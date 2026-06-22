@@ -450,6 +450,23 @@ public abstract class SolrCall {
         int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
         solrRsp.add("error", info);
         response.setStatus(code);
+
+        // Fail-fast errors (e.g. an update that hits a bad field on the first doc) set the error
+        // response before the request handler has read the whole request body. If we commit the
+        // error response now while bytes are still inbound, Jetty resets the HTTP/1.1 connection
+        // and the client gets a "Broken pipe" mid-upload instead of being able to read the error.
+        // Drain any unconsumed request body first so the client can finish sending and then read
+        // the error response cleanly (SOLR-8453 / SOLR-8683).
+        if (!req.isAsyncStarted()) {
+          try {
+            ServletInputStream in = req.getInputStream();
+            if (in != null && !in.isFinished()) {
+              SolrDispatchFilter.consumeInputFully(in);
+            }
+          } catch (IOException e) {
+            log.info("Could not drain client request body before sending error response", e);
+          }
+        }
       }
 
 
@@ -545,11 +562,13 @@ public abstract class SolrCall {
           //          });
         } else {
           HttpOutput out = (HttpOutput) response.getOutputStream();
-          try {
-            out.sendContent(buffer);
-          } finally {
-            ExpandableBuffers.getInstance().release(outStream.buffer());
-          }
+          // The response buffer is owned by the PooledBufferHandle stashed in the
+          // "responseBuffer" request attribute (QueryResponseWriterUtil.writeQueryResponse)
+          // and released exactly once by SolrDispatchFilter.releaseResponseBufferHandle after
+          // filter() returns.  Releasing it here as well is a double-free of the pooled Agrona
+          // buffer, which the PooledBufferHandle CAS detects as an AssertionError and corrupts
+          // the in-flight response (e.g. /admin/metrics → SplitShard "missing index size").
+          out.sendContent(buffer);
         }
       }
       //else http HEAD request, nothing to write out, waited this long just to get ContentType

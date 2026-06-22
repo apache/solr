@@ -247,7 +247,11 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       try {
         modelWeight = scoringQuery.createWeight(searcher, ScoreMode.COMPLETE, 1f);
-      } catch (final IOException e) {
+      } catch (final Exception e) {
+        // createWeight resolves per-feature weights; a missing required efi parameter surfaces here
+        // as a FeatureException wrapped in a RuntimeException (see LTRScoringQuery.createWeights),
+        // not just an IOException. Treat any weight-creation failure as a bad request so the client
+        // gets 400 instead of a generic 500 leaking out of response streaming.
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
       }
       if (modelWeight == null) {

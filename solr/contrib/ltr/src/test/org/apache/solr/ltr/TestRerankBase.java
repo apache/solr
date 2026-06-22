@@ -105,6 +105,14 @@ public class TestRerankBase extends RestTestBase {
     }
     if (defaultFeatureFormat != null) {
       System.setProperty(SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT, defaultFeatureFormat);
+    } else {
+      // This is invoked once per test method (via setuptest). When the null branch is chosen the
+      // test expects the solrconfig default ("dense") to apply, but a *previous* method may have
+      // set this system property to "sparse"/"dense". Without clearing it here that stale value
+      // leaks into the freshly loaded core's transformer factory, so the server renders the wrong
+      // format while chooseDefaultFeatureVector() still expects the null->dense default. Clear it
+      // so the test's expectation and the server's configuration always agree.
+      System.clearProperty(SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT);
     }
   }
 

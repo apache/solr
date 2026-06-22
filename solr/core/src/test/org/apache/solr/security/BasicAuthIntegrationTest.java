@@ -379,7 +379,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 //    setAuthorizationHeader(httpPost, makeBasicAuthHeader(user, pwd));
 
     Map headers = new HashMap();
-    headers.put("Authorization",  makeBasicAuthHeader("solr", "SolrRocks"));
+    headers.put("Authorization",  makeBasicAuthHeader(user, pwd));
     Http2SolrClient.SimpleResponse resp = Http2SolrClient.POST(url, ByteBuffer.wrap(payload.getBytes(UTF_8)), "application/json; charset=UTF-8", headers);
 
     String response = resp.asString;

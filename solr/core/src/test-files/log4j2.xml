@@ -15,10 +15,15 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-<!-- Configuration for asynchronous logging -->
+<!-- Synchronous logging. Async loggers (AsyncRoot/AsyncLogger) drop buffered events when the forked
+     test JVM or the Log4j context is torn down without a clean flush, which is precisely when a failing
+     test emits its last (most important) request-time logs - so those traces never reach the captured
+     SYSTEM_ERR output. Synchronous logging writes each event before returning and applies natural
+     backpressure to flooding producers (no unbounded ring-buffer accumulation), so it also removes the
+     OOM risk the async ring-buffer size cap in defaults-tests.gradle was guarding against. -->
 <Configuration>
   <Appenders>
-    <Console name="STDERR" target="SYSTEM_ERR">
+    <Console name="STDERR" target="SYSTEM_ERR" follow="true">
       <PatternLayout>
         <Pattern>
           %maxLen{%-4r %-5p (%-5t) [%X{node_name} %X{core}] %c{1.} %m%notEmpty{
@@ -28,16 +33,16 @@
     </Console>
   </Appenders>
   <Loggers>
-    <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
-    <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
-    <AsyncLogger name="org.apache.hadoop" level="WARN"/>
-    <AsyncLogger name="org.apache.directory" level="WARN"/>
-    <AsyncLogger name="org.apache.solr.hadoop" level="WARN"/>
-    <AsyncLogger name="org.eclipse.jetty" level="WARN"/>
+    <Logger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
+    <Logger name="org.apache.zookeeper" level="WARN"/>
+    <Logger name="org.apache.hadoop" level="WARN"/>
+    <Logger name="org.apache.directory" level="WARN"/>
+    <Logger name="org.apache.solr.hadoop" level="WARN"/>
+    <Logger name="org.eclipse.jetty" level="WARN"/>
 
-    <AsyncRoot level="WARN">
+    <Root level="WARN">
       <AppenderRef ref="STDERR"/>
-    </AsyncRoot>
+    </Root>
   </Loggers>
 </Configuration>
 

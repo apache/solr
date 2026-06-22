@@ -140,9 +140,18 @@ allprojects {
       // Set up cwd and temp locations.
       systemProperty("java.io.tmpdir", testsTmpDir)
       systemProperty("tempDir", testsTmpDir)
+
+      // Give every forked test JVM a real solr.log.dir. Without it, StartupLoggingUtils logs an
+      // ERROR ("Missing Java Option solr.log.dir. Logging may be missing or incomplete.") on every
+      // node start and the test security policy's "${solr.log.dir}" FilePermission entries
+      // (solr-tests.policy) resolve to an empty path. A concrete directory keeps node logging and the
+      // policy file well-defined.
+      def testsLogDir = file("${buildDir}/tmp/tests-logs")
+      systemProperty("solr.log.dir", testsLogDir)
       doFirst {
         testsCwd.mkdirs()
         testsTmpDir.mkdirs()
+        testsLogDir.mkdirs()
       }
 
       // Disable HTML report generation. The reports are big and slow to generate.
@@ -160,7 +169,27 @@ allprojects {
       }
 
       // Set up custom test output handler.
+      def resultsHistoryRoot = file("${buildDir}/test-results-history")
+      def maxResultHistory = (project.findProperty('tests.resulthistory') ?: '5') as Integer
       doFirst {
+        // Preserve the PREVIOUS run's full results (TEST-*.xml + outputs/) before this run clobbers them.
+        // Gradle overwrites per-class XML in place and we delete the outputs dir just below, so without
+        // this a flaky or failed run's logs vanish the next time any overlapping test runs. Snapshot the
+        // current results into a timestamped history slot and keep only the most recent N snapshots, so a
+        // run's logs are only lost after N more runs. Tune with -Ptests.resulthistory=N (0 disables).
+        def resultsDir = reports.junitXml.destination
+        if (maxResultHistory > 0 && resultsDir.exists() && (resultsDir.listFiles()?.length ?: 0) > 0) {
+          resultsHistoryRoot.mkdirs()
+          def stamp = new java.text.SimpleDateFormat('yyyyMMdd-HHmmss-SSS').format(new Date())
+          project.copy {
+            from resultsDir
+            into new File(resultsHistoryRoot, stamp)
+          }
+          def snaps = (resultsHistoryRoot.listFiles()?.findAll { it.isDirectory() } ?: []).toList().sort { it.name }
+          if (snaps.size() > maxResultHistory) {
+            snaps.take(snaps.size() - maxResultHistory).each { project.delete(it) }
+          }
+        }
         project.delete testOutputsDir
       }
 

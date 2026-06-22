@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ZkStateReaderQueue implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -47,6 +48,16 @@ public class ZkStateReaderQueue implements Closeable {
   public static final byte[] EMPTY_BYTES = new byte[0];
 
   private final LinkedTransferQueue<FetchStateUpdatesRequest> workQueue = new LinkedTransferQueue<>();
+
+  /**
+   * Bounds how many times a single collection's state fetch is automatically re-enqueued after a
+   * transient ZooKeeper failure before we give up and rely on the next watch event / session
+   * reconnect resync. The counter is cleared on the first successful fetch, so a steady stream of
+   * isolated flaps never exhausts the budget.
+   */
+  private static final int MAX_FETCH_RETRIES = 5;
+
+  private final ConcurrentHashMap<String, AtomicInteger> fetchRetries = new ConcurrentHashMap<>();
 
   private final SolrZkClient zkClient;
   private final ZkStateReader reader;
@@ -192,11 +203,16 @@ public class ZkStateReaderQueue implements Closeable {
                 }
                 return CompletableFuture.completedFuture(docCollection1);
               }).thenAcceptAsync(docCollection1 -> {
+                fetchRetries.remove(collection);
                 reader.updateWatchedCollection(collection, new ClusterState.CollectionRef(docCollection1));
               }).exceptionally(t -> {
-                // Without this handler a failed full fetch is silently swallowed and the node's
-                // view of the collection can go permanently stale.
+                // A failed full fetch must not be silently swallowed: the triggering watch event has
+                // already been consumed (the recursive ZK watch does not replay events missed during
+                // a disconnect) and a transient ConnectionLoss does not fire OnReconnect resync, so
+                // without re-fetching the node's view of the collection can go permanently stale and
+                // getLeaderRetry will spin until timeout. Re-enqueue on transient ZK failures.
                 log.error("fetchCollectionState failed coll={}", collection, t);
+                scheduleRetryOnTransientFailure(collection, false, t);
                 return null;
               });
 
@@ -209,11 +225,13 @@ public class ZkStateReaderQueue implements Closeable {
                 if (docCollection1 == null) {
                   return;
                 }
+                fetchRetries.remove(collection);
                 reader.updateWatchedCollection(collection, new ClusterState.CollectionRef(docCollection1));
               }).exceptionally(t -> {
-                // Mirror the full-fetch branch: without this a failed delta apply is silently
-                // swallowed and the node's view of the collection can go permanently stale.
+                // Mirror the full-fetch branch: re-enqueue on transient ZK failures so a missed
+                // delta apply does not leave the node's view permanently stale.
                 log.error("getAndProcessStateUpdates failed coll={}", collection, t);
+                scheduleRetryOnTransientFailure(collection, true, t);
                 return null;
               });
             }
@@ -226,6 +244,48 @@ public class ZkStateReaderQueue implements Closeable {
       } catch (Exception e) {
         log.error("Exception processing state update request", e);
       }
+    }
+
+    /**
+     * Re-enqueue a failed state fetch when the failure looks transient (a ZooKeeper connection-level
+     * error rather than a structural one like NoNode). The re-fetch is deferred onto a shared
+     * executor that first waits for the ZK connection to be re-established, so we never hot-spin while
+     * the ensemble is unreachable. Retries are bounded per collection and the counter resets on the
+     * next successful fetch.
+     */
+    private void scheduleRetryOnTransientFailure(String collection, boolean justStates, Throwable t) {
+      if (closed || terminated) {
+        fetchRetries.remove(collection);
+        return;
+      }
+      if (!isTransientZkFailure(t)) {
+        // Structural failures (e.g. NoNode for a deleted collection) are not recoverable by retry;
+        // drop any accumulated retry budget for this collection.
+        fetchRetries.remove(collection);
+        return;
+      }
+
+      int attempt = fetchRetries.computeIfAbsent(collection, k -> new AtomicInteger()).incrementAndGet();
+      if (attempt > MAX_FETCH_RETRIES) {
+        log.error("Giving up re-fetching state for collection={} after {} transient ZK failures; the next watch event or session reconnect will resync", collection, MAX_FETCH_RETRIES);
+        fetchRetries.remove(collection);
+        return;
+      }
+
+      log.warn("Re-enqueuing state fetch for collection={} justStates={} after transient ZK failure (attempt {}/{})", collection, justStates, attempt, MAX_FETCH_RETRIES);
+      ParWork.getRootSharedExecutor().submit(() -> {
+        try {
+          int waitMs = zkClient.getZkClientTimeout();
+          zkClient.getConnectionManager().waitForConnected(waitMs > 0 ? waitMs : 30000);
+        } catch (Exception e) {
+          // Fall through and re-enqueue anyway; if ZK is still unreachable the worker's fetch will
+          // fail again and either retry or exhaust the bounded budget.
+          log.debug("waitForConnected before state re-fetch interrupted/failed coll={}", collection, e);
+        }
+        if (!closed && !terminated) {
+          fetchStateUpdates(collection, justStates);
+        }
+      });
     }
 
     private int bulkMessage(FetchStateUpdatesRequest fetchStateUpdatesRequest, BulkMessage bulkMessage) {
@@ -345,6 +405,27 @@ public class ZkStateReaderQueue implements Closeable {
       return null;
     }
     return StateDeltaCodec.decodeStateSnapshot(data);
+  }
+
+  /**
+   * Whether a failed state fetch should be retried. True only for ZooKeeper connection-level
+   * failures (ConnectionLoss / OperationTimeout / Session{Expired,Moved}), which are recoverable by
+   * re-fetching once the connection is back. Structural failures such as {@code NoNode} are not
+   * retryable — retrying them would spin without ever succeeding. Unwraps the cause chain because the
+   * fetch futures wrap the original {@link KeeperException} in {@link SolrException}.
+   */
+  static boolean isTransientZkFailure(Throwable t) {
+    Throwable c = t;
+    while (c != null) {
+      if (c instanceof KeeperException.ConnectionLossException
+          || c instanceof KeeperException.OperationTimeoutException
+          || c instanceof KeeperException.SessionExpiredException
+          || c instanceof KeeperException.SessionMovedException) {
+        return true;
+      }
+      c = c.getCause();
+    }
+    return false;
   }
 
   public void fetchStateUpdates(String collection, boolean justStates) {

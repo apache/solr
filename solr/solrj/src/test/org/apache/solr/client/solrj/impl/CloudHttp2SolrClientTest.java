@@ -391,6 +391,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
         .setMaxShardsPerNode(liveNodes * liveNodes)
         .process(cluster.getSolrClient());
+    // Wait for all replicas to go ACTIVE so shard-preference routing has every candidate
+    // available before the preference queries run.
+    cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * liveNodes);
     // Add some new documents
     new UpdateRequest()
         .add(id, "0", "a_t", "hello1")
@@ -475,6 +478,10 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, liveNodes/3, liveNodes/3, liveNodes/3)
         .setMaxShardsPerNode(liveNodes)
         .process(cluster.getSolrClient());
+
+    // Wait for every replica type (NRT+TLOG+PULL) to go ACTIVE so replica-type routing has
+    // a live candidate of each type before the queries run.
+    cluster.waitForActiveCollection(collectionName, 1, (liveNodes/3) * 3);
 
     // Add some new documents
     new UpdateRequest()
@@ -957,7 +964,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, 1, 1, pullReplicas)
         .setMaxShardsPerNode(liveNodes)
         .process(cluster.getSolrClient());
-    
+
+    // Replica-type routing (shards.preference=replica.type) only selects a replica of the
+    // preferred type when one is ACTIVE; otherwise it falls back to another type and the
+    // type assertion in queryWithPreferReplicaTypes fails. Wait for every replica of every
+    // type (NRT+TLOG+PULL per shard) to go ACTIVE before issuing the preference queries.
+    cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * (1 + 1 + pullReplicas));
+
     // Add some new documents
     new UpdateRequest()
         .add(id, "0", "a_t", "hello1")

@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -215,6 +216,9 @@ public class ClusterState implements JSONWriter.Writable {
     DocCollection coll = null;
     try {
       coll = ref.get().get();
+    } catch (ExecutionException e) {
+      if (e.getCause() instanceof KeeperException.NoNodeException) return null;
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
@@ -369,6 +373,15 @@ public class ClusterState implements JSONWriter.Writable {
    */
   public void forEachCollection(Consumer<CompletableFuture<DocCollection>> consumer) {
     collectionStateRefs.forEach((s, collectionRef) -> {
+      // A collection can appear in both maps. The watched map (collectionStates) is
+      // authoritative and takes precedence (see getCollectionRef, which consults it
+      // first); it is iterated below. Skip the lazy ref here so each collection is
+      // visited exactly once. Visiting both surfaced the same collection twice, e.g.
+      // duplicate ReplicaInfo entries in SolrClientNodeStateProvider where only one
+      // copy received the fetched metric -> spurious "missing index size information".
+      if (collectionStates.containsKey(s)) {
+        return;
+      }
       try {
         CompletableFuture<DocCollection> collection = collectionRef.get();
         if (collection != null) {

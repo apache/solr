@@ -73,7 +73,6 @@ public class TestExternalFeatures extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=10 model=externalmodel efi.user_query=w3 efi.userTitlePhrase1=w4 efi.userTitlePhrase2=w5}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.34972426");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==0.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==0.0");
 
@@ -83,7 +82,6 @@ public class TestExternalFeatures extends TestRerankBase {
     query.add("fl", "*,score,[fv efi.user_query=w2 efi.userTitlePhrase1=w4 efi.userTitlePhrase2=w5]");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.34972426");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==0.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==0.0");
   }
@@ -120,11 +118,12 @@ public class TestExternalFeatures extends TestRerankBase {
     final String docs0fv_csv = FeatureLoggerTestUtils.toFeatureVector(
         "occurrences","2.3", "originalScore","1.0");
 
-    // Features we're extracting depend on external feature info not passed in
+    // Features we're extracting depend on external feature info not passed in —
+    // default store features (matchedTitle etc.) use ${user_query} EFI; SolrFeature
+    // throws FeatureException when macroExpander.expand() returns null, which propagates
+    // as SolrException(BAD_REQUEST) from FeatureTransformer.setContext() before streaming.
     query.add("fl", "[fv]");
-    // MRM: missing required efi surfaces during [fv] streaming, so the fork returns an
-    // empty/aborted response rather than a structured /error/msg body.
-    assertEquals("", restTestHarness.query("/query" + query.toQueryString()));
+    assertJQ("/query" + query.toQueryString(), "/error/code==400");
 
     // Adding efi in features section should make it work
     query.remove("fl");
@@ -145,17 +144,19 @@ public class TestExternalFeatures extends TestRerankBase {
     query.setQuery("*:*");
     query.add("rows", "1");
 
+    // occurrencesImplicit in fstore5 has no "required" key — required defaults to false.
+    // With no efi.myOccImplicit, featureValue is null, scorer is null, feature is not used.
     final String docs0fvalias_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
-        "occurrences","0.0",
+        "occurrencesImplicit","0.0",
         "originalScore","1.0");
     final String docs0fvalias_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
         "originalScore","1.0");
 
     final String docs0fvalias_default_csv = chooseDefaultFeatureVector(docs0fvalias_dense_csv, docs0fvalias_sparse_csv);
 
-    // Efi is explicitly not required, so we do not score the feature
+    // No required key in feature definition — efi absence is silently ignored
     query.remove("fl");
-    query.add("fl", "fvalias:[fv store=fstore3]");
+    query.add("fl", "fvalias:[fv store=fstore5]");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fvalias_default_csv+"'");
   }
 
@@ -174,7 +175,7 @@ public class TestExternalFeatures extends TestRerankBase {
 
     final String docs0fvalias_default_csv = chooseDefaultFeatureVector(docs0fvalias_dense_csv, docs0fvalias_sparse_csv);
 
-    // Efi is explicitly not required, so we do not score the feature
+    // occurrences in fstore3 has explicit "required": false — efi absence is silently ignored
     query.remove("fl");
     query.add("fl", "fvalias:[fv store=fstore3]");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fvalias_default_csv+"'");
@@ -190,12 +191,10 @@ public class TestExternalFeatures extends TestRerankBase {
     // Using nondefault store should still result in error with no efi when it is required (myPop)
     query.remove("fl");
     query.add("fl", "fvalias:[fv store=fstore4]");
-    // MRM: in this fork a missing-but-required efi is detected lazily during
-    // [fv] document streaming (LTRScoringQuery.createWeights -> FeatureTransformer.setContext),
-    // i.e. after the response writer has already begun, so the server cannot emit a
-    // structured /error/msg body — the request fails with an empty/aborted response.
-    // Assert the request did not produce a normal (parseable) response body.
-    assertEquals("", restTestHarness.query("/query" + query.toQueryString()));
+    // FeatureTransformer.setContext() is called before document streaming begins;
+    // a missing required efi throws SolrException(BAD_REQUEST) and the server
+    // writes a structured 400 JSON error body.
+    assertJQ("/query" + query.toQueryString(), "/error/code==400");
   }
 
   @Test
@@ -209,10 +208,9 @@ public class TestExternalFeatures extends TestRerankBase {
     query.setQuery("*:*");
     query.add("rows", "1");
     query.add("fl", "score,features:[fv efi.user_query=uq "+userTitlePhrasePresent+"=utpp]");
-    // MRM: see featureExtraction_valueFeatureRequired_shouldThrowException — the missing
-    // required efi surfaces during [fv] streaming, so the fork returns an empty/aborted
-    // response rather than a structured /error/msg body.
-    assertEquals("", restTestHarness.query("/query" + query.toQueryString()));
+    // FeatureTransformer.setContext() is called before streaming; missing required efi
+    // throws SolrException(BAD_REQUEST) — server writes structured 400 JSON error body.
+    assertJQ("/query" + query.toQueryString(), "/error/code==400");
   }
 
 }

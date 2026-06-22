@@ -55,6 +55,16 @@ import org.junit.Test;
 public class TestSelectiveWeightCreation extends TestRerankBase {
   private IndexSearcher getSearcher(IndexReader r) {
     final IndexSearcher searcher = LuceneTestCase.newSearcher(r, false, false);
+
+    // These tests extend TestRerankBase (which does not extend LuceneTestCase), so
+    // LuceneTestCase's class-env rule never runs and LuceneTestCase.classEnvRule.similarity
+    // is null. newSearcher() unconditionally applies that null via setSimilarity(...), leaving
+    // the searcher with no similarity and causing an NPE in TermWeight. Restore a non-null
+    // similarity so scoring works.
+    if (searcher.getSimilarity() == null) {
+      searcher.setSimilarity(IndexSearcher.getDefaultSimilarity());
+    }
+
     return searcher;
   }
 
@@ -114,6 +124,13 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   @After
   public void after() throws Exception {
     super.tearDown();
+    // Stop Jetty explicitly before aftertest() deletes tmpSolrHome; without this
+    // each @Before setUp() starts a new Jetty while the previous one is still running,
+    // causing port/resource conflicts between test methods.
+    if (jetty != null) {
+      jetty.stop();
+      jetty = null;
+    }
     aftertest();
   }
 

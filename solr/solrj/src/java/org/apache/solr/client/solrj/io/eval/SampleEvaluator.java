@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.List;
@@ -85,7 +84,14 @@ public class SampleEvaluator extends RecursiveObjectEvaluator implements ManyVal
         MultivariateNormalDistribution multivariateNormalDistribution = (MultivariateNormalDistribution)first;
         double[] sample = multivariateNormalDistribution.sample();
 
-        return Collections.singletonList(sample);
+        // A single draw from a multivariate distribution is a vector. Return its components as a
+        // flat List<Number> (one element per dimension), mirroring the scalar RealDistribution
+        // path; wrapping the double[] in a singletonList yields a size-1 list of an array instead.
+        List<Number> sampleList = new ArrayList<>(sample.length);
+        for(double value : sample) {
+          sampleList.add(value);
+        }
+        return sampleList;
       }
     } else {
       IntegerDistribution integerDistribution = (IntegerDistribution) first;

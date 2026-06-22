@@ -15,10 +15,15 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-<!-- Configuration for asynchronous logging -->
+<!-- Synchronous logging. Async loggers (AsyncRoot/AsyncLogger) drop buffered events when the forked
+     test JVM or the Log4j context is torn down without a clean flush, which is precisely when a failing
+     test emits its last (most important) request-time logs - so those traces never reach the captured
+     SYSTEM_ERR output. Synchronous logging writes each event before returning. follow="true" makes the
+     Console appender re-resolve System.err on each write so per-test stderr capture is not lost when the
+     test framework reassigns System.err. -->
 <Configuration>
   <Appenders>
-    <Console name="STDERR" target="SYSTEM_ERR">
+    <Console name="STDERR" target="SYSTEM_ERR" follow="true">
       <PatternLayout>
         <Pattern>
           %maxLen{%-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core} %X{trace_id}] %c{1.} %m%notEmpty{
@@ -28,15 +33,15 @@
     </Console>
   </Appenders>
   <Loggers>
-    <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
-    <AsyncLogger name="org.apache.hadoop" level="WARN"/>
-    <AsyncLogger name="org.apache.directory" level="WARN"/>
-    <AsyncLogger name="org.apache.solr.hadoop" level="INFO"/>
-    <AsyncLogger name="org.eclipse.jetty" level="INFO"/>
+    <Logger name="org.apache.zookeeper" level="WARN"/>
+    <Logger name="org.apache.hadoop" level="WARN"/>
+    <Logger name="org.apache.directory" level="WARN"/>
+    <Logger name="org.apache.solr.hadoop" level="INFO"/>
+    <Logger name="org.eclipse.jetty" level="INFO"/>
 
-    <AsyncRoot level="INFO">
+    <Root level="INFO">
       <AppenderRef ref="STDERR"/>
-    </AsyncRoot>
+    </Root>
   </Loggers>
 </Configuration>
 

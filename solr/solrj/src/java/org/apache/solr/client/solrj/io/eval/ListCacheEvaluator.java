@@ -18,10 +18,8 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 
-import java.util.Enumeration;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -49,13 +47,10 @@ public class ListCacheEvaluator extends RecursiveObjectEvaluator implements Many
     List list = new ArrayList();
 
     if(values.length == 0) {
-      @SuppressWarnings({"rawtypes"})
-      ConcurrentHashMap m = (ConcurrentHashMap)objectCache;
-      @SuppressWarnings({"rawtypes"})
-      Enumeration en = m.keys();
-      while(en.hasMoreElements()) {
-        list.add(en.nextElement());
-      }
+      // The object cache is a ConcurrentMap whose concrete type varies (e.g. a jctools
+      // NonBlockingHashMap), so iterate via the interface's keySet() rather than casting to
+      // ConcurrentHashMap and calling its keys() Enumeration.
+      list.addAll(objectCache.keySet());
       return list;
     } else if(values.length == 1) {
       String space = (String)values[0];
@@ -63,17 +58,9 @@ public class ListCacheEvaluator extends RecursiveObjectEvaluator implements Many
       @SuppressWarnings({"rawtypes"})
       ConcurrentMap spaceCache = (ConcurrentMap)objectCache.get(space);
       if(spaceCache != null) {
-        @SuppressWarnings({"rawtypes"})
-        ConcurrentHashMap spaceMap = (ConcurrentHashMap)objectCache.get(space);
-        @SuppressWarnings({"rawtypes"})
-        Enumeration en = spaceMap.keys();
-        while(en.hasMoreElements()) {
-          list.add(en.nextElement());
-        }
-        return list;
-      } else {
-        return list;
+        list.addAll(spaceCache.keySet());
       }
+      return list;
     } else {
       throw new IOException("The listCache function requires two parameters: workspace and key");
     }

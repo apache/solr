@@ -117,20 +117,22 @@ public class PackageManager implements Closeable {
   }
 
   public Map<String, SolrPackageInstance> getPackagesDeployed(String collection) {
-    Map<String, String> packages = null;
+    Map<String, Object> packages = null;
     try {
       NavigableObject result = (NavigableObject) Utils.executeGET(solrClient,
           solrBaseUrl + PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS?omitHeader=true&wt=javabin", Utils.JAVABINCONSUMER);
-      packages = (Map<String, String>) result._get("/response/params/PKG_VERSIONS", Collections.emptyMap());
+      packages = (Map<String, Object>) result._get("/response/params/PKG_VERSIONS", Collections.emptyMap());
     } catch (PathNotFoundException ex) {
       // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by the package manager.
     }
     if (packages == null) return Collections.emptyMap();
     Map<String, SolrPackageInstance> ret = new HashMap<>();
     packages.forEach((packageName, value) -> {
-      if (Strings.isNullOrEmpty(packageName) == false && // There can be an empty key, storing the version here
-          value != null) { // null means the package was undeployed from this package before
-        ret.put(packageName, getPackageInstance(packageName, value));
+      // The PKG_VERSIONS param set also carries an empty-key entry holding the ParamSet version
+      // metadata as a nested map; only real packageName -> version (String) entries are deployments.
+      // A null/non-String value means the package was undeployed from this collection.
+      if (Strings.isNullOrEmpty(packageName) == false && value instanceof String) {
+        ret.put(packageName, getPackageInstance(packageName, (String) value));
       }
     });
     return ret;

@@ -83,6 +83,13 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   private final ReentrantLock iwOpenLock = new ReentrantLock(true);
 
   private volatile SolrIndexWriter indexWriter = null;
+
+  // The thread executing close(). decrefSolrCoreState() sets closed=true BEFORE invoking close(), and
+  // close() drives a commit-on-close (DirectUpdateHandler2.closeWriter -> commit -> getIndexWriter). That
+  // re-entrant call must be allowed through the closed-fence in getIndexWriter; only OTHER (racing /update)
+  // threads must be rejected. We identify the close thread by reference rather than relaxing the fence.
+  private volatile Thread closingThread;
+
   private final DirectoryFactory directoryFactory;
   private final RecoveryStrategy.Builder recoveryStrategyBuilder;
 
@@ -166,7 +173,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     // indexWriter != null it would otherwise skip straight to incref() and hand out the very writer
     // close() is committing/closing (-> AlreadyClosedException / partial commit); with indexWriter == null
     // it would reopen a brand-new writer on a Directory that close() is releasing.
-    if (closed) {
+    // The close thread itself must be let through: close() runs a commit-on-close that re-enters here
+    // (closeWriter -> commit -> getIndexWriter). It holds the writeLock, so the readLock taken below is a
+    // safe re-entrant downgrade. Every OTHER caller is rejected once closing has begun.
+    if (closed && Thread.currentThread() != closingThread) {
       throw new AlreadyClosedException("SolrCoreState already closed");
     }
     // NOTE: do NOT block on core.readOnly here. Read-only enforcement belongs at the request-processing
@@ -849,6 +859,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
     log.debug("Closing SolrCoreState refCnt={}", solrCoreStateRefCnt.get());
 
+    // Mark ourselves as the close thread so the commit-on-close below (which re-enters getIndexWriter)
+    // is allowed past the closed-fence while still rejecting racing /update threads.
+    closingThread = Thread.currentThread();
+
     cancelRecovery(false, true);
 
     try {
@@ -881,6 +895,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     try {
       closeIndexWriter(closer);
     } finally {
+      closingThread = null;
       if (locked) {
         iwLock.writeLock().unlock();
       }

@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
@@ -314,9 +315,18 @@ public class DaemonStream extends TupleStream implements Expressible {
 
     public void run() {
       executingThread = Thread.currentThread();
+      // The daemon does its streaming work on this detached thread, severed from the originating
+      // request's SolrRequestInfo. Internode requests it makes (e.g. TopicStream checkpoint
+      // persistence during a reindex) are secured by PKIAuthenticationPlugin, which only mints a
+      // token when the caller is either a recognized user or a Solr server thread. Without the
+      // server-thread flag the token is empty and a secured cluster answers 401, so the daemon
+      // fails and (for reindex) the collection command times out. Flag this as a server thread so
+      // PKI signs internode requests with the node ("$") identity.
+      ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
       try {
         stream();
       } finally {
+        ExecutorUtil.setServerThreadFlag(null);
         shutdown = true;
         executingThread = null;
       }

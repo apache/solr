@@ -227,12 +227,21 @@ class SolrCores implements Closeable {
       addCoreDescriptor(new CoreDescriptor(n0, cd1));
       cores.put(n0, c1);
       cores.put(n1, c0);
+      // Capture the metric registry names BEFORE renaming. SolrCore.setName performs the metrics-context
+      // rename (afterCoreSetName) asynchronously on the core container executor, so reading
+      // getRegistryName() after setName races those tasks: if exactly one rename has landed, both cores
+      // transiently report the same registry name and swapRegistries() short-circuits on from==to,
+      // leaving the per-core metric registries un-swapped (e.g. UPDATE./update.requests stays attributed
+      // to the wrong core). The pre-rename names are always distinct, so the registries are exchanged
+      // deterministically; afterCoreSetName only repoints each core's context to its new name and never
+      // mutates the manager's registry map, so it composes correctly whenever it runs.
+      String registryName0 = c0.getCoreMetricManager().getRegistryName();
+      String registryName1 = c1.getCoreMetricManager().getRegistryName();
+
       c0.setName(n1);
       c1.setName(n0);
-      
-      container.getMetricManager().swapRegistries(
-          c0.getCoreMetricManager().getRegistryName(),
-          c1.getCoreMetricManager().getRegistryName());
+
+      container.getMetricManager().swapRegistries(registryName0, registryName1);
     }
 
   }

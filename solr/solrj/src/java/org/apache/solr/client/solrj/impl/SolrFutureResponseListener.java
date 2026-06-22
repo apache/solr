@@ -47,6 +47,7 @@ public class SolrFutureResponseListener extends SolrBufferingResponseListener im
     private final Request request;
     private volatile ContentResponse response;
     private volatile Throwable failure;
+    private volatile Throwable responseFailure;
     private volatile boolean cancelled;
 
 
@@ -67,6 +68,7 @@ public class SolrFutureResponseListener extends SolrBufferingResponseListener im
     {
         response = new HttpContentResponse(result.getResponse(), null, getMediaType(), getEncoding());
         failure = result.getFailure();
+        responseFailure = result.getResponseFailure();
         latch.countDown();
     }
 
@@ -110,7 +112,17 @@ public class SolrFutureResponseListener extends SolrBufferingResponseListener im
         if (isCancelled())
             throw (CancellationException)new CancellationException().initCause(failure);
         if (failure != null)
+        {
+            // A complete HTTP response can arrive even though the overall exchange is marked failed:
+            // when the server fails fast on a streamed request (e.g. an update with a bad field) it
+            // sends the error response (status + body) and then RST_STREAM's the still-uploading
+            // request body. That surfaces here as a request-side failure (EofException "dropped")
+            // while the response side succeeded. Prefer the real response so the caller can decode it
+            // into a proper RemoteSolrException instead of an opaque transport reset.
+            if (responseFailure == null && response != null && response.getStatus() > 0)
+                return response;
             throw new ExecutionException(failure);
+        }
         return response;
     }
 }

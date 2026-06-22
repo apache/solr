@@ -81,6 +81,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -753,7 +754,10 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
    */
   public void registerCloudCollectionsListener(CloudCollectionsListener cloudCollectionsListener) {
     cloudCollectionsListeners.add(cloudCollectionsListener);
-    notifications.submit(()-> cloudCollectionsListener.onChange(Collections.emptySet(), getCurrentCollections()));
+    // Notify synchronously so a freshly registered listener observes the current collection set
+    // before this method returns. Dispatching this on the async notifications executor lets the
+    // caller race ahead and read a not-yet-populated result.
+    cloudCollectionsListener.onChange(Collections.emptySet(), getCurrentCollections());
   }
 
   /**
@@ -1222,6 +1226,9 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
     final DocCollection docCollection;
     try {
       docCollection = docCollectionRef.get().get();
+    } catch (ExecutionException e) {
+      if (e.getCause() instanceof KeeperException.NoNodeException) return null;
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
@@ -1864,7 +1871,11 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
     final DocCollectionAndLiveNodesWatcherWrapper wrapper = new DocCollectionAndLiveNodesWatcherWrapper(collection, stateWatcher, latch);
 
     try {
-      registerDocCollectionWatcher(collection, wrapper);
+      // notifyOnRegister=false: this method does its own on-register notify below (via stateWatcher)
+      // and owns the combined doc-watcher + live-nodes-listener cleanup through
+      // removeCollectionStateWatcher, so letting registerDocCollectionWatcher also notify would
+      // both double-fire the delegate and risk leaking the live-nodes listener on auto-remove.
+      registerDocCollectionWatcher(collection, wrapper, false);
     } catch (InterruptedException e) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
     }
@@ -1886,6 +1897,17 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
    * </p>
    */
   public void registerDocCollectionWatcher(String collection, DocCollectionWatcher docCollectionWatcher) throws InterruptedException {
+    registerDocCollectionWatcher(collection, docCollectionWatcher, true);
+  }
+
+  /**
+   * @param notifyOnRegister when true, the watcher is invoked synchronously with the currently
+   *     known state if one is already cached locally. The {@link #registerCollectionStateWatcher}
+   *     path passes false because it performs its own on-register notification (via the wrapped
+   *     {@link org.apache.solr.common.cloud.CollectionStateWatcher}) and owns the combined
+   *     doc-watcher + live-nodes-listener cleanup; double-notifying it would fire the delegate twice.
+   */
+  private void registerDocCollectionWatcher(String collection, DocCollectionWatcher docCollectionWatcher, boolean notifyOnRegister) throws InterruptedException {
     log.debug("registerDocCollectionWatcher {}", collection);
 
     if (collection == null) {
@@ -1905,6 +1927,12 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
 
     if (state == null) {
       zkStateReaderQueue.fetchStateUpdates(collection, false);
+    } else if (notifyOnRegister) {
+      // The state is already cached locally; the watcher contract requires that a freshly
+      // registered watcher observes the current state without waiting for the next change event.
+      if (docCollectionWatcher.onStateChanged(state)) {
+        removeDocCollectionWatcher(collection, docCollectionWatcher);
+      }
     }
   }
 
@@ -1919,6 +1947,15 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
     if (coll == null) return null;
     try {
       return coll.get().get();
+    } catch (ExecutionException e) {
+      // A lazy ref resolves state.json directly from ZK. During a reconnect/refresh window the
+      // node can be transiently absent. The contract of this method is "or null", so treat
+      // NoNode as a non-existent collection rather than surfacing a spurious 500.
+      // Mirrors the already-hardened ClusterState.getCollectionsMap / forEachCollection.
+      if (e.getCause() instanceof KeeperException.NoNodeException) {
+        return null;
+      }
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }

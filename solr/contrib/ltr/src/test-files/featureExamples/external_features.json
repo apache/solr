@@ -30,6 +30,18 @@
     "store": "fstore3",
     "params":{}
 }, {
+    "name" : "occurrencesImplicit",
+    "class" : "org.apache.solr.ltr.feature.ValueFeature",
+    "store": "fstore5",
+    "params" : {
+        "value" : "${myOccImplicit}"
+    }
+}, {
+    "name":"originalScore",
+    "class":"org.apache.solr.ltr.feature.OriginalScoreFeature",
+    "store": "fstore5",
+    "params":{}
+}, {
     "name" : "popularity",
     "class" : "org.apache.solr.ltr.feature.ValueFeature",
     "store": "fstore4",

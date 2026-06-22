@@ -534,13 +534,16 @@ public class CoreContainer implements Closeable {
       pkiAuthenticationPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
       shardHandlerFactory.setSecurityBuilder(pkiAuthenticationPlugin);
       updateShardHandler.setSecurityBuilder(pkiAuthenticationPlugin);
-    }
-    // Also setup the overseer's internal HTTP client so inter-node collection API requests (e.g.
-    // create-core) carry PKI auth headers when blockUnknown=true is configured.
-    if (pkiAuthenticationPlugin != null && isZooKeeperAware()) {
-      Overseer overseer = getZkController().getOverseer();
-      if (overseer != null && overseer.overseerOnlyClient != null) {
-        pkiAuthenticationPlugin.setup(overseer.overseerOnlyClient);
+      // The overseer owns a separate internode client (overseerOnlyClient) used for collection admin
+      // (e.g. /admin/cores during CREATE). On node startup the overseer election wins before this
+      // plugin is created, so Overseer.start() could not PKI-sign that client. Wire it now that the
+      // plugin exists; otherwise its requests go out unsigned and a blockUnknown auth plugin rejects
+      // them with 401. Overseer.start() handles the reverse ordering (failover after PKI exists).
+      if (isZooKeeperAware() && zkSys.getZkController() != null) {
+        Overseer overseer = zkSys.getZkController().getOverseer();
+        if (overseer != null && overseer.overseerOnlyClient != null) {
+          pkiAuthenticationPlugin.setup(overseer.overseerOnlyClient);
+        }
       }
     }
   }

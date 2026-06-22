@@ -151,7 +151,8 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
       return ReindexCollectionCmd.State.FINISHED == state;
     });
 
-    // verify the target docs exist
+    // verify the target docs exist -- wait for all target replicas to converge first (see indexDocs)
+    waitForAllReplicasDocCount(targetCollection, NUM_DOCS);
     QueryResponse queryResponse = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
     assertEquals("copied num docs", NUM_DOCS, queryResponse.getResults().getNumFound());
   }
@@ -200,7 +201,8 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
       return ReindexCollectionCmd.State.FINISHED == state;
     });
     solrClient.getZkStateReader().aliasesManager.update();
-    // verify the target docs exist
+    // verify the target docs exist -- wait for all target replicas to converge first (see indexDocs)
+    waitForAllReplicasDocCount(realTargetCollection, NUM_DOCS);
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
     ClusterState state = solrClient.getClusterStateProvider().getClusterState();
@@ -232,7 +234,9 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
       ReindexCollectionCmd.State state = ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
       return ReindexCollectionCmd.State.FINISHED == state;
     });
-    // verify the target docs exist
+    // verify the target docs exist -- wait for every target replica to converge first, otherwise a
+    // distributed query can land on a follower that briefly trails its leader under load.
+    waitForAllReplicasDocCount(targetCollection, NUM_DOCS);
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
     for (SolrDocument doc : rsp.getResults()) {
@@ -401,10 +405,13 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     }
     solrClient.add(collection, docs);
     solrClient.commit(collection);
-    // verify the docs exist
+    // Verify the docs exist on EVERY replica before returning. Under load a leader->follower forward
+    // can error without the leader pushing the follower into recovery (its term stays equal), so a
+    // plain distributed query that lands on the lagging follower would intermittently undercount and
+    // the reindex would then copy from a stale source. waitForAllReplicasDocCount waits for true
+    // convergence and drives recovery on any follower stuck behind its leader.
+    waitForAllReplicasDocCount(collection, numDocs);
     QueryResponse rsp = solrClient.query(collection, params(CommonParams.Q, "*:*"));
-
     assertEquals("num docs", NUM_DOCS, rsp.getResults().getNumFound());
-
   }
 }

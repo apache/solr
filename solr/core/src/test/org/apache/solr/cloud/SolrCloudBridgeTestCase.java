@@ -325,6 +325,15 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeSolrCloudBridgeTestClass() {
+    // collectionCount is static and gradle reuses a forked test JVM across many test classes
+    // (forkEvery=0), so without this reset the counter carries over from whatever
+    // SolrCloudBridgeTestCase subclass happened to run first in this JVM. That makes the per-method
+    // COLLECTION name ("collection" + count) non-deterministic across classes, and any test that
+    // hard-codes "collection1" (BasicDistributedZkTest, TestConfigReload, the ChaosMonkey suites,
+    // ...) fails with "Could not find collection : collection1 collections=[collectionN]" whenever it
+    // is not the first such class in the JVM. Reset at each class boundary so the first @Before in
+    // every class deterministically yields collection1.
+    collectionCount.set(0);
     fieldNames = new String[]{"n_ti1", "n_f1", "n_tf1", "n_d1", "n_td1", "n_l1", "n_tl1", "n_dt1", "n_tdt1"};
     randVals = new RandVal[]{rint, rfloat, rfloat, rdouble, rdouble, rlong, rlong, rdate, rdate};
   }

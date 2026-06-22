@@ -30,6 +30,7 @@ import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.JsonSchemaValidator;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
@@ -450,28 +451,40 @@ public class HttpSolrCall extends SolrCall {
       name = reqPath;
     }
     if (name != null && !name.isEmpty()) {
-      // local core (descriptor lookup -- no refcount, includes still-loading cores)
-      if (cores.getCoreDescriptor(name) != null) {
-        return true;
-      }
-      if (cores.isZooKeeperAware()) {
-        ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
-        if (zkStateReader.getAliases().hasAlias(name)) {
+      // The first segment may be a comma-separated list of collections/aliases (e.g.
+      // /solr/collection1,collection2/select -- a distributed-search coordinator request). The
+      // request is Solr-owned if ANY listed name resolves to a local core, alias, or known
+      // collection; resolveCollectionListOrAlias() likewise splits on ',' when routing. Without
+      // splitting here, the literal "a,b" matches no single core/collection/alias, this returns
+      // false, and a form-urlencoded POST body is never parsed -> the coordinator runs with an empty
+      // param map (wt/q/fl lost -> a JSON response a javabin client rejects, and zero hits).
+      for (String candidate : StrUtils.splitSmart(name, ',', true)) {
+        if (candidate.isEmpty()) {
+          continue;
+        }
+        // local core (descriptor lookup -- no refcount, includes still-loading cores)
+        if (cores.getCoreDescriptor(candidate) != null) {
           return true;
         }
-        if (zkStateReader.getClusterState().hasCollection(name)) {
-          return true;
-        }
-        // The first segment may be a CORE (replica) name addressed directly, hosted on ANOTHER node
-        // (e.g. /solr/<coreName>/update for a core that lives elsewhere). Such a request is Solr-owned:
-        // the constructor resolves it to a REMOTEQUERY and forwards it. resolveRemoteCore() returns
-        // non-null when the name matches a replica anywhere in the cluster (a URL when servable
-        // remotely, "" when known-but-not-servable). Only a name that matches no replica at all yields
-        // null, i.e. a genuine PASSTHROUGH. Without this check, a by-core-name form-urlencoded POST to a
-        // non-hosting node skipped body parsing here, so the forwarded request carried an empty param
-        // map (lost wt/commit/etc.) -> the target wrote a default XML response a javabin client rejects.
-        if (resolveRemoteCore(cores, name) != null) {
-          return true;
+        if (cores.isZooKeeperAware()) {
+          ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
+          if (zkStateReader.getAliases().hasAlias(candidate)) {
+            return true;
+          }
+          if (zkStateReader.getClusterState().hasCollection(candidate)) {
+            return true;
+          }
+          // The first segment may be a CORE (replica) name addressed directly, hosted on ANOTHER node
+          // (e.g. /solr/<coreName>/update for a core that lives elsewhere). Such a request is Solr-owned:
+          // the constructor resolves it to a REMOTEQUERY and forwards it. resolveRemoteCore() returns
+          // non-null when the name matches a replica anywhere in the cluster (a URL when servable
+          // remotely, "" when known-but-not-servable). Only a name that matches no replica at all yields
+          // null, i.e. a genuine PASSTHROUGH. Without this check, a by-core-name form-urlencoded POST to a
+          // non-hosting node skipped body parsing here, so the forwarded request carried an empty param
+          // map (lost wt/commit/etc.) -> the target wrote a default XML response a javabin client rejects.
+          if (resolveRemoteCore(cores, candidate) != null) {
+            return true;
+          }
         }
       }
     }

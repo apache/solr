@@ -999,10 +999,19 @@ public class Http2SolrClient extends SolrClient {
     }
 
     if (solrRequest instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = changeV2RequestEndpoint(basePath);
-      } else {
-        basePath = (solrRequest.getBasePath() == null ? serverBaseUrl  : solrRequest.getBasePath()) + "/____v2";
+      // A V2Request whose path already carries the full "/api/..." routing prefix (e.g. the package
+      // manager's PackageUtils.postFile builds resource "/api/cluster/files/...") is already a
+      // complete, server-routable path -- the client must not prepend another V2 prefix. Without this
+      // guard the solr.v2RealPath test mode appends "/____v2" and yields "/____v2/api/..." (a path no
+      // servlet context matches), so the request 404s before reaching SolrDispatchFilter. Leaving such
+      // paths untouched makes the URL base + path == "http://host:port/api/..." which the /api rewrite
+      // routes correctly, matching the raw-GET path the package manager already uses elsewhere.
+      if (!path.startsWith("/api/")) {
+        if (System.getProperty("solr.v2RealPath") == null) {
+          basePath = changeV2RequestEndpoint(basePath);
+        } else {
+          basePath = (solrRequest.getBasePath() == null ? serverBaseUrl  : solrRequest.getBasePath()) + "/____v2";
+        }
       }
     }
 

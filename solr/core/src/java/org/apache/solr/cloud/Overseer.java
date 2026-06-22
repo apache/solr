@@ -26,6 +26,7 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.QueueWatcher;
 import org.apache.solr.cloud.overseer.WorkQueueWatcher;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
@@ -270,6 +271,17 @@ public class Overseer implements SolrCloseable {
      // zkWriterExecutor.prestartAllCoreThreads();
       overseerOnlyClient = new Http2SolrClient.Builder().markInternalRequest().maxThreadPoolSize(128).idleTimeout(600000).connectionTimeout(5000).build();
       overseerOnlyClient.enableCloseLock();
+
+      // Secure the overseer's internode client with PKI signing. During node startup the overseer
+      // election can win (here) *before* CoreContainer creates the PKIAuthenticationPlugin, so this
+      // returns null on first boot — in that case CoreContainer.setupHttpClientForAuthPlugin wires PKI
+      // onto this client once the plugin exists (it reaches in via getOverseer().overseerOnlyClient).
+      // This call still matters for overseer failover, where a fresh overseer starts on a node whose
+      // PKI plugin already exists.
+      PKIAuthenticationPlugin pkiPlugin = zkController.getCoreContainer().getPkiAuthenticationPlugin();
+      if (pkiPlugin != null) {
+        pkiPlugin.setup(overseerOnlyClient);
+      }
 
       this.overseerLbClient = new LBHttp2SolrClient(overseerOnlyClient, true);
 

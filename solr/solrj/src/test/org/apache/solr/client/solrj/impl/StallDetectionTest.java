@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntSupplier;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
@@ -282,80 +283,125 @@ public class StallDetectionTest extends SolrTestCase {
 
   @Test
   public void testConcurrentAccess() throws Exception {
-
+    // Models StallDetection's real production concurrency contract: MANY runner threads call
+    // incrementProcessedCount() concurrently while EXACTLY ONE thread calls stallCheck()
+    // periodically (see ConcurrentUpdateHttp2SolrClient, which has a single stall-checker).
+    // The class is single-checker by design — lastProcessedCount/startStallTime are mutated
+    // only by that one checker, so there is no shared-checker-state race. Running multiple
+    // concurrent stall-checkers is NOT a supported pattern and is intentionally not exercised
+    // (the previous version of this test did, and flaked: concurrent checkers consumed each
+    // other's progress signal while collectively advancing the shared clock past the stall
+    // threshold, producing a genuine — and correctly reported — stall).
+    //
+    // Invariant under test, asserted deterministically: while progress is being made, advancing
+    // the clock PAST the stall threshold must never trigger a false stall. The checker advances
+    // the clock only in an iteration where it has observed new progress in the SAME counter
+    // stallCheck() consumes (getProcessedCount(), i.e. the LongAdder sum), and re-baselines from
+    // that counter AFTER each stallCheck(). Because the baseline is always >= stallCheck()'s
+    // internal lastProcessedCount and the sum is monotonic on the checker thread, the advancing
+    // iteration is guaranteed to take stallCheck()'s progress-reset branch — so the stall timer is
+    // never armed across an interval of advanced time and the check can never spuriously throw,
+    // regardless of thread scheduling. (Gating on a SEPARATE proxy counter is incorrect: the
+    // LongAdder sum lags an exact AtomicInteger under contention, so the checker would advance the
+    // clock on an increment stallCheck() cannot yet see, producing a genuine — correctly reported —
+    // stall. That is exactly what the previous version of this test did, and why it flaked.)
     final long stallTimeMillis = 1000;
     final FakeTimeSource timeSource = new FakeTimeSource();
-    final AtomicInteger queueSize = new AtomicInteger(10);
+    final AtomicInteger queueSize = new AtomicInteger(10); // queue stays non-empty all test
     final StallDetection stallDetection =
         new StallDetection(stallTimeMillis, queueSize::get, timeSource);
 
     // Initialize the timer
     stallDetection.stallCheck();
 
-    final int threadCount = 10;
+    final int incrementerCount = 8;
+    final int incrementsPerThread = 1000;
+    final int expectedTotal = incrementerCount * incrementsPerThread;
 
-    final CyclicBarrier barrier = new CyclicBarrier(threadCount);
-    final CountDownLatch allDone = new CountDownLatch(threadCount);
-    final AtomicBoolean exceptionThrown = new AtomicBoolean(false);
+    // Start gate releases all incrementers plus the single checker simultaneously.
+    final CyclicBarrier startGate = new CyclicBarrier(incrementerCount + 1);
+    final CountDownLatch incrementersDone = new CountDownLatch(incrementerCount);
+    final AtomicBoolean failed = new AtomicBoolean(false);
+    final AtomicReference<Throwable> firstError = new AtomicReference<>();
 
-    ExecutorService executor = ParWork.getExecutorService("StallDetectionTest", threadCount, false);
+    ExecutorService executor =
+        ParWork.getExecutorService("StallDetectionTest", incrementerCount + 1, false);
 
     try {
-      for (int i = 0; i < threadCount; i++) {
-        final int threadId = i;
+      for (int i = 0; i < incrementerCount; i++) {
         executor.submit(
             () -> {
               try {
-                // Wait for all threads to be ready
-                barrier.await();
-
-                // Half the threads increment the progress counter
-                // The other half call stallCheck
-                if (threadId % 2 == 0) {
-                  // Increment progress
-                  for (int j = 0; j < 100; j++) {
-                    stallDetection.incrementProcessedCount();
-                    Thread.yield(); // Hint to allow other threads to run
-                  }
-                } else {
-                  // Check for stalls
-                  for (int j = 0; j < 100; j++) {
-                    try {
-                      stallDetection.stallCheck();
-                      // Advance time a bit between checks, but not enough to trigger a stall
-                      synchronized (timeSource) {
-                        timeSource.advanceMillis(5);
-                      }
-                      Thread.yield(); // Hint to allow other threads to run
-                    } catch (IOException e) {
-                      exceptionThrown.set(true);
-                      fail("Unexpected IOException: " + e.getMessage());
-                    }
+                startGate.await();
+                for (int j = 0; j < incrementsPerThread; j++) {
+                  stallDetection.incrementProcessedCount();
+                  if ((j & 0x3f) == 0) {
+                    Thread.yield(); // Hint to interleave with the checker
                   }
                 }
-              } catch (Exception e) {
-                exceptionThrown.set(true);
-                log.error("Exception in thread {}", threadId, e);
+              } catch (Throwable t) {
+                failed.set(true);
+                firstError.compareAndSet(null, t);
+                log.error("Incrementer thread failed", t);
               } finally {
-                allDone.countDown();
+                incrementersDone.countDown();
               }
             });
       }
 
-      // Wait for all threads to complete
-      assertTrue("Timed out waiting for threads to complete", allDone.await(30, TimeUnit.SECONDS));
+      // Exactly one stall-checker thread — the real production pattern.
+      executor.submit(
+          () -> {
+            try {
+              startGate.await();
+              long baseline = stallDetection.getProcessedCount();
+              // Check concurrently with the incrementers. Like the real production checker, this
+              // thread yields between checks rather than busy-spinning, so it never starves the
+              // incrementers. It stops once all incrementers are done (the final count assertion,
+              // made after the executor terminates, sees every increment regardless).
+              while (incrementersDone.getCount() > 0) {
+                long now = stallDetection.getProcessedCount();
+                if (now > baseline) {
+                  // New progress visible in the same counter stallCheck() reads: jump the clock
+                  // well past the stall threshold. The immediately following stallCheck() observes
+                  // the progress and resets the timer, so the large advance cannot cause a stall.
+                  synchronized (timeSource) {
+                    timeSource.advanceMillis(stallTimeMillis * 2);
+                  }
+                }
+                stallDetection.stallCheck();
+                // Re-baseline from the post-check sum so the next advance is gated strictly above
+                // stallCheck()'s internal lastProcessedCount.
+                baseline = stallDetection.getProcessedCount();
+                Thread.yield();
+              }
+            } catch (Throwable t) {
+              failed.set(true);
+              firstError.compareAndSet(null, t);
+              log.error("Stall-checker thread failed", t);
+            }
+          });
 
-      // Verify no exceptions were thrown
-      assertFalse("Exception was thrown during concurrent operation", exceptionThrown.get());
-
-      // Verify the final processed count is correct
-      assertEquals(
-          "Processed count should equal number of incrementing threads × 100",
-          (threadCount / 2) * 100,
-          stallDetection.getProcessedCount());
+      // The 9 worker threads (incrementers + checker) synchronize on the barrier among
+      // themselves; the main thread is not a party and proceeds straight to the join wait.
+      assertTrue(
+          "Timed out waiting for incrementer threads",
+          incrementersDone.await(30, TimeUnit.SECONDS));
     } finally {
-      executor.shutdownNow();
+      executor.shutdown();
+      assertTrue(
+          "Timed out waiting for executor shutdown", executor.awaitTermination(30, TimeUnit.SECONDS));
     }
+
+    if (failed.get()) {
+      throw new AssertionError("Concurrent operation threw an exception", firstError.get());
+    }
+
+    // All concurrent increments must be accounted for exactly once.
+    assertEquals(
+        "Processed count must equal the total number of concurrent increments",
+        expectedTotal,
+        stallDetection.getProcessedCount());
   }
 
   @Test

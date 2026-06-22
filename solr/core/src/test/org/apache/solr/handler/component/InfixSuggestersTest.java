@@ -170,11 +170,14 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
                   || message.contains("closed"));
           assertTrue("Unexpected wrapped SolrException message: '" + message + "'", ok);
         } else if (wrappedException instanceof IllegalStateException
-          && ! (wrappedException instanceof SolrCoreState.CoreIsClosedException)) { // CoreIsClosedException extends IllegalStateException
-        String expectedMessage = "Cannot commit on an closed writer. Add documents first";
-        assertTrue("Expected wrapped IllegalStateException message to contain '" + expectedMessage
-                + "' but message is '" + wrappedException.getMessage() + "'",
-            wrappedException.getMessage().contains(expectedMessage));
+          && ! (wrappedException instanceof org.apache.solr.common.AlreadyClosedException)) {
+          // org.apache.solr.common.AlreadyClosedException (and its subclass CoreIsClosedException)
+          // extend IllegalStateException but represent core-closed conditions with a null message —
+          // they are accepted silently in the SolrException branch above or fall through here.
+          String expectedMessage = "Cannot commit on an closed writer. Add documents first";
+          assertTrue("Expected wrapped IllegalStateException message to contain '" + expectedMessage
+                  + "' but message is '" + wrappedException.getMessage() + "'",
+              wrappedException.getMessage().contains(expectedMessage));
         }
       }
     } finally {

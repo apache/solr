@@ -2254,6 +2254,25 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         cmd.setVersion(commitVersion);
         cmd.softCommit = false;
         cmd.waitSearcher = true;
+        // activeLog == true is *only* the recovery buffered-update replay (applyBufferedUpdates), where a
+        // follower coming out of BUFFERING replays updates forwarded to it during its recovery window.
+        // For startup/current-log replay (activeLog == false: recoverFromLog / recoverFromCurrentLog)
+        // there is no leader re-driving commits, so we keep the hard commit + open searcher that exposes
+        // the recovered docs.
+        if (activeLog) {
+          // Buffered-update replay (RecoveryStrategy replication/peersync path). The buffer tlog can
+          // contain adds the leader has NOT durably committed (e.g. an uncommitted doc forwarded while
+          // this replica was BUFFERING). A HARD commit here would fsync those leader-uncommitted docs
+          // into this replica's index and a registered-searcher reopen would publish them to q=*:* while
+          // the leader still hides them -> the replica diverges (the load-dependent "expected N but was
+          // N+1" cloud flake; e.g. TestCloudPseudoReturnFields's uncommitted id=99). Use a soft commit
+          // with openSearcher=false: the replayed docs land in the IndexWriter (RTG-visible via the
+          // realtime searcher that RecoveryStrategy.replay opens next) and stay durable in the tlog, but
+          // are NOT promoted into a durable commit point and NOT exposed to ordinary search. They become
+          // *:* visible on the next real commit, exactly as on the leader.
+          cmd.softCommit = true;
+          cmd.openSearcher = false;
+        }
         cmd.setFlags(UpdateCommand.REPLAY);
         try {
           if (debug) log.debug("commit {}", cmd);

@@ -24,6 +24,11 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -63,9 +68,33 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     JettyConfig jettyConfig =
         JettyConfig.builder()
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
+            .withServlet(new ServletHolder(SlowServlet.class), "/slow/*")
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+  }
+
+  /**
+   * Sleeps long enough for any reasonable client idle timeout to fire, so {@code testTimeout}
+   * actually exercises the timeout path. Without this servlet {@code /slow/*} would 404
+   * immediately and the test would never observe a "Timeout" error.
+   */
+  public static class SlowServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException {
+      try {
+        Thread.sleep(10_000);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException {
+      doGet(req, resp);
+    }
   }
 
   @AfterClass
@@ -90,9 +119,12 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
         getHttp2SolrClient(jetty.getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)) {
-      SolrException e =
+      // The fork's Http2SolrClient surfaces every idle/request-timeout as a
+      // SolrServerException wrapping the underlying TimeoutException (see Http2SolrClient
+      // request paths), matching the throws clause of SolrClient.query.
+      SolrServerException e =
           LuceneTestCase.expectThrows(
-              SolrException.class, () -> client.query(q, SolrRequest.METHOD.GET));
+              SolrServerException.class, () -> client.query(q, SolrRequest.METHOD.GET));
       assertTrue(e.getMessage().contains("Timeout"));
     }
   }

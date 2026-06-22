@@ -125,6 +125,13 @@ public final class CryptoKeys {
     }
   }
 
+  // Package/file signatures may be created with either algorithm: SHA1withRSA is the upstream Solr
+  // default and the only option usable with the 512-bit keys some package repositories still ship,
+  // while SHA512withRSA is the stronger scheme used for newer artifacts (and requires >=1024-bit
+  // keys). Verification accepts either so both legacy and current signatures validate against the
+  // trusted key; a signature is rejected only when it matches no supported algorithm.
+  private static final String[] SIGNATURE_ALGORITHMS = {"SHA512withRSA", "SHA1withRSA"};
+
   /**
    * Verify the signature of a file
    *
@@ -133,40 +140,47 @@ public final class CryptoKeys {
    * @param data      The data tha is signed
    */
   public static boolean verify(PublicKey publicKey, byte[] sig, ByteBuffer data) throws InvalidKeyException, SignatureException {
-    data = ByteBuffer.wrap(data.array(), data.arrayOffset(), data.limit());
-    try {
-      Signature signature = Signature.getInstance("SHA512withRSA");
-      signature.initVerify(publicKey);
-      signature.update(data);
-      return signature.verify(sig);
-    } catch (NoSuchAlgorithmException e) {
-      //wil not happen
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    for (String algorithm : SIGNATURE_ALGORITHMS) {
+      // Re-wrap per attempt: Signature.update(ByteBuffer) consumes the buffer's position.
+      ByteBuffer buffer = ByteBuffer.wrap(data.array(), data.arrayOffset(), data.limit());
+      try {
+        Signature signature = Signature.getInstance(algorithm);
+        signature.initVerify(publicKey);
+        signature.update(buffer);
+        if (signature.verify(sig)) {
+          return true;
+        }
+      } catch (NoSuchAlgorithmException e) {
+        //will not happen
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (GeneralSecurityException e) {
+        // This algorithm cannot be applied to this key/signature (e.g. SHA512withRSA against a
+        // 512-bit key, or a signature length that does not match); try the next supported one.
+      }
     }
-
+    return false;
   }
 
   public static boolean verify(PublicKey publicKey, byte[] sig, InputStream is)
       throws InvalidKeyException, SignatureException, IOException {
-    try {
-      Signature signature = Signature.getInstance("SHA512withRSA");
-      signature.initVerify(publicKey);
-      byte[] buf = new byte[1024];
-      while (true) {
-        int sz = is.read(buf);
-        if (sz == -1) break;
-        signature.update(buf, 0, sz);
-      }
+    byte[] data = is.readAllBytes();
+    for (String algorithm : SIGNATURE_ALGORITHMS) {
       try {
-        return signature.verify(sig);
-      } catch (SignatureException e) {
-        return false;
+        Signature signature = Signature.getInstance(algorithm);
+        signature.initVerify(publicKey);
+        signature.update(data);
+        if (signature.verify(sig)) {
+          return true;
+        }
+      } catch (NoSuchAlgorithmException e) {
+        //will not happen
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (GeneralSecurityException e) {
+        // This algorithm cannot be applied to this key/signature (e.g. SHA512withRSA against a
+        // 512-bit key, or a signature length that does not match); try the next supported one.
       }
-    } catch (NoSuchAlgorithmException e) {
-      //will not happen
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-
+    return false;
   }
 
 
@@ -405,7 +419,7 @@ public final class CryptoKeys {
     public byte[] signSha256(byte[] bytes) throws InvalidKeyException, SignatureException {
       Signature dsa = null;
       try {
-        dsa = Signature.getInstance("SHA512withRSA");
+        dsa = Signature.getInstance("SHA256withRSA");
       } catch (NoSuchAlgorithmException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }

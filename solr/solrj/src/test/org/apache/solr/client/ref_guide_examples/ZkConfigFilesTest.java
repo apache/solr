@@ -26,6 +26,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -42,8 +43,17 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setUpCluster() throws Exception {
+    // This fork's ZkController bootstraps the _default configset into ZK on cloud startup (matching
+    // production bin/solr behavior). This ref-guide example demonstrates uploading a configset to an
+    // otherwise-empty ZK, so suppress that bootstrap here to keep the clean-slate assumption valid.
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "true");
     configureCluster(1)
         .configure();
+  }
+
+  @AfterClass
+  public static void tearDownCluster() throws Exception {
+    System.clearProperty("solr.suppressDefaultConfigBootstrap");
   }
 
   @After

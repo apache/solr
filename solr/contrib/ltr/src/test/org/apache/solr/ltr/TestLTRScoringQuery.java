@@ -59,14 +59,13 @@ public class TestLTRScoringQuery extends SolrTestCase {
   private IndexSearcher getSearcher(IndexReader r) {
     final IndexSearcher searcher = LuceneTestCase.newSearcher(r, false, false);
 
-    // These tests extend SolrTestCase (which does not extend LuceneTestCase), so
-    // LuceneTestCase's class-env rule never runs and LuceneTestCase.classEnvRule.similarity
-    // is null. newSearcher() unconditionally applies that null via setSimilarity(...), leaving
-    // the searcher with no similarity and causing an NPE in TermWeight. Restore a non-null
-    // similarity so scoring works.
-    if (searcher.getSimilarity() == null) {
-      searcher.setSimilarity(IndexSearcher.getDefaultSimilarity());
-    }
+    // These tests extend SolrTestCase (which does not extend LuceneTestCase), so LuceneTestCase's
+    // class-env rule never runs for this suite. newSearcher() applies LuceneTestCase.classEnvRule's
+    // static similarity unconditionally: when no prior LuceneTestCase suite ran in this JVM it is
+    // null (-> NPE in TermWeight), and when one did run it leaks that suite's random similarity into
+    // this searcher (a test-ordering-dependent failure under the nightly full-suite run). Always
+    // install a known-good default so scoring is deterministic regardless of JVM test ordering.
+    searcher.setSimilarity(IndexSearcher.getDefaultSimilarity());
 
     return searcher;
   }

@@ -16,18 +16,23 @@
 package org.apache.solr.ltr;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.SortedMap;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
@@ -211,7 +216,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       if (!solrRunner.getCoreContainer().getCores().isEmpty()){
         String coreName = solrRunner.getCoreContainer().getCores().iterator().next().getName();
         restTestHarness = new RestTestHarness(() -> solrRunner.getBaseUrl().toString() + "/" + coreName, solrCluster.getSolrClient().getHttpClient()
-            , solrCluster.getJettySolrRunners().get(0).getCoreContainer()
+            , solrRunner.getCoreContainer()
             .getResourceLoader());
         break;
       }
@@ -287,6 +292,79 @@ public class TestLTROnSolrCloud extends TestRerankBase {
              jsonModelParams
     );
     reloadCollection(COLLECTION);
+    // The feature/model managed resources are PUT to a single core and persisted to ZK, then
+    // reloadCollection reloads every core from ZK. The subsequent queries are routed by
+    // CloudSolrClient to any replica, so a replica that has not finished re-registering its
+    // managed model/feature store yet would answer with "cannot find model" or an empty feature
+    // vector (the long-standing SOLR-12028 flake). Block until every replica can actually serve
+    // the model and feature store through the live query path before querying.
+    waitForModelAndFeaturesOnAllReplicas("powpularityS-model", featureStore);
+  }
+
+  private void waitForModelAndFeaturesOnAllReplicas(String modelName, String featureStore)
+      throws Exception {
+    // Probe every replica directly (distrib=false) until each one can both resolve the LTR model
+    // and emit a non-empty feature vector. The in-memory managed model/feature store reachable
+    // outside the request path is not the instance the query consults after a core reload, so it
+    // is not a reliable readiness signal. The live query path is the ground truth for both failure
+    // modes here: a missing model surfaces as a 400 and an unready feature store surfaces as an
+    // empty feature vector.
+    //
+    // The managed model/feature resources are PUT to one core and persisted to the shared ZK
+    // configset, then reloadCollection reloads every core to re-read them. A core that reloads
+    // before the just-persisted resource is visible to it re-reads a stale configset and then
+    // stays stale until it is reloaded again (the long-standing SOLR-12028 propagation flake).
+    // Reload is itself the propagation mechanism, so when a replica is found not-ready we re-issue
+    // the (idempotent) reload to repair it, throttled so we do not hammer the cluster.
+    final List<Replica> replicas = new ArrayList<>(
+        solrCluster.getSolrClient().getZkStateReader().getClusterState()
+            .getCollection(COLLECTION).getReplicas());
+    final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(90);
+    long nextReloadNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+    String notReady;
+    do {
+      notReady = probeReplicasForModel(replicas, modelName, featureStore);
+      if (notReady == null) {
+        return;
+      }
+      if (System.nanoTime() >= nextReloadNanos) {
+        reloadCollection(COLLECTION);
+        nextReloadNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+      }
+      Thread.sleep(200);
+    } while (System.nanoTime() < deadlineNanos);
+    fail("Timed out waiting for LTR model '" + modelName + "' and feature store '" + featureStore
+        + "' to be queryable on replica " + notReady);
+  }
+
+  /** Returns the description of the first replica not yet serving the model/features, else null. */
+  private String probeReplicasForModel(List<Replica> replicas, String modelName, String featureStore)
+      throws Exception {
+    for (Replica replica : replicas) {
+      try (Http2SolrClient client =
+          new Http2SolrClient.Builder(replica.getBaseUrl()).build()) {
+        final SolrQuery probe = new SolrQuery("{!func}sub(8,field(popularity))");
+        probe.setRequestHandler("/query");
+        probe.setParam("distrib", "false");
+        probe.setParam("rows", "1");
+        probe.setFields("id,score,features:[fv store=" + featureStore + "]");
+        probe.add("rq", "{!ltr model=" + modelName + " reRankDocs=1}");
+        try {
+          final QueryResponse resp = client.query(replica.getName(), probe);
+          if (resp.getResults().isEmpty()) {
+            // This shard slice holds no doc to extract features from; nothing to verify here.
+            continue;
+          }
+          final Object fv = resp.getResults().get(0).get("features");
+          if (fv == null || fv.toString().isEmpty()) {
+            return replica.getName() + " @ " + replica.getBaseUrl() + " (empty feature vector)";
+          }
+        } catch (final Exception e) {
+          return replica.getName() + " @ " + replica.getBaseUrl() + " (" + e.getMessage() + ")";
+        }
+      }
+    }
+    return null;
   }
 
   private void reloadCollection(String collection) throws Exception {

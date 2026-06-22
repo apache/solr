@@ -945,12 +945,22 @@ public class SimplePostTool {
 //          fatal("Shouldn't happen: HttpURLConnection doesn't support POST??"+e);
 //        }
 
+        // Buffer the whole body so the request carries a definite Content-Length. ofInputStream() sends
+        // an unknown-length (chunked) body, which this fork's server-side request parser reads as empty
+        // -> XMLLoader fails with "Unexpected EOF in prolog" and nothing is indexed. Posted files here
+        // (example docs) are small, so buffering is fine.
+        byte[] bodyBytes = data.readAllBytes();
         HttpRequest.BodyPublisher requestBody = HttpRequest.BodyPublishers
-            .ofInputStream(() -> data);
+            .ofByteArray(bodyBytes);
         HttpRequest request = HttpRequest.newBuilder()
             .POST(requestBody)
             .version(HttpClient.Version.HTTP_2)
             .uri(url.toURI())
+            // Advertise the content type the caller derived from the file extension (application/xml,
+            // text/csv, application/json, ...). Without it Solr's SolrRequestParsers wt=javabin guard
+            // force-routes a Content-Type-less body to the javabin parser, so an XML/CSV/JSON update
+            // body fails to parse and nothing gets indexed (techproducts example -> 0 docs).
+            .header("Content-Type", type)
             .build();
 
         HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
