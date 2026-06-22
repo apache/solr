@@ -132,8 +132,9 @@ public class XMLLoader extends ContentStreamLoader {
       } catch(TransformerException te) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, te.getMessage(), te);
       } finally {
-        //org.apache.solr.common.util.IOUtils.closeQuietly(is);
-       // Utils.readFully(is);
+        // drain + close the content stream so the HTTP/2 pooled buffer is released; was commented out.
+        Utils.readFully(is);
+        org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
       // second step: feed the intermediate DOM tree into StAX parser:
       try {
@@ -143,7 +144,9 @@ public class XMLLoader extends ContentStreamLoader {
       } catch (XMLStreamException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
       } finally {
-      //  if (parser != null) parser.close();
+        // close the StAX parser on every path (processUpdate only closes it on END_DOCUMENT, not on
+        // exception); was commented out, leaking the parser per failed XSLT update.
+        if (parser != null) parser.close();
       }
     }
     // Normal XML Loader
@@ -167,7 +170,9 @@ public class XMLLoader extends ContentStreamLoader {
       } catch (XMLStreamException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
       } finally {
-      //  if (parser != null) parser.close();
+        // close the StAX parser on every path (processUpdate only closes it on END_DOCUMENT, not on
+        // exception); was commented out, leaking the parser per failed update.
+        if (parser != null) parser.close();
         Utils.readFully(is);
       }
     }
@@ -297,7 +302,7 @@ public class XMLLoader extends ContentStreamLoader {
 
     // First look for commitWithin parameter on the request, will be overwritten for individual <delete>'s
     SolrParams params = req.getParams();
-    deleteCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+    int commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
 
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       String attrName = parser.getAttributeLocalName(i);
@@ -307,11 +312,15 @@ public class XMLLoader extends ContentStreamLoader {
       } else if ("fromCommitted".equals(attrName)) {
         // deprecated
       } else if (UpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
-        deleteCmd.commitWithin = Integer.parseInt(attrVal);
+        commitWithin = Integer.parseInt(attrVal);
       } else {
         log.warn("XML element <delete> has invalid XML attr: {}", attrName);
       }
     }
+
+    // commitWithin must survive deleteCmd.clear() between siblings: clear() resets it to -1, so the
+    // 2nd+ <id>/<query> in a single <delete> would otherwise drop the requested commit window.
+    deleteCmd.commitWithin = commitWithin;
 
     StringBuilder text = new StringBuilder(32);
     while (true) {
@@ -357,6 +366,7 @@ public class XMLLoader extends ContentStreamLoader {
           }
           processor.processDelete(deleteCmd);
           deleteCmd.clear();
+          deleteCmd.commitWithin = commitWithin; // re-seed: clear() wiped it
           break;
 
           // Add everything to the text

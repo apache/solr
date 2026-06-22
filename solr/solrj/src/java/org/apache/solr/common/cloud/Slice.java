@@ -52,8 +52,13 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
+    // Guard the cast: equals(null) and equals(foreignType) must return false, not NPE/ClassCastException
+    // (equals contract). Use Objects.equals so a null field never NPEs (hashCode already uses Objects.hash).
+    if (o == null || getClass() != o.getClass()) return false;
     Slice slice = (Slice) o;
-    return collection.equals(slice.collection) && collectionId.equals(slice.collectionId) && name.equals(slice.name);
+    return Objects.equals(collection, slice.collection)
+        && Objects.equals(collectionId, slice.collectionId)
+        && Objects.equals(name, slice.name);
   }
 
   @Override
@@ -294,10 +299,11 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   }
 
   public Replica getLeader(Set<String> liveNodes) {
-
+    // Read-only: do NOT write this.leader here. Slices are shared across shallow DocCollection copies, so
+    // mutating the shared volatile on a "read" path is an unguarded race; the cache is maintained instead by
+    // setLeader()/setSlice() and the write here was dead (never read back).
     for (Replica replica : this.replicas.values()) {
       if (replica.getRawState() == Replica.State.LEADER && (liveNodes.size() == 0 || liveNodes.contains(replica.getNodeName()))) {
-        this.leader = replica;
         return replica;
       }
     }

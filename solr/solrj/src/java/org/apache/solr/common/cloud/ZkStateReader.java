@@ -52,6 +52,7 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -865,10 +866,16 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
       Stat childrenStat = new Stat();
       List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, null, childrenStat, true);
 
+      AtomicReference<Set<String>> oldLiveNodesRef = new AtomicReference<>();
       liveNodesVersion.updateAndGet(cversion -> {
         if (childrenStat.getCversion() > cversion) {
+          // Publish liveNodes inside the version-CAS so the field and liveNodesVersion advance
+          // together; otherwise a concurrent refresher can leave liveNodes older than the
+          // version claims and a node-down event is missed until the next children-changed.
+          // (updateAndGet may retry this lambda, so it must only mutate via this CAS winner.)
+          oldLiveNodesRef.set(this.liveNodes);
           newLiveNodes.set(new TreeSet<>(nodeList));
-          this.liveNodesVersion.set(childrenStat.getCversion());
+          this.liveNodes = newLiveNodes.get();
           continueOn.set(true);
           return childrenStat.getCversion();
         }
@@ -879,8 +886,7 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
         return;
       }
 
-      oldLiveNodes = this.liveNodes;
-      this.liveNodes = newLiveNodes.get();
+      oldLiveNodes = oldLiveNodesRef.get();
 
     } catch (KeeperException.NoNodeException e) {
       log.warn("No node exception in live nodes watcher", e);
@@ -2246,7 +2252,9 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
       if (v == null) return v;
 
       log.debug("remove doc collection watcher");
-      //if (v.coreRefCount.get() > 0) v.coreRefCount.decrementAndGet();
+      // registerDocCollectionWatcher increments coreRefCount; this must mirror that decrement or
+      // canBeRemoved (needs refCount<=0) never holds and the watch leaks (collection never goes lazy).
+      if (v.coreRefCount.get() > 0) v.coreRefCount.decrementAndGet();
       v.stateWatchers.remove(watcher);
       if (v.canBeRemoved(watchedCollectionStates.size())) {
         log.debug("no longer watch collection {}", collection);
@@ -2494,7 +2502,13 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
       log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
       // Call sync() first to ensure the subsequent read (getData) is up to date.
       // MRM TODO: review
-      zkClient.getConnectionManager().getKeeper().sync(ALIASES, null, null);
+      // getKeeper() can be transiently null during a reconnect window; the sync() is only a
+      // freshness optimization, so skip it rather than NPE out of this KeeperException-only
+      // retry loop (the getData below + outer retry still guarantee correctness).
+      ZooKeeper keeper = zkClient.getConnectionManager().getKeeper();
+      if (keeper != null) {
+        keeper.sync(ALIASES, null, null);
+      }
       Stat stat = new Stat();
       final byte[] data = zkClient.getData(ALIASES, null, stat, true);
       return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));

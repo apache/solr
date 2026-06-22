@@ -287,7 +287,7 @@ public class ZkMaintenanceUtils {
 
     for (String subpath : paths) {
       if (!subpath.equals("/")) {
-        clean(zkClient, path);
+        clean(zkClient, subpath);
       }
     }
   }

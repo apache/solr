@@ -758,13 +758,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         reportErrorOnResponse(rsp, "unable to get file names for given index generation", e);
         return;
       } finally {
-        if (dir != null) {
-//          try {
-//           core.getDirectoryFactory().release(dir);
-//          } catch (IOException e) {
-//            SolrException.log(log, "Could not release directory after fetching file list", e);
-//          }
-        }
+        // Intentionally NOT released. This fork's DirectoryFactory removed get()/release()
+        // refcounting: get() returns a shared cached Directory and release(String path) only
+        // evicts that shared entry from the cache WITHOUT closing it. Re-enabling release here
+        // would fix no leak and would actively harm -- it evicts the live index Directory, so
+        // the next get() opens a duplicate Directory on the same path. The Directory is closed
+        // at core/factory shutdown (DirectoryFactory.remove()/close()).
       }
 
       if (log.isDebugEnabled()) {
@@ -1223,13 +1222,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
       } finally {
         try {
-          if (dir != null) {
-            try {
-           //   core.getDirectoryFactory().doneWithDirectory(dir);
-            } finally {
-          //    core.getDirectoryFactory().release(dir);
-            }
-          }
+          // Intentionally NOT released -- see getFileList(): this fork's DirectoryFactory
+          // removed get()/release() refcounting, so release(String) only evicts the shared
+          // cached Directory without closing it. The data Directory is closed at core/factory
+          // shutdown.
         } finally {
           org.apache.solr.common.util.IOUtils.closeQuietly(isr);
           org.apache.solr.common.util.IOUtils.closeQuietly(is);

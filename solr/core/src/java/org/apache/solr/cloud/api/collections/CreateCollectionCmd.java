@@ -128,11 +128,15 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
       if (!activeAndLive) {
-        ZkNodeProps m = new ZkNodeProps();
         try {
-          m.getProperties().put(QUEUE_OPERATION, "delete");
-          m.getProperties().put(NAME, collectionName);
-          ocmh.overseer.getCoreContainer().getZkController().getOverseerCollectionQueue().offer(Utils.toJSON(m), 15000);
+          // Route cleanup of the half-created collection through the StateUpdates DELETE
+          // path (ocmh.cleanupCollection -> DeleteCollectionCmd), which actually removes the
+          // collection state/znodes in this fork. The old overseer collection queue is gone,
+          // and overseer.getZkController() avoids the cc.getZkController() null-trap.
+          AddReplicaCmd.Response rsp = ocmh.cleanupCollection(collectionName, new NamedList<Object>());
+          if (rsp.asyncFinalRunner != null) {
+            rsp.asyncFinalRunner.call();
+          }
           return false;
         } catch (Exception e) {
           log.error("Exception in collection cleanup after fail", e);

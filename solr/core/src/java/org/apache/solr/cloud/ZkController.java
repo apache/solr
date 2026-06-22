@@ -422,6 +422,15 @@ public class ZkController implements Closeable, Runnable {
             log.info("skipping zk reconnect logic due to shutdown");
             return;
           }
+          // init() assigns statePublisher/zkStateReader/overseerElector under initLock, but this
+          // OnReconnect listener is registered in start() BEFORE init() runs. A session event in the
+          // start()->init() window (or a partially-failed init) would otherwise NPE in the async task
+          // below, which dereferences all three. We hold initLock here, so once they are set, init()
+          // has completed assigning them. Skip reconnect handling until then.
+          if (statePublisher == null || zkStateReader == null || overseerElector == null) {
+            log.info("skipping zk reconnect logic, ZkController not fully initialized yet");
+            return;
+          }
           ParWork.getRootSharedExecutor().submit(() -> {
             log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
             try {
@@ -446,7 +455,11 @@ public class ZkController implements Closeable, Runnable {
 
               // start the overseer first as following code may need it's processing
 
-              overseerElector.retryElection(false);
+              // Route through rejoinOverseerElection (not overseerElector.retryElection directly) so the
+              // overseer.isCloseAndDone()/isClosed/isShutdownCalled/null-context guards apply: a reconnect
+              // must not re-win overseer election around an already closed-and-done Overseer that would then
+              // process nothing.
+              rejoinOverseerElection(false);
 
               Collection<CoreDescriptor> descriptors = getCoreContainer().getCoreDescriptors();
               // re register all descriptors
@@ -1053,8 +1066,18 @@ public class ZkController implements Closeable, Runnable {
       try {
         zkClient.create(nodePath, (byte[]) null, CreateMode.EPHEMERAL, true);
       } catch (KeeperException.NodeExistsException e) {
-        log.warn("Found our ephemeral live node already exists. This must be a quick restart after a hard shutdown? ... {}", nodePath);
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        // A stale ephemeral from a prior (now-expired) session may not be reaped by the ZK server yet
+        // when the new session recreates the live node on reconnect (common right after expiry). The
+        // node is always our own nodeName path, so delete the stale node and recreate it under the
+        // current session rather than aborting the reconnect (which would leave this node permanently
+        // absent from live_nodes for the new session).
+        log.warn("Our ephemeral live node already exists, removing the stale node and recreating {}", nodePath);
+        try {
+          zkClient.delete(nodePath, -1, true, false);
+        } catch (KeeperException.NoNodeException nne) {
+          // already gone - fine
+        }
+        zkClient.create(nodePath, (byte[]) null, CreateMode.EPHEMERAL, true);
       }
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
@@ -1485,6 +1508,11 @@ public class ZkController implements Closeable, Runnable {
    * Publish core state to overseer.
    */
   public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState) throws Exception {
+    // Guard: statePublisher is only created in init() (after start()). A publish racing a
+    // never-started or torn-down ZkController would NPE on submitState below; treat it as closed.
+    if (statePublisher == null) {
+      throw new AlreadyClosedException();
+    }
 
     String collection = cd.getCloudDescriptor().getCollectionName();
     String shardId = cd.getCloudDescriptor().getShardId();
@@ -1570,6 +1598,10 @@ public class ZkController implements Closeable, Runnable {
   }
 
   public void publish(ZkNodeProps message) {
+    // See publish(CoreDescriptor, State, boolean): statePublisher exists only after init().
+    if (statePublisher == null) {
+      throw new AlreadyClosedException();
+    }
     statePublisher.submitState(message);
   }
 

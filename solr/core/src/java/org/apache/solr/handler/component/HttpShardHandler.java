@@ -81,6 +81,9 @@ public class HttpShardHandler extends ShardHandler {
   private final AtomicInteger pending;
   private final Map<String, ObjectList<String>> shardToURLs;
   private final LBHttp2SolrClient lbClient;
+  // Set by cancelAll(); makes in-flight async callbacks skip adding their (now irrelevant)
+  // response so a cancelled request can't enqueue a stale ShardResponse onto a reused handler.
+  private volatile boolean canceled;
  // private volatile Runnable finish;
 
 
@@ -225,6 +228,9 @@ public class HttpShardHandler extends ShardHandler {
 
       @Override
       public void onSuccess(LBSolrClient.Rsp rsp, int code, Object context) {
+        if (canceled) {
+          return; // request was cancelled; don't enqueue a stale response
+        }
         SimpleSolrResponse ssr = new SimpleSolrResponse(rsp.getResponse());
         ShardResponse srsp = new ShardResponse(ssr);
         if (sreq.nodeName != null) {
@@ -251,6 +257,9 @@ public class HttpShardHandler extends ShardHandler {
       }
 
       public void onFailure(Throwable throwable, int code, Object context) {
+        if (canceled) {
+          return; // request was cancelled; don't enqueue a stale response
+        }
         SimpleSolrResponse ssr = new SimpleSolrResponse(null);
         ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
         ShardResponse srsp = new ShardResponse(ssr);
@@ -313,20 +322,18 @@ public class HttpShardHandler extends ShardHandler {
   private ShardResponse take(boolean bailOnError) {
     try {
       while (pending.get() > 0) {
-        //log.info("loop ing in httpshardhandler pending {}", pending.get());
-
-
-//        ShardResponse rsp = responses.poll(5, TimeUnit.SECONDS);
-//////
-//        if (rsp == null) {
-//          if (pending.get() > 0 && httpShardHandlerFactory.isClosed()) {
-//            cancelAll();
-//            pending.set(0);
-//            throw new AlreadyClosedException();
-//          }
-//          continue;
-//        }
-        ShardResponse rsp = responses.take();
+        // Timed poll instead of a blocking take(): a never-arriving response (e.g. the
+        // factory is shutting down) must not wedge this thread forever. On each wakeup,
+        // bail out if the factory is closed. cancelAll() drains responses and zeroes
+        // pending so the three structures stay in sync.
+        ShardResponse rsp = responses.poll(5, TimeUnit.SECONDS);
+        if (rsp == null) {
+          if (pending.get() > 0 && httpShardHandlerFactory.isClosed()) {
+            cancelAll();
+            throw new AlreadyClosedException();
+          }
+          continue;
+        }
         responseCancellableMap.remove(rsp.getShardRequest());
 
         pending.decrementAndGet();
@@ -356,12 +363,15 @@ public class HttpShardHandler extends ShardHandler {
 
   @Override
   public void cancelAll() {
-    responseCancellableMap.values().forEach(cancellable -> {
-      cancellable.cancel();
-      pending.decrementAndGet();
-    });
-
+    // Stop in-flight callbacks from enqueueing late responses, then reset all three
+    // structures together (map, responses queue, pending counter). Decrementing pending
+    // per-entry while leaving responses undrained desynced them and could wedge a later
+    // take() or let a stale response satisfy a termination check.
+    canceled = true;
+    responseCancellableMap.values().forEach(Cancellable::cancel);
     responseCancellableMap.clear();
+    responses.clear();
+    pending.set(0);
   }
 
   @Override

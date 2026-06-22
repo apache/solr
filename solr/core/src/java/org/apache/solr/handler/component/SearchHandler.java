@@ -29,6 +29,7 @@ import java.util.concurrent.LinkedTransferQueue;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
@@ -451,6 +452,19 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
                 }
               } else {
                 rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+              }
+            } else {
+              // A shard can return HTTP 200 (no exception) yet still signal partial results in
+              // its own response header (e.g. timeAllowed exceeded on that shard). Propagate it
+              // so the merged response isn't reported as complete.
+              SolrResponse solrRsp = srsp.getSolrResponse();
+              NamedList<Object> shardResponse = solrRsp == null ? null : solrRsp.getResponse();
+              if (shardResponse != null) {
+                NamedList<?> shardHeader = (NamedList<?>) shardResponse.get("responseHeader");
+                if (shardHeader != null
+                    && Boolean.TRUE.equals(shardHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+                  rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+                }
               }
             }
 

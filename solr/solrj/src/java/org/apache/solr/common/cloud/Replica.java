@@ -118,6 +118,11 @@ public class Replica extends ZkNodeProps {
         } else {
           return State.LEADER;
         }
+      } if (shortState.equals(0)) {
+        // 0 is the "unknown/uninitialized" sentinel (shortStateToLetterState(0)=='U'). Treat it as DOWN to
+        // stay consistent with the letter mapping and the fork's DOWN-is-default convention, rather than
+        // throwing. Does not touch shortState 1, so the LEADER/ACTIVE invariant is preserved.
+        return State.DOWN;
       } if (shortState.equals(2)) {
         return State.ACTIVE;
       } if (shortState.equals(4)) {
@@ -267,9 +272,11 @@ public class Replica extends ZkNodeProps {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     Replica replica = (Replica) o;
-    if (replica == null) return false;
-    return name.equals(replica.name) && id.equals(replica.id) && collectionId.equals(replica.collectionId);
+    return name.equals(replica.name)
+        && Objects.equals(id, replica.id)
+        && collectionId.equals(replica.collectionId);
   }
 
   @Override
@@ -278,7 +285,10 @@ public class Replica extends ZkNodeProps {
   }
 
   public String getId() {
-    return collectionId + "-" + (id == null ? null : id.toString());
+    // For synthetic replicas (no numeric id) fall back to the unique name instead of the literal "null",
+    // otherwise every id-less replica in a collection collides to "<collId>-null". name is non-null and unique
+    // (it is the core/replica name). equals() keys off the numeric id field, not getId(), so this is safe.
+    return collectionId + "-" + (id == null ? name : id.toString());
   }
 
   public Integer getInternalId() {
@@ -339,8 +349,14 @@ public class Replica extends ZkNodeProps {
     // re-add the current state before serializing. Otherwise a JSON-serialized cluster state (e.g. a
     // CLUSTERSTATUS response) omits each replica's state and clients treat every replica as DOWN, failing with
     // "Could not find a healthy node". getState() reflects the live channel value.
-    propMap.put(ZkStateReader.STATE_PROP, getState().toString());
-    super.write(jsonWriter);
+    //
+    // Serialize a private copy rather than mutating propMap in place: propMap is shared across DocCollection
+    // graphs and is an unsynchronized fastutil open-hash map, so a concurrent CLUSTERSTATUS serialize racing
+    // an overseer state write that touches the same map could corrupt it (lost entry / resize race) or emit a
+    // torn state. The copy makes write() read-only on the shared map.
+    Object2ObjectMap<String,Object> snapshot = shallowCopy();
+    snapshot.put(ZkStateReader.STATE_PROP, getState().toString());
+    new ZkNodeProps(snapshot).write(jsonWriter);
   }
 
   public State getRawState() {

@@ -159,7 +159,7 @@ public class ReplicaMutator {
     String coreName = message.getStr(ZkStateReader.CORE_NAME_PROP);
 
     DocCollection collection = clusterState.getCollectionOrNull(collectionName);
-    if (collection.getReplica(coreName) == null) {
+    if (collection == null || collection.getReplica(coreName) == null) {
       log.info("Failed to update state because the replica does not exist, {}", message);
       return clusterState;
     }
@@ -250,6 +250,10 @@ public class ReplicaMutator {
     //prevState =checkAndCompleteShardSplit(prevState, collection, coreName, sliceName, replica);
     // get the current slice again because it may have been updated due to checkAndCompleteShardSplit method
     slice = collection.getSlice(sliceName);
+    if (slice == null) {
+      log.info("Failed to update state because the slice no longer exists, {}", message);
+      return clusterState;
+    }
     replicas = slice.getReplicasCopy();
 
     replicas.put(replica.getName(), replica);

@@ -538,28 +538,26 @@ public class TransactionLog implements Closeable {
           pos = fos.size();   // if we had flushed, this should be equal to channel.position()
 
           // Reserve this record's region [pos, pos+lastAddSize+4) by advancing the write
-          // position under the lock, so concurrent writers get distinct, non-overlapping
-          // offsets. The actual buffer copy below can then happen outside the lock.
+          // position, then write the bytes -- all under fosLock.
           fos.position((int) (pos + lastAddSize + 4));
 
           raf.setLength(fos.size());
           ensureCapacity(fos.size());
 
-        } finally {
-          fosLock.unlock();
-        }
-        //   fos.flushBuffer();
+          expandableBuffer1.byteBuffer().position(0 +  expandableBuffer1.wrapAdjustment());
+          expandableBuffer1.byteBuffer().limit(lastAddSize + expandableBuffer1.wrapAdjustment());
 
-        expandableBuffer1.byteBuffer().position(0 +  expandableBuffer1.wrapAdjustment());
-        expandableBuffer1.byteBuffer().limit(lastAddSize + expandableBuffer1.wrapAdjustment());
-
-        mapLock.readLock().lock();
-        try {
+          // Copy the record bytes BEFORE releasing fosLock so a concurrent LogReader.next()
+          // (which gates on pos >= fos.size() under fosLock) can never observe the
+          // reserved-but-unwritten region as readable and decode a torn record. This mirrors
+          // writeDelete/writeDeleteByQuery/writeCommit, which do putBytes + putInt + position
+          // advance entirely inside fosLock. The buffer write does not need mapLock here because
+          // the only re-map (ensureCapacity) is also performed under fosLock.
           fos.putBytes( pos, expandableBuffer1.byteBuffer(), lastAddSize);
 
           fos.putInt((int) (pos + lastAddSize), lastAddSize);
         } finally {
-          mapLock.readLock().unlock();
+          fosLock.unlock();
         }
 
         numRecords.increment();

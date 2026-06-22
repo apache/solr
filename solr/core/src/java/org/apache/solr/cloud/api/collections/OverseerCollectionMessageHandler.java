@@ -471,9 +471,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     params.set(CORE_NAME_PROP, message.getStr(CORE_NAME_PROP));
     params.set(ELECTION_NODE_PROP, message.getStr(ELECTION_NODE_PROP));
 
-    String baseUrl = zkStateReader.getBaseUrlForNodeName(message.getStr(message.getStr(NODE_NAME_PROP)));
+    // The inner getStr returned the node name which was then (wrongly) used as a key for the outer
+    // getStr -> null -> getBaseUrlForNodeName(null). Resolve the base URL directly from the node name.
+    String baseUrl = zkStateReader.getBaseUrlForNodeName(message.getStr(NODE_NAME_PROP));
     ShardRequest sreq = new ShardRequest();
-    sreq.nodeName = message.getStr(ZkStateReader.CORE_NAME_PROP);
+    // sreq.nodeName is the target node, not the core name.
+    sreq.nodeName = message.getStr(NODE_NAME_PROP);
     // yes, they must use same admin handler path everywhere...
     params.set("qt", adminPath);
     sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
@@ -696,6 +699,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       // await it here before triggering the reload. Otherwise the reloaded cores observe the stale
       // READ_ONLY value: turning read-only OFF leaves replica cores stuck read-only (403 on writes),
       // and turning it ON can leave cores writable.
+      boolean stateWritten = false;
       DocCollection modified = clusterState.getCollectionOrNull(collectionName);
       if (modified != null) {
         overseer.getZkStateWriter().enqueueStructureChange(modified);
@@ -703,6 +707,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         if (writeFut != null) {
           try {
             writeFut.get(30, TimeUnit.SECONDS);
+            stateWritten = true;
           } catch (InterruptedException ie) {
             ParWork.propagateInterrupt(ie);
           } catch (Exception e) {
@@ -710,7 +715,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           }
         }
       }
-      reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
+      // Only reload once the READ_ONLY change is durably written. Reloading after a failed/timed-out
+      // write would have the cores read the stale value (see comment above), defeating the toggle.
+      if (stateWritten) {
+        reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
+      }
     }
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
     response.clusterState = clusterState;

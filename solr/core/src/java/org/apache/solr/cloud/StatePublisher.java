@@ -267,10 +267,13 @@ public class StatePublisher implements Closeable {
             KeeperException e = KeeperException.create(KeeperException.Code.get(rc), path);
             log.error("Exception publish state messages path={}", path, e);
 
-            if (e instanceof KeeperException.ConnectionLossException) {
-              // if we use, check for alive
-//              zkStateReader.getZkClient().getConnectionManager().waitForConnected();
-//              workQueue.offer(message);
+            // This bulk message was NOT persisted. Re-offering the already-batched map is unsafe (it has
+            // op=state with id->line entries the worker's bulkMessage() can't re-interpret), so instead we
+            // drop the dedup records: otherwise the 30s dedup window would suppress the caller's identical
+            // retry and the failed (non-LEADER) transition would be lost permanently. Clearing is bounded
+            // and harmless — any healthy id simply gets to republish once (idempotent).
+            synchronized (dedupCache) {
+              dedupCache.clear();
             }
           }
         });
@@ -292,6 +295,13 @@ public class StatePublisher implements Closeable {
 
   public void submitState(ZkNodeProps stateMessage) {
     // Don't allow publish of state we last published if not DOWNNODE?
+    // Reject submits after close(): the worker has consumed its TERMINATE pill and exited, so anything
+    // enqueued now is silently dropped (and workerExec may be null if start() never ran). A late
+    // registration finishing during shutdown must not pretend to publish onto a dead worker.
+    if (closed) {
+      log.warn("Skipping state publish; StatePublisher is closed message={}", stateMessage);
+      return;
+    }
     try {
       if (stateMessage != TERMINATE_OP) {
         published.mark();
@@ -437,17 +447,26 @@ public class StatePublisher implements Closeable {
     }
 
     public void close () {
-     // this.closed = true;
+      // Set closed FIRST so submitState() stops accepting work before we stop the worker; otherwise a
+      // concurrent publish could enqueue after the TERMINATE pill and be lost. Idempotent: close() is
+      // invoked twice from ZkController (explicit close() + closeQuietly).
+      if (closed) {
+        return;
+      }
+      this.closed = true;
 
-     // if (!workQueue.tryTransfer(TERMINATE_OP_MAP)) {
-        workQueue.put(TERMINATE_OP_MAP);
-      //}
+      workQueue.put(TERMINATE_OP_MAP);
 
-      workerExec.shutdown();
-      try {
-        workerExec.awaitTermination(5000, TimeUnit.MILLISECONDS);
-      } catch (InterruptedException e) {
-
+      // workerExec is null if start() was never called (e.g. a ZkController that failed mid-init).
+      ExecutorService exec = this.workerExec;
+      if (exec != null) {
+        exec.shutdown();
+        try {
+          exec.awaitTermination(5000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+          // Restore the interrupt flag rather than swallowing it, so callers up the close() chain see it.
+          Thread.currentThread().interrupt();
+        }
       }
     }
   }

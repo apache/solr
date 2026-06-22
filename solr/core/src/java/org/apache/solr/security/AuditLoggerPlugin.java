@@ -306,9 +306,9 @@ public abstract class AuditLoggerPlugin extends ParWork.ParWorkCallableBase impl
   }
 
   /**
-   * Waits 30s for async queue to drain, then closes executor threads.
+   * Waits up to 5s for async queue to drain, then closes executor threads.
    * Subclasses should either call <code>super.close()</code> or {@link #waitForQueueToDrain(int)}
-   * <b>before</b> shutting itself down to make sure they can complete logging events in the queue. 
+   * <b>before</b> shutting itself down to make sure they can complete logging events in the queue.
    */
   @Override
   public void close() throws IOException {
@@ -319,7 +319,11 @@ public abstract class AuditLoggerPlugin extends ParWork.ParWorkCallableBase impl
       // pending async audit events were silently dropped on shutdown (an audit-completeness bug), and
       // testAsyncQueueDrain flaked (~1/3) when its post-shutdown events lost that race. Drain first
       // (bounded), THEN stop polling.
-      waitForQueueToDrain(30);
+      //
+      // 5s is ample for a fast/normal sink to flush; a slow or hung sink is released after 5s so
+      // rolling-restart shutdown time stays bounded (the previous bound was ~7.5s before the ×4
+      // iteration factor was added; 30s made every shutdown wait 30s when the sink misbehaved).
+      waitForQueueToDrain(5);
       closed = true; // breaking out of polling
       runningFuture.cancel(true);
       log.info("Shutting down async Auditlogger background thread(s)");

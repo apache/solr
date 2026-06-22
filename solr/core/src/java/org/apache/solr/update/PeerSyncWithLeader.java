@@ -317,7 +317,13 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
       for (Long bufferUpdate : bufferedUpdates) {
         // updater will sort updates before apply
-        updates.add(recentUpdates.lookup(bufferUpdate));
+        // WHY: lookup returns null if the buffered version was trimmed/rolled out of the
+        // recent-updates window between the snapshot and here. A null entry would NPE/CCE in
+        // the gap-trim stream below and in Updater.applyUpdates, aborting the whole sync.
+        Object bufferedUpdateEntry = recentUpdates.lookup(bufferUpdate);
+        if (bufferedUpdateEntry != null) {
+          updates.add(bufferedUpdateEntry);
+        }
       }
     }
 

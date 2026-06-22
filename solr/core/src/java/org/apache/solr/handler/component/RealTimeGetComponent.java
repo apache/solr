@@ -528,7 +528,17 @@ public class RealTimeGetComponent extends SearchComponent
       doc = toSolrDoc(luceneDocument, core.getLatestSchema());
       searcher.getDocFetcher().decorateDocValueFields(doc, docid, decorateFields);
 
-      long docVersion = (long) doc.getFirstValue(VERSION_FIELD);
+      Object docVersionObj = doc.getFirstValue(VERSION_FIELD);
+      if (docVersionObj == null) {
+        // The full doc has no retrievable _version_ (e.g. DV-only and excluded from decorateFields);
+        // we cannot reconcile the in-place partial against it, so fall back to the partial doc as-is.
+        for (String fieldName: partialDoc.getFieldNames()) {
+          doc.setField(fieldName, partialDoc.getFieldValue(fieldName));
+        }
+        return doc;
+      }
+      long docVersion = docVersionObj instanceof Field? ((Field) docVersionObj).numericValue().longValue():
+        docVersionObj instanceof Number? ((Number) docVersionObj).longValue(): Long.parseLong(docVersionObj.toString());
       Object partialVersionObj = partialDoc.getFieldValue(VERSION_FIELD);
       long partialDocVersion = partialVersionObj instanceof Field? ((Field) partialVersionObj).numericValue().longValue():
         partialVersionObj instanceof Number? ((Number) partialVersionObj).longValue(): Long.parseLong(partialVersionObj.toString());
@@ -585,6 +595,11 @@ public class RealTimeGetComponent extends SearchComponent
                 // resolve it to a full document to be returned to the user.
                 SolrDocument sdoc = resolveFullDocument(core, idBytes, new SolrReturnFields(), doc, entry, onlyTheseNonStoredDVs);
                 if (sdoc == null) {
+                  // The in-place partial entry's version was set above, but resolving the prevPointer
+                  // chain found the doc deleted. Don't report a live version for a DELETED result.
+                  if (versionReturned != null) {
+                    versionReturned.set(0L);
+                  }
                   return DELETED;
                 }
                 doc = toSolrInputDocument(sdoc, core.getLatestSchema());
@@ -1282,6 +1297,12 @@ public class RealTimeGetComponent extends SearchComponent
     Set<Long> versionsToRet = new HashSet<>(ulog.getNumRecordsToKeep());
     for (String range : ranges) {
       String[] rangeBounds = COMPILE.split(range);
+      // A comma-separated token that is not itself a "lo...hi" range (e.g. a bare version mixed
+      // in with ranges) splits to length 1; skip it rather than AIOOBE on rangeBounds[1] and
+      // abort the whole peersync getUpdates.
+      if (rangeBounds.length < 2) {
+        continue;
+      }
       int indexStart = Collections.binarySearch(versionAvailable, Long.valueOf(rangeBounds[1]), PeerSync.absComparator);
       int indexEnd = Collections.binarySearch(versionAvailable, Long.valueOf(rangeBounds[0]), PeerSync.absComparator); 
       if(indexStart >=0 && indexEnd >= 0) {

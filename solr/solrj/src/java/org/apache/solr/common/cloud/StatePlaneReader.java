@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -204,7 +205,7 @@ public final class StatePlaneReader {
     }
     // (a) Legacy-domain carry-forward — preserves the ORIGINAL pre-delta behavior byte-for-byte.
     if (prev.getStateUpdatesZkVersion() > newState.getStateUpdatesZkVersion()) {
-      newState.setStateUpdates(prev.getStateUpdates());
+      newState.setStateUpdates(deepCopy(prev.getStateUpdates()));
     }
     // (b) Delta-plane carry-forward — if prev's per-shard cursors are ahead, adopt prev's
     //     StateUpdates + cursors so an older structure/legacy fetch cannot regress newer delta state.
@@ -217,9 +218,27 @@ public final class StatePlaneReader {
     //     RECOVERING (TestTlogReplica create-and-wait timeout on every iteration after the first).
     if (sameIncarnation(newState, prev)
         && prev.getStatePlaneGeneration() > newState.getStatePlaneGeneration()) {
-      newState.setStateUpdates(prev.getStateUpdates());
+      newState.setStateUpdates(deepCopy(prev.getStateUpdates()));
       newState.adoptStatePlaneCursors(prev);
     }
+  }
+
+  /**
+   * Deep-copy a {@link StateUpdates} map: fresh map + a NEW {@link AtomicInteger} per entry (value
+   * preserved) and the same version. Carry-forward MUST NOT alias {@code prev}'s map or its
+   * AtomicInteger values — {@link DocCollection#updateState} mutates entries in place
+   * ({@code sateForReplica.set(state)}), so a shared instance would let an {@code updateState} on the
+   * new generation bleed into {@code prev} (still referenced by other in-flight ClusterState
+   * snapshots). A fresh AtomicInteger per entry isolates the generations while preserving the
+   * value-aware {@code hashCode()} freshness token (equal values → equal hash).
+   */
+  private static StateUpdates<Integer, AtomicInteger> deepCopy(StateUpdates<Integer, AtomicInteger> src) {
+    StateUpdates<Integer, AtomicInteger> copy = new StateUpdates<>();
+    if (src != null) {
+      src.forEach((k, v) -> copy.put((Integer) k, new AtomicInteger(((AtomicInteger) v).get())));
+      copy.setStateUpdatesVersion(src.getStateUpdatesVersion());
+    }
+    return copy;
   }
 
   /**

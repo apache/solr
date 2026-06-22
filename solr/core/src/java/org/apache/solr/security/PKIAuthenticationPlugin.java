@@ -118,7 +118,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       filterChain.doFilter(request, response);
       return true;
     }
-    if ((receivedTime - decipher.timestamp) > MAX_VALIDITY) {
+    // G6-4: bound the skew in BOTH directions. The original one-sided check
+    // (receivedTime - timestamp) > MAX_VALIDITY let a future (or attacker-chosen, clock-skewed)
+    // timestamp produce a negative delta that always passed, extending the replay window for a
+    // captured SolrAuth header well beyond the intended TTL.
+    if (Math.abs(receivedTime - decipher.timestamp) > MAX_VALIDITY) {
       log.error("Invalid key request timestamp: {} , received timestamp: {} , TTL: {}", decipher.timestamp, receivedTime, MAX_VALIDITY);
       numErrors.mark();
       filterChain.doFilter(request, response);
@@ -147,10 +151,23 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       log.debug("public key obtained {} ", key);
     }
 
+    // G6-3: never call parseCipher with a null key. getRemotePublicKey returns null when the
+    // node isn't in live-nodes or the fetch fails; a null key would otherwise be fed into
+    // CryptoKeys.decryptRSA (NPE/garbage) and conflate a transient key-fetch miss with a bad
+    // signature. Treat a missing key as an auth failure (caller leaves the request unauthenticated).
+    if (key == null) {
+      log.warn("No public key available for node {}; cannot decipher header", nodeName);
+      return null;
+    }
+
     PKIHeaderData header = parseCipher(cipherBase64, key);
     if (header == null) {
       log.warn("Failed to decrypt header, trying after refreshing the key ");
       key = getRemotePublicKey(nodeName);
+      if (key == null) {
+        log.warn("No public key available for node {} after refresh; cannot decipher header", nodeName);
+        return null;
+      }
       return parseCipher(cipherBase64, key);
     } else {
       return header;

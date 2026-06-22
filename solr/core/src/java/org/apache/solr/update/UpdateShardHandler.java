@@ -29,6 +29,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SysStats;
 import org.apache.solr.core.SolrInfoBean;
@@ -240,6 +241,10 @@ public class UpdateShardHandler implements SolrInfoBean {
     if (solrCmdDistributorClient != null) solrCmdDistributorClient.disableCloseLock();
     if (searchOnlyClient != null) searchOnlyClient.disableCloseLock();
 
+    // Drain the recovery executor BEFORE closing the HTTP clients. Recovery tasks run against
+    // recoveryOnlyClient; shutting the clients first would leave in-flight recovery work running
+    // against closed clients (G6-1) and leak the executor across core reloads.
+    ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
 
     try (ParWork closer = new ParWork(this, false)) {
       closer.collect(recoveryOnlyClient);
@@ -269,7 +274,6 @@ public class UpdateShardHandler implements SolrInfoBean {
     builder.setup(sharedHttpClient);
     builder.setup(recoveryOnlyClient);
     builder.setup(solrCmdDistributorClient);
-    builder.setup(recoveryOnlyClient);
     builder.setup(searchOnlyClient);
   }
 }

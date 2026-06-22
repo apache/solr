@@ -212,7 +212,9 @@ public class LBHttp2SolrClient extends LBSolrClient {
         } catch (SolrException e) {
           // we retry on 404 or 403 or 502, 503 or 500
           // unless it's an update - then we only retry on connect exception
-          if (!isNonRetryable && (RETRY_CODES.contains(e.code())) || e.getMessage().contains("Connection refused")) {
+          if (!isNonRetryable
+              && (RETRY_CODES.contains(e.code())
+                  || (e.getMessage() != null && e.getMessage().contains("Connection refused")))) {
             req.retryCount.incrementAndGet();
             listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
           } else {

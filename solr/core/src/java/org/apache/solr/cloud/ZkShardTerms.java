@@ -79,8 +79,13 @@ public class ZkShardTerms extends DoNotWrap implements Closeable {
   private final Map<String, CoreTermWatcher> listeners = new ConcurrentHashMap<>();
 
   private final AtomicReference<ShardTerms> terms = new AtomicReference<>();
-  private volatile boolean checkAgain = false;
-  private volatile boolean running;
+  // Guards the running/checkAgain coalescing gate in scheduleTermNotify. These flags are a
+  // check-then-act pair; without a lock a producer's "checkAgain=true" can race the worker's
+  // "running=false" exit and be stranded with no runner -> a term-change notification is lost
+  // (E5-1 lost wakeup). All reads/writes of running+checkAgain now happen under this lock.
+  private final ReentrantLock ourLock = new ReentrantLock();
+  private boolean checkAgain = false;
+  private boolean running;
 
   private volatile boolean closed;
 
@@ -111,36 +116,52 @@ public class ZkShardTerms extends DoNotWrap implements Closeable {
     if (closed || zkClient.isClosed()) {
       return;
     }
+    // Claim the gate under the lock. If a worker is already running, record that another round is
+    // needed and return; the running worker will observe checkAgain under the same lock before it
+    // exits, so the request can never be stranded (E5-1).
+    ourLock.lock();
     try {
       if (running) {
         checkAgain = true;
-      } else {
-        running = true;
-
-        ParWork.getRootSharedExecutor().submit(() -> {
-          try {
-            do {
-              checkAgain = false;
-              if (refreshFirst) refresh();
-              onTermUpdates(this.terms.get());
-
-              if (checkAgain) {
-                checkAgain = false;
-              } else {
-                running = false;
-                break;
-              }
-            } while (true);
-
-          } catch (Exception e) {
-            running = false;
-            log.error("exception submitting queue task", e);
-          }
-        });
+        return;
       }
+      running = true;
     } finally {
-     // ourLock.unlock();
+      ourLock.unlock();
     }
+
+    ParWork.getRootSharedExecutor().submit(() -> {
+      try {
+        while (true) {
+          if (refreshFirst) refresh();
+          onTermUpdates(this.terms.get());
+
+          // Decide whether to loop again or exit, atomically with respect to producers setting
+          // checkAgain. Either we see a pending request and re-run, or we clear running while
+          // holding the lock so any later producer takes the !running branch and starts a fresh
+          // worker. No notification can slip between the two.
+          ourLock.lock();
+          try {
+            if (checkAgain) {
+              checkAgain = false;
+            } else {
+              running = false;
+              break;
+            }
+          } finally {
+            ourLock.unlock();
+          }
+        }
+      } catch (Exception e) {
+        ourLock.lock();
+        try {
+          running = false;
+        } finally {
+          ourLock.unlock();
+        }
+        log.error("exception submitting queue task", e);
+      }
+    });
   }
 
   /**
@@ -404,9 +425,14 @@ public class ZkShardTerms extends DoNotWrap implements Closeable {
       log.info("Failed to save terms, version is not a match, retrying version={} found={}", newTerms.getVersion(), foundVersion);
 
       if (newTerms.getVersion() > foundVersion) {
-        // terms in zk is less than ours - new collection or catastrophic failure,
-        // stop retrying
-        return true;
+        // Our in-memory version drifted AHEAD of ZK (term node deleted+recreated, or stale
+        // in-memory ShardTerms). The CAS write did NOT happen. Returning true here used to report a
+        // SUCCESSFUL save while writing nothing (E4-4) -> a silent term no-op: a replica could
+        // publish ACTIVE with a stale ZK term (skipped by the leader's update fan-out) and leave its
+        // _recovering marker stuck (can never become leader). We cannot simply refresh-and-retry
+        // because setNewTerms refuses to pull the in-memory version back DOWN (version-monotonic
+        // guard), which would livelock. Surface the failure to the caller instead of faking success.
+        throw e;
       }
 
       refreshTerms(foundVersion);

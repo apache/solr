@@ -250,13 +250,18 @@ public class ConnectionManager implements Watcher, Closeable {
         updateZk();
         try {
           if (onReconnect != null) {
-            client.zkCallbackExecutor.execute(() -> {
-              try {
-                onReconnect.command();
-              } catch (Exception e) {
-                log.error("Exception in on reconnect", e);
-              }
-            });
+            // Run the reconnect callback inline on this dedicated zkReconnect thread rather than
+            // resubmitting to zkCallbackExecutor: close() calls shutdownNow() on that executor, so a
+            // close racing reconnect would reject the submission with RejectedExecutionException and
+            // silently drop the critical onReconnect (retryElection) task. Running inline removes the
+            // race; if we are already closed, AlreadyClosedException below ends the reconnect loop.
+            try {
+              onReconnect.command();
+            } catch (AlreadyClosedException e) {
+              throw e;
+            } catch (Exception e) {
+              log.error("Exception in on reconnect", e);
+            }
           }
         } catch (AlreadyClosedException e) {
           throw e;
@@ -324,7 +329,11 @@ public class ConnectionManager implements Watcher, Closeable {
       IsClosed hlc = client.higherLevelIsClosed;
       if (hlc != null && hlc.isClosed()) throw new AlreadyClosedException();
       SolrZooKeeper fkeeper = keeper;
-      if (fkeeper != null && fkeeper.getState().isConnected()) {
+      // Also require !expired: on session expiry the old keeper handle can still briefly report
+      // CONNECTED before reconnect() swaps it out. Without this gate a waiter could observe the
+      // dying handle as connected and issue an op on a being-torn-down session. expired stays true
+      // for the whole reconnect window (cleared only on the next SyncConnected).
+      if (fkeeper != null && !expired && fkeeper.getState().isConnected()) {
         log.debug("Client is connected");
         return;
       }

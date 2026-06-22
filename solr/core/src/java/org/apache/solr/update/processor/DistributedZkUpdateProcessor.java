@@ -876,6 +876,18 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         forwardToLeader = true;
         assert !isLeader;
         assert !isSubShardLeader;
+        if (leaderReplica == null) {
+          // Both slice.getLeader() and the short non-blocking getLeaderRetry above can return null
+          // during a leader-failover gap. Constructing a ForwardNode with a null leader throws
+          // "nodeProps cannot be null" -> client 500. Block for the new leader to be elected instead
+          // so the update is forwarded once failover completes rather than failing the client outright.
+          leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
+          if (desc.getName().equals(leaderReplica.getName())) {
+            // we became the leader during the gap; serve locally rather than forwarding to ourself
+            isLeader = true;
+            return setupRequest(id, doc, route);
+          }
+        }
         List<SolrCmdDistributor.Node> nodes = Collections.singletonList(
                 new SolrCmdDistributor.ForwardNode(zkController.getZkStateReader(), leaderReplica, collection, shardId));
         if (log.isDebugEnabled()) log.debug("Forward update to leader {}", nodes);
@@ -938,7 +950,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       Slice slice = slices.get(sliceEntry.getKey());
       Replica replica = docCollection.getLeader(slice.getName(), zkController.zkStateReader.getLiveNodes());
       if (replica != null) {
-        if (zkController.getZkStateReader().isNodeLive(replica.getNodeName()) && types.contains(replica.getType()) && replica.getState() == Replica.State.ACTIVE || replica.getState() == Replica.State.BUFFERING) {
+        if (zkController.getZkStateReader().isNodeLive(replica.getNodeName()) && types.contains(replica.getType()) && (replica.getState() == Replica.State.ACTIVE || replica.getState() == Replica.State.BUFFERING)) {
           urls.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), replica, collectionName, slice.getName()));
         }
       }
@@ -954,6 +966,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // Could I be the leader of a shard in "construction/recovery" state?
     String myShardId = cloudDesc.getShardId();
     Slice mySlice = coll.getSlice(myShardId);
+    if (mySlice == null) {
+      // This core's shard was removed/renamed in the freshly-read cluster state (e.g. a split that
+      // deleted the parent slice, or a stale-vs-new state race): cleanly report "not a sub-shard leader".
+      return false;
+    }
     Slice.State state = mySlice.getState();
     return state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY;
   }
@@ -963,6 +980,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // Am I the leader of a shard in "construction/recovery" state?
     String myShardId = cloudDesc.getShardId();
     Slice mySlice = coll.getSlice(myShardId);
+    if (mySlice == null) {
+      return false;
+    }
     final Slice.State state = mySlice.getState();
     if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY) {
       Replica myLeader;
@@ -1265,7 +1285,15 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     errors.forEach(error -> {
 
-        if (error.req == null) return;
+        if (error.req == null) {
+          // finish() on a closed CoreContainer injects a req-less AlreadyClosed error to mark the
+          // batch as aborted-by-shutdown. Surface it to the client so the update is not falsely
+          // reported as a success (silent loss on shutdown); other req-less errors stay informational.
+          if (error.t instanceof AlreadyClosedException) {
+            errorsForClient.add(error);
+          }
+          return;
+        }
 
         if (error.req.node instanceof SolrCmdDistributor.ForwardNode) {
           // if it's a forward, any fail is a problem -

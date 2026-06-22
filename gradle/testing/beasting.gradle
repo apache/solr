@@ -132,12 +132,25 @@ if (beastingMode) {
 
       // A duplicate subclasses the target, so the target must be concrete and subclassable.
       // Best-effort detection of the common mistakes (final/abstract) so the failure is a clear
-      // message rather than a cryptic javac error on the generated sources.
-      def decl = (parentSrc.getText("UTF-8") =~ /(?m)^.*\bclass\s+${java.util.regex.Pattern.quote(simpleName)}\b.*$/)
-      if (decl.find() && (decl.group() =~ /\b(?:final|abstract)\b/)) {
-        throw new GradleException(
-            "The 'beast' target '${targetClass}' is declared final or abstract and cannot be " +
-            "subclassed. Choose a concrete, non-final test class.")
+      // message rather than a cryptic javac error on the generated sources. Skip single-line comments so
+      // a line like "// the class FooTest is final" does not produce a false positive, and only inspect
+      // the modifiers that appear BEFORE the 'class' keyword so "final" in a name/comment after it (e.g.
+      // an implemented interface) is ignored.
+      def quotedName = java.util.regex.Pattern.quote(simpleName)
+      def declLine = parentSrc.readLines("UTF-8").find { line ->
+        def trimmed = line.trim()
+        if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) {
+          return false
+        }
+        return (line =~ /\bclass\s+${quotedName}\b/).find()
+      }
+      if (declLine != null) {
+        def modifiers = declLine.substring(0, declLine.indexOf("class"))
+        if (modifiers =~ /\b(?:final|abstract)\b/) {
+          throw new GradleException(
+              "The 'beast' target '${targetClass}' is declared final or abstract and cannot be " +
+              "subclassed. Choose a concrete, non-final test class.")
+        }
       }
 
       // N iterations (one generated subclass per iteration) run P at a time.
@@ -199,6 +212,11 @@ if (beastingMode) {
         // regardless of pass/fail, unlike doLast).
         def beastLogsDir = file("${buildDir}/test-results/beast")
         def beastWriters = new java.util.concurrent.ConcurrentHashMap<String, Writer>()
+        // Sentinel marking a suite whose writer has already been closed in afterSuite. A late
+        // TestOutputEvent can still arrive after afterSuite; without this guard beastWriterFor's
+        // computeIfAbsent would re-open the file (newWriter truncates it, wiping the captured output) and
+        // leak an unclosed writer. Parking the sentinel keeps the entry present so no re-open happens.
+        final Writer CLOSED = java.io.Writer.nullWriter()
         def beastWriterFor = { String cls ->
           beastWriters.computeIfAbsent(cls, { c ->
             def safe = c.replaceAll(/[^a-zA-Z0-9.\-_]+/, "_")
@@ -216,6 +234,9 @@ if (beastingMode) {
             return
           }
           def w = beastWriterFor(d.className)
+          if (w.is(CLOSED)) {
+            return
+          }
           synchronized (w) {
             w.write(e.destination == TestOutputEvent.Destination.StdErr ? "  2> " : "  1> ")
             w.write(e.message)
@@ -232,8 +253,10 @@ if (beastingMode) {
             if (d.className == null) {
               return
             }
-            def w = beastWriters.remove(d.className)
-            if (w != null) {
+            // Park the CLOSED sentinel (do not remove) so a late TestOutputEvent cannot re-open and
+            // truncate the file via computeIfAbsent after we close it here.
+            def w = beastWriters.put(d.className, CLOSED)
+            if (w != null && !w.is(CLOSED)) {
               synchronized (w) {
                 w.write("\n=== ${d.className}: ${r.resultType} (tests=${r.testCount}, " +
                         "failures=${r.failedTestCount}, skipped=${r.skippedTestCount}) ===\n")

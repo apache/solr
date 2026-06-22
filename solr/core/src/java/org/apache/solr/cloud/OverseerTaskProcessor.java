@@ -212,6 +212,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     try {
       List<String> children = zkClient.getChildren(Overseer.OVERSEER_ELECT + "/leader", null, true);
       if (children == null || children.isEmpty()) return null;
+      // WHY: during an overseer handoff there can be two transient ephemeral children;
+      // the leader is the lowest sequence node, so sort before picking (get(0) was unsorted
+      // and could return a stale id). Mirrors getSortedElectionNodes.
+      LeaderElector.sortSeqs(children);
       return children.get(0); // the child node name IS the leader id
     } catch (KeeperException.NoNodeException e) {
       return null;
@@ -340,6 +344,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         synchronized (runningTasks) {
           runningTasks.remove(id);
         }
+        // WHY: runningZKTasks is added in markTaskAsRunning but was never removed, so the
+        // exclusion set (excludedTasks) grew forever and could spuriously exclude reused ids.
+        runningZKTasks.remove(id);
 
         if (asyncId != null) {
           if (!runningMap.remove(asyncId)) {
@@ -362,6 +369,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       synchronized (runningTasks) {
         runningTasks.remove(id);
       }
+      // WHY: mirror markTaskComplete — runningZKTasks must be cleared on the failure/retry
+      // path too, otherwise the id is permanently stuck in the exclusion set.
+      runningZKTasks.remove(id);
 
     }
 

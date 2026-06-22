@@ -102,6 +102,15 @@ public class ZkStateWriter {
 
   private final Set<String> dirtyStructure = ConcurrentHashMap.newKeySet();
 
+  /**
+   * collectionId -&gt; replica internalIds published LEADER while that collection's DocCollection was
+   * absent (overseer takeover before cs repopulated, or a LEADER update landing before its
+   * structure-change). enqueueStateUpdates cannot run the single-leader-per-slice demotion without
+   * slice membership, so it defers the ids here; enqueueStructureChange drains them and demotes against
+   * the authoritative slice membership the instant the structure lands. Cleared in removeCollection.
+   */
+  private final Map<Integer,Set<Integer>> pendingLeaderDemotions = new ConcurrentHashMap<>(16);
+
   private volatile ExecutorService workerExec;
   private volatile long start;
 
@@ -278,6 +287,57 @@ public class ZkStateWriter {
     return Replica.State.shortStateToState(shortState, true) == Replica.State.ACTIVE;
   }
 
+  /**
+   * H1: demote any replica still holding a stale LEADER short-state that was published while this
+   * collection's structure was absent (recorded in {@link #pendingLeaderDemotions}). Called from
+   * enqueueStructureChange just before the DocCollection is published to {@code cs}, so the
+   * single-leader-per-slice invariant holds atomically at the moment slice membership becomes
+   * available. Only ever touches replicas in the SAME slice as the deferred leader, so it can never
+   * demote a legitimate leader of a different slice.
+   */
+  private void drainPendingLeaderDemotions(DocCollection landed) {
+    if (landed == null) {
+      return;
+    }
+    Set<Integer> pending = pendingLeaderDemotions.remove(landed.getId());
+    if (pending == null || pending.isEmpty()) {
+      return;
+    }
+    Map<Integer,Integer> curMap = this.stateUpdates.get(landed.getId());
+    if (curMap == null) {
+      return;
+    }
+    final int LEADER_SHORT = Replica.State.getShortState(Replica.State.LEADER);
+    final int ACTIVE_SHORT = Replica.State.getShortState(Replica.State.ACTIVE);
+    for (Integer rid : pending) {
+      // The deferred leader may since have gone DOWN; only act if it still holds LEADER.
+      Integer ridState = curMap.get(rid);
+      if (ridState == null || ridState.intValue() != LEADER_SHORT) {
+        continue;
+      }
+      Slice mySlice = null;
+      for (Slice s : landed.getSlices()) {
+        for (Replica r : s.getReplicas()) {
+          if (rid.equals(r.getInternalId())) { mySlice = s; break; }
+        }
+        if (mySlice != null) break;
+      }
+      if (mySlice == null) {
+        continue;
+      }
+      for (Replica r : mySlice.getReplicas()) {
+        Integer otherId = r.getInternalId();
+        if (otherId == null || otherId.equals(rid)) continue;
+        Integer st = curMap.get(otherId);
+        if (st != null && st.intValue() == LEADER_SHORT) {
+          curMap.put(otherId, ACTIVE_SHORT);
+          log.info("Demoting stale leader replicaId={} -> ACTIVE in collection={} slice={} (deferred; replicaId={} published LEADER before structure landed)",
+              otherId, landed.getName(), mySlice.getName(), rid);
+        }
+      }
+    }
+  }
+
   public void enqueueStateUpdates(Map<Integer,Map<Integer,Integer>> replicaStates,  Map<Integer,List<ZkStateWriter.StateUpdate>> sliceStates) {    log.debug("enqueue state updates");
 
     replicaStates.forEach((collectionId, idToStateMap) -> {
@@ -338,6 +398,16 @@ public class ZkStateWriter {
             }
           }
         });
+      } else {
+        // Structure not yet known (dc == null): slice peers are unidentifiable, so the demotion above
+        // cannot run now. A blanket demotion against curMap would be wrong — it spans all slices of the
+        // collection and would demote legitimate leaders of other slices. Defer the LEADER ids so
+        // enqueueStructureChange demotes against authoritative membership once the structure lands.
+        idToStateMap.forEach((rid, newState) -> {
+          if (newState != null && newState.intValue() == LEADER_SHORT) {
+            pendingLeaderDemotions.computeIfAbsent(collectionId, k -> ConcurrentHashMap.newKeySet()).add(rid);
+          }
+        });
       }
 
       // log.debug("enqueue state updates result {} {}", replicaStatesEntry.getKey(), stateUpdates.get(replicaStatesEntry.getKey()));
@@ -346,7 +416,13 @@ public class ZkStateWriter {
     sliceStates.forEach((collectionId, updates) -> {
       String collection = idToCollection.get(collectionId);
 
-      DocCollection docColl = cs.get(collection);
+      DocCollection docColl = collection == null ? null : cs.get(collection);
+      if (docColl == null) {
+        // Structure for this collection id is not (yet) loaded — e.g. a freshly elected overseer
+        // applying a slice-state (UPDATESHARDSTATE) update before its DocCollection is populated.
+        // Skip rather than NPE, which would abort the whole batch (dropping co-batched replica updates).
+        return;
+      }
 
       boolean didUpdate = false;
 
@@ -573,6 +649,9 @@ public class ZkStateWriter {
           newCollection.setStateUpdatesZkVersion(currentCollection.getStateUpdatesZkVersion());
           newCollection.adoptStatePlaneCursors(currentCollection);
           log.debug("zkwriter newCollection={} replicas={}", newCollection, newCollection.getReplicas());
+          // Demote any leader published before this structure landed (H1), before the collection becomes
+          // visible to readers, so the single-leader-per-slice invariant holds atomically at publication.
+          drainPendingLeaderDemotions(newCollection);
           cs.put(currentCollection.getName(), newCollection);
 
         } else {
@@ -608,7 +687,10 @@ public class ZkStateWriter {
           newDocProps.remove("nrtReplicas");
           newDocProps.remove("tlogReplicas");
           newDocProps.remove("numShards");
-          cs.put(docCollection.getName(), docCollection.copyWithSlices(newSlices, newDocProps));
+          DocCollection landedCollection = docCollection.copyWithSlices(newSlices, newDocProps);
+          // Demote any leader published before this structure landed (H1), before publication to cs.
+          drainPendingLeaderDemotions(landedCollection);
+          cs.put(docCollection.getName(), landedCollection);
         }
 
       } finally {
@@ -664,13 +746,16 @@ public class ZkStateWriter {
     }
 
     log.debug("process collection {}", coll);
-//    ReentrantLock collLock = collLocks.compute(coll, (s, reentrantLock) -> {
-//      if (reentrantLock == null) {
-//        return new ReentrantLock();
-//      }
-//      return reentrantLock;
-//    });
-//    collLock.lock();
+    // Serialize all writes for a single collection through the same per-collection lock that
+    // enqueueStructureChange takes when it mutates cs. setData() below is async with version -1, and the
+    // ZK client is a single FIFO session: the request is queued in the order setData() is invoked. Two
+    // concurrent writers for the same collection could otherwise read cs, race into setData(), and have an
+    // older cs land after a newer one -- BadVersion can never reject it (version -1) so the stale state.json
+    // would silently persist. Holding the lock across the cs read + setData invocation makes the last writer
+    // read the freshest cs and queue its send last, so ZK applies the newest state.json last.
+    ReentrantLock collLock = collLocks.compute(coll, (s, reentrantLock) ->
+        reentrantLock == null ? new ReentrantLock() : reentrantLock);
+    collLock.lock();
     try {
 
       DocCollection collection = cs.get(coll);
@@ -707,25 +792,23 @@ public class ZkStateWriter {
             return;
           }
 
-          dirtyStructure.remove(collection.getName());
-
           structureWrites.mark();
           reader.getZkClient().setData(path, data, -1, (rc, path1, ctx, stateJsonStat) -> {
             if (rc != 0) {
               KeeperException e = KeeperException.create(KeeperException.Code.get(rc), path1);
-              log.error("Exception on trigger scn znode path={}", path1, e);
+              log.error("Exception writing state.json path={}", path1, e);
 
-              if (e instanceof KeeperException.BadVersionException) {
-
-                log.info("Tried to update state.json for {} with bad version {} \n {}", coll, -1, collection);
-
-              }
-              if (e instanceof KeeperException.ConnectionLossException) {
-                dirtyStructure.add(coll);
+              // dirtyStructure is cleared only on success (below), so the collection is still marked
+              // dirty here. Reschedule for any non-success rc (ConnectionLoss, SessionExpired, NoNode,
+              // ...) so the in-memory cs does not stay ahead of the persisted state.json with no retry.
+              // setData uses version -1, so BadVersion cannot occur. Guard against a reschedule storm
+              // during shutdown (mirrors the writer-loop close guard above).
+              if (!overseer.isClosed() && !reader.getZkClient().isClosed()) {
                 overseer.getZkStateWriter().writeStructureUpdates(coll);
               }
 
             } else {
+              dirtyStructure.remove(name);
               try {
                 reader.getZkClient().setData(pathSCN, null, -1, (rc2, path2, ctx2, scnStat) -> {
                   if (rc2 != 0) {
@@ -746,7 +829,7 @@ public class ZkStateWriter {
       }
 
     } finally {
-    //  collLock.unlock();
+      collLock.unlock();
     }
 
   }
@@ -838,6 +921,9 @@ public class ZkStateWriter {
         if (removed != null) {
           stateUpdates.remove(removed.getId());
           idToCollection.remove(removed.getId());
+          // The structure for this id will never land now; drop any deferred leader-demotion ids so the
+          // map does not leak an entry keyed by a dead collection id.
+          pendingLeaderDemotions.remove(removed.getId());
           List<Replica> replicas = removed.getReplicas();
           for (Replica replica : replicas) {
             overseer.getZkController().clearCachedState(replica.getName());
@@ -952,7 +1038,6 @@ public class ZkStateWriter {
         if (lostLiveNodes.isEmpty()) {
           return false;
         }
-        Set<Integer> collIds = new HashSet<>();
         Set<Map.Entry<String,DocCollection>> entrySet = cs.entrySet();
         for (Map.Entry<String,DocCollection> entry : entrySet) {
           DocCollection coll = entry.getValue();
@@ -965,7 +1050,6 @@ public class ZkStateWriter {
             for (String node : lostLiveNodes) {
               List<Replica> replicas = coll.getReplicas(node);
               for (Replica replica : replicas) {
-                collIds.add(coll.getId());
                 if (log.isDebugEnabled()) {
                   log.debug("Set an inactive state for replica {} on node {} ...", replica, replica.getNodeName());
                 }
@@ -979,7 +1063,9 @@ public class ZkStateWriter {
               }
             }
             if (write) {
-              writeStateUpdatesInternal(collIds, 1);
+              // Write only this collection's id; a shared growing union across collections re-submitted
+              // already-written collections and could write a collection whose DOWN compute() had not run yet.
+              writeStateUpdatesInternal(Collections.singleton(coll.getId()), 1);
             }
             return integerIntegerMap;
           });

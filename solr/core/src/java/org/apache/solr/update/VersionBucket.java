@@ -73,7 +73,7 @@ public class VersionBucket {
           final long longValue = adder.longValue();
           if (!(longValue > 0)) break;
           try {
-            lockCondition.awaitNanos(250);
+            lockCondition.awaitNanos(250_000_000L); // 250ms, not 250ns (which busy-spins the CPU)
           } catch (InterruptedException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
           }

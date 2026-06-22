@@ -1409,7 +1409,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       
       if (1 == errors.size()) {
         Error error = errors.iterator().next();
-        return "Async exception during distributed update (headers=" + error.req.uReq.getHeaders() + ") : " + error.t.getMessage();
+        // error.req can be null for synthetic errors (e.g. the AlreadyClosed marker added by
+        // SolrCmdDistributor.finish() when the distributor is already closed), so guard the deref.
+        Object headers = (error.req != null && error.req.uReq != null) ? error.req.uReq.getHeaders() : null;
+        return "Async exception during distributed update (headers=" + headers + ") : " + error.t.getMessage();
       } else {
         StringBuilder buf = new StringBuilder(errors.size());
         buf.append(" Async exceptions during distributed update: ");

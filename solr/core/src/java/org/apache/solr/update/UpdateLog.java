@@ -1327,14 +1327,19 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     try {
       tlogLock.lock();
       try {
-        state.set(State.ACTIVE);
         if (bufferTlog == null) {
+          state.set(State.ACTIVE);
           return;
         }
         // by calling this, we won't switch to new tlog (compared to applyBufferedUpdates())
         // if we switch to new tlog we can possible lose updates on the next fetch
         copyOverOldUpdates(cuc.getVersion(), bufferTlog);
         dropBufferTlog();
+        // WHY: flip to ACTIVE only AFTER the buffered tlog is fully copied into the live tlog.
+        // Lock-free readers (a peer's PeerSync getVersions, RTG, fingerprint, the state gauge)
+        // do not take blockUpdates()/tlogLock; setting ACTIVE first lets them observe ACTIVE
+        // mid-copy and conclude "in sync" with only a prefix of the buffered updates present.
+        state.set(State.ACTIVE);
       } finally {
         tlogLock.unlock();
       }
@@ -1384,10 +1389,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         log.warn("Exception reading log", e);
         return;
       }
+      // WHY: pin the tlog while still holding tlogLock (refcount already verified > 0 above) so a
+      // concurrent decref -> forceClose cannot unmap the Agrona buffer between releasing the lock
+      // and opening the reader in the two-arg copy (SIGSEGV class). Released in the finally below.
+      oldTlog.incref();
     } finally {
       tlogLock.unlock();
     }
-    copyOverOldUpdates(commitVersion, oldTlog);
+    try {
+      copyOverOldUpdates(commitVersion, oldTlog);
+    } finally {
+      oldTlog.decref();
+    }
   }
 
   /**
@@ -1936,7 +1949,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     LogReplayer replayer = new LogReplayer(Collections.singletonList(bufferTlog), true);
     return cs.submit(() -> {
       replayer.run();
-      dropBufferTlog();
+      // WHY: doReplay() breaks out of its loop early on cancelApplyBufferUpdate || isClosed,
+      // leaving un-applied updates in the buffer tlog. Dropping it unconditionally would lose
+      // those updates while the replica still transitions ACTIVE. Only drop once the buffered
+      // updates were actually replayed to completion.
+      if (!cancelApplyBufferUpdate && !isClosed) {
+        dropBufferTlog();
+      }
     }, recoveryInfo);
   }
 

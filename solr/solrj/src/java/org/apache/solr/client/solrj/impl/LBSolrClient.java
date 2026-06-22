@@ -679,6 +679,13 @@ public abstract class LBSolrClient extends SolrClient {
         break;
       }
 
+      // WHY: with an explicit numServersToTry, maxTries can be > 0 while the alive list is
+      // empty; skip to the zombie revive path rather than calling pickServer on an empty
+      // array (count % 0 -> ArithmeticException / AIOOBE).
+      if (serverList.length == 0) {
+        break;
+      }
+
       ServerWrapper wrapper = pickServer(serverList, request);
       try {
 

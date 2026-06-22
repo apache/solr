@@ -1026,6 +1026,11 @@ public class IndexFetcher {
       if (!status) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to create temporary config folder: " + tmpconfDir.getName());
       }
+      // Capture the first conf-file download failure. We must NOT proceed to copy a partial
+      // set of conf files into place and reloadCore() -- that would bring the replica up
+      // reporting success while running a stale/incomplete schema or solrconfig.
+      final java.util.concurrent.atomic.AtomicReference<Exception> confFetchError =
+          new java.util.concurrent.atomic.AtomicReference<>();
       try (ParWork work = new ParWork(this, false)) {
         for (Map<String,Object> file : confFilesToDownload) {
           work.collect("fetchConfigFile", () -> {
@@ -1041,12 +1046,19 @@ public class IndexFetcher {
                 throw new AlreadyClosedException();
               }
             } catch (Exception e) {
-              log.error("", e);
+              log.error("Error downloading config file: {}", file.get(NAME), e);
+              confFetchError.compareAndSet(null, e);
             } finally {
               fileFetchRequests.remove((String) file.get(NAME));
             }
           });
         }
+      }
+
+      if (confFetchError.get() != null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Failed to download one or more configuration files from master; aborting to avoid "
+                + "reloading the core with stale configuration", confFetchError.get());
       }
 
       // Wait for all fsync tasks to complete before renaming files out of tmpconfDir.
@@ -1586,8 +1598,14 @@ public class IndexFetcher {
   }
 
   private void markReplicationStop() {
-   // replicationStartTimeStamp = 0;
-    // replicationTimer = null;
+    // Reset the start timestamp so getReplicationTimeElapsed() returns 0 once a fetch ends
+    // (its guard is `replicationStartTimeStamp > 0`); leaving it set made the reported
+    // elapsed time keep growing after replication finished. replicationStartTimeStamp is
+    // volatile, so this publish is visible to the stats-reporting threads. We deliberately
+    // do NOT null replicationTimer here: it is non-volatile, and clearing it could race a
+    // concurrent getReplicationTimeElapsed() into an NPE; once the timestamp is 0 the timer
+    // is never dereferenced.
+    replicationStartTimeStamp = 0;
   }
 
   Date getReplicationStartTimeStamp() {
@@ -1759,8 +1777,11 @@ public class IndexFetcher {
         //if cleanup succeeds . The file is downloaded fully
         fsyncService.submit(() -> {
           try {
+            // cleanup() above already closed the file. Only fsync here -- calling close()
+            // a second time double-closes the underlying IndexOutput (DirectoryFile) and
+            // throws AlreadyClosedException. sync() is safe post-close for both impls
+            // (DirectoryFile syncs via the Directory; LocalFsFile re-opens the path).
             file.sync();
-            file.close();
           } catch (Exception e) {
             fsyncException = e;
           }
@@ -1802,15 +1823,14 @@ public class IndexFetcher {
             //read the checksum
             checkSumServer = fis.readLong();
           }
-          //then read the packet of bytes
-          fis.readFully(buf, 0, (int)Math.min(this.size, ReplicationHandler.PACKET_SZ));
-          try {
-            while (fis.read() != -1) {
-
-            }
-          } catch (IOException e) {
-
-          }
+          // Read exactly packetSize bytes -- the length the server framed this packet with
+          // (DirectoryFileStream.write writes min(PACKET_SZ, remaining)). Using
+          // min(this.size, PACKET_SZ) was wrong for any file > PACKET_SZ: the final short
+          // packet would over-read/over-write PACKET_SZ bytes, corrupting multi-packet files.
+          // The stray drain loop (while fis.read()!=-1) that used to sit here consumed every
+          // subsequent packet on the stream, so multi-packet downloads could never complete --
+          // removed.
+          fis.readFully(buf, 0, packetSize);
           //compare the checksum as sent from the master
           if (includeChecksum) {
             checksum.reset();
@@ -1824,9 +1844,9 @@ public class IndexFetcher {
             }
           }
           //if everything is fine, write down the packet to the file
-          file.write(buf, (int)Math.min(this.size, ReplicationHandler.PACKET_SZ));
+          file.write(buf, packetSize);
 
-          bytesDownloaded += (int)Math.min(this.size, ReplicationHandler.PACKET_SZ);
+          bytesDownloaded += packetSize;
           log.debug("Fetched and wrote {} bytes of file={} from replica={}", bytesDownloaded, fileName, masterUrl);
           //errorCount is always set to zero after a successful packet
           errorCount = 0;

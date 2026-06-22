@@ -648,6 +648,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
 
   public static void sendException(Throwable e, SolrCall call, HttpServletRequest request, HttpServletResponse response) throws IOException {
+      // Sent-once guard: once the response is committed, part of a body (and the headers /
+      // Content-Length) has already been flushed to the client. Writing an error body here would
+      // append a second, structurally-distinct payload onto the partial response, corrupting it
+      // and mismatching Content-Length. Some callers (the async WriteListener onError/onWritePossible
+      // paths, the filter() catch block) can reach this after a partial write, so guard centrally
+      // instead of relying on each caller's own isCommitted() check.
+      if (response.isCommitted()) {
+        log.warn("Response already committed; not writing exception body", e);
+        return;
+      }
       // Routine client-caused 4xx errors (auth prompts, bad requests) should not log an ERROR
       // stacktrace per request — only genuine server faults (5xx / non-SolrException) do.
       int logCode = (e instanceof SolrException) ? ((SolrException) e).code() : 500;

@@ -635,6 +635,9 @@ public class Http2SolrClient extends SolrClient {
             try {
               org.apache.solr.common.util.IOUtils.closeQuietly(is);
               ((SolrHttpRequest) req).freeBuffer();
+              // Return the response buffer to the pool alongside the request buffer. It was never released
+              // on this path, losing pooling and adding GC pressure on every async request.
+              ExpandableBuffers.getInstance().release(expandableBuffer);
             } finally {
               asyncTracker.arrive();
             }
@@ -887,6 +890,9 @@ public class Http2SolrClient extends SolrClient {
     } finally {
       org.apache.solr.common.util.IOUtils.closeQuietly(is);
       ((SolrHttpRequest)req).freeBuffer();
+      // freeBuffer() only releases the request-body buffer; the response buffer was never returned (lost
+      // from the pool, extra GC pressure). Released once here after the stream is fully read into the result.
+      ExpandableBuffers.getInstance().release(expandableBuffer);
     }
   }
 

@@ -484,7 +484,7 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
 
     if (retryOnConnLoss) {
-      return ZkCmdExecutor.retryOperation(zkCmdExecutor, new SetData(connManager.getKeeper(), path, data, version), retryOnSessionExpiration);
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, new SetData(connManager, path, data, version), retryOnSessionExpiration);
     } else {
       return connManager.getKeeper().setData(path, data, version);
     }
@@ -560,7 +560,26 @@ public class SolrZkClient implements Closeable {
     List<ACL> acls = zkACLProvider.getACLsToAdd(path);
 
     if (retryOnConnLoss) {
-      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> connManager.getKeeper().create(path, data, acls, createMode), retryOnSessionExp);
+      // create is not idempotent: a ConnectionLoss may be returned for a create that actually
+      // succeeded on the server, so the retry would throw NodeExistsException for our own node and
+      // surface as a spurious hard failure. Reconcile by treating NodeExists as success only when it
+      // arrives on a retry (a prior attempt was already made) of a non-sequential create — meaning
+      // the node we are seeing is the one our lost-ack attempt created. A first-attempt NodeExists
+      // (node truly pre-existed) still propagates. Sequential creates cannot be reconciled (the
+      // assigned name is unknown after a lost ack), so they are left to fail as before.
+      final boolean[] attempted = {false};
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> {
+        boolean isRetry = attempted[0];
+        attempted[0] = true;
+        try {
+          return connManager.getKeeper().create(path, data, acls, createMode);
+        } catch (NodeExistsException e) {
+          if (isRetry && !createMode.isSequential()) {
+            return path;
+          }
+          throw e;
+        }
+      }, retryOnSessionExp);
     } else {
       return connManager.getKeeper().create(path, data, acls, createMode);
     }
@@ -839,6 +858,14 @@ public class SolrZkClient implements Closeable {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
+    // The latch.await return was previously ignored: a timeout left some async creates unacked while
+    // the method returned "successfully", so a partially-created path tree looked complete. Fail
+    // explicitly so the caller does not proceed on an incomplete create batch.
+    if (!success) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Timeout waiting for mkDirs operations to complete paths=" + paths);
+    }
+
     // MRM TODO:, still haackey, do fails right
     if (code[0] != 0 && code[0] != KeeperException.Code.NODEEXISTS.intValue()) {
       KeeperException e = KeeperException.create(KeeperException.Code.get(code[0]), path[0]);
@@ -887,6 +914,10 @@ public class SolrZkClient implements Closeable {
 
     Map<String,byte[]> dataMap = Collections.synchronizedMap(new LinkedHashMap<>());
     CountDownLatch latch = new CountDownLatch(paths.size());
+    // A non-NONODE rc (e.g. CONNECTIONLOSS) was previously dropped silently, so a failed read was
+    // indistinguishable from an absent node (path simply missing from the returned map). Capture the
+    // first real error and rethrow it after the await so callers see read failures.
+    KeeperException[] firstError = new KeeperException[1];
 
     for (String path : paths) {
       try {
@@ -896,6 +927,12 @@ public class SolrZkClient implements Closeable {
               final KeeperException.Code keCode = KeeperException.Code.get(rc);
               if (keCode == KeeperException.Code.NONODE) {
                 if (log.isDebugEnabled()) log.debug("No node found for {}", path1);
+              } else {
+                synchronized (firstError) {
+                  if (firstError[0] == null) {
+                    firstError[0] = KeeperException.create(keCode, path1);
+                  }
+                }
               }
             } else {
               dataMap.put(path1, data);
@@ -917,12 +954,19 @@ public class SolrZkClient implements Closeable {
       success = latch.await(30, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
-      log.error("mkDirs(String={})", paths, e);
+      log.error("getData(paths={})", paths, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
     if (!success) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for operations to complete count=" + latch);
+    }
+
+    synchronized (firstError) {
+      if (firstError[0] != null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Error reading zk paths " + paths, firstError[0]);
+      }
     }
 
     return dataMap;
@@ -1526,13 +1570,13 @@ public class SolrZkClient implements Closeable {
   }
 
   private static class SetData implements ZkOperation {
-    private final ZooKeeper keeper;
+    private final ConnectionManager connManager;
     private final String path;
     private final byte[] data;
     private final int version;
 
-    public SetData(ZooKeeper keeper, String path, byte[] data, int version) {
-      this.keeper = keeper;
+    public SetData(ConnectionManager connManager, String path, byte[] data, int version) {
+      this.connManager = connManager;
       this.path = path;
       this.data = data;
       this.version = version;
@@ -1540,7 +1584,10 @@ public class SolrZkClient implements Closeable {
 
     @Override
     public Object execute() throws KeeperException, InterruptedException {
-      return keeper.setData(path, data, version);
+      // Read the live ZooKeeper handle per attempt: after a session expiry/reconnect the
+      // SolrZooKeeper instance is swapped, and retries must target the current session
+      // rather than a stale/closed handle (otherwise the write silently never lands).
+      return connManager.getKeeper().setData(path, data, version);
     }
   }
 

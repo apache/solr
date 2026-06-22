@@ -73,12 +73,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         zkClient.delete(leaderPath + "/" + id, -1);
       }
 
-      if (heldSingleton) {
-        heldSingleton = false;
-        try {
-          zkClient.delete(leaderPath + LEADER_SINGLETON_SUFFIX, -1);
-        } catch (NoNodeException ignore) {}
-      }
+      releaseSingletonIfHeld();
 
     } catch (NoNodeException e) {
 
@@ -153,9 +148,32 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       return true;
     } catch (Exception e) {
       log.warn("Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed", e);
+      // We may have acquired the single-leader lock earlier in this pass (heldSingleton). A failure after
+      // the lock mkdir but before the registration node succeeds would otherwise strand the ephemeral lock
+      // until our ZK session ends: every other replica then sees NodeExists / not-ours and no one can win,
+      // leaving the shard leaderless for the full session timeout while we are alive and re-joining. Release
+      // it so the next election attempt (ours or a peer's) starts clean.
+      releaseSingletonIfHeld();
       return false;
     }
     return true;
+  }
+
+  /** Releases the single-leader mutual-exclusion lock if this context currently holds it. Idempotent. */
+  private void releaseSingletonIfHeld() {
+    if (heldSingleton) {
+      heldSingleton = false;
+      try {
+        zkClient.delete(leaderPath + LEADER_SINGLETON_SUFFIX, -1);
+      } catch (NoNodeException ignore) {
+        // already gone
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.info("Interrupted releasing leader lock for {}", replica);
+      } catch (Exception e) {
+        log.info("Exception releasing leader lock {} {}", e.getClass().getName(), e.getMessage());
+      }
+    }
   }
 
   @Override public boolean isClosed() {

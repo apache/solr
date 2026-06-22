@@ -37,6 +37,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.JsonRecordReader;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.handler.UpdateRequestHandler;
@@ -121,7 +122,9 @@ public class JsonLoader extends ContentStreamLoader {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot parse provided JSON: " + e.getMessage());
       }
       finally {
-       // IOUtils.closeQuietly(reader);
+        // close the content-stream reader so the HTTP/2 pooled buffer is released and the
+        // connection can be reused; was previously commented out, leaking a reader per update.
+        IOUtils.closeQuietly(reader);
       }
     }
 

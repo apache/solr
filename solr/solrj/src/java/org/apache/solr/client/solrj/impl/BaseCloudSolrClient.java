@@ -529,11 +529,20 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           shardResponses.add(url, rsp);
         } catch (Exception e) {
           ParWork.propagateInterrupt(e);
-          if(e instanceof SolrException) {
-            throw (SolrException) e;
-          } else {
-            throw new SolrServerException(e);
-          }
+          // WHY: collect per-shard failures and defer the throw (mirroring the parallel
+          // path) so a RouteException carries every route's outcome. Throwing a bare
+          // SolrException on the first failure discarded already-succeeded shard
+          // responses and hid which routes actually need retrying.
+          exceptions.add(url, e);
+        }
+      }
+      if (exceptions.size() > 0) {
+        Throwable firstException = exceptions.getVal(0);
+        if (firstException instanceof SolrException) {
+          SolrException e = (SolrException) firstException;
+          throw getRouteException(SolrException.ErrorCode.getErrorCode(e.code()), exceptions, routes);
+        } else {
+          throw getRouteException(SolrException.ErrorCode.SERVER_ERROR, exceptions, routes);
         }
       }
     }
@@ -691,9 +700,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         continue;
       }
 
-      int s = (Integer) header.get("status");
-      if(s > 0) {
-        status = s;
+      Object statusObj = header.get("status");
+      if (statusObj instanceof Number) {
+        int s = ((Number) statusObj).intValue();
+        if (s > 0) {
+          status = s;
+        }
       }
       Object rfObj = header.get(UpdateRequest.REPFACT);
       if (rfObj instanceof Integer) {
@@ -760,6 +772,13 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         toThrow.setMetadata(metadata);
         throw toThrow;
       }
+    }
+    if (status > 0) {
+      // A shard reported a non-OK status in its responseHeader (e.g. an HTTP-200 body-level
+      // failure that the transport layer did not turn into an exception). Surface it instead
+      // of returning an apparently-successful 200 with the failure buried in the header.
+      throw new SolrException(SolrException.ErrorCode.getErrorCode(status),
+          "Distributed update failed on at least one shard (status=" + status + ")");
     }
     versions.forEach(condensed::add);
     condensed.add("responseHeader", cheader);
@@ -921,14 +940,26 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           Map invalidStates = (Map) o;
           for (Object invalidEntries : invalidStates.entrySet()) {
             Map.Entry e = (Map.Entry) invalidEntries;
-         //   if (e.getValue() instanceof String) {
-              String[] versionAndUpdatesHash = ((String) e.getValue()).split(">");
-              int version = Integer.parseInt(versionAndUpdatesHash[0]);
-              int updateHash = Integer.parseInt(versionAndUpdatesHash[1]);
-              log.info("got invalid states", versionAndUpdatesHash);
-              getDocCollection((String) e.getKey(), version, updateHash);
-         //   }
-
+            // WHY: guard the version/hash parse so a malformed _stateVer_ value (no '>'
+            // separator, or non-numeric halves) does not throw and abort an otherwise
+            // successful response. A bad hint is logged and skipped, not fatal.
+            String value = String.valueOf(e.getValue());
+            String[] versionAndUpdatesHash = value.split(">");
+            if (versionAndUpdatesHash.length != 2) {
+              log.warn("ignoring malformed invalid-state hint for {}: {}", e.getKey(), value);
+              continue;
+            }
+            int version;
+            int updateHash;
+            try {
+              version = Integer.parseInt(versionAndUpdatesHash[0]);
+              updateHash = Integer.parseInt(versionAndUpdatesHash[1]);
+            } catch (NumberFormatException nfe) {
+              log.warn("ignoring malformed invalid-state hint for {}: {}", e.getKey(), value);
+              continue;
+            }
+            log.info("got invalid states {}", value);
+            getDocCollection((String) e.getKey(), version, updateHash);
           }
         }
       } catch (Exception exc) {

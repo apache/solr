@@ -42,14 +42,22 @@ public class SolrZooKeeper extends ZooKeeperAdmin {
   private CloseTracker closeTracker;
 
   /**
-   * Test-only, client/reader connections only: when true, {@link #close()} interrupts the ZK SendThread
-   * so the hardcoded {@code Thread.sleep(100)} in {@code ClientCnxnSocketNIO.cleanup()} returns
-   * immediately. The graceful closeSession round-trip is still performed (ephemerals release promptly),
-   * so this is behavior-preserving — it only avoids the wasted ~100ms nap per close. Always false in
-   * production. Restricted to client connections after enabling it server-wide regressed an async
-   * audit-event test.
+   * Test-only, client/reader connections only: when true, {@link #close()} cuts short the hardcoded
+   * {@code Thread.sleep(100)} in {@code ClientCnxnSocketNIO.cleanup()} so close() does not block ~100ms in
+   * {@code sendThread.join()} per connection. The graceful closeSession round-trip is preserved — the
+   * SendThread is interrupted only after a short grace window (see {@link #startSendThreadInterrupter}), so
+   * the close packet has time to be written before the interrupt fires and ephemerals still release
+   * promptly. Always false in production. Restricted to client connections after enabling it server-wide
+   * regressed an async audit-event test.
    */
   private final boolean fastClose;
+
+  /**
+   * Grace window (ms) the fast-close watchdog waits before interrupting the SendThread, leaving time for the
+   * graceful closeSession packet to be written. Comfortably larger than a localhost round-trip yet far
+   * smaller than the 100ms cleanup nap it short-circuits.
+   */
+  private static final long SEND_GRACE_MILLIS = 50;
 
   public SolrZooKeeper(String connectString, int sessionTimeout, Watcher watcher) throws IOException {
     this(connectString, sessionTimeout, watcher, false);
@@ -106,26 +114,59 @@ public class SolrZooKeeper extends ZooKeeperAdmin {
   @Override
   public synchronized void close() {
     assert closeTracker != null ? closeTracker.close() : true;
-    if (fastClose) {
-      // ZooKeeper 3.7.0's ClientCnxnSocketNIO.cleanup() runs a hardcoded Thread.sleep(100) on the
-      // SendThread during shutdown, so close() blocks ~100ms in sendThread.join() per connection. That
-      // sleep catches InterruptedException, so interrupting the SendThread makes it return immediately.
-      // The graceful close (closeSession round-trip) below is otherwise untouched, so ephemerals still
-      // release promptly. Test-only.
-      interruptSendThread();
-    }
+    // Fast-close must NOT interrupt the SendThread before super.close(): super.close() is what queues the
+    // graceful closeSession packet, and interrupting first makes the SendThread abort the write with
+    // ClosedByInterruptException, so the session is dropped instead of closed gracefully and ephemerals
+    // linger until session timeout. Instead start a watchdog that lets the close packet go out, then
+    // interrupts the SendThread only after a short grace window to cut short the 100ms cleanup nap.
+    Thread interrupter = fastClose ? startSendThreadInterrupter() : null;
     try {
       super.close();
     } catch (InterruptedException e) {
-
+      Thread.currentThread().interrupt();
+    } finally {
+      // super.close() returned (the cleanup nap already happened or was interrupted); stop the watchdog so
+      // it does not interrupt an unrelated thread if the SendThread field was reused.
+      if (interrupter != null) {
+        interrupter.interrupt();
+      }
     }
   }
 
-  /** Interrupts the ZK client SendThread so the hardcoded {@code Thread.sleep(100)} in
-   *  {@code ClientCnxnSocketNIO.cleanup()} returns at once (test fast-close path; see {@link #fastClose}). */
-  private void interruptSendThread() {
+  /**
+   * Starts a daemon watchdog that waits {@link #SEND_GRACE_MILLIS} for the graceful closeSession round-trip
+   * to be written, then interrupts the ZK client SendThread if it is still alive so the hardcoded
+   * {@code Thread.sleep(100)} in {@code ClientCnxnSocketNIO.cleanup()} returns at once (test fast-close path;
+   * see {@link #fastClose}). Returns the watchdog thread, or {@code null} if the SendThread could not be
+   * located.
+   */
+  private Thread startSendThreadInterrupter() {
+    final Thread sendThread = findSendThread();
+    if (sendThread == null) {
+      return null;
+    }
+    Thread watchdog = new Thread("SolrZkFastCloseInterrupter") {
+      @Override public void run() {
+        try {
+          sendThread.join(SEND_GRACE_MILLIS);
+        } catch (InterruptedException e) {
+          // close() finished before the grace window elapsed; nothing left to interrupt.
+          return;
+        }
+        if (sendThread.isAlive()) {
+          sendThread.interrupt();
+        }
+      }
+    };
+    watchdog.setDaemon(true);
+    watchdog.start();
+    return watchdog;
+  }
+
+  /** Reflectively locates the ZK client SendThread, or returns {@code null} if it cannot be found. */
+  private Thread findSendThread() {
     try {
-      AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+      return AccessController.doPrivileged((PrivilegedAction<Thread>) () -> {
         try {
           final ClientCnxn c = getConnection();
           if (c != null) {
@@ -133,16 +174,17 @@ public class SolrZooKeeper extends ZooKeeperAdmin {
             sendThreadFld.setAccessible(true);
             final Object sendThread = sendThreadFld.get(c);
             if (sendThread instanceof Thread) {
-              ((Thread) sendThread).interrupt();
+              return (Thread) sendThread;
             }
           }
         } catch (Exception e) {
-          log.debug("fast-close: could not interrupt ZK SendThread; graceful close will proceed", e);
+          log.debug("fast-close: could not locate ZK SendThread; graceful close will proceed", e);
         }
         return null;
       });
     } catch (Throwable t) {
-      log.debug("fast-close: error interrupting ZK SendThread", t);
+      log.debug("fast-close: error locating ZK SendThread", t);
+      return null;
     }
   }
 

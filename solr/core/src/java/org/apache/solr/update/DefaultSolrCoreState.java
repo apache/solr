@@ -160,6 +160,15 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
               "Indexing is temporarily disabled");
     }
+
+    // Reject callers once this SolrCoreState has begun closing. decrefSolrCoreState() sets closed=true
+    // BEFORE calling close()/closeIndexWriter(), so this check fences out a racing getIndexWriter: with
+    // indexWriter != null it would otherwise skip straight to incref() and hand out the very writer
+    // close() is committing/closing (-> AlreadyClosedException / partial commit); with indexWriter == null
+    // it would reopen a brand-new writer on a Directory that close() is releasing.
+    if (closed) {
+      throw new AlreadyClosedException("SolrCoreState already closed");
+    }
     // NOTE: do NOT block on core.readOnly here. Read-only enforcement belongs at the request-processing
     // layer (DistributedZkUpdateProcessor rejects client add/delete/commit on a read-only collection).
     // A recovering replica still has to WRITE to catch up -- it applies PeerSync/replayed updates
@@ -242,7 +251,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       try {
         acquired = lock.tryLock() || lock.tryLock(100, TimeUnit.MILLISECONDS);
       } catch (InterruptedException e) {
-        log.warn("WARNING - Dangerous interrupt", e);
+        // Restore the interrupt flag and bail out rather than swallowing it and spinning forever (the
+        // next tryLock(100,...) would immediately re-throw, busy-looping). An interrupt here means the
+        // thread is being torn down (e.g. core/container close), so surface it as AlreadyClosedException.
+        Thread.currentThread().interrupt();
+        throw new AlreadyClosedException("Interrupted while acquiring index writer lock", e);
       }
     } while (!acquired);
   }
@@ -315,7 +328,16 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   @Override
   public void closeIndexWriter(SolrCore core, boolean rollback) throws IOException {
     lock(iwLock.writeLock());
-    changeWriter(core, rollback, false,false);
+    // On success the writeLock is intentionally held and released later by openIndexWriter (see base
+    // class javadoc). But if changeWriter throws (e.g. IOException closing the old writer) openIndexWriter
+    // is never reached, so we must release the writeLock here or it leaks permanently and every later
+    // update/commit (which needs the lock) hangs forever.
+    try {
+      changeWriter(core, rollback, false,false);
+    } catch (Throwable t) {
+      iwLock.writeLock().unlock();
+      throw t;
+    }
     // Do not unlock the writeLock in this method.  It will be unlocked by the openIndexWriter call (see base class javadoc)
   }
 
@@ -825,11 +847,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   @Override
   public void close(IndexWriterCloser closer) {
 
-    // we can't lock here without
-    // a blocking race, we should not need to
-    // though
-    // iwLock.writeLock().lock();
-
     log.debug("Closing SolrCoreState refCnt={}", solrCoreStateRefCnt.get());
 
     cancelRecovery(false, true);
@@ -842,10 +859,31 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
     }
 
+    // closeIndexWriter() commits/closes the writer; running it concurrently with an /update thread that
+    // holds the readLock (and is using the same writer) violates the writeLock="changing writers"
+    // invariant -> AlreadyClosedException / partial commit. decrefSolrCoreState() has already set
+    // closed=true before calling us, so getIndexWriter() now rejects NEW callers; here we additionally
+    // try to acquire the writeLock to drain any reader already in-flight. We use a BOUNDED tryLock (not
+    // the original commented-out unconditional writeLock().lock(), which could block close indefinitely
+    // behind a stuck reader -- the "blocking race" the prior author flagged). If we time out we proceed
+    // anyway (residual: a long-running in-flight update could still race the close, but it is bounded and
+    // far safer than either hanging close forever or never locking at all).
+    boolean locked = false;
+    try {
+      locked = iwLock.writeLock().tryLock(10, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    if (!locked) {
+      log.warn("Could not acquire writeLock before closing IndexWriter; proceeding without it");
+    }
+
     try {
       closeIndexWriter(closer);
     } finally {
-      // iwLock.writeLock().unlock();
+      if (locked) {
+        iwLock.writeLock().unlock();
+      }
       IOUtils.closeQuietly(directoryFactory);
     }
 
@@ -927,6 +965,16 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
             // latched true after the first recovery and the doRecovery() "Recovery already running"
             // guard permanently blocked all later recoveries for this core — leaving a replica that
             // lost a leader election (which cancels its in-flight recovery) stranded in BUFFERING.
+            recoveryRunning = false;
+            return false;
+          }
+          // Do not resubmit once we are closing/shutting down. cancelRecovery(prepForClose) on the close
+          // path sets prepForClose=true and nulls recoveryStrat; without this guard an in-flight task
+          // would re-arm recoveryRunning=true and resubmit itself onto the (soon-to-be-shutdown) recovery
+          // executor, racing close. NOTE (needs-coordination with G6-1 / F2 close ordering): the shared
+          // recoveryExecutor is not itself shut down/interrupted here, so a task already submitted before
+          // close still runs; this guard only stops further self-resubmission.
+          if (prepForClose || closed || corecontainer.isShutDown()) {
             recoveryRunning = false;
             return false;
           }

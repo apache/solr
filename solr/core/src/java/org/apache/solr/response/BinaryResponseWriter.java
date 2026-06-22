@@ -120,10 +120,14 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         return null; // null means we completely handled it
       }
       if( o instanceof IndexableField ) {
-        if(schema == null) schema = solrQueryRequest.getSchema();
+        // A StoredField holding a String/numeric value (getCharSequenceValue()==null) reaches here too.
+        // Guard the schema lookup: a request-less Resolver (e.g. streaming export / getParsedResponse)
+        // has solrQueryRequest==null, so blindly calling solrQueryRequest.getSchema() NPEs. DocsStreamer
+        // .getValue tolerates a null SchemaField (falls back to binary/stringValue), so leave sf null.
+        if(schema == null && solrQueryRequest != null) schema = solrQueryRequest.getSchema();
 
         IndexableField f = (IndexableField)o;
-        SchemaField sf = schema.getFieldOrNull(f.name());
+        SchemaField sf = schema == null ? null : schema.getFieldOrNull(f.name());
         try {
           o = DocsStreamer.getValue(sf, f);
         } catch (Exception e) {

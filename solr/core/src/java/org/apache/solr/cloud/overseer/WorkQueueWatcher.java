@@ -112,9 +112,18 @@ public class WorkQueueWatcher extends QueueWatcher {
                 log.error("Exception during overseer queue queue processing", e);
               }
 
-              if (!checkAgain) {
-                running = false;
-                break;
+              // Make the stop-decision under the same lock processEvent uses to set checkAgain / read
+              // running. Unlocked, a checkAgain=true set by processEvent could land between our read here
+              // and our running=false write, leaving checkAgain==true with running==false and nothing
+              // scheduled — the last update (e.g. a final DOWNNODE with no following watch event) stalls.
+              lock.lock();
+              try {
+                if (!checkAgain) {
+                  running = false;
+                  break;
+                }
+              } finally {
+                lock.unlock();
               }
 
             } while (true);

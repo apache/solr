@@ -128,7 +128,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
@@ -947,6 +946,15 @@ public class CoreContainer implements Closeable {
       for (final CoreDescriptor cd : cds) {
         solrCores.removeCoreDescriptor(cd);
       }
+      // Removing the core descriptors alone leaves updateShardHandler/shardHandlerFactory/metricManager/
+      // zkSys initialized but unclosed -- and zkSys may have already created a live ephemeral node in ZK.
+      // A direct load() caller (embedded/test) would otherwise be handed a half-init container that
+      // advertises a live node but hosts no cores. Tear the container back down before rethrowing.
+      try {
+        shutdown();
+      } catch (Exception ce) {
+        log.error("Exception shutting down CoreContainer after failed load", ce);
+      }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Exception in CoreContainer load", e);
     }
 
@@ -1098,6 +1106,21 @@ public class CoreContainer implements Closeable {
       try {
         solrCoreExecutor.awaitTermination(5, TimeUnit.SECONDS);
         break;
+      } catch (InterruptedException e) {
+
+      }
+    }
+
+    // SolrCores.close() (via closeQuietly(solrCores) above) submits the actual core.closeAndWait()
+    // work to solrCoreCloseExecutor, NOT solrCoreExecutor. We must drain it here, before the ParWork
+    // below closes zkSys (-> ZkController -> StatePublisher); otherwise an async core-close runs after
+    // StatePublisher is gone and the replica's final state is published into a dead channel
+    // (NPE/AlreadyClosed) and never lands.
+    solrCoreCloseExecutor.shutdown();
+
+    while (true) {
+      try {
+        if (solrCoreCloseExecutor.awaitTermination(5, TimeUnit.SECONDS)) break;
       } catch (InterruptedException e) {
 
       }
@@ -1678,8 +1701,6 @@ public class CoreContainer implements Closeable {
 //    return ret;
 //  }
 
-  private final AtomicInteger reloadWaiting = new AtomicInteger();
-
   /**
    * Recreates a SolrCore.
    * While the new core is loading, requests will continue to be dispatched to
@@ -1728,8 +1749,6 @@ public class CoreContainer implements Closeable {
       lock = corestate.getReloadLock();
       lock.lock();
       try {
-        reloadWaiting.decrementAndGet();
-
         SolrCore newCore = null;
 
         if (core != null) {
@@ -2098,7 +2117,15 @@ public class CoreContainer implements Closeable {
     CoreDescriptor desc = null;
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
-    core = solrCores.getCoreFromAnyList(name);
+    // getCoreFromAnyList() calls core.open(), which throws AlreadyClosedException if the core began
+    // closing between the map lookup and the open(). getCore's contract is "return null if not
+    // present" (callers use try (SolrCore c = getCore(...)) + null-check), so a concurrent unload/close
+    // racing this lookup must surface as a clean miss, not a spurious AlreadyClosedException to the client.
+    try {
+      core = solrCores.getCoreFromAnyList(name);
+    } catch (AlreadyClosedException e) {
+      return null;
+    }
 
     // If a core is loaded, we're done just return it.
     if (core != null) {
@@ -2122,6 +2149,13 @@ public class CoreContainer implements Closeable {
     if (desc != null && !desc.isLoadOnStartup()) {
       try {
         core = createFromDescriptor(desc, false, false);
+        // createFromDescriptor returns the core holding only its registration reference (refCount 1).
+        // The loaded path above returns via getCoreFromAnyList(), which open()s an extra ref for the
+        // caller. Match that contract here, otherwise the first accessor's try-with-resources close()
+        // decrefs the registration ref to 0 and starts closing a freshly-registered core.
+        if (core != null) {
+          core.open();
+        }
       } catch (Exception e) {
         log.error("Error lazy-loading core {}", name, e);
       }

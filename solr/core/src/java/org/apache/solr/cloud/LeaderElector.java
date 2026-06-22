@@ -618,6 +618,17 @@ public class LeaderElector implements Closeable {
     ExecutorService oldExecutor = this.executor;
     if (oldExecutor != null) {
       oldExecutor.shutdownNow();
+      // shutdownNow interrupts an in-flight leader process but does not join it. Bounded-await its
+      // termination before starting a new one: a task still mid-runLeaderProcess (ephemeral lock /
+      // registration node created but not yet published) would otherwise race the new task over the same
+      // ZK nodes -- and its unwind can cancelElection and delete the very lock the new task just took.
+      try {
+        if (!oldExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+          log.warn("Previous leader election task did not terminate within 10s; proceeding with a new election");
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
     this.executor = new ThreadPoolExecutor(0, 1,
         0L, TimeUnit.MILLISECONDS,

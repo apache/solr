@@ -139,10 +139,14 @@ public class JavabinLoader extends ContentStreamLoader {
   private static void delete(SolrQueryRequest req, UpdateRequest update, UpdateRequestProcessor processor) throws IOException {
     SolrParams params = update.getParams();
     DeleteUpdateCommand delcmd = new DeleteUpdateCommand(req);
+    // commitWithin must survive delcmd.clear() between siblings: clear() resets it to -1, so the
+    // 2nd+ deleteById and every deleteByQuery would otherwise drop the requested commit window.
+    int commitWithin = -1;
     if(params != null) {
-      delcmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+      commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
     }
-    
+    delcmd.commitWithin = commitWithin;
+
     if(update.getDeleteByIdMap() != null) {
       Set<Entry<String,Map<String,Object>>> entries = update.getDeleteByIdMap().entrySet();
       for (Entry<String,Map<String,Object>> e : entries) {
@@ -162,9 +166,10 @@ public class JavabinLoader extends ContentStreamLoader {
         }
         processor.processDelete(delcmd);
         delcmd.clear();
+        delcmd.commitWithin = commitWithin; // re-seed: clear() wiped it
       }
     }
-    
+
     if(update.getDeleteQuery() != null) {
       for (String s : update.getDeleteQuery()) {
         delcmd.query = s;

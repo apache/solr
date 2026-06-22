@@ -203,7 +203,18 @@ public class ZkStateReaderQueue implements Closeable {
             } else {
               log.debug("getAndProcessStateUpdates {}", collection);
               getAndProcessStateUpdates(reader.watchedCollectionStates.get(collection)).thenAcceptAsync(docCollection1 -> {
+                // The collection can be demoted to lazy between the watch event and this drain, in
+                // which case watchedCollectionStates.get returns null and getAndProcessStateUpdates
+                // yields null; passing a null-wrapped ref through is a no-op, so guard it explicitly.
+                if (docCollection1 == null) {
+                  return;
+                }
                 reader.updateWatchedCollection(collection, new ClusterState.CollectionRef(docCollection1));
+              }).exceptionally(t -> {
+                // Mirror the full-fetch branch: without this a failed delta apply is silently
+                // swallowed and the node's view of the collection can go permanently stale.
+                log.error("getAndProcessStateUpdates failed coll={}", collection, t);
+                return null;
               });
             }
           } catch (Exception e) {

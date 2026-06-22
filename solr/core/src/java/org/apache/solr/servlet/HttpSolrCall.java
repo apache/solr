@@ -26,6 +26,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.JsonSchemaValidator;
@@ -81,6 +82,10 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
  **/
 public class HttpSolrCall extends SolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  // E3-6: upper bound on how long a request thread will wait for an in-flight core load before
+  // giving up and routing the request elsewhere (remote/404/503) instead of blocking forever.
+  private static final long CORE_LOADING_WAIT_MS = 30_000L;
 
   protected final SolrDispatchFilter solrDispatchFilter;
   protected final CoreContainer cores;
@@ -140,7 +145,16 @@ public class HttpSolrCall extends SolrCall {
       String csName = request.getCharacterEncoding();
       java.nio.charset.Charset charset = csName != null
           ? java.nio.charset.Charset.forName(csName) : java.nio.charset.StandardCharsets.UTF_8;
-      SolrRequestParsers.parseFormDataContent(request.getInputStream(), Long.MAX_VALUE, charset, copy, false);
+      // D6-1: bound the buffered form-urlencoded read. This consume happens before any core (and thus
+      // its per-core formUploadLimitKB from solrconfig.xml) is resolved, so the configured cap is not
+      // reachable here; SolrRequestParsers.parse() applies it as a Content-Length backstop later.
+      // Passing Long.MAX_VALUE made this an unbounded heap buffer (OOM/DoS): a body cannot legitimately
+      // stream more bytes than its declared Content-Length, so use that as the ceiling when present,
+      // otherwise fall back to an absolute cap (upstream's 2048 KB default form limit) for
+      // chunked/undeclared bodies. parseFormDataContent throws BAD_REQUEST once the limit is exceeded.
+      long declaredLen = request.getContentLengthLong();
+      long maxFormBytes = declaredLen >= 0 ? declaredLen : (2048L << 10);
+      SolrRequestParsers.parseFormDataContent(request.getInputStream(), maxFormBytes, charset, copy, false);
     }
     solrParams = new MultiMapSolrParams(copy);
     // set a request timer which can be reused by requests if needed
@@ -202,10 +216,17 @@ public class HttpSolrCall extends SolrCall {
       solrCore = cores.getCore(origCorename);
 
       if (solrCore == null) {
-        while (true) {
-          final boolean coreLoading = cores.isCoreLoading(origCorename);
-          if (!coreLoading) break;
-          Thread.sleep(250); // nocommit - make efficient
+        // E3-6: bound the wait for an in-flight core load. An unbounded spin parks the request
+        // thread forever on a wedged load and saturates the request pool. Cap the wait; on timeout
+        // fall through with a null core (handled below as remote-route / 503 / 404) rather than
+        // blocking indefinitely.
+        final long deadline = System.currentTimeMillis() + CORE_LOADING_WAIT_MS;
+        while (cores.isCoreLoading(origCorename)) {
+          if (System.currentTimeMillis() > deadline) {
+            log.warn("Timed out waiting for core {} to finish loading", origCorename);
+            break;
+          }
+          Thread.sleep(250);
         }
         solrCore = cores.getCore(origCorename);
       }
@@ -524,8 +545,18 @@ public class HttpSolrCall extends SolrCall {
       // is secured using PKI authentication and the internode request here will contain the
       // original user principal as a payload/header, using which the receiving node should be
       // able to perform the authorization.
+      // E3-2: Only skip authorization on the REMOTEQUERY/FORWARD path for a GENUINE inter-node hop
+      // (Request-Source: internal, i.e. PKI-signed). REMOTEQUERY/FORWARD is also chosen for EXTERNAL
+      // client requests that land on a node holding no local replica; that forward stamps
+      // QoSParams.INTERNAL and is signed as the PKI super-user, so the downstream node skips authz
+      // too. Skipping it here as well would let an external request bypass authorization entirely.
+      // Authorize external proxied requests at this entry node; internal hops keep skipping
+      // (downstream/PKI-secured node performs the authorization).
+      String requestSource = req.getHeader(QoSParams.REQUEST_SOURCE);
+      boolean internalProxyHop = (action == REMOTEQUERY || action == FORWARD)
+          && QoSParams.INTERNAL.equals(requestSource);
       if (cores.getAuthorizationPlugin() != null && shouldAuthorize(cores, path, req)
-          && !(action == REMOTEQUERY || action == FORWARD)) {
+          && !internalProxyHop) {
         Action authorizationAction = authorize(cores, solrReq, req, response);
         if (authorizationAction == RETURN) {
           return authorizationAction;
@@ -557,6 +588,14 @@ public class HttpSolrCall extends SolrCall {
             forwardParams = mp;
           }
           Action a = remoteQuery(req, response, coreUrl + path, solrDispatchFilter.getCores().getUpdateShardHandler().getTheSharedHttpClient().getHttpClient(), forwardParams);
+          // E3-5: a proxied (REMOTEQUERY) request otherwise emits NO audit event, silently omitting
+          // every cross-node-routed request from the audit trail. Record the routing decision here.
+          // (The forward is async, so success/failure of the downstream exchange is audited on the
+          // node that actually executes the request.)
+          if (shouldAudit(cores, EventType.COMPLETED)) {
+            cores.getAuditLoggerPlugin().doAudit(
+                new AuditEvent(EventType.COMPLETED, req, getAuthCtx(solrReq, req, path, getRequestType())));
+          }
           return a;
         case PROCESS:
           final Method reqMethod = Method.getMethod(req.getMethod());
@@ -605,6 +644,12 @@ public class HttpSolrCall extends SolrCall {
               }
             };
 
+            // E3-3: DO NOT re-enable this async hand-off without first fixing the response-write
+            // lifecycle. SolrDispatchFilter.filter() runs call.destroy() (closing solrCore/solrReq)
+            // in its finally as soon as call() returns; deferring writeResponse to an async callback
+            // (here, or the WriteListener path in SolrCall.writeResponse when solr.asyncIO=true)
+            // means the writer touches/releases resources after the core has been torn down
+            // (use-after-free). runWhenFinished is therefore run synchronously below.
             if (req.isAsyncStarted() && handler != null && handler instanceof SearchHandler) {
      //         solrRsp.startAsync();
        //       solrRsp.onFinished(runWhenFinished);
@@ -643,12 +688,16 @@ public class HttpSolrCall extends SolrCall {
 
   public void destroy() {
     try {
+      // Always release the core ref if one was acquired (cores.getCore(..) → open() → +1 refcount),
+      // independent of solrReq. Requests that acquire a core but end with solrReq == null
+      // (HEAD→/select, default-core passthrough, REMOTEQUERY routing) would otherwise leak the
+      // refcount permanently, blocking RELOAD/DELETE/shutdown.
+      IOUtils.closeQuietly(solrCore);
+
       if (solrReq != null) {
         if (log.isTraceEnabled()) {
           log.trace("Closing out SolrRequest: {}", solrReq);
         }
-
-        IOUtils.closeQuietly(solrCore);
 
         IOUtils.closeQuietly(solrReq);
       }

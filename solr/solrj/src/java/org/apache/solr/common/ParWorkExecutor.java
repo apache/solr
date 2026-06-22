@@ -18,7 +18,6 @@ package org.apache.solr.common;
 
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.SolrQTP;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
@@ -71,10 +70,17 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
    // if (workQueue instanceof LinkedTransferQueue) {
       setRejectedExecutionHandler(new AbortPolicy() {
         public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+          // Do NOT block-enqueue onto a pool that is shutting down: the queue would never drain and
+          // the task would be stranded forever. Surface the rejection so callers (e.g. ParWork.close)
+          // run the task inline instead.
+          if (e.isShutdown()) {
+            throw new RejectedExecutionException("Task " + r + " rejected from shut down executor " + e);
+          }
           try {
-            getQueue().put(r);
+            e.getQueue().put(r);
           } catch (InterruptedException e1) {
-
+            Thread.currentThread().interrupt();
+            throw new RejectedExecutionException(e1);
           }
         }
 
@@ -131,11 +137,12 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
       ((SolrThread)Thread.currentThread()).resetName();
       //((SolrThread)Thread.currentThread()).clearExecutor();
     }
- //   JavaBinCodec.THREAD_LOCAL_ARR.remove();
-
-//    for (ThreadLocal tl : SolrQTP.threadLocals) {
-//      tl.remove();
-//    }
+    // NOTE: JavaBinCodec.THREAD_LOCAL_ARR no longer exists in this fork, so that cleanup is gone.
+    // Clear thread-locals registered for cleanup so they are not retained on this pooled thread
+    // between unrelated tasks. SolrQTP.threadLocals is the registry built precisely for this.
+    for (ThreadLocal tl : SolrQTP.threadLocals) {
+      tl.remove();
+    }
     MDCLoggingContext.reset();
   }
 

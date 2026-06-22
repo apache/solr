@@ -99,10 +99,8 @@ public class SolrRequestParsers {
 
   public final static String REQUEST_TIMER_SERVLET_ATTRIBUTE = "org.apache.solr.RequestTimer";
 
-  // Multipart config used to enable Jetty's multipart/form-data parsing on demand (see parse()).
-  // temp dir = default, maxFileSize = unlimited, maxRequestSize = unlimited, fileSizeThreshold = 2MB.
-  private static final MultipartConfigElement MULTIPART_CONFIG =
-      new MultipartConfigElement(null, -1L, -1L, 2097152);
+  // fileSizeThreshold (bytes) above which Jetty spills a multipart file part to a temp file.
+  private static final int MULTIPART_FILE_SIZE_THRESHOLD = 2097152; // 2 MB
 
   //private final HashMap<String,SolrRequestParser> parsers = new HashMap<>();
   private final boolean enableRemoteStreams;
@@ -110,6 +108,17 @@ public class SolrRequestParsers {
  // private StandardRequestParser standard;
   private boolean handleSelect = true;
   private boolean addHttpRequestToContext;
+
+  // Configured upload limits (KB) from solrconfig.xml; Integer.MAX_VALUE means "unlimited".
+  // Stored here so the limits are actually enforced (previously init() dropped them on the floor).
+  private int multipartUploadLimitKB;
+  private int formUploadLimitKB;
+
+  // Multipart config used to enable Jetty's multipart/form-data parsing on demand (see parse()).
+  // Built per-instance from multipartUploadLimitKB so the configured cap is enforced by Jetty:
+  // maxRequestSize is the limit (or -1 = unlimited when not configured); a request exceeding it
+  // makes getParts() throw, preventing unbounded buffering / disk spill (DoS).
+  private MultipartConfigElement multipartConfig;
 
   /**
    * Pass in an xml configuration.  A null configuration will enable
@@ -148,6 +157,12 @@ public class SolrRequestParsers {
   }
 
   private void init(int multipartUploadLimitKB, int formUploadLimitKB) {
+    this.multipartUploadLimitKB = multipartUploadLimitKB;
+    this.formUploadLimitKB = formUploadLimitKB;
+    // -1 = unlimited (Integer.MAX_VALUE sentinel from SolrConfig); otherwise convert KB -> bytes.
+    final long maxRequestSize =
+        multipartUploadLimitKB == Integer.MAX_VALUE ? -1L : ((long) multipartUploadLimitKB) << 10;
+    this.multipartConfig = new MultipartConfigElement(null, -1L, maxRequestSize, MULTIPART_FILE_SIZE_THRESHOLD);
   //  MultipartRequestParser multi = new MultipartRequestParser(multipartUploadLimitKB);
    // RawRequestParser raw = new RawRequestParser();
   //  FormDataRequestParser formdata = new FormDataRequestParser(formUploadLimitKB);
@@ -197,6 +212,9 @@ public class SolrRequestParsers {
     }
 
     HttpRequestContentStream servletStream = null;
+    // Multipart parts (file uploads + form fields) that Jetty may have spilled to temp files; these
+    // must be delete()'d after request handling or the temp files leak until the disk fills (D6-2).
+    Collection<Part> multipartFiles = null;
     if ("multipart/form-data".equalsIgnoreCase(baseType)) {
       // multipart/form-data: simple form fields are request parameters, the file parts are content
       // streams. (Mirrors the upstream MultipartRequestParser.) Adding the raw multipart body as a
@@ -204,9 +222,10 @@ public class SolrRequestParsers {
       // as the unsupported "multipart/form-data" type and 415.
       // Tell Jetty dynamically that we want multipart processing (otherwise getParts() throws
       // "No multipart config for servlet").
-      req.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, MULTIPART_CONFIG);
+      req.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfig);
       Map<String,String[]> fieldParams = new HashMap<>();
-      for (Part part : req.getParts()) {
+      multipartFiles = req.getParts();
+      for (Part part : multipartFiles) {
         if (part.getSubmittedFileName() == null) { // form field, not a file upload
           String value;
           try (InputStream in = part.getInputStream()) {
@@ -227,6 +246,20 @@ public class SolrRequestParsers {
       // Do NOT add it as a content stream -- it would otherwise reach content-stream handlers
       // (e.g. UpdateRequestHandler for commit/optimize/delete) as the unsupported
       // "application/x-www-form-urlencoded" type and 415. (Mirrors the upstream FormDataRequestParser.)
+      //
+      // Enforce the configured formUploadLimitKB by Content-Length (mirrors upstream FormDataRequestParser's
+      // early rejection). NOTE: HttpSolrCall already streamed the body into the param map with no limit, so
+      // this is a backstop that restores the configured cap; the streaming read itself (HttpSolrCall.parse,
+      // currently passing Long.MAX_VALUE) must also pass the limit to bound buffering fully (D6-1).
+      if (formUploadLimitKB != Integer.MAX_VALUE) {
+        long contentLength = req.getContentLengthLong();
+        long maxBytes = ((long) formUploadLimitKB) << 10;
+        if (contentLength > maxBytes) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              "application/x-www-form-urlencoded content length (" + contentLength
+                  + " bytes) exceeds upload limit of " + formUploadLimitKB + " KB");
+        }
+      }
     } else {
       servletStream = new HttpRequestContentStream(req, contentType);
       // Only treat the HTTP request body as a content stream when the request actually carries one.
@@ -238,6 +271,11 @@ public class SolrRequestParsers {
       }
     }
     SolrQueryRequest sreq = buildRequestFrom(core, solrParams, streams, getRequestTimer(req), req);
+
+    // Hand the multipart parts to the request so its close() deletes any temp files Jetty spilled (D6-2).
+    if (multipartFiles != null && sreq instanceof MySolrQueryRequestBase) {
+      ((MySolrQueryRequestBase) sreq).setMultipartFiles(multipartFiles);
+    }
 
     // wt selects the RESPONSE writer, not the request body format. Only fall back to it to label the
     // request body when the client sent no Content-Type at all; otherwise an XML/JSON update body sent
@@ -631,11 +669,36 @@ public class SolrRequestParsers {
   private static class MySolrQueryRequestBase extends SolrQueryRequestBase {
     private final HttpServletRequest req;
     private final SolrCall solrCall;
+    // Multipart parts whose backing temp files must be deleted when the request is closed (D6-2).
+    private Collection<Part> multipartFiles;
 
     public MySolrQueryRequestBase(HttpServletRequest req, SolrCall httpSolrCall, SolrCore core, SolrParams params) {
       super(core, params);
       this.req = req;
       this.solrCall = httpSolrCall;
+    }
+
+    void setMultipartFiles(Collection<Part> multipartFiles) {
+      this.multipartFiles = multipartFiles;
+    }
+
+    @Override public void close() {
+      try {
+        if (multipartFiles != null) {
+          // Delete after request handling has finished (close() is invoked from HttpSolrCall.destroy()),
+          // so the parts are no longer being read. delete() removes the temp file Jetty spilled, if any.
+          for (Part part : multipartFiles) {
+            try {
+              part.delete();
+            } catch (Exception e) {
+              log.warn("Could not delete multipart temp file for part {}", part.getName(), e);
+            }
+          }
+          multipartFiles = null;
+        }
+      } finally {
+        super.close();
+      }
     }
 
     @Override public Principal getUserPrincipal() {

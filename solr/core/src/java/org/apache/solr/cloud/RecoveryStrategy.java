@@ -720,10 +720,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
             // <N" cloud flake). Open a new searcher so the recovered state is searchable before we go
             // ACTIVE. PeerSync is NRT-only here (TLOG replicas skip it above), so this does not touch
             // the TLOG-follower RTG path.
-            openSearcherAfterPeerSync(core);
-
-            // sync success
-            successfulRecovery = true;
+            // If the searcher reopen fails, fall through to replication recovery instead of going
+            // ACTIVE with a stale search view.
+            if (openSearcherAfterPeerSync(core)) {
+              successfulRecovery = true;
+            } else {
+              log.warn("PeerSync succeeded but reopening the searcher failed - falling back to replication recovery.");
+              successfulRecovery = false;
+            }
           } else {
             successfulRecovery = false;
           }
@@ -808,6 +812,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
         if (didReplication) {
           if (isClosed() || core.isClosed() || core.getCoreContainer().isShutDown()) {
             log.info("Bailing on recovery due to close");
+            // Recovery succeeded; only the close raced ahead of publish(ACTIVE). The "<core>_recovering"
+            // marker (set by startRecovering when we published BUFFERING/RECOVERING) is cleared ONLY by
+            // publish(ACTIVE). If we return without clearing it, this fully-caught-up replica keeps the
+            // recoveringTerm flag in ZK, so canBecomeLeader stays false forever and it can never win an
+            // election after restart (E5-3). Clear the marker here on the success-then-close path.
+            clearRecoveringMarkerOnClose(core);
             return false;
           }
           log.info("Updating version bucket highest from index after successful recovery.");
@@ -824,9 +834,17 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
         if (isClosed() || core.isClosed() || core.getCoreContainer().isShutDown()) {
           log.info("Bailing on recovery due to close");
+          // See E5-3 above: recovery completed but close raced publish(ACTIVE); clear the recovering
+          // marker so this caught-up replica is electable on restart.
+          clearRecoveringMarkerOnClose(core);
           return false;
         }
-        zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+        // The index is already caught up; only the ZK state publish remains. A transient publish
+        // failure here used to fall through to successfulRecovery=false and re-run the WHOLE
+        // PeerSync+replication cycle, burning the bounded retry budget for work that was already
+        // done (E5-4). Retry just the publish a few times first; only fall back to the full cycle
+        // if it keeps failing.
+        publishActiveAfterRecovery(core);
         recoveryListener.recovered();
         return true;
       } catch (AlreadyClosedException | RejectedExecutionException e) {
@@ -977,17 +995,72 @@ public class RecoveryStrategy implements Runnable, Closeable {
    * next commit -- leaving an ACTIVE replica serving a stale {@code *:*} view. A soft commit is
    * enough (the recovered docs are already durable in the tlog); it just reopens the searcher.
    */
-  private void openSearcherAfterPeerSync(SolrCore core) {
+  private boolean openSearcherAfterPeerSync(SolrCore core) {
     try (SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
       CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
       cuc.softCommit = true;
       cuc.openSearcher = true;
       cuc.waitSearcher = true;
       core.getUpdateHandler().commit(cuc);
+      return true;
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       log.warn("Could not open a new searcher after PeerSync recovery for core={}", core.getName(), e);
+      return false;
     }
+  }
+
+  /**
+   * Recovery completed but a concurrent close raced ahead of {@code publish(ACTIVE)}, which is the
+   * only place the "&lt;core&gt;_recovering" term marker (set by startRecovering) is normally cleared.
+   * Mirror that completion logic here so a fully-caught-up replica does not keep the recoveringTerm
+   * flag in ZK — otherwise canBecomeLeader stays false and it can never win an election after
+   * restart (E5-3). Best-effort: failures are logged, not propagated, since we are already closing.
+   */
+  private void clearRecoveringMarkerOnClose(SolrCore core) {
+    if (replicaType == Replica.Type.PULL) {
+      return; // PULL terms are not tracked
+    }
+    try {
+      CoreDescriptor cd = core.getCoreDescriptor();
+      ZkShardTerms shardTerms = zkController.getShardTerms(cd.getCollectionName(),
+          cd.getCloudDescriptor().getShardId());
+      if (shardTerms.isRecovering(coreName)) {
+        // setTermEqualsToLeader (not doneRecovering) so the term tracks any leader advance during
+        // recovery, matching the normal publish(ACTIVE) completion path in ZkController.
+        shardTerms.setTermEqualsToLeader(coreName);
+      }
+    } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
+      log.warn("Could not clear recovering term marker on close for core={}", coreName, e);
+    }
+  }
+
+  /**
+   * Publish ACTIVE after a successful recovery, retrying a transient ZK publish failure a bounded
+   * number of times. The index is already caught up at this point, so a failed publish should not
+   * discard the recovery and re-run the entire PeerSync+replication cycle (E5-4). AlreadyClosed /
+   * RejectedExecution and the close flag are propagated/honored so shutdown is not retried over.
+   */
+  private void publishActiveAfterRecovery(SolrCore core) throws Exception {
+    final int publishRetries = 3;
+    Exception last = null;
+    for (int i = 0; i < publishRetries; i++) {
+      if (isClosed() || core.isClosed() || core.getCoreContainer().isShutDown()) {
+        throw new AlreadyClosedException();
+      }
+      try {
+        zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+        return;
+      } catch (AlreadyClosedException | RejectedExecutionException e) {
+        throw e; // shutdown in progress — let the caller stop, do not retry
+      } catch (Exception e) {
+        last = e;
+        log.warn("Transient failure publishing ACTIVE after recovery (attempt {}/{}), retrying", i + 1, publishRetries, e);
+        Thread.sleep(250);
+      }
+    }
+    throw last; // exhausted publish retries — fall back to the full retry loop
   }
 
   static private void cloudDebugLog(SolrCore core, String op) {

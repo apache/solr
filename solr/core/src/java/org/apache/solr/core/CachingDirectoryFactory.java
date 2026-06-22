@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.solr.common.SolrException;
@@ -85,8 +86,45 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   @Override
   public void close() throws IOException {
     log.debug("Closing CachingDirectoryFactory");
+    // Set closed first so a concurrent get() observes it and refuses to insert a new
+    // Directory. Note: without a shared lock there is a residual race where a get()
+    // already past the closed check can insert after the forEach below; this fork
+    // deliberately removed the refcount/lock machinery, so we accept that narrow
+    // window rather than reintroduce coarse locking.
     closed = true;
-    byPathCache.forEach((s, directory) -> org.apache.solr.common.util.IOUtils.closeQuietly(directory));
+    byPathCache.forEach((s, directory) -> closeWithListeners(directory));
+    byPathCache.clear();
+    byDirCache.clear();
+    closeListeners.clear();
+  }
+
+  /**
+   * Closes the given Directory, invoking any registered {@link CloseListener}s around the
+   * close (pre/post) and removing its listener registration. The closeListeners map was
+   * previously populated by {@link #addCloseListener} but never consumed, so registered
+   * listeners never fired; this is the single place that drains them.
+   */
+  private void closeWithListeners(Directory directory) {
+    List<CloseListener> listeners = closeListeners.remove(directory);
+    if (listeners != null) {
+      for (CloseListener listener : listeners) {
+        try {
+          listener.preClose();
+        } catch (Exception e) {
+          log.error("Error executing preClose for directory {}", directory, e);
+        }
+      }
+    }
+    IOUtils.closeQuietly(directory);
+    if (listeners != null) {
+      for (CloseListener listener : listeners) {
+        try {
+          listener.postClose();
+        } catch (Exception e) {
+          log.error("Error executing postClose for directory {}", directory, e);
+        }
+      }
+    }
   }
 
   @Override
@@ -112,6 +150,13 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   public final Directory get(String path, DirContext dirContext, String rawLockType)
           throws IOException {
     if (log.isTraceEnabled()) log.trace("get(String path={}, DirContext dirContext={}, String rawLockType={}) - start", path, dirContext, rawLockType);
+
+    // Refuse to create/serve a Directory from a factory that is closing or closed,
+    // otherwise we would insert into byPathCache after close() has already drained it
+    // (leaking the freshly-created Directory and its held write lock).
+    if (closed) {
+      throw new AlreadyClosedException("CachingDirectoryFactory is closed");
+    }
 
     String fullPath = normalize(path);
 
@@ -153,16 +198,36 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   @Override
   public void remove(Directory dir) throws IOException {
     String fullPath = byDirCache.remove(dir);
-    IOUtils.closeQuietly(dir);
-    byPathCache.remove(fullPath);
+    if (fullPath != null) {
+      byPathCache.remove(fullPath);
+    } else {
+      // dir was not tracked in byDirCache (e.g. created outside the cache, or the
+      // mapping was already removed). We are about to close it, so make sure no
+      // byPathCache entry still points at this Directory; otherwise a subsequent
+      // get() would return a CLOSED Directory.
+      byPathCache.values().removeIf(cached -> cached == dir);
+    }
+    closeWithListeners(dir);
     if (fullPath != null) {
       remove(fullPath);
     }
   }
 
-  @Override public void release(String fullPath) throws IOException {
+  @Override public void release(String path) throws IOException {
+    // Normalize the key exactly as get() does, otherwise an un-normalized key (e.g. with
+    // a trailing slash) misses the cached entry and leaks the Directory.
+    String fullPath = normalize(path);
     Directory dir = byPathCache.remove(fullPath);
-    byDirCache.remove(dir);
+    if (dir != null) {
+      byDirCache.remove(dir);
+    }
+    // NOTE: the Directory is intentionally NOT closed here. This fork removed the
+    // refcount machinery, so release() has no way to know whether another caller still
+    // holds this Directory; closing it would risk a use-after-close and would drop the
+    // Lucene write lock out from under a live IndexWriter. Residual risk: the evicted
+    // Directory (and its held write lock) is not closed until remove()/close() runs.
+    // Closing here safely would require reinstating per-holder accounting, which is out
+    // of scope for this fix.
   }
 
 

@@ -2107,21 +2107,17 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
             searcherLock.lock();
             try {
-              for (RefCounted<SolrIndexSearcher> searcher : _searchers) {
-                try {
-                  searcher.get().close();
-                } catch (IOException e) {
-                  log.error("", e);
-                }
-                _realtimeSearchers.clear();
+              // Release via decref() (the RefCounted protocol), not raw resource close():
+              // a raw close() would close a SolrIndexSearcher still referenced by an in-flight
+              // query and double-close it later (SolrIndexSearcher.close() is not idempotent).
+              // decref() closes only when the refcount hits 0; the holder's close() removes itself
+              // from the list, so iterate over a snapshot to avoid ConcurrentModificationException.
+              for (RefCounted<SolrIndexSearcher> searcher : new ArrayList<>(_searchers)) {
+                searcher.decref();
               }
               _searchers.clear();
-              for (RefCounted<SolrIndexSearcher> searcher : _realtimeSearchers) {
-                try {
-                  searcher.get().close();
-                } catch (IOException e) {
-                  log.error("", e);
-                }
+              for (RefCounted<SolrIndexSearcher> searcher : new ArrayList<>(_realtimeSearchers)) {
+                searcher.decref();
               }
               _realtimeSearchers.clear();
             } finally {
@@ -3140,6 +3136,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         } catch (Exception e) {
           ParWork.propagateInterrupt(e);
           newSearcherHolder.decref();
+          // register() can throw after _searcher was already pointed at this holder (above).
+          // Null it out so the next registerSearcher() doesn't decref the same holder again
+          // (double-decref -> refcount underflow / premature close).
+          if (_searcher == newSearcherHolder) {
+            _searcher = null;
+          }
           // an exception in register() shouldn't be fatal.
           ParWork.propagateInterrupt(e);
         } finally {

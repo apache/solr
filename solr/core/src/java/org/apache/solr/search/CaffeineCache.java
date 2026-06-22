@@ -150,7 +150,14 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     }
     Cache<K, V> newCache = builder.build();
     if (prev != null) {
-      newCache.putAll(prev.asMap());
+      // putAll bypasses put()/computeIfAbsent(), so account for the copied entries' RAM here.
+      // Otherwise onRemoval() later subtracts bytes that were never added and ramBytes drifts negative.
+      for (Map.Entry<K, V> entry : prev.asMap().entrySet()) {
+        newCache.put(entry.getKey(), entry.getValue());
+        ramBytes.add(RamUsageEstimator.sizeOfObject(entry.getKey(), RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+            RamUsageEstimator.sizeOfObject(entry.getValue(), RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+            RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
+      }
     }
     return newCache;
   }
@@ -231,9 +238,11 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     ParWork.getRootSharedExecutor().submit(()->{
       cache.invalidateAll();
       cache.cleanUp();
+      // Reset AFTER invalidateAll() so that synchronous onRemoval() decrements (when
+      // cleanupThread=false / inline executor) have already fired.  Resetting on the
+      // calling thread races those decrements and can leave ramBytes permanently negative.
+      ramBytes.reset();
     });
-
-    ramBytes.reset();
   }
 
   @Override

@@ -461,6 +461,13 @@ public abstract class SolrCall {
         buffer.limit(outStream.position() + outStream.buffer().wrapAdjustment());
 
         response.setContentLength((int) outStream.size());
+        // DO NOT re-enable this WriteListener async-write path until the destroy()/writeResponse
+        // lifecycle is fixed. It is currently latent because it requires BOTH solr.asyncIO=true
+        // (ASYNC_IO) and solr.asyncDispatchFilter=true (ASYNC, which makes req.isAsyncStarted()
+        // true) — both default false. When enabled, SolrDispatchFilter.filter()'s finally runs
+        // call.destroy() (closing solrCore, releasing the pooled buffer) the instant call() returns,
+        // while this WriteListener defers the buffer write/release to a later Jetty callback →
+        // use-after-free of the pooled Agrona buffer. Synchronous sendContent below is the safe path.
         if (req.isAsyncStarted() && SolrDispatchFilter.ASYNC_IO) {
 
           HttpOutput out = (HttpOutput) response.getOutputStream();
@@ -696,13 +703,20 @@ public abstract class SolrCall {
     if (nodeMatches) {
       core = cores.getCore(replica.getName());
       if (core == null) {
-        while (true) {
-          final boolean coreLoading = cores.isCoreLoading(replica.getName());
-          if (!coreLoading) break;
+        // Bound the wait for a still-loading core (mirrors HttpSolrCall's 30s cap): an unbounded
+        // poll parks the request thread forever on a wedged load and saturates the request pool.
+        // On timeout fall through with whatever getCore returns (possibly null) rather than blocking.
+        final long deadline = System.currentTimeMillis() + 30_000L;
+        while (cores.isCoreLoading(replica.getName())) {
+          if (System.currentTimeMillis() > deadline) {
+            log.warn("Timed out waiting for core {} to finish loading", replica.getName());
+            break;
+          }
           try {
-            Thread.sleep(150); // nocommit - make efficient
+            Thread.sleep(150);
           } catch (InterruptedException interruptedException) {
             ParWork.propagateInterrupt(interruptedException);
+            break;
           }
         }
         core = cores.getCore(replica.getName());

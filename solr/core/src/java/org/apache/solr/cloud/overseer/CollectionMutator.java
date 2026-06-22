@@ -114,7 +114,15 @@ public class CollectionMutator {
     DocCollection coll = clusterState.getCollection(collection);
 
     Map<String, Slice> newSlices = new LinkedHashMap<>(coll.getSlicesMap());
-    newSlices.get(sliceId).getProperties().put("remove", "true");
+    Slice oldSlice = newSlices.get(sliceId);
+    // Build a fresh Slice with a fresh props map rather than mutating the shared, canonical Slice
+    // instance in place: a shallow copy shares Slice instances with the live DocCollection in `cs`,
+    // so stamping remove=true on the shared props would poison a concurrent getClusterState snapshot
+    // (and survive permanently if the structure write later fails).
+    Map<String, Object> newProps = new LinkedHashMap<>(oldSlice.getProperties());
+    newProps.put("remove", "true");
+    Slice newSlice = new Slice(oldSlice.getName(), oldSlice.getReplicasCopy(), newProps, collection, coll.getId());
+    newSlices.put(sliceId, newSlice);
 
     DocCollection newCollection = coll.copyWithSlicesShallow(newSlices);
     return clusterState.copyWith(collection, newCollection);

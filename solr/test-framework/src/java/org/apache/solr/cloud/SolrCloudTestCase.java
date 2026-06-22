@@ -509,7 +509,6 @@ public class SolrCloudTestCase extends SolrTestCase {
     Map<String, Http2SolrClient> clients = new HashMap<>();
     String diag = "";
     boolean loggedWait = false;
-    boolean nudged = false;
     Set<String> recoveryRequested = new HashSet<>();
     try {
       while (true) {
@@ -584,20 +583,6 @@ public class SolrCloudTestCase extends SolrTestCase {
           fail("Replicas failed to converge to " + expectedTotal + " docs for collection=" + collection
               + " within " + timeoutMs + "ms. per-replica counts (distrib=false): [" + diag + "] "
               + dumpShardTerms(collection));
-        }
-        // If replicas stay divergent past a short window, a follower may simply be missing a searcher
-        // reopen for docs it has already applied -- e.g. under heavy load a commit did not reopen its
-        // searcher, or recovery applied updates without committing. Nudge once with a best-effort
-        // distributed commit so such docs become searchable; a genuine doc loss will still fail to
-        // converge. Best-effort: a read-only collection (CollectionsAPIDistributedZkTest) rejects the
-        // commit, which is fine -- there the docs are made visible by the reload, not by this nudge.
-        if (!nudged && System.nanoTime() - startNanos > TimeUnit.SECONDS.toNanos(5)) {
-          nudged = true;
-          try {
-            cluster.getSolrClient().commit(collection);
-          } catch (Exception e) {
-            log.info("waitForAllReplicasDocCount commit nudge skipped for {}: {}", collection, e.toString());
-          }
         }
         // If a follower stays behind its shard leader past a longer window, proactively ask it to
         // recover. Under diverse full-suite load a follower can miss some forwards during collection

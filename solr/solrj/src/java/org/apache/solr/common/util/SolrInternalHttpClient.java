@@ -117,12 +117,21 @@ public class SolrInternalHttpClient extends HttpClient {
       // the time super.doStop() stops the (already-closed) sessions there is no SSL flush left to contend
       // for the lock. AbstractLifeCycle.stop() is idempotent, so super's later stop of the now-STOPPED
       // connector is a no-op.
+      int quiesced = 0;
       for (ClientConnector connector : getContainedBeans(ClientConnector.class)) {
         try {
           connector.stop();
+          quiesced++;
         } catch (Exception e) {
           log.warn("Exception quiescing ClientConnector before HTTP client stop", e);
         }
+      }
+      if (quiesced == 0) {
+        // No ClientConnector bean was found to quiesce first, so the AB-BA deadlock guard above is inert and
+        // super.doStop() will stop the sessions without the selector threads being quiesced. This is not
+        // expected for a started HTTP/2 client; warn so a Jetty bean-registration change does not silently
+        // reintroduce the deadlock.
+        log.warn("No ClientConnector bean found to quiesce before HTTP client stop; deadlock guard inactive");
       }
       super.doStop();
       for (HttpDestination destination : dests.values()) {

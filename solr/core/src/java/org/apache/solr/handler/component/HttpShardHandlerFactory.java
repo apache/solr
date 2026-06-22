@@ -333,6 +333,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     if (numServersToTry < this.permittedLoadBalancerRequestsMinimumAbsolute) {
       numServersToTry = this.permittedLoadBalancerRequestsMinimumAbsolute;
     }
+    // A maximumFraction < 1 with a small replica count floors numServersToTry to 0, which makes
+    // the load balancer try nothing and throw "No live SolrServers". Always try at least one
+    // server when the shard actually has candidate URLs.
+    if (numServersToTry < 1 && !urls.isEmpty()) {
+      numServersToTry = 1;
+    }
     return new LBSolrClient.Req(req, urls, numServersToTry);
   }
 

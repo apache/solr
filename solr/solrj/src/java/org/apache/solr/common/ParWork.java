@@ -423,39 +423,37 @@ public class ParWork implements Closeable {
                 try {
                   future = executor.submit(call);
                 } catch (RejectedExecutionException rejectedExecutionException) {
-                  call.call();
+                  // Pool rejected the task (e.g. shutting down) - run it inline. A failure here
+                  // must NOT abort the submit loop, or the remaining objects in this WorkUnit
+                  // would never be closed (resource leak). Record it like any other close failure.
+                  try {
+                    call.call();
+                  } catch (Throwable t) {
+                    recordException(exception, t);
+                  }
                 }
                 if (future != null) {
                   results.add(future);
                 }
               }
 
-              int i = 0;
               for (Future<Object> future : results) {
                   try {
-
-                    while (true) {
-                      try {
-                        future.get(TIMEOUT, TimeUnit.MILLISECONDS); // MRM TODO: timeout
-                        break;
-                      } catch (InterruptedException e) {
-                        log.warn("ParWork interrupted", e);
-                        break;
-                      }
-                    }
-
+                    future.get(TIMEOUT, TimeUnit.MILLISECONDS); // MRM TODO: timeout
+                  } catch (InterruptedException e) {
+                    // Restore the interrupt flag and record the failure so close() does not return
+                    // as if it succeeded while a close task may still be running. Stop waiting on
+                    // the rest - we are interrupted - but cancel this future first.
+                    Thread.currentThread().interrupt();
+                    log.warn("ParWork interrupted while waiting for close tasks", e);
+                    future.cancel(false);
+                    recordException(exception, e);
+                    break;
                   } catch (Error error) {
                     log.error("Error in ParWork", error);
                     throw error;
                   } catch (Throwable t) {
-                    exception.updateAndGet(throwable -> {
-                      if (throwable == null) {
-                        return t;
-                      } else {
-                        throwable.addSuppressed(t);
-                        return throwable;
-                      }
-                    });
+                    recordException(exception, t);
                   }
                   if (!future.isDone() || future.isCancelled()) {
                     log.warn("A task did not finish isDone={} isCanceled={}", future.isDone(), future.isCancelled(), exception.get());
@@ -540,6 +538,17 @@ public class ParWork implements Closeable {
     return new VirtualExecutorService(name, getRootSharedIOExecutor(), maximumPoolSize, wait);
   }
 
+  private static void recordException(AtomicReference<Throwable> exception, Throwable t) {
+    exception.updateAndGet(throwable -> {
+      if (throwable == null) {
+        return t;
+      } else {
+        throwable.addSuppressed(t);
+        return throwable;
+      }
+    });
+  }
+
   private static void handleObject(AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, Object ob, boolean ignoreExceptions) {
     if (log.isTraceEnabled()) log.trace(
           "handleObject(AtomicReference<Throwable> exception={}, CloseTimeTracker workUnitTracker={}, Object object={}) - start",
@@ -590,6 +599,10 @@ public class ParWork implements Closeable {
       }
     } catch (Throwable t) {
       if (ignoreExceptions) {
+        // By design for the close() path (new ParWork(this, true)): a single failed close must not
+        // abort the rest of teardown nor make close() throw. The failure is intentionally swallowed
+        // but is always made visible here at error level (never silent) so a half-released resource
+        // is diagnosable. Errors (except AssertionError) still propagate.
         log.error("Error handling close for an object: {}", ob.getClass().getSimpleName(), new ObjectReleaseTrackerTestImpl.ObjectTrackerException(t));
         if (t instanceof Error && !(t instanceof AssertionError)) {
           throw (Error) t;

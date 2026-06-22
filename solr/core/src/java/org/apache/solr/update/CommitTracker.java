@@ -260,6 +260,7 @@ public final class CommitTracker implements Runnable, Closeable {
   
   /** Inform tracker that a commit has occurred */
   public void didCommit() {
+    docsSinceCommit.set(0);
   }
   
   /** Inform tracker that a rollback has occurred, cancel any pending commits */
