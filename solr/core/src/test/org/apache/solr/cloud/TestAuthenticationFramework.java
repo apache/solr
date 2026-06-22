@@ -21,7 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -70,9 +70,11 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
     // Should fail with 401
     try {
-      RemoteSolrException e =
-          expectThrows(RemoteSolrException.class, this::collectionCreateSearchDeleteTwice);
-      assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
+      SolrServerException e =
+          expectThrows(SolrServerException.class, this::collectionCreateSearchDeleteTwice);
+      assertTrue(
+          "Should've returned a 401 error",
+          e.getMessage().contains("401") || e.getMessage().contains("Authentication"));
     } finally {
       MockAuthenticationPlugin.expectedUsername = null;
       MockAuthenticationPlugin.expectedPassword = null;

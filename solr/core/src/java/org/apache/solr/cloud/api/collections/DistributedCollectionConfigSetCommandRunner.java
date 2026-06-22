@@ -200,7 +200,7 @@ public class DistributedCollectionConfigSetCommandRunner {
             action, (String) result.get(ConfigSetCmds.BASE_CONFIGSET));
 
     if (log.isInfoEnabled()) {
-      log.info("Running Config Set API locally for " + action + " " + configSetName); // nowarn
+      log.info("Running Config Set API locally for {} {}", action, configSetName);
     }
 
     ConfigSetCommandRunner commandRunner =

@@ -34,13 +34,13 @@ import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
-import org.junit.ClassRule;
+import org.junit.Rule;
 
 @LogLevel("org.eclipse.jetty.client=DEBUG;org.eclipse.jetty.util=DEBUG")
 @SolrTestCaseJ4.SuppressSSL
 public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+  @Rule public SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   public void testSystemPropertyFlag() {
     System.setProperty("solr.http1", "true");
@@ -62,6 +62,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
             .build();
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    System.setProperty("solr.http1", "true");
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
@@ -74,8 +75,6 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
       } catch (RemoteSolrException ignored) {
       }
-    } finally {
-      solrTestRule.reset();
     }
   }
 
@@ -100,8 +99,6 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
       } catch (RemoteSolrException ignored) {
       }
-    } finally {
-      solrTestRule.reset();
     }
   }
 
@@ -118,6 +115,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
 
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    System.setProperty("solr.http1", "true");
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
@@ -133,8 +131,6 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
       } catch (SolrServerException e) {
         // expected
       }
-    } finally {
-      solrTestRule.reset();
     }
   }
 }

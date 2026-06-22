@@ -26,6 +26,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.util.Holder;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.handler.sql.functions.ArrayContainsAll;
 import org.apache.solr.handler.sql.functions.ArrayContainsAny;
@@ -87,7 +88,8 @@ public class CalciteSolrDriver extends Driver {
     if (schemaName == null) {
       throw new SQLException("zk must be set");
     }
-    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache);
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(schemaName);
+    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache, solrConnection);
     rootSchema.add(schemaName, solrSchema);
 
     registerUDFs();

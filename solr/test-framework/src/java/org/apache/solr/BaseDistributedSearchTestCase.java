@@ -50,6 +50,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -173,14 +174,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected volatile JettySolrRunner controlJetty;
-  protected final List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
+  protected final List<HttpSolrClient> clients = Collections.synchronizedList(new ArrayList<>());
   protected final List<JettySolrRunner> jettys = Collections.synchronizedList(new ArrayList<>());
 
   protected volatile String[] deadServers;
   protected volatile String shards;
   protected volatile String[] shardsArr;
   protected volatile Path testDir;
-  protected volatile SolrClient controlClient;
+  protected volatile HttpSolrClient controlClient;
 
   // to stress with higher thread counts and requests, make sure the junit
   // xml formatter is not being used (all output will be buffered before
@@ -451,7 +452,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
-  protected SolrClient createNewSolrClient(int port) {
+  protected HttpSolrClient createNewSolrClient(int port) {
     return getHttpSolrClient(buildUrl(port), DEFAULT_TEST_CORENAME);
   }
 

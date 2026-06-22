@@ -151,6 +151,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         final var unparsedQuery = params.get(queryKey);
         ResponseBuilder rbNew = new ResponseBuilder(rb.req, new SolrQueryResponse(), rb.components);
         rbNew.setQueryString(unparsedQuery);
+        rbNew.setDebug(rb.isDebug());
         super.prepare(rbNew);
         crb.setFilters(rbNew.getFilters());
         crb.responseBuilders.add(rbNew);

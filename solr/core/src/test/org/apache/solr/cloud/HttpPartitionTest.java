@@ -36,7 +36,6 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -83,6 +82,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("solr.retries.on.forward", "0");
     System.setProperty("solr.retries.to.followers", "0");
+    // Keep short so stale PrepRecoveryOp handlers time out within the Jetty graceful stop window
+    System.setProperty("leaderConflictResolveWait", "10000");
   }
 
   public HttpPartitionTest() {
@@ -521,10 +522,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   // Send doc directly to a server (without going through proxy)
   protected int sendDoc(String collectionName, int docId, JettySolrRunner leaderJetty)
       throws IOException, SolrServerException {
-    try (SolrClient solrClient =
-        new HttpSolrClient.Builder(leaderJetty.getBaseUrl().toString()).build()) {
-      return sendDoc(docId, solrClient, collectionName);
-    }
+    return sendDoc(docId, leaderJetty.getSolrClient(), collectionName);
   }
 
   protected int sendDoc(String collectionName, int docId) throws Exception {

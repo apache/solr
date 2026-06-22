@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -43,7 +44,6 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter aliasExpression = factory.getNamedOperand(expression, "aliases");
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
     // Collection Name
     if (null == collectionName) {
@@ -54,8 +54,8 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
               expression));
     }
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
-    // need to count it twice
+    // Validate there are no unknown parameters - solrConnection/zkHost and alias are
+    // namedParameter, so we don't  need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -70,12 +70,8 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
               expression));
     }
 
-    ModifiableSolrParams mParams = new ModifiableSolrParams();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("aliases")) {
-        mParams.add(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    ModifiableSolrParams mParams =
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection", "aliases"));
 
     // Aliases, optional, if provided then need to split
     if (null != aliasExpression
@@ -96,27 +92,9 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
       }
     }
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    if (null == zkHost) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    // We've got all the required items
-    init(collectionName, zkHost, mParams);
+    init(solrConnection, collectionName, mParams);
   }
 
   @Override
@@ -130,7 +108,7 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
     // collection
     expression.addParameter(collection);
 
-    for (Map.Entry<String, String[]> param : params.getMap().entrySet()) {
+    for (Map.Entry<String, String[]> param : params) {
       for (String val : param.getValue()) {
         // SOLR-8409: Escaping the " is a special case.
         // Do note that in any other BASE streams with parameters where a " might come into play
@@ -140,8 +118,8 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
       }
     }
 
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     // aliases
     if (null != fieldMappings && 0 != fieldMappings.size()) {
