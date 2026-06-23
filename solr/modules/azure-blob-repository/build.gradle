@@ -43,6 +43,8 @@ dependencies {
   }
   implementation(libs.azure.identity) {
     exclude group: 'com.azure', module: 'azure-core-http-netty'
+    exclude group: 'com.microsoft.azure', module: 'msal4j-persistence-extension'
+    exclude group: 'net.java.dev.jna', module: 'jna-platform'
   }
   implementation(libs.azure.core) {
     exclude group: 'com.azure', module: 'azure-core-http-netty'

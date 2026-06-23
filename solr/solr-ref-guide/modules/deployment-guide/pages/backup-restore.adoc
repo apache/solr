@@ -836,6 +836,8 @@ This is provided via the `azure-blob-repository` xref:configuration-guide:solr-m
 This plugin supports multiple authentication methods: connection strings, account keys, SAS tokens, and Azure Identity (Managed Identity, Service Principal, Azure CLI).
 For Azure Identity, ensure the identity has the "Storage Blob Data Contributor" role on the storage account.
 
+An example configuration, placed in `solr.xml`, can be seen below:
+
 [source,xml]
 ----
 <backup>
@@ -846,7 +848,7 @@ For Azure Identity, ensure the identity has the "Storage Blob Data Contributor" 
 </backup>
 ----
 
-AzureBlobBackupRepository accepts the following options for configuration:
+AzureBlobBackupRepository accepts the following options (in `solr.xml`) for configuration:
 
 `azure.blob.container.name`::
 +
@@ -942,8 +944,32 @@ Default path prefix within the container for backup storage.
 
 The target container must already exist; it is not created automatically.
 
-==== Known Limitation: Azure Identity and the Security Manager
+==== Azure Identity and the Java Security Manager
 
-Azure Identity authentication (Managed Identity, Service Principal, and `DefaultAzureCredential`) does not work when Solr is started with the Java Security Manager enabled, which is the default (`SOLR_SECURITY_MANAGER_ENABLED=true`).
-To use Azure Identity, set `SOLR_SECURITY_MANAGER_ENABLED=false` before starting Solr.
-The Connection String, Account Key, and SAS Token authentication methods are unaffected and work with the Security Manager enabled.
+Solr enables the Java Security Manager by default (`SOLR_SECURITY_MANAGER_ENABLED=true`).
+The Connection String, Account Key, and SAS Token methods are unaffected.
+Azure Identity behaves as follows:
+
+* Managed Identity and Service Principal (`azure.blob.tenant.id`, `azure.blob.client.id`, `azure.blob.client.secret`) obtain tokens over the network and are not blocked by the Security Manager; they work with the default `security.policy`.
+* The Azure CLI and Azure PowerShell developer credentials in the `DefaultAzureCredential` chain spawn a child process (for example `az`), which the Security Manager blocks with `access denied ("java.io.FilePermission" "/bin/sh" "execute")`.
+
+If you must use the Azure CLI credential (typically only for local development), add the following to `server/etc/security.policy`, adjusting the shell path for your platform:
+
+[source]
+----
+permission java.io.FilePermission "/bin/sh", "execute";
+permission java.io.FilePermission "/dev/null", "read,write";
+----
+
+For production, prefer Managed Identity or a Service Principal. Alternatively, set `SOLR_SECURITY_MANAGER_ENABLED=false` if you depend on the CLI credential.
+
+==== Troubleshooting
+
+`403 Forbidden`::
+Check the SAS token permissions (`srt=sco`, `sp=rwdlac`) or the RBAC role assignment on the storage account.
+
+`Signature did not match`::
+Ensure `&` is escaped as `&amp;` in XML and that the SAS token contains no surrounding whitespace.
+
+`DefaultAzureCredential failed to retrieve a token`::
+Run `az login`, or verify the Service Principal credentials (`azure.blob.tenant.id`, `azure.blob.client.id`, `azure.blob.client.secret`). See the Security Manager limitation above.
