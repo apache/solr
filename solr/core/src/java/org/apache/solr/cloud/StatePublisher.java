@@ -278,12 +278,15 @@ public class StatePublisher implements Closeable {
           }
         });
       } catch (KeeperException.ConnectionLossException e) {
-        log.error("Exception publish state messages", e);
-        // if we use, check for alive
-        //              zkStateReader.getZkClient().getConnectionManager().waitForConnected();
-        //              workQueue.offer(message);
-//        zkStateReader.getZkClient().getConnectionManager().waitForConnected();
-//        workQueue.offer(message);
+        log.error("Exception publish state messages (synchronous ConnectionLoss)", e);
+        // The bulk message was NOT persisted and the async rc-callback never fired for it, so the dedup
+        // records stamped at submitState() time are stale. Drop them — identical to the rc!=0 branch
+        // above — so the 30s dedup window cannot suppress the caller's identical retry of the failed
+        // (non-LEADER) transition; otherwise that transition is lost permanently. Clearing is bounded
+        // and idempotent (any healthy id simply republishes once).
+        synchronized (dedupCache) {
+          dedupCache.clear();
+        }
       }
     }
   }

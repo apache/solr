@@ -99,7 +99,6 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String STRUCTURE_CHANGE_NOTIFIER = "_scn";
-  public static final String STATE_UPDATES = "_statupdates";
 
   private static final Meter docCollLiveUpdateRequests = Metrics.MARKS_METRICS.meter("zkreader_doccollliveupdates_requests");
   private static final Meter stateUpdateNotifications = Metrics.MARKS_METRICS.meter("zkreader_stateupdates_notifications");
@@ -542,6 +541,26 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
           collectionAdded(collection);
         }
 
+        // ADR (finding #7 — deferred, no correctness impact): every node delivers state-plane leaf
+        // changes (deltas/snapshot/manifest) through this single cluster-wide PERSISTENT_RECURSIVE watch
+        // and then filters locally in process(). A scoped design would instead register a per-collection
+        // (or per-shard) data watch when a collectionWatch is added, tear it down on removal, and
+        // re-register on reconnect — so an uninterested node would never be woken for another collection's
+        // leaf change. We deliberately defer that here because:
+        //   1. This watch is load-bearing and multi-purpose: the same recursive subscription also delivers
+        //      collection add/remove (parts.length==2 NodeCreated/NodeDeleted) and structure `_scn` changes.
+        //      Carving state-plane delivery out into scoped subscriptions requires a full watch-lifecycle
+        //      subsystem (add on collectionWatch registration, remove on deregistration, re-add on session
+        //      reconnect, plus lazy-collection handling) with its own failure modes.
+        //   2. The remaining cost for an uninterested node is just CPU, not ZK I/O: process() rejects an
+        //      unwatched collection's leaf event with a single O(1) containsKey on parts[1]
+        //      (watchedCollectionStates / collectionWatches) BEFORE any getData/fetch. No node does
+        //      O(replicas) work for a collection it does not watch.
+        //   3. US-4 already removed the expensive half: a watching node now fetches only the changed
+        //      shard's ring (targeted mode) instead of re-reading every shard, so the N×ZK-read
+        //      amplification this finding was most concerned about is gone. What is left is a per-node
+        //      hashmap lookup on the watcher thread — a micro-optimization, not a correctness or scaling
+        //      cliff — which is why scoped subscriptions are deferred rather than built now.
         zkClient.addWatch(ZkStateReader.COLLECTIONS_ZKNODE, this, AddWatchMode.PERSISTENT_RECURSIVE, true);
 
         refreshAliases(aliasesManager);
@@ -588,15 +607,12 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
           } else if (parts[parts.length - 1].equals("_scn") && (watchedCollectionStates.containsKey(parts[1]) || collectionWatches.containsKey(parts[1]))) {
             String collection = parts[1];
             zkStateReaderQueue.fetchStateUpdates(collection, false);
-          } else if (parts[parts.length - 1].equals(STATE_UPDATES) && (watchedCollectionStates.containsKey(parts[1]) || collectionWatches
-              .containsKey(parts[1]))) {
-            String collection = parts[1];
-            zkStateReaderQueue.fetchStateUpdates(collection, true);
           } else if (isStatePlaneNode(parts[parts.length - 1]) && (watchedCollectionStates.containsKey(parts[1]) || collectionWatches
               .containsKey(parts[1]))) {
-            // PR-3 delta plane node created (ring/snapshot/manifest) — route to the delta apply path.
+            // PR-3 delta plane node created (ring/snapshot/manifest) — route to the delta apply path,
+            // scoped to the changed shard when the path identifies one (finding #2).
             String collection = parts[1];
-            zkStateReaderQueue.fetchStateUpdates(collection, true);
+            zkStateReaderQueue.fetchStateUpdates(collection, shardFromStatePlanePath(parts), true);
           }
           break;
         case NodeDeleted:
@@ -609,14 +625,12 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
             log.debug("NodeDataChanged lastPart={} collection={} watchedCollectionStates={} collectionWatches={} lazyCollectionStates={}", parts[parts.length - 1], parts[1], watchedCollectionStates,
                 collectionWatches, lazyCollectionStates);
           }
-          if (parts[parts.length - 1].equals(STATE_UPDATES) && (watchedCollectionStates.containsKey(parts[1]) || collectionWatches.containsKey(parts[1]))) {
-            String collection = parts[1];
-            zkStateReaderQueue.fetchStateUpdates(collection, true);
-          } else if (isStatePlaneNode(parts[parts.length - 1]) && (watchedCollectionStates.containsKey(parts[1]) || collectionWatches.containsKey(parts[1]))) {
+          if (isStatePlaneNode(parts[parts.length - 1]) && (watchedCollectionStates.containsKey(parts[1]) || collectionWatches.containsKey(parts[1]))) {
             // Delta plane: a per-shard delta ring / snapshot / manifest changed. Re-fetch state
-            // updates (the queue routes to the delta apply path).
+            // updates (the queue routes to the delta apply path), scoped to the changed shard when the
+            // path identifies one (finding #2); a manifest change folds all shards.
             String collection = parts[1];
-            zkStateReaderQueue.fetchStateUpdates(collection, true);
+            zkStateReaderQueue.fetchStateUpdates(collection, shardFromStatePlanePath(parts), true);
           } else if (parts[parts.length - 1].equals("_scn") && (watchedCollectionStates.containsKey(parts[1]) || collectionWatches.containsKey(parts[1]) || lazyCollectionStates.containsKey(parts[1]))) {
             String collection = parts[1];
             zkStateReaderQueue.fetchStateUpdates(collection, false);
@@ -634,6 +648,21 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
   /** True for the delta-plane leaf znode names (PR-3): per-shard {@code deltas}/{@code snapshot} and the {@code manifest}. */
   private static boolean isStatePlaneNode(String lastPart) {
     return "deltas".equals(lastPart) || "snapshot".equals(lastPart) || "manifest".equals(lastPart);
+  }
+
+  /**
+   * The shard name encoded in a per-shard state-plane leaf path (finding #2), or null for the
+   * collection-level {@code manifest} node. Path shapes (after stripping the leading slash and
+   * splitting on {@code /}): {@code collections/<coll>/state/shards/<shard>/deltas} and
+   * {@code .../snapshot} carry the shard at {@code parts[len-2]}; {@code collections/<coll>/state/manifest}
+   * has no shard (a collection-level switch onto the plane, so all shards are folded).
+   */
+  private static String shardFromStatePlanePath(String[] parts) {
+    String lastPart = parts[parts.length - 1];
+    if (("deltas".equals(lastPart) || "snapshot".equals(lastPart)) && parts.length >= 2) {
+      return parts[parts.length - 2];
+    }
+    return null;
   }
 
   private void colectionRemoved(String collection) {
@@ -1753,9 +1782,6 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
     return getCollectionPathRoot(coll) + '/' + STRUCTURE_CHANGE_NOTIFIER;
   }
 
-  public static String getCollectionStateUpdatesPath(String coll) {
-    return getCollectionPathRoot(coll) + '/' + STATE_UPDATES;
-  }
   /**
    * Notify this reader that a local Core is a member of a collection, and so that collection
    * state should be watched.
@@ -2295,8 +2321,16 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
       v.stateWatchers.remove(watcher);
       if (v.canBeRemoved(watchedCollectionStates.size())) {
         log.debug("no longer watch collection {}", collection);
-        LazyCollectionRef docRef = new LazyCollectionRef(collection);
-        lazyCollectionStates.put(collection, docRef);
+        // Only downgrade to a lazy ref for a collection we actually resolved real state for. A
+        // timed-out waitForState on a NON-EXISTENT collection name (e.g. a stale request routed to a
+        // deleted core via SolrCall.getRemoteCoreUrl) would otherwise leave behind a permanent
+        // LazyCollectionRef that can never resolve. That doomed ref lingers in getCollectionRefs() and
+        // makes the next overseer's ZkStateWriter.init fail with NoNode (root cause of the
+        // TestTlogReplica.testKillLeader "Expect new leader" flake). Don't manufacture it for a phantom.
+        if (watchedCollectionStates.containsKey(collection)) {
+          LazyCollectionRef docRef = new LazyCollectionRef(collection);
+          lazyCollectionStates.put(collection, docRef);
+        }
         return null;
       }
       return v;
@@ -2344,7 +2378,7 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
           return newDocState;
         }
 
-        if (newDocState.getZNodeVersion() > v.getZNodeVersion() || (newDocState.getZNodeVersion() == v.getZNodeVersion() && newDocState.getStateUpdatesZkVersion() > v.getStateUpdatesZkVersion())) {
+        if (StatePlaneReader.shouldReplaceWatched(newDocState, v)) {
 
           log.debug("[{}] updateWatchedCollection existing state is {}, replace", v, coll);
           update.set(true);

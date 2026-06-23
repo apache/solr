@@ -257,9 +257,18 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
       client.waitForState("no-such-collection", 10, TimeUnit.MILLISECONDS,
                           (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
     });
-//
-//    await("Watchers for collection should be removed after timeout").atMost(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS)
-//        .until(() -> client.getZkStateReader().getStateWatchers("no-such-collection").isEmpty());
+
+    // waitForState removes its watcher synchronously in a finally block, so the watch must be gone.
+    assertTrue("Watcher for a non-existent collection should be removed after timeout",
+               client.getZkStateReader().getStateWatchers("no-such-collection").isEmpty());
+
+    // Stronger invariant: the timed-out watch must not leave a permanent doomed LazyCollectionRef
+    // behind. Such a phantom ref (for a collection that never existed) lingers in getCollectionRefs()
+    // forever and makes the next overseer's ZkStateWriter.init abort with NoNode -- which leaves a
+    // just-killed shard leaderless (root cause of the TestTlogReplica.testKillLeader
+    // "Expect new leader" flake).
+    assertFalse("waitForState timeout leaked a doomed lazy ref for a non-existent collection",
+                client.getZkStateReader().getCollectionRefs().containsKey("no-such-collection"));
   }
 
   @Test

@@ -190,9 +190,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public DocCollection copy(){
-  //  StateUpdates newStateUpdates = new StateUpdates();
-//    newStateUpdates.setStateUpdatesVersion(stateUpdates.getStateUpdatesVersion());
-//    stateUpdates.forEach((k, v) -> newStateUpdates.put(k, new AtomicInteger(((AtomicInteger)v).get())));
     return new DocCollection(name, getSlicesCopy(), propMap, router, znodeVersion);
   }
 
@@ -316,8 +313,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public String toString() {
     try {
       StringBuilder sb = new StringBuilder(128);
-      sb.append("DocCollection(").append(id).append(':').append(name).append(':').append("v=").append(znodeVersion).append(" u[").
-          append(stateUpdates.getStateUpdatesVersion()).append("]=").append(stateUpdates).append(" shards=").append(slices.size());
+      sb.append("DocCollection(").append(id).append(':').append(name).append(':').append("v=").append(znodeVersion).append(" u=").
+          append(stateUpdates).append(" shards=").append(slices.size());
       for (Slice slice : slices.values()) {
         Replica leader = slice.getLeader(Collections.emptySet());
         sb.append(' ').append(slice.getName())
@@ -477,21 +474,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /**
-   * The {@code StateUpdates} version token for this collection's live state map.
-   *
-   * <p>This is a single, self-contained ordering token. It is NEVER mixed with the delta-plane
-   * per-shard {@code (epoch, seq)} cursor generation (see {@link #getStatePlaneGeneration()}); the two
-   * domains are compared independently by {@link StatePlaneReader#carryForwardStateUpdates}.
-   */
-  public int getStateUpdatesZkVersion() {
-    return stateUpdates.getStateUpdatesVersion();
-  }
-
-  /**
    * Monotone applied-generation of the delta plane's per-shard cursors, or {@code -1} before any
-   * delta has been applied to this collection. This is a separate version domain from
-   * {@link #getStateUpdatesZkVersion()} and must only be compared against another collection's
-   * generation.
+   * delta has been applied to this collection. This is a self-contained version domain and must only
+   * be compared against another collection's generation.
    */
   public int getStatePlaneGeneration() {
     StatePlaneCursors c = statePlaneCursors;
@@ -602,10 +587,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
       sateForReplica.set(state);
     }
-  }
-
-  public void setStateUpdatesZkVersion(int version) {
-    stateUpdates.setStateUpdatesVersion(version);
   }
 
   public void setStateUpdates(StateUpdates<Integer,AtomicInteger> stateUpdates) {

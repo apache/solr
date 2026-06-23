@@ -218,18 +218,36 @@ public class StatePlaneWriter {
                     List<StateDelta> newEntries = new ArrayList<>(ring.entries);
                     newEntries.add(delta);
                     long newBaseSeq = ring.baseSeq;
-                    // Blind-trim hard-safety BACKSTOP only — PR-5 compaction (below, post-append) folds
-                    // the prefix into the snapshot well before ringCap is reached. This fires solely on a
-                    // misconfiguration where compactAfterCount > ringCap, and a reader past the cap rebases
-                    // from the snapshot (which compaction keeps current).
+                    // Hard-safety BACKSTOP only — PR-5 compaction (below, post-append) folds the prefix
+                    // into the snapshot well before ringCap is reached. This fires solely on a
+                    // misconfiguration where compactAfterCount > ringCap. SAFETY (finding #8): a reader
+                    // past the cap rebases from the snapshot, so baseSeq must NEVER advance past a delta
+                    // the snapshot does not durably cover — that would leave an unrecoverable gap between
+                    // snapshot.upToSeq and ring.baseSeq. So fold the committed ring into the snapshot
+                    // FIRST (durable), then clamp the trim to the covered seq; if the fold cannot be made
+                    // durable, retain ALL deltas (no trim) — fail-safe, bounded by the misconfiguration.
                     if (newEntries.size() > ringCap) {
-                        int drop = newEntries.size() - ringCap;
-                        // baseSeq advances to the last dropped delta's seq.
-                        newBaseSeq = newEntries.get(drop - 1).seq;
-                        newEntries = new ArrayList<>(newEntries.subList(drop, newEntries.size()));
-                        log.warn("ring {} exceeded hard cap {} (compactAfterCount {} should be <= ringCap); "
-                                        + "blind-trimmed {} oldest entries (baseSeq->{}).",
-                                deltaPath, ringCap, compactAfterCount, drop, newBaseSeq);
+                        int intendedDrop = newEntries.size() - ringCap;
+                        long intendedBaseSeq = newEntries.get(intendedDrop - 1).seq;
+                        long coveredUpToSeq = foldCommittedRingIntoSnapshot(collPath, coll, shard, ring);
+                        // Never past the snapshot coverage, never past the intended trim point.
+                        long safeBaseSeq = Math.min(intendedBaseSeq, Math.max(ring.baseSeq, coveredUpToSeq));
+                        int safeDrop = 0;
+                        while (safeDrop < intendedDrop && newEntries.get(safeDrop).seq <= safeBaseSeq) {
+                            safeDrop++;
+                        }
+                        if (safeDrop > 0) {
+                            newBaseSeq = newEntries.get(safeDrop - 1).seq;
+                            newEntries = new ArrayList<>(newEntries.subList(safeDrop, newEntries.size()));
+                            log.warn("ring {} exceeded hard cap {} (compactAfterCount {} should be <= ringCap); "
+                                            + "safely trimmed {} snapshot-covered entries (baseSeq->{}).",
+                                    deltaPath, ringCap, compactAfterCount, safeDrop, newBaseSeq);
+                        } else {
+                            log.warn("ring {} exceeded hard cap {} but the snapshot covers no droppable "
+                                            + "prefix (coveredUpToSeq={}); retaining all {} deltas to preserve "
+                                            + "reconstruct-ability.",
+                                    deltaPath, ringCap, coveredUpToSeq, newEntries.size());
+                        }
                     }
 
                     ShardStateLog newRing = new ShardStateLog(
@@ -412,6 +430,40 @@ public class StatePlaneWriter {
             return StateDeltaCodec.decodeStateSnapshot(data);
         } catch (KeeperException.NoNodeException nne) {
             return null;
+        }
+    }
+
+    /**
+     * Durably fold the given <b>committed</b> ring's deltas into the shard snapshot and return the
+     * highest seq the snapshot now covers ({@code ring.lastSeq}), or {@code -1} if the fold could not
+     * be made durable. Unlike {@link #compactShard}, this does NOT trim the ring — the caller (the
+     * hard-cap path in {@link #publish}) owns the single ring write, and must not advance baseSeq past
+     * a delta the snapshot does not cover (finding #8). Best-effort: any ZK failure returns -1 so the
+     * caller retains all deltas rather than risk an unrecoverable gap.
+     *
+     * <p>{@code protected} as a test seam: a subclass returning {@code -1} exercises the fail-safe
+     * (no-trim) branch deterministically without inducing a ZK fault.
+     */
+    protected long foldCommittedRingIntoSnapshot(String collPath, String coll, String shard, ShardStateLog ring) {
+        try {
+            StateSnapshot oldSnap = readSnapshot(collPath, shard);
+            if (oldSnap == null) {
+                oldSnap = new StateSnapshot(-1L, coll, ring.epoch, shard, ring.baseSeq, Collections.emptyMap());
+            }
+            long upToSeq = ring.lastSeq;
+            Map<Integer, Integer> folded = oldSnap.reconstruct(ring.entries);
+            StateSnapshot newSnap = new StateSnapshot(
+                    oldSnap.collectionId, coll, ring.epoch, shard, upToSeq, folded);
+            // Snapshot durable FIRST (single atomic op), exactly as compactShard does, so the caller's
+            // subsequent ring trim can never expose a gap even on a crash between the two writes.
+            writeOrCreate(StatePlanePaths.shardSnapshot(collPath, shard),
+                    StateDeltaCodec.encodeStateSnapshot(newSnap));
+            return upToSeq;
+        } catch (KeeperException | InterruptedException | IOException e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            log.warn("hard-cap snapshot fold failed for {}/{}; retaining un-snapshotted deltas (no trim)",
+                    coll, shard, e);
+            return -1L;
         }
     }
 

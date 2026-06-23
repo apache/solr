@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,7 +45,7 @@ public class ZkStateReaderQueue implements Closeable {
   private static final Meter stateUpdateRequests = Metrics.MARKS_METRICS.meter("zkreader_stateupdates_requests");
   private static final Meter docCollUpdateRequests = Metrics.MARKS_METRICS.meter("zkreader_doccollupdates_requests");
 
-  private final static FetchStateUpdatesRequest TERMINATED = new FetchStateUpdatesRequest(null,null, false);
+  private final static FetchStateUpdatesRequest TERMINATED = new FetchStateUpdatesRequest(null, null, null, false);
   public static final byte[] EMPTY_BYTES = new byte[0];
 
   private final LinkedTransferQueue<FetchStateUpdatesRequest> workQueue = new LinkedTransferQueue<>();
@@ -217,8 +218,22 @@ public class ZkStateReaderQueue implements Closeable {
               });
 
             } else {
-              log.debug("getAndProcessStateUpdates {}", collection);
-              getAndProcessStateUpdates(reader.watchedCollectionStates.get(collection)).thenAcceptAsync(docCollection1 -> {
+              // Targeted-shard delta apply (finding #2): fold ONLY the shards whose delta plane fired,
+              // not every shard of the collection. If any coalesced request carries a null shard (a
+              // manifest event, which is a collection-level switch onto the plane), fall back to the
+              // full delta apply so a freshly-seeded collection still folds all shards.
+              Set<String> targetShards = new HashSet<>();
+              boolean allShardsApply = false;
+              for (FetchStateUpdatesRequest fetch : fetchStateUpdatesRequests) {
+                if (fetch.shard == null) {
+                  allShardsApply = true;
+                  break;
+                }
+                targetShards.add(fetch.shard);
+              }
+              final Set<String> shardsArg = allShardsApply ? null : targetShards;
+              log.debug("getAndProcessStateUpdates {} shards={}", collection, shardsArg);
+              getAndProcessStateUpdates(reader.watchedCollectionStates.get(collection), shardsArg).thenAcceptAsync(docCollection1 -> {
                 // The collection can be demoted to lazy between the watch event and this drain, in
                 // which case watchedCollectionStates.get returns null and getAndProcessStateUpdates
                 // yields null; passing a null-wrapped ref through is a no-op, so guard it explicitly.
@@ -316,7 +331,16 @@ public class ZkStateReaderQueue implements Closeable {
    * {@code (epoch, seq)} delta rings + snapshots.
    */
   public CompletableFuture<DocCollection> getAndProcessStateUpdates(DocCollection docCollection) {
-    return getAndProcessDeltaUpdates(docCollection);
+    return getAndProcessStateUpdates(docCollection, null);
+  }
+
+  /**
+   * Targeted-shard variant (finding #2). {@code targetShards == null} folds every shard (structure
+   * refresh or manifest switch); a non-null set folds only those shards, skipping the per-shard ring
+   * read for every other shard.
+   */
+  public CompletableFuture<DocCollection> getAndProcessStateUpdates(DocCollection docCollection, Set<String> targetShards) {
+    return getAndProcessDeltaUpdates(docCollection, targetShards);
   }
 
   /**
@@ -330,6 +354,16 @@ public class ZkStateReaderQueue implements Closeable {
    * switch onto the plane.
    */
   public CompletableFuture<DocCollection> getAndProcessDeltaUpdates(DocCollection docCollection) {
+    return getAndProcessDeltaUpdates(docCollection, null);
+  }
+
+  /**
+   * Targeted-shard delta-plane apply (finding #2). When {@code targetShards} is non-null, only those
+   * shards' rings are read and folded — every other shard's ring read is skipped — so a delta event on
+   * one shard costs O(1) ZK reads instead of O(shards). A null {@code targetShards} folds all shards
+   * (structure refresh / manifest switch / first seed).
+   */
+  public CompletableFuture<DocCollection> getAndProcessDeltaUpdates(DocCollection docCollection, Set<String> targetShards) {
     stateUpdateRequests.mark();
     try {
       if (docCollection == null) {
@@ -352,6 +386,10 @@ public class ZkStateReaderQueue implements Closeable {
 
       for (Slice slice : docCollection.getSlices()) {
         String shard = slice.getName();
+        if (targetShards != null && !targetShards.contains(shard)) {
+          // finding #2: this shard's delta plane did not fire — skip its ring read entirely.
+          continue;
+        }
         String deltaPath = StatePlanePaths.shardDeltas(collectionPath, shard);
 
         byte[] ringBytes;
@@ -429,7 +467,16 @@ public class ZkStateReaderQueue implements Closeable {
   }
 
   public void fetchStateUpdates(String collection, boolean justStates) {
-    log.debug("add update request to queue for collection={}", collection);
+    fetchStateUpdates(collection, null, justStates);
+  }
+
+  /**
+   * Enqueue a state fetch scoped to a single {@code shard} (finding #2): a delta event on
+   * {@code /state/shards/<shard>/deltas} folds ONLY that shard's ring instead of every shard of the
+   * collection. A null {@code shard} (a manifest event or a structure refresh) folds all shards.
+   */
+  public void fetchStateUpdates(String collection, String shard, boolean justStates) {
+    log.debug("add update request to queue for collection={} shard={}", collection, shard);
 //    if (closed) {
 //      throw new AlreadyClosedException();
 //    }
@@ -439,7 +486,7 @@ public class ZkStateReaderQueue implements Closeable {
       throw new IllegalArgumentException();
     }
 
-    FetchStateUpdatesRequest request = new FetchStateUpdatesRequest(collection,  null, justStates);
+    FetchStateUpdatesRequest request = new FetchStateUpdatesRequest(collection, shard, null, justStates);
 
    // if (!workQueue.tryTransfer(request)) {
       workQueue.put(request);
@@ -511,11 +558,14 @@ public class ZkStateReaderQueue implements Closeable {
 
   static class FetchStateUpdatesRequest {
     final String collection;
+    /** The single shard whose delta plane fired (finding #2), or null for a collection-wide apply. */
+    final String shard;
     volatile CompletableFuture<DocCollection> future;
     final boolean justStates;
 
-    public FetchStateUpdatesRequest(String collection, CompletableFuture<DocCollection> docCollectionCompletableFuture, boolean justStates) {
+    public FetchStateUpdatesRequest(String collection, String shard, CompletableFuture<DocCollection> docCollectionCompletableFuture, boolean justStates) {
       this.collection = collection;
+      this.shard = shard;
       this.future = docCollectionCompletableFuture;
       this.justStates = justStates;
     }

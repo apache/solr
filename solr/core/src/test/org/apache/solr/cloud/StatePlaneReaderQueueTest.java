@@ -16,13 +16,13 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
@@ -39,9 +39,6 @@ import org.apache.solr.common.cloud.StatePlanePaths;
 import org.apache.solr.common.cloud.StatePlaneWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReaderQueue;
-import org.apache.solr.common.util.FastOutputStream;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.zookeeper.CreateMode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,8 +49,7 @@ import org.junit.Test;
  *
  * <ul>
  *   <li>delta plane present ({@code state/manifest} seeded) → snapshot + deltas applied.
- *   <li>plane NOT seeded (no manifest) → reader no-ops, leaving state unchanged (it never reads a
- *       {@code _statupdates} full map for live state).
+ *   <li>plane NOT seeded (no manifest) → reader no-ops, leaving live state unchanged.
  * </ul>
  *
  * <p>Short states (raw): LEADER=1, ACTIVE=2, RECOVERING=4, DOWN=5.
@@ -123,18 +119,37 @@ public class StatePlaneReaderQueueTest extends SolrTestCaseJ4 {
     return new StatePlaneWriter(zkClient, new AlwaysElectedFence(id));
   }
 
-  /** Writes a legacy collection-wide {@code _statupdates} full-map node exactly like the old ZkStateWriter. */
-  private void writeLegacyStateUpdates(String coll, Map<Integer, Integer> updates) throws Exception {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    try (JavaBinCodec codec = new JavaBinCodec()) {
-      codec.marshal(updates, new FastOutputStream(baos));
-    }
-    String path = ZkStateReader.getCollectionStateUpdatesPath(coll);
-    zkClient.makePath(path, baos.toByteArray(), CreateMode.PERSISTENT, true);
-  }
-
   private DocCollection apply(DocCollection dc) throws Exception {
     return queue.getAndProcessStateUpdates(dc).get(10, TimeUnit.SECONDS);
+  }
+
+  private DocCollection apply(DocCollection dc, Set<String> targetShards) throws Exception {
+    return queue.getAndProcessStateUpdates(dc, targetShards).get(10, TimeUnit.SECONDS);
+  }
+
+  /** One ACTIVE-registration slice with the given internal ids (live state arrives via the plane). */
+  private static Slice buildSlice(String collName, String shard, int[] ids) {
+    Map<String, Replica> replicaMap = new LinkedHashMap<>();
+    for (int i = 0; i < ids.length; i++) {
+      Map<String, Object> props = new HashMap<>();
+      props.put(ZkStateReader.NODE_NAME_PROP, "127.0.0.1:898" + i + "_solr");
+      props.put(ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
+      props.put(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name());
+      props.put("id", ids[i]);
+      String replicaName = shard + "_replica_n" + ids[i];
+      Object2ObjectMap<String, Object> pm = new Object2ObjectLinkedOpenHashMap<>(props);
+      replicaMap.put(replicaName, new Replica(replicaName, pm, collName, -1, shard, null));
+    }
+    return new Slice(shard, replicaMap, null, collName, -1);
+  }
+
+  private static DocCollection twoShardCollection(String name, String shardA, int[] idsA, String shardB, int[] idsB) {
+    Map<String, Slice> slices = new HashMap<>();
+    slices.put(shardA, buildSlice(name, shardA, idsA));
+    slices.put(shardB, buildSlice(name, shardB, idsB));
+    Map<String, Object> collProps = new HashMap<>();
+    collProps.put("id", -1L);
+    return new DocCollection(name, slices, collProps, CompositeIdRouter.DEFAULT);
   }
 
   // ---- delta plane seeded -> snapshot + deltas applied ----
@@ -166,19 +181,16 @@ public class StatePlaneReaderQueueTest extends SolrTestCaseJ4 {
     assertNotNull("delta cursors were created", out.getStatePlaneCursorsOrNull());
   }
 
-  // ---- plane NOT seeded (no manifest) -> reader no-ops; a stray _statupdates node is ignored ----
+  // ---- plane NOT seeded (no manifest) -> reader no-ops, leaving live state unchanged ----
 
   @Test
   public void testNoopWhenManifestAbsent() throws Exception {
     final String coll = "fallbackc";
 
-    // No state plane manifest for this collection. A stray legacy _statupdates node must NOT be
-    // applied to live state — the reader switches onto state only via the delta-plane manifest.
+    // No state plane manifest for this collection. The reader switches onto live state only via the
+    // delta-plane manifest, so with no manifest present apply() must be a no-op.
     assertFalse(zkClient.exists(
         StatePlanePaths.manifest(StatePlanePaths.collectionPath(coll))));
-    Map<Integer, Integer> legacy = new HashMap<>();
-    legacy.put(301, ACTIVE);
-    writeLegacyStateUpdates(coll, legacy);
 
     DocCollection dc = collection(coll, "s1", new int[] {301},
         new Replica.State[] {Replica.State.DOWN});
@@ -186,8 +198,67 @@ public class StatePlaneReaderQueueTest extends SolrTestCaseJ4 {
 
     DocCollection out = apply(dc);
 
-    assertEquals("manifest absent -> reader no-op; the stray _statupdates node is never applied",
+    assertEquals("manifest absent -> reader no-op; live state is unchanged",
         Replica.State.DOWN, out.getReplicaById(301).getRawState());
     assertNull("no manifest -> no delta cursors", out.getStatePlaneCursorsOrNull());
+  }
+
+  // ---- finding #2: a targeted-shard apply folds ONLY that shard, then a full apply catches up ----
+
+  @Test
+  public void testTargetedShardApplyFoldsOnlyThatShardThenFullCatchup() throws Exception {
+    final String coll = "targetedc";
+    final int epoch = 3;
+
+    StatePlaneWriter w = writer("e1");
+    Map<Integer, Integer> seedS1 = new HashMap<>();
+    seedS1.put(201, ACTIVE);
+    seedS1.put(202, ACTIVE);
+    Map<Integer, Integer> seedS2 = new HashMap<>();
+    seedS2.put(301, ACTIVE);
+    seedS2.put(302, ACTIVE);
+    w.seedShard(coll, "s1", epoch, seedS1);
+    w.seedShard(coll, "s2", epoch, seedS2);
+    w.writeManifestSeeded(coll, epoch, Arrays.asList("s1", "s2"));
+    // A live LEADER transition on EACH shard.
+    w.publish(coll, "s1", Collections.singletonList(new StateDelta.Entry(202, LEADER)), Collections.emptyList());
+    w.publish(coll, "s2", Collections.singletonList(new StateDelta.Entry(302, LEADER)), Collections.emptyList());
+
+    DocCollection dc = twoShardCollection(coll, "s1", new int[] {201, 202}, "s2", new int[] {301, 302});
+
+    // Targeted apply of ONLY s1: s1's ring is folded, s2's ring is never read.
+    DocCollection out = apply(dc, Collections.singleton("s1"));
+    assertEquals("s1 leader transition applied (targeted shard folded)",
+        Replica.State.LEADER, out.getReplicaById(202).getRawState());
+    assertEquals("s2 NOT folded in a targeted s1 apply -> still registration ACTIVE",
+        Replica.State.ACTIVE, out.getReplicaById(302).getRawState());
+
+    // A subsequent full apply (targetShards == null) catches up s2.
+    DocCollection out2 = apply(out, null);
+    assertEquals("s1 leader stays (idempotent)", Replica.State.LEADER, out2.getReplicaById(202).getRawState());
+    assertEquals("full apply now folds s2's leader transition",
+        Replica.State.LEADER, out2.getReplicaById(302).getRawState());
+  }
+
+  @Test
+  public void testUnknownTargetShardIsNoop() throws Exception {
+    final String coll = "unknownshardc";
+    final int epoch = 2;
+
+    StatePlaneWriter w = writer("e1");
+    Map<Integer, Integer> seed = new HashMap<>();
+    seed.put(401, ACTIVE);
+    seed.put(402, ACTIVE);
+    w.seedShard(coll, "s1", epoch, seed);
+    w.writeManifestSeeded(coll, epoch, Arrays.asList("s1"));
+    w.publish(coll, "s1", Collections.singletonList(new StateDelta.Entry(402, LEADER)), Collections.emptyList());
+
+    DocCollection dc = collection(coll, "s1", new int[] {401, 402},
+        new Replica.State[] {Replica.State.ACTIVE, Replica.State.ACTIVE});
+
+    // Target a shard that does not exist in the collection: no slice matches, nothing is folded.
+    DocCollection out = apply(dc, Collections.singleton("sX"));
+    assertEquals("unknown target shard -> s1 ring not read; leader transition not applied",
+        Replica.State.ACTIVE, out.getReplicaById(402).getRawState());
   }
 }

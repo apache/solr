@@ -23,13 +23,18 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class WorkQueueWatcher extends QueueWatcher {
@@ -41,6 +46,14 @@ public class WorkQueueWatcher extends QueueWatcher {
   private volatile boolean running;
 
   private final ReentrantLock lock = new ReentrantLock();
+
+  /**
+   * Upper bound on how long an item's processing waits for its state-plane append to become durable
+   * before the item is left in the queue for idempotent reprocess (finding #5). The publish itself is
+   * bounded by ZK session/retry limits, so this is a backstop, not the normal completion path.
+   */
+  private static final long DURABLE_APPEND_TIMEOUT_MS =
+      Long.getLong("solr.overseer.queueItemDurabilityTimeoutMs", 30000L);
 
   public WorkQueueWatcher(Overseer overseer, CoreContainer cc) throws KeeperException {
     super(cc, overseer, Overseer.OVERSEER_QUEUE);
@@ -153,6 +166,10 @@ public class WorkQueueWatcher extends QueueWatcher {
 
     Map<String,byte[]> data = zkController.getZkClient().getData(fullPaths);
     Set<Integer> collIds = new HashSet<>();
+    // Per-item durability gate (finding #5): an item is deleted only after the future for the
+    // state-plane append that carries its update completes. Items applied as synchronous structure
+    // changes (already durable) map to an already-completed future.
+    final Map<String,CompletableFuture<Void>> durableByKey = new LinkedHashMap<>();
     data.forEach((key, value) -> {
       Map<Integer,Map<Integer,Integer>> replicaStates = new ConcurrentHashMap<>();
       Map<Integer,List<ZkStateWriter.StateUpdate>> sliceStates = new ConcurrentHashMap<>();
@@ -171,6 +188,8 @@ public class WorkQueueWatcher extends QueueWatcher {
         // the whole batch and (since the item is then not deleted) be reprocessed forever, permanently
         // poisoning the overseer state-update queue.
         applyCollectionStateUpdate(op, message);
+        // Structure changes are applied synchronously via writePendingUpdates().get() — already durable.
+        durableByKey.put(key, CompletableFuture.completedFuture(null));
       } else {
         switch (overseerAction) {
           case STATE:
@@ -211,21 +230,45 @@ public class WorkQueueWatcher extends QueueWatcher {
         }
         overseer.getZkStateWriter().enqueueStateUpdates(replicaStates, sliceStates);
         try {
-          overseer.getZkStateWriter().writeStateUpdates(collIds);
+          // writeStateUpdates enqueues the publish and returns a future that completes once the
+          // delta-plane append is durable. enqueueStateUpdates above already recorded this item's
+          // change in the in-memory map, so the publish this future tracks necessarily carries it.
+          durableByKey.put(key, overseer.getZkStateWriter().writeStateUpdates(collIds));
         } catch (InterruptedException e) {
           log.warn("interrupted", e);
           throw new AlreadyClosedException(e);
         }
       }
-
-      if (!overseer.getTaskZkWriterExecutor().isShutdown()) {
-        try {
-          zkController.getZkClient().delete(key, -1);
-        } catch (Exception e) {
-          log.warn("Failed deleting processed items", e);
-        }
-      }
     });
+
+    // Second pass: delete each queue item only after its update is durably appended to the state plane.
+    // All units were enqueued above, so the ZkStateWriter Worker coalesces them into batched publishes;
+    // we do not serialize one publish per item. On timeout/failure the item is left for reprocess (the
+    // publish is idempotent — it re-reads effective state and suppresses no-ops).
+    for (Map.Entry<String,CompletableFuture<Void>> e : durableByKey.entrySet()) {
+      if (overseer.getTaskZkWriterExecutor().isShutdown()) {
+        break;
+      }
+      final String key = e.getKey();
+      try {
+        e.getValue().get(DURABLE_APPEND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        throw new AlreadyClosedException(ie);
+      } catch (TimeoutException te) {
+        log.warn("state-plane append for queue item {} not durable within {}ms; leaving it for reprocess",
+            key, DURABLE_APPEND_TIMEOUT_MS);
+        continue;
+      } catch (ExecutionException ee) {
+        log.warn("state-plane append for queue item {} failed; leaving it for reprocess", key, ee);
+        continue;
+      }
+      try {
+        zkController.getZkClient().delete(key, -1);
+      } catch (Exception ex) {
+        log.warn("Failed deleting processed items", ex);
+      }
+    }
 
     return collIds;
   }
@@ -333,26 +376,20 @@ public class WorkQueueWatcher extends QueueWatcher {
           }
           String nodeName = (String) entry.getValue();
 
-          Set<String> collections = overseer.getZkStateWriter().getCollections();
-
-          for (String collection : collections) {
-            ClusterState cs = overseer.getZkStateWriter().getClusterstate(collection);
-            if (cs != null) {
-              DocCollection docCollection = cs.getCollectionOrNull(collection);
-              if (docCollection != null) {
-                List<Replica> replicas = docCollection.getReplicas();
-                for (Replica replica : replicas) {
-                  if (replica.getNodeName().equals(nodeName)) {
-                    collIds.add(docCollection.getId());
-                    Map<Integer,Integer> updates = replicaStates.computeIfAbsent(replica.getCollectionId(), k -> new ConcurrentHashMap<>());
-                    if (log.isDebugEnabled()) {
-                      log.debug("add state update id={} {} for collection {}", replica.getInternalId(), state, docCollection.getId());
-                    }
-                    updates.remove(replica.getInternalId());
-                    updates.put(replica.getInternalId(), state);
-                  }
-                }
+          // finding #6: resolve the node's replicas through the ZkStateWriter placement index, so this
+          // scales O(replicas on this node) instead of scanning every collection and every replica. The
+          // index key is the collection id (== Replica.getCollectionId() for replicas in that collection),
+          // matching the prior scan's replicaStates key and collIds entry exactly.
+          for (Map.Entry<Integer,Set<Integer>> ne : overseer.getZkStateWriter().getReplicasOnNode(nodeName).entrySet()) {
+            Integer collId = ne.getKey();
+            collIds.add(collId);
+            Map<Integer,Integer> updates = replicaStates.computeIfAbsent(collId, k -> new ConcurrentHashMap<>());
+            for (Integer internalId : ne.getValue()) {
+              if (log.isDebugEnabled()) {
+                log.debug("add state update id={} {} for collection {}", internalId, state, collId);
               }
+              updates.remove(internalId);
+              updates.put(internalId, state);
             }
           }
           continue;

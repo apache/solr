@@ -27,10 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * {@code Stat.version} (D2). Higher epoch always wins; within an epoch, higher seq wins.
  *
  * <p>{@link #getGeneration()} is a monotone count of applied delta batches, decoupled from ZK
- * {@code Stat.version}. It is surfaced as a SEPARATE version domain via
- * {@link DocCollection#getStatePlaneGeneration()} (never via {@code getStateUpdatesZkVersion()},
- * which stays pure legacy domain) so that the {@code updateWatchedCollection} clobber guard compares
- * delta-plane progress against delta-plane progress only — and is not misled by a ZK
+ * {@code Stat.version}. It is surfaced as a self-contained version domain via
+ * {@link DocCollection#getStatePlaneGeneration()} so that the {@code updateWatchedCollection} clobber
+ * guard compares delta-plane progress against delta-plane progress only — and is not misled by a ZK
  * {@code Stat.version} that permanently outruns logical seq after the first ring compaction fold.
  */
 public final class StatePlaneCursors {

@@ -7,8 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class StateUpdates<I extends Integer, A extends AtomicInteger> extends ConcurrentHashMap {
 
-  private final AtomicInteger stateUpdatesVersion = new AtomicInteger(-1);
-
   public StateUpdates() {
 
   }
@@ -16,14 +14,6 @@ public class StateUpdates<I extends Integer, A extends AtomicInteger> extends Co
 //  public StateUpdates(Map existingUpdates) {
 //    putAll(existingUpdates);
 //  }
-
-  public void setStateUpdatesVersion(int version) {
-    this.stateUpdatesVersion.set(version);
-  }
-
-  public int getStateUpdatesVersion() {
-    return this.stateUpdatesVersion.get();
-  }
 
   // Value-aware hashCode/equals. The values are AtomicInteger, which inherits identity hashCode/equals, and
   // DocCollection.updateState mutates an existing entry in place (sateForReplica.set(state)). With the default

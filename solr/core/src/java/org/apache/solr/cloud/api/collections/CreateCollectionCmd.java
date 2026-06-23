@@ -808,7 +808,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
               ZkStateReader.emptyJson);
           paths.put(getCollectionSCNPath(collection),
               ZkStateReader.emptyJson);
-          paths.put(ZkStateReader.getCollectionStateUpdatesPath(collection), null);
           paths.put(ZkStateReader.getCollectionPropsPath(collection),
               ZkStateReader.emptyJson);
         } catch (Exception e) {

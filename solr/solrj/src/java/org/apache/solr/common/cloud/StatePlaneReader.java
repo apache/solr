@@ -179,45 +179,80 @@ public final class StatePlaneReader {
   }
 
   /**
+   * Replace-gate decision for {@link ZkStateReader#updateWatchedCollection}: should the just-fetched
+   * {@code incoming} collection replace the currently-watched {@code current}?
+   *
+   * <p>Structure version ({@code state.json} {@code znodeVersion}) is the primary key: a strictly
+   * newer structure always wins, a strictly older one never does. The subtle case is EQUAL structure
+   * version, where the only thing that changed is live replica state on the delta plane:
+   * <ul>
+   *   <li>A {@code incoming} that folded the delta plane ({@link DocCollection#getStatePlaneGeneration()}
+   *       {@code >= 0}) read the CURRENT per-shard rings on a full fetch and is authoritative — it must
+   *       win. A fresher fold carrying a just-published {@code LEADER} must not be discarded; if it were,
+   *       a shard that went quiet right after the promotion would show no leader until the next structural
+   *       change (LeaderElectionIntegrationTest single-replica-shard leader loss under load).
+   *   <li>An UN-folded ({@code generation < 0}) bare structure refresh carries only the {@code DOWN}
+   *       baseline; it must NOT replace folded state. {@link #carryForwardStateUpdates} separately
+   *       adopts the previous live state for that case.
+   * </ul>
+   */
+  public static boolean shouldReplaceWatched(DocCollection incoming, DocCollection current) {
+    if (current == null) {
+      return true;
+    }
+    int inV = incoming.getZNodeVersion();
+    int curV = current.getZNodeVersion();
+    if (inV != curV) {
+      return inV > curV;
+    }
+    // Equal structure version: a freshly-folded delta plane is authoritative (read the current rings).
+    if (incoming.getStatePlaneGeneration() >= 0) {
+      return true;
+    }
+    // Un-folded refresh: do not replace the currently-watched (folded) state.
+    return false;
+  }
+
+  /**
    * Carry-forward for the {@code updateWatchedCollection} clobber guard: when {@code prev} (the
    * previously watched collection) is ahead of {@code newState} (a just-fetched structure refresh),
    * adopt {@code prev}'s live {@link StateUpdates} map (and, on the delta plane, its per-shard cursors)
    * so an older {@code state.json}/legacy read cannot regress newer state.
    *
-   * <p>Two strictly single-domain gates run independently — the two version domains are NEVER compared
-   * against each other (MAJOR-1):
-   * <ul>
-   *   <li>(a) Legacy gate — compares legacy ZK {@code Stat.version}
-   *       ({@link DocCollection#getStateUpdatesZkVersion()}). Preserves the original pre-delta behavior
-   *       byte-for-byte; this is the ONLY gate that fires in LEGACY mode.
-   *   <li>(b) Delta-plane gate — compares the per-shard cursor generation
-   *       ({@link DocCollection#getStatePlaneGeneration()}). When {@code prev}'s cursors are ahead it
-   *       adopts {@code prev}'s StateUpdates + cursors, so an older structure/legacy fetch carrying a
-   *       high legacy {@code Stat.version} but no cursors cannot regress newer delta state.
-   * </ul>
-   *
-   * <p>In LEGACY mode both generations are {@code -1}, so gate (b) ({@code -1 > -1}) is always false and
-   * only the original legacy gate runs — byte-for-byte unchanged.
+   * <p>The delta-plane gate compares the per-shard cursor generation
+   * ({@link DocCollection#getStatePlaneGeneration()}). When {@code prev}'s cursors are ahead it adopts
+   * {@code prev}'s StateUpdates + cursors, so an older structure fetch carrying no cursors cannot
+   * regress newer delta state.
    */
   public static void carryForwardStateUpdates(DocCollection newState, DocCollection prev) {
     if (newState == null || prev == null) {
       return;
     }
-    // (a) Legacy-domain carry-forward — preserves the ORIGINAL pre-delta behavior byte-for-byte.
-    if (prev.getStateUpdatesZkVersion() > newState.getStateUpdatesZkVersion()) {
-      newState.setStateUpdates(deepCopy(prev.getStateUpdates()));
-    }
-    // (b) Delta-plane carry-forward — if prev's per-shard cursors are ahead, adopt prev's
-    //     StateUpdates + cursors so an older structure/legacy fetch cannot regress newer delta state.
+    // Delta-plane carry-forward — adopt prev's already-folded StateUpdates + per-shard cursors so
+    //     an UN-folded structure refresh cannot regress newer delta state.
     //
-    //     ONLY within the same collection incarnation. A collection deleted and recreated with the same
-    //     name gets a brand-new delta ring whose seq restarts low under the SAME (unchanged) node epoch.
-    //     The reader's (epoch, seq) cursors only carry meaning within one incarnation, so adopting the
-    //     prior incarnation's far-ahead cursors makes applyRing silently skip every delta of the new
-    //     ring (curSeq <= carried cursor) — leader/active never propagate and the replicas stay stuck
-    //     RECOVERING (TestTlogReplica create-and-wait timeout on every iteration after the first).
+    //     Gated on {@code newState.getStatePlaneGeneration() < 0}: this fires ONLY when newState has no
+    //     per-shard cursors of its own, i.e. it has NOT folded the delta plane (a bare state.json
+    //     structure refresh). Such a refresh carries only the DOWN baseline and genuinely needs prev's
+    //     live state.
+    //
+    //     A newState that DID fold the plane (generation >= 0) read the CURRENT ZK rings and is
+    //     authoritative — it must keep its own freshly-applied state. The previous gate compared the
+    //     two per-INSTANCE generations ({@code prev.gen > newState.gen}); but generation is a monotone
+    //     count that a long-lived prev accumulates from high-activity shards far above a freshly-fetched
+    //     newState's. That let a staler prev (whose own map never contained a low-activity shard's
+    //     leader, because it skipped that id while it was un-seeded) clobber newState's correctly-folded
+    //     leader back to the state.json baseline — the low-activity shard then stayed DOWN forever
+    //     (LeaderElectionIntegrationTest single-replica-shard register timeout under load).
+    //
+    //     Same-incarnation only. A collection deleted and recreated with the same name gets a brand-new
+    //     delta ring whose seq restarts low under the SAME (unchanged) node epoch; adopting the prior
+    //     incarnation's far-ahead cursors would make applyRing silently skip every delta of the new ring
+    //     (curSeq <= carried cursor), so leader/active never propagate (TestTlogReplica create-and-wait
+    //     timeout on every iteration after the first).
     if (sameIncarnation(newState, prev)
-        && prev.getStatePlaneGeneration() > newState.getStatePlaneGeneration()) {
+        && newState.getStatePlaneGeneration() < 0
+        && prev.getStatePlaneGeneration() >= 0) {
       newState.setStateUpdates(deepCopy(prev.getStateUpdates()));
       newState.adoptStatePlaneCursors(prev);
     }
@@ -225,7 +260,7 @@ public final class StatePlaneReader {
 
   /**
    * Deep-copy a {@link StateUpdates} map: fresh map + a NEW {@link AtomicInteger} per entry (value
-   * preserved) and the same version. Carry-forward MUST NOT alias {@code prev}'s map or its
+   * preserved). Carry-forward MUST NOT alias {@code prev}'s map or its
    * AtomicInteger values — {@link DocCollection#updateState} mutates entries in place
    * ({@code sateForReplica.set(state)}), so a shared instance would let an {@code updateState} on the
    * new generation bleed into {@code prev} (still referenced by other in-flight ClusterState
@@ -236,7 +271,6 @@ public final class StatePlaneReader {
     StateUpdates<Integer, AtomicInteger> copy = new StateUpdates<>();
     if (src != null) {
       src.forEach((k, v) -> copy.put((Integer) k, new AtomicInteger(((AtomicInteger) v).get())));
-      copy.setStateUpdatesVersion(src.getStateUpdatesVersion());
     }
     return copy;
   }

@@ -28,12 +28,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
@@ -85,6 +88,16 @@ public class ZkStateWriter {
 
   private final Map<Integer, Map<Integer,Integer>> stateUpdates = new ConcurrentHashMap<>(64);
 
+  /**
+   * collectionId -&gt; the set of replica internalIds whose state changed since the last delta-plane
+   * publish for that collection (finding #1). Every path that mutates {@link #stateUpdates} records the
+   * touched ids here; {@link #writeStateUpdatesInternal} drains the set and publishes a delta carrying
+   * ONLY those replicas (plus writer-computed demotions) instead of the whole collection map. A drain
+   * that finds no entry (e.g. {@link #stop()} / takeover republish) falls back to publishing the full
+   * map, which is always safe — just larger.
+   */
+  private final Map<Integer, Set<Integer>> pendingChangedIds = new ConcurrentHashMap<>(64);
+
 //  Map<Long,List<ZkStateWriter.StateUpdate>> sliceStates = new ConcurrentHashMap<>();
 
   private final Map<Integer,String> idToCollection = new NonBlockingHashMap<>(64);
@@ -97,6 +110,14 @@ public class ZkStateWriter {
 
   private final Map<String,DocCollection> cs = new ConcurrentHashMap<>(64);
 
+  // finding #6: node-down/recovery must scale O(replicas_on_node), not O(all collections * all replicas).
+  // Primary query index: nodeName -> (collectionId -> immutable snapshot of replica internal ids that the
+  // node hosts for that collection). Maintained only on structure changes (the points where a DocCollection
+  // lands in or leaves {@link #cs}), so it can never drift from cluster state.
+  private final Map<String,Map<Integer,Set<Integer>>> nodeReplicas = new ConcurrentHashMap<>(64);
+  // Reverse index: collectionId -> set of node names currently hosting a replica of it. Lets a structure
+  // change find which node entries to refresh/drop for a collection without scanning every node.
+  private final Map<Integer,Set<String>> collectionNodes = new ConcurrentHashMap<>(64);
 
   private final AtomicInteger ID = new AtomicInteger();
 
@@ -266,10 +287,18 @@ public class ZkStateWriter {
     }
   }
 
-  /** Takeover-monotonic seed epoch: the overseer election id when available (else 1 in minimal setups). */
+  /**
+   * Takeover-monotonic seed epoch: the overseer's monotonic ZK election sequence
+   * ({@link Overseer#getElectionSeq()}) — NOT {@link Overseer#getId()} (the node port, which is not
+   * ordered by election recency, so a lower-port node elected later would seed a lower epoch and
+   * order behind a prior overseer's ring). Mirrors {@link OverseerElectionFence#writerId()}, which
+   * already fences on the election sequence. getElectionSeq() is null in minimal test setups (no
+   * election path); fall back to 1 so a seed is still positive and monotonic-enough to win over an
+   * empty plane.
+   */
   private int seedEpoch() {
-    Integer id = overseer.getId();
-    return (id != null && id > 0) ? id : 1;
+    Integer seq = overseer.getElectionSeq();
+    return (seq != null && seq > 0) ? seq : 1;
   }
 
   /**
@@ -362,6 +391,15 @@ public class ZkStateWriter {
         });
 
         return map;
+      });
+
+      // Record the touched ids so the next publish carries only these entries (finding #1). Accumulate
+      // INSIDE compute so the add is atomic against writeStateUpdatesInternal's remove() drain — a
+      // computeIfAbsent()+addAll() could add to an already-drained (orphaned) set and lose the id.
+      pendingChangedIds.compute(collectionId, (k, set) -> {
+        Set<Integer> s = (set == null) ? ConcurrentHashMap.newKeySet() : set;
+        s.addAll(idToStateMap.keySet());
+        return s;
       });
 
       // Single-leader-per-slice invariant. The StateUpdates channel is a flat replicaId->shortState
@@ -641,18 +679,18 @@ public class ZkStateWriter {
           // (often DOWN) baseline. Overlaying via updateState mutates each surviving replica's already-linked
           // AtomicInteger in place (preserving Replica.linkState): ids no longer present in the new structure
           // are skipped (updateState no-ops on absent ids, so tombstone-dropped replicas stay dropped), and
-          // newly-added replicas keep their fresh baseline seed (absent from the current map). The legacy
-          // Stat.version and any delta-plane cursors are carried forward too so the two single-domain version
-          // gates in StatePlaneReader.carryForwardStateUpdates keep ordering correctly across the merge.
+          // newly-added replicas keep their fresh baseline seed (absent from the current map). The
+          // delta-plane cursors are carried forward too so the delta-plane version gate in
+          // StatePlaneReader.carryForwardStateUpdates keeps ordering correctly across the merge.
           currentCollection.getStateUpdates().forEach((id, st) ->
               newCollection.updateState((Integer) id, ((AtomicInteger) st).get()));
-          newCollection.setStateUpdatesZkVersion(currentCollection.getStateUpdatesZkVersion());
           newCollection.adoptStatePlaneCursors(currentCollection);
           log.debug("zkwriter newCollection={} replicas={}", newCollection, newCollection.getReplicas());
           // Demote any leader published before this structure landed (H1), before the collection becomes
           // visible to readers, so the single-leader-per-slice invariant holds atomically at publication.
           drainPendingLeaderDemotions(newCollection);
           cs.put(currentCollection.getName(), newCollection);
+          indexCollection(newCollection);
 
         } else {
           Map<String,Object> newDocProps = new HashMap<>(docCollection.getProps());
@@ -691,6 +729,7 @@ public class ZkStateWriter {
           // Demote any leader published before this structure landed (H1), before publication to cs.
           drainPendingLeaderDemotions(landedCollection);
           cs.put(docCollection.getName(), landedCollection);
+          indexCollection(landedCollection);
         }
 
       } finally {
@@ -919,6 +958,7 @@ public class ZkStateWriter {
 
         DocCollection removed = cs.remove(collection);
         if (removed != null) {
+          deindexCollection(removed.getId());
           stateUpdates.remove(removed.getId());
           idToCollection.remove(removed.getId());
           // The structure for this id will never land now; drop any deferred leader-demotion ids so the
@@ -939,6 +979,64 @@ public class ZkStateWriter {
       log.error("Exception removing collection", e);
 
     }
+  }
+
+  /**
+   * Rebuilds the nodeName-&gt;placement index for a single collection from its authoritative DocCollection.
+   * Called under the per-collection lock right where the collection lands in {@link #cs}, so the index can
+   * never drift from cluster state. Cost is O(replicas in this collection). Per-node value sets are
+   * immutable snapshots and are always replaced wholesale, so concurrent {@link #getReplicasOnNode} reads
+   * are lock-free and consistent. Empty per-node maps are intentionally left in place (a bounded set of
+   * known nodes) to avoid a remove/reinsert race with a concurrent structure change on the same node.
+   */
+  private void indexCollection(DocCollection dc) {
+    final int collId = dc.getId();
+    Map<String,Set<Integer>> newByNode = new HashMap<>();
+    for (Slice slice : dc.getSlices()) {
+      for (Replica r : slice.getReplicas()) {
+        newByNode.computeIfAbsent(r.getNodeName(), k -> new HashSet<>()).add(r.getInternalId());
+      }
+    }
+    Set<String> oldNodes = collectionNodes.get(collId);
+    if (oldNodes != null) {
+      for (String node : oldNodes) {
+        if (!newByNode.containsKey(node)) {
+          Map<Integer,Set<Integer>> perColl = nodeReplicas.get(node);
+          if (perColl != null) {
+            perColl.remove(collId);
+          }
+        }
+      }
+    }
+    for (Map.Entry<String,Set<Integer>> e : newByNode.entrySet()) {
+      nodeReplicas.computeIfAbsent(e.getKey(), k -> new ConcurrentHashMap<>())
+          .put(collId, Set.copyOf(e.getValue()));
+    }
+    collectionNodes.put(collId, Set.copyOf(newByNode.keySet()));
+  }
+
+  /** Drops all node-index entries for a removed collection. Cost is O(nodes that hosted it). */
+  private void deindexCollection(int collId) {
+    Set<String> oldNodes = collectionNodes.remove(collId);
+    if (oldNodes != null) {
+      for (String node : oldNodes) {
+        Map<Integer,Set<Integer>> perColl = nodeReplicas.get(node);
+        if (perColl != null) {
+          perColl.remove(collId);
+        }
+      }
+    }
+  }
+
+  /**
+   * Returns, for a node, the (collectionId -&gt; replica internal ids) it hosts, so node-down/recovery can
+   * mark exactly that node's replicas without scanning every collection (finding #6). The returned map and
+   * its value sets are live/immutable snapshots; callers must not mutate them. Iteration is weakly
+   * consistent (matches the prior cluster-state-snapshot scan's eventual-consistency semantics).
+   */
+  public Map<Integer,Set<Integer>> getReplicasOnNode(String nodeName) {
+    Map<Integer,Set<Integer>> perColl = nodeReplicas.get(nodeName);
+    return perColl == null ? Collections.emptyMap() : perColl;
   }
 
   public Integer getHighestId(String collection) {
@@ -963,16 +1061,61 @@ public class ZkStateWriter {
 
       overseer.getZkController().clearStatePublisher();
 
+      // This ZkStateWriter is a per-node singleton (one Overseer per ZkController, one final ZkStateWriter
+      // per Overseer), so init() runs again every time this node re-wins the overseer election. The Worker
+      // run loop guards on the instance field `terminated`, and stop() enqueues a shared static TERMINATED
+      // sentinel onto the instance `workQueue`. Neither was reset on re-init, so under overseer churn a
+      // stale TERMINATED left in workQueue by a previous incarnation's stop() was polled by the NEW Worker,
+      // which then terminated itself immediately -- leaving a freshly-elected overseer with no running
+      // writer. Replica state updates (e.g. a just-elected shard LEADER) were then enqueued via
+      // workQueue.put but never drained to the delta plane, so readers hung in getLeaderRetry until the
+      // suite timeout (LeaderElectionIntegrationTest under load). Re-establish a clean runnable state
+      // before submitting the new Worker: a new overseer rebuilds all durable state from ZK
+      // (reconcileLeadersFromZk + WorkQueueWatcher onStart + the delta plane), so the in-process hand-off
+      // queue legitimately starts empty.
+      terminated = false;
+      workQueue.clear();
+
       Worker worker = new Worker();
       workerExec = Executors.newSingleThreadExecutor(new SolrNamedThreadFactory("ZKStateWriter", true));
       workerExec.submit(worker);
 
       int[] highId = new int[1];
+      // This ZkStateWriter is a per-node singleton re-init()'d on every overseer re-election; rebuild the
+      // node-placement index from scratch so a prior incarnation's placements cannot linger (finding #6).
+      nodeReplicas.clear();
+      collectionNodes.clear();
+
       Map<String,ClusterState.CollectionRef> collectionRefs = reader.getCollectionRefs();
 
       collectionRefs.forEach((collectionName, docStateRef) -> {
-        DocCollection docState = docStateRef.get(false).join();
+        final DocCollection docState;
+        try {
+          docState = docStateRef.get(false).join();
+        } catch (Exception e) {
+          // getCollectionRefs() is a point-in-time snapshot that can include a lazy ref whose
+          // state.json no longer exists: a collection deleted in the window between the snapshot and
+          // this resolve, or a doomed lazy ref left behind by a timed-out waitForState on a
+          // non-existent collection name (e.g. a stale request routed to a deleted core via
+          // SolrCall.getRemoteCoreUrl). A newly-elected overseer must seed and republish the leader of
+          // every *resolvable* collection; aborting the entire init on one unresolvable ref previously
+          // bricked the takeover -- no LEADER was republished, so a just-killed shard stayed
+          // leaderless until the next overseer change (root cause of the
+          // TestTlogReplica.testKillLeader "Expect new leader" flake). Skip the bad ref, keep seeding.
+          log.warn("ZkStateWriter init skipping collection={} whose state could not be resolved", collectionName, e);
+          return;
+        }
         idToCollection.put(docState.getId(), collectionName);
+        // Register the structure BEFORE reconcileLeadersFromZk/writeStateUpdatesInternal. The latter
+        // submits publishToStatePlane onto the taskZkWriterExecutor, which reads cs.get(collection) to
+        // map replicas to shards. If cs.put ran afterwards the async publish could race ahead, find no
+        // DocCollection, and silently defer the reconciled LEADER (see publishToStatePlane). In a
+        // quiescent cluster (e.g. every other replica just killed) there is no later write to flush that
+        // deferred state, so the just-reconciled leader never reaches the delta plane and readers hang in
+        // getLeaderRetry. submit-happens-before-run on the executor guarantees the async publish observes
+        // this put.
+        cs.put(collectionName, docState);
+        indexCollection(docState);
         if (weAreReplacement) {
           // Overseer-takeover leader reconciliation. A leader-promotion StateUpdate routed to the
           // previous overseer can be lost if that overseer (frequently the same node as the outgoing
@@ -991,8 +1134,6 @@ public class ZkStateWriter {
 //            writeStateUpdatesInternal(Collections.singleton(docState.getId()), 1);
 //          }
         }
-
-        cs.put(collectionName, docState);
 
         if (docState.getId() > highId[0]) {
           highId[0] = docState.getId();
@@ -1038,34 +1179,46 @@ public class ZkStateWriter {
         if (lostLiveNodes.isEmpty()) {
           return false;
         }
-        Set<Map.Entry<String,DocCollection>> entrySet = cs.entrySet();
-        for (Map.Entry<String,DocCollection> entry : entrySet) {
-          DocCollection coll = entry.getValue();
-
-          stateUpdates.compute(coll.getId(), (integer, integerIntegerMap) -> {
+        // finding #6: resolve the affected replicas through the nodeName->placement index so this scales
+        // O(replicas on the lost nodes), not O(all collections * all replicas). Aggregate per collection so
+        // each collection's stateUpdates entry is computed exactly once.
+        Map<Integer,Set<Integer>> downByColl = new HashMap<>();
+        for (String node : lostLiveNodes) {
+          for (Map.Entry<Integer,Set<Integer>> e : getReplicasOnNode(node).entrySet()) {
+            downByColl.computeIfAbsent(e.getKey(), k -> new HashSet<>()).addAll(e.getValue());
+          }
+        }
+        for (Map.Entry<Integer,Set<Integer>> e : downByColl.entrySet()) {
+          final Integer collId = e.getKey();
+          final Set<Integer> downIds = e.getValue();
+          stateUpdates.compute(collId, (integer, integerIntegerMap) -> {
             if (integerIntegerMap == null) {
               return null;
             }
             boolean write = false;
-            for (String node : lostLiveNodes) {
-              List<Replica> replicas = coll.getReplicas(node);
-              for (Replica replica : replicas) {
-                if (log.isDebugEnabled()) {
-                  log.debug("Set an inactive state for replica {} on node {} ...", replica, replica.getNodeName());
-                }
-                // Mark the replica DOWN rather than removing its entry. Removing it left readers with the
-                // last applied state (often ACTIVE/LEADER), and fresh DocCollections fall back to the stale
-                // state.json baseline — so the instant the node rejoined live nodes, the replica looked
-                // ACTIVE to every reader until the RECOVERYNODE update landed, letting waitForState-style
-                // checks race past an in-progress recovery.
-                integerIntegerMap.put(replica.getInternalId(), Replica.State.getShortState(Replica.State.DOWN));
-                write = true;
+            for (Integer internalId : downIds) {
+              if (log.isDebugEnabled()) {
+                log.debug("Set an inactive state for replica id={} on a lost node for collection {} ...", internalId, collId);
               }
+              // Mark the replica DOWN rather than removing its entry. Removing it left readers with the
+              // last applied state (often ACTIVE/LEADER), and fresh DocCollections fall back to the stale
+              // state.json baseline — so the instant the node rejoined live nodes, the replica looked
+              // ACTIVE to every reader until the RECOVERYNODE update landed, letting waitForState-style
+              // checks race past an in-progress recovery.
+              integerIntegerMap.put(internalId, Replica.State.getShortState(Replica.State.DOWN));
+              // Record the downed replica so the publish carries only these DOWN entries (finding #1),
+              // not the whole collection map. Drained by writeStateUpdatesInternal.
+              pendingChangedIds.compute(collId, (k, set) -> {
+                Set<Integer> s = (set == null) ? ConcurrentHashMap.newKeySet() : set;
+                s.add(internalId);
+                return s;
+              });
+              write = true;
             }
             if (write) {
               // Write only this collection's id; a shared growing union across collections re-submitted
               // already-written collections and could write a collection whose DOWN compute() had not run yet.
-              writeStateUpdatesInternal(Collections.singleton(coll.getId()), 1);
+              writeStateUpdatesInternal(Collections.singleton(collId), 1);
             }
             return integerIntegerMap;
           });
@@ -1114,6 +1267,12 @@ public class ZkStateWriter {
         m.put(leaderInternalId, leaderShort);
         return m;
       });
+      // Record the re-asserted leader so the subsequent publish carries only this entry (finding #1).
+      pendingChangedIds.compute(docState.getId(), (k, set) -> {
+        Set<Integer> s = (set == null) ? ConcurrentHashMap.newKeySet() : set;
+        s.add(leaderInternalId);
+        return s;
+      });
       if (log.isDebugEnabled()) {
         log.debug("Leader reconciliation: re-asserted LEADER collection={} shard={} internalId={}",
             collectionName, slice.getName(), leaderInternalId);
@@ -1125,22 +1284,38 @@ public class ZkStateWriter {
     return cs.keySet();
   }
 
-  public void writeStateUpdates(Set<Integer> collIds) throws InterruptedException {
+  /**
+   * Enqueue a delta-plane publish for {@code collIds} and return a future that completes once that
+   * publish is DURABLE in ZooKeeper (finding #5). The Worker coalesces queued units into batched
+   * {@link #writeStateUpdatesInternal} calls and completes every unit's future when its batch's
+   * publish finishes (exceptionally if the publish failed). {@link WorkQueueWatcher} gates the overseer
+   * queue-item delete on this future so an item is never removed before its state is durably appended.
+   */
+  public CompletableFuture<Void> writeStateUpdates(Set<Integer> collIds) throws InterruptedException {
     Set<Integer> workSet = ConcurrentHashMap.newKeySet(collIds.size());
     workSet.addAll(collIds);
-    workQueue.put(workSet);
-//    Set<CompletableFuture> futures = new HashSet<>(collIds.size());
-//    for (Integer collId : collIds) {
-//      CompletableFuture<Object> future = new CompletableFuture<>();
-//      futures.add(future);
-//    }
-//    writeStateUpdatesInternal(collIds, futures);
-//    return futures;
+    CompletableFuture<Void> done = new CompletableFuture<>();
+    workQueue.put(new WriteUnit(workSet, done));
+    return done;
   }
 
   private static final byte VERSION = 2;
 
-  private final static Set<Integer> TERMINATED = new HashSet<>(0);
+  /**
+   * A queued batch of collection ids to publish to the delta plane, paired with a {@code done} future
+   * completed once the publish is durable. The {@link #TERMINATED} sentinel carries null fields.
+   */
+  private static final class WriteUnit {
+    final Set<Integer> collIds;
+    final CompletableFuture<Void> done;
+
+    WriteUnit(Set<Integer> collIds, CompletableFuture<Void> done) {
+      this.collIds = collIds;
+      this.done = done;
+    }
+  }
+
+  private final static WriteUnit TERMINATED = new WriteUnit(null, null);
 
   public void stop() throws InterruptedException {
 
@@ -1154,7 +1329,13 @@ public class ZkStateWriter {
       workerExec.awaitTermination(5000, TimeUnit.MILLISECONDS);
     }
 
-    writeStateUpdatesInternal(stateUpdates.keySet(), 1);
+    // Final flush: publish whatever state is still buffered in the in-memory map and wait (bounded) for
+    // it to be durable, so a clean overseer handoff does not drop the last updates.
+    try {
+      writeStateUpdatesInternal(stateUpdates.keySet(), 1).get(10000, TimeUnit.MILLISECONDS);
+    } catch (ExecutionException | TimeoutException e) {
+      log.warn("ZkStateWriter.stop final state flush did not complete cleanly", e);
+    }
   }
 
   private static class DocAssign {
@@ -1180,26 +1361,20 @@ public class ZkStateWriter {
     }
   }
 
-  private void writeStateUpdatesInternal(Set<Integer> collIds, int tryCnt) {
+  /**
+   * Schedule a per-collection delta-plane publish for each id in {@code collIds} and return a future
+   * that completes once ALL of those publishes have durably appended to ZK (finding #5). Each publish
+   * runs as a {@link CompletableFuture#runAsync} task on the {@code taskZkWriterExecutor}; a task that
+   * throws completes its future exceptionally, which propagates through the aggregate so the queue-item
+   * delete is held back and the item is reprocessed.
+   */
+  private CompletableFuture<Void> writeStateUpdatesInternal(Set<Integer> collIds, int tryCnt) {
     log.debug("writeStateUpdates for {}", collIds);
+    List<CompletableFuture<Void>> futures = new ArrayList<>(collIds.size());
     for (Integer collId : collIds) {
       String collection = idToCollection.get(collId);
 
-//      if (collection == null) {
-//        log.info("could not find id for collection id={} collections={}", collId, getCollections());
-//        if (TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) < 5000) {
-//
-//          try {
-//            writeStateUpdates(Collections.singleton(collId));
-//          } catch (InterruptedException e) {
-//
-//          }
-//
-//        }
-//        continue;
-//      }
-
-      overseer.getTaskZkWriterExecutor().submit(() -> {
+      futures.add(CompletableFuture.runAsync(() -> {
 
         ActionThrottle writeThrottle = stateWriteThrottles.compute(collection, (s, throttle) -> {
           if (throttle == null) {
@@ -1211,14 +1386,28 @@ public class ZkStateWriter {
         writeThrottle.minimumWaitBetweenActions();
         writeThrottle.markAttemptingAction();
 
+        // Drain the changed-id set for this collection (finding #1). Non-null -> publish only those
+        // replicas' current states (the writer computes any stale-leader demotions itself, D5). Null ->
+        // no per-id tracking for this write (stop()/takeover or any untracked caller) -> full-map
+        // republish, which is always safe, just larger.
+        final Set<Integer> changed = pendingChangedIds.remove(collId);
         HashMap<Integer,Integer> javaBinMap = new HashMap<>(16);
         stateUpdates.compute(collId, (id, idToStateMap) -> {
-          log.debug("writeStateUpdates for collection {} updates={}", collId, idToStateMap);
+          log.debug("writeStateUpdates for collection {} updates={} changed={}", collId, idToStateMap, changed);
           if (idToStateMap == null) {
             idToStateMap = new ConcurrentHashMap<>(16);
           }
 
-          javaBinMap.putAll(idToStateMap);
+          if (changed == null) {
+            javaBinMap.putAll(idToStateMap);
+          } else {
+            for (Integer cid : changed) {
+              Integer st = idToStateMap.get(cid);
+              if (st != null) {
+                javaBinMap.put(cid, st);
+              }
+            }
+          }
 
           return idToStateMap;
         });
@@ -1227,12 +1416,13 @@ public class ZkStateWriter {
         // taskZkWriterExecutor, outside any stateUpdates.compute() bin lock.
         stateUpdateWrites.mark();
         publishToStatePlane(collection, javaBinMap);
-      });
+      }, overseer.getTaskZkWriterExecutor()));
     }
 
+    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
   }
 
-  private final LinkedTransferQueue<Set<Integer>> workQueue = new LinkedTransferQueue<>();
+  private final LinkedTransferQueue<WriteUnit> workQueue = new LinkedTransferQueue<>();
 
   private volatile boolean terminated;
   private class Worker implements Runnable {
@@ -1245,7 +1435,7 @@ public class ZkStateWriter {
 
       while (!terminated) {
         try {
-          Set<Integer> message = null;
+          WriteUnit message = null;
           try {
             log.debug("ZkStateWriter worker will poll for 5 seconds");
             message = workQueue.poll(5000, TimeUnit.MILLISECONDS);
@@ -1256,6 +1446,9 @@ public class ZkStateWriter {
             log.warn("state publisher hit exception polling", e);
           }
           Set<Integer> bulkMessage = ConcurrentHashMap.newKeySet();
+          // Futures of every coalesced unit in this batch; completed (or failed) together once the
+          // batch's publish is durable. WorkQueueWatcher gates queue-item deletes on these.
+          List<CompletableFuture<Void>> pendingDone = new ArrayList<>();
           if (message != null) {
             log.debug("Got state message {}", message);
 
@@ -1265,7 +1458,7 @@ public class ZkStateWriter {
               terminated = true;
               pollTime = 0;
             } else {
-              pollTime = bulkMessage(message, bulkMessage);
+              pollTime = bulkMessage(message, bulkMessage, pendingDone);
             }
 
             while (true) {
@@ -1282,7 +1475,7 @@ public class ZkStateWriter {
                   terminated = true;
                   pollTime = 0;
                 } else {
-                  pollTime = bulkMessage(message, bulkMessage);
+                  pollTime = bulkMessage(message, bulkMessage, pendingDone);
                 }
               } else {
                 break;
@@ -1290,8 +1483,25 @@ public class ZkStateWriter {
             }
           }
 
-          if (bulkMessage.size() > 0) {
-            writeStateUpdatesInternal(bulkMessage, 1);
+          if (bulkMessage.size() > 0 || !pendingDone.isEmpty()) {
+            CompletableFuture<Void> batch;
+            try {
+              batch = writeStateUpdatesInternal(bulkMessage, 1);
+            } catch (Throwable t) {
+              log.error("Exception scheduling state-plane publish for {}", bulkMessage, t);
+              batch = new CompletableFuture<>();
+              batch.completeExceptionally(t);
+            }
+            final List<CompletableFuture<Void>> toComplete = pendingDone;
+            batch.whenComplete((v, ex) -> {
+              for (CompletableFuture<Void> d : toComplete) {
+                if (ex == null) {
+                  d.complete(null);
+                } else {
+                  d.completeExceptionally(ex);
+                }
+              }
+            });
           }
 
         } catch (Exception e) {
@@ -1300,8 +1510,11 @@ public class ZkStateWriter {
       }
     }
 
-    private int bulkMessage(Set<Integer> collIds, Set<Integer> bulkColIds) {
-      bulkColIds.addAll(collIds);
+    private int bulkMessage(WriteUnit unit, Set<Integer> bulkColIds, List<CompletableFuture<Void>> pendingDone) {
+      bulkColIds.addAll(unit.collIds);
+      if (unit.done != null) {
+        pendingDone.add(unit.done);
+      }
       return 50;
     }
   }

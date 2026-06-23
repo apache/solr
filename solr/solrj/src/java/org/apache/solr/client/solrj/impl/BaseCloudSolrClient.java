@@ -1045,7 +1045,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
             !requestedCollections.isEmpty()) {
           for (DocCollection ext : requestedCollections) {
             DocCollection latestStateFromZk = getDocCollection(ext.getName(), null, null);
-            if (latestStateFromZk.getZNodeVersion() != ext.getZNodeVersion() || latestStateFromZk.getStateUpdatesZkVersion() != ext.getStateUpdatesZkVersion()) {
+            if (latestStateFromZk.getZNodeVersion() != ext.getZNodeVersion() || latestStateFromZk.getStateUpdates().hashCode() != ext.getStateUpdates().hashCode()) {
               // looks like we couldn't reach the server because the state was stale == retry
               stateWasStale = true;
               // we just pulled state from ZK, so update the cache so that the retry uses it

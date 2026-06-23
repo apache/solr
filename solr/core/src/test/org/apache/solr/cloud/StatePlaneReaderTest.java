@@ -49,9 +49,8 @@ import org.junit.Test;
  * The fork collapses raw LEADER(1) to ACTIVE on {@code published=true} reads — so a promoted leader
  * is simultaneously {@code getRawState()==LEADER} and {@code isActive()==true} (AGENTS.md).
  *
- * <p>The ZK dispatch / migration-fallback path ({@code ZkStateReaderQueue.getAndProcessDeltaUpdates}
- * and the legacy {@code _statupdates} fallback) is covered ZK-backed in
- * {@link StatePlaneReaderQueueTest}.
+ * <p>The ZK dispatch path ({@code ZkStateReaderQueue.getAndProcessDeltaUpdates}) is covered ZK-backed
+ * in {@link StatePlaneReaderQueueTest}.
  */
 public class StatePlaneReaderTest extends SolrTestCaseJ4 {
 
@@ -255,36 +254,31 @@ public class StatePlaneReaderTest extends SolrTestCaseJ4 {
     assertEquals(Replica.State.ACTIVE, leader.getState());
   }
 
-  // ---- 7. cross-domain clobber guard: a high StateUpdates version must NOT regress delta state ----
+  // ---- 7. delta-plane clobber guard: a bare un-folded structure refresh must NOT regress delta state ----
 
   @Test
-  public void testDeltaStateSurvivesHighStateUpdatesVersionRefresh() {
-    // prev: delta-plane driven. Non-empty cursors, LOW generation (1), 101 promoted to LEADER.
+  public void testDeltaStateSurvivesUnfoldedStructureRefresh() {
+    // prev: delta-plane driven (FOLDED). Non-empty cursors (generation >= 0), 101 promoted to LEADER.
     DocCollection prev = collection("c7", "s1", new int[] {101},
         new Replica.State[] {Replica.State.DOWN});
     StatePlaneCursors cursors = prev.getOrCreateStatePlaneCursors();
     cursors.advance("s1", 1, 0);
     StatePlaneReader.applyRing(prev, "s1", ring(1, 0, 1, delta(1, 1, 101, LEADER)), cursors);
     assertEquals(Replica.State.LEADER, raw(prev, 101));
-    assertTrue("prev's delta generation is small (a few applied batches), well below 47",
-        prev.getStatePlaneGeneration() > 0 && prev.getStatePlaneGeneration() < 47);
-    assertEquals("prev has no StateUpdates version set (delta-plane driven)",
-        -1, prev.getStateUpdatesZkVersion());
+    assertTrue("prev folded the delta plane (generation >= 0)", prev.getStatePlaneGeneration() >= 0);
 
-    // fresh: a stale structure refresh with a HIGH StateUpdates version (47) but NO cursors.
-    // Pre-fix this high int out-competed the small delta generation and clobbered LEADER->DOWN.
+    // fresh: an UN-FOLDED bare structure refresh (published DOWN, no cursors) for the SAME collection.
+    // Without the delta-plane clobber guard this stale fetch would drop the newer LEADER state.
     DocCollection fresh = collection("c7", "s1", new int[] {101},
         new Replica.State[] {Replica.State.DOWN});
-    fresh.setStateUpdatesZkVersion(47);
-    assertEquals("fresh carries a high StateUpdates version", 47, fresh.getStateUpdatesZkVersion());
-    assertEquals("fresh has no delta-plane cursors", -1, fresh.getStatePlaneGeneration());
+    assertEquals("fresh has no delta-plane cursors (un-folded)", -1, fresh.getStatePlaneGeneration());
     assertEquals(Replica.State.DOWN, raw(fresh, 101));
 
     StatePlaneReader.carryForwardStateUpdates(fresh, prev);
 
-    // Gate (a) StateUpdates-version domain: prev(-1) > fresh(47) is FALSE -> no carry.
-    // Gate (b) delta domain:                prev(1)  > fresh(-1) is TRUE  -> adopt prev's StateUpdates + cursors.
-    assertEquals("delta LEADER state survives the high-version refresh (no cross-domain clobber)",
+    // Gate (b) delta domain: prev folded (gen >= 0), fresh un-folded (gen < 0) -> adopt prev's
+    // StateUpdates + cursors so the bare refresh cannot regress the freshly-folded LEADER.
+    assertEquals("delta LEADER state survives the un-folded structure refresh",
         Replica.State.LEADER, raw(fresh, 101));
     assertNotNull("prev's delta cursors carried forward", fresh.getStatePlaneCursorsOrNull());
     assertEquals("prev's delta generation carried forward",
@@ -328,5 +322,110 @@ public class StatePlaneReaderTest extends SolrTestCaseJ4 {
     // Cursor still advances to the ring head (catch-up limitation documented in production code).
     assertEquals("cursor at the ring head epoch", 2L, cursors.get("s1")[0]);
     assertEquals("cursor at the ring head seq", 7L, cursors.get("s1")[1]);
+  }
+
+  // ---- 9. a folded structure refresh must NOT be clobbered by a staler prev whose per-instance
+  //         generation merely happens to be higher (low-activity shard leader survives catch-up) ----
+
+  @Test
+  public void testFoldedRefreshNotClobberedByStalerPrevGeneration() {
+    // Reproduces the LeaderElectionIntegrationTest low-activity-shard hang. A single-replica shard
+    // (s2, id=2) publishes exactly ONE delta (2 -> LEADER) while id=2 is still un-seeded in the
+    // reader's state.json structure. The previously-watched collection (prev) folds that ring while
+    // id=2 is absent, so prev SKIPS id=2 (its live map never gains the key) yet its per-instance
+    // generation keeps climbing from a high-activity shard (s1). When structure finally seeds id=2, a
+    // FRESH full-fetch folds 2 -> LEADER correctly and is authoritative. Pre-fix, carry-forward
+    // wholesale-overwrote that freshly-folded map with prev's (which lacks id=2) purely because prev's
+    // generation was numerically higher, regressing the leader to the DOWN baseline forever.
+    final int S2_LEADER_ID = 2;
+    StateSnapshot s2snap =
+        new StateSnapshot(1, "s2", 0, Collections.singletonMap(S2_LEADER_ID, LEADER));
+    ShardStateLog s2ring = ring(1, 0, 1, delta(1, 1, S2_LEADER_ID, LEADER));
+
+    // prev: structure does NOT yet contain id=2 (un-seeded) -> folding s2's ring skips id=2.
+    DocCollection prev = collection("collection1", "s2", new int[] {}, new Replica.State[] {});
+    StatePlaneCursors prevCursors = prev.getOrCreateStatePlaneCursors();
+    StatePlaneReader.applySnapshotAndDeltas(prev, "s2", s2snap, s2ring, prevCursors);
+    assertNull("prev never seeded id=2, so its live map has no entry for it",
+        prev.getReplicaById(S2_LEADER_ID));
+    // A high-activity shard drives prev's per-instance generation well above a fresh single-shard fold.
+    prevCursors.advance("s1", 1, 5);
+    prevCursors.advance("s1", 1, 9);
+    prevCursors.advance("s1", 1, 14);
+
+    // freshV9: state.json has caught up and seeded id=2 (DOWN baseline). A full-fetch folds s2's ring,
+    // correctly promoting id=2 -> raw LEADER. This freshly-folded collection is authoritative.
+    DocCollection freshV9 = collection("collection1", "s2", new int[] {S2_LEADER_ID},
+        new Replica.State[] {Replica.State.DOWN});
+    StatePlaneCursors freshCursors = freshV9.getOrCreateStatePlaneCursors();
+    StatePlaneReader.applySnapshotAndDeltas(freshV9, "s2", s2snap, s2ring, freshCursors);
+    assertEquals("fresh full-fetch folds the only delta -> raw LEADER",
+        Replica.State.LEADER, raw(freshV9, S2_LEADER_ID));
+    assertTrue("fresh fold initialized cursors (generation >= 0)",
+        freshV9.getStatePlaneGeneration() >= 0);
+    assertTrue("prev's per-instance generation outruns the fresh fold's",
+        prev.getStatePlaneGeneration() > freshV9.getStatePlaneGeneration());
+
+    // Carry-forward must NOT regress the freshly-folded authoritative leader just because prev's
+    // per-instance generation is higher: a folded newState already read the CURRENT ZK rings.
+    StatePlaneReader.carryForwardStateUpdates(freshV9, prev);
+
+    assertEquals("the low-activity shard's leader survives the structure catch-up (no clobber)",
+        Replica.State.LEADER, raw(freshV9, S2_LEADER_ID));
+    assertTrue("leader still reads active on published reads",
+        freshV9.getReplicaById(S2_LEADER_ID).isActive());
+    assertEquals("exactly one visible leader in s2", 1, rawLeaderCount(freshV9, "s2"));
+  }
+
+  // ---- 10. updateWatchedCollection replace-gate: a freshly-folded state at EQUAL structure version
+  //          must replace the stale watched fold (LeaderElectionIntegrationTest / Beast_068 leader loss).
+  //          A fresher fold carrying a just-published LEADER must not be discarded as a same-version
+  //          duplicate; when the shard then went quiet, no leader would ever be seen otherwise.
+
+  @Test
+  public void testShouldReplaceWatchedFoldedStateAtEqualStructureVersion() {
+    final int LEADER_ID = 4;
+
+    // current watched (v): stale folded state at structure v=9, generation >= 0, replica 4 ACTIVE.
+    DocCollection current = collection("c10", "s1", new int[] {LEADER_ID},
+        new Replica.State[] {Replica.State.ACTIVE});
+    current.setZnodeVersion(9);
+    current.getOrCreateStatePlaneCursors().advance("s1", 1, 3);
+    assertTrue("current folded the plane", current.getStatePlaneGeneration() >= 0);
+
+    // incoming: a fresh full-fetch fold at the SAME structure version (v=9) that promoted 4 -> LEADER.
+    DocCollection incoming = collection("c10", "s1", new int[] {LEADER_ID},
+        new Replica.State[] {Replica.State.DOWN});
+    incoming.setZnodeVersion(9);
+    StatePlaneCursors inCursors = incoming.getOrCreateStatePlaneCursors();
+    StatePlaneReader.applyRing(incoming, "s1", ring(1, 0, 1, delta(1, 1, LEADER_ID, LEADER)), inCursors);
+    assertEquals("incoming folded 4 -> raw LEADER", Replica.State.LEADER, raw(incoming, LEADER_ID));
+    assertTrue("incoming folded the plane", incoming.getStatePlaneGeneration() >= 0);
+
+    assertTrue("a freshly-folded same-structure-version state must replace the stale watched fold",
+        StatePlaneReader.shouldReplaceWatched(incoming, current));
+
+    // An UN-folded bare structure refresh (no cursors) at the same version must NOT replace folded
+    // state — carryForwardStateUpdates handles that case, the gate must not let the baseline overwrite.
+    DocCollection bareRefresh = collection("c10", "s1", new int[] {LEADER_ID},
+        new Replica.State[] {Replica.State.DOWN});
+    bareRefresh.setZnodeVersion(9);
+    assertEquals("bare refresh is un-folded", -1, bareRefresh.getStatePlaneGeneration());
+    assertFalse("an un-folded baseline refresh at equal version must not replace folded state",
+        StatePlaneReader.shouldReplaceWatched(bareRefresh, current));
+
+    // Structure version strictly newer always replaces; strictly older never does (even if folded).
+    DocCollection newerStructure = collection("c10", "s1", new int[] {LEADER_ID},
+        new Replica.State[] {Replica.State.DOWN});
+    newerStructure.setZnodeVersion(10);
+    assertTrue("a strictly newer structure version always replaces",
+        StatePlaneReader.shouldReplaceWatched(newerStructure, current));
+
+    DocCollection olderStructure = collection("c10", "s1", new int[] {LEADER_ID},
+        new Replica.State[] {Replica.State.DOWN});
+    olderStructure.setZnodeVersion(8);
+    olderStructure.getOrCreateStatePlaneCursors().advance("s1", 1, 99);
+    assertFalse("a strictly older structure version never replaces, even when folded",
+        StatePlaneReader.shouldReplaceWatched(olderStructure, current));
   }
 }

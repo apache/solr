@@ -28,7 +28,6 @@ import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
@@ -1213,7 +1212,7 @@ public class SolrZkClient implements Closeable {
 //          }
 
           if (dataStat.getDataLength() < maxBytesBeforeSuppress || path.endsWith("state.json") || path.endsWith("security.json") || path.endsWith("solrconfig.xml") && Boolean
-              .getBoolean("solr.tests.printsolrconfig") || path.endsWith("_statupdates") || path.contains("/terms/") || path.endsWith("leader")) {
+              .getBoolean("solr.tests.printsolrconfig") || path.contains("/terms/") || path.endsWith("leader")) {
             //        if (path.endsWith(".xml")) {
             //          // this is the cluster state in xml format - lets pretty print
             //          dataString = prettyPrint(path, dataString);
@@ -1224,12 +1223,7 @@ public class SolrZkClient implements Closeable {
               // things change
               return;
             }
-            if (path.endsWith("_statupdates")) {
-              Map<Long,String> m = Collections.unmodifiableMap(new LinkedHashMap<>((Map) Utils.fromJavabin(data)));
-              dataString = m.toString();
-            } else {
-              dataString = new String(data, StandardCharsets.UTF_8);
-            }
+            dataString = new String(data, StandardCharsets.UTF_8);
             dataString = COMPILE.matcher(dataString).replaceAll("\n" + dent + INDENT);
 
             dataBuilder.append(" (").append(dataStat.getDataLength()).append("b) : ").append(lines > 1 ? "\n" + dent + INDENT : "").append(dataString.trim()).append(NEWL);

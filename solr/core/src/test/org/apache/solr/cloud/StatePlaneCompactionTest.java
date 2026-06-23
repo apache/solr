@@ -316,4 +316,121 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
             System.setProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP, Integer.toString(COMPACT_AFTER));
         }
     }
+
+    // ---- 7. hard-cap trim folds the snapshot FIRST and never advances baseSeq past coverage ----
+
+    /**
+     * Finding #8: the ring-cap blind trim must not drop deltas the snapshot does not cover. With the
+     * normal count/time compaction triggers disabled and a tiny {@code ringCap}, every over-cap publish
+     * must fold the committed ring into the snapshot before trimming, so {@code ring.baseSeq} never runs
+     * ahead of {@code snapshot.upToSeq} (an unrecoverable gap) and a full reconstruct is always exact.
+     */
+    @Test
+    public void hardCapTrimFoldsSnapshotAndPreservesReconstructability() throws Exception {
+        // Disable the count trigger so the ONLY snapshot writer is the hard-cap fold path.
+        System.setProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP, "1000");
+        String savedCap = System.getProperty(StatePlaneWriter.RING_CAP_SYSPROP);
+        System.setProperty(StatePlaneWriter.RING_CAP_SYSPROP, "3");
+        try {
+            StatePlaneWriter w = writer("e1"); // reads ringCap=3 at construction
+            final String coll = "hc1", shard = "s1";
+
+            w.publish(coll, shard, promo(10, ACTIVE), null);     // seq1
+            assertNoGap(coll, shard);
+            w.publish(coll, shard, promo(11, ACTIVE), null);     // seq2
+            assertNoGap(coll, shard);
+            w.publish(coll, shard, promo(12, ACTIVE), null);     // seq3 (ring size == cap, no trim yet)
+            assertNoGap(coll, shard);
+            assertNull("under the cap, no hard-cap fold yet", readSnapshot(coll, shard));
+
+            w.publish(coll, shard, promo(10, RECOVERING), null); // seq4 -> over cap -> fold+trim
+            assertNoGap(coll, shard);
+            w.publish(coll, shard, promo(11, DOWN), null);       // seq5 -> over cap -> fold+trim
+            assertNoGap(coll, shard);
+            w.publish(coll, shard, promo(12, RECOVERING), null); // seq6 -> over cap -> fold+trim
+            assertNoGap(coll, shard);
+
+            ShardStateLog ring = readRing(coll, shard);
+            StateSnapshot snap = readSnapshot(coll, shard);
+            assertNotNull("hard-cap path wrote a snapshot before trimming", snap);
+            assertTrue("ring bounded by the hard cap", ring.entries.size() <= 3);
+            assertTrue("baseSeq never advanced past snapshot coverage (no gap)",
+                    ring.baseSeq <= snap.upToSeq());
+
+            // Full reconstruct (snapshot + remaining ring) preserves EVERY replica's latest state — no
+            // transition was lost to the trim, including replicas whose only delta fell in a dropped prefix.
+            Map<Integer, Integer> eff = effective(coll, shard);
+            assertEquals("r10 latest = RECOVERING (seq4)", Integer.valueOf(RECOVERING), eff.get(10));
+            assertEquals("r11 latest = DOWN (seq5)", Integer.valueOf(DOWN), eff.get(11));
+            assertEquals("r12 latest = RECOVERING (seq6)", Integer.valueOf(RECOVERING), eff.get(12));
+            assertEquals("no phantom replicas", 3, eff.size());
+        } finally {
+            System.setProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP, Integer.toString(COMPACT_AFTER));
+            if (savedCap == null) System.clearProperty(StatePlaneWriter.RING_CAP_SYSPROP);
+            else System.setProperty(StatePlaneWriter.RING_CAP_SYSPROP, savedCap);
+        }
+    }
+
+    // ---- 8. hard-cap fails safe: if the fold cannot be made durable, NO delta is dropped ----
+
+    /** A writer whose snapshot fold can never be made durable (returns -1), to drive the fail-safe path. */
+    static class FoldFailingWriter extends StatePlaneWriter {
+        FoldFailingWriter(SolrZkClient zk, ElectionFence fence) { super(zk, fence); }
+        @Override
+        protected long foldCommittedRingIntoSnapshot(String collPath, String coll, String shard, ShardStateLog ring) {
+            return -1L; // simulate a snapshot fold that cannot be made durable
+        }
+    }
+
+    /**
+     * Finding #8 fail-safe: when the hard-cap path cannot fold the committed ring into a durable
+     * snapshot, it must retain ALL deltas (the ring grows past the cap) rather than advance baseSeq past
+     * un-snapshotted deltas. Reconstruct-ability is preserved entirely from the (un-trimmed) ring.
+     */
+    @Test
+    public void hardCapRetainsAllDeltasWhenSnapshotFoldCannotAdvance() throws Exception {
+        System.setProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP, "1000");
+        String savedCap = System.getProperty(StatePlaneWriter.RING_CAP_SYSPROP);
+        System.setProperty(StatePlaneWriter.RING_CAP_SYSPROP, "3");
+        try {
+            StatePlaneWriter w = new FoldFailingWriter(zkClient, new AlwaysElectedFence("e1"));
+            final String coll = "hc2", shard = "s1";
+
+            w.publish(coll, shard, promo(20, ACTIVE), null);      // seq1
+            w.publish(coll, shard, promo(21, ACTIVE), null);      // seq2
+            w.publish(coll, shard, promo(22, ACTIVE), null);      // seq3 (== cap)
+            w.publish(coll, shard, promo(23, RECOVERING), null);  // seq4 over cap, fold fails -> no trim
+            w.publish(coll, shard, promo(24, DOWN), null);        // seq5 over cap, fold fails -> no trim
+
+            ShardStateLog ring = readRing(coll, shard);
+            assertNull("fold never succeeded -> no snapshot written", readSnapshot(coll, shard));
+            assertEquals("fail-safe retained every delta (ring may exceed the cap)", 5, ring.entries.size());
+            assertEquals("baseSeq never advanced past un-snapshotted deltas", 0L, ring.baseSeq);
+
+            // The full (un-trimmed) ring still reconstructs every replica's state — nothing was lost.
+            Map<Integer, Integer> eff = effective(coll, shard);
+            assertEquals(Integer.valueOf(ACTIVE), eff.get(20));
+            assertEquals(Integer.valueOf(ACTIVE), eff.get(21));
+            assertEquals(Integer.valueOf(ACTIVE), eff.get(22));
+            assertEquals(Integer.valueOf(RECOVERING), eff.get(23));
+            assertEquals(Integer.valueOf(DOWN), eff.get(24));
+            assertEquals(5, eff.size());
+        } finally {
+            System.setProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP, Integer.toString(COMPACT_AFTER));
+            if (savedCap == null) System.clearProperty(StatePlaneWriter.RING_CAP_SYSPROP);
+            else System.setProperty(StatePlaneWriter.RING_CAP_SYSPROP, savedCap);
+        }
+    }
+
+    /** No unrecoverable gap: if the ring's baseSeq advanced, a snapshot must cover at least that far. */
+    private void assertNoGap(String coll, String shard) throws Exception {
+        ShardStateLog ring = readRing(coll, shard);
+        StateSnapshot snap = readSnapshot(coll, shard);
+        if (ring.baseSeq > 0) {
+            assertNotNull("baseSeq advanced to " + ring.baseSeq + " but no snapshot exists — gap!", snap);
+            assertTrue("ring.baseSeq (" + ring.baseSeq + ") must not exceed snapshot.upToSeq ("
+                            + snap.upToSeq() + ") — that is an unrecoverable gap",
+                    ring.baseSeq <= snap.upToSeq());
+        }
+    }
 }

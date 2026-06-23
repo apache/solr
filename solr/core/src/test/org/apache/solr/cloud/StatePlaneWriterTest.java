@@ -265,6 +265,59 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         assertEquals(1, readRing("fresh", "sX").entries.size());
     }
 
+    /**
+     * Finding #1: a single replica's state change appends a delta carrying ONLY that replica's entry,
+     * not the whole shard/collection map. Seed a 3-replica shard, change ONE replica, and assert the
+     * delta payload size is 1 (scales with changed replicas, not shard size).
+     */
+    @Test
+    public void singleChangedEntryDeltaIsMinimal() throws Exception {
+        StatePlaneWriter w = writer("e1");
+        java.util.Map<Integer, Integer> seeded = new java.util.HashMap<>();
+        seeded.put(10, ACTIVE);
+        seeded.put(11, ACTIVE);
+        seeded.put(12, ACTIVE);
+        w.seedShard("c1", "s1", 1, seeded);
+        assertEquals("seeded ring is empty (state lives in snapshot)", 0, readRing("c1", "s1").entries.size());
+
+        // Only replica 11 transitions. The caller (ZkStateWriter) now passes ONLY this entry.
+        assertTrue(w.publish("c1", "s1", promo(11, RECOVERING), null));
+
+        ShardStateLog ring = readRing("c1", "s1");
+        assertEquals("exactly one appended delta", 1, ring.entries.size());
+        StateDelta d = ring.entries.get(0);
+        assertEquals("delta carries ONLY the changed replica, not all 3", 1, d.entries.size());
+        assertEquals(11, d.entries.get(0).replicaId);
+        assertEquals(RECOVERING, d.entries.get(0).shortState);
+        assertTrue("a non-leader change carries no demotions", d.demotedReplicaIds.isEmpty());
+    }
+
+    /**
+     * Finding #1: leader demotion is computed INSIDE the writer from snapshot+ring, so the caller need
+     * only publish the NEW leader's single entry — it does NOT pass the prior leader (the whole map).
+     * Seed {10:LEADER, 11:ACTIVE}, publish only {11:LEADER}, assert the writer itself demotes 10.
+     */
+    @Test
+    public void leaderDemotionComputedFromSingleEntry() throws Exception {
+        StatePlaneWriter w = writer("e1");
+        java.util.Map<Integer, Integer> seeded = new java.util.HashMap<>();
+        seeded.put(10, LEADER);
+        seeded.put(11, ACTIVE);
+        w.seedShard("c1", "s1", 1, seeded);
+
+        // Publish ONLY the new leader's entry — the prior leader (10) is NOT passed by the caller.
+        assertTrue(w.publish("c1", "s1", promo(11, LEADER), null));
+
+        ShardStateLog ring = readRing("c1", "s1");
+        StateDelta last = ring.entries.get(ring.entries.size() - 1);
+        assertEquals("delta carries ONLY the new leader entry", 1, last.entries.size());
+        assertEquals(11, last.entries.get(0).replicaId);
+        assertEquals(LEADER, last.entries.get(0).shortState);
+        assertEquals("writer computed the prior-leader demotion itself", 1, last.demotedReplicaIds.size());
+        assertEquals(Integer.valueOf(10), last.demotedReplicaIds.get(0));
+        assertEquals("demoted to ACTIVE(2)", ACTIVE, last.demotedShortState);
+    }
+
     /** Seed order: snapshot + deltas written, manifest(seeded=true) published LAST. */
     @Test
     public void seedWriteOrderSnapshotThenManifestLast() throws Exception {
