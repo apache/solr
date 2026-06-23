@@ -220,6 +220,9 @@ public abstract class CloudSolrClient extends SolrClient {
     }
   }
 
+  /** The HttpSolrClient that underlies this one. It has no baseUrl or default collection. */
+  public abstract HttpSolrClient getHttpClient();
+
   public ResponseParser getParser() {
     return getLbClient().getParser();
   }
