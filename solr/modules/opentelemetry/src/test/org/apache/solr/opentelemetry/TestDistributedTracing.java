@@ -17,11 +17,11 @@
 
 package org.apache.solr.opentelemetry;
 
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,11 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
@@ -50,6 +49,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@Seed("0") // don't want randomization when testing observability
 public class TestDistributedTracing extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
@@ -58,6 +58,8 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     // force early init
     CustomTestOtelTracerConfigurator.prepareForTest();
+    // HTTP 2 clients can do things more asynchronously, leading to less determinism in what we test
+    System.setProperty("solr.http1", "true");
 
     configureCluster(4)
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
@@ -71,7 +73,28 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         TracerProvider.noop(),
         GlobalOpenTelemetry.get().getTracerProvider());
 
-    CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 2)
+    // Create collection with explicit replica placement for deterministic leader assignment.
+    // First replica on each shard becomes the leader.
+    String node0 = cluster.getJettySolrRunner(0).getNodeName();
+    String node1 = cluster.getJettySolrRunner(1).getNodeName();
+    String node2 = cluster.getJettySolrRunner(2).getNodeName();
+    String node3 = cluster.getJettySolrRunner(3).getNodeName();
+    CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 1)
+        .setCreateNodeSet("EMPTY")
+        .process(cluster.getSolrClient());
+    // shard1: node0 = leader, node1 = follower
+    CollectionAdminRequest.addReplicaToShard(COLLECTION, "shard1")
+        .setNode(node0)
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.addReplicaToShard(COLLECTION, "shard1")
+        .setNode(node1)
+        .process(cluster.getSolrClient());
+    // shard2: node2 = leader, node3 = follower
+    CollectionAdminRequest.addReplicaToShard(COLLECTION, "shard2")
+        .setNode(node2)
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.addReplicaToShard(COLLECTION, "shard2")
+        .setNode(node3)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
   }
@@ -87,121 +110,76 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   @Test
-  public void test() throws IOException, SolrServerException {
-    // TODO it would be clearer if we could compare the complete Span tree between reality
-    // and what we assert it looks like in a structured visual way.
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+  public void test() throws Exception {
+    var verifier = new GoldFileTraceVerifier(getClass(), "test");
+    // TODO use a CloudSolrClient.  However it's not yet deterministic due to use of random not
+    //   aligned to the test seed.
+    var client = cluster.getJettySolrRunner(0).getSolrClient();
 
     // Indexing
-    cloudClient.add(COLLECTION, sdoc("id", "1"));
-    var finishedSpans = getAndClearSpans(1);
-    finishedSpans.removeIf(
-        span ->
-            span.getAttributes().get(TraceUtils.TAG_HTTP_URL) == null
-                || !span.getAttributes().get(TraceUtils.TAG_HTTP_URL).endsWith("/update"));
-    assertEquals(2, finishedSpans.size());
-    assertOneSpanIsChildOfAnother(finishedSpans);
-    // core because cloudClient routes to core
-    assertEquals("post:/{core}/update", finishedSpans.get(0).getName());
-    assertCoreName(finishedSpans.get(0), COLLECTION);
-
-    cloudClient.add(COLLECTION, sdoc("id", "2"));
-    cloudClient.add(COLLECTION, sdoc("id", "3"));
-    cloudClient.add(COLLECTION, sdoc("id", "4"));
-    cloudClient.commit(COLLECTION);
-    getAndClearSpans();
+    new UpdateRequest()
+        .add(List.of(sdoc("id", "1"), sdoc("id", "2"), sdoc("id", "3"), sdoc("id", "4")))
+        .commit(client, COLLECTION);
+    verifier.verifyPhase();
 
     // Searching
-    cloudClient.query(COLLECTION, new SolrQuery("*:*"));
-    finishedSpans = getAndClearSpans(1);
-    finishedSpans.removeIf(
-        span ->
-            span.getAttributes().get(TraceUtils.TAG_HTTP_URL) == null
-                || !span.getAttributes().get(TraceUtils.TAG_HTTP_URL).endsWith("/select"));
-    // one from client to server, 2 for execute query, 2 for fetching documents
-    assertEquals(5, finishedSpans.size());
-    var parentTraceId = getRootTraceId(finishedSpans);
-    for (var span : finishedSpans) {
-      if (isRootSpan(span)) {
-        continue;
-      }
-      assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
-      assertEquals(span.getTraceId(), parentTraceId);
-    }
-    assertEquals("get:/{core}/select", finishedSpans.get(0).getName());
-    assertCoreName(finishedSpans.get(0), COLLECTION);
+    client.query(COLLECTION, new SolrQuery("*:*"));
+    verifier.verifyPhase();
+
+    verifier.done();
   }
 
   @Test
   public void testAdminApi() throws Exception {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    var verifier = new GoldFileTraceVerifier(getClass(), "testAdminApi");
+    // TODO use a CloudSolrClient.  However it's not yet deterministic due to use of random not
+    //   aligned to the test seed.
+    var client = cluster.getJettySolrRunner(0).getSolrClient();
 
     MetricsRequest request = new MetricsRequest();
     request.setResponseParser(new InputStreamResponseParser(MetricUtils.PROMETHEUS_METRICS_WT));
-    NamedList<Object> rsp = cloudClient.request(request);
+    NamedList<Object> rsp = client.request(request);
     ((InputStream) rsp.get("stream")).close();
-    var finishedSpans = getAndClearSpans(1);
-    assertEquals("get:/admin/metrics", finishedSpans.get(0).getName());
+    verifier.verifyPhase();
 
-    CollectionAdminRequest.listCollections(cloudClient);
-    finishedSpans = getAndClearSpans(1);
-    assertEquals("list:/admin/collections", finishedSpans.get(0).getName());
+    CollectionAdminRequest.listCollections(client);
+    verifier.verifyPhase();
+
+    verifier.done();
   }
 
   @Test
   public void testV2Api() throws Exception {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    var verifier = new GoldFileTraceVerifier(getClass(), "testV2Api");
+    // TODO use a CloudSolrClient.  However it's not yet deterministic due to use of random not
+    //   aligned to the test seed.
+    var client = cluster.getJettySolrRunner(0).getSolrClient();
 
     new V2Request.Builder("/collections/" + COLLECTION + "/reload")
         .withMethod(SolrRequest.METHOD.POST)
         .withPayload("{}")
         .build()
-        .process(cloudClient);
-    var finishedSpans = getAndClearSpans(1);
-    assertEquals("post:/collections/{collection}/reload", finishedSpans.get(0).getName());
-    assertCollectionName(finishedSpans.get(0), COLLECTION);
+        .process(client);
+    verifier.verifyPhase();
 
     new V2Request.Builder("/c/" + COLLECTION + "/update/json")
         .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{\n" + " \"id\" : \"9\"\n" + "}")
+        .withPayload("{\"id\":\"9\"}")
         .withParams(params("commit", "true"))
         .build()
-        .process(cloudClient);
-    finishedSpans = getAndClearSpans(1);
-    assertEquals("post:/c/{collection}/update/json", finishedSpans.get(0).getName());
-    assertCollectionName(finishedSpans.get(0), COLLECTION);
+        .process(client);
+    verifier.verifyPhase();
 
     final V2Response v2Response =
         new V2Request.Builder("/c/" + COLLECTION + "/select")
             .withMethod(SolrRequest.METHOD.GET)
             .withParams(params("q", "id:9"))
             .build()
-            .process(cloudClient);
-    finishedSpans = getAndClearSpans(1);
-    assertEquals("get:/c/{collection}/select", finishedSpans.get(0).getName());
-    assertCollectionName(finishedSpans.get(0), COLLECTION);
+            .process(client);
+    verifier.verifyPhase();
     assertEquals(1, ((SolrDocumentList) v2Response.getResponse().get("response")).getNumFound());
-  }
 
-  /**
-   * Best effort test of the apache http client tracing. the test assumes the request uses the http
-   * client but there is no way to enforce it, so when the api will be rewritten this test will
-   * become obsolete
-   */
-  @Test
-  public void testApacheClient() throws Exception {
-    CollectionAdminRequest.ColStatus a1 = CollectionAdminRequest.collectionStatus(COLLECTION);
-    CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
-    assertEquals(0, r1.getStatus());
-    var finishedSpans = getAndClearSpans(1);
-    var parentTraceId = getRootTraceId(finishedSpans);
-    for (var span : finishedSpans) {
-      if (isRootSpan(span)) {
-        continue;
-      }
-      assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
-      assertEquals(span.getTraceId(), parentTraceId);
-    }
+    verifier.done();
   }
 
   @Test
@@ -314,18 +292,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   private static void assertCoreName(SpanData span, String collection) {
     assertTrue(span.getAttributes().get(TraceUtils.TAG_DB).startsWith(collection + "_"));
-  }
-
-  private void assertOneSpanIsChildOfAnother(List<SpanData> finishedSpans) {
-    SpanData child = finishedSpans.get(0);
-    SpanData parent = finishedSpans.get(1);
-    if (isRootSpan(child)) {
-      var temp = parent;
-      parent = child;
-      child = temp;
-    }
-    assertEquals(child.getParentSpanContext().getTraceId(), parent.getTraceId());
-    assertEquals(child.getTraceId(), parent.getTraceId());
   }
 
   static List<SpanData> getAndClearSpans() {
