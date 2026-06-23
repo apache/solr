@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,26 +34,31 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
 /**
- * Unit test for the StatePublisher connection-loss dedup path (review finding #4).
+ * Unit test for the StatePublisher durable-publish + dedup interaction (review findings #1 / #4).
  *
  * <p>StatePublisher keeps a short-lived per-id dedup window so a caller that re-submits the same
  * (id, state) within {@code solr.statePublisher.dedupMaxAgeMs} is not republished. The dedup entry
  * is stamped at submit time, BEFORE the bulk message is actually persisted to the overseer queue.
- * If the persist fails — including the SYNCHRONOUS {@link KeeperException.ConnectionLossException}
- * thrown straight out of {@code SolrZkClient.create(...)} before the async callback ever fires —
- * the stamped dedup entry is stale: it claims a publish happened that did not. Left in place, the
- * dedup window would suppress the caller's identical retry of that failed (non-LEADER) transition,
- * and the transition would be lost permanently.
  *
- * <p>This test drives a real {@code Worker.processMessage} whose {@code create(...)} throws a
- * synchronous ConnectionLoss and asserts that the dedup record is cleared so the retry is no longer
- * suppressed within the age window.
+ * <p>{@code processMessage} now persists the batch DURABLY via the synchronous
+ * {@link SolrZkClient#create(String, byte[], CreateMode, boolean)} with {@code retryOnConnLoss=true}
+ * (review P0 #1): the previous fire-and-forget async create dropped edge-triggered transitions
+ * permanently when the create never reached the queue. A plain {@code ConnectionLoss} is retried
+ * inside {@code create(...)} until ZK accepts the write, so it never surfaces here. A TERMINAL
+ * failure that DOES escape (e.g. {@link KeeperException.SessionExpiredException}, which is not
+ * retried) leaves the stamped dedup entry stale — it claims a publish happened that did not. So on
+ * any escaping {@link KeeperException} the publisher clears the dedup cache (a backstop so the
+ * caller's identical retry is not suppressed within the age window) and then PROPAGATES the
+ * exception so the run loop logs it.
+ *
+ * <p>This test drives a real {@code Worker.processMessage} whose durable {@code create(...)} throws a
+ * terminal {@code SessionExpired} and asserts both behaviors: the dedup record is cleared, and the
+ * exception is propagated (not swallowed).
  */
 public class StatePublisherConnectionLossTest extends SolrTestCaseJ4 {
 
@@ -60,18 +67,15 @@ public class StatePublisherConnectionLossTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void testSynchronousConnectionLossClearsStaleDedupRecord() throws Exception {
+  public void testTerminalPersistFailureClearsDedupAndPropagates() throws Exception {
     ZkStateReader reader = mock(ZkStateReader.class);
     SolrZkClient zk = mock(SolrZkClient.class);
     when(reader.getZkClient()).thenReturn(zk);
-    // The persist throws ConnectionLoss synchronously, before the async rc-callback can run.
-    doThrow(new KeeperException.ConnectionLossException())
+    // The durable persist throws a terminal SessionExpired (ConnectionLoss is retried inside
+    // create(...) and would never escape, so it cannot exercise the clear-dedup escape path).
+    doThrow(new KeeperException.SessionExpiredException())
         .when(zk)
-        .create(
-            anyString(),
-            any(byte[].class),
-            any(CreateMode.class),
-            any(AsyncCallback.Create2Callback.class));
+        .create(anyString(), any(byte[].class), any(CreateMode.class), anyBoolean());
 
     StatePublisher sp = new StatePublisher(reader, null);
 
@@ -92,9 +96,9 @@ public class StatePublisherConnectionLossTest extends SolrTestCaseJ4 {
         "identical publish within the age window is deduped",
         (boolean) isDuplicatePublish.invoke(sp, core, DOWN, now));
 
-    // Drive a real processMessage whose synchronous create() throws ConnectionLoss. processMessage
-    // is private on the private inner Worker; reach it via reflection so production visibility is
-    // unchanged.
+    // Drive a real processMessage whose durable create() throws a terminal SessionExpired.
+    // processMessage is private on the private inner Worker; reach it via reflection so production
+    // visibility is unchanged.
     Class<?> workerClass = Class.forName("org.apache.solr.cloud.StatePublisher$Worker");
     Constructor<?> workerCtor = workerClass.getDeclaredConstructor(StatePublisher.class);
     workerCtor.setAccessible(true);
@@ -105,21 +109,23 @@ public class StatePublisherConnectionLossTest extends SolrTestCaseJ4 {
     Map<String, Object> bulk = new HashMap<>();
     bulk.put("operation", "state");
     bulk.put(core, Integer.toString(DOWN));
-    // The synchronous ConnectionLoss must be swallowed by the catch block, not propagated.
-    processMessage.invoke(worker, bulk);
 
-    // The persist was actually attempted (guards against a false pass where create() never ran).
+    // The terminal KeeperException must PROPAGATE out of processMessage (the run loop logs it),
+    // not be swallowed. Reflection wraps it in InvocationTargetException.
+    InvocationTargetException ite =
+        expectThrows(InvocationTargetException.class, () -> processMessage.invoke(worker, bulk));
+    assertTrue(
+        "terminal persist failure must propagate as a KeeperException, got: " + ite.getCause(),
+        ite.getCause() instanceof KeeperException);
+
+    // The durable persist was actually attempted (guards against a false pass where create() never ran).
     verify(zk, times(1))
-        .create(
-            anyString(),
-            any(byte[].class),
-            any(CreateMode.class),
-            any(AsyncCallback.Create2Callback.class));
+        .create(anyString(), any(byte[].class), any(CreateMode.class), anyBoolean());
 
     // The stale dedup entry must have been cleared, so the caller's identical retry of the failed
     // transition is NOT suppressed within the age window (returns false == not a duplicate).
     assertFalse(
-        "synchronous ConnectionLoss must clear dedup so the retry is not suppressed",
+        "terminal persist failure must clear dedup so the retry is not suppressed",
         (boolean) isDuplicatePublish.invoke(sp, core, DOWN, now));
   }
 }

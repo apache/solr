@@ -102,6 +102,10 @@ public final class StatePlaneReader {
     int curEpoch = (int) cur[0];
     long curSeq = cur[1];
 
+    // finding #3: before applying new deltas, replay any previously-skipped transition whose replica id
+    // has since been seeded into local structure, so the advancing cursor never permanently strands it.
+    flushDeferred(dc, shard, cursors);
+
     List<StateDelta> sorted = new ArrayList<>(ring.entries);
     Collections.sort(sorted);
 
@@ -114,7 +118,7 @@ public final class StatePlaneReader {
         log.trace("applyRing shard={} applying delta (epoch={}, seq={}) entries={} demoted={}->{}",
             shard, d.epoch, d.seq, d.entries, d.demotedReplicaIds, d.demotedShortState);
       }
-      applyDelta(dc, d);
+      applyDelta(dc, d, shard, cursors);
       curEpoch = d.epoch;
       curSeq = d.seq;
       applied = true;
@@ -137,6 +141,9 @@ public final class StatePlaneReader {
    */
   public static void applySnapshotAndDeltas(DocCollection dc, String shard, StateSnapshot snapshot,
                                             ShardStateLog ring, StatePlaneCursors cursors) {
+    // finding #3: replay resolvable previously-skipped transitions before rebasing from the snapshot.
+    flushDeferred(dc, shard, cursors);
+
     StateSnapshot base = snapshot != null ? snapshot
         : new StateSnapshot(ring.epoch, shard, ring.baseSeq, Collections.emptyMap());
     Map<Integer, Integer> effective = base.reconstruct(ring.entries);
@@ -150,23 +157,14 @@ public final class StatePlaneReader {
     // in (epoch, seq) order, so it yields a single leader; we additionally enforce single-leader
     // defensively below in case a snapshot was hand-seeded with two raw leaders.
     //
-    // DocCollection.updateState(id, ..) is a no-op for an id absent from the live StateUpdates map
-    // (the map is seeded in setStates() only from replicas present in the current state.json
-    // structure). A reconstructed id that is not yet in local structure is therefore SKIPPED here.
-    // Known catch-up limitation: fully un-seeded ids (present in the snapshot but not yet in the
-    // state.json structure) are deferred to the live-cluster integration PR — the reader re-applies
-    // them once structure catches up and seeds the map. We log instead of silently advancing past
-    // them so far-behind catch-up gaps are observable.
+    // DocCollection.updateState(id, ..) is a no-op for an id absent from the live StateUpdates map (the
+    // map is seeded in setStates() only from replicas present in the current state.json structure). A
+    // reconstructed id that is not yet in local structure is buffered by applyOrDefer (finding #3) rather
+    // than dropped: the cursor still advances to the ring head, but the transition is replayed by
+    // flushDeferred once structure catches up and seeds the id — so a far-behind catch-up cannot strand
+    // a leader/active transition for a replica the structure has not yet observed.
     for (Map.Entry<Integer, Integer> e : effective.entrySet()) {
-      if (dc.getReplicaById(e.getKey()) == null) {
-        if (log.isWarnEnabled()) {
-          log.warn("Snapshot catch-up skipping un-seeded replica id={} (shard={}, state={}) absent from "
-              + "local state.json structure; will re-apply once structure catches up", e.getKey(), shard,
-              e.getValue());
-        }
-        continue;
-      }
-      dc.updateState(e.getKey(), e.getValue());
+      applyOrDefer(dc, shard, cursors, e.getKey(), e.getValue());
     }
     enforceSingleLeaderPerSlice(dc, shard, effective);
 
@@ -288,16 +286,77 @@ public final class StatePlaneReader {
 
   // ---- internals ----
 
-  private static void applyDelta(DocCollection dc, StateDelta d) {
+  private static void applyDelta(DocCollection dc, StateDelta d, String shard, StatePlaneCursors cursors) {
     // Demotions first (deposed leaders / node-down), then promotions (ordering invariant).
     for (Integer demotedId : d.demotedReplicaIds) {
-      dc.updateState(demotedId, d.demotedShortState);
+      applyOrDefer(dc, shard, cursors, demotedId, d.demotedShortState);
     }
     for (StateDelta.Entry e : d.entries) {
-      if (e.shortState == LEADER) {
-        demoteOtherLeaders(dc, e.replicaId);
+      applyOrDefer(dc, shard, cursors, e.replicaId, e.shortState);
+    }
+  }
+
+  /**
+   * Apply a single {@code replicaId -> shortState} transition to {@code dc}, or buffer it for deferred
+   * replay when the id is not yet present in local state.json structure ({@link DocCollection#updateState}
+   * is a silent no-op for an absent id). Buffering (finding #3) prevents the advancing per-shard cursor
+   * from permanently stranding a transition for a replica the structure has not caught up to yet — it is
+   * replayed by {@link #flushDeferred} once the id is seeded. The buffer holds at most one LEADER per
+   * shard: a newer LEADER demotes any earlier buffered (or live) LEADER, so a structure catch-up cannot
+   * resurrect a stale leader.
+   */
+  private static void applyOrDefer(DocCollection dc, String shard, StatePlaneCursors cursors,
+                                   int replicaId, int shortState) {
+    if (dc.getReplicaById(replicaId) == null) {
+      if (shortState == LEADER) {
+        demoteDeferredLeadersExcept(cursors, shard, replicaId);
       }
-      dc.updateState(e.replicaId, e.shortState);
+      cursors.defer(shard, replicaId, shortState);
+      return;
+    }
+    cursors.undefer(shard, replicaId); // resolved; drop any now-stale buffered value
+    if (shortState == LEADER) {
+      demoteOtherLeaders(dc, replicaId);
+      demoteDeferredLeadersExcept(cursors, shard, replicaId);
+    }
+    dc.updateState(replicaId, shortState);
+  }
+
+  /**
+   * Replay buffered transitions (finding #3) whose replica id is now present in local structure. Each is
+   * an independent per-replica state set and the in-buffer single-LEADER invariant guarantees at most one
+   * buffered LEADER per shard, so replay order is immaterial. Applied entries are dropped from the buffer;
+   * still-un-seeded entries are left for a later flush.
+   */
+  private static void flushDeferred(DocCollection dc, String shard, StatePlaneCursors cursors) {
+    if (!cursors.hasDeferred(shard)) {
+      return;
+    }
+    for (Map.Entry<Integer, Integer> e : cursors.deferredSnapshot(shard).entrySet()) {
+      int replicaId = e.getKey();
+      if (dc.getReplicaById(replicaId) == null) {
+        continue; // still un-seeded — keep buffered
+      }
+      int shortState = e.getValue();
+      if (shortState == LEADER) {
+        demoteOtherLeaders(dc, replicaId);
+        demoteDeferredLeadersExcept(cursors, shard, replicaId);
+      }
+      dc.updateState(replicaId, shortState);
+      cursors.undefer(shard, replicaId);
+      if (log.isDebugEnabled()) {
+        log.debug("flushDeferred shard={} replayed buffered transition replicaId={} state={}",
+            shard, replicaId, shortState);
+      }
+    }
+  }
+
+  /** Downgrade any buffered LEADER in {@code shard} other than {@code exceptId} to ACTIVE. */
+  private static void demoteDeferredLeadersExcept(StatePlaneCursors cursors, String shard, int exceptId) {
+    for (Map.Entry<Integer, Integer> e : cursors.deferredSnapshot(shard).entrySet()) {
+      if (e.getKey() != exceptId && e.getValue() == LEADER) {
+        cursors.defer(shard, e.getKey(), ACTIVE);
+      }
     }
   }
 

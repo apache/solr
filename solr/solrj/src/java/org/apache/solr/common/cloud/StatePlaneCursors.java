@@ -16,6 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,6 +41,14 @@ public final class StatePlaneCursors {
 
   // Monotone count of applied delta batches. Never regresses; decoupled from ZK Stat.version (D2).
   private final AtomicInteger generation = new AtomicInteger(0);
+
+  // shard -> (replicaId -> shortState): deferred replay buffer (finding #3). When an apply path skips a
+  // reconstructed/delta'd replica id because it is not yet present in local state.json structure
+  // (DocCollection.updateState is a silent no-op for an absent id), the transition is recorded here so
+  // the advancing per-shard cursor does not permanently strand it. StatePlaneReader flushes an entry once
+  // structure seeds the id, and maintains a single-LEADER-per-shard invariant within the buffer so a
+  // stale buffered leader cannot be resurrected after a handoff.
+  private final Map<String, Map<Integer, Integer>> deferred = new ConcurrentHashMap<>();
 
   public StatePlaneCursors() {}
 
@@ -67,6 +77,34 @@ public final class StatePlaneCursors {
     }
   }
 
+  /** Record a replica-state transition skipped because its id is not yet in local structure (finding #3). */
+  public void defer(String shard, int replicaId, int shortState) {
+    deferred.computeIfAbsent(shard, k -> new ConcurrentHashMap<>()).put(replicaId, shortState);
+  }
+
+  /** Drop a deferred entry once it has been applied (or superseded). */
+  public void undefer(String shard, int replicaId) {
+    Map<Integer, Integer> m = deferred.get(shard);
+    if (m != null) {
+      m.remove(replicaId);
+      if (m.isEmpty()) {
+        deferred.remove(shard);
+      }
+    }
+  }
+
+  /** True if {@code shard} has any deferred (skipped, not-yet-applied) transitions buffered. */
+  public boolean hasDeferred(String shard) {
+    Map<Integer, Integer> m = deferred.get(shard);
+    return m != null && !m.isEmpty();
+  }
+
+  /** Immutable point-in-time snapshot of {@code shard}'s deferred {@code replicaId -> shortState} buffer. */
+  public Map<Integer, Integer> deferredSnapshot(String shard) {
+    Map<Integer, Integer> m = deferred.get(shard);
+    return (m == null || m.isEmpty()) ? Collections.emptyMap() : new HashMap<>(m);
+  }
+
   public boolean isEmpty() {
     return cursors.isEmpty();
   }
@@ -79,6 +117,7 @@ public final class StatePlaneCursors {
   public StatePlaneCursors copy() {
     StatePlaneCursors c = new StatePlaneCursors();
     cursors.forEach((shard, pos) -> c.cursors.put(shard, new long[] {pos[0], pos[1]}));
+    deferred.forEach((shard, m) -> c.deferred.put(shard, new ConcurrentHashMap<>(m)));
     c.generation.set(generation.get());
     return c;
   }
@@ -93,6 +132,11 @@ public final class StatePlaneCursors {
       return;
     }
     other.cursors.forEach((shard, pos) -> advance(shard, (int) pos[0], pos[1]));
+    // Carry forward other's deferred replays so a structure refresh that adopts these cursors does not
+    // drop a transition still pending a structure catch-up (finding #3). Other (the ahead instance) wins
+    // on conflict.
+    other.deferred.forEach((shard, m) ->
+        deferred.computeIfAbsent(shard, k -> new ConcurrentHashMap<>()).putAll(m));
     int og = other.generation.get();
     if (og > generation.get()) {
       generation.set(og);

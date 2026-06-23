@@ -541,11 +541,11 @@ public class StatePlaneWriter {
         // 1) snapshot (carry the collection name as identity; numeric id unknown at seed → -1)
         StateSnapshot snap = new StateSnapshot(-1L, coll, epoch, shard, 0L,
                 states == null ? Collections.emptyMap() : states);
-        writeOrCreate(StatePlanePaths.shardSnapshot(collPath, shard),
+        createIfAbsent(StatePlanePaths.shardSnapshot(collPath, shard),
                 StateDeltaCodec.encodeStateSnapshot(snap));
         // 2) deltas (empty)
         ShardStateLog empty = new ShardStateLog(epoch, 0L, 0L, fence.writerId(), Collections.emptyList());
-        writeOrCreate(StatePlanePaths.shardDeltas(collPath, shard),
+        createIfAbsent(StatePlanePaths.shardDeltas(collPath, shard),
                 StateDeltaCodec.encodeShardStateLog(empty));
     }
 
@@ -563,7 +563,7 @@ public class StatePlaneWriter {
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
         new org.apache.solr.common.util.JavaBinCodec()
                 .marshal(manifest, new org.apache.solr.common.util.FastOutputStream(baos));
-        writeOrCreate(StatePlanePaths.manifest(collPath), baos.toByteArray());
+        createIfAbsent(StatePlanePaths.manifest(collPath), baos.toByteArray());
     }
 
     /**
@@ -622,16 +622,25 @@ public class StatePlaneWriter {
         if (lastBve != null) throw lastBve;
     }
 
-    private void writeOrCreate(String path, byte[] bytes)
+    /**
+     * Create-only seed write: create {@code path} with the empty/seed {@code bytes} <b>only if it does
+     * not already exist</b>, and never overwrite an existing node. Seeding establishes an empty baseline
+     * (snapshot, empty ring, manifest) on first collection bring-up. Once a shard's ring or snapshot
+     * exists — from a prior seed, or from a real {@link #publish} that raced in between {@link
+     * org.apache.solr.cloud.overseer.ZkStateWriter}'s absent-manifest check and this write — it must not
+     * be clobbered back to an empty baseline. The previous unconditional {@code setData(-1)} could
+     * overwrite a non-empty ring/snapshot with the empty seed, durably dropping already-published state
+     * at the plane switch. A NodeExists outcome is the success case (another seeder or a real writer
+     * already established the node); {@code makePath} with {@code failOnExists=true} surfaces it and we
+     * leave the existing node intact.
+     */
+    private void createIfAbsent(String path, byte[] bytes)
             throws KeeperException, InterruptedException {
         try {
-            zkClient.setData(path, bytes, -1, true);
-        } catch (KeeperException.NoNodeException nne) {
-            try {
-                zkClient.makePath(path, bytes, CreateMode.PERSISTENT, true);
-            } catch (KeeperException.NodeExistsException nee) {
-                // raced; overwrite
-                zkClient.setData(path, bytes, -1, true);
+            zkClient.makePath(path, bytes, CreateMode.PERSISTENT, true);
+        } catch (KeeperException.NodeExistsException nee) {
+            if (log.isDebugEnabled()) {
+                log.debug("seed: {} already exists; keeping existing state (no empty-baseline overwrite)", path);
             }
         }
     }

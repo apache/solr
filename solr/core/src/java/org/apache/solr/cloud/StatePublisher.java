@@ -260,33 +260,28 @@ public class StatePublisher implements Closeable {
     private void processMessage(Map message) throws KeeperException, InterruptedException {
       log.debug("Send state updates to Overseer {}", message);
       byte[] updates = Utils.toJSON(message);
+      // The state batch must be DURABLE in the overseer queue before this returns. The previous
+      // fire-and-forget async create only logged on failure and cleared the dedup cache, relying on the
+      // caller to re-publish — but most replica-state transitions are edge-triggered, so a batch dropped
+      // before it reached the queue was a PERMANENT loss of that transition; the later queue-item
+      // durability gate in WorkQueueWatcher never helps because the item never existed (review P0 #1).
+      // Use a synchronous create with retryOnConnLoss=true: ZkCmdExecutor retries through ConnectionLoss
+      // until ZK accepts the write, so the publisher worker only advances once the batch is persisted. A
+      // ConnectionLoss-retry may create a duplicate sequential queue item, which is harmless — re-applying
+      // the same id->shortState batch is idempotent at the reader (state is set, not incremented).
       try {
-        zkStateReader.getZkClient().create("/overseer/queue" + '/' + PREFIX, updates, CreateMode.PERSISTENT_SEQUENTIAL, (rc, path, ctx, name, stat) -> {
-          if (rc != 0) {
-
-            KeeperException e = KeeperException.create(KeeperException.Code.get(rc), path);
-            log.error("Exception publish state messages path={}", path, e);
-
-            // This bulk message was NOT persisted. Re-offering the already-batched map is unsafe (it has
-            // op=state with id->line entries the worker's bulkMessage() can't re-interpret), so instead we
-            // drop the dedup records: otherwise the 30s dedup window would suppress the caller's identical
-            // retry and the failed (non-LEADER) transition would be lost permanently. Clearing is bounded
-            // and harmless — any healthy id simply gets to republish once (idempotent).
-            synchronized (dedupCache) {
-              dedupCache.clear();
-            }
-          }
-        });
-      } catch (KeeperException.ConnectionLossException e) {
-        log.error("Exception publish state messages (synchronous ConnectionLoss)", e);
-        // The bulk message was NOT persisted and the async rc-callback never fired for it, so the dedup
-        // records stamped at submitState() time are stale. Drop them — identical to the rc!=0 branch
-        // above — so the 30s dedup window cannot suppress the caller's identical retry of the failed
-        // (non-LEADER) transition; otherwise that transition is lost permanently. Clearing is bounded
-        // and idempotent (any healthy id simply republishes once).
+        zkStateReader.getZkClient().create("/overseer/queue" + '/' + PREFIX, updates,
+            CreateMode.PERSISTENT_SEQUENTIAL, true);
+      } catch (KeeperException e) {
+        // Durable create still failed after connection-loss retries (e.g. SessionExpired, which is
+        // terminal and not retried). Clear the dedup cache as a backstop so the caller's identical
+        // re-publish is not suppressed by the dedup window, then propagate so the run loop logs it. On
+        // SessionExpired the overseer is losing its role anyway and a freshly elected overseer re-seeds
+        // leader/active state from ZK.
         synchronized (dedupCache) {
           dedupCache.clear();
         }
+        throw e;
       }
     }
   }
@@ -315,13 +310,6 @@ public class StatePublisher implements Closeable {
           String collection = stateMessage.getStr(ZkStateReader.COLLECTION_PROP);
           Replica.State state = (Replica.State) stateMessage.get(ZkStateReader.STATE_PROP);
 
-          log.debug("submit state for publishing core={} state={}", core, state);
-
-          if (core == null || state == null) {
-            log.error("Nulls in published state");
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nulls in published state " + stateMessage);
-          }
-
           // The publishing replica normally stamps its own id into the message ("id"), and for a
           // registered replica that id is exactly replica.getId(). So trust the message's id first
           // and only fall back to a cluster-state lookup when the message arrived without one —
@@ -329,6 +317,18 @@ public class StatePublisher implements Closeable {
           // already carries an id, the putIfAbsent write-back is redundant (the map already has it),
           // so we only write the id back when it was resolved from cluster state.
           id = stateMessage.getStr("id");
+
+          log.debug("submit state for publishing core={} id={} state={}", core, id, state);
+
+          // Per the fork, the replica's unified id is the canonical identifier and the replica NAME is the
+          // core name (Replica.getName()); a separate CORE_NAME_PROP is not guaranteed on a state message
+          // (review P2 #7). Require only a non-null state plus SOME way to identify the replica — its id,
+          // or (legacy path) a core/replica name that resolves to an id from cluster state. Do NOT reject
+          // an id-carrying message just because it lacks "core".
+          if (state == null || (id == null && core == null)) {
+            log.error("Published state needs a non-null state and either an id or a core/replica name: {}", stateMessage);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Insufficient published state " + stateMessage);
+          }
           if (id == null) {
             DocCollection coll = zkStateReader.getCollectionOrNull(collection);
             if (coll != null) {

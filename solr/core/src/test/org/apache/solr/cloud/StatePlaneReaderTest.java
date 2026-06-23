@@ -428,4 +428,69 @@ public class StatePlaneReaderTest extends SolrTestCaseJ4 {
     assertFalse("a strictly older structure version never replaces, even when folded",
         StatePlaneReader.shouldReplaceWatched(olderStructure, current));
   }
+
+  // ---- 11. finding #3: a transition for an un-seeded id is BUFFERED (not dropped past the advancing
+  //          cursor) and REPLAYED once the structure catches up and seeds that id. ----
+
+  @Test
+  public void testDeferredTransitionReplayedAfterStructureSeedsId() {
+    // The advancing per-shard cursor must not permanently strand a transition for a replica the local
+    // structure has not observed yet. The reader buffers it in the shared cursors and replays it on the
+    // next apply once the id is seeded.
+    StatePlaneCursors cursors = new StatePlaneCursors();
+
+    // dc1: structure only knows 101; 102 is not yet seeded. A delta promotes the un-seeded 102 -> LEADER.
+    DocCollection dc1 = collection("c11", "s1", new int[] {101},
+        new Replica.State[] {Replica.State.DOWN});
+    boolean applied = StatePlaneReader.applyRing(dc1, "s1",
+        ring(1, 0, 1, delta(1, 1, 102, LEADER)), cursors);
+    assertTrue("the ring delta advanced the cursor", applied);
+    assertNull("102 is absent from dc1's structure, so it was not applied there", dc1.getReplicaById(102));
+    assertTrue("the un-seeded transition was buffered, not dropped", cursors.hasDeferred("s1"));
+    assertEquals("cursor still advanced past the buffered delta", 1L, cursors.get("s1")[1]);
+
+    // dc2: a structure refresh that has caught up and seeded 102 (DOWN baseline). It carries the SAME
+    // cursors forward (as carryForwardStateUpdates/adoptStatePlaneCursors do in production). The next
+    // apply — even one whose ring deltas are all stale — flushes the buffered 102 -> LEADER onto dc2.
+    DocCollection dc2 = collection("c11", "s1", new int[] {101, 102},
+        new Replica.State[] {Replica.State.DOWN, Replica.State.DOWN});
+    boolean appliedAgain = StatePlaneReader.applyRing(dc2, "s1",
+        ring(1, 0, 1, delta(1, 1, 102, LEADER)), cursors);
+    assertFalse("the ring deltas are all stale (cursor already at seq=1)", appliedAgain);
+
+    assertEquals("the buffered transition was replayed once 102 was seeded",
+        Replica.State.LEADER, raw(dc2, 102));
+    assertEquals("exactly one visible leader after the replay", 1, rawLeaderCount(dc2, "s1"));
+    assertFalse("the buffer drained once the transition was replayed", cursors.hasDeferred("s1"));
+  }
+
+  // ---- 12. finding #3 safety: a stale buffered LEADER must NOT resurrect after a later handoff. The
+  //          buffer holds at most one LEADER per shard, so replay yields the LATEST leader only. ----
+
+  @Test
+  public void testBufferedStaleLeaderDoesNotResurrectAfterHandoff() {
+    StatePlaneCursors cursors = new StatePlaneCursors();
+
+    // dc1: structure only knows 101; 102 and 103 are un-seeded. Two deltas hand leadership 102 -> 103
+    // while both are un-seeded, so both promotions are buffered. The buffer must demote the earlier
+    // buffered leader (102) to ACTIVE when the later one (103) is buffered.
+    DocCollection dc1 = collection("c12", "s1", new int[] {101},
+        new Replica.State[] {Replica.State.DOWN});
+    StatePlaneReader.applyRing(dc1, "s1",
+        ring(1, 0, 2, delta(1, 1, 102, LEADER), delta(1, 2, 103, LEADER)), cursors);
+    assertTrue("both un-seeded promotions were buffered", cursors.hasDeferred("s1"));
+
+    // dc2: structure caught up and seeded both 102 and 103 (DOWN). Flushing the buffer must yield ONLY
+    // 103 as leader — the superseded 102 must not be replayed as a (stale) second leader.
+    DocCollection dc2 = collection("c12", "s1", new int[] {101, 102, 103},
+        new Replica.State[] {Replica.State.DOWN, Replica.State.DOWN, Replica.State.DOWN});
+    StatePlaneReader.applyRing(dc2, "s1",
+        ring(1, 0, 2, delta(1, 1, 102, LEADER), delta(1, 2, 103, LEADER)), cursors);
+
+    assertEquals("the latest leader (103) was replayed as LEADER", Replica.State.LEADER, raw(dc2, 103));
+    assertEquals("the superseded leader (102) replayed as ACTIVE, not a resurrected leader",
+        Replica.State.ACTIVE, raw(dc2, 102));
+    assertEquals("exactly one visible leader survives the handoff replay", 1, rawLeaderCount(dc2, "s1"));
+    assertFalse("the buffer drained after the replay", cursors.hasDeferred("s1"));
+  }
 }

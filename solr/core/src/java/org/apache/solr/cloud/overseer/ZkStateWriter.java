@@ -1333,13 +1333,42 @@ public class ZkStateWriter {
       if (children == null || children.isEmpty()) {
         continue;
       }
-      final Integer leaderInternalId;
-      try {
-        leaderInternalId = Integer.parseInt(children.get(0));
-      } catch (NumberFormatException e) {
-        log.warn("Leader reconciliation: unexpected leader node child {} under {}", children.get(0), leaderPath);
+      // Normally exactly one EPHEMERAL leader-registration child exists. A contested election or a
+      // not-yet-expired stale session can transiently leave more than one, and getChildren order is
+      // undefined — so picking children.get(0) could re-assert a STALE leader. Select the most recently
+      // created registration (highest czxid), i.e. the latest election winner, skipping non-numeric or
+      // raced-away children defensively (finding #9).
+      if (children.size() > 1) {
+        log.warn("Leader reconciliation: {} leader-registration children under {} {}; choosing most recent",
+            children.size(), leaderPath, children);
+      }
+      Integer chosenId = null;
+      long bestCzxid = Long.MIN_VALUE;
+      for (String child : children) {
+        final int parsedId;
+        try {
+          parsedId = Integer.parseInt(child);
+        } catch (NumberFormatException e) {
+          log.warn("Leader reconciliation: unexpected leader node child {} under {}", child, leaderPath);
+          continue;
+        }
+        try {
+          Stat st = reader.getZkClient().exists(leaderPath + "/" + child, null, true);
+          if (st == null) {
+            continue; // raced away between getChildren and exists
+          }
+          if (st.getCzxid() > bestCzxid) {
+            bestCzxid = st.getCzxid();
+            chosenId = parsedId;
+          }
+        } catch (Exception e) {
+          log.warn("Leader reconciliation: failed reading leader child {} under {}", child, leaderPath, e);
+        }
+      }
+      if (chosenId == null) {
         continue;
       }
+      final Integer leaderInternalId = chosenId;
       stateUpdates.compute(docState.getId(), (k, v) -> {
         Map<Integer,Integer> m = (v == null) ? new ConcurrentHashMap<>() : v;
         m.put(leaderInternalId, leaderShort);
@@ -1453,6 +1482,18 @@ public class ZkStateWriter {
       String collection = idToCollection.get(collId);
 
       futures.add(CompletableFuture.runAsync(() -> {
+
+        if (collection == null) {
+          // Unknown collection id: the structure change for collId has not landed yet (or the collection
+          // was removed). Returning early — and crucially NOT draining pendingChangedIds / stateUpdates —
+          // leaves this id's changed set and in-memory states armed, so enqueueStructureChange's
+          // structure-landing republish (writeStateUpdatesInternal for that id) publishes them once
+          // idToCollection resolves. We complete normally (not exceptionally) so WorkQueueWatcher deletes
+          // the queue item rather than reprocessing it forever: a null-collection key would otherwise NPE
+          // in stateWriteThrottles.compute / publishToStatePlane and poison the queue (finding #6).
+          log.debug("writeStateUpdates: no collection mapping for id {} yet; deferring to structure-change republish", collId);
+          return;
+        }
 
         ActionThrottle writeThrottle = stateWriteThrottles.compute(collection, (s, throttle) -> {
           if (throttle == null) {
