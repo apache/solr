@@ -224,7 +224,7 @@ Attention:
 ** `analytics` has been removed
 ** `hadoop-auth` (including the `solr.KerberosPlugin` class) has been removed
 
-* `OpenTracing` libraries were removed and replaced with `OpenTelemetry` libraries. Any Java agents providing `OpenTracing` tracers will no longer work. Telemetry tags `http.status_code` and `http.method` have been deprecated, newer versions of the tags have been added to the span data: `http.response.status_code`, `http.request.method`.
+* `OpenTracing` libraries were removed and replaced with `OpenTelemetry` libraries. Any Java agents providing `OpenTracing` tracers will no longer work. Telemetry tags `http.status_code` and `http.method` have been removed from the span data; use `http.response.status_code` and `http.request.method` instead. (SOLR-18110)
 
 * The sysProp `-Dsolr.redaction.system.pattern`, which allows users to provide a pattern to match sysProps that should be redacted for sensitive information,
 has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` instead.
@@ -283,6 +283,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 * The deprecated `LowerCaseTokenizer` and `LowerCaseTokenizerFactory` have been removed. These classes were deprecated in Solr 8 and can be replaced by combining `LetterTokenizerFactory` with `LowerCaseFilterFactory`.
 
 * The deprecated `solrcore.properties` configuration method has been removed.  The ability to configure a core via a custom properties file using the `core.properties` "property" setting remains.
+
+* The deprecated `VMParamsAllAndReadonlyDigestZkACLProvider` class has been removed. Use a combination of `DigestZkACLProvider` and `VMParamsZkCredentialsInjector` instead. (SOLR-18122)
 
 === Security
 
