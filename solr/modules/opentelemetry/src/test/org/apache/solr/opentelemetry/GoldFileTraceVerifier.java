@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -367,6 +368,7 @@ public class GoldFileTraceVerifier {
       Path tempFile = writeTempJson(Utils.toJSONString(actual, 2), phaseIndex);
       String message =
           String.format(
+              Locale.getDefault(),
               """
 
               Trace spans mismatch in phase %d%s
