@@ -322,22 +322,24 @@ public class StatePublisher implements Closeable {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nulls in published state " + stateMessage);
           }
 
-          DocCollection coll = zkStateReader.getCollectionOrNull(collection);
-
-          if (coll != null) {
-            Replica replica = coll.getReplica(core);
-            if (replica != null) {
-              id = replica.getId();
-            } else {
-              id = stateMessage.getStr("id");
-            }
-
-          }
-
+          // The publishing replica normally stamps its own id into the message ("id"), and for a
+          // registered replica that id is exactly replica.getId(). So trust the message's id first
+          // and only fall back to a cluster-state lookup when the message arrived without one —
+          // avoiding a getCollectionOrNull + getReplica scan on the hot path. When the message
+          // already carries an id, the putIfAbsent write-back is redundant (the map already has it),
+          // so we only write the id back when it was resolved from cluster state.
+          id = stateMessage.getStr("id");
           if (id == null) {
-            id = stateMessage.getStr("id");
-          } else {
-            stateMessage.getProperties().putIfAbsent("id", id);
+            DocCollection coll = zkStateReader.getCollectionOrNull(collection);
+            if (coll != null) {
+              Replica replica = coll.getReplica(core);
+              if (replica != null) {
+                id = replica.getId();
+              }
+            }
+            if (id != null) {
+              stateMessage.getProperties().putIfAbsent("id", id);
+            }
           }
 
           // Bounded dedup. LEADER is NEVER dedup-suppressed: a LEADER publish is the repair mechanism for the single

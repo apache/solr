@@ -96,6 +96,37 @@ public class ZkStateReaderQueue implements Closeable {
 
   }
 
+  /**
+   * Retry-budget key for {@link #fetchRetries}. A full fetch ({@code justStates == false}) rebuilds
+   * the whole collection, so it uses the bare collection name as its single scope. A delta apply
+   * keys by collection + the targeted shard scope so one shard's run of transient failures neither
+   * exhausts nor resets another shard's budget; a null/empty scope (a manifest / full-apply event)
+   * is its own collection-level delta scope. Collection names cannot contain {@code "::"} (enforced by
+   * {@link org.apache.solr.common.SolrIdentifierValidator} at every collection-creation entry point),
+   * so the scopes never collide with the bare full-fetch key.
+   */
+  private static String retryKey(String collection, boolean justStates, Set<String> targetShards) {
+    if (!justStates) {
+      return collection;
+    }
+    if (targetShards == null || targetShards.isEmpty()) {
+      return collection + "::*";
+    }
+    return collection + "::" + new java.util.TreeSet<>(targetShards);
+  }
+
+  /**
+   * Drop every retry-budget entry for a collection: its full-fetch key and all per-shard delta
+   * scopes. A successful full fetch supersedes all outstanding shard state, so it bounds counter
+   * leaks (e.g. a shard scope that stopped firing under bulk-message coalescing) rather than letting
+   * orphaned per-shard counters accumulate.
+   */
+  private void clearCollectionRetries(String collection) {
+    fetchRetries.remove(collection);
+    final String prefix = collection + "::";
+    fetchRetries.keySet().removeIf(k -> k.startsWith(prefix));
+  }
+
   private class Worker implements Runnable {
 
     public static final int POLL_TIME_ON_PUBLISH_NODE = 1;
@@ -204,7 +235,7 @@ public class ZkStateReaderQueue implements Closeable {
                 }
                 return CompletableFuture.completedFuture(docCollection1);
               }).thenAcceptAsync(docCollection1 -> {
-                fetchRetries.remove(collection);
+                clearCollectionRetries(collection);
                 reader.updateWatchedCollection(collection, new ClusterState.CollectionRef(docCollection1));
               }).exceptionally(t -> {
                 // A failed full fetch must not be silently swallowed: the triggering watch event has
@@ -240,7 +271,7 @@ public class ZkStateReaderQueue implements Closeable {
                 if (docCollection1 == null) {
                   return;
                 }
-                fetchRetries.remove(collection);
+                fetchRetries.remove(retryKey(collection, true, shardsArg));
                 reader.updateWatchedCollection(collection, new ClusterState.CollectionRef(docCollection1));
               }).exceptionally(t -> {
                 // Mirror the full-fetch branch: re-enqueue on transient ZK failures so a missed
@@ -272,21 +303,26 @@ public class ZkStateReaderQueue implements Closeable {
      * next successful fetch.
      */
     private void scheduleRetryOnTransientFailure(String collection, boolean justStates, Set<String> targetShards, Throwable t) {
+      // Bound retries per (collection, shard-scope) rather than per collection, so one shard's run of
+      // persistent transient failures neither exhausts nor resets the retry budget of the
+      // collection's other shards. A full fetch supersedes all shard scopes and clears them on
+      // success via clearCollectionRetries.
+      final String key = retryKey(collection, justStates, targetShards);
       if (closed || terminated) {
-        fetchRetries.remove(collection);
+        fetchRetries.remove(key);
         return;
       }
       if (!isTransientZkFailure(t)) {
         // Structural failures (e.g. NoNode for a deleted collection) are not recoverable by retry;
-        // drop any accumulated retry budget for this collection.
-        fetchRetries.remove(collection);
+        // drop any accumulated retry budget for this scope.
+        fetchRetries.remove(key);
         return;
       }
 
-      int attempt = fetchRetries.computeIfAbsent(collection, k -> new AtomicInteger()).incrementAndGet();
+      int attempt = fetchRetries.computeIfAbsent(key, k -> new AtomicInteger()).incrementAndGet();
       if (attempt > MAX_FETCH_RETRIES) {
-        log.error("Giving up re-fetching state for collection={} after {} transient ZK failures; the next watch event or session reconnect will resync", collection, MAX_FETCH_RETRIES);
-        fetchRetries.remove(collection);
+        log.error("Giving up re-fetching state for collection={} scope={} after {} transient ZK failures; the next watch event or session reconnect will resync", collection, key, MAX_FETCH_RETRIES);
+        fetchRetries.remove(key);
         return;
       }
 

@@ -140,7 +140,7 @@ public class ZkStateWriter {
 
   /**
    * D2 (PR-4): collections whose delta-plane snapshot+manifest this writer has already ensured during
-   * this overseer lifetime. The manifest is the reader's legacy→delta switch (written LAST); we seed it
+   * this overseer lifetime. The manifest is the reader's switch onto the delta plane (written LAST); we seed it
    * lazily on first publish per collection — never an eager cluster-wide sweep. ZK is the source of
    * truth (we re-check {@code state/manifest} existence before seeding), so this set is only a fast skip.
    */
@@ -290,8 +290,8 @@ public class ZkStateWriter {
             collection, epoch, shards.size());
       }
     } catch (Exception e) {
-      // Do NOT mark ensured AND do NOT swallow. After legacy _statupdates was removed, the manifest is
-      // the reader's ONLY authoritative switch onto the delta plane: a delta appended while the manifest
+      // Do NOT mark ensured AND do NOT swallow. There is no _statupdates fallback by design: the manifest
+      // is the reader's ONLY authoritative switch onto the delta plane, so a delta appended while the manifest
       // is absent is durable-but-unreachable (readers treat a missing manifest as "plane not seeded" and
       // no-op). Propagate so publishToStatePlane aborts BEFORE appending any delta, completes its publish
       // future exceptionally, and WorkQueueWatcher leaves the queue item for reprocess — the seed (and the
@@ -1031,7 +1031,7 @@ public class ZkStateWriter {
         // Invalidate the delta-plane manifest skip cache: the collection's state/manifest znode is
         // deleted with the collection, so a later same-named recreate must re-seed it. Without this,
         // ensureManifestSeeded() short-circuits on the stale name and the reader never switches onto
-        // the delta plane for the new incarnation (stays on the unwritten legacy node).
+        // the delta plane for the new incarnation (sees no manifest and treats the plane as un-seeded).
         manifestEnsured.remove(collection);
 
         DocCollection removed = cs.remove(collection);

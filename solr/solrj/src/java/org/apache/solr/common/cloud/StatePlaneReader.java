@@ -217,7 +217,7 @@ public final class StatePlaneReader {
    * Carry-forward for the {@code updateWatchedCollection} clobber guard: when {@code prev} (the
    * previously watched collection) is ahead of {@code newState} (a just-fetched structure refresh),
    * adopt {@code prev}'s live {@link StateUpdates} map (and, on the delta plane, its per-shard cursors)
-   * so an older {@code state.json}/legacy read cannot regress newer state.
+   * so an older {@code state.json} structure read cannot regress newer state.
    *
    * <p>The delta-plane gate compares the per-shard cursor generation
    * ({@link DocCollection#getStatePlaneGeneration()}). When {@code prev}'s cursors are ahead it adopts
