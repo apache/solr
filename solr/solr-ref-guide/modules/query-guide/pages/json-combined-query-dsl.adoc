@@ -73,6 +73,8 @@ The query structure is similar to JSON Query DSL except for how multiple queries
 `combiner.algorithm` | Default: `rrf`::
    The algorithm to be used for combining the results. Reciprocal Rank Fusion (RRF) is the in-built fusion algorithm.
    Any other algorithm can be configured using xref:json-combined-query-dsl.adoc#combiner-algorithm-plugin[plugin].
+`combiner.queryDepth` | Default: `start + rows`::
+The maximum number of documents to retrieve from each subquery before combining the results.
 `combiner.rrf.k` | Default: `60`::
    The k parameter in the RRF algorithm.
 

@@ -1,0 +1,8 @@
+title: Add combiner.queryDepth to limit per-subquery result depth with CombinedQueryComponent (RRF)
+type: added
+authors:
+  - name: Sonu Sharma
+    nick: ercsonusharma
+links:
+  - name: SOLR-18290
+    url: https://issues.apache.org/jira/browse/SOLR-18290
