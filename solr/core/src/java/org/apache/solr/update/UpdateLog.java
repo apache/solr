@@ -1959,6 +1959,90 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }, recoveryInfo);
   }
 
+  /**
+   * NRT recovery catch-up: replay the leader's downloaded transaction logs (its still-uncommitted
+   * updates, which are not present in the replicated commit point) followed by this replica's buffer
+   * tlog (updates the leader forwarded during the BUFFERING window), in one ordered LogReplayer pass.
+   * Mirrors {@link #applyBufferedUpdates()} but prepends {@code leaderLogs}. Replay runs with
+   * {@code activeLog=true}, so each per-log commit is a soft commit with openSearcher=false: the
+   * replayed adds land in the live tlog + RTG map and become RTG-visible and tlog-durable WITHOUT
+   * being promoted to a durable commit point or exposed to ordinary {@code q=*:*} search -- identical
+   * to the leader. Returns the Future to wait on, or null if the replica is no longer BUFFERING (the
+   * caller should fall back / retry). If {@code leaderLogs} is empty this degrades to the plain
+   * {@link #applyBufferedUpdates()}.
+   *
+   * <p>Ownership: the LogReplayer decrefs every log handed to it (doReplay's finally, and run()'s
+   * leftover loop), so {@code leaderLogs} are released by the replayer (and, being deleteOnClose,
+   * their backing temp files deleted) -- do NOT decref them here on the replay path. The buffer tlog
+   * keeps its structural refcount: it is incref'd before the replay and dropped only on a clean,
+   * error-free completion, so any replay error leaves the buffer intact for a retry (never
+   * partial-apply-then-drop-buffer).
+   */
+  public Future<RecoveryInfo> applyLeaderTlogThenBuffer(List<TransactionLog> leaderLogs) {
+    if (leaderLogs == null || leaderLogs.isEmpty()) {
+      // nothing fetched from the leader -- fall back to the plain buffered-update replay
+      return applyBufferedUpdates();
+    }
+
+    AtomicBoolean skip = new AtomicBoolean();
+    AtomicBoolean haveBuffer = new AtomicBoolean();
+    versionInfo.blockUpdates();
+    try {
+      cancelApplyBufferUpdate = false;
+
+      state.getAndUpdate(state1 -> {
+          if (state1 != State.BUFFERING) {
+            skip.set(true);
+            return state1;
+          }
+          tlogLock.lock();
+          try {
+            if (bufferTlog != null) {
+              bufferTlog.incref();
+              haveBuffer.set(true);
+            }
+          } finally {
+            tlogLock.unlock();
+          }
+          return State.APPLYING_BUFFERED;
+      });
+      if (skip.get()) {
+        // not BUFFERING: the replayer will never run, so we still own leaderLogs -- release them so
+        // the caller can fall back / retry cleanly (deleteOnClose removes the temp files too).
+        for (TransactionLog l : leaderLogs) {
+          try {
+            l.decref();
+          } catch (Exception e) {
+            log.warn("Error releasing leader tlog after skipped replay", e);
+          }
+        }
+        return null;
+      }
+    } finally {
+      versionInfo.unblockUpdates();
+    }
+
+    // Order: leader logs (oldest first) then the buffer (newest). The replayer processes the deque
+    // FIFO, one log fully before the next; version checks make any overlap idempotent.
+    List<TransactionLog> combined = new ArrayList<>(leaderLogs);
+    if (haveBuffer.get()) {
+      combined.add(bufferTlog);
+    }
+
+    ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(ParWork.getRootSharedExecutor());
+    LogReplayer replayer = new LogReplayer(combined, true);
+    return cs.submit(() -> {
+      replayer.run();
+      // Only drop the buffer once everything replayed cleanly. doReplay() also breaks out early on
+      // cancelApplyBufferUpdate || isClosed, and a leader-log record may error -- in any of those
+      // cases keep the buffer intact so the whole recovery retries.
+      if (haveBuffer.get() && !cancelApplyBufferUpdate && !isClosed
+          && !recoveryInfo.failed && recoveryInfo.errors == 0) {
+        dropBufferTlog();
+      }
+    }, recoveryInfo);
+  }
+
   public State getState() {
     return state.get();
   }
@@ -2079,6 +2163,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     public void doReplay(TransactionLog translog, SolrQueryRequest req) {
 
       UpdateRequestProcessor proc = null;
+      // finishing/updatesBlocked are per-log state. When one LogReplayer replays multiple activeLog
+      // tlogs in sequence (NRT recovery catch-up: leader tlogs followed by the buffer tlog), a stale
+      // finishing==true left over from the previous log would route this log's end-of-log handling
+      // into the already-finishing branch and call versionInfo.unblockUpdates() on a thread that never
+      // took the write lock -> IllegalMonitorStateException. Reset so each log blocks/finishes/unblocks
+      // exactly once. (No-op for the single-log activeLog and multi-log non-active replay paths.)
+      finishing = false;
       try {
         loglog.warn("Starting log replay {}  active={} starting pos={} inSortedOrder={} tlog={}", translog, activeLog, recoveryInfo.positionOfStart, inSortedOrder, translog);
         long lastStatusTime = System.nanoTime();

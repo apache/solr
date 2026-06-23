@@ -50,6 +50,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.PeerSyncWithLeader;
+import org.apache.solr.update.TransactionLog;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -61,8 +62,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -247,18 +250,36 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     log.info("Attempting to replicate from [{}].", leader);
 
-    String leaderUrl;
-    // send commit
-    try {
-      leaderUrl = leader.getCoreUrl();
-      commitOnLeader(leaderUrl);
-    } catch (Exception e) {
-      if (e instanceof  SolrException && ((SolrException) e).getRootCause() instanceof RejectedExecutionException) {
-       throw new AlreadyClosedException("An executor is shutdown already");
-      }
+    String leaderUrl = leader.getCoreUrl();
 
-      log.error("Commit on leader failed", e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    // commit-on-leader is replica-type dependent:
+    //
+    // NRT/PULL: do NOT commit-on-leader before the fetch. Forcing a HARD commit on the leader fsyncs its
+    // still-uncommitted in-RAM docs (e.g. a deliberately-uncommitted doc) into a fresh durable commit
+    // point, which this follower then replicates and exposes to *:* while the leader itself still hides
+    // them -- the load-dependent "expected N but was N+1" leak. An NRT follower instead catches up the
+    // leader's uncommitted docs via the leader-tlog replay (Option B: RTG-visible/tlog-durable but not
+    // *:*-visible until a real commit, identically on leader and follower); both only replicate the
+    // leader's existing latest commit point.
+    //
+    // TLOG: DOES commit-on-leader. A TLOG follower has no Option B catch-up -- its only route to the
+    // leader's data is replicating a commit point, and docs the leader accepted but had not committed
+    // before this follower went down were never forwarded into its buffer. Without flushing them into a
+    // commit point here, the follower replicates only the leader's last commit and permanently misses
+    // them (TestTlogReplica testRecovery/testBasicLeaderElection: expected:<4> but was:<2>). Unlike NRT,
+    // TLOG has no keep-uncommitted-hidden invariant -- a leader commit makes those docs *:*-visible on
+    // leader and followers alike (no divergence), which is exactly the established, tested TLOG model.
+    if (replicaType == Replica.Type.TLOG) {
+      // send commit
+      try {
+        commitOnLeader(leaderUrl);
+      } catch (Exception e) {
+        if (e instanceof SolrException && ((SolrException) e).getRootCause() instanceof RejectedExecutionException) {
+          throw new AlreadyClosedException("An executor is shutdown already");
+        }
+        log.error("Commit on leader failed", e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
     }
 
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
@@ -707,8 +728,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
             }
             // log.debug("Replaying updates buffered during PeerSync.");
             //ulog.bufferUpdates();
-            // exit buffering state
-            replay(core);
+            // exit buffering state. PeerSync already caught the replica up to the leader's versions,
+            // so no leader-tlog fetch is needed here -- just replay the buffer (leader=null).
+            replay(core, null, false);
 
             // PeerSync.Updater applies the recovered docs with IGNORE_AUTOCOMMIT and never reopens
             // the main searcher, and PeerSync verifies success against the *realtime* searcher
@@ -751,10 +773,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
             close = true;
             return false;
           }
-          // recalling buffer updates will drop the old buffer tlog
-          //if (ulog.getState() != UpdateLog.State.BUFFERING) {
+          // Recalling bufferUpdates() drops the existing buffer tlog. Locus-1
+          // (DefaultSolrCoreState.sendFullPrep) already opened the buffer BEFORE this replica published
+          // BUFFERING, so the updates the leader forwarded during the prep-recovery handshake are
+          // already accumulating in it. Only open a fresh buffer if we are not already BUFFERING --
+          // otherwise we would drop those window-forwarded updates and reopen the data-loss/leak window.
+          if (ulog.getState() != UpdateLog.State.BUFFERING) {
             ulog.bufferUpdates();
-         // }
+          }
 
           log.debug("Begin buffering updates. core=[{}]", coreName);
 
@@ -769,14 +795,51 @@ public class RecoveryStrategy implements Runnable, Closeable {
             shardHadData = leaderHasUpdateVersions(leader.getCoreUrl());
           }
           if (result == IndexFetcher.IndexFetchResult.MASTER_VERSION_ZERO && shardHadData) {
-            // Treating empty-leader as success here would publish us ACTIVE with an empty index
-            // and lose RTG visibility — retry until the leader has its data back.
-            log.warn("Leader reports an empty index but the shard has update history — leader likely still recovering; will retry. core={}", coreName);
-            successfulRecovery = false;
+            if (replicaType == Replica.Type.NRT) {
+              // OPTION B (NRT) wiring: MASTER_VERSION_ZERO is emitted ONLY when the leader's commit point
+              // is null (ReplicationHandler: getCommitTimestamp is a positive stamp on every real commit),
+              // i.e. the leader has never committed. With no commit, nothing has been pruned or rolled off
+              // the leader's tlog, so the leader's getLogList enumerates its ENTIRE accepted dataset -- all
+              // of which is still uncommitted (down-window) and therefore absent from the (empty) commit
+              // point the replication fetch above copied. So deleteAll'ing our index and replaying the
+              // leader's full tlog converges us exactly. Rather than retrying forever waiting for a leader
+              // commit that may never come, fetch the leader's tlog and replay it (ahead of our buffer) so
+              // those docs become RTG-visible + tlog-durable here WITHOUT q=*:* exposure, then publish
+              // ACTIVE — identically to the leader. (Correctness here rests on the empty-commit ⇒ full-tlog
+              // identity above, NOT on tlog-vs-IndexWriter write ordering.) On ANY fetch/replay failure
+              // replay() throws before touching the buffer (download/validation) or after an error-flagged
+              // replay (buffer only dropped on a clean replay), so we fall back to retry with the buffer
+              // left fully intact (never partial-apply-then-drop).
+              log.error("DIAG OptionB: MASTER_VERSION_ZERO with leader update history -> NRT leader-tlog catch-up. core={} leaderUrl={}",
+                  coreName, leader.getCoreUrl());
+              try {
+                replay(core, leader, true);
+                log.error("DIAG OptionB: leader-tlog catch-up SUCCESS -> publishing ACTIVE. core={}", coreName);
+                log.info("Replication Recovery (leader-tlog catch-up) was successful.");
+                successfulRecovery = true;
+              } catch (InterruptedException | AlreadyClosedException | RejectedExecutionException e) {
+                throw e; // let the outer catch bail on close/interrupt
+              } catch (Exception e) {
+                log.error("DIAG OptionB: leader-tlog catch-up FAILED -> fallback to retry (buffer left intact). core={}", coreName, e);
+                successfulRecovery = false;
+              }
+            } else {
+              // TLOG follower: Option B is NRT-only — leave the original version-0 retry semantics
+              // untouched (the TLOG branch of replay() does copyOverBufferingUpdates, not leader-tlog fetch).
+              log.warn("Leader reports an empty index but the shard has update history — leader likely still recovering; will retry. core={}", coreName);
+              successfulRecovery = false;
+            }
           } else if (result.getSuccessful()) {
             log.info("replication fetch reported as success");
 
-            replay(core);
+            // Replication only copies the leader's latest *commit point*. Any updates the leader has
+            // accepted but not yet committed (its open tlog / IndexWriter RAM) are absent from the
+            // fetched index. For an NRT follower, replay the leader's tlog (those uncommitted updates)
+            // followed by our buffer so they become RTG-visible and tlog-durable on the follower --
+            // without exposing them to q=*:* -- identically to the leader. Pass the leader so replay()
+            // can fetch its tlog. The fetched commit point already converges us, so an empty leader tlog
+            // (no uncommitted docs) is legitimate here -- do NOT require a non-empty fetch.
+            replay(core, leader, false);
 
             log.info("Replication Recovery was successful.");
             successfulRecovery = true;
@@ -938,7 +1001,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   public static Runnable testing_beforeReplayBufferingUpdates;
 
-  private void replay(SolrCore core)
+  private void replay(SolrCore core, Replica leader, boolean requireLeaderTlog)
       throws InterruptedException, ExecutionException {
     if (testing_beforeReplayBufferingUpdates != null) {
       testing_beforeReplayBufferingUpdates.run();
@@ -955,36 +1018,114 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // the last fetched commit until the next segment replication.
       return;
     }
-    Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog().applyBufferedUpdates();
-    if (future == null) {
-      // no replay needed\
-      log.debug("No replay needed.");
-      return;
-    } else {
-      log.info("Replaying buffered documents.");
-      // wait for replay
-      RecoveryInfo report;
+
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+
+    Future<RecoveryInfo> future;
+    File tmpTlogDir = null;
+    if (leader != null) {
+      // NRT replication-recovery catch-up: download the leader's tlog (its updates accepted-but-not-
+      // committed, hence absent from the fetched commit point) and replay them ahead of our buffer.
+      List<TransactionLog> leaderLogs = new ArrayList<>();
+      tmpTlogDir = new File(new File(ulog.getLogDir()).getParentFile(), "leadertlog." + System.nanoTime());
       try {
-        report = future.get(10, TimeUnit.MINUTES); // MRM TODO: - how long? make configurable too
-      } catch (InterruptedException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
-      } catch (TimeoutException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        List<File> files = replicationHandler.fetchLeaderTlogFiles(leader.getCoreUrl(), tmpTlogDir);
+        for (File f : files) {
+          // openExisting=true reads + validates the header (a corrupt/short tlog throws here), so a
+          // bad download is caught before any replay touches the buffer.
+          leaderLogs.add(UpdateLog.newTransactionLog(f, null, true));
+        }
+        if (requireLeaderTlog && leaderLogs.isEmpty()) {
+          // We entered this path because the leader reported index version 0 BUT advertised update
+          // history (leaderHasUpdateVersions) -- with no commit point, its ENTIRE dataset lives in its
+          // tlog. An empty fetch now means the leader committed and pruned/rotated its tlog between the
+          // probe and this fetch. replicate() already deleteAll'd our index, so replaying nothing would
+          // publish ACTIVE with the leader's data missing. Fail (caught below -> recovery retries, buffer
+          // left intact); the retry sees the leader's new commit point and converges via normal replication.
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+              "Leader tlog fetch returned empty but leader reported update history -- retrying recovery");
+        }
+      } catch (Exception e) {
+        // Download/validation failed: release anything opened, discard the temp dir, and fail the
+        // recovery so it retries -- the buffer is left completely untouched (never partial-apply).
+        for (TransactionLog l : leaderLogs) {
+          try {
+            l.decref();
+          } catch (Exception ignore) {
+            // best effort
+          }
+        }
+        deleteDirTree(tmpTlogDir);
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+            "Failed to fetch leader tlog for NRT recovery catch-up", e);
       }
-      if (report.failed) {
-        SolrException.log(log, "Replay failed");
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
-      }
+      log.error("DIAG OptionB: fetched {} leader tlog file(s) for NRT catch-up; replaying leader-tlog then buffer. core={} leaderUrl={}",
+          leaderLogs.size(), core.getName(), leader.getCoreUrl());
+      future = ulog.applyLeaderTlogThenBuffer(leaderLogs);
+    } else {
+      future = ulog.applyBufferedUpdates();
     }
 
-    // the index may ahead of the tlog's caches after recovery, by calling this tlog's caches will be purged
-    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-    if (ulog != null) {
-      ulog.openRealtimeSearcher();
+    try {
+      if (future == null) {
+        // no replay needed\
+        log.debug("No replay needed.");
+        return;
+      } else {
+        log.info("Replaying buffered documents.");
+        // wait for replay
+        RecoveryInfo report;
+        try {
+          report = future.get(10, TimeUnit.MINUTES); // MRM TODO: - how long? make configurable too
+        } catch (InterruptedException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
+        } catch (TimeoutException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+        // On the leader-tlog catch-up path a record-level error must also fail the recovery: the
+        // buffer is only dropped on an error-free replay (see applyLeaderTlogThenBuffer), so treating
+        // errors>0 as success would publish ACTIVE with the buffer's updates still un-applied.
+        if (report.failed || (leader != null && report.errors > 0)) {
+          SolrException.log(log, "Replay failed");
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
+        }
+        if (leader != null) {
+          log.error("DIAG OptionB: leader-tlog catch-up replay applied {} core={}", report, core.getName());
+        }
+      }
+
+      // the index may ahead of the tlog's caches after recovery, by calling this tlog's caches will be purged
+      if (ulog != null) {
+        ulog.openRealtimeSearcher();
+      }
+    } finally {
+      // The replayer deletes the downloaded tlog files (deleteOnClose) as it decrefs them; remove the
+      // now-empty temp dir. On the error path above, deleteDirTree already ran before the throw.
+      if (tmpTlogDir != null) {
+        deleteDirTree(tmpTlogDir);
+      }
     }
 
     // solrcloud_debug
     // cloudDebugLog(core, "replayed");
+  }
+
+  /** Recursively delete a directory tree, best effort (used to clean the leader-tlog temp dir). */
+  private static void deleteDirTree(File dir) {
+    if (dir == null) {
+      return;
+    }
+    File[] children = dir.listFiles();
+    if (children != null) {
+      for (File child : children) {
+        if (child.isDirectory()) {
+          deleteDirTree(child);
+        } else {
+          child.delete();
+        }
+      }
+    }
+    dir.delete();
   }
 
   /**

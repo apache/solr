@@ -724,7 +724,17 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         ulock.lock();
         try {
           if (ulog != null) ulog.preSoftCommit(cmd);
-          core.getSearcher(true, false, waitSearcher, true);
+          if (cmd.openSearcher) {
+            core.getSearcher(true, false, waitSearcher, true);
+          } else if (!cmd.closing) {
+            // Honor openSearcher=false on a soft commit (recovery buffered / leader-tlog replay): open
+            // only a realtime searcher so RTG and versioning see the replayed docs, but do NOT register
+            // a new main searcher. Registering one here would publish leader-uncommitted docs (replayed
+            // from the buffer / leader tlog) to ordinary q=*:* while the leader still hides them -> the
+            // recovering follower diverges from the leader. Mirrors the hard-commit branch below.
+            RefCounted<SolrIndexSearcher> searchHolder = core.openNewSearcher(true, true);
+            searchHolder.decref();
+          }
           if (ulog != null) ulog.postSoftCommit(cmd);
         } finally {
           ulock.unlock();

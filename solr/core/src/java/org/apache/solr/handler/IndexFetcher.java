@@ -120,6 +120,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1925,7 +1926,13 @@ public class IndexFetcher {
 
         //    //the method is command=filecontent
         params.set(COMMAND, CMD_GET_FILE);
-        params.set(GENERATION, Long.toString(indexGen));
+        // A tlog fetch (NRT recovery catch-up) has no associated index commit point. Sending
+        // GENERATION would make the server reserve/save that (nonexistent) commit point
+        // (DirectoryFileStream.initWrite -> delPolicy.saveCommitPoint), throwing IllegalStateException.
+        // Omit GENERATION for TLOG_FILE so the server sees a null gen and skips commit-point reservation.
+        if (!ReplicationHandler.TLOG_FILE.equals(solrParamOutput)) {
+          params.set(GENERATION, Long.toString(indexGen));
+        }
         params.set(CommonParams.QT, ReplicationHandler.PATH);
         //add the version to download. This is used to reserve the download
         params.set(solrParamOutput, fileName);
@@ -1962,11 +1969,23 @@ public class IndexFetcher {
             }
 
             @Override public void onFailure(Throwable throwable, int code, Object context) {
-              log.error("Exception fetching file code={}", code, throwable);
-
-              if (code == 403 || code == 500 || code == 503 || code == 0) {
-                // try again
+              // Closing a partially-consumed response stream between retry attempts (fetch()'s finally
+              // calls IOUtils.closeQuietly) makes SolrInputStreamResponseListener.Input.close() fail the
+              // still-pending Jetty callbacks with a manufactured AsynchronousCloseException. That surfaces
+              // here as a failure carrying the already-received status code (200). It is NOT a fatal server
+              // error: the OFFSET-resume retry loop in fetch() is built to recover from transient mid-stream
+              // failures, and setting stop=true here permanently defeats it -- every subsequent file in the
+              // fetch then throws "Index fetch stopped", turning one transient hiccup into an unrecoverable,
+              // self-reinforcing replication failure (slave stuck at 0 docs under load). Only a genuinely
+              // fatal server response should hard-stop the whole fetch; a 200, a connection-level failure
+              // (code 0), the retryable 403/500/503, and any client-initiated AsynchronousCloseException
+              // must fall through to the retry loop.
+              boolean retryable = code == 200 || code == 0 || code == 403 || code == 500 || code == 503
+                  || throwable instanceof java.nio.channels.AsynchronousCloseException;
+              if (retryable) {
+                log.warn("Transient failure fetching file code={} (will retry)", code, throwable);
               } else {
+                log.error("Exception fetching file code={}", code, throwable);
                 stop = true;
               }
             }
@@ -2082,6 +2101,72 @@ public class IndexFetcher {
     QueryRequest request = new QueryRequest(params);
     request.setBasePath(masterUrl);
     return solrClient.request(request);
+  }
+
+  /**
+   * List and download the leader's transaction-log files into {@code destDir} for NRT recovery
+   * catch-up of the leader's still-uncommitted updates. Each downloaded tlog is validated: its
+   * on-disk length must equal the SIZE the leader reported. Returns the files sorted by name
+   * ({@code tlog.NNNN...} = version order, oldest first). Throws on list/download/validation failure
+   * so the caller can discard {@code destDir}, leave the recovery buffer intact, and retry.
+   */
+  public List<File> fetchTlogFiles(File destDir) throws Exception {
+    if (!destDir.exists() && !destDir.mkdirs()) {
+      throw new IOException("Could not create temp tlog dir " + destDir);
+    }
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(COMMAND, ReplicationHandler.CMD_GET_TLOG_FILE_LIST);
+    params.set(CommonParams.WT, JAVABIN);
+    params.set(CommonParams.QT, ReplicationHandler.PATH);
+    QueryRequest req = new QueryRequest(params);
+    req.setBasePath(masterUrl);
+
+    @SuppressWarnings({"rawtypes"})
+    NamedList response;
+    try {
+      response = solrClient.request(req);
+    } catch (SolrServerException e) {
+      throw new IOException(e);
+    }
+
+    // fastutil trap: the javabin codec deserializes lists as fastutil ObjectArrayList -- never cast
+    // to java.util.ArrayList. The List interface is safe.
+    @SuppressWarnings({"unchecked"})
+    List<Map<String, Object>> tlogFiles =
+        (List<Map<String, Object>>) response.get(ReplicationHandler.CMD_GET_TLOG_FILE_LIST);
+    if (tlogFiles == null || tlogFiles.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    // fetchFile() schedules an fsync of the downloaded file on the fsyncService; a one-shot fetcher
+    // does not otherwise create it (only fetchLatestIndex does). Create it for the download and shut
+    // it down (allowing queued fsyncs to drain) when done.
+    fsyncService = Executors.newSingleThreadScheduledExecutor(new SolrNamedThreadFactory("fsyncService"));
+    try {
+      List<File> downloaded = new ArrayList<>(tlogFiles.size());
+      for (Map<String, Object> fileMeta : tlogFiles) {
+        String name = (String) fileMeta.get(NAME);
+        long expectedSize = (Long) fileMeta.get(SIZE);
+        // latestGen=0 is unused: getStream() omits GENERATION for TLOG_FILE so the leader does not
+        // reserve/save a (nonexistent) commit point for the tlog fetch.
+        LocalFsFileFetcher fetcher =
+            new LocalFsFileFetcher(destDir, fileMeta, name, ReplicationHandler.TLOG_FILE, 0L);
+        fetcher.fetchFile();
+        File out = new File(destDir, name);
+        long actual = out.exists() ? out.length() : -1L;
+        if (actual != expectedSize) {
+          throw new IOException("Downloaded tlog '" + name + "' length mismatch from " + masterUrl
+              + ": expected " + expectedSize + " but got " + actual);
+        }
+        downloaded.add(out);
+      }
+      downloaded.sort(Comparator.comparing(File::getName));
+      return downloaded;
+    } finally {
+      if (fsyncService != null && !fsyncService.isShutdown()) fsyncService.shutdown();
+      fsyncService = null;
+    }
   }
 
   public void destroy() {

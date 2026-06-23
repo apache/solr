@@ -143,9 +143,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         // commit that flushes pending docs without setCommitData leaves empty userData -> replication
         // index version 0 -> recovering replicas see this leader as empty.
         if (indexWriter.hasUncommittedChanges()) {
-          SolrIndexWriter.setCommitData(indexWriter, -1);
+          // Only stamp fresh commit metadata when the writer doesn't already carry valid commit data;
+          // re-stamping would mint a new commitTimeMSec and bump the replication index version on every
+          // close/reload (see SolrIndexWriter.hasValidCommitData).
+          if (!SolrIndexWriter.hasValidCommitData(indexWriter)) {
+            SolrIndexWriter.setCommitData(indexWriter, -1);
+          }
+          indexWriter.commit();
         }
-        indexWriter.commit();
         indexWriter.close();
       }
       indexWriter = null;
@@ -292,9 +297,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           // never completes recovery. Guard on uncommitted changes so we don't create a spurious commit
           // (or overwrite an existing, properly-stamped commit) when there is nothing to flush.
           if (iw.hasUncommittedChanges()) {
-            SolrIndexWriter.setCommitData(iw, -1);
+            // Only stamp fresh commit metadata when the writer doesn't already carry valid commit
+            // data; re-stamping would mint a new commitTimeMSec and bump the replication index version
+            // on every close/reload (see SolrIndexWriter.hasValidCommitData).
+            if (!SolrIndexWriter.hasValidCommitData(iw)) {
+              SolrIndexWriter.setCommitData(iw, -1);
+            }
+            iw.commit();
           }
-          iw.commit();
           iw.rollback();
         } catch (Exception e) {
           ParWork.propagateInterrupt("Error closing old IndexWriter. core=" + coreName, e);
@@ -669,6 +679,23 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     // We have confirmed the leader is reachable; clear any DOWN-episode latch so a later unreachable
     // episode can publish DOWN again, then publish BUFFERING (raises our term to the leader's).
     recoveryTask.downPublished.set(false);
+
+    // KEYSTONE: open the ulog buffer BEFORE we publish BUFFERING. Publishing BUFFERING is what makes
+    // the leader observe us as a valid forward target (DistributedZkUpdateProcessor includes BUFFERING
+    // in its forward set and does not skip it) and begin streaming FROMLEADER updates to us. If the
+    // buffer is not yet open when those forwarded updates arrive, the ulog is still State.ACTIVE so
+    // they are applied straight to the live INDEX instead of being buffered; the later
+    // RecoveryStrategy.bufferUpdates() then drops them and the index fetch (MASTER_VERSION_ZERO when
+    // the leader has no fresh commit) can leave the follower stale/empty -- previously masked by a hard
+    // commit-on-leader that fsynced the leader's uncommitted docs into a new commit point (the *:*
+    // leak). Opening the buffer here guarantees every update forwarded once the leader sees BUFFERING
+    // lands in the buffer (replayed at the end of recovery), never the live index, and never *:*. Done
+    // only if we are not already BUFFERING, since bufferUpdates() drops any existing buffer tlog.
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+    if (ulog != null && ulog.getState() != UpdateLog.State.BUFFERING) {
+      ulog.bufferUpdates();
+    }
+
     core.getCoreContainer().getZkController().publish(core.getCoreDescriptor(), Replica.State.BUFFERING);
 
     recoveryTask.setFistLeader(leader);

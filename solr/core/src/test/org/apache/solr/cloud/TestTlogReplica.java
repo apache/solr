@@ -657,14 +657,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     new UpdateRequest()
         .deleteById("1")
         .process(cloudClient, collectionName);
-    boolean successs = false;
-    try {
-      checkRTG(1, 1, cluster.getJettySolrRunners());
-      successs = true;
-    } catch (AssertionError e) {
-      //expected
-    }
-    assertFalse("Doc1 is deleted but it's still exist", successs);
+    checkRTG(1, 1, cluster.getJettySolrRunners(), false);
   }
 
   @Test
@@ -932,6 +925,18 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   private void checkRTG(int from, int to, List<JettySolrRunner> solrRunners) throws Exception{
+    checkRTG(from, to, solrRunners, true);
+  }
+
+  /**
+   * Real-time-get check across the given runners. When {@code expectExist} is true every doc in the
+   * range must be retrievable; when false every doc must be absent (e.g. after a delete). A leader
+   * forwards updates to its TLOG followers asynchronously, so the target state can land a moment
+   * after the update call returns on the client. We poll up to {@link #REPLICATION_TIMEOUT_SECS} so a
+   * brief forwarding delay is absorbed instead of producing a spurious failure, while a state that
+   * has already settled is detected on the first query and returns immediately.
+   */
+  private void checkRTG(int from, int to, List<JettySolrRunner> solrRunners, boolean expectExist) throws Exception{
     for (JettySolrRunner solrRunner: solrRunners) {
       try (SolrClient client = solrRunner.newClient()) {
         for (int i = from; i <= to; i++) {
@@ -939,8 +944,19 @@ public class TestTlogReplica extends SolrCloudTestCase {
           query.set("distrib", false);
           query.setRequestHandler("/get");
           query.set("id",i);
-          QueryResponse res = client.query(collectionName, query);
-          assertNotNull("Can not find doc "+ i + " in " + solrRunner.getBaseUrl(),res.getResponse().get("doc"));
+          Object doc = null;
+          TimeOut timeout = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+          while (true) {
+            QueryResponse res = client.query(collectionName, query);
+            doc = res.getResponse().get("doc");
+            if ((doc != null) == expectExist || timeout.hasTimedOut()) break;
+            Thread.sleep(50);
+          }
+          if (expectExist) {
+            assertNotNull("Can not find doc " + i + " in " + solrRunner.getBaseUrl(), doc);
+          } else {
+            assertNull("Doc " + i + " should be deleted but still exists in " + solrRunner.getBaseUrl(), doc);
+          }
         }
       }
     }

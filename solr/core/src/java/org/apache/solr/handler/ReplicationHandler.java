@@ -98,6 +98,7 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -304,6 +305,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       getFileStream(solrParams, rsp);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
       getFileList(solrParams, rsp);
+    } else if (command.equals(CMD_GET_TLOG_FILE_LIST)) {
+      getTlogFileList(rsp);
     } else if (command.equalsIgnoreCase(CMD_BACKUP)) {
       doSnapShoot(new ModifiableSolrParams(solrParams), rsp, req);
     } else if (command.equalsIgnoreCase(CMD_RESTORE)) {
@@ -659,6 +662,59 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
     rsp.add(STATUS, OK_STATUS);
+  }
+
+  /**
+   * Lists the leader's transaction-log files (name + on-disk length) so a recovering NRT follower
+   * can fetch and replay the leader's still-uncommitted updates -- the ones that live only in the
+   * leader's open tlog (and IndexWriter RAM), not in any replicated commit point. The reported SIZE
+   * is the file's current logical length (this fork's TransactionLog keeps the file length equal to
+   * the logical content via raf.setLength on each write), which the follower validates each
+   * downloaded tlog against before replaying; a tlog whose length does not match is discarded and
+   * recovery retries with the buffer left intact.
+   */
+  private void getTlogFileList(SolrQueryResponse rsp) {
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+    if (ulog == null) {
+      rsp.add(CMD_GET_TLOG_FILE_LIST, Collections.EMPTY_LIST);
+      rsp.add(STATUS, OK_STATUS);
+      return;
+    }
+    File tlogDir = new File(ulog.getLogDir());
+    String[] logList = UpdateLog.getLogList(tlogDir);
+    List<Map<String, Object>> result = new ArrayList<>(logList.length);
+    for (String fileName : logList) {
+      File f = new File(tlogDir, fileName);
+      if (!f.exists()) continue;
+      Map<String, Object> fileMeta = new HashMap<>();
+      fileMeta.put(NAME, fileName);
+      fileMeta.put(SIZE, f.length());
+      result.add(fileMeta);
+    }
+    if (log.isDebugEnabled()) {
+      log.debug("TlogFileList={}", result);
+    }
+    rsp.add(CMD_GET_TLOG_FILE_LIST, result);
+    rsp.add(STATUS, OK_STATUS);
+  }
+
+  /**
+   * Download the leader's transaction-log files into {@code destDir} for NRT recovery catch-up of
+   * the leader's still-uncommitted updates. Builds a one-shot {@link IndexFetcher} against
+   * {@code leaderUrl}, lists the leader tlogs (CMD_GET_TLOG_FILE_LIST), downloads each, and
+   * validates length against the listed SIZE. Returns the downloaded files sorted by name (version
+   * order). On any failure the exception propagates so the caller can discard {@code destDir}, leave
+   * the recovery buffer intact, and retry.
+   */
+  public List<File> fetchLeaderTlogFiles(String leaderUrl, File destDir) throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(MASTER_URL, leaderUrl);
+    IndexFetcher fetcher = new IndexFetcher(params.toNamedList(), this, core);
+    try {
+      return fetcher.fetchTlogFiles(destDir);
+    } finally {
+      fetcher.destroy();
+    }
   }
 
   private void getFileList(SolrParams solrParams, SolrQueryResponse rsp) {
@@ -1920,6 +1976,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String CMD_ABORT_FETCH = "abortfetch";
 
   public static final String CMD_GET_FILE_LIST = "filelist";
+
+  public static final String CMD_GET_TLOG_FILE_LIST = "tlogfilelist";
 
   public static final String CMD_GET_FILE = "filecontent";
 

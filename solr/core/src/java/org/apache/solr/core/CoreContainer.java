@@ -1794,9 +1794,19 @@ public class CoreContainer implements Closeable {
                     // something to flush, so we don't create a spurious commit or overwrite a properly
                     // stamped existing commit.
                     if (iw.hasUncommittedChanges()) {
-                      SolrIndexWriter.setCommitData(iw, -1);
+                      // Only stamp fresh commit metadata when the writer doesn't already carry valid
+                      // commit data. Re-stamping here would mint a new commitTimeMSec and bump the
+                      // replication index version on every reload (even when the pending changes are
+                      // just an async flush/merge and no docs were added), breaking the
+                      // reload-preserves-version invariant and triggering spurious follower
+                      // re-replication. When no valid metadata exists yet, stamping is still required
+                      // so the flush produces a non-zero replication version (see
+                      // SolrIndexWriter.hasValidCommitData).
+                      if (!SolrIndexWriter.hasValidCommitData(iw)) {
+                        SolrIndexWriter.setCommitData(iw, -1);
+                      }
+                      iw.commit();
                     }
-                    iw.commit();
                   }
                 } finally {
                   preReloadIw.decref();
@@ -1852,9 +1862,14 @@ public class CoreContainer implements Closeable {
                 try {
                   if (iw != null) {
                     if (iw.hasUncommittedChanges()) {
-                      SolrIndexWriter.setCommitData(iw, -1);
+                      // Only stamp fresh commit metadata when the writer doesn't already carry valid
+                      // commit data; re-stamping would mint a new commitTimeMSec and bump the
+                      // replication index version unnecessarily (see SolrIndexWriter.hasValidCommitData).
+                      if (!SolrIndexWriter.hasValidCommitData(iw)) {
+                        SolrIndexWriter.setCommitData(iw, -1);
+                      }
+                      iw.commit();
                     }
-                    iw.commit();
                   }
                 } finally {
                   iwRef.decref();

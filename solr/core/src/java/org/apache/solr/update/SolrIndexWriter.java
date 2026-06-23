@@ -283,6 +283,33 @@ public class SolrIndexWriter extends IndexWriter {
     iw.setLiveCommitData(commitData.entrySet());
   }
 
+  /**
+   * Returns true if the writer already carries valid (non-zero) commit metadata in its live commit
+   * data (i.e. a prior real commit stamped {@link #COMMIT_TIME_MSEC_KEY}). Out-of-band commits during
+   * reload/close should only call {@link #setCommitData} when this returns false: re-stamping when valid
+   * metadata already exists would mint a fresh commitTimeMSec and needlessly bump the replication index
+   * version on every reload (breaking the reload-preserves-version invariant and triggering spurious
+   * follower re-replication). Stamping is still required when no valid metadata exists, otherwise a bare
+   * commit leaves empty userData, which makes getCommitTimestamp() report 0 and causes a recovering
+   * replica to treat this (data-bearing) leader as empty so it never completes recovery.
+   */
+  public static boolean hasValidCommitData(IndexWriter iw) {
+    Iterable<Map.Entry<String,String>> liveCommitData = iw.getLiveCommitData();
+    if (liveCommitData == null) {
+      return false;
+    }
+    for (Map.Entry<String,String> entry : liveCommitData) {
+      if (COMMIT_TIME_MSEC_KEY.equals(entry.getKey())) {
+        try {
+          return Long.parseLong(entry.getValue()) > 0;
+        } catch (NumberFormatException e) {
+          return false;
+        }
+      }
+    }
+    return false;
+  }
+
   // we override this method to collect metrics for merges.
   @Override
   public void merge(MergePolicy.OneMerge merge) throws IOException {
