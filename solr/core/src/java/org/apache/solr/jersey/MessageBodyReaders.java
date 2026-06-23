@@ -48,7 +48,8 @@ public class MessageBodyReaders {
       implements MessageBodyReader<Object> {
     @Override
     public MessageBodyReader<Object> getDelegate() {
-      return new JacksonJsonProvider().configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+      return new JacksonJsonProvider(SolrJacksonMapper.getObjectMapper())
+          .configure(JsonParser.Feature.ALLOW_COMMENTS, true);
     }
   }
 

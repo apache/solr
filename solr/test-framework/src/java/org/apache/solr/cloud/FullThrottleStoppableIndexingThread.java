@@ -23,12 +23,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.ConcurrentUpdateJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,19 +39,18 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** */
-  private final HttpClient httpClient;
+  private final HttpJettySolrClient httpClient;
 
   private volatile boolean stop = false;
   int clientIndex = 0;
-  private ConcurrentUpdateSolrClient cusc;
-  private List<SolrClient> clients;
+  private ConcurrentUpdateBaseSolrClient cusc;
+  private List<HttpSolrClient> clients;
   private AtomicInteger fails = new AtomicInteger();
 
   public FullThrottleStoppableIndexingThread(
-      HttpClient httpClient,
       SolrClient controlClient,
       CloudSolrClient cloudClient,
-      List<SolrClient> clients,
+      List<HttpSolrClient> clients,
       String id,
       boolean doDeletes,
       int clientSoTimeout) {
@@ -58,17 +58,18 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
     setName("FullThrottleStoppableIndexingThread");
     setDaemon(true);
     this.clients = clients;
-    this.httpClient = httpClient;
+    this.httpClient =
+        new HttpJettySolrClient.Builder()
+            .withConnectionTimeout(10, TimeUnit.SECONDS)
+            .withIdleTimeout(clientSoTimeout, TimeUnit.MILLISECONDS)
+            .build();
 
     cusc =
         new ErrorLoggingConcurrentUpdateSolrClient.Builder(
-                ((HttpSolrClient) clients.get(0)).getBaseURL())
-            .withDefaultCollection(clients.get(0).getDefaultCollection())
-            .withHttpClient(httpClient)
+                clients.getFirst().getBaseURL(), httpClient)
+            .withDefaultCollection(clients.getFirst().getDefaultCollection())
             .withQueueSize(8)
             .withThreadCount(2)
-            .withConnectionTimeout(10000, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(clientSoTimeout, TimeUnit.MILLISECONDS)
             .build();
   }
 
@@ -127,9 +128,8 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
       cusc.shutdownNow();
       cusc =
           new ErrorLoggingConcurrentUpdateSolrClient.Builder(
-                  ((HttpSolrClient) clients.get(clientIndex)).getBaseURL())
+                  clients.get(clientIndex).getBaseURL(), httpClient)
               .withDefaultCollection(clients.get(clientIndex).getDefaultCollection())
-              .withHttpClient(httpClient)
               .withQueueSize(30)
               .withThreadCount(3)
               .build();
@@ -163,7 +163,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
     throw new UnsupportedOperationException();
   }
 
-  static class ErrorLoggingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+  static class ErrorLoggingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolrClient {
     public ErrorLoggingConcurrentUpdateSolrClient(Builder builder) {
       super(builder);
     }
@@ -173,10 +173,10 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
       log.warn("cusc error", ex);
     }
 
-    static class Builder extends ConcurrentUpdateSolrClient.Builder {
+    static class Builder extends ConcurrentUpdateJettySolrClient.Builder {
 
-      public Builder(String baseSolrUrl) {
-        super(baseSolrUrl);
+      public Builder(String baseSolrUrl, HttpJettySolrClient jettySolrClient) {
+        super(baseSolrUrl, jettySolrClient);
       }
 
       @Override

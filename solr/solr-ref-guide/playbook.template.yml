@@ -33,7 +33,7 @@ content:
   - url: '${source_url}'
     branches: ${source_branches}
     start_path: '${start_path}'
-
+${additional_sources}
 ui:
   bundle:
     url: 'https://nightlies.apache.org/solr/solr-reference-guide-ui-bundle/ui-bundle.zip'

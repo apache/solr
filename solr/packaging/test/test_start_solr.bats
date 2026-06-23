@@ -25,7 +25,7 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop --all >/dev/null 2>&1
+  SOLR_STOP_WAIT=30 solr stop --all >/dev/null 2>&1
 }
 
 @test "SOLR-11740 check 'solr stop' connection" {
@@ -85,7 +85,7 @@ teardown() {
 
 @test "deprecated system properties converted to modern properties" {
   solr start -Ddisable.config.edit=true
-  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'You are passing in deprecated system property disable.config.edit and should upgrade to using solr.api.config.edit.enabled instead.'
+  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Deprecated system property disable.config.edit has been replaced by solr.api.config.edit.enabled'
 }
 
 @test "start with custom jetty options" {

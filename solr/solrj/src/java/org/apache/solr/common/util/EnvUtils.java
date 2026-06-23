@@ -75,7 +75,7 @@ public class EnvUtils {
           CUSTOM_MAPPINGS.put(key, props.getProperty(key));
         }
         for (String key : deprecatedProps.stringPropertyNames()) {
-          DEPRECATED_MAPPINGS.put(deprecatedProps.getProperty(key), key);
+          DEPRECATED_MAPPINGS.put(camelCaseToDotSeparated(deprecatedProps.getProperty(key)), key);
         }
         init(false, System.getenv(), System.getProperties());
       }
@@ -216,32 +216,28 @@ public class EnvUtils {
       }
     }
 
-    // Convert deprecated keys to non deprecated versions
-    for (String key : sysProperties.stringPropertyNames()) {
-      if (DEPRECATED_MAPPINGS.containsKey(key) || DEPRECATED_MAPPINGS.containsKey("!" + key)) {
-        String deprecatedKey = key;
-        boolean invertValue = false;
-        key = DEPRECATED_MAPPINGS.get(deprecatedKey);
-        if (key == null) {
-          key = DEPRECATED_MAPPINGS.get("!" + deprecatedKey);
-          invertValue = true;
-        }
-        log.warn(
-            "You are passing in deprecated system property {} and should upgrade to using {} instead.  The deprecated property support will be removed in future version of Solr.",
-            deprecatedKey,
-            key);
-
-        if (invertValue) {
-          log.warn(
-              "Converting from legacy system property {} to modern equivalent {} by inverting the boolean value.",
-              deprecatedKey,
-              key);
-          setProperty(key, String.valueOf(!Boolean.getBoolean(deprecatedKey)));
-        } else {
-          setProperty(key, sysProperties.getProperty(deprecatedKey));
-        }
+    for (String deprecatedKey : sysProperties.stringPropertyNames()) {
+      var dotKey = camelCaseToDotSeparated(deprecatedKey);
+      if (DEPRECATED_MAPPINGS.containsKey(dotKey)
+          || DEPRECATED_MAPPINGS.containsKey("!" + dotKey)) {
+        applyDeprecatedPropertyMapping(deprecatedKey, dotKey, sysProperties);
       }
     }
+  }
+
+  private static void applyDeprecatedPropertyMapping(
+      String deprecatedKey, String lookupKey, Properties sysProperties) {
+    var newPropName =
+        DEPRECATED_MAPPINGS.getOrDefault(lookupKey, DEPRECATED_MAPPINGS.get("!" + lookupKey));
+    var newValue =
+        DEPRECATED_MAPPINGS.containsKey(lookupKey)
+            ? sysProperties.getProperty(deprecatedKey)
+            : String.valueOf(!Boolean.parseBoolean(sysProperties.getProperty(deprecatedKey)));
+    log.warn(
+        "Deprecated system property {} has been replaced by {}. Support for the old property will be removed in a future version of Solr.",
+        deprecatedKey,
+        newPropName);
+    setProperty(newPropName, newValue);
   }
 
   protected static String envNameToSyspropName(String envName) {

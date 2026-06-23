@@ -18,9 +18,6 @@
 package org.apache.solr.client.solrj.io.graph;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -57,7 +54,6 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -1237,13 +1233,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .add(id, "5", "from_s", "jim", "to_s", "ann", "message_t", "Hello steve")
         .commit(cluster.getSolrClient(), COLLECTION);
 
-    commit();
+    SolrClient client = cluster.getRandomJetty(random()).getSolrClient();
 
-    List<JettySolrRunner> runners = cluster.getJettySolrRunners();
-    JettySolrRunner runner = runners.get(0);
-    String url = runner.getBaseUrl().toString();
-
-    SolrClient client = getHttpSolrClient(url);
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     String expr =
@@ -1261,9 +1252,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     NamedList<Object> genericResponse = client.request(query);
 
-    InputStream stream = (InputStream) genericResponse.get(InputStreamResponseParser.STREAM_KEY);
-    InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
-    String xml = readString(reader);
+    String xml = InputStreamResponseParser.consumeResponseToString(genericResponse);
     // Validate the nodes
     String error =
         BaseTestHarness.validateXPath(
@@ -1290,16 +1279,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     }
 
     client.close();
-  }
-
-  private String readString(InputStreamReader reader) throws Exception {
-    StringBuilder builder = new StringBuilder();
-    int c = 0;
-    while ((c = reader.read()) != -1) {
-      builder.append(((char) c));
-    }
-
-    return builder.toString();
   }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {

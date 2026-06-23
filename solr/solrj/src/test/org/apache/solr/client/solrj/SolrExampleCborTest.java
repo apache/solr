@@ -23,11 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -36,6 +34,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Ignore;
 
 /**
@@ -47,9 +46,8 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .allowMultiPartPost(random().nextBoolean())
+    return solrTestRule
+        .newSolrClientBuilder()
         .withRequestWriter(cborRequestWriter())
         .withResponseParser(cborResponseParser())
         .build();
@@ -249,7 +247,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
               List<Map> mapDocs = new ArrayList<>();
               for (SolrInputDocument doc : docs) {
-                mapDocs.add(doc.toMap(new LinkedHashMap<>()));
+                mapDocs.add(new SimpleOrderedMap(doc));
               }
 
               ObjectMapper cborMapper =

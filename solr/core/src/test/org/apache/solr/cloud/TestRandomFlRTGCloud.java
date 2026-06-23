@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -38,8 +37,8 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -52,7 +51,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.response.transform.DocTransformer;
@@ -76,9 +74,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
-
-  /** We have a map of clients, keyed by base URL */
-  private static final Map<String, SolrClient> CLIENTS = new ConcurrentHashMap<>();
 
   /** Always included in fl, so we can check what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");
@@ -167,7 +162,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     configureCluster(numNodes).addConfig(configName, configDir).configure();
 
-    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME); // FYI is closed automatically
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .withProperty("config", "solrconfig-tlog.xml")
@@ -179,14 +174,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (null != COLLECTION_CLIENT) {
-      COLLECTION_CLIENT.close();
-      COLLECTION_CLIENT = null;
-    }
-    for (SolrClient client : CLIENTS.values()) {
-      IOUtils.closeQuietly(client);
-    }
-    CLIENTS.clear();
+    COLLECTION_CLIENT = null;
   }
 
   /**
@@ -420,10 +408,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
   }
 
-  private static SolrClient getSolrClient(final String jettyBaseUrl) {
-    return new HttpSolrClient.Builder(jettyBaseUrl).withDefaultCollection(COLLECTION_NAME).build();
-  }
-
   /**
    * Does one or more RTG request for the specified docIds with a randomized fl &amp; fq params,
    * asserting that the returned document (if any) makes sense given the expected SolrInputDocuments
@@ -617,9 +601,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       // Return the CloudSolrClient, it only uses javabin writerType.
       return COLLECTION_CLIENT;
     } else {
-      JettySolrRunner jetty = jettySolrRunners.get(idx);
-      String jettyBaseUrl = jetty.getBaseUrl().toString();
-      return CLIENTS.computeIfAbsent(jettyBaseUrl, TestRandomFlRTGCloud::getSolrClient);
+      var solrClient = jettySolrRunners.get(idx).getSolrClient();
+      return new CollectionScopedSolrClient(solrClient, COLLECTION_NAME);
     }
   }
 
