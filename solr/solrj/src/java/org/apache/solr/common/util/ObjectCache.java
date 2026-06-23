@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -27,8 +28,8 @@ import org.apache.solr.common.SolrCloseable;
 /** Simple object cache with a type-safe accessor. */
 public class ObjectCache implements SolrCloseable {
 
-  private final AtomicBoolean isClosed = new AtomicBoolean(false);
   protected final ConcurrentMap<String, Object> map;
+  private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
   public ObjectCache() {
     this.map = new ConcurrentHashMap<>();
