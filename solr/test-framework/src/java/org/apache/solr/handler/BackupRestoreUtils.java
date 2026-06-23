@@ -21,20 +21,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.URLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,42 +78,25 @@ public class BackupRestoreUtils extends SolrTestCase {
 
   public static void runCoreAdminCommand(
       String baseUrl, String coreName, String action, Map<String, String> params)
-      throws IOException, URISyntaxException {
-    final URI uri = new URI(baseUrl);
-    final var oldPath = uri.getPath() != null ? uri.getPath().substring(1) : "";
-    final var newPath = "admin/cores";
-    final var finalPath = oldPath.isEmpty() ? newPath : oldPath + "/" + newPath;
-
-    final URIBuilder builder =
-        new URIBuilder(uri)
-            .setPath(finalPath)
-            .addParameter("action", action)
-            .addParameter("core", coreName);
-
-    // Add additional parameters using loop
-    for (Map.Entry<String, String> entry : params.entrySet()) {
-      builder.addParameter(entry.getKey(), entry.getValue());
-    }
-
-    executeHttpRequest(builder.build());
+      throws IOException {
+    executeHttpRequest(
+        URLUtil.buildURI(
+            URI.create(baseUrl),
+            "admin/cores",
+            SolrParams.wrapDefaults(
+                new MapSolrParams(params),
+                new MapSolrParams(Map.of("action", action, "core", coreName)))));
   }
 
   public static void runReplicationHandlerCommand(
       String baseUrl, String coreName, String action, String repoName, String backupName)
-      throws IOException, URISyntaxException {
-    final URI uri = new URI(baseUrl);
-    final var oldPath = uri.getPath() != null ? uri.getPath().substring(1) : "";
-    final var newPath = coreName + ReplicationHandler.PATH;
-    final var finalPath = oldPath.isEmpty() ? newPath : oldPath + "/" + newPath;
-
-    final URI finalURI =
-        new URIBuilder(uri)
-            .setPath(finalPath)
-            .addParameter("command", action)
-            .addParameter("repository", repoName)
-            .addParameter("name", backupName)
-            .build();
-    executeHttpRequest(finalURI);
+      throws IOException {
+    executeHttpRequest(
+        URLUtil.buildURI(
+            URI.create(baseUrl),
+            coreName + ReplicationHandler.PATH,
+            new MapSolrParams(
+                Map.of("command", action, "repository", repoName, "name", backupName))));
   }
 
   private static void executeHttpRequest(URI uri) throws IOException {

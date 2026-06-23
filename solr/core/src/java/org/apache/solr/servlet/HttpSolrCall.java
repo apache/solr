@@ -19,6 +19,7 @@ package org.apache.solr.servlet;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
 import static org.apache.solr.security.AuditEvent.EventType.ERROR;
 import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
@@ -37,7 +38,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -738,6 +738,10 @@ public class HttpSolrCall {
 
   protected void handleAdmin(SolrQueryResponse solrResp) {
     SolrCore.preDecorateResponse(solrReq, solrResp);
+    String callingLockId = req.getHeader(CALLING_LOCK_ID_HEADER);
+    if (callingLockId != null && !callingLockId.isBlank()) {
+      solrReq.getContext().put(CALLING_LOCK_ID_HEADER, callingLockId);
+    }
     handler.handleRequest(solrReq, solrResp);
     SolrCore.postDecorateResponse(handler, solrReq, solrResp);
   }
@@ -760,8 +764,7 @@ public class HttpSolrCall {
     if (collectionParam == null
         && // if collection param already exists, we may need to over-write it
         core != null
-        && collections.equals(
-            Collections.singletonList(core.getCoreDescriptor().getCollectionName()))) {
+        && collections.equals(List.of(core.getCoreDescriptor().getCollectionName()))) {
       return;
     }
     String newCollectionParam = StrUtils.join(collections, ',');

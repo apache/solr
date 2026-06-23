@@ -21,6 +21,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.util.StrUtils.splitSmart;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +39,7 @@ import org.apache.solr.client.solrj.request.ApiMapping.V2EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -103,7 +105,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             if (commands.size() > 1) {
               for (ApiCommand command : commands) {
                 if (command.meta().getName().equals(req.getPath())) {
-                  commands = Collections.singletonList(command);
+                  commands = List.of(command);
                   break;
                 }
               }
@@ -126,6 +128,8 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
   }
 
   /** Wrapper for SolrParams that wraps V2 params and exposes them as V1 params. */
+  @SuppressForbidden(
+      reason = "CommandOperation.getCommandData can return null when there is no payload")
   private static void wrapParams(
       final SolrQueryRequest req,
       final CommandOperation co,
@@ -182,7 +186,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
           }
 
           @Override
-          public Map<String, Object> toMap(Map<String, Object> suppliedMap) {
+          public void writeMap(EntryWriter ew) throws IOException {
             for (Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
               final String param = it.next();
               String key = cmd.meta().getParamSubstitute(param);
@@ -192,6 +196,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
                       : map.get(key);
               if (o == null) o = pathValues.get(key);
               if (o == null && useRequestParams) o = origParams.getParams(key);
+              if (o == null) continue;
               // make strings out of as many things as we can now to minimize differences from
               // the standard impls that pass through a NamedList/SimpleOrderedMap...
               Class<?> oClass = o.getClass();
@@ -199,19 +204,21 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
                   || Number.class.isAssignableFrom(oClass)
                   || Character.class.isAssignableFrom(oClass)
                   || Boolean.class.isAssignableFrom(oClass)) {
-                suppliedMap.put(param, String.valueOf(o));
-              } else if (List.class.isAssignableFrom(oClass)
-                  && ((List) o).get(0) instanceof String) {
+                ew.put(param, String.valueOf(o));
+              } else if (List.class.isAssignableFrom(oClass)) {
                 @SuppressWarnings({"unchecked"})
-                List<String> l = (List<String>) o;
-                suppliedMap.put(param, l.toArray(new String[0]));
+                List<?> l = (List<?>) o;
+                if (l.isEmpty() || l.get(0) instanceof String) {
+                  ew.put(param, l.toArray(new String[0]));
+                } else {
+                  ew.put(param, o);
+                }
               } else {
                 // Lists pass through but will require special handling downstream
                 // if they contain non-string elements.
-                suppliedMap.put(param, o);
+                ew.put(param, o);
               }
             }
-            return suppliedMap;
           }
         });
   }

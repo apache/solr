@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
@@ -58,6 +60,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
@@ -68,10 +71,10 @@ import org.slf4j.LoggerFactory;
  */
 public class GatherNodesStream extends TupleStream implements Expressible {
 
-  private String zkHost;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private String collection;
   private StreamContext streamContext;
-  private Map<String, String> queryParams;
+  private SolrParams queryParams;
   private String traverseFrom;
   private String traverseTo;
   private String gather;
@@ -97,20 +100,20 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public GatherNodesStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       String traverseFrom,
       String traverseTo,
       String gather,
-      Map<String, String> queryParams,
+      SolrParams queryParams,
       List<Metric> metrics,
       boolean trackTraversal,
       Set<Traversal.Scatter> scatter,
       int maxDocFreq) {
 
     init(
-        zkHost,
+        solrConnection,
         collection,
         tupleStream,
         traverseFrom,
@@ -130,7 +133,6 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
     List<StreamExpression> streamExpressions =
         factory.getExpressionOperandsRepresentingTypes(
@@ -273,43 +275,24 @@ public class GatherNodesStream extends TupleStream implements Expressible {
           Integer.parseInt(((StreamExpressionValue) docFreqExpression.getParameter()).getValue());
     }
 
-    Map<String, String> params = new HashMap<String, String>();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost")
-          && !namedParam.getName().equals("gather")
-          && !namedParam.getName().equals("walk")
-          && !namedParam.getName().equals("scatter")
-          && !namedParam.getName().equals("maxDocFreq")
-          && !namedParam.getName().equals("trackTraversal")
-          && !namedParam.getName().equals("window")
-          && !namedParam.getName().equals("lag")) {
-        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    SolrParams params =
+        buildSolrParamsExcept(
+            namedParams,
+            Set.of(
+                "zkHost",
+                "solrConnection",
+                "gather",
+                "walk",
+                "scatter",
+                "maxDocFreq",
+                "trackTraversal",
+                "window",
+                "lag"));
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    if (null == zkHost) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
-
-    // We've got all the required items
     init(
-        zkHost,
+        solrConnection,
         collectionName,
         stream,
         traverseFrom,
@@ -326,13 +309,13 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   }
 
   private void init(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       String traverseFrom,
       String traverseTo,
       String gather,
-      Map<String, String> queryParams,
+      SolrParams queryParams,
       List<Metric> metrics,
       boolean trackTraversal,
       Set<Traversal.Scatter> scatter,
@@ -340,7 +323,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       int window,
       int lag,
       int interval) {
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.tupleStream = tupleStream;
     this.traverseFrom = traverseFrom;
@@ -385,18 +368,15 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       expression.addParameter("<stream>");
     }
 
-    Set<Map.Entry<String, String>> entries = queryParams.entrySet();
-    // parameters
-    for (Map.Entry<String, String> param : entries) {
+    for (Map.Entry<String, String[]> param : queryParams) {
       assert param.getKey() != null && param.getValue() != null : "Bad types passed";
-      String value = param.getValue().toString();
-
-      // SOLR-8409: This is a special case where the params contain a " character
-      // Do note that in any other BASE streams with parameters where a " might come into play
-      // that this same replacement needs to take place.
-      value = value.replace("\"", "\\\"");
-
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey().toString(), value));
+      for (String paramValue : param.getValue()) {
+        // SOLR-8409: This is a special case where the params contain a " character
+        // Do note that in any other BASE streams with parameters where a " might come into play
+        // that this same replacement needs to take place.
+        paramValue = paramValue.replace("\"", "\\\"");
+        expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), paramValue));
+      }
     }
 
     if (metrics != null) {
@@ -405,8 +385,9 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
-    expression.addParameter(new StreamExpressionNamedParameter("gather", zkHost));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
+    expression.addParameter(new StreamExpressionNamedParameter("gather", gather));
     if (maxDocFreq > -1) {
       expression.addParameter(
           new StreamExpressionNamedParameter("maxDocFreq", Integer.toString(maxDocFreq)));
@@ -454,10 +435,14 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     child.setFunctionName("solr (graph)");
     child.setImplementingClass("Solr/Lucene");
     child.setExpressionType(ExpressionType.DATASTORE);
-    child.setExpression(
-        queryParams.entrySet().stream()
-            .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
-            .collect(Collectors.joining(",")));
+    String expression =
+        queryParams.stream()
+            .flatMap(
+                e ->
+                    Arrays.stream(e.getValue())
+                        .map(v -> String.format(Locale.ROOT, "%s=%s", e.getKey(), v)))
+            .collect(Collectors.joining(","));
+    child.setExpression(expression);
     explanation.addChild(child);
 
     if (null != metrics) {
@@ -536,7 +521,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         }
       }
 
-      if (queryParams.containsKey("fl")) {
+      if (queryParams.get("fl") != null) {
         String flString = queryParams.get("fl");
         String[] flArray = flString.split(",");
         for (String f : flArray) {
@@ -553,8 +538,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         }
       }
 
-      ModifiableSolrParams joinSParams = new ModifiableSolrParams();
-      queryParams.forEach(joinSParams::add);
+      ModifiableSolrParams joinSParams = new ModifiableSolrParams(queryParams);
       joinSParams.set("fl", buf.toString());
       joinSParams.set("qt", "/export");
       joinSParams.set(SORT, gather + " asc," + traverseTo + " asc");
@@ -582,7 +566,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       try {
         stream =
             new UniqueStream(
-                new CloudSolrStream(zkHost, collection, joinSParams),
+                new CloudSolrStream(solrConnection, collection, joinSParams),
                 new MultipleFieldEqualitor(
                     new FieldEqualitor(gather), new FieldEqualitor(traverseTo)));
         stream.setStreamContext(streamContext);

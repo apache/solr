@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -476,9 +475,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // index some docs - to verify all is good for both shards
     try (CloudSolrClient cloudClient =
-        new RandomizingCloudHttp2SolrClientBuilder(
-                Collections.singletonList(executor.solrCloudCluster.getZkServer().getZkAddress()),
-                Optional.empty())
+        new RandomizingCloudSolrClientBuilder(
+                List.of(executor.solrCloudCluster.getZkServer().getZkAddress()), Optional.empty())
             .withDefaultCollection(collectionName)
             .build()) {
 
@@ -591,8 +589,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     // verify the collection was created with the specified parameters
     try (CloudSolrClient cloudClient =
         new RandomizingCloudSolrClientBuilder(
-                Collections.singletonList(executor.solrCloudCluster.getZkServer().getZkAddress()),
-                Optional.empty())
+                List.of(executor.solrCloudCluster.getZkServer().getZkAddress()), Optional.empty())
             .withDefaultCollection(collectionName)
             .build()) {
 

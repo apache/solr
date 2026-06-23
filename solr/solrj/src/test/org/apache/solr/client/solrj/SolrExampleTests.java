@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj;
 
 import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
@@ -43,13 +44,14 @@ import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -720,7 +722,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     doc.addField("id", "DOCID2");
     doc.addField("name", "hello");
 
-    if (client instanceof HttpSolrClient) {
+    if (client instanceof HttpJettySolrClient) {
       ex = expectThrows(SolrException.class, () -> client.add(doc));
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().indexOf("contains multiple values for uniqueKey") > 0);
@@ -1021,6 +1023,39 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertNotNull("Couldn't upload xml files", result);
     rsp = client.query(new SolrQuery("*:*"));
     assertEquals(5, rsp.getResults().getNumFound());
+  }
+
+  @Test
+  public void testArbitraryJsonIndexing() throws Exception {
+    try (SolrClient client = getSolrClient()) {
+      client.deleteByQuery("*:*");
+      client.commit();
+      assertNumFound("*:*", 0); // make sure it got in
+
+      // two docs, one with uniqueKey, another without it
+      String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
+      var request =
+          new GenericSolrRequest(
+                  SolrRequest.METHOD.POST, "/update/json/docs", SolrRequest.SolrRequestType.UPDATE)
+              .setRequiresCollection(true)
+              .withContent(json.getBytes(StandardCharsets.UTF_8), "application/json");
+      client.request(request);
+      client.commit();
+      QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*"));
+      assertEquals(2, rsp.getResults().getNumFound());
+
+      SolrDocument doc = rsp.getResults().get(0);
+      String src = (String) doc.getFieldValue("_src_");
+      @SuppressWarnings({"rawtypes"})
+      Map m = (Map) fromJSONString(src);
+      assertEquals("abc1", m.get("id"));
+      assertEquals("name1", m.get("name"));
+
+      doc = rsp.getResults().get(1);
+      src = (String) doc.getFieldValue("_src_");
+      m = (Map) fromJSONString(src);
+      assertEquals("name2", m.get("name"));
+    }
   }
 
   @Test
@@ -2351,7 +2386,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     doc.addField(field, oper);
     try {
       client.add(doc);
-      if (client instanceof HttpSolrClient) {
+      if (client instanceof HttpJettySolrClient) {
         // XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
       } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {

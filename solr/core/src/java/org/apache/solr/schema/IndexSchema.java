@@ -17,8 +17,6 @@
 package org.apache.solr.schema;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -31,7 +29,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -60,7 +57,7 @@ import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.ConfigNode;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -71,7 +68,6 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrCore;
@@ -1559,7 +1555,7 @@ public class IndexSchema {
     return getNamedPropertyValues(null, new MapSolrParams(Map.of()));
   }
 
-  public static class SchemaProps implements MapSerializable {
+  public static class SchemaProps implements MapWriter {
     private static final String SOURCE_FIELD_LIST = IndexSchema.SOURCE + "." + CommonParams.FL;
     private static final String DESTINATION_FIELD_LIST =
         IndexSchema.DESTINATION + "." + CommonParams.FL;
@@ -1685,12 +1681,13 @@ public class IndexSchema {
     }
 
     @Override
-    public Map<String, Object> toMap(Map<String, Object> map) {
-      return Stream.of(Handler.values())
-          .filter(it -> name == null || it.nameLower.equals(name))
-          .map(it -> new Pair<>(it.realName, it.fun.apply(this)))
-          .filter(it -> it.second() != null)
-          .collect(Collectors.toMap(Pair::first, Pair::second, (v1, v2) -> v2, LinkedHashMap::new));
+    public void writeMap(EntryWriter ew) throws IOException {
+      for (Handler it : Handler.values()) {
+        if (name == null || it.nameLower.equals(name)) {
+          Object val = it.fun.apply(this);
+          if (val != null) ew.put(it.realName, val);
+        }
+      }
     }
   }
 
@@ -1701,7 +1698,9 @@ public class IndexSchema {
                   SchemaProps.Handler::getNameLower, SchemaProps.Handler::getRealName));
 
   public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
-    return new SchemaProps(name, params, this).toMap(new LinkedHashMap<>());
+    // Must remain a SimpleOrderedMap (with SOM-valued entries preserved) — SchemaXmlWriter casts
+    // nested values to SimpleOrderedMap when persisting managed schemas.
+    return new SimpleOrderedMap<>(new SchemaProps(name, params, this));
   }
 
   /**
@@ -1801,7 +1800,7 @@ public class IndexSchema {
    * @see #newField(String, String, Map)
    */
   public IndexSchema addField(SchemaField newField, boolean persist) {
-    return addFields(Collections.singletonList(newField), Map.of(), persist);
+    return addFields(List.of(newField), Map.of(), persist);
   }
 
   public IndexSchema addField(SchemaField newField) {
@@ -1819,8 +1818,7 @@ public class IndexSchema {
    * @see #newField(String, String, Map)
    */
   public IndexSchema addField(SchemaField newField, Collection<String> copyFieldNames) {
-    return addFields(
-        singletonList(newField), singletonMap(newField.getName(), copyFieldNames), true);
+    return addFields(List.of(newField), Map.of(newField.getName(), copyFieldNames), true);
   }
 
   /**

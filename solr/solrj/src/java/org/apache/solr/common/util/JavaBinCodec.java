@@ -47,7 +47,6 @@ import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
-import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
@@ -426,11 +425,6 @@ public class JavaBinCodec implements PushWriter {
     }
     if (val instanceof Map.Entry) {
       writeMapEntry((Map.Entry) val);
-      return true;
-    }
-    if (val instanceof MapSerializable) {
-      // todo find a better way to reuse the map more efficiently
-      writeMap(((MapSerializable) val).toMap(new NamedList().asShallowMap()));
       return true;
     }
     if (val instanceof AtomicInteger) {
@@ -1482,7 +1476,10 @@ public class JavaBinCodec implements PushWriter {
 
   @Override
   public void close() throws IOException {
-    if (daos != null) {
+    // marshal() already flushes in its own finally block, so skip the redundant flush.
+    // Flushing again after a marshal failure would re-throw the same exception from the broken
+    // stream, causing "Self-suppression not permitted" in the caller's try-with-resources.
+    if (daos != null && !alreadyMarshalled) {
       daos.flushBuffer();
     }
   }

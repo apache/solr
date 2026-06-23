@@ -402,7 +402,7 @@ public class PackageAPI {
       if (name == null) {
         rsp.add("result", pkgs);
       } else {
-        rsp.add("result", Collections.singletonMap(name, pkgs.packages.get(name)));
+        rsp.add("result", Map.of(name, pkgs.packages.get(name)));
       }
     }
 

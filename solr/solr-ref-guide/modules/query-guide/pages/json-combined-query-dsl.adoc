@@ -78,14 +78,21 @@ The query structure is similar to JSON Query DSL except for how multiple queries
 
 === Example
 
-Below is a sample JSON query payload:
+Below is an example with sample JSON query payload:
 
-```
+[tabs#json-query-with-queries]
+======
+curl::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/solr/techproducts/query -d '
 {
     "queries": {
         "lexical1": {
             "lucene": {
-                "query": "title:sales"
+                "query": "name:apache"
             }
         },
         "vector": {
@@ -97,15 +104,37 @@ Below is a sample JSON query payload:
         }
     },
     "limit": 5,
-    "fields": ["id", "score", "title"],
+    "fields": ["id", "score", "name"],
     "params": {
         "combiner": true,
         "combiner.query": ["lexical1", "vector"],
         "combiner.algorithm": "rrf",
         "combiner.rrf.k": "15"
     }
-}
-```
+}'
+----
+====
+SolrJ::
++
+====
+[source,java,indent=0]
+----
+final Map<String, Object> queriesMap = new HashMap<>();
+queriesMap.put("lexical1", Map.of("lucene", Map.of("query", "apache", "df", "name")));
+queriesMap.put("vector", Map.of("knn", Map.of("query", [0.1,-0.34,0.89,0.02], "f", "vector", "topK", 5)));
+final JsonQueryRequest query =
+    new JsonQueryRequest()
+        .setQueries(queriesMap)
+        .withParam("id", "score", "name")
+        .setLimit(5)
+        .withParam("combiner", "true")
+        .withParam("combiner.query", List.of("lexical1", "vector"))
+        .withParam("combiner.algorithm", "rrf")
+        .withParam("combiner.rrf.k", "15");
+QueryResponse queryResponse = query.process(solrClient, COLLECTION_NAME);
+----
+====
+======
 
 == Combiner Algorithm Plugin
 

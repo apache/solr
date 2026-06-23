@@ -56,8 +56,10 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.CommonTestInjection;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -506,7 +508,7 @@ public class ZkStateReader implements SolrCloseable {
           // What do you know, it exists!
           log.debug("Adding lazily-loaded reference for collection {}", collection);
           lazyCollectionStates.putIfAbsent(collection, tryLazyCollection);
-          constructState(Collections.singleton(collection));
+          constructState(Set.of(collection));
         }
       } else if (ref.isLazilyLoaded()) {
         log.debug("Refreshing lazily-loaded state for collection {}", collection);
@@ -518,7 +520,7 @@ public class ZkStateReader implements SolrCloseable {
         log.debug("Forcing refresh of watched collection state for {}", collection);
         DocCollection newState = fetchCollectionState(collection, null);
         if (collectionWatches.updateDocCollection(collection, newState)) {
-          constructState(Collections.singleton(collection));
+          constructState(Set.of(collection));
         }
       } else {
         log.error("Collection {} is not lazy nor watched!", collection);
@@ -543,7 +545,7 @@ public class ZkStateReader implements SolrCloseable {
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
         if (collectionWatches.updateDocCollection(coll, nu)) {
           synchronized (getUpdateLock()) {
-            constructState(Collections.singleton(coll));
+            constructState(Set.of(coll));
           }
         }
         collection = nu;
@@ -1228,8 +1230,7 @@ public class ZkStateReader implements SolrCloseable {
    * @return url that looks like {@code https://localhost:8983/solr}
    */
   public String getBaseUrlForNodeName(final String nodeName) {
-    String urlScheme = getClusterProperty(URL_SCHEME, "http");
-    return Utils.getBaseUrlForNodeName(nodeName, urlScheme, false);
+    return URLUtil.getBaseUrlForNodeName(nodeName, getUrlScheme(), false);
   }
 
   /**
@@ -1240,8 +1241,20 @@ public class ZkStateReader implements SolrCloseable {
    * @return url that looks like {@code https://localhost:8983/api}
    */
   public String getBaseUrlV2ForNodeName(final String nodeName) {
-    String urlScheme = getClusterProperty(URL_SCHEME, "http");
-    return Utils.getBaseUrlForNodeName(nodeName, urlScheme, true);
+    return URLUtil.getBaseUrlForNodeName(nodeName, getUrlScheme(), true);
+  }
+
+  /**
+   * Returns the URL scheme for hosts in the cluster.
+   *
+   * @return the URL scheme ("http" or "https")
+   */
+  public String getUrlScheme() {
+    final Boolean isSolrSslEnabled = EnvUtils.getPropertyAsBool("solr.ssl.enabled");
+    if (isSolrSslEnabled != null) {
+      return isSolrSslEnabled ? "https" : "http";
+    }
+    return getClusterProperty(URL_SCHEME, "http");
   }
 
   /** Watches a single collection's state.json. */
@@ -1302,7 +1315,7 @@ public class ZkStateReader implements SolrCloseable {
         DocCollection newState = fetchCollectionState(coll, this);
         collectionWatches.updateDocCollection(coll, newState);
         synchronized (getUpdateLock()) {
-          constructState(Collections.singleton(coll));
+          constructState(Set.of(coll));
         }
 
       } catch (KeeperException.SessionExpiredException
@@ -1331,7 +1344,7 @@ public class ZkStateReader implements SolrCloseable {
                 : fetchCollectionState(coll, null);
         collectionWatches.updateDocCollection(coll, newState);
         synchronized (getUpdateLock()) {
-          constructState(Collections.singleton(coll));
+          constructState(Set.of(coll));
         }
         if (log.isDebugEnabled()) {
           log.debug(

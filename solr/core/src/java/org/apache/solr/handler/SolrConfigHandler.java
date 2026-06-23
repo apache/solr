@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
@@ -61,7 +60,7 @@ import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -76,6 +75,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -205,7 +205,7 @@ public class SolrConfigHandler extends RequestHandlerBase
             Map<String, Object> m = new LinkedHashMap<>();
             m.put(ZNODEVER, params.getZnodeVersion());
             if (p != null) {
-              m.put(RequestParams.NAME, Map.of(parts.get(2), p.toMap(new LinkedHashMap<>())));
+              m.put(RequestParams.NAME, Map.of(parts.get(2), p));
             }
             resp.add(SolrQueryResponse.NAME, m);
           } else {
@@ -284,16 +284,16 @@ public class SolrConfigHandler extends RequestHandlerBase
               Map pluginNameVsPluginInfo = (Map) val.get(parts.get(1));
               if (pluginNameVsPluginInfo != null) {
                 Object o =
-                    pluginNameVsPluginInfo instanceof MapSerializable
+                    pluginNameVsPluginInfo instanceof MapWriter
                         ? pluginNameVsPluginInfo
                         : pluginNameVsPluginInfo.get(componentName);
                 Map<String, Object> pluginInfo =
-                    o instanceof MapSerializable
-                        ? ((MapSerializable) o).toMap(new LinkedHashMap<>())
+                    o instanceof MapWriter
+                        ? new SimpleOrderedMap<>((MapWriter) o)
                         : (Map<String, Object>) o;
                 val.put(
                     parts.get(1),
-                    pluginNameVsPluginInfo instanceof PluginInfo
+                    pluginNameVsPluginInfo instanceof MapWriter
                         ? pluginInfo
                         : Map.of(componentName, pluginInfo));
                 if (req.getParams().getBool("meta", false)) {
@@ -307,8 +307,10 @@ public class SolrConfigHandler extends RequestHandlerBase
                     if (infos == null || infos.isEmpty()) continue;
                     infos.forEach(
                         (s, mapWriter) -> {
-                          if (s.equals(pluginInfo.get("class"))) {
-                            (pluginInfo).put("_packageinfo_", mapWriter);
+                          Map<String, Object> componentInfo =
+                              getComponentInfo(pluginInfo, componentName);
+                          if (s.equals(componentInfo.get("class"))) {
+                            (componentInfo).put("_packageinfo_", mapWriter);
                           }
                         });
                   }
@@ -321,10 +323,21 @@ public class SolrConfigHandler extends RequestHandlerBase
       }
     }
 
+    @SuppressWarnings({"unchecked"})
+    private Map<String, Object> getComponentInfo(
+        Map<String, Object> pluginInfo, String componentName) {
+      if (pluginInfo.containsKey("class")) {
+        return pluginInfo;
+      }
+      return (Map<String, Object>)
+          pluginInfo.computeIfAbsent(componentName, k -> new LinkedHashMap<>());
+    }
+
     private Map<String, Object> getConfigDetails(String componentType, SolrQueryRequest req) {
       String componentName = componentType == null ? null : req.getParams().get("componentName");
       boolean showParams = req.getParams().getBool("expandParams", false);
-      Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
+      Map<String, Object> map =
+          Utils.convertToMap(this.req.getCore().getSolrConfig(), new LinkedHashMap<>());
       if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
 
       @SuppressWarnings({"unchecked"})
@@ -357,7 +370,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       if (plugin instanceof Map) {
         pluginInfo = (Map) plugin;
       } else if (plugin instanceof PluginInfo) {
-        pluginInfo = ((PluginInfo) plugin).toMap(new LinkedHashMap<>());
+        pluginInfo = Utils.convertToMap((PluginInfo) plugin, new LinkedHashMap<>());
       }
       String useParams = (String) pluginInfo.get(USEPARAM);
       String useParamsInReq = req.getOriginalParams().get(USEPARAM);
@@ -423,7 +436,7 @@ public class SolrConfigHandler extends RequestHandlerBase
         }
       } catch (Exception e) {
         resp.setException(e);
-        resp.add(CommandOperation.ERR_MSGS, singletonList(SchemaManager.getErrorStr(e)));
+        resp.add(CommandOperation.ERR_MSGS, List.of(SchemaManager.getErrorStr(e)));
       }
     }
 
@@ -511,9 +524,7 @@ public class SolrConfigHandler extends RequestHandlerBase
           ZkController.touchConfDir(zkLoader);
         } else {
           if (log.isDebugEnabled()) {
-            log.debug(
-                "persisting params data : {}",
-                Utils.toJSONString(params.toMap(new LinkedHashMap<>())));
+            log.debug("persisting params data : {}", Utils.toJSONString(params));
           }
           int latestVersion =
               ZkController.persistConfigResourceToZooKeeper(

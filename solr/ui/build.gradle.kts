@@ -67,50 +67,51 @@ kotlin {
 
     sourceSets {
         // Shared multiplatform dependencies
-        val commonMain by getting {
-            dependencies {
-                implementation(project.dependencies.platform(project(":platform")))
-                implementation(compose.runtime)
-                implementation(compose.foundation)
-                implementation(compose.material3)
-                implementation(compose.ui)
-                implementation(compose.components.resources)
-                implementation(compose.components.uiToolingPreview)
-                implementation(compose.materialIconsExtended)
+        commonMain.dependencies {
+            implementation(project.dependencies.platform(project(":platform")))
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.androidx.lifecycle.viewmodelCompose)
+            implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.androidx.lifecycle.viewModelNav3)
+            implementation(libs.androidx.navigation3.ui)
+            implementation(libs.androidx.material3.adaptive.asProvider())
+            implementation(libs.androidx.material3.adaptive.nav3)
 
-                implementation(libs.kotlinx.serialization.core)
-                implementation(libs.kotlinx.serialization.json)
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.serialization.core)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.datetime)
 
-                implementation(libs.decompose.decompose)
-                implementation(libs.essenty.lifecycle)
-                implementation(libs.decompose.extensions.compose)
-                implementation(libs.mvikotlin.extensions.coroutines)
-                implementation(libs.mvikotlin.mvikotlin)
-                implementation(libs.mvikotlin.main)
-                implementation(libs.mvikotlin.logging)
+            implementation(libs.decompose.decompose)
+            implementation(libs.essenty.lifecycle)
+            implementation(libs.decompose.extensions.compose)
+            implementation(libs.mvikotlin.extensions.coroutines)
+            implementation(libs.mvikotlin.mvikotlin)
+            implementation(libs.mvikotlin.main)
+            implementation(libs.mvikotlin.logging)
 
-                implementation(libs.ktor.client.auth)
-                implementation(libs.ktor.client.core)
-                implementation(libs.ktor.client.cio)
-                implementation(libs.ktor.client.contentNegotiation)
-                implementation(libs.ktor.client.serialization.json)
-                implementation(libs.squareup.okio)
+            implementation(project.dependencies.platform(libs.ktor.bom))
+            implementation(libs.ktor.client.auth)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.cio)
+            implementation(libs.ktor.client.contentNegotiation)
+            implementation(libs.ktor.client.serialization.json)
+            implementation(libs.squareup.okio)
 
-                implementation(libs.oshai.logging)
-                implementation(libs.slf4j.api)
-            }
+            implementation(libs.oshai.logging)
+            implementation(libs.slf4j.api)
         }
 
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.kotlinx.coroutines.test)
-                @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-                implementation(compose.uiTest)
-                implementation(libs.ktor.client.mock)
-            }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.compose.uiTest)
+            implementation(libs.ktor.client.mock)
         }
 
         val desktopMain by getting {
@@ -122,6 +123,10 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.swing)
             }
         }
+    }
+
+    compilerOptions {
+        freeCompilerArgs.add("-Xexplicit-backing-fields")
     }
 }
 
