@@ -20,16 +20,26 @@ import static org.apache.solr.common.params.CommonParams.PARTIAL_RESULTS;
 import static org.apache.solr.request.SolrQueryRequest.disallowPartialResults;
 
 import java.lang.invoke.MethodHandles;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -47,6 +57,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
@@ -55,6 +66,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * Solr's default {@link ShardHandler} implementation; uses Jetty's async HTTP Client APIs for
@@ -91,19 +103,20 @@ public class HttpShardHandler extends ShardHandler {
 
   private final HttpShardHandlerFactory httpShardHandlerFactory;
 
-  protected final ConcurrentMap<ShardResponse, CompletableFuture<LBSolrClient.Rsp>>
-      responseFutureMap;
+  protected final ConcurrentMap<ShardResponse, Future<?>> pending;
   protected final BlockingQueue<ShardResponse> responses;
   private final AtomicBoolean canceled = new AtomicBoolean(false);
 
   private final Map<String, List<String>> shardToURLs;
   protected LBAsyncSolrClient lbClient;
+  private final ExecutorService shardExecutor;
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
     this.httpShardHandlerFactory = httpShardHandlerFactory;
     this.lbClient = httpShardHandlerFactory.loadbalancer;
+    this.shardExecutor = httpShardHandlerFactory.shardExecutor;
     this.responses = new LinkedBlockingQueue<>();
-    this.responseFutureMap = new ConcurrentHashMap<>();
+    this.pending = new ConcurrentHashMap<>();
 
     // maps "localhost:8983|localhost:7574" to a shuffled
     // List("http://localhost:8983","http://localhost:7574")
@@ -265,40 +278,108 @@ public class HttpShardHandler extends ShardHandler {
       SimpleSolrResponse ssr,
       ShardResponse srsp,
       long startTimeNS) {
-    CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
-    // Synchronize on canceled, so that we know precisely whether to add it to the responseFutureMap
-    // or not.
-    synchronized (canceled) {
-      if (canceled.get() && !future.isDone()) {
-        future.cancel(true);
-        return;
-      } else {
-        responseFutureMap.put(srsp, future);
+    // Capture submitter context now so the shard task (running on a virtual thread) sees the
+    // submitter's MDC + every registered InheritableThreadLocalProvider (SolrRequestInfo for PKI,
+    // OTel trace Context, etc.), matching what MDCAwareThreadPoolExecutor does for pool threads.
+    // Virtual threads aren't pooled so no restore is needed.
+    final Map<String, String> submitterMdc = MDC.getCopyOfContextMap();
+    final List<ExecutorUtil.InheritableThreadLocalProvider> providers =
+        ExecutorUtil.getThreadLocalProviders();
+    final List<AtomicReference<Object>> providerCtx;
+    if (providers.isEmpty()) {
+      providerCtx = List.of();
+    } else {
+      providerCtx = new ArrayList<>(providers.size());
+      for (ExecutorUtil.InheritableThreadLocalProvider p : providers) {
+        AtomicReference<Object> ref = new AtomicReference<>();
+        p.store(ref);
+        providerCtx.add(ref);
       }
     }
-    // Add the callback explicitly after adding the future to the map, because the callback relies
-    // on the map already having the future.
-    future.whenComplete(
-        (LBSolrClient.Rsp rsp, Throwable throwable) -> {
-          if (rsp != null) {
-            ssr.nl = rsp.getResponse();
-            srsp.setShardAddress(rsp.getServer());
-          } else if (throwable != null) {
-            srsp.setException(throwable);
-            if (throwable instanceof SolrException) {
-              srsp.setResponseCode(((SolrException) throwable).code());
-            }
+
+    // Build + dispatch the request on the virtual thread (parallel CPU work) and block on the
+    // returned CompletableFuture there. cancelAll() interrupts the virtual thread; the catch
+    // below translates that into a graceful jetty-future cancel, which is how Jetty wants to be
+    // aborted (vs. interrupting a synchronous send mid-flight).
+    Runnable shardTask =
+        () -> {
+          ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
+          if (submitterMdc != null) {
+            MDC.setContextMap(submitterMdc);
           }
-          ssr.elapsedTime =
-              TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
-          // Synchronize on cancelled so this code and cancelAll() cannot happen at the same time
-          synchronized (canceled) {
-            // We don't want to add responses after the requests have been canceled
-            if (responseFutureMap.containsKey(srsp)) {
-              responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
-            }
+          for (int i = 0; i < providers.size(); i++) {
+            providers.get(i).set(providerCtx.get(i));
           }
-        });
+          CompletableFuture<LBSolrClient.Rsp> jettyFuture = null;
+          try {
+            try {
+              // doPrivileged needed because the request setup reads "solr.*" system properties
+              // and otherwise fails under SecurityManager when invoked from a virtual thread.
+              @SuppressWarnings("removal")
+              CompletableFuture<LBSolrClient.Rsp> tmp =
+                  AccessController.doPrivileged(
+                      (PrivilegedExceptionAction<CompletableFuture<LBSolrClient.Rsp>>)
+                          () -> lbClient.requestAsync(lbReq));
+              jettyFuture = tmp;
+              LBSolrClient.Rsp rsp = jettyFuture.get();
+              ssr.nl = rsp.getResponse();
+              srsp.setShardAddress(rsp.getServer());
+            } catch (CancellationException ce) {
+              // jettyFuture was cancelled; leave srsp without an exception/response.
+            } catch (InterruptedException ie) {
+              Thread.currentThread().interrupt();
+              if (jettyFuture != null) {
+                jettyFuture.cancel(true);
+              }
+            } catch (ExecutionException ee) {
+              Throwable cause = ee.getCause() != null ? ee.getCause() : ee;
+              srsp.setException(cause);
+              if (cause instanceof SolrException se) {
+                srsp.setResponseCode(se.code());
+              }
+            } catch (PrivilegedActionException pae) {
+              Throwable cause = pae.getCause() != null ? pae.getCause() : pae;
+              srsp.setException(cause);
+              if (cause instanceof SolrException se) {
+                srsp.setResponseCode(se.code());
+              }
+            }
+          } finally {
+            ssr.elapsedTime =
+                TimeUnit.MILLISECONDS.convert(
+                    System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
+            // Synchronize on canceled so this code and cancelAll() cannot happen at the same time
+            synchronized (canceled) {
+              // We don't want to add responses after the requests have been canceled
+              if (pending.containsKey(srsp)) {
+                responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
+              }
+            }
+            for (int i = 0; i < providers.size(); i++) {
+              providers.get(i).clean(providerCtx.get(i));
+            }
+            MDC.clear();
+          }
+        };
+
+    // Submit cheaply; the coordinator thread races through the loop while CPU-heavy request
+    // setup happens in parallel on the virtual threads.
+    synchronized (canceled) {
+      if (canceled.get()) {
+        return;
+      }
+      try {
+        Future<?> vtFuture = shardExecutor.submit(shardTask);
+        pending.put(srsp, vtFuture);
+      } catch (RejectedExecutionException ree) {
+        recordShardSubmitError(
+            srsp,
+            new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Shard executor rejected request for shard: " + shard,
+                ree));
+      }
+    }
   }
 
   /** Subclasses could modify the request based on the shard */
@@ -349,7 +430,7 @@ public class HttpShardHandler extends ShardHandler {
                 .orElse(previousResponse);
           }
         } else {
-          responseFutureMap.remove(rsp);
+          pending.remove(rsp);
 
           // add response to the response list... we do this after the take() and
           // not after the completion of "call" so we know when the last response
@@ -375,7 +456,7 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   protected boolean responsesPending() {
-    return !responseFutureMap.isEmpty() || !responses.isEmpty();
+    return !pending.isEmpty() || !responses.isEmpty();
   }
 
   @Override
@@ -394,13 +475,12 @@ public class HttpShardHandler extends ShardHandler {
         // We don't want to queue this multiple times if we are already canceled
         responses.add(CANCELLATION_NOTIFICATION);
       }
-      // Cancel all outstanding requests
-      for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
+      for (Future<?> future : pending.values()) {
         if (!future.isDone()) {
           future.cancel(true);
         }
       }
-      responseFutureMap.clear();
+      pending.clear();
     }
   }
 

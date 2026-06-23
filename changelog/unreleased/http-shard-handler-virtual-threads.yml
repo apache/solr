@@ -1,0 +1,6 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: HttpShardHandler now uses Java virtual threads for shard fan-out, replacing CompletableFuture callbacks; the now-equivalent ParallelHttpShardHandlerFactory is removed (switch to the default HttpShardHandlerFactory).
+type: changed
+authors:
+  - name: Mark Robert Miller
+links: []
