@@ -255,12 +255,19 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
 
     if (createCollection1) {
-      CollectionAdminRequest.createCollection(COLLECTION, "_default", sliceCount, replicationFactor).setMaxShardsPerNode(10).process(cluster.getSolrClient());
+      // Honor useTlogReplicas() and getPullReplicaCount() so subclasses that request TLOG/PULL
+      // replicas (e.g. the ChaosMonkey*WithPullReplicasTest classes) actually get them created.
+      // Both default to false/0, so plain NRT subclasses are unaffected.
+      CollectionAdminRequest.createCollection(COLLECTION, "_default", sliceCount,
+          useTlogReplicas() ? 0 : replicationFactor,
+          useTlogReplicas() ? replicationFactor : 0,
+          getPullReplicaCount()).setMaxShardsPerNode(10).process(cluster.getSolrClient());
       // Wait for every shard to have an active leader before the test body runs. createCollection()
       // returns once the cores are created, but under load a shard's leader election can still be in
       // flight; issuing an update/RTG immediately then routes to a shard with no active replica and
       // fails with "no servers hosting shard: sN" (503). (ShardRoutingTest.doAtomicUpdate.)
-      cluster.waitForActiveCollection(COLLECTION, sliceCount, sliceCount * replicationFactor);
+      cluster.waitForActiveCollection(COLLECTION, sliceCount,
+          sliceCount * (replicationFactor + getPullReplicaCount()));
     }
 
     cloudClient = cluster.getSolrClient();
@@ -1039,20 +1046,41 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   }
 
   protected void checkShardConsistency(String shardName) throws Exception {
-    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION);
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    DocCollection coll = zkStateReader.getClusterState().getCollection(COLLECTION);
     Slice slice = coll.getSlice(shardName);
     assertNotNull("Shard " + shardName + " not found", slice);
-    long leaderCount = -1;
+    Set<String> liveNodes = zkStateReader.getLiveNodes();
+
+    // Only replicas that are both on a live node AND in ACTIVE state are required to be
+    // consistent. A replica on a downed node (e.g. a deliberately-stopped jetty, or one killed
+    // by ChaosMonkey) cannot be queried at all, and a replica still recovering is allowed to
+    // lag behind the leader. Both are skipped here, mirroring upstream
+    // AbstractFullDistribZkTestBase.checkShardConsistency. Recovery completion is enforced
+    // separately by the waitForRecoveriesToFinish / waitForReplicationFromReplicas calls the
+    // chaos tests run before this check, so any live+ACTIVE replica that still disagrees is a
+    // genuine consistency defect and must fail. Note getState() treats LEADER as ACTIVE.
+    long baselineCount = -1;
+    String baselineReplica = null;
     for (Replica replica : slice.getReplicas()) {
+      if (!liveNodes.contains(replica.getNodeName())) {
+        continue;
+      }
+      if (replica.getState() != Replica.State.ACTIVE) {
+        continue;
+      }
       String baseUrl = replica.getBaseUrl() + "/" + COLLECTION;
+      long cnt;
       try (Http2SolrClient rc = new Http2SolrClient.Builder(baseUrl).build()) {
-        long cnt = rc.query(new SolrQuery("*:*").add("distrib", "false")).getResults().getNumFound();
-        if (leaderCount < 0) {
-          leaderCount = cnt;
-        } else {
-          assertEquals("Shard " + shardName + " replica " + replica.getName() + " count mismatch",
-              leaderCount, cnt);
-        }
+        cnt = rc.query(new SolrQuery("*:*").add("distrib", "false")).getResults().getNumFound();
+      }
+      if (baselineCount < 0) {
+        baselineCount = cnt;
+        baselineReplica = replica.getName();
+      } else {
+        assertEquals("Shard " + shardName + " replica " + replica.getName()
+                + " count mismatch vs " + baselineReplica,
+            baselineCount, cnt);
       }
     }
   }
@@ -1219,9 +1247,19 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected void restartZk(int pauseMillis) throws Exception {
     log.info("Restarting ZK with a pause of {}ms in between", pauseMillis);
     ZkTestServer zkServer = cluster.getZkServer();
-    zkServer.shutdown();
+    final int port = zkServer.getPort();
+    final Path zkDir = zkServer.getZkDir();
+
+    // shutdownForRestart re-grabs the port with an internal placeholder socket the instant the
+    // listening socket closes, holding it across the down-window so no foreign test JVM can steal
+    // it; the replacement server releases it microseconds before it rebinds. Without this, under
+    // heavy parallel load a freed port is grabbed by another JVM and held for its whole run,
+    // blowing the 30s rebind-retry budget ("Timeout waiting for zk test server to start").
+    zkServer.shutdownForRestart();
+
     Thread.sleep(pauseMillis);
-    ZkTestServer newZkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
+
+    ZkTestServer newZkServer = new ZkTestServer(zkDir, port);
     newZkServer.run(false);
   }
 

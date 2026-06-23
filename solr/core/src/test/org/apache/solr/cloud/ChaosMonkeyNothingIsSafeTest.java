@@ -194,7 +194,7 @@ public class ChaosMonkeyNothingIsSafeTest extends SolrCloudBridgeTestCase {
 
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
-        zkStateReader.getLeaderRetry(COLLECTION, "shard" + j, 30000);
+        zkStateReader.getLeaderRetry(COLLECTION, "s" + j, 30000);
       }
 
       commit();

@@ -422,6 +422,86 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
         }
     }
 
+    // ---- 9. snapshot writes are monotonic: a stale writer cannot regress a higher-coverage snapshot ----
+
+    /** Surfaces the {@code protected} fold seam so a test can drive the snapshot-write primitive directly. */
+    static class ExposingWriter extends StatePlaneWriter {
+        ExposingWriter(SolrZkClient zk, ElectionFence fence) { super(zk, fence); }
+        long fold(String collPath, String coll, String shard, ShardStateLog ring) {
+            return foldCommittedRingIntoSnapshot(collPath, coll, shard, ring);
+        }
+    }
+
+    private static ShardStateLog ringWith(int epoch, long lastSeq, String writerId, int replicaId, int shortState) {
+        List<StateDelta> entries = new ArrayList<>();
+        entries.add(new StateDelta(epoch, lastSeq, promo(replicaId, shortState),
+                Collections.emptyList(), ACTIVE));
+        return new ShardStateLog(epoch, 0L, lastSeq, writerId, entries);
+    }
+
+    /**
+     * Fix #3: {@code writeSnapshotMonotonic} must never let a stale writer (one that computed a LOWER
+     * {@code upToSeq}) overwrite a newer writer's higher-coverage snapshot. Combined with a ring trim,
+     * a regressed snapshot opens an unreconstructable gap between {@code snapshot.upToSeq} and
+     * {@code ring.baseSeq}. Here a newer writer has already folded to upToSeq=100; a stale fold at
+     * upToSeq=5 must be skipped, leaving the upToSeq=100 snapshot intact.
+     */
+    @Test
+    public void snapshotWriteRejectsStaleRegression() throws Exception {
+        final String coll = "mono1", shard = "s1";
+        final String collPath = StatePlanePaths.collectionPath(coll);
+
+        // A newer writer's snapshot already covers up to seq 100.
+        Map<Integer, Integer> newerStates = new HashMap<>();
+        newerStates.put(10, DOWN);
+        newerStates.put(11, LEADER);
+        StateSnapshot newer = new StateSnapshot(-1L, coll, 0, shard, 100L, newerStates);
+        String snapPath = StatePlanePaths.shardSnapshot(collPath, shard);
+        zkClient.makePath(snapPath, StateDeltaCodec.encodeStateSnapshot(newer),
+                org.apache.zookeeper.CreateMode.PERSISTENT, true);
+
+        // A stale writer folds a ring whose lastSeq (5) is far below the live snapshot's coverage (100).
+        ExposingWriter stale = new ExposingWriter(zkClient, new AlwaysElectedFence("stale"));
+        long covered = stale.fold(collPath, coll, shard, ringWith(0, 5L, "stale", 10, ACTIVE));
+
+        StateSnapshot after = readSnapshot(coll, shard);
+        assertNotNull(after);
+        assertEquals("regressive snapshot write rejected — coverage never drops below the newer writer",
+                100L, after.upToSeq());
+        assertEquals("higher-coverage replica states preserved (10 stays DOWN, not the stale ACTIVE)",
+                Integer.valueOf(DOWN), after.replicaStates.get(10));
+        assertEquals("replica only present in the newer snapshot survives the rejected regression",
+                Integer.valueOf(LEADER), after.replicaStates.get(11));
+        // The fold still returns its own (conservative) upToSeq; the snapshot already covers >= that.
+        assertEquals("fold returns its computed upToSeq as a conservative lower bound", 5L, covered);
+    }
+
+    /**
+     * The monotonic guard must not over-block: a fold whose {@code upToSeq} is strictly HIGHER than the
+     * existing snapshot's coverage must still advance the snapshot (CAS overwrite at the read version).
+     */
+    @Test
+    public void snapshotWriteAdvancesOnHigherCoverage() throws Exception {
+        final String coll = "mono2", shard = "s1";
+        final String collPath = StatePlanePaths.collectionPath(coll);
+
+        StateSnapshot older = new StateSnapshot(-1L, coll, 0, shard, 5L,
+                Collections.singletonMap(10, ACTIVE));
+        String snapPath = StatePlanePaths.shardSnapshot(collPath, shard);
+        zkClient.makePath(snapPath, StateDeltaCodec.encodeStateSnapshot(older),
+                org.apache.zookeeper.CreateMode.PERSISTENT, true);
+
+        ExposingWriter w = new ExposingWriter(zkClient, new AlwaysElectedFence("e1"));
+        long covered = w.fold(collPath, coll, shard, ringWith(0, 150L, "e1", 10, DOWN));
+
+        StateSnapshot after = readSnapshot(coll, shard);
+        assertNotNull(after);
+        assertEquals("higher-coverage fold advances the snapshot", 150L, after.upToSeq());
+        assertEquals("new state folded in (10 -> DOWN at seq150)", Integer.valueOf(DOWN),
+                after.replicaStates.get(10));
+        assertEquals(150L, covered);
+    }
+
     /** No unrecoverable gap: if the ring's baseSeq advanced, a snapshot must cover at least that far. */
     private void assertNoGap(String coll, String shard) throws Exception {
         ShardStateLog ring = readRing(coll, shard);

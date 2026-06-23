@@ -437,6 +437,21 @@ public class HttpPartitionTest extends SolrCloudBridgeTestCase {
         testCollectionName+"; clusterState: "+printClusterStateInfo(testCollectionName), leader);
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
 
+    // doc 1 was sent (above) before the active-replica wait, and in this fork a replica is
+    // published ACTIVE before its recovery has fully converged (a term-behind replica stays
+    // ACTIVE while it catches up). The active-replica wait can therefore return while doc 1 is
+    // still in flight to the follower. If we expired the leader's zk session now, the follower
+    // could win leadership via the onlyLiveReplica/setTermToMax bypass while still term-behind,
+    // permanently losing doc 1 -- the only durable copy lived on the leader we are about to
+    // remove. Assert doc 1 is durably visible on the follower (RTG, distrib=false) BEFORE
+    // inducing the partition, so this test exercises leader failover rather than pre-partition
+    // convergence timing. A doc that never converges here (leader still alive) fails loudly.
+    for (Replica notLeader : notLeaders) {
+      try (Http2SolrClient notLeaderSolr = getHttpSolrClient(notLeader, testCollectionName)) {
+        assertDocExists(notLeaderSolr, testCollectionName, "1");
+      }
+    }
+
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField(id, String.valueOf(2));
     doc.addField("a_t", "hello" + 2);

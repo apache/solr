@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -59,20 +60,30 @@ public class RollingRestartTest extends SolrCloudBridgeTestCase {
 
         leader = OverseerCollectionConfigSetProcessor
             .getLeaderNode(cloudClient.getZkStateReader().getZkClient());
-        if (leader == null) log.error("NOOVERSEER election queue is : {}",
-            OverseerCollectionConfigSetProcessor.getSortedElectionNodes(
-                cloudClient.getZkStateReader().getZkClient(),
-                "/overseer_elect/election"));
+        if (leader == null) {
+          try {
+            log.error("NOOVERSEER election queue is : {}",
+                OverseerCollectionConfigSetProcessor.getSortedElectionNodes(
+                    cloudClient.getZkStateReader().getZkClient(),
+                    Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE));
+          } catch (KeeperException.NoNodeException e) {
+            log.error("NOOVERSEER election node not yet present: {}", e.getMessage());
+          }
+        }
 
         jetty.start();
 
         leader = OverseerCollectionConfigSetProcessor
             .getLeaderNode(cloudClient.getZkStateReader().getZkClient());
         if (leader == null) {
-          log.error("NOOVERSEER election queue is :{}",
-              OverseerCollectionConfigSetProcessor.getSortedElectionNodes(
-                  cloudClient.getZkStateReader().getZkClient(),
-                  "/overseer_elect/election"));
+          try {
+            log.error("NOOVERSEER election queue is :{}",
+                OverseerCollectionConfigSetProcessor.getSortedElectionNodes(
+                    cloudClient.getZkStateReader().getZkClient(),
+                    Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE));
+          } catch (KeeperException.NoNodeException e) {
+            log.error("NOOVERSEER election node not yet present: {}", e.getMessage());
+          }
           fail("No overseer leader found after restart #" + (i + 1) + ": " + leader);
         }
 

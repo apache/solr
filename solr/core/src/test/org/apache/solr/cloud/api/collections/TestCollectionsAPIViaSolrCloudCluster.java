@@ -83,6 +83,9 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas).setMaxShardsPerNode(maxShardsPerNode)
           .setCreateNodeSet(createNodeSet).process(cluster.getSolrClient());
     }
+    if (!ZkStateReader.CREATE_NODE_SET_EMPTY.equals(createNodeSet)) {
+      cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
+    }
   }
 
   @Test public void testDeleteUnknownCollection() throws Exception {

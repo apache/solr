@@ -385,9 +385,9 @@ public class StatePlaneWriter {
                 StateSnapshot newSnap = new StateSnapshot(
                         oldSnap.collectionId, coll, ring.epoch, shard, upToSeq, folded);
 
-                // (1) snapshot durable FIRST — single atomic op.
-                writeOrCreate(StatePlanePaths.shardSnapshot(collPath, shard),
-                        StateDeltaCodec.encodeStateSnapshot(newSnap));
+                // (1) snapshot durable FIRST — single atomic op, monotonic (never regresses a newer
+                //     writer's higher-coverage snapshot; see writeSnapshotMonotonic).
+                writeSnapshotMonotonic(collPath, shard, newSnap);
 
                 // (2) THEN CAS-trim the ring: baseSeq advances to upToSeq, folded deltas removed.
                 ShardStateLog trimmed = new ShardStateLog(
@@ -455,9 +455,10 @@ public class StatePlaneWriter {
             StateSnapshot newSnap = new StateSnapshot(
                     oldSnap.collectionId, coll, ring.epoch, shard, upToSeq, folded);
             // Snapshot durable FIRST (single atomic op), exactly as compactShard does, so the caller's
-            // subsequent ring trim can never expose a gap even on a crash between the two writes.
-            writeOrCreate(StatePlanePaths.shardSnapshot(collPath, shard),
-                    StateDeltaCodec.encodeStateSnapshot(newSnap));
+            // subsequent ring trim can never expose a gap even on a crash between the two writes. The
+            // write is monotonic: if a newer writer already folded further, this skips and the snapshot
+            // still covers >= upToSeq, so returning upToSeq remains a safe (conservative) lower bound.
+            writeSnapshotMonotonic(collPath, shard, newSnap);
             return upToSeq;
         } catch (KeeperException | InterruptedException | IOException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
@@ -563,6 +564,62 @@ public class StatePlaneWriter {
         new org.apache.solr.common.util.JavaBinCodec()
                 .marshal(manifest, new org.apache.solr.common.util.FastOutputStream(baos));
         writeOrCreate(StatePlanePaths.manifest(collPath), baos.toByteArray());
+    }
+
+    /**
+     * CAS-safe, monotonic shard-snapshot write. A snapshot must never regress in coverage: a stale
+     * writer that computed a lower {@code upToSeq} must not overwrite a newer writer's
+     * higher-coverage snapshot. Combined with a trimmed ring, a regressed snapshot opens an
+     * unreconstructable gap between {@code snapshot.upToSeq} and {@code ring.baseSeq}. The election
+     * fence narrows but does not close this window (a not-yet-fenced stale writer can still issue the
+     * write), so the snapshot write itself is made monotonic here:
+     * <ul>
+     *   <li>absent — create it;</li>
+     *   <li>existing coverage {@code >= newSnap.upToSeq} — skip (never regress; the existing snapshot
+     *       already covers at least this prefix);</li>
+     *   <li>otherwise CAS-overwrite at the read version, retrying on BadVersion (a concurrent writer
+     *       advanced it — re-read and re-evaluate the monotonic guard).</li>
+     * </ul>
+     * On exhaustion it rethrows the last {@link KeeperException.BadVersionException}; both callers
+     * ({@link #compactShard}, {@link #foldCommittedRingIntoSnapshot}) treat a thrown
+     * {@code KeeperException} as "fold not durable" and fall back safely (no ring trim).
+     */
+    private void writeSnapshotMonotonic(String collPath, String shard, StateSnapshot newSnap)
+            throws KeeperException, InterruptedException, IOException {
+        final String snapPath = StatePlanePaths.shardSnapshot(collPath, shard);
+        KeeperException.BadVersionException lastBve = null;
+        for (int attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
+            Stat stat = new Stat();
+            byte[] cur;
+            try {
+                cur = zkClient.getData(snapPath, null, stat, true);
+            } catch (KeeperException.NoNodeException nne) {
+                try {
+                    zkClient.makePath(snapPath, StateDeltaCodec.encodeStateSnapshot(newSnap),
+                            CreateMode.PERSISTENT, true);
+                    return;
+                } catch (KeeperException.NodeExistsException nee) {
+                    continue; // raced a creator — re-read and treat as an existing node
+                }
+            }
+            StateSnapshot existing = StateDeltaCodec.decodeStateSnapshot(cur);
+            if (existing != null && existing.upToSeq() >= newSnap.upToSeq()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("snapshot {} already covers upToSeq {} >= {}; skip regressive write",
+                            snapPath, existing.upToSeq(), newSnap.upToSeq());
+                }
+                return;
+            }
+            try {
+                zkClient.setData(snapPath, StateDeltaCodec.encodeStateSnapshot(newSnap),
+                        stat.getVersion(), false);
+                return;
+            } catch (KeeperException.BadVersionException bve) {
+                lastBve = bve;
+                if (log.isDebugEnabled()) log.debug("snapshot CAS BadVersion on {}; retry {}", snapPath, attempt);
+            }
+        }
+        if (lastBve != null) throw lastBve;
     }
 
     private void writeOrCreate(String path, byte[] bytes)

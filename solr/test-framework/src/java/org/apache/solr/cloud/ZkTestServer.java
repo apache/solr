@@ -21,8 +21,10 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -66,6 +68,45 @@ public class ZkTestServer implements Closeable {
 
   public static final int MAX_CLIENT_CNXNS = 1000;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  // Placeholder sockets that hold a ZK port across a same-port restart down-window, keyed by port.
+  // Without this, a foreign test JVM (which allocates OS-assigned ports en masse) can grab the
+  // just-freed port between shutdown and rebind and hold it for its whole run, blowing the 30s
+  // rebind-retry budget and causing "Timeout waiting for zk test server to start" under load.
+  private static final java.util.concurrent.ConcurrentHashMap<Integer, ServerSocket>
+      RESTART_PORT_RESERVATIONS = new java.util.concurrent.ConcurrentHashMap<>();
+
+  /**
+   * Bind a placeholder server socket on {@code port} so the OS will not reassign it during a
+   * same-port ZK restart. Best-effort: on failure we log and fall back to the bind-retry loop.
+   */
+  static void reservePortForRestart(int port) {
+    try {
+      ServerSocket s = new ServerSocket();
+      s.setReuseAddress(true);
+      s.bind(new InetSocketAddress(port));
+      ServerSocket prev = RESTART_PORT_RESERVATIONS.put(port, s);
+      if (prev != null) {
+        try {
+          prev.close();
+        } catch (IOException ignore) {
+        }
+      }
+    } catch (IOException e) {
+      log.warn("Could not reserve ZK port {} across restart; rebind will rely on retry", port, e);
+    }
+  }
+
+  /** Release a placeholder reservation taken by {@link #reservePortForRestart(int)}. No-op if none. */
+  static void releasePortReservation(int port) {
+    ServerSocket s = RESTART_PORT_RESERVATIONS.remove(port);
+    if (s != null) {
+      try {
+        s.close();
+      } catch (IOException ignore) {
+      }
+    }
+  }
 
   public static File SOLRHOME;
   static {
@@ -185,9 +226,31 @@ public class ZkTestServer implements Closeable {
                 config.getMinSessionTimeout(), config.getMaxSessionTimeout(), 1024,
                 new ZKDatabase(ftxn), "");
 
-        cnxnFactory = new NIOServerCnxnFactory(); // MRM TODO: look again at the netty impl
-        cnxnFactory.configure(config.getClientPortAddress(),
-                config.getMaxClientCnxns(), 1024);
+        // The test harness restarts ZK on the SAME port (see SolrCloudBridgeTestCase.restartZk).
+        // Under heavy parallel load the previous listening socket may not be fully released by
+        // the OS yet, so bind() throws BindException("Address already in use") even though we
+        // already shut the old server down. SO_REUSEADDR does not help while the old socket is
+        // still live. Retry the bind with a bounded backoff until the port frees up.
+        //
+        // Release the cross-restart placeholder reservation (if any) the instant before we bind,
+        // so no foreign JVM can steal the port in the gap. See reservePortForRestart / shutdown.
+        releasePortReservation(config.getClientPortAddress().getPort());
+        long bindDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (true) {
+          cnxnFactory = new NIOServerCnxnFactory(); // MRM TODO: look again at the netty impl
+          try {
+            cnxnFactory.configure(config.getClientPortAddress(),
+                    config.getMaxClientCnxns(), 1024);
+            break;
+          } catch (BindException be) {
+            if (System.nanoTime() >= bindDeadline) {
+              throw be;
+            }
+            log.warn("ZK test server port {} still in use on restart, retrying bind...",
+                    config.getClientPortAddress());
+            Thread.sleep(250);
+          }
+        }
         cnxnFactory.startup(zooKeeperServer);
 
         startupWait.countDown();
@@ -211,18 +274,41 @@ public class ZkTestServer implements Closeable {
      *           If there is a low-level I/O error.
      */
     protected void shutdown() throws IOException {
+      shutdown(false);
+    }
+
+    protected void shutdown(boolean reserveForRestart) throws IOException {
       try {
         //        zooKeeperServer.shutdown(true);
         //      ZKDatabase zkDb = zooKeeperServer.getZKDatabase();
         //    if (zkDb != null) zkDb.clear();
 
+        // Capture the bound port up front so we can re-grab it the instant the listening socket
+        // closes below (the harness restarts ZK on the SAME port — see restartPortReservations).
+        int reservePort = -1;
+        if (reserveForRestart && cnxnFactory != null) {
+          try {
+            reservePort = cnxnFactory.getLocalPort();
+          } catch (RuntimeException ignore) {
+            reservePort = -1;
+          }
+        }
 
         if (zooKeeperServer != null) zooKeeperServer.shutdown(false);
         if (cnxnFactory != null) {
 
-          if (cnxnFactory != null) {
-            cnxnFactory.closeAll(ServerCnxn.DisconnectReason.CONNECTION_CLOSE_FORCED);
-            cnxnFactory.shutdown();
+          cnxnFactory.closeAll(ServerCnxn.DisconnectReason.CONNECTION_CLOSE_FORCED);
+          cnxnFactory.shutdown();
+          // The listening socket is now closed. Under heavy parallel test load (many JVMs each
+          // constantly allocating sockets / starting their own ZkTestServer on an OS-assigned
+          // port), a freed port can be grabbed by a foreign JVM and held for the rest of its
+          // test run, which makes the same-port rebind in runFromConfig fail with BindException
+          // for far longer than the 30s bind-retry window ("Timeout waiting for zk test server to
+          // start"). Re-bind a placeholder immediately — before join() and before the restart
+          // down-window sleep — so the OS cannot hand this port to anyone else. The replacement
+          // server releases it microseconds before it binds (see runFromConfig).
+          if (reserveForRestart && reservePort > 0) {
+            reservePortForRestart(reservePort);
           }
 
           try {
@@ -398,7 +484,9 @@ public class ZkTestServer implements Closeable {
 
       zooThread.start();
 
-      boolean success = startupWait.await(5, TimeUnit.SECONDS);
+      // Must exceed the bind-retry window in ZKServerMain.runFromConfig (30s) so a same-port
+      // restart that is briefly blocked on a not-yet-released socket is not treated as a failure.
+      boolean success = startupWait.await(40, TimeUnit.SECONDS);
       if (!success) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for zk test server to start");
       }
@@ -423,6 +511,20 @@ public class ZkTestServer implements Closeable {
   }
 
   public void shutdown() throws IOException, InterruptedException {
+    shutdown(false);
+  }
+
+  /**
+   * Shut down in preparation for a same-port restart: the bound port is re-grabbed by an internal
+   * placeholder socket the instant the listening socket closes, so no foreign JVM can steal it
+   * during the restart down-window. The replacement server releases it just before it rebinds.
+   * See {@link #reservePortForRestart(int)} and {@code ZKServerMain.runFromConfig}.
+   */
+  public void shutdownForRestart() throws IOException, InterruptedException {
+    shutdown(true);
+  }
+
+  private void shutdown(boolean reserveForRestart) throws IOException, InterruptedException {
     log.info("Shutting down ZkTestServer.");
     assert closeTracker != null ? closeTracker.close() : true;
 
@@ -449,7 +551,7 @@ public class ZkTestServer implements Closeable {
     IOUtils.closeQuietly(chRootClient);
     chRootClient = null;
 
-    zkServer.shutdown();
+    zkServer.shutdown(reserveForRestart);
 
     if (zooThread != null) {
 

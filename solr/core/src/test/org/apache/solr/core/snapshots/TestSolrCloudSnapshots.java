@@ -193,6 +193,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(solrClient, 30));//async
       }
 
+      cluster.waitForActiveCollection(restoreCollectionName, NUM_SHARDS, NUM_SHARDS * NUM_REPLICAS);
       BackupRestoreUtils.verifyDocs(nDocs, solrClient, restoreCollectionName);
     }
 

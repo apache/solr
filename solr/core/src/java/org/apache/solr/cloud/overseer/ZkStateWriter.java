@@ -211,10 +211,19 @@ public class ZkStateWriter {
   private void publishToStatePlane(String collection, Map<Integer,Integer> fullMap) {
     DocCollection dc = cs.get(collection);
     if (dc == null) {
-      // No structure yet — cannot map replicas to shards. The in-memory stateUpdates map retains the
-      // state and republishes it in full on the next write once the DocCollection exists.
-      log.debug("statePlane: no DocCollection for {} yet; deferring publish", collection);
-      return;
+      if (fullMap.isEmpty()) {
+        // Nothing to publish — no structure AND no pending replica states. Safe to report success.
+        log.debug("statePlane: no DocCollection for {} and nothing to publish", collection);
+        return;
+      }
+      // Structure not yet known but there ARE replica-state changes to persist. Do NOT report success:
+      // the caller already drained these ids from pendingChangedIds, so a normal return would let the
+      // durability future complete and WorkQueueWatcher delete the queue item before anything was
+      // appended — a durable loss (finding #1). Fail the publish so the future completes exceptionally;
+      // writeStateUpdatesInternal re-arms the drained ids and the queue item is held for reprocess until
+      // the DocCollection lands (at which point this collection's states publish in full).
+      throw new RuntimeException("statePlane: structure for " + collection
+          + " not yet known; deferring " + fullMap.size() + " replica-state update(s) for retry");
     }
     // Ensure the snapshot+manifest exist BEFORE any delta is appended. The manifest is the reader's
     // switch onto the delta plane; without it the reader never sees this collection's state. Throws if
@@ -803,30 +812,26 @@ public class ZkStateWriter {
    *
    */
 
-  public Future writeStructureUpdates(String collection) {
-    return ParWork.submit("zkStateWriter#writePendingUpdates", () -> {
+  public CompletableFuture<Void> writeStructureUpdates(String collection) {
+    // The state.json write is async (setData with a ZK callback), so the returned future must be
+    // completed FROM that callback — completing it when this submit body returns would signal
+    // durability before ZK has acked the write, letting WorkQueueWatcher delete the queue item too
+    // early (finding #2). write() completes `result` on the state.json callback (success) or chains a
+    // rescheduled attempt's future into it (on a retriable ZK rc), so the future tracks real durability.
+    CompletableFuture<Void> result = new CompletableFuture<>();
+    ParWork.submit("zkStateWriter#writePendingUpdates", () -> {
       MDCLoggingContext.setNode(overseer.getZkController().getNodeName());
-
-      do {
-        try {
-          write(collection);
-          break;
-        } catch (KeeperException.BadVersionException e) {
-          log.warn("hit bad version trying to write state.json, trying again ...");
-        } catch (Exception e) {
-          log.error("write pending failed", e);
-          break;
-        }
-        final boolean closed = overseer.getZkStateReader().getZkClient().isClosed();
-        final boolean overseerClosed = overseer.isClosed();
-        if (closed || overseerClosed) {
-          break;
-        }
-      } while (true);
+      try {
+        write(collection, result);
+      } catch (Exception e) {
+        log.error("write pending failed", e);
+        result.completeExceptionally(e);
+      }
     });
+    return result;
   }
 
-  private void write(String coll) throws KeeperException.BadVersionException {
+  private void write(String coll, CompletableFuture<Void> result) {
 
     if (log.isDebugEnabled()) {
       log.debug("writePendingUpdates {}", coll);
@@ -848,6 +853,8 @@ public class ZkStateWriter {
       DocCollection collection = cs.get(coll);
 
       if (collection == null) {
+        // Nothing to persist (collection not present in cs) — no durable write needed.
+        result.complete(null);
         return;
       }
 
@@ -872,10 +879,12 @@ public class ZkStateWriter {
 
           if (reader == null) {
             log.error("read not initialized in zkstatewriter");
+            result.completeExceptionally(new IllegalStateException("reader not initialized in ZkStateWriter"));
             return;
           }
           if (reader.getZkClient() == null) {
             log.error("zkclient not initialized in zkstatewriter");
+            result.completeExceptionally(new IllegalStateException("zkclient not initialized in ZkStateWriter"));
             return;
           }
 
@@ -891,7 +900,18 @@ public class ZkStateWriter {
               // setData uses version -1, so BadVersion cannot occur. Guard against a reschedule storm
               // during shutdown (mirrors the writer-loop close guard above).
               if (!overseer.isClosed() && !reader.getZkClient().isClosed()) {
-                overseer.getZkStateWriter().writeStructureUpdates(coll);
+                // Retriable rc — reschedule and propagate THAT attempt's durability into this future,
+                // so `result` completes only when state.json is actually persisted (finding #2).
+                overseer.getZkStateWriter().writeStructureUpdates(coll).whenComplete((v, ex) -> {
+                  if (ex == null) {
+                    result.complete(null);
+                  } else {
+                    result.completeExceptionally(ex);
+                  }
+                });
+              } else {
+                // Shutting down — no retry will run; do not falsely claim durability.
+                result.completeExceptionally(e);
               }
 
             } else {
@@ -906,13 +926,23 @@ public class ZkStateWriter {
               } catch (Exception e) {
                 log.error("Exception triggering SCN node");
               }
+              // state.json is durable here. The _scn node is a best-effort change-notification trigger
+              // whose failure does NOT affect state.json durability, so the durability future completes
+              // on state.json success regardless of the SCN outcome (finding #2).
+              result.complete(null);
             }
           }, "state.json");
 
+        } else {
+          // No structure change pending for this collection — already clean and durable.
+          result.complete(null);
         }
 
       } catch (Exception e) {
         log.error("Failed processing update={}", collection, e);
+        // setData (or a surrounding synchronous step) threw before any callback could fire; do not let
+        // the durability future hang. completeExceptionally is a no-op if already completed.
+        result.completeExceptionally(e);
       }
 
     } finally {
@@ -1463,7 +1493,23 @@ public class ZkStateWriter {
         // Route replica state updates through the per-shard delta plane. Runs on the
         // taskZkWriterExecutor, outside any stateUpdates.compute() bin lock.
         stateUpdateWrites.mark();
-        publishToStatePlane(collection, javaBinMap);
+        try {
+          publishToStatePlane(collection, javaBinMap);
+        } catch (RuntimeException ex) {
+          // The publish failed AFTER we drained `changed` (e.g. structure not yet known, or the manifest
+          // seed failed). Re-arm the drained ids so a subsequent write re-publishes them — the in-memory
+          // stateUpdates map still holds their states. The exception also completes this future
+          // exceptionally so WorkQueueWatcher holds the queue item for reprocess. Without re-arming, a
+          // post-drain failure would permanently lose these ids from the delta plane. (finding #1)
+          if (changed != null && !changed.isEmpty()) {
+            pendingChangedIds.compute(collId, (k, set) -> {
+              Set<Integer> s = (set == null) ? ConcurrentHashMap.newKeySet() : set;
+              s.addAll(changed);
+              return s;
+            });
+          }
+          throw ex;
+        }
       }, overseer.getTaskZkWriterExecutor()));
     }
 

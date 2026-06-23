@@ -440,6 +440,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
         if (leaderElector != null && leaderElector.isLeader()) {
           log.warn("We are the leader, STOP recovery", new SolrException(ErrorCode.INVALID_STATE, "Leader in recovery"));
+          exitBufferingForLeader(core);
           ZkNodeProps zkNodes = ZkNodeProps
               .fromKeyVals(StatePublisher.OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.CORE_NAME_PROP, core.getName(), "id",
                   core.getCoreDescriptor().getCoreProperty("collId", null) + "-" + core.getCoreDescriptor().getCoreProperty("id", null),
@@ -457,6 +458,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
         if (leaderElector != null && leaderElector.isLeader()) {
           log.warn("We are the leader, STOP recovery", new SolrException(ErrorCode.INVALID_STATE, "Leader in recovery"));
+          exitBufferingForLeader(core);
           //          ZkNodeProps zkNodes = ZkNodeProps
           //              .fromKeyVals(StatePublisher.OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.CORE_NAME_PROP, core.getName(), "id",
           //                  core.getCoreDescriptor().getCoreProperty("collId", null)+ "-" +  core.getCoreDescriptor().getCoreProperty("id", null),
@@ -999,6 +1001,25 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   }
 
+  /**
+   * A node that has (re)gained leadership must not leave its update log in BUFFERING. A TLOG replica
+   * can begin buffering for recovery and then win (or already hold) leadership -- e.g. via the
+   * leaderVoteWait/setTermToMax bypass -- and this recovery attempt then aborts here. If the log is
+   * left BUFFERING, every write the node later accepts as leader is flagged BUFFERING by
+   * DistributedUpdateProcessor and written to the buffer tlog instead of the live RTG map, so
+   * realtime-get returns null for docs indexed after leadership was acquired.
+   * copyOverBufferingUpdates() drains any buffered updates into the live tlog (preserving RTG
+   * visibility) and returns the log to ACTIVE.
+   */
+  private void exitBufferingForLeader(SolrCore core) {
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+    if (ulog != null && ulog.getState() == UpdateLog.State.BUFFERING) {
+      try (SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
+        ulog.copyOverBufferingUpdates(new CommitUpdateCommand(req, false));
+      }
+    }
+  }
+
   public static Runnable testing_beforeReplayBufferingUpdates;
 
   private void replay(SolrCore core, Replica leader, boolean requireLeaderTlog)
@@ -1063,7 +1084,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
           leaderLogs.size(), core.getName(), leader.getCoreUrl());
       future = ulog.applyLeaderTlogThenBuffer(leaderLogs);
     } else {
-      future = ulog.applyBufferedUpdates();
+      // SolrCloud peersync recovery: hide the replayed buffer from ordinary q=*:* search
+      // (openSearcher=false) so leader-uncommitted forwarded docs are not exposed before the leader
+      // durably commits -- the replica converges on the leader's next real commit.
+      future = ulog.applyBufferedUpdates(false);
     }
 
     try {

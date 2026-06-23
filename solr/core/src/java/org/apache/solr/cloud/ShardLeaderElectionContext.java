@@ -32,9 +32,13 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.KeeperException;
@@ -340,6 +344,21 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             log.info("New leader does not have old tlog to replay");
           }
 
+        }
+        // A leader's update log must never be left in BUFFERING. A TLOG replica can win
+        // leadership via the leaderVoteWait/setTermToMax bypass while a recovery already had
+        // its log buffering, and recoverFromCurrentLog() above only replays the current tlog --
+        // it neither drains the buffer tlog nor guarantees a BUFFERING->ACTIVE transition (it is
+        // a no-op when there is no current tlog). A log left BUFFERING means every add we later
+        // accept as leader gets the BUFFERING flag in DistributedUpdateProcessor and is written
+        // to the buffer tlog instead of the live RTG map, so realtime-get returns null for docs
+        // indexed after we became leader. copyOverBufferingUpdates() drains any buffered updates
+        // into the live tlog (preserving RTG visibility) and flips the log to ACTIVE.
+        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+        if (ulog != null && ulog.getState() == UpdateLog.State.BUFFERING) {
+          try (SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
+            ulog.copyOverBufferingUpdates(new CommitUpdateCommand(req, false));
+          }
         }
       }
       // in case of leaderVoteWait timeout, a replica with lower term can win the election

@@ -89,6 +89,7 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -758,9 +759,10 @@ public class BasicDistributedZkTest extends SolrCloudBridgeTestCase {
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
     }
+    List<Future<?>> addReplicaFutures = new ArrayList<>(numReplicas);
     for (int i = 0; i < numReplicas; i++) {
       final int freezeI = i;
-      executor.execute(() -> {
+      addReplicaFutures.add(executor.submit(() -> {
         try {
           assertTrue(CollectionAdminRequest.addReplicaToShard(collection, "s"+((freezeI%numShards)+1))
               .setCoreName(collection + freezeI)
@@ -768,7 +770,20 @@ public class BasicDistributedZkTest extends SolrCloudBridgeTestCase {
         } catch (SolrServerException | IOException e) {
           throw new RuntimeException(e);
         }
-      });
+      }));
+    }
+    // The replicas are added asynchronously, but callers immediately close the client and/or
+    // stop the target node on return. Wait for the in-flight ADDREPLICA calls to finish so the
+    // cores are actually created before the caller tears down the client/node out from under them.
+    for (Future<?> f : addReplicaFutures) {
+      try {
+        f.get();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(e);
+      } catch (ExecutionException e) {
+        throw new RuntimeException(e.getCause());
+      }
     }
   }
 
@@ -924,24 +939,50 @@ public class BasicDistributedZkTest extends SolrCloudBridgeTestCase {
 
   private Long getNumCommits(Http2SolrClient sourceClient) throws
       SolrServerException, IOException {
-    // construct the /admin/metrics URL
     URL url = new URL(sourceClient.getBaseURL());
     String path = url.getPath().substring(1);
     String[] elements = path.split("/");
     String collection = elements[elements.length - 1];
-    String urlString = url.toString();
-    urlString = urlString.substring(0, urlString.length() - collection.length() - 1);
-    try (Http2SolrClient client = getHttpSolrClient(urlString, 15000, 60000)) {
+
+    // Node placement is not guaranteed to keep a <collection> core on the source
+    // client's node after the many load/unload/create subtests run, so locate a
+    // node that actually hosts a replica of this collection from cluster state and
+    // read that specific core's metrics. A distributed commit reaches every replica,
+    // so any one collection replica's commit count moves by the same delta; pick a
+    // deterministic replica (lowest core name) so start/end measure the same core.
+    DocCollection dc = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
+    assertNotNull("collection " + collection + " not found in cluster state", dc);
+    Replica replica = null;
+    for (Replica r : dc.getReplicas()) {
+      if (replica == null || r.getName().compareTo(replica.getName()) < 0) {
+        replica = r;
+      }
+    }
+    assertNotNull("no replica found for collection " + collection, replica);
+    String coreName = replica.getName();
+
+    try (Http2SolrClient client = getHttpSolrClient(replica.getBaseUrl(), 15000, 60000)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      //params.set("qt", "/admin/metrics?prefix=UPDATE.updateHandler&registry=solr.core." + collection);
       params.set("qt", "/admin/metrics");
       params.set("prefix", "UPDATE.updateHandler");
-      params.set("registry", "solr.core." + collection);
+      // In cloud mode the core registry name is hierarchical
+      // (solr.core.<collection>.<shard>.<coreName>), so request all core registries
+      // and select the one whose name corresponds to this core.
+      params.set("group", "core");
       // use generic request to avoid extra processing of queries
       QueryRequest req = new QueryRequest(params);
       NamedList<Object> resp = client.request(req);
       NamedList metrics = (NamedList) resp.get("metrics");
-      NamedList uhandlerCat = (NamedList) metrics.getVal(0);
+      NamedList uhandlerCat = null;
+      for (int i = 0; i < metrics.size(); i++) {
+        String regName = metrics.getName(i);
+        if (regName.endsWith("." + coreName) || regName.equals("solr.core." + coreName)) {
+          uhandlerCat = (NamedList) metrics.getVal(i);
+          break;
+        }
+      }
+      assertNotNull("No core metric registry found for core " + coreName
+          + " in " + metrics.asShallowMap().keySet(), uhandlerCat);
       Map<String,Object> commits = (Map<String,Object>) uhandlerCat.get("UPDATE.updateHandler.commits");
       return (Long) commits.get("count");
     }

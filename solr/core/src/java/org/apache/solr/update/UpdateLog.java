@@ -1903,6 +1903,23 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   /** Returns the Future to wait on, or null if no replay was needed */
   public Future<RecoveryInfo> applyBufferedUpdates() {
+    return applyBufferedUpdates(true);
+  }
+
+  /**
+   * Replay buffered updates. {@code openSearcher} controls end-of-replay search visibility:
+   * <ul>
+   *   <li>{@code true} (standalone/terminal callers -- SolrIndexSplitter, RequestApplyUpdatesOp, and
+   *       the UpdateLog unit tests) keeps the historical hard commit + open searcher that exposes the
+   *       replayed docs to ordinary {@code q=*:*} search.</li>
+   *   <li>{@code false} (SolrCloud peersync recovery, called from RecoveryStrategy) hides them from
+   *       ordinary search via a soft commit with openSearcher=false, so leader-uncommitted forwarded
+   *       docs are not exposed before the leader durably commits.</li>
+   * </ul>
+   *
+   * @return the Future to wait on, or null if no replay was needed
+   */
+  public Future<RecoveryInfo> applyBufferedUpdates(boolean openSearcher) {
     // recovery trips this assert under some race - even when
     // it checks the state first
     // assert state == State.BUFFERING;
@@ -1947,6 +1964,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(ParWork.getRootSharedExecutor());
     LogReplayer replayer = new LogReplayer(Collections.singletonList(bufferTlog), true);
+    replayer.hideReplayFromSearch = !openSearcher;
     return cs.submit(() -> {
       replayer.run();
       // WHY: doReplay() breaks out of its loop early on cancelApplyBufferUpdate || isClosed,
@@ -1963,13 +1981,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * NRT recovery catch-up: replay the leader's downloaded transaction logs (its still-uncommitted
    * updates, which are not present in the replicated commit point) followed by this replica's buffer
    * tlog (updates the leader forwarded during the BUFFERING window), in one ordered LogReplayer pass.
-   * Mirrors {@link #applyBufferedUpdates()} but prepends {@code leaderLogs}. Replay runs with
-   * {@code activeLog=true}, so each per-log commit is a soft commit with openSearcher=false: the
-   * replayed adds land in the live tlog + RTG map and become RTG-visible and tlog-durable WITHOUT
-   * being promoted to a durable commit point or exposed to ordinary {@code q=*:*} search -- identical
-   * to the leader. Returns the Future to wait on, or null if the replica is no longer BUFFERING (the
-   * caller should fall back / retry). If {@code leaderLogs} is empty this degrades to the plain
-   * {@link #applyBufferedUpdates()}.
+   * Mirrors {@link #applyBufferedUpdates(boolean)} but prepends {@code leaderLogs}. Replay runs with
+   * {@code activeLog=true} and {@code hideReplayFromSearch=true}, so the end-of-replay commit is a
+   * soft commit with openSearcher=false: the replayed adds land in the live tlog + RTG map and become
+   * RTG-visible and tlog-durable WITHOUT being promoted to a durable commit point or exposed to
+   * ordinary {@code q=*:*} search -- identical to the leader. Returns the Future to wait on, or null
+   * if the replica is no longer BUFFERING (the caller should fall back / retry). If {@code leaderLogs}
+   * is empty this degrades to {@link #applyBufferedUpdates(boolean) applyBufferedUpdates(false)},
+   * which stays hidden from ordinary search.
    *
    * <p>Ownership: the LogReplayer decrefs every log handed to it (doReplay's finally, and run()'s
    * leftover loop), so {@code leaderLogs} are released by the replayer (and, being deleteOnClose,
@@ -1980,8 +1999,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    */
   public Future<RecoveryInfo> applyLeaderTlogThenBuffer(List<TransactionLog> leaderLogs) {
     if (leaderLogs == null || leaderLogs.isEmpty()) {
-      // nothing fetched from the leader -- fall back to the plain buffered-update replay
-      return applyBufferedUpdates();
+      // nothing fetched from the leader -- fall back to the plain buffered-update replay, still
+      // hidden from ordinary search (this is the SolrCloud recovery catch-up path).
+      return applyBufferedUpdates(false);
     }
 
     AtomicBoolean skip = new AtomicBoolean();
@@ -2031,6 +2051,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(ParWork.getRootSharedExecutor());
     LogReplayer replayer = new LogReplayer(combined, true);
+    replayer.hideReplayFromSearch = true;
     return cs.submit(() -> {
       replayer.run();
       // Only drop the buffer once everything replayed cleanly. doReplay() also breaks out early on
@@ -2077,6 +2098,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     Deque<TransactionLog> translogs;
     TransactionLog.LogReader tlogReader;
     boolean activeLog;
+    // When true, the end-of-replay commit on the active log is a soft commit with openSearcher=false so
+    // leader-uncommitted replayed docs are not exposed to ordinary q=*:* search (SolrCloud recovery).
+    // Default false keeps the historical hard commit + open searcher for standalone/terminal replay.
+    boolean hideReplayFromSearch;
     boolean finishing = false;  // state where we lock out other updates and finish those updates that snuck in before we locked
     boolean updatesBlocked = false;
     boolean debug = loglog.isDebugEnabled();
@@ -2345,22 +2370,23 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         cmd.setVersion(commitVersion);
         cmd.softCommit = false;
         cmd.waitSearcher = true;
-        // activeLog == true is *only* the recovery buffered-update replay (applyBufferedUpdates), where a
-        // follower coming out of BUFFERING replays updates forwarded to it during its recovery window.
-        // For startup/current-log replay (activeLog == false: recoverFromLog / recoverFromCurrentLog)
-        // there is no leader re-driving commits, so we keep the hard commit + open searcher that exposes
-        // the recovered docs.
-        if (activeLog) {
-          // Buffered-update replay (RecoveryStrategy replication/peersync path). The buffer tlog can
-          // contain adds the leader has NOT durably committed (e.g. an uncommitted doc forwarded while
-          // this replica was BUFFERING). A HARD commit here would fsync those leader-uncommitted docs
-          // into this replica's index and a registered-searcher reopen would publish them to q=*:* while
-          // the leader still hides them -> the replica diverges (the load-dependent "expected N but was
-          // N+1" cloud flake; e.g. TestCloudPseudoReturnFields's uncommitted id=99). Use a soft commit
-          // with openSearcher=false: the replayed docs land in the IndexWriter (RTG-visible via the
-          // realtime searcher that RecoveryStrategy.replay opens next) and stay durable in the tlog, but
-          // are NOT promoted into a durable commit point and NOT exposed to ordinary search. They become
-          // *:* visible on the next real commit, exactly as on the leader.
+        // hideReplayFromSearch is set only by the SolrCloud recovery replay paths (the leader-tlog
+        // catch-up applyLeaderTlogThenBuffer, and the peersync buffered replay invoked with
+        // openSearcher=false from RecoveryStrategy). Those paths can replay adds the leader has NOT
+        // durably committed (e.g. an uncommitted doc forwarded while this replica was BUFFERING). A HARD
+        // commit + registered-searcher reopen would fsync those leader-uncommitted docs into a durable
+        // commit point and publish them to q=*:* while the leader still hides them -> the replica diverges
+        // (the load-dependent "expected N but was N+1" cloud flake; e.g. TestCloudPseudoReturnFields's
+        // uncommitted id=99). Use a soft commit with openSearcher=false: the replayed docs land in the
+        // IndexWriter (RTG-visible via the realtime searcher RecoveryStrategy opens next) and stay durable
+        // in the tlog, but are NOT promoted into a durable commit point and NOT exposed to ordinary search.
+        // They become *:* visible on the next real commit, exactly as on the leader.
+        //
+        // Every other replay keeps the historical hard commit + open searcher that exposes the recovered
+        // docs: startup/current-log recoverFromLog/recoverFromCurrentLog (activeLog == false), and the
+        // terminal standalone applyBufferedUpdates() used by SolrIndexSplitter, RequestApplyUpdatesOp, and
+        // the UpdateLog unit tests (which assert post-replay q=*:* visibility).
+        if (activeLog && hideReplayFromSearch) {
           cmd.softCommit = true;
           cmd.openSearcher = false;
         }

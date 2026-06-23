@@ -1343,12 +1343,25 @@ public class ZkController implements Closeable, Runnable {
             // recovery. Upstream short-circuits the same case via PeerSync; the fork otherwise always
             // sent a prep-recovery op even for a fresh, in-sync replica (which made it needlessly slow
             // and, under TestInjection.prepRecoveryOpPauseForever, stuck in BUFFERING on registration).
-            // Data-safe: any replica that missed an update has its term pushed strictly below the
-            // leader's — on a failed forward (replicasShouldBeInLowerTerms) or while it is skipped as
-            // DOWN/not-live (skippedCoreNodeNames -> ensureTermsIsHigher) — so term==max with no
-            // recovering marker genuinely means in sync. A behind or mid-recovery replica still
-            // recovers below.
-            if (shardTerms != null && shardTerms.canBecomeLeader(coreName) && !isTlogReplicaAndNotLeader) {
+            // Data-safe ONLY for a freshly-created replica (core.isNewCore() — a runtime CoreAdmin
+            // CREATE / addReplica, which starts from an empty index). For such a replica term==max
+            // with no recovering marker genuinely means in sync: any replica that later missed an
+            // update has its term pushed strictly below the leader's — on a failed forward
+            // (replicasShouldBeInLowerTerms) or while it is skipped as DOWN/not-live
+            // (skippedCoreNodeNames -> ensureTermsIsHigher).
+            //
+            // A cold-loaded replica (node restart: newCore==false, loaded from an existing on-disk
+            // index) must NOT trust a persisted term==max. The term invariant has a hole under a hard
+            // kill: an NRT replica can ACK a forwarded update into its not-yet-fsynced tlog buffer — so
+            // the leader sees success and never lowers the replica's term — then lose that buffer on
+            // kill -9. It restarts with term==max but a stale index, would take this short-circuit, and
+            // (being NRT, with no ReplicateFromLeader poller) go ACTIVE and never converge
+            // (ChaosMonkeyNothingIsSafeWithPullReplicasTest: a replica ACTIVE with 0 docs). So on a cold
+            // load we always recover (DOWN -> RECOVERING -> ACTIVE), matching upstream Solr's
+            // recover-on-restart behavior; a genuinely in-sync replica's PeerSync finds nothing and
+            // completes fast. A behind or mid-recovery replica still recovers below regardless.
+            if (shardTerms != null && shardTerms.canBecomeLeader(coreName) && !isTlogReplicaAndNotLeader
+                && core.isNewCore()) {
               log.info("Replica {} is in sync with the leader (highest term, not recovering); publishing ACTIVE without recovery", coreName);
               // Mark as recovered-without-full-recovery so a LATER recovery uses current recent
               // versions, not the empty at-startup snapshot (else PeerSync gets "no frame of

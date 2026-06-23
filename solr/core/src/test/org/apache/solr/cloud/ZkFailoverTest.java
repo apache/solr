@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -73,8 +75,8 @@ public class ZkFailoverTest extends SolrCloudTestCase {
       thread.join();
     }
     waitForLiveNodes(2);
-    waitForState("Timeout waiting for " + coll, coll, clusterShape(2, 2));
-    cluster.waitForActiveCollection(coll, 2, 2);
+    waitForState("Timeout waiting for " + coll, coll, clusterShape(2, 2), 60, TimeUnit.SECONDS);
+    cluster.waitForActiveCollection(coll, 60, TimeUnit.SECONDS, 2, 2);
     QueryResponse rsp = new QueryRequest(new SolrQuery("*:*")).process(cluster.getSolrClient(), coll);
     assertEquals(1, rsp.getResults().getNumFound());
     zkTestServer.shutdown();

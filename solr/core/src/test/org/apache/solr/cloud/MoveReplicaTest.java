@@ -209,20 +209,23 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       replica = getRandomReplica(coll, cloudClient);
     } while (!replica.getNodeName().equals(overseerLeader) && count-- > 0);
     assertNotNull("could not find non-overseer replica???", replica);
-    Set<String> liveNodes = cloudClient.getZkStateReader().getLiveNodes();
-    ArrayList<String> l = new ArrayList<>(liveNodes);
-    Collections.shuffle(l, random());
-    String targetNode = null;
-    for (String node : liveNodes) {
-      if (!replica.getNodeName().equals(node) && !overseerLeader.equals(node)) {
-        targetNode = node;
-        break;
-      }
-    }
-    assertNotNull(targetNode);
+    // Use a freshly-started spare node as the move target instead of an existing data-bearing node.
+    // The move must fail because the target dies before it runs. If we instead killed a node that
+    // already hosted a replica, we could strand a shard whose only surviving replica is a PULL
+    // (which can never be elected leader), leaving that shard with no leader. That is not data loss
+    // -- the docs still live on the downed NRT's disk and the PULL replica -- but it makes the
+    // shard-leader doc count unverifiable. A spare target keeps every original replica (and its
+    // leader) alive so the "failed move must not lose data" invariant can actually be checked.
+    JettySolrRunner spareTarget = cluster.startJettySolrRunner();
+    cluster.waitForNode(spareTarget, 30);
+    String targetNode = spareTarget.getNodeName();
+    final String spareTargetNode = targetNode;
+    assertFalse("spare target must not host a replica of " + coll,
+        cloudClient.getZkStateReader().getClusterState().getCollection(coll).getReplicas().stream()
+            .anyMatch(r -> spareTargetNode.equals(r.getNodeName())));
     CollectionAdminRequest.MoveReplica moveReplica = createMoveReplicaRequest(coll, replica, targetNode);
     moveReplica.setInPlaceMove(inPlaceMove);
-    // Kill the target node before starting the move so the move always fails
+    // Kill the spare target node before starting the move so the move always fails
     // (in this fork async operations complete too quickly to race with a post-processAsync kill).
     // Wait for it to leave live_nodes so Solr rejects the move due to dead target.
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
