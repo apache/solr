@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -25,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.solr.common.ConfigNode;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * Contains the knowledge of how cache config is stored in the solrconfig.xml file, and implements a
  * factory to create caches.
  */
-public class CacheConfig implements MapSerializable {
+public class CacheConfig implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String nodeName;
@@ -175,9 +176,10 @@ public class CacheConfig implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap(Map<String, Object> argsMap) {
-    // TODO: Should not create new HashMap?
-    return new HashMap<>(args);
+  public void writeMap(EntryWriter ew) throws IOException {
+    for (Map.Entry<String, String> entry : args.entrySet()) {
+      ew.put(entry.getKey(), entry.getValue());
+    }
   }
 
   public String getNodeName() {

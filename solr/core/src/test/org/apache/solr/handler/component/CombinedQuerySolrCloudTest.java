@@ -16,12 +16,15 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.cloud.AbstractZkTestCase.SOLRHOME;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
@@ -47,6 +50,12 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     fixShardCount(2);
     schemaString = "schema-vector-catchall.xml";
     configString = "solrconfig-combined-query.xml";
+  }
+
+  @Override
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
+    ZkTestServer.putConfig("conf1", zkServer.getZkClient(), SOLRHOME, "elevate.xml");
   }
 
   @Override
@@ -121,7 +130,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         query(
             CommonParams.JSON,
             "{\"queries\":"
-                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^10\"}}},"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^=10\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"]}}",
@@ -141,8 +150,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
             + "\"limit\":5,"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
@@ -161,8 +170,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^1)\"}}},"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
             + "\"limit\":5,\"sort\":\"mod3_idv desc, score desc\""
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
@@ -183,8 +192,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         query(
             CommonParams.JSON,
             "{\"queries\":"
-                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
             CommonParams.QT,
@@ -194,8 +203,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         query(
             CommonParams.JSON,
             "{\"queries\":"
-                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
                 + "\"limit\":4,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
@@ -206,8 +215,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         query(
             CommonParams.JSON,
             "{\"queries\":"
-                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
                 + "\"limit\":4,\"offset\":3,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
@@ -227,7 +236,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}}},"
+            + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1 OR 6^=2 OR 5^=1)\"}}},"
             + "\"limit\":3,\"offset\":1"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\",\"facet.mincount\":1,"
@@ -248,8 +257,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
             + "\"limit\":4,"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
@@ -270,6 +279,48 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
   }
 
   /**
+   * Tests the combined query feature with faceting, highlighting and elevation.
+   *
+   * @throws Exception if any unexpected error occurs during the test execution.
+   */
+  @Test
+  public void testElevatedQueriesWithFacetAndHighlights() throws Exception {
+    prepareIndexDocs();
+    String jsonQuery =
+        """
+        {
+          "queries": {
+            "lexical1": {"lucene": {"query": "id:(2^=3 OR 3^=1 OR 6^=2 OR 5^=2)"}},
+            "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=2 OR 7^=3 OR 10^=2)"}}
+          },
+          "limit": 4,
+          "fields": ["id", "score", "title"],
+          "params": {
+            "combiner": true,
+            "elevateIds": "6,10",
+            "combiner.query": ["lexical1", "lexical2"],
+            "facet": true,
+            "facet.field": "mod3_idv",
+            "hl": true,
+            "hl.fl": "title",
+            "hl.q": "test doc"
+          }
+        }""";
+    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search-elevate");
+    assertEquals(4, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "6", "10", "5", "7");
+    assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
+    assertEquals("[1 (3), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals(4, rsp.getHighlighting().size());
+    assertEquals(
+        "title <em>test</em> for <em>doc</em> 10",
+        rsp.getHighlighting().get("10").get("title").getFirst());
+    assertEquals(
+        "title <em>test</em> for <em>doc</em> 5",
+        rsp.getHighlighting().get("5").get("title").getFirst());
+  }
+
+  /**
    * Tests the combined query feature with faceting, highlighting and collapse.
    *
    * @throws Exception if any unexpected error occurs during the test execution.
@@ -284,12 +335,12 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
             "queries": {
                 "lexical1": {
                     "lucene": {
-                        "query": "id:(CO!2^3 OR CO!3^1 OR CO!6^2 OR CO!5^1)"
+                        "query": "id:(CO!2^=3 OR CO!3^=1 OR CO!6^=2 OR CO!5^=1)"
                     }
                 },
                 "lexical2": {
                     "lucene": {
-                        "query": "id:(CO!8^1 OR CO!5^2 OR CO!7^3 OR CO!10^2)"
+                        "query": "id:(CO!8^=1 OR CO!5^=2 OR CO!7^=3 OR CO!10^=2)"
                     }
                 }
             },
