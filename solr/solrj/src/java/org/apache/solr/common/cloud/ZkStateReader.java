@@ -561,6 +561,11 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
         //      amplification this finding was most concerned about is gone. What is left is a per-node
         //      hashmap lookup on the watcher thread — a micro-optimization, not a correctness or scaling
         //      cliff — which is why scoped subscriptions are deferred rather than built now.
+        // Net tradeoff, stated plainly: the DATA FETCH is now shard-scoped, but NOTIFICATION DELIVERY is
+        // still broad — every high-frequency state-plane leaf event is delivered as a ZK watch event to
+        // every node holding this recursive watch, which then filters by collection locally. This is an
+        // accepted interim limit; closing it requires the per-collection scoped-subscription subsystem in
+        // (1).
         zkClient.addWatch(ZkStateReader.COLLECTIONS_ZKNODE, this, AddWatchMode.PERSISTENT_RECURSIVE, true);
 
         refreshAliases(aliasesManager);

@@ -213,7 +213,7 @@ public class ZkStateReaderQueue implements Closeable {
                 // without re-fetching the node's view of the collection can go permanently stale and
                 // getLeaderRetry will spin until timeout. Re-enqueue on transient ZK failures.
                 log.error("fetchCollectionState failed coll={}", collection, t);
-                scheduleRetryOnTransientFailure(collection, false, t);
+                scheduleRetryOnTransientFailure(collection, false, null, t);
                 return null;
               });
 
@@ -246,7 +246,10 @@ public class ZkStateReaderQueue implements Closeable {
                 // Mirror the full-fetch branch: re-enqueue on transient ZK failures so a missed
                 // delta apply does not leave the node's view permanently stale.
                 log.error("getAndProcessStateUpdates failed coll={}", collection, t);
-                scheduleRetryOnTransientFailure(collection, true, t);
+                // Carry the target shards through so a transient one-shard failure retries scoped to
+                // those shards instead of degrading to a full-collection fold. shardsArg == null (a
+                // manifest/full-apply event) correctly retries as a full apply. (finding #5)
+                scheduleRetryOnTransientFailure(collection, true, shardsArg, t);
                 return null;
               });
             }
@@ -268,7 +271,7 @@ public class ZkStateReaderQueue implements Closeable {
      * the ensemble is unreachable. Retries are bounded per collection and the counter resets on the
      * next successful fetch.
      */
-    private void scheduleRetryOnTransientFailure(String collection, boolean justStates, Throwable t) {
+    private void scheduleRetryOnTransientFailure(String collection, boolean justStates, Set<String> targetShards, Throwable t) {
       if (closed || terminated) {
         fetchRetries.remove(collection);
         return;
@@ -287,7 +290,7 @@ public class ZkStateReaderQueue implements Closeable {
         return;
       }
 
-      log.warn("Re-enqueuing state fetch for collection={} justStates={} after transient ZK failure (attempt {}/{})", collection, justStates, attempt, MAX_FETCH_RETRIES);
+      log.warn("Re-enqueuing state fetch for collection={} justStates={} targetShards={} after transient ZK failure (attempt {}/{})", collection, justStates, targetShards, attempt, MAX_FETCH_RETRIES);
       ParWork.getRootSharedExecutor().submit(() -> {
         try {
           int waitMs = zkClient.getZkClientTimeout();
@@ -298,7 +301,15 @@ public class ZkStateReaderQueue implements Closeable {
           log.debug("waitForConnected before state re-fetch interrupted/failed coll={}", collection, e);
         }
         if (!closed && !terminated) {
-          fetchStateUpdates(collection, justStates);
+          // Preserve shard targeting on retry (finding #5): a non-null targetShards re-enqueues a
+          // scoped per-shard fetch; null (full-fetch or manifest event) re-enqueues the full apply.
+          if (justStates && targetShards != null) {
+            for (String shard : targetShards) {
+              fetchStateUpdates(collection, shard, true);
+            }
+          } else {
+            fetchStateUpdates(collection, justStates);
+          }
         }
       });
     }

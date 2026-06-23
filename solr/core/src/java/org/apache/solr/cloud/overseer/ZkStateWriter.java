@@ -217,23 +217,22 @@ public class ZkStateWriter {
       return;
     }
     // Ensure the snapshot+manifest exist BEFORE any delta is appended. The manifest is the reader's
-    // switch onto the delta plane; without it the reader never sees this collection's state.
+    // switch onto the delta plane; without it the reader never sees this collection's state. Throws if
+    // seeding fails, aborting this publish before any delta is appended so we never leave a durable but
+    // unreachable delta (the failure propagates to the publish future and the queue item is reprocessed).
     ensureManifestSeeded(collection, dc);
-    // Group changed-replica states by shard.
+    // Group changed-replica states by shard. The shard for each changed internalId is resolved in O(1)
+    // through DocCollection's idToReplica index (getReplicaById) rather than scanning every slice/replica.
+    // The old nested scan made a single-replica publish O(replicas_in_collection) and a node-down publish
+    // O(changed_ids x replicas_in_collection); this is O(changed_ids). (finding #3)
     Map<String,List<StateDelta.Entry>> byShard = new LinkedHashMap<>();
     for (Map.Entry<Integer,Integer> e : fullMap.entrySet()) {
       Integer internalId = e.getKey();
       Integer shortState = e.getValue();
       if (internalId == null || shortState == null) continue;
-      Slice slice = null;
-      for (Slice s : dc.getSlices()) {
-        for (Replica r : s.getReplicas()) {
-          if (internalId.equals(r.getInternalId())) { slice = s; break; }
-        }
-        if (slice != null) break;
-      }
-      if (slice == null) continue; // replica not in structure (e.g. just removed)
-      byShard.computeIfAbsent(slice.getName(), k -> new ArrayList<>())
+      Replica r = dc.getReplicaById(internalId);
+      if (r == null) continue; // replica not in structure (e.g. just removed)
+      byShard.computeIfAbsent(r.getSlice(), k -> new ArrayList<>())
           .add(new StateDelta.Entry(internalId, shortState));
     }
     if (byShard.isEmpty()) return;
@@ -282,8 +281,14 @@ public class ZkStateWriter {
             collection, epoch, shards.size());
       }
     } catch (Exception e) {
-      // Do NOT mark ensured — a fence loss or transient ZK error is retried on the next publish.
-      log.warn("statePlane: could not seed delta manifest for {} (retried next publish)", collection, e);
+      // Do NOT mark ensured AND do NOT swallow. After legacy _statupdates was removed, the manifest is
+      // the reader's ONLY authoritative switch onto the delta plane: a delta appended while the manifest
+      // is absent is durable-but-unreachable (readers treat a missing manifest as "plane not seeded" and
+      // no-op). Propagate so publishToStatePlane aborts BEFORE appending any delta, completes its publish
+      // future exceptionally, and WorkQueueWatcher leaves the queue item for reprocess — the seed (and the
+      // delta it gates) is retried on the next publish. (finding #1)
+      log.warn("statePlane: could not seed delta manifest for {} (publish held back; will retry)", collection, e);
+      throw new RuntimeException("Failed to seed delta-plane manifest for " + collection, e);
     }
   }
 
@@ -367,7 +372,18 @@ public class ZkStateWriter {
     }
   }
 
-  public void enqueueStateUpdates(Map<Integer,Map<Integer,Integer>> replicaStates,  Map<Integer,List<ZkStateWriter.StateUpdate>> sliceStates) {    log.debug("enqueue state updates");
+  /**
+   * Apply replica-state and slice-state updates to the in-memory cluster state. Replica-state updates are
+   * carried by the changed-id set and published to the delta plane by the caller via {@link
+   * #writeStateUpdates}; slice-state (UPDATESHARDSTATE) updates are hard-state structure changes written
+   * here via {@link #writeStructureUpdates}. Returns a future that completes once ALL structure writes
+   * this call scheduled have completed (an already-complete future when none were scheduled). The caller
+   * MUST gate any queue-item delete on BOTH this future and the {@link #writeStateUpdates} append future:
+   * a pure UPDATESHARDSTATE item adds no collection id to the replica-state set, so its append future is
+   * trivially complete and, without this gate, the item could be deleted before its slice-state write is
+   * durable. (finding #2)
+   */
+  public CompletableFuture<Void> enqueueStateUpdates(Map<Integer,Map<Integer,Integer>> replicaStates,  Map<Integer,List<ZkStateWriter.StateUpdate>> sliceStates) {    log.debug("enqueue state updates");
 
     replicaStates.forEach((collectionId, idToStateMap) -> {
       // A newly-elected overseer's ZkStateWriter starts with an EMPTY in-memory stateUpdates map. The
@@ -451,6 +467,10 @@ public class ZkStateWriter {
       // log.debug("enqueue state updates result {} {}", replicaStatesEntry.getKey(), stateUpdates.get(replicaStatesEntry.getKey()));
     });
 
+    // Structure (slice-state / UPDATESHARDSTATE) writes scheduled below are async; collect their futures
+    // so the returned aggregate lets the caller gate queue-item deletion on their durability. (finding #2)
+    final List<Future<?>> structureWrites = new ArrayList<>();
+
     sliceStates.forEach((collectionId, updates) -> {
       String collection = idToCollection.get(collectionId);
 
@@ -474,7 +494,7 @@ public class ZkStateWriter {
 
       if (didUpdate) {
         dirtyStructure.add(collection);
-        writeStructureUpdates(collection);
+        structureWrites.add(writeStructureUpdates(collection));
       }
     });
 
@@ -485,6 +505,34 @@ public class ZkStateWriter {
     if (!replicaStates.isEmpty()) {
       checkAndCompleteShardSplits(replicaStates.keySet());
     }
+
+    return awaitAll(structureWrites);
+  }
+
+  /**
+   * Aggregate the given async structure-write futures into one {@link CompletableFuture} that completes
+   * when ALL of them complete and completes exceptionally if any fails. Lets {@link WorkQueueWatcher}
+   * gate a slice-state (UPDATESHARDSTATE) queue-item delete on the durability of the structure write it
+   * triggered. Runs the (brief) join on the zkWriter executor so the calling thread is never blocked; an
+   * empty list short-circuits to an already-complete future so the common replica-state-only path never
+   * touches the executor. (finding #2)
+   */
+  private CompletableFuture<Void> awaitAll(List<Future<?>> futures) {
+    if (futures.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+    return CompletableFuture.runAsync(() -> {
+      for (Future<?> f : futures) {
+        try {
+          f.get();
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw new RuntimeException(ie);
+        } catch (ExecutionException ee) {
+          throw new RuntimeException(ee.getCause() != null ? ee.getCause() : ee);
+        }
+      }
+    }, overseer.getTaskZkWriterExecutor());
   }
 
   /**

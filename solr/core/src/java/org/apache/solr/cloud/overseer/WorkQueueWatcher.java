@@ -228,12 +228,18 @@ public class WorkQueueWatcher extends QueueWatcher {
             log.warn("Ignoring unsupported overseer state-update op={} contents={}", op, message);
             break;
         }
-        overseer.getZkStateWriter().enqueueStateUpdates(replicaStates, sliceStates);
+        // enqueueStateUpdates returns a future for any slice-state (UPDATESHARDSTATE) structure write it
+        // scheduled. writeStateUpdates returns a future that completes once the delta-plane replica-state
+        // append is durable. enqueueStateUpdates already recorded this item's change in the in-memory map,
+        // so the append future this tracks necessarily carries it.
+        CompletableFuture<Void> structureFuture =
+            overseer.getZkStateWriter().enqueueStateUpdates(replicaStates, sliceStates);
         try {
-          // writeStateUpdates enqueues the publish and returns a future that completes once the
-          // delta-plane append is durable. enqueueStateUpdates above already recorded this item's
-          // change in the in-memory map, so the publish this future tracks necessarily carries it.
-          durableByKey.put(key, overseer.getZkStateWriter().writeStateUpdates(collIds));
+          // Gate the queue-item delete on BOTH futures: a pure UPDATESHARDSTATE item adds nothing to
+          // collIds, so its append future is trivially complete — without the structure future it could be
+          // deleted before its slice hard-state write is durable. (finding #2)
+          CompletableFuture<Void> appendFuture = overseer.getZkStateWriter().writeStateUpdates(collIds);
+          durableByKey.put(key, CompletableFuture.allOf(structureFuture, appendFuture));
         } catch (InterruptedException e) {
           log.warn("interrupted", e);
           throw new AlreadyClosedException(e);
