@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.util.Utils;
@@ -110,10 +109,6 @@ public class ShardBackupMetadata {
   public void store(BackupRepository repository, URI folderURI, ShardBackupId shardBackupId)
       throws IOException {
     final String filename = shardBackupId.getBackupMetadataFilename();
-    URI fileURI = repository.resolve(folderURI, filename);
-    if (repository.exists(fileURI)) {
-      repository.delete(folderURI, Set.of(filename));
-    }
 
     try (OutputStream os = repository.createOutput(repository.resolve(folderURI, filename))) {
       store(os);
