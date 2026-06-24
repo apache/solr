@@ -33,6 +33,7 @@ import java.util.Set;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.handler.admin.api.ModifyBasicAuthConfigAPI;
 import org.slf4j.Logger;
@@ -43,6 +44,19 @@ public class Sha256AuthenticationProvider
 
   static String CANNOT_DELETE_LAST_USER_ERROR =
       "You cannot delete the last user. At least one user must be configured at all times.";
+
+  /**
+   * System property (or {@code SOLR_SECURITY_AUTH_BASICAUTH_ALLOWUSERASPASSWORD} environment
+   * variable) that, when explicitly set to {@code true}, disables the check that rejects a password
+   * equal to its username, both at login time and when creating or editing a user via the {@code
+   * set-user} command (UI, API or CLI). This is an escape hatch for users upgrading to 9.11.0 or
+   * 10.1.0 who still have Basic Auth users with weak passwords equal to the username; it lets them
+   * keep logging in (and managing those accounts) while they migrate to stronger passwords.
+   * Defaults to {@code false}.
+   */
+  public static final String ALLOW_USER_AS_PASSWORD_PROP =
+      "solr.security.auth.basicauth.allowuseraspassword";
+
   private Map<String, String> credentials;
   private String realm;
   private Map<String, String> promptHeader;
@@ -94,6 +108,11 @@ public class Sha256AuthenticationProvider
 
   @Override
   public boolean authenticate(String username, String password) {
+    if (username != null
+        && username.equals(password)
+        && !EnvUtils.getPropertyAsBool(ALLOW_USER_AS_PASSWORD_PROP, false)) {
+      return false;
+    }
     String cred = credentials.get(username);
     if (cred == null || cred.isEmpty()) return false;
     cred = cred.trim();
@@ -164,6 +183,11 @@ public class Sha256AuthenticationProvider
         for (Map.Entry<String, Object> e : kv.entrySet()) {
           if (e.getKey() == null || e.getValue() == null) {
             cmd.addError("name and password must be non-null");
+            return null;
+          }
+          if (e.getKey().equals(String.valueOf(e.getValue()))
+              && !EnvUtils.getPropertyAsBool(ALLOW_USER_AS_PASSWORD_PROP, false)) {
+            cmd.addError("Password must not be the same as the username");
             return null;
           }
           putUser(e.getKey(), String.valueOf(e.getValue()), map);

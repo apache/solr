@@ -30,8 +30,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
@@ -39,6 +41,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.security.Sha256AuthenticationProvider;
@@ -467,10 +470,14 @@ public class AuthTool extends ToolBase {
           } while (password.length() == 0);
         }
 
-        boolean blockUnknown =
-            Boolean.parseBoolean(
-                SolrCLI.getOptionWithDeprecatedAndDefault(
-                    cli, "block-unknown", "blockUnknown", "true"));
+        if (username.equals(password)
+            && !EnvUtils.getPropertyAsBool(
+                Sha256AuthenticationProvider.ALLOW_USER_AS_PASSWORD_PROP, false)) {
+          CLIO.err(
+              "Error: username and password must not be identical."
+                  + " This credential would never authenticate.");
+          runtime.exit(1);
+        }
 
         String resourceName = "security.json";
         final URL resource = SolrCore.class.getClassLoader().getResource(resourceName);
@@ -480,7 +487,14 @@ public class AuthTool extends ToolBase {
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode securityJson1 = mapper.readTree(resource.openStream());
-        ((ObjectNode) securityJson1).put("blockUnknown", blockUnknown);
+        // Only override blockUnknown if explicitly passed; otherwise let the template decide
+        if (cli.hasOption("block-unknown") || cli.hasOption("blockUnknown")) {
+          boolean blockUnknown =
+              Boolean.parseBoolean(
+                  SolrCLI.getOptionWithDeprecatedAndDefault(
+                      cli, "block-unknown", "blockUnknown", "true"));
+          ((ObjectNode) securityJson1.get("authentication")).put("blockUnknown", blockUnknown);
+        }
         JsonNode credentialsNode = securityJson1.get("authentication").get("credentials");
         ((ObjectNode) credentialsNode)
             .put(username, Sha256AuthenticationProvider.getSaltedHashedValue(password));
@@ -534,8 +548,23 @@ public class AuthTool extends ToolBase {
             includeFile.toPath(), basicAuthConfFile.getAbsolutePath(), null, cli);
         final String successMessage =
             String.format(
-                Locale.ROOT, "Successfully enabled basic auth with username [%s].", username);
+                Locale.ROOT,
+                "Successfully enabled basic auth with username [%s] assigned to all roles (superadmin, admin, index, search).",
+                username);
         echo(successMessage);
+        if (!updateIncludeFileOnly) {
+          Map<String, String> templateUsers = new LinkedHashMap<>();
+          templateUsers.put("admin", "admin, index, search");
+          templateUsers.put("index", "index, search");
+          templateUsers.put("search", "search");
+          templateUsers.remove(username);
+          CLIO.out(
+              "\nIMPORTANT: The following template users have been created with NO password set"
+                  + " and cannot log in until passwords are assigned:");
+          templateUsers.forEach((u, roles) -> CLIO.out("  - " + u + "  (roles: " + roles + ")"));
+          CLIO.out(
+              "Set their passwords using the Admin UI Security page or the authentication API.");
+        }
         return 0;
 
       case "disable":
