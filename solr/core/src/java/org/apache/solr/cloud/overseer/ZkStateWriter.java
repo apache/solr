@@ -316,7 +316,7 @@ public class ZkStateWriter {
     for (Map.Entry<String,List<StateDelta.Entry>> e : byShard.entrySet()) {
       // One multi-entry delta per (coll,shard) — node-down batching (D7) falls out for free here,
       // because all of a downed node's replicas in a shard arrive in fullMap together.
-      w.publish(collection, e.getKey(), e.getValue(), null);
+      w.publish(collection, e.getKey(), Integer.toString(dc.getId()), e.getValue(), null);
     }
   }
 
@@ -1118,6 +1118,13 @@ public class ZkStateWriter {
         // ensureManifestSeeded() short-circuits on the stale name and the reader never switches onto
         // the delta plane for the new incarnation (sees no manifest and treats the plane as un-seeded).
         manifestEnsured.remove(collection);
+        StatePlaneWriter w = statePlaneWriter;
+        if (w != null) {
+          // A same-name collection recreation starts a fresh ring that may reuse the same lastSeq as the
+          // prior incarnation. Drop writer-local effective-state caches/timers for this name so no-op
+          // suppression or leader demotion can never consult stale replica state.
+          w.clearCollection(collection);
+        }
 
         DocCollection removed = cs.remove(collection);
         if (removed != null) {
@@ -1577,8 +1584,6 @@ public class ZkStateWriter {
           // Unknown collection id (review P0 #2). Two cases:
           //  (a) the collection was REMOVED (in removedCollIds) — its id will never resolve. Drop the
           //      armed state and complete NORMALLY so WorkQueueWatcher deletes the queue item (option 3).
-          //      Same disposition once an id has been retained past the bounded removed-collection proof, which guards
-          //      a stale item from a long-dead incarnation this overseer never observed being removed.
           //  (b) the structure simply has not LANDED yet — keep pendingChangedIds / stateUpdates armed
           //      and complete EXCEPTIONALLY so WorkQueueWatcher RETAINS the queue item for reprocess
           //      (option 1). enqueueStructureChange republishes the armed ids the moment the structure
@@ -1591,9 +1596,8 @@ public class ZkStateWriter {
             unknownIdAttempts.remove(collId);
             pendingChangedIds.remove(collId);
             stateUpdates.remove(collId);
-            log.warn("writeStateUpdates: dropping state update for unknown collection id {} ({}); "
-                    + "structure will never land",
-                collId, removedCollIds.contains(collId) ? "collection removed" : "not yet proven removed");
+            log.warn("writeStateUpdates: dropping state update for unknown collection id {} "
+                + "(collection removed); structure will never land", collId);
             return;
           }
           log.debug("writeStateUpdates: structure for collection id {} not yet known (attempt {}); "
@@ -1764,4 +1768,3 @@ public class ZkStateWriter {
   }
 
 }
-

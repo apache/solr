@@ -234,7 +234,14 @@ public class StatePublisherConnectionLossTest extends SolrTestCaseJ4 {
             java.lang.reflect.InvocationTargetException.class, () -> parkBatch.invoke(worker, overflow));
     assertTrue(thrown.getCause() instanceof SolrException);
     assertSame("overflow must not evict the oldest unpersisted batch", oldest, pendingBatches.peekFirst());
-    assertEquals("overflow must not silently grow or drop the retry buffer", maxPendingBatches, pendingBatches.size());
+    assertSame(
+        "overflow batch itself must be retained before fail-closed terminal state",
+        overflow,
+        pendingBatches.peekLast());
+    assertEquals(
+        "overflow uses one reserved retained slot instead of dropping an unpersisted batch",
+        maxPendingBatches + 1,
+        pendingBatches.size());
 
     Field terminalFailure = StatePublisher.class.getDeclaredField("terminalFailure");
     terminalFailure.setAccessible(true);

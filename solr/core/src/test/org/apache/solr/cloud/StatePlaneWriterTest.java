@@ -122,6 +122,33 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         assertEquals(1L, readRing("c1", "s1").lastSeq);
     }
 
+    /** Same-name collection recreations must not reuse the prior incarnation's writer cache. */
+    @Test
+    public void effectiveCacheIsScopedByCollectionIncarnation() throws Exception {
+        StatePlaneWriter w = writer("e1");
+        String coll = "reincarnated";
+        String shard = "s1";
+
+        // First incarnation: seed snapshot state at seq 0, then publish the same state. This builds a
+        // writer-local effective cache with lastSeq=0 and replica 10 already ACTIVE.
+        java.util.Map<Integer, Integer> seeded = new java.util.HashMap<>();
+        seeded.put(10, ACTIVE);
+        w.seedShard(coll, shard, 1, seeded);
+        assertFalse(w.publish(coll, shard, "incarnation-1", promo(10, ACTIVE), null));
+        assertEquals(0L, readRing(coll, shard).lastSeq);
+
+        // Delete the collection state-plane znodes and recreate the same name. The fresh ring also
+        // starts at lastSeq=0. If the cache were keyed only by collection name/shard, the first needed
+        // ACTIVE delta would be suppressed as a stale no-op from the previous incarnation.
+        zkClient.clean(StatePlanePaths.collectionPath(coll));
+        assertTrue(w.publish(coll, shard, "incarnation-2", promo(10, ACTIVE), null));
+        ShardStateLog recreated = readRing(coll, shard);
+        assertEquals("new incarnation must append its own first delta", 1L, recreated.lastSeq);
+        assertEquals(1, recreated.entries.size());
+        assertEquals(10, recreated.entries.get(0).entries.get(0).replicaId);
+        assertEquals(ACTIVE, recreated.entries.get(0).entries.get(0).shortState);
+    }
+
     /** A BadVersion/ConnLoss-style retry that re-reads effective state cannot regress it. */
     @Test
     public void badVersionRetryIdempotent() throws Exception {

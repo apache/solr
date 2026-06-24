@@ -746,7 +746,8 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
    * Register a scoped recursive watch on {@code /collections/<collection>} so this node receives that
    * collection's structure (`_scn`) and high-frequency state-plane leaf events (deltas/snapshot/manifest)
    * WITHOUT the broad cluster-wide fanout (review finding #4). Idempotent and best-effort: a transient ZK
-   * failure is logged and the intent dropped so a later interest registration (or reconnect) retries.
+   * failure is logged and the wanted intent retained so delayed retry, a later interest registration, or reconnect
+   * can arm the watch.
    */
   private void registerStatePlaneWatch(String collection) {
     if (closed || collection == null) {

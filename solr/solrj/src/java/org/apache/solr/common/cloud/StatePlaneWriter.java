@@ -128,12 +128,15 @@ public class StatePlaneWriter {
      * decode the per-shard snapshot and {@code reconstruct} the WHOLE replica map on every publish —
      * O(replicas-in-shard) per single-replica transition. Instead the elected writer (the only one that
      * may append, per the per-shard lock + election fence) keeps the effective map in memory and updates
-     * it incrementally as it appends. {@code lastSeq} is the ring {@code lastSeq} this map reflects; the
-     * cache is reused only when the freshly-read ring still has that {@code lastSeq} — otherwise (first
-     * publish on this shard after takeover, or a concurrent append seen as a changed lastSeq) it is
-     * rebuilt from snapshot + ring exactly as before. {@code currentLeaderId} is the O(1)
-     * stale-leader-demotion index (the single replica at raw {@code LEADER}, or {@code null}). All
-     * fields are read/written only under the owning shard's lock.
+     * it incrementally as it appends. The cache key includes the collection incarnation id when the
+     * caller has one; {@code lastSeq} alone is not incarnation-safe because a same-name recreation can
+     * start a fresh ring at the same sequence. {@code lastSeq} is the ring {@code lastSeq} this map
+     * reflects; the cache is reused only when the freshly-read ring still has that {@code lastSeq} for
+     * the same incarnation — otherwise (first publish on this shard after takeover, a collection
+     * recreation, or a concurrent append seen as a changed lastSeq) it is rebuilt from snapshot + ring
+     * exactly as before. {@code currentLeaderId} is the O(1) stale-leader-demotion index (the single
+     * replica at raw {@code LEADER}, or {@code null}). All fields are read/written only under the owning
+     * shard's lock.
      */
     private static final class ShardEffective {
         long lastSeq;
@@ -165,6 +168,9 @@ public class StatePlaneWriter {
      * to a shard (or after a detected divergence) and advanced incrementally per append, so steady-state
      * publishes skip the snapshot decode + full-map reconstruct. Bounded by the shards this overseer
      * incarnation publishes to; rebuilt fresh on takeover (a new overseer constructs a new writer).
+     * Keys are collection-incarnation scoped when the caller has a collection id, so a same-name
+     * collection recreation cannot reuse the prior incarnation's effective state when its fresh ring
+     * restarts at the same sequence number.
      */
     private final ConcurrentHashMap<String, ShardEffective> effectiveCache = new ConcurrentHashMap<>();
 
@@ -188,6 +194,24 @@ public class StatePlaneWriter {
         return localEpoch;
     }
 
+    private static String cacheKey(String coll, String shard, String collectionIncarnation) {
+        String incarnation =
+                (collectionIncarnation == null || collectionIncarnation.isEmpty())
+                        ? coll
+                        : collectionIncarnation;
+        return coll + "#" + incarnation + "/" + shard;
+    }
+
+    private static boolean collectionKey(String key, String coll) {
+        return key.startsWith(coll + "#") || key.startsWith(coll + "/");
+    }
+
+    /** Drop writer-local cache/timer state for a removed collection name. */
+    public void clearCollection(String coll) {
+        effectiveCache.keySet().removeIf(key -> collectionKey(key, coll));
+        lastCompactionMillis.keySet().removeIf(key -> collectionKey(key, coll));
+    }
+
     /**
      * Publish replica state for one shard. Synchronous and serialized per (coll,shard).
      *
@@ -201,6 +225,17 @@ public class StatePlaneWriter {
      */
     public boolean publish(String coll, String shard, List<StateDelta.Entry> promotions,
                            List<Integer> demotions) {
+        return publish(coll, shard, null, promotions, demotions);
+    }
+
+    /**
+     * Publish replica state for one shard with a caller-supplied collection incarnation id.
+     *
+     * <p>The id is used only for writer-local cache isolation. The durable state-plane layout remains
+     * collection-name based.
+     */
+    public boolean publish(String coll, String shard, String collectionIncarnation,
+                           List<StateDelta.Entry> promotions, List<Integer> demotions) {
         final String collPath = StatePlanePaths.collectionPath(coll);
         final String deltaPath = StatePlanePaths.shardDeltas(collPath, shard);
         final List<StateDelta.Entry> promos =
@@ -212,11 +247,11 @@ public class StatePlaneWriter {
         lock.lock();
         try {
             // Authoritative election fence (review P1 #5): confirm we still OWN the overseer election in
-            // ZK before appending. The per-attempt fence.stillElected() below is only a local liveness
-            // flag, and ring.writerId fencing cannot reveal a stale writer when the new overseer has not
-            // yet written THIS shard's ring. The authoritative check rejects a stale overseer that lost
-            // leadership but is not yet marked closed. Done once per publish (not per CAS retry) to bound
-            // the extra ZK read.
+            // ZK before doing publish work. The per-attempt fence.stillElected() below is only a local
+            // liveness flag, and ring.writerId fencing cannot reveal a stale writer when the new overseer
+            // has not yet written THIS shard's ring. The authoritative check rejects a stale overseer
+            // that lost leadership but is not yet marked closed; the check is repeated immediately
+            // before each mutating CAS below.
             if (!fence.ownsElectionAuthoritative()) {
                 throw new FencedException("no longer the elected overseer (authoritative); refusing to append "
                         + deltaPath);
@@ -251,11 +286,12 @@ public class StatePlaneWriter {
 
                     // ---- Effective state (review P1 #3): served from the writer-local per-shard cache so
                     //      a steady-state publish does NOT decode the snapshot and reconstruct the whole
-                    //      shard map every time. Valid iff it reflects the ring we just read
-                    //      (ce.lastSeq == ring.lastSeq); otherwise (first publish on this shard after
-                    //      takeover, or a concurrent append detected via a changed lastSeq) rebuild it from
-                    //      snapshot + ring exactly as before. Held under the per-shard lock. ----
-                    final String cacheKey = coll + "/" + shard;
+                    //      shard map every time. Valid iff it reflects the same collection incarnation
+                    //      AND the ring we just read (ce.lastSeq == ring.lastSeq); otherwise (first
+                    //      publish on this shard after takeover, same-name collection recreation, or a
+                    //      concurrent append detected via a changed lastSeq) rebuild it from snapshot +
+                    //      ring exactly as before. Held under the per-shard lock. ----
+                    final String cacheKey = cacheKey(coll, shard, collectionIncarnation);
                     ShardEffective ce = effectiveCache.get(cacheKey);
                     if (ce == null || ce.lastSeq != ring.lastSeq) {
                         Map<Integer, Integer> rebuilt = effectiveState(coll, collPath, shard, ring);

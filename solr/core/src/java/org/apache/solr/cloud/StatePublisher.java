@@ -108,16 +108,13 @@ public class StatePublisher implements Closeable {
   private final LinkedTransferQueue<Map> workQueue = new LinkedTransferQueue<>();
 
   // Bounded retry buffer for batches whose durable persist to the overseer queue did NOT succeed
-  // (review P0 #1). A state batch is edge-triggered: once the Worker has drained its constituent
-  // messages from workQueue and bulked them, this batch is the ONLY in-memory record of those
-  // transitions. processMessage persists synchronously with retryOnConnLoss=true, but ZkCmdExecutor
-  // gives up after a finite retry count and wraps the failure as a SolrException — which previously
-  // fell through to the run loop's catch(Exception) and the freshly-built bulkMessage was simply
-  // dropped, permanently losing those transitions (no caller re-emits an edge-triggered change). A
-  // batch that fails to persist is now parked here and retried on subsequent worker loops (after
-  // waitForConnected) until ZK accepts it. Bounded so a permanent outage cannot exhaust heap; on
-  // overflow the OLDEST parked batch is dropped with a loud error (last-resort backstop only reachable
-  // under a sustained, multi-thousand-batch outage). Touched only by the single Worker thread.
+  // A durable persist failure parks the coalesced batch here and the worker retries
+  // parked batches before accepting fresh work. The queue is intentionally bounded so a
+  // prolonged ZooKeeper outage cannot consume unbounded heap. On overflow we retain the
+  // overflowing batch as a reserved final entry, mark the publisher terminally failed,
+  // and reject future submissions. That makes overflow fail-closed without discarding
+  // any batch already handed to this publisher; external recovery must recreate/rejoin
+  // the node so replicas re-register and publish fresh state.
   private static final int MAX_PENDING_BATCHES =
       Integer.getInteger("solr.statePublisher.maxPendingBatches", 10000);
   private final java.util.ArrayDeque<Map> pendingBatches = new java.util.ArrayDeque<>();
@@ -337,16 +334,21 @@ public class StatePublisher implements Closeable {
       }
     }
 
-    /** Park a batch for retry. Overflow is fail-closed, never lossy (strict no-loss semantics). */
+    /** Park a batch for retry. Overflow retains the overflowing batch, then fails closed. */
     private void parkBatch(Map bulkMessage) {
       if (pendingBatches.size() >= MAX_PENDING_BATCHES) {
+        // Retain the overflow batch before entering terminal fail-closed mode. This intentionally
+        // grows the retry buffer by one reserved overflow slot: rejecting it here would make the
+        // fail-closed path itself lossy unless some outer component could prove replica re-registration.
+        pendingBatches.addLast(bulkMessage);
         SolrException failure = new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "StatePublisher pending-batch buffer full (" + MAX_PENDING_BATCHES
-                + "); refusing to drop unpersisted state transitions");
+                + "); retained overflow batch and refusing to accept more state transitions");
         terminalFailure = failure;
         closed = true;
         log.error("StatePublisher pending-batch buffer full ({}); failing closed instead of "
-            + "dropping unpersisted state batch: {}", MAX_PENDING_BATCHES, bulkMessage);
+            + "dropping unpersisted state batch; retained overflow batch: {}",
+            MAX_PENDING_BATCHES, bulkMessage);
         throw failure;
       }
       pendingBatches.addLast(bulkMessage);
