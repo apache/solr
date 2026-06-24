@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
@@ -75,9 +74,6 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.ThreadCpuTimer;
-import org.apache.solr.util.circuitbreaker.CircuitBreaker;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -231,10 +227,6 @@ public class SearchHandler extends RequestHandlerBase
       SolrPluginUtils.getDebugInterests(req.getParams().getParams(CommonParams.DEBUG), rb);
     }
 
-    if (checkCircuitBreakers(req, rsp, rb)) {
-      return; // Circuit breaker tripped, return immediately
-    }
-
     processComponents(req, rsp, rb, components);
   }
 
@@ -358,42 +350,6 @@ public class SearchHandler extends RequestHandlerBase
   protected ResponseBuilder newResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
     return new ResponseBuilder(req, rsp, components);
-  }
-
-  /**
-   * Check if {@link SolrRequestType#QUERY} circuit breakers are tripped. Override this method in
-   * sub classes that do not want to check circuit breakers.
-   *
-   * @return true if circuit breakers are tripped, false otherwise.
-   */
-  protected boolean checkCircuitBreakers(
-      SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb) {
-    if (isInternalShardRequest(req)) {
-      if (log.isTraceEnabled()) {
-        log.trace("Internal request, skipping circuit breaker check");
-      }
-      return false;
-    }
-    final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
-
-    final CircuitBreakerRegistry circuitBreakerRegistry = req.getCore().getCircuitBreakerRegistry();
-    if (circuitBreakerRegistry.isEnabled(SolrRequestType.QUERY)) {
-      List<CircuitBreaker> trippedCircuitBreakers;
-
-      if (timer != null) {
-        RTimerTree subt = timer.sub("circuitbreaker");
-        rb.setTimer(subt);
-
-        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped(SolrRequestType.QUERY);
-
-        rb.getTimer().stop();
-      } else {
-        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped(SolrRequestType.QUERY);
-      }
-
-      return CircuitBreakerUtils.reportErrorIfBreakersTripped(rsp, trippedCircuitBreakers);
-    }
-    return false;
   }
 
   protected void processComponents(

@@ -28,6 +28,7 @@
   <filter>
     <filter-name>SolrFilter</filter-name>
     <filter-class>org.apache.solr.servlet.RequiredSolrRequestFilter</filter-class>
+    <async-supported>true</async-supported>
   </filter>
   <filter-mapping>
     <filter-name>SolrFilter</filter-name>
@@ -35,17 +36,9 @@
   </filter-mapping>
 
   <filter>
-    <filter-name>RateLimitFilter</filter-name>
-    <filter-class>org.apache.solr.servlet.RateLimitFilter</filter-class>
-  </filter>
-  <filter-mapping>
-    <filter-name>RateLimitFilter</filter-name>
-    <servlet-name>SolrServlet</servlet-name>
-  </filter-mapping>
-
-  <filter>
     <filter-name>TracingFilter</filter-name>
     <filter-class>org.apache.solr.servlet.TracingFilter</filter-class>
+    <async-supported>true</async-supported>
   </filter>
   <filter-mapping>
     <filter-name>TracingFilter</filter-name>
@@ -55,15 +48,37 @@
   <filter>
     <filter-name>AuthenticationFilter</filter-name>
     <filter-class>org.apache.solr.servlet.AuthenticationFilter</filter-class>
+    <async-supported>true</async-supported>
   </filter>
   <filter-mapping>
     <filter-name>AuthenticationFilter</filter-name>
     <servlet-name>SolrServlet</servlet-name>
   </filter-mapping>
 
+  <filter>
+    <filter-name>SolrQoSFilter</filter-name>
+    <filter-class>org.apache.solr.servlet.SolrQoSFilter</filter-class>
+    <async-supported>true</async-supported>
+  </filter>
+  <filter-mapping>
+    <filter-name>SolrQoSFilter</filter-name>
+    <servlet-name>SolrServlet</servlet-name>
+  </filter-mapping>
+
+  <filter>
+    <filter-name>RateLimitFilter</filter-name>
+    <filter-class>org.apache.solr.servlet.RateLimitFilter</filter-class>
+    <async-supported>true</async-supported>
+  </filter>
+  <filter-mapping>
+    <filter-name>RateLimitFilter</filter-name>
+    <servlet-name>SolrServlet</servlet-name>
+  </filter-mapping>
+
   <servlet>
     <servlet-name>SolrServlet</servlet-name>
     <servlet-class>org.apache.solr.servlet.SolrServlet</servlet-class>
+    <async-supported>true</async-supported>
   </servlet>
   <servlet-mapping>
     <servlet-name>SolrServlet</servlet-name>

@@ -21,6 +21,7 @@ import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Locale;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.OtelRuntimeJvmMetrics;
@@ -34,6 +35,11 @@ import org.slf4j.LoggerFactory;
  * <p>This circuit breaker gets the recent average CPU usage and uses that data to take a decision.
  * We depend on OperatingSystemMXBean which does not allow a configurable interval of collection of
  * data.
+ *
+ * <p>Polling the underlying Prometheus metric per request is wasteful since the metric updates on a
+ * coarser cadence. Successive {@link #isTripped()} invocations reuse a sample for {@link
+ * CircuitBreakerRegistry#SYSPROP_SAMPLE_TTL_MS} (default {@value
+ * CircuitBreakerRegistry#DEFAULT_SAMPLE_TTL_MS} ms).
  */
 public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -41,6 +47,12 @@ public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
   private boolean enabled = false;
   private double cpuUsageThreshold;
   private CoreContainer cc;
+
+  private final TtlSampledMetric cpuUsageCache =
+      new TtlSampledMetric(
+          EnvUtils.getPropertyAsLong(
+              CircuitBreakerRegistry.SYSPROP_SAMPLE_TTL_MS,
+              CircuitBreakerRegistry.DEFAULT_SAMPLE_TTL_MS));
 
   private static final ThreadLocal<Double> seenCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
@@ -65,7 +77,7 @@ public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
       return false;
     }
     double localAllowedCPUUsage = getCpuUsageThreshold();
-    double localSeenCPUUsage = calculateLiveCPUUsage();
+    double localSeenCPUUsage = cpuUsageCache.get(this::calculateLiveCPUUsage);
 
     allowedCPUUsage.set(localAllowedCPUUsage);
 
