@@ -217,24 +217,7 @@ public class ZkStateReaderQueue implements Closeable {
           try {
             if (!justStates) {
               log.debug("fetchCollectionState {}", collection);
-              fetchCollectionState(collection).thenCompose(docCollection1 -> {
-                // PR-3 delta plane: re-apply the live state plane onto the freshly-fetched structure
-                // before installing it. The structure (state.json) and the delta plane are watched on
-                // two independent ZK nodes, so a leader/active delta can arrive (and be processed
-                // against a structure that does not yet contain that replica id) BEFORE the structure
-                // that defines the replica. The justStates path then skips the un-seeded id but still
-                // advances the per-shard cursor past it (StatePlaneReader logs "skipping un-seeded
-                // replica"), so the raced-ahead state is lost forever. A full fetch builds a fresh
-                // DocCollection with fresh (epoch=0) cursors that now seeds the replica, so re-running
-                // the delta apply reconstructs the current state from the snapshot+ring and recovers
-                // the lost leader/active state — self-healing convergence independent of watch order.
-                // ZkStateReader.updateWatchedCollection's carryForward already assumes the full-fetch
-                // path delivers freshly-applied updates and preserves whichever side is newer.
-                if (docCollection1 != null) {
-                  return getAndProcessDeltaUpdates(docCollection1);
-                }
-                return CompletableFuture.completedFuture(docCollection1);
-              }).thenAcceptAsync(docCollection1 -> {
+              fetchCollectionState(collection).thenAcceptAsync(docCollection1 -> {
                 clearCollectionRetries(collection);
                 reader.updateWatchedCollection(collection, new ClusterState.CollectionRef(docCollection1));
               }).exceptionally(t -> {

@@ -124,6 +124,12 @@ public class StatePlaneWriter {
         }
     }
 
+    private void requireAuthoritativeOwnership(String action) {
+        if (!fence.ownsElectionAuthoritative()) {
+            throw new FencedException("lost authoritative overseer ownership before " + action);
+        }
+    }
+
     /**
      * Writer-local cached effective state for one shard (review P1 #3). The hot write path used to
      * decode the per-shard snapshot and {@code reconstruct} the WHOLE replica map on every publish —
@@ -487,6 +493,7 @@ public class StatePlaneWriter {
         final String deltaPath = StatePlanePaths.shardDeltas(collPath, shard);
         for (int attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
             try {
+                requireAuthoritativeOwnership("compaction work");
                 Stat stat = new Stat();
                 byte[] data;
                 try {
@@ -520,12 +527,14 @@ public class StatePlaneWriter {
 
                 // (1) snapshot durable FIRST — single atomic op, monotonic (never regresses a newer
                 //     writer's higher-coverage snapshot; see writeSnapshotMonotonic).
+                requireAuthoritativeOwnership("compaction snapshot write");
                 writeSnapshotMonotonic(collPath, shard, newSnap);
 
                 // (2) THEN CAS-trim the ring: baseSeq advances to upToSeq, folded deltas removed.
                 ShardStateLog trimmed = new ShardStateLog(
                         ring.collectionId, ring.shardId, ring.epoch, upToSeq, ring.lastSeq,
                         fence.writerId(), Collections.emptyList());
+                requireAuthoritativeOwnership("compaction ring trim");
                 zkClient.setData(deltaPath, StateDeltaCodec.encodeShardStateLog(trimmed),
                         stat.getVersion(), false);
 
@@ -574,10 +583,12 @@ public class StatePlaneWriter {
                 if (current != null && current.upToSeq() >= newSnap.upToSeq()) {
                     return;
                 }
+                requireAuthoritativeOwnership("snapshot update");
                 zkClient.setData(snapPath, newBytes, stat.getVersion(), true);
                 return;
             } catch (KeeperException.NoNodeException nne) {
                 try {
+                    requireAuthoritativeOwnership("snapshot create");
                     zkClient.makePath(snapPath, newBytes, CreateMode.PERSISTENT, true);
                     return;
                 } catch (KeeperException.NodeExistsException exists) {

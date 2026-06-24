@@ -592,6 +592,9 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
 
   @Override
   public void process(WatchedEvent event) {
+    if (event == null || EventType.None.equals(event.getType()) || event.getPath() == null) {
+      return;
+    }
     // section process
     try {
       MDCLoggingContext.setNode(node);

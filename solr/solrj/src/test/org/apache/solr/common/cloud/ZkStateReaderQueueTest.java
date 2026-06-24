@@ -68,4 +68,45 @@ public class ZkStateReaderQueueTest extends SolrTestCase {
             new KeeperException.NoNodeException()));
     assertFalse(ZkStateReaderQueue.isTransientZkFailure(wrappedStructural));
   }
+  @Test
+  public void testZkStateReaderIgnoresSessionWatchEventsWithNullPath() {
+    ZkStateReader reader = new ZkStateReader((SolrZkClient) null);
+    reader.process(new org.apache.zookeeper.WatchedEvent(
+        org.apache.zookeeper.Watcher.Event.EventType.None,
+        org.apache.zookeeper.Watcher.Event.KeeperState.SyncConnected,
+        null));
+  }
+
+  @Test
+  public void testFullFetchWorkerDoesNotChainSecondDeltaFold() throws Exception {
+    java.nio.file.Path sourceRoot = java.nio.file.Paths.get(System.getProperty("user.dir"));
+    java.nio.file.Path moduleRelative = java.nio.file.Paths.get(
+        "src/java/org/apache/solr/common/cloud/ZkStateReaderQueue.java");
+    java.nio.file.Path repoRelative = java.nio.file.Paths.get(
+        "solr/solrj/src/java/org/apache/solr/common/cloud/ZkStateReaderQueue.java");
+    java.nio.file.Path sourcePath = null;
+    for (java.nio.file.Path dir = sourceRoot; dir != null; dir = dir.getParent()) {
+      java.nio.file.Path candidate = dir.resolve(moduleRelative);
+      if (java.nio.file.Files.exists(candidate)) {
+        sourcePath = candidate;
+        break;
+      }
+      candidate = dir.resolve(repoRelative);
+      if (java.nio.file.Files.exists(candidate)) {
+        sourcePath = candidate;
+        break;
+      }
+    }
+    assertNotNull("could not locate ZkStateReaderQueue.java", sourcePath);
+    String source = new String(java.nio.file.Files.readAllBytes(sourcePath), java.nio.charset.StandardCharsets.UTF_8);
+    int fullFetch = source.indexOf("fetchCollectionState(collection).thenAcceptAsync");
+    assertTrue("full-fetch worker should install fetched state directly", fullFetch >= 0);
+    int clearRetries = source.indexOf("clearCollectionRetries(collection)", fullFetch);
+    assertTrue("full-fetch branch should still clear retry state after install", clearRetries > fullFetch);
+    String fullFetchBranch = source.substring(fullFetch, clearRetries);
+    assertFalse("fetchCollectionState already applies the delta plane; full fetch must not fold it again",
+        fullFetchBranch.contains("getAndProcessDeltaUpdates")
+            || fullFetchBranch.contains("getAndProcessStateUpdates"));
+  }
+
 }

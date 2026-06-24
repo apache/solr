@@ -514,4 +514,65 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
                     ring.baseSeq <= snap.upToSeq());
         }
     }
+    @Test
+    public void testCompactionSnapshotWriteRequiresAuthoritativeOwnership() throws Exception {
+        String oldCount = System.getProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP);
+        String oldMillis = System.getProperty(StateDeltaConfig.COMPACT_AFTER_MILLIS_SYSPROP);
+        System.setProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP, "1");
+        System.setProperty(StateDeltaConfig.COMPACT_AFTER_MILLIS_SYSPROP, "0");
+        try {
+            class Fence implements StatePlaneWriter.ElectionFence {
+                private int authoritativeChecks;
+
+                @Override
+                public boolean stillElected() {
+                    return true;
+                }
+
+                @Override
+                public String writerId() {
+                    return "writer";
+                }
+
+                @Override
+                public boolean isFencedBy(String ringWriterId) {
+                    return ringWriterId != null && !writerId().equals(ringWriterId);
+                }
+
+                @Override
+                public boolean ownsElectionAuthoritative() {
+                    return ++authoritativeChecks <= 2;
+                }
+            }
+
+            StatePlaneWriter w = new StatePlaneWriter(zkClient, new Fence());
+            RuntimeException fenced = null;
+            try {
+                w.publish("c1", "s1", COLL_ID, promo(10, ACTIVE), java.util.Collections.emptyList());
+                fail("expected compaction snapshot write to be fenced");
+            } catch (RuntimeException e) {
+                fenced = e;
+            }
+            assertEquals(
+                "org.apache.solr.common.cloud.StatePlaneWriter$FencedException",
+                fenced.getClass().getName());
+
+            ShardStateLog ring = readRing("c1", "s1");
+            assertEquals(1, ring.entries.size());
+            assertFalse("lost overseer ownership must not write a compaction snapshot",
+                zkClient.exists(StatePlanePaths.shardSnapshot(StatePlanePaths.collectionPath("c1"), "s1"), true));
+        } finally {
+            if (oldCount == null) {
+                System.clearProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP);
+            } else {
+                System.setProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP, oldCount);
+            }
+            if (oldMillis == null) {
+                System.clearProperty(StateDeltaConfig.COMPACT_AFTER_MILLIS_SYSPROP);
+            } else {
+                System.setProperty(StateDeltaConfig.COMPACT_AFTER_MILLIS_SYSPROP, oldMillis);
+            }
+        }
+    }
+
 }
