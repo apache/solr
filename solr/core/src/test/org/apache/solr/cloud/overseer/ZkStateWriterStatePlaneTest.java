@@ -77,24 +77,73 @@ public class ZkStateWriterStatePlaneTest extends SolrTestCaseJ4 {
     return (StatePlaneWriter.ElectionFence) ctor.newInstance(overseer);
   }
 
+  private void markRemoved(ZkStateWriter writer, int collId) throws Exception {
+    Method mark = ZkStateWriter.class.getDeclaredMethod("markCollectionIdRemovedDurably", int.class);
+    mark.setAccessible(true);
+    invoke(mark, writer, collId);
+  }
+
+  private boolean isRemoved(ZkStateWriter writer, int collId) throws Exception {
+    Method isRemoved = ZkStateWriter.class.getDeclaredMethod("isCollectionIdRemovedDurably", int.class);
+    isRemoved.setAccessible(true);
+    return (Boolean) invoke(isRemoved, writer, collId);
+  }
+
+  private Object invoke(Method method, Object target, Object... args) throws Exception {
+    try {
+      return method.invoke(target, args);
+    } catch (java.lang.reflect.InvocationTargetException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof Exception) {
+        throw (Exception) cause;
+      }
+      if (cause instanceof Error) {
+        throw (Error) cause;
+      }
+      throw new RuntimeException(cause);
+    }
+  }
+
+  private org.apache.solr.common.cloud.DocCollection emptyCollection(String name, int id) {
+    java.util.Map<String,Object> props = new java.util.HashMap<>();
+    props.put("id", id);
+    return new org.apache.solr.common.cloud.DocCollection(name, Collections.emptyMap(), props,
+        org.apache.solr.common.cloud.CompositeIdRouter.DEFAULT);
+  }
+
+  @SuppressWarnings("unchecked")
+  private java.util.Map<String,org.apache.solr.common.cloud.DocCollection> collectionMap(
+      ZkStateWriter writer) throws Exception {
+    java.lang.reflect.Field field = ZkStateWriter.class.getDeclaredField("cs");
+    field.setAccessible(true);
+    return (java.util.Map<String,org.apache.solr.common.cloud.DocCollection>) field.get(writer);
+  }
+
+  @SuppressWarnings("unchecked")
+  private java.util.Map<Integer,String> idToCollectionMap(ZkStateWriter writer) throws Exception {
+    java.lang.reflect.Field field = ZkStateWriter.class.getDeclaredField("idToCollection");
+    field.setAccessible(true);
+    return (java.util.Map<Integer,String>) field.get(writer);
+  }
+
   @Test
   public void removedCollectionIdTombstoneSurvivesWriterInstance() throws Exception {
     ZkStateWriter first = new ZkStateWriter(reader, new Stats(), null);
-    Method mark = ZkStateWriter.class.getDeclaredMethod("markCollectionIdRemovedDurably", int.class);
-    mark.setAccessible(true);
-    mark.invoke(first, 4242);
+    markRemoved(first, 4242);
 
-    assertFalse("removed-id tombstones must not appear as fake collection children",
-        zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, true));
+    java.util.List<String> tombstoneChildren =
+        zkClient.getChildren("/overseer/stateplane_removed_ids", null, true);
+    assertFalse("new writes must not create one persistent znode per removed id",
+        tombstoneChildren.contains("4242"));
+    assertTrue("new writes must use bounded sharded tombstone buckets",
+        tombstoneChildren.stream().anyMatch(child -> child.startsWith("bucket-")));
 
     ZkStateWriter afterFailover = new ZkStateWriter(reader, new Stats(), null);
-    Method isRemoved = ZkStateWriter.class.getDeclaredMethod("isCollectionIdRemovedDurably", int.class);
-    isRemoved.setAccessible(true);
 
     assertTrue("durable tombstone must be visible to a later overseer writer",
-        (Boolean) isRemoved.invoke(afterFailover, 4242));
+        isRemoved(afterFailover, 4242));
     assertFalse("unmarked ids must not be treated as removed",
-        (Boolean) isRemoved.invoke(afterFailover, 4243));
+        isRemoved(afterFailover, 4243));
   }
 
   @Test
@@ -219,6 +268,117 @@ public class ZkStateWriterStatePlaneTest extends SolrTestCaseJ4 {
       future.get(10, TimeUnit.SECONDS);
     } finally {
       executor.shutdownNow();
+    }
+  }
+
+
+  @Test
+  public void removeCollectionFailsClosedWhenDurableTombstoneCannotBePersisted() throws Exception {
+    String bucketCountProp = "solr.zkStateWriter.removedCollIdTombstoneBuckets";
+    String bucketCapProp = "solr.zkStateWriter.removedCollIdTombstoneBucketEntryCap";
+    String oldBucketCount = System.getProperty(bucketCountProp);
+    String oldBucketCap = System.getProperty(bucketCapProp);
+    try {
+      System.setProperty(bucketCountProp, "1");
+      System.setProperty(bucketCapProp, "1");
+
+      ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), null);
+      markRemoved(writer, 7000);
+      collectionMap(writer).put("deleteMe", emptyCollection("deleteMe", 7001));
+      idToCollectionMap(writer).put(7001, "deleteMe");
+
+      org.apache.lucene.util.LuceneTestCase.expectThrows(org.apache.solr.common.SolrException.class,
+          () -> writer.removeCollection("deleteMe"));
+
+      assertTrue("collection structure must remain armed when tombstone persistence fails",
+          collectionMap(writer).containsKey("deleteMe"));
+      assertEquals("deleteMe", idToCollectionMap(writer).get(7001));
+      assertFalse("failed tombstone must not be treated as durable removal", isRemoved(writer, 7001));
+    } finally {
+      if (oldBucketCount == null) System.clearProperty(bucketCountProp);
+      else System.setProperty(bucketCountProp, oldBucketCount);
+      if (oldBucketCap == null) System.clearProperty(bucketCapProp);
+      else System.setProperty(bucketCapProp, oldBucketCap);
+    }
+  }
+
+  @Test
+  public void removedCollectionIdTombstoneBucketFailsClosedAtCap() throws Exception {
+    String bucketCountProp = "solr.zkStateWriter.removedCollIdTombstoneBuckets";
+    String bucketCapProp = "solr.zkStateWriter.removedCollIdTombstoneBucketEntryCap";
+    String oldBucketCount = System.getProperty(bucketCountProp);
+    String oldBucketCap = System.getProperty(bucketCapProp);
+    try {
+      System.setProperty(bucketCountProp, "1");
+      System.setProperty(bucketCapProp, "1");
+
+      ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), null);
+      markRemoved(writer, 7100);
+
+      org.apache.lucene.util.LuceneTestCase.expectThrows(org.apache.solr.common.SolrException.class,
+          () -> markRemoved(writer, 7101));
+      assertTrue(isRemoved(writer, 7100));
+      assertFalse("bucket overflow must fail closed rather than evicting old tombstones",
+          isRemoved(writer, 7101));
+    } finally {
+      if (oldBucketCount == null) System.clearProperty(bucketCountProp);
+      else System.setProperty(bucketCountProp, oldBucketCount);
+      if (oldBucketCap == null) System.clearProperty(bucketCapProp);
+      else System.setProperty(bucketCapProp, oldBucketCap);
+    }
+  }
+
+  @Test
+  public void collectionIdAllocationSkipsDurablyRemovedIds() throws Exception {
+    ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), null);
+    markRemoved(writer, 1);
+
+    assertEquals("new collection ids must not reuse durable removed ids",
+        Integer.valueOf(2), writer.getHighestId("newCollection"));
+    assertEquals("newCollection", idToCollectionMap(writer).get(2));
+    assertFalse("skipped tombstone id must not be assigned to the new collection",
+        idToCollectionMap(writer).containsKey(1));
+  }
+
+  @Test
+  public void removedCollectionIdBucketCasRetriesAfterRealBadVersion() throws Exception {
+    String bucketCountProp = "solr.zkStateWriter.removedCollIdTombstoneBuckets";
+    String oldBucketCount = System.getProperty(bucketCountProp);
+    try {
+      System.setProperty(bucketCountProp, "1");
+      String bucketPath = "/overseer/stateplane_removed_ids/bucket-000";
+      zkClient.makePath(bucketPath, "8000\n".getBytes(java.nio.charset.StandardCharsets.UTF_8),
+          org.apache.zookeeper.CreateMode.PERSISTENT, null, false, true);
+
+      SolrZkClient spyZkClient = org.mockito.Mockito.spy(zkClient);
+      ZkStateReader spyReader = new ZkStateReader(spyZkClient);
+      java.util.concurrent.atomic.AtomicBoolean mutateAfterFirstRead =
+          new java.util.concurrent.atomic.AtomicBoolean(true);
+      org.mockito.Mockito.doAnswer(invocation -> {
+        byte[] data = (byte[]) invocation.callRealMethod();
+        if (mutateAfterFirstRead.getAndSet(false)) {
+          zkClient.setData(bucketPath,
+              "8000\n8999\n".getBytes(java.nio.charset.StandardCharsets.UTF_8), -1, true);
+        }
+        return data;
+      }).when(spyZkClient).getData(
+          org.mockito.ArgumentMatchers.eq(bucketPath),
+          org.mockito.ArgumentMatchers.isNull(),
+          org.mockito.ArgumentMatchers.any(org.apache.zookeeper.data.Stat.class),
+          org.mockito.ArgumentMatchers.eq(true));
+
+      ZkStateWriter writer = new ZkStateWriter(spyReader, new Stats(), null);
+      markRemoved(writer, 8001);
+
+      byte[] data = zkClient.getData(bucketPath, null, (org.apache.zookeeper.data.Stat) null, true);
+      String bucket = new String(data, java.nio.charset.StandardCharsets.UTF_8);
+      assertTrue(bucket.contains("8000\n"));
+      assertTrue(bucket.contains("8999\n"));
+      assertTrue("CAS retry must preserve and add the requested tombstone after BadVersion",
+          bucket.contains("8001\n"));
+    } finally {
+      if (oldBucketCount == null) System.clearProperty(bucketCountProp);
+      else System.setProperty(bucketCountProp, oldBucketCount);
     }
   }
 

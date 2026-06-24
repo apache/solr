@@ -103,17 +103,24 @@ public class ZkStateWriter {
   private final Map<Integer, Set<Integer>> pendingChangedIds = new ConcurrentHashMap<>(64);
 
   /**
-   * Bounded record of collection ids whose structure was REMOVED. A replica
-   * state update whose collection id is unknown is normally retained — its overseer queue item is held
-   * for reprocess — on the assumption the structure simply has not landed yet. But if the collection
-   * was deleted, that id can never resolve, so the update is dropped cleanly instead of poisoning the
-   * queue. Collection ids are monotonic and never reused, so only the most recent removals need to be
-   * remembered to tell "deleted" from "not yet landed". synchronizedSet: written under collLock in
+   * Bounded in-memory cache of collection ids whose structure was REMOVED. A replica state update whose
+   * collection id is unknown is normally retained — its overseer queue item is held for reprocess — on
+   * the assumption the structure simply has not landed yet. Durable removed-id tombstones are the
+   * cross-overseer proof that an unknown id can never resolve; this local cache is only a fast path for
+   * ids removed by the current writer instance. synchronizedSet: written under collLock in
    * {@link #removeCollection}, read from the taskZkWriterExecutor in {@link #writeStateUpdatesInternal}.
    */
   private static final int REMOVED_COLL_IDS_CAP =
       Integer.getInteger("solr.zkStateWriter.removedCollIdsCap", 8192);
   private static final String REMOVED_COLL_ID_TOMBSTONES = "/overseer/stateplane_removed_ids";
+  private static final String REMOVED_COLL_ID_TOMBSTONE_BUCKETS_PROP =
+      "solr.zkStateWriter.removedCollIdTombstoneBuckets";
+  private static final String REMOVED_COLL_ID_TOMBSTONE_BUCKET_CAP_PROP =
+      "solr.zkStateWriter.removedCollIdTombstoneBucketEntryCap";
+  private static final int DEFAULT_REMOVED_COLL_ID_TOMBSTONE_BUCKETS = 256;
+  private static final int DEFAULT_REMOVED_COLL_ID_TOMBSTONE_BUCKET_ENTRY_CAP = 8192;
+  private static final int REMOVED_COLL_ID_TOMBSTONE_CAS_RETRIES =
+      Integer.getInteger("solr.zkStateWriter.removedCollIdTombstoneCasRetries", 20);
   private final Set<Integer> removedCollIds = Collections.synchronizedSet(
       Collections.newSetFromMap(new java.util.LinkedHashMap<Integer, Boolean>(256, 0.75f, false) {
         @Override protected boolean removeEldestEntry(Map.Entry<Integer, Boolean> eldest) {
@@ -300,8 +307,43 @@ public class ZkStateWriter {
    * lock during the synchronous ZK round trip. When the collection's structure is not yet known the
    * state stays in the in-memory map and is published in full on a later write once structure exists.
    */
-  private String removedCollectionIdPath(int collId) {
-    return REMOVED_COLL_ID_TOMBSTONES + "/" + collId;
+  private int removedCollectionIdTombstoneBucketCount() {
+    return Math.max(1, Integer.getInteger(REMOVED_COLL_ID_TOMBSTONE_BUCKETS_PROP,
+        DEFAULT_REMOVED_COLL_ID_TOMBSTONE_BUCKETS));
+  }
+
+  private int removedCollectionIdTombstoneBucketEntryCap() {
+    return Math.max(1, Integer.getInteger(REMOVED_COLL_ID_TOMBSTONE_BUCKET_CAP_PROP,
+        DEFAULT_REMOVED_COLL_ID_TOMBSTONE_BUCKET_ENTRY_CAP));
+  }
+
+  private String removedCollectionIdBucketPath(int collId) {
+    int bucket = Math.floorMod(collId, removedCollectionIdTombstoneBucketCount());
+    return REMOVED_COLL_ID_TOMBSTONES + "/bucket-"
+        + String.format(java.util.Locale.ROOT, "%03d", bucket);
+  }
+
+  private Set<Integer> decodeRemovedCollectionIdBucket(byte[] data) {
+    Set<Integer> ids = new HashSet<>();
+    if (data == null || data.length == 0) {
+      return ids;
+    }
+    String text = new String(data, java.nio.charset.StandardCharsets.UTF_8);
+    for (String raw : text.split("\\n")) {
+      String trimmed = raw.trim();
+      if (!trimmed.isEmpty()) {
+        ids.add(Integer.parseInt(trimmed));
+      }
+    }
+    return ids;
+  }
+
+  private byte[] encodeRemovedCollectionIdBucket(Set<Integer> ids) {
+    StringBuilder builder = new StringBuilder(ids.size() * 8);
+    for (Integer id : new java.util.TreeSet<>(ids)) {
+      builder.append(id).append('\n');
+    }
+    return builder.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
   }
 
   private void ensurePersistentPath(String path) throws KeeperException, InterruptedException {
@@ -319,12 +361,46 @@ public class ZkStateWriter {
     try {
       ensurePersistentPath("/overseer");
       ensurePersistentPath(REMOVED_COLL_ID_TOMBSTONES);
-      byte[] marker = Integer.toString(collId).getBytes(java.nio.charset.StandardCharsets.UTF_8);
-      try {
-        reader.getZkClient().create(removedCollectionIdPath(collId), marker, CreateMode.PERSISTENT, true);
-      } catch (KeeperException.NodeExistsException e) {
-        // Idempotent across repeated delete processing or takeover replay.
+      String bucketPath = removedCollectionIdBucketPath(collId);
+      for (int attempt = 0; attempt < REMOVED_COLL_ID_TOMBSTONE_CAS_RETRIES; attempt++) {
+        org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
+        byte[] data;
+        try {
+          data = reader.getZkClient().getData(bucketPath, null, stat, true);
+        } catch (KeeperException.NoNodeException e) {
+          Set<Integer> ids = new HashSet<>();
+          ids.add(collId);
+          try {
+            reader.getZkClient().create(bucketPath, encodeRemovedCollectionIdBucket(ids),
+                CreateMode.PERSISTENT, true);
+            return;
+          } catch (KeeperException.NodeExistsException race) {
+            continue;
+          }
+        }
+
+        Set<Integer> ids = decodeRemovedCollectionIdBucket(data);
+        if (ids.contains(collId)) {
+          return;
+        }
+        int cap = removedCollectionIdTombstoneBucketEntryCap();
+        if (ids.size() >= cap) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Removed collection-id tombstone bucket " + bucketPath + " is full (cap=" + cap
+                  + "); refusing to drop tombstone for " + collId);
+        }
+        ids.add(collId);
+        try {
+          reader.getZkClient().setData(bucketPath, encodeRemovedCollectionIdBucket(ids),
+              stat.getVersion(), true);
+          return;
+        } catch (KeeperException.BadVersionException race) {
+          // Another writer updated this bucket; retry the read/modify/write with the new version.
+        }
       }
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Failed to persist removed collection-id tombstone for " + collId
+              + " after " + REMOVED_COLL_ID_TOMBSTONE_CAS_RETRIES + " CAS retries");
     } catch (KeeperException | InterruptedException e) {
       if (e instanceof InterruptedException) Thread.currentThread().interrupt();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -334,7 +410,13 @@ public class ZkStateWriter {
 
   private boolean isCollectionIdRemovedDurably(int collId) {
     try {
-      return reader.getZkClient().exists(removedCollectionIdPath(collId), true);
+      try {
+        byte[] data = reader.getZkClient().getData(removedCollectionIdBucketPath(collId),
+            null, (org.apache.zookeeper.data.Stat) null, true);
+        return decodeRemovedCollectionIdBucket(data).contains(collId);
+      } catch (KeeperException.NoNodeException e) {
+        return false;
+      }
     } catch (KeeperException | InterruptedException e) {
       if (e instanceof InterruptedException) Thread.currentThread().interrupt();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -424,7 +506,7 @@ public class ZkStateWriter {
             collection, epoch, shards.size());
       }
     } catch (Exception e) {
-      // Do NOT mark ensured AND do NOT swallow. There is no _statupdates fallback by design: the manifest
+      // Do NOT mark ensured AND do NOT swallow. State-plane publication is the only live-state durability path: the manifest
       // is the reader's ONLY authoritative switch onto the delta plane, so a delta appended while the manifest
       // is absent is durable-but-unreachable (readers treat a missing manifest as "plane not seeded" and
       // no-op). Propagate so publishToStatePlane aborts BEFORE appending any delta, completes its publish
@@ -778,7 +860,7 @@ public class ZkStateWriter {
 
             // Merge the incoming replicas INTO the current slice's replica set rather than replacing
             // it wholesale. enqueueStructureChange is invoked concurrently (e.g. parallel addReplica to
-            // different shards, as the legacy FullDistrib test base does); each caller builds its
+            // different shards, as FullDistrib-style test bases can); each caller builds its
             // DocCollection from a possibly-stale cluster-state snapshot, so replacing every incoming
             // slice's replicas wholesale clobbered replicas that a concurrent change had just committed
             // to ANOTHER shard (the stale caller's view of that shard was still empty/older). Starting
@@ -1177,6 +1259,13 @@ public class ZkStateWriter {
       });
       collLock.lock();
       try {
+        DocCollection removed = cs.get(collection);
+        if (removed != null) {
+          // Persist the cross-overseer proof before any destructive local cleanup. If this write fails,
+          // keep the collection-id mapping/state armed and fail this removal so a later overseer cannot
+          // see an unknown deleted id with no durable tombstone and poison the state-update queue forever.
+          markCollectionIdRemovedDurably(removed.getId());
+        }
         assignMap.remove(collection);
         dirtyStructure.remove(collection);
         // Invalidate the delta-plane manifest skip cache: the collection's state/manifest znode is
@@ -1192,15 +1281,14 @@ public class ZkStateWriter {
           w.clearCollection(collection);
         }
 
-        DocCollection removed = cs.remove(collection);
         if (removed != null) {
+          removed = cs.remove(collection);
           deindexCollection(removed.getId());
           stateUpdates.remove(removed.getId());
           idToCollection.remove(removed.getId());
           // Record the removed incarnation so a late replica-state update for this id is dropped cleanly
           // rather than retained-for-reprocess forever.
           removedCollIds.add(removed.getId());
-          markCollectionIdRemovedDurably(removed.getId());
           pendingChangedIds.remove(removed.getId());
           // The structure for this id will never land now; drop any deferred leader-demotion ids so the
           // map does not leak an entry keyed by a dead collection id.
@@ -1218,7 +1306,11 @@ public class ZkStateWriter {
       }
     } catch (Exception e) {
       log.error("Exception removing collection", e);
-
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
+      }
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Exception removing collection " + collection, e);
     }
   }
 
@@ -1281,7 +1373,10 @@ public class ZkStateWriter {
   }
 
   public Integer getHighestId(String collection) {
-    Integer id = ID.incrementAndGet();
+    Integer id;
+    do {
+      id = ID.incrementAndGet();
+    } while (isCollectionIdRemovedDurably(id));
     idToCollection.put(id, collection);
     return id;
   }
