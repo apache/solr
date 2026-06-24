@@ -1,0 +1,6 @@
+{
+  "targetBranchChoices": ["branch_10x", "branch_9x"],
+  "branchLabelMapping": {
+    "^backport-to-(.+)$": "$1"
+  }
+}

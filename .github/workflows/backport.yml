@@ -1,0 +1,32 @@
+# This workflow automatically backports merged PRs to maintenance branches when
+# a backport label is applied (e.g. "backport-to-branch_10x" or "backport-to-branch_9x").
+#
+# For more information, see https://github.com/marketplace/actions/backport-action
+name: Backport PR
+
+on:
+  pull_request_target:
+    types: ["labeled", "closed"]
+
+jobs:
+  backport:
+    name: Backport PR
+    if: github.repository == 'apache/solr' && github.event.pull_request.merged == true && !(contains(github.event.pull_request.labels.*.name, 'backport'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Backport Action
+        uses: sorenlouv/backport-github-action@v11
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          auto_backport_label_prefix: backport-to-
+
+      - name: Info log
+        if: ${{ success() }}
+        run: cat ~/.backport/backport.info.log
+
+      - name: Debug log
+        if: ${{ failure() }}
+        run: cat ~/.backport/backport.debug.log
