@@ -519,12 +519,22 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
       // start by recording the results of the purely "default" behavior...
       final NamedList expected = getFacetResponse(basicParams);
+      // The json.facet methods are only guaranteed to return the SAME SET of buckets, not the same
+      // bucket ORDER, when sort values tie (common with sort:skg and refine:false / overrequest:0).
+      // BaseDistributedSearchTestCase.compare compares the "buckets" List POSITIONALLY -- the
+      // UNORDERED flag below only affects NamedList key matching, NOT List element order -- so a
+      // tie-dependent ordering difference between two methods would be reported as a spurious
+      // ".count:X!=Y" mismatch even though both methods are correct. Normalize bucket order (by val,
+      // recursively through sub-facets) on both sides so the comparison aligns the same term across
+      // methods and only flags genuine per-term differences.
+      sortFacetBucketsByVal(expected);
 
       // now loop over all processors and compare them to the "default"...
       for (FacetMethod method : EnumSet.allOf(FacetMethod.class)) {
         ModifiableSolrParams options = params("method_val", method.toString().toLowerCase(Locale.ROOT));
-          
+
         final NamedList actual = getFacetResponse(SolrParams.wrapAppended(options, basicParams));
+        sortFacetBucketsByVal(actual);
 
         // we can't rely on a trivial assertEquals() comparison...
         // 
@@ -545,7 +555,39 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     } catch (AssertionError e) {
       throw new AssertionError(basicParams + " ===> " + e.getMessage(), e);
     } finally {
-      log.info("Ending full run"); 
+      log.info("Ending full run");
+    }
+  }
+
+  /**
+   * Recursively sorts every json.facet <code>"buckets"</code> list (including nested sub-facets) by
+   * the bucket <code>"val"</code>, so two facet responses that contain the same set of buckets in a
+   * different (tie-dependent) order compare equal under the positional list comparison in
+   * {@link BaseDistributedSearchTestCase#compare}. Bucket vals are unique within a single terms
+   * facet, so this gives a deterministic alignment without hiding genuine per-term count/skg
+   * differences (those surface as a mismatch on the same val).
+   */
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static void sortFacetBucketsByVal(Object o) {
+    if (o instanceof NamedList) {
+      final NamedList nl = (NamedList) o;
+      for (int i = 0; i < nl.size(); i++) {
+        final Object val = nl.getVal(i);
+        if ("buckets".equals(nl.getName(i)) && val instanceof List) {
+          final List<Object> sorted = new ArrayList<>((List) val);
+          sorted.sort(java.util.Comparator.comparing(b -> String.valueOf(((NamedList) b).get("val"))));
+          nl.setVal(i, sorted);
+          for (Object b : sorted) {
+            sortFacetBucketsByVal(b);
+          }
+        } else {
+          sortFacetBucketsByVal(val);
+        }
+      }
+    } else if (o instanceof List) {
+      for (Object e : (List) o) {
+        sortFacetBucketsByVal(e);
+      }
     }
   }
 

@@ -1355,14 +1355,14 @@ public class IndexFetcher {
    *  if it cannot be opened, and (unlike Java's
    *  File.exists) throws IOException if there's some
    *  unexpected error. */
-//  private static boolean slowFileExists(Directory dir, String fileName) throws IOException {
-//    try {
-//      dir.openInput(fileName, IOContext.DEFAULT).close();
-//      return true;
-//    } catch (NoSuchFileException | FileNotFoundException e) {
-//      return false;
-//    }
-//  }
+  private static boolean slowFileExists(Directory dir, String fileName) throws IOException {
+    try {
+      dir.openInput(fileName, IOContext.DEFAULT).close();
+      return true;
+    } catch (NoSuchFileException | FileNotFoundException e) {
+      return false;
+    }
+  }
 
   /**
    * All the files which are common between master and slave must have same size and same checksum else we assume
@@ -1376,21 +1376,25 @@ public class IndexFetcher {
       String filename = (String) file.get(NAME);
       Long length = (Long) file.get(SIZE);
       Long checksum = (Long) file.get(CHECKSUM);
-   //   if (slowFileExists(dir, filename)) {
         if (checksum != null) {
+          // compareFile opens the local file and, if it is missing, catches NoSuchFileException and
+          // reports not-equal -> stale. So a leader file absent locally correctly forces a (full) copy.
           if (!(compareFile(dir, filename, length, checksum, masterUrl, "isIndexStale").equal)) {
             // file exists and size or checksum is different, therefore we must download it again
             log.debug("Index is stale using checksums");
             return true;
           }
         } else {
-          if (length != dir.fileLength(filename)) {
-            log.debug("File {} did not match on stale index check. expected length is {} and actual length is {}", filename, length, dir.fileLength(filename));
+          // No checksum advertised by the leader (e.g. a SimpleText-codec segment). If the file is
+          // missing locally, the local index is stale and needs a copy -- treat it as stale instead of
+          // letting dir.fileLength() throw NoSuchFileException, which aborted the entire fetch and left
+          // an empty PULL replica stuck at version 0, retrying forever against a changing leader index.
+          if (!slowFileExists(dir, filename) || length != dir.fileLength(filename)) {
+            log.debug("File {} did not match on stale index check (missing locally or length differs). expected length is {}", filename, length);
             log.debug("Index is stale using file lengths");
             return true;
           }
         }
-    //  }
     }
 
     log.debug("Index is not stale");

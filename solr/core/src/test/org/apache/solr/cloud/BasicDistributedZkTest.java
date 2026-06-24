@@ -1236,8 +1236,15 @@ public class BasicDistributedZkTest extends SolrCloudBridgeTestCase {
       if (future == null) return;
       pending.remove(future);
     }
-    
-    indexDoc("collection2", getDoc(id, "10000000")); 
+
+    // The replicas added per node by createNewCollection above recover asynchronously; the addReplica
+    // admin requests returning success does NOT mean those replicas are ACTIVE yet. Wait for recovery
+    // before indexing/querying so a per-collection single-node query cannot fan out to a
+    // still-recovering replica with an un-refreshed searcher and undercount (e.g. expected:<5> was:<7>).
+    waitForRecoveriesToFinish("collection2");
+    waitForRecoveriesToFinish("collection3");
+
+    indexDoc("collection2", getDoc(id, "10000000"));
     indexDoc("collection2", getDoc(id, "10000001")); 
     indexDoc("collection2", getDoc(id, "10000003"));
     cloudClient.setDefaultCollection("collection2");

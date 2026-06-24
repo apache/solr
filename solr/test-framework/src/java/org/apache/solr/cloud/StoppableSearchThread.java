@@ -53,10 +53,14 @@ class StoppableSearchThread extends StoppableThread {
         cloudClient.query(new SolrQuery(QUERIES[random.nextInt(QUERIES.length)]));
       } catch (Exception e) {
         ParWork.propagateInterrupt(e);
-        System.err.println("QUERY REQUEST FAILED:");
-        log.error("", e);
-        if (e instanceof SolrServerException) {
-          log.error("ROOTCAUSE", ((SolrServerException) e).getRootCause());
+        // Query failures while ChaosMonkey kills nodes are EXPECTED — log at DEBUG (suppressed in
+        // the test log config), not ERROR with full stacks, which floods captured beast output and
+        // OOMs the gradle daemon. The failure is still counted in queryFails / the final summary.
+        if (log.isDebugEnabled()) {
+          log.debug("Query request failed", e);
+          if (e instanceof SolrServerException) {
+            log.debug("ROOTCAUSE", ((SolrServerException) e).getRootCause());
+          }
         }
         queryFails.incrementAndGet();
       }

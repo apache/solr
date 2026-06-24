@@ -40,6 +40,19 @@
     <Logger name="org.apache.solr.hadoop" level="WARN"/>
     <Logger name="org.eclipse.jetty" level="WARN"/>
 
+    <!-- FLT-INVESTIGATION (temporary; revert before commit): capture leader-election, recovery,
+         shard-term and forward/term-bump decision logs to root-cause the ChaosMonkey symmetric
+         divergence (extra/missing docs after a leadership flap). Targeted so the per-doc update path
+         is not flooded (timing perturbation). -->
+    <Logger name="org.apache.solr.cloud" level="INFO"/>
+    <Logger name="org.apache.solr.cloud.RecoveryStrategy" level="DEBUG"/>
+    <Logger name="org.apache.solr.cloud.ZkShardTerms" level="DEBUG"/>
+    <Logger name="org.apache.solr.cloud.ShardLeaderElectionContext" level="DEBUG"/>
+    <Logger name="org.apache.solr.cloud.ShardLeaderElectionContextBase" level="DEBUG"/>
+    <Logger name="org.apache.solr.update.processor.DistributedZkUpdateProcessor" level="DEBUG"/>
+    <Logger name="org.apache.solr.update.PeerSyncWithLeader" level="DEBUG"/>
+    <Logger name="org.apache.solr.handler.IndexFetcher" level="INFO"/>
+
     <Root level="WARN">
       <AppenderRef ref="STDERR"/>
     </Root>

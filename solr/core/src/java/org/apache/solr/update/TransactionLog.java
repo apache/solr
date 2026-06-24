@@ -1208,11 +1208,37 @@ public class TransactionLog implements Closeable {
       mapLock.readLock().lock();
       Object o;
       try {
-        o = codec.readVal(fis);
+        // A tlog can legitimately end with a torn trailing record: this fork's tlog is a live,
+        // memory-mapped, concurrently-written file, and the leader-tlog NRT catch-up path
+        // (RecoveryStrategy.replay -> fetchLeaderTlogFiles) copies the leader's currently-open tlog,
+        // which can contain a record that was only partially written when the snapshot was taken (the
+        // leader reserves a record region, then fills it; a copy taken mid-fill captures a short record
+        // with no valid 4-byte size trailer). Every well-formed record satisfies
+        // trailerSize == bytesConsumedByReadVal; a torn record does not. Validate that invariant and
+        // treat a failed read (codec throws on garbage bytes) or a trailer mismatch as a clean EOF,
+        // exactly as a crash-torn standalone tlog tail is handled -- replay keeps every fully-written
+        // record before the tear and stops, instead of decoding garbage (ClassCastException / OOM from a
+        // bogus string length) and failing the entire recovery.
+        long recordStart = fis.position();
+        try {
+          o = codec.readVal(fis);
+        } catch (Throwable t) {
+          // Reading past a torn record yields garbage (e.g. an absurd string/array length -> OOM, or a
+          // type tag that decodes to the wrong Java type). Stop cleanly at the last good record.
+          log.warn("Stopping tlog replay at torn record (read failed) file={} pos={} size={}", tlogFile, recordStart, fos.size(), t);
+          return null;
+        }
+        long afterVal = fis.position();
 
         // skip over record size
         int size = fis.readInt();
-        //  assert size == fis.position() - pos - 4 : "size=" + size + " pos-4=" + (fis.position() - pos - 4);
+        if (size != (int) (afterVal - recordStart)) {
+          // Size trailer does not match the bytes the record actually consumed -> torn/partial record.
+          // This is the leader-tlog mid-fill snapshot case described above. Treat as EOF.
+          log.warn("Stopping tlog replay at torn record (size trailer {} != consumed {}) file={} pos={} size={}",
+              size, (afterVal - recordStart), tlogFile, recordStart, fos.size());
+          return null;
+        }
       } finally {
         mapLock.readLock().unlock();
       }

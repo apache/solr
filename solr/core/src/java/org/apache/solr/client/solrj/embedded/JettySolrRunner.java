@@ -714,8 +714,18 @@ public class JettySolrRunner implements Closeable {
 
     try {
       int port = reusePort && jettyPort != -1 ? jettyPort : this.config.port;
+      // Up-front allocation / hand-out: on a FIRST start whose configured port is OS-assigned (0),
+      // take a pre-reserved HELD port from the broker rather than racing every other test JVM at the
+      // OS at bind time. The broker holds it from here through our bind, so no concurrent JVM can be
+      // handed it in the gap. On a restart the port is the one reserve()'d in doClose(), still held.
+      if (port == 0 && !startedBefore) {
+        int reserved = PortReservations.reserveFreePort();
+        if (reserved > 0) {
+          port = reserved;
+        }
+      }
       log.info("Start Jetty (configured port={}, binding port={})", this.config.port, port);
-      if (startedBefore) {
+      if (port > 0) {
         connector.setPort(port);
       }
 
@@ -725,6 +735,8 @@ public class JettySolrRunner implements Closeable {
         if (config.portRetryTime > 0) {
           retryOnPortBindFailure(port);
         } else {
+          // Drop our placeholder microseconds before the real listener binds (smallest race window).
+          PortReservations.release(port);
           server.start();
         }
       }
@@ -756,19 +768,27 @@ public class JettySolrRunner implements Closeable {
   }
 
   private void retryOnPortBindFailure(int port) throws Exception {
+    // Backstop to the PortReservations broker: even with the placeholder, a brief contention can
+    // remain, so ride it out with a real time budget (config.portRetryTime seconds) and a backoff
+    // sleep — not the old fixed 3 immediate retries, which gave a still-contended port no time to
+    // free. The broker is what makes this terminate quickly in the common case.
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(Math.max(config.portRetryTime, 1));
     int tryCnt = 1;
-    while (tryCnt < 3) {
+    while (true) {
       try {
         if (log.isDebugEnabled()) log.debug(" {} try number {} ...", port, tryCnt);
+        // Drop our placeholder microseconds before the real listener binds (smallest race window).
+        // Idempotent, so it is safe to repeat on each retry.
+        PortReservations.release(port);
         server.start();
         break;
       } catch (IOException ioe) {
         Exception e = lookForBindException(ioe);
-        if (e instanceof BindException) {
-          log.info("Port is in use, will try again");
+        if (e instanceof BindException && System.nanoTime() < deadline) {
+          log.info("Port {} is in use, will try again (attempt {})", port, tryCnt);
           server.stop();
-
           tryCnt++;
+          Thread.sleep(250);
           continue;
         }
 
@@ -847,6 +867,13 @@ public class JettySolrRunner implements Closeable {
         server.join();
       } catch (InterruptedException e) {
 
+      }
+      // The listening socket is now released. Hold our port with a placeholder across the (possible)
+      // restart down-window so no concurrent test JVM can grab it before we rebind in start(). The
+      // placeholder is dropped just before the rebind; PortReservations.releaseAll() at cluster
+      // shutdown drops any that never restart (so they do not accumulate across test methods).
+      if (jettyPort > 0) {
+        PortReservations.reserve(jettyPort);
       }
       return stopLatch;
     } catch (Exception e) {

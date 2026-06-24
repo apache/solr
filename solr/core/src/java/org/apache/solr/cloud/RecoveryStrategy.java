@@ -29,7 +29,9 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -48,6 +50,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.TransactionLog;
@@ -291,8 +294,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     log.info("do replication fetch [{}].", solrParams);
 
-    // Force a full copy (fresh tmp index dir + modifyIndexProps swap) for TLOG replicas. A TLOG
-    // follower replays its tlog into its OWN local IndexWriter, producing segments whose names
+    // Force a full copy (fresh tmp index dir + modifyIndexProps swap) for TLOG **and NRT** replicas.
+    // A TLOG follower replays its tlog into its OWN local IndexWriter, producing segments whose names
     // (_0, _1, ...) collide with the leader's segments but hold DIFFERENT content. A partial,
     // in-place fetch (fetchFromLeader skips the searcher-close/IW-rollback that the NRT path does)
     // then moves a leader segment over a local one while an open reader still holds it, so the
@@ -301,7 +304,24 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // testRecovery expected:5 was:4). A full copy downloads into a fresh dir and switches via
     // modifyIndexProps, so nothing in the live dir is overwritten under an open reader. The local
     // replayed segments are not authoritative, so discarding them via full copy is always safe.
-    boolean forceFullCopy = retries.get() > 3 || replicaType == Replica.Type.TLOG;
+    //
+    // NRT needs the SAME full copy on the replication-recovery path, for a convergence (not just a
+    // file-handle) reason. Under Option B an NRT follower also replays the leader tlog into its own
+    // IndexWriter, and recovery can RETRY after a partially-applied attempt (e.g. the leader-tlog
+    // download is truncated mid-fetch when the leader's connection is torn down during chaos -- the
+    // replay had already added docs and dropped the buffer before the later fetch threw). On the next
+    // attempt the INCREMENTAL in-place fetch (isFullCopyNeeded false) only ADDS/overwrites files that
+    // appear in the leader's current commit; it never DELETES follower-only segments left from the
+    // prior incarnation or an earlier replay generation. Those stale segments hold docs the new leader
+    // commit no longer contains, so the follower publishes ACTIVE holding MORE (older) docs than the
+    // leader -- a divergence a commit can never reconcile (ChaosMonkeySafeLeaderWithPullReplicasTest:
+    // a non-leader NRT replica ended up with 137 old docs the leader lacked). A full copy installs the
+    // leader's commit point as the EXACT authoritative base (discarding every local segment), after
+    // which replay(leader,false) layers only the leader's uncommitted tail on top -- converging the
+    // follower to precisely the leader's set, identically to the MASTER_VERSION_ZERO deleteAll path.
+    boolean forceFullCopy = retries.get() > 3
+        || replicaType == Replica.Type.TLOG
+        || replicaType == Replica.Type.NRT;
     return replicationHandler.doFetch(solrParams, forceFullCopy);
 
     // solrcloud_debug
@@ -356,6 +376,46 @@ public class RecoveryStrategy implements Runnable, Closeable {
       log.warn("Failed asking leader for update versions while evaluating empty-leader fetch result", e);
       return false; // cannot tell — do not block recovery
     }
+  }
+
+  /**
+   * True when this replica's index fingerprint does NOT match the leader's, i.e. our doc set still
+   * differs from the leader's by value -- NOT merely "behind on the max version". A replica can hold
+   * the leader's newest version yet be missing earlier docs, so a max-version comparison is unsafe; the
+   * fingerprint (the same primitive PeerSync uses to confirm sync) catches any value difference. Used to
+   * keep an NRT replica RECOVERING until it is fully caught up; see the call site in
+   * {@link #doSyncOrReplicateRecovery}. Fail-open (return false) on any probe/compute error so a
+   * transient leader hiccup never strands an otherwise-caught-up replica in recovery.
+   */
+  final private boolean replicaDivergesFromLeader(SolrCore core, Replica leader) {
+    if (leader == null) {
+      return false;
+    }
+    try {
+      IndexFingerprint leaderFp = fetchLeaderFingerprint(leader.getCoreUrl());
+      if (leaderFp == null) {
+        // Leader did not return a fingerprint -> cannot tell; do not block going ACTIVE.
+        return false;
+      }
+      IndexFingerprint ourFp = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
+      return IndexFingerprint.compare(leaderFp, ourFp) != 0;
+    } catch (Exception e) {
+      log.warn("Could not compare index fingerprint with leader while finishing recovery; "
+          + "proceeding to ACTIVE. core={}", coreName, e);
+      return false;
+    }
+  }
+
+  /** The leader's whole-index fingerprint (versions up to {@link Long#MAX_VALUE}), or null if unavailable. */
+  final private IndexFingerprint fetchLeaderFingerprint(String leaderUrl) throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("qt", "/get");
+    params.set("distrib", false);
+    params.set("getFingerprint", String.valueOf(Long.MAX_VALUE));
+    QueryRequest req = new QueryRequest(params);
+    req.setBasePath(leaderUrl);
+    Object fp = recoveryOnlyClient.request(req).get("fingerprint");
+    return fp == null ? null : IndexFingerprint.fromObject(fp);
   }
 
   final private void commitOnLeader(String leaderUrl) throws SolrServerException,
@@ -812,17 +872,16 @@ public class RecoveryStrategy implements Runnable, Closeable {
               // replay() throws before touching the buffer (download/validation) or after an error-flagged
               // replay (buffer only dropped on a clean replay), so we fall back to retry with the buffer
               // left fully intact (never partial-apply-then-drop).
-              log.error("DIAG OptionB: MASTER_VERSION_ZERO with leader update history -> NRT leader-tlog catch-up. core={} leaderUrl={}",
+              log.info("OptionB: MASTER_VERSION_ZERO with leader update history -> NRT leader-tlog catch-up. core={} leaderUrl={}",
                   coreName, leader.getCoreUrl());
               try {
                 replay(core, leader, true);
-                log.error("DIAG OptionB: leader-tlog catch-up SUCCESS -> publishing ACTIVE. core={}", coreName);
-                log.info("Replication Recovery (leader-tlog catch-up) was successful.");
+                log.info("Replication Recovery (leader-tlog catch-up) was successful. core={}", coreName);
                 successfulRecovery = true;
               } catch (InterruptedException | AlreadyClosedException | RejectedExecutionException e) {
                 throw e; // let the outer catch bail on close/interrupt
               } catch (Exception e) {
-                log.error("DIAG OptionB: leader-tlog catch-up FAILED -> fallback to retry (buffer left intact). core={}", coreName, e);
+                log.warn("OptionB: leader-tlog catch-up failed -> fallback to retry (buffer left intact). core={}", coreName, e);
                 successfulRecovery = false;
               }
             } else {
@@ -904,6 +963,50 @@ public class RecoveryStrategy implements Runnable, Closeable {
           clearRecoveringMarkerOnClose(core);
           return false;
         }
+        // SOLR-9504 / TestCloudConsistency.testOutOfSyncReplicasCannotBecomeLeader*: we technically
+        // caught up, but if a DATA-BEARING peer is currently DOWN (it was LEADER/ACTIVE in cluster
+        // state, or carries a shard term > 0) then the source we just recovered from may NOT be
+        // authoritative -- an out-of-sync peer can win/serve leadership while the real leader is down,
+        // and converging to it would leave us missing the down leader's last updates. Publishing
+        // ACTIVE now would clear our "<core>_recovering" marker and bump our term to max
+        // (ZkController.publish -> isRecovering -> setTermEqualsToLeader), making this out-of-sync
+        // replica leader-electable (data loss). Instead stay RECOVERING and let the outer doRecovery
+        // loop retry with backoff; when the down data-bearing peer returns it has the highest term and
+        // no marker, wins the election, and we then recover from IT (dataBearingPeerIsDown is false
+        // once it is live) and converge correctly with all its docs. This makes deliberate what the
+        // baseline achieved only accidentally (via the hidden-replay no-searcher livelock). NRT only:
+        // TLOG/PULL followers track the leader via ReplicateFromLeader after going ACTIVE.
+        boolean stayRecovering = false;
+        if (replicaType == Replica.Type.NRT) {
+          if (dataBearingPeerIsDown(core)) {
+            log.info("Recovery caught up but a data-bearing peer is currently DOWN; staying RECOVERING "
+                + "and retrying so we converge from the authoritative leader when it returns. core={}", coreName);
+            stayRecovering = true;
+          } else if (replicaDivergesFromLeader(core, leader)) {
+            // OptionB / replication recovery replays a POINT-IN-TIME snapshot of the leader (its tlog at
+            // fetch time plus our buffer). Under concurrent indexing the leader can accept more updates
+            // between that snapshot and this publish(ACTIVE) -- and the leader serves its live, still-
+            // growing tlog (LocalFsFileStream streams to EOF while the follower only reads the length
+            // advertised at list time), so a single pass can land us with a doc set that differs from the
+            // leader's. A max-version check is NOT enough: a replica can hold the leader's NEWEST version
+            // yet still be missing earlier docs, so we compare the full INDEX FINGERPRINT (the same
+            // primitive PeerSync uses to confirm sync) -- it diverges if any doc differs by value, not
+            // just if we are behind on the frontier. An NRT replica has NO poller to catch up after going
+            // ACTIVE, so publishing ACTIVE while divergent would serve a view permanently inconsistent with
+            // the leader (the ChaosMonkey "replica count short of the leader" divergence). Stay RECOVERING
+            // and let the retry loop re-fetch+replay until our fingerprint matches the leader's; once
+            // indexing quiesces the two converge and we go ACTIVE caught up. checkShardConsistency only
+            // compares live+ACTIVE replicas, so a still-RECOVERING replica is correctly skipped rather than
+            // asserted against a divergent view.
+            log.info("Recovery completed but this replica's index fingerprint still differs from the "
+                + "leader's; staying RECOVERING and retrying so we converge to the leader's doc set before "
+                + "serving. core={}", coreName);
+            stayRecovering = true;
+          }
+        }
+        if (stayRecovering) {
+          successfulRecovery = false;
+        } else {
         // The index is already caught up; only the ZK state publish remains. A transient publish
         // failure here used to fall through to successfulRecovery=false and re-run the WHOLE
         // PeerSync+replication cycle, burning the bounded retry budget for work that was already
@@ -912,6 +1015,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         publishActiveAfterRecovery(core);
         recoveryListener.recovered();
         return true;
+        }
       } catch (AlreadyClosedException | RejectedExecutionException e) {
         log.error("Already closed");
         close = true;
@@ -1080,7 +1184,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "Failed to fetch leader tlog for NRT recovery catch-up", e);
       }
-      log.error("DIAG OptionB: fetched {} leader tlog file(s) for NRT catch-up; replaying leader-tlog then buffer. core={} leaderUrl={}",
+      log.info("OptionB: fetched {} leader tlog file(s) for NRT catch-up; replaying leader-tlog then buffer. core={} leaderUrl={}",
           leaderLogs.size(), core.getName(), leader.getCoreUrl());
       future = ulog.applyLeaderTlogThenBuffer(leaderLogs);
     } else {
@@ -1114,7 +1218,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
         }
         if (leader != null) {
-          log.error("DIAG OptionB: leader-tlog catch-up replay applied {} core={}", report, core.getName());
+          log.info("OptionB: leader-tlog catch-up replay applied {} core={}", report, core.getName());
         }
       }
 
@@ -1171,6 +1275,60 @@ public class RecoveryStrategy implements Runnable, Closeable {
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       log.warn("Could not open a new searcher after PeerSync recovery for core={}", core.getName(), e);
+      return false;
+    }
+  }
+
+  /**
+   * Mirror of {@link org.apache.solr.cloud.ShardLeaderElectionContext}'s {@code anotherReplicaHasData}:
+   * returns true if some OTHER non-PULL replica in this shard is currently DOWN and is data-bearing --
+   * it was LEADER/ACTIVE in cluster state, or carries a shard term &gt; 0. Used to refuse publishing
+   * ACTIVE after a recovery that may have converged us to a non-authoritative source while the real
+   * data-bearing leader is down (SOLR-9504). Short-circuits false for a pristine, never-indexed shard
+   * (maxTerm &lt;= 0): the first update bumps every replica's term off 0, so maxTerm==0 means no data
+   * exists anywhere and there is nothing to protect. Fail-open on any bookkeeping error so a stuck
+   * lookup never strands an otherwise-complete recovery.
+   */
+  private boolean dataBearingPeerIsDown(SolrCore core) {
+    try {
+      CoreDescriptor coreDescriptor = core.getCoreDescriptor();
+      String collection = coreDescriptor.getCollectionName();
+      String shardId = coreDescriptor.getCloudDescriptor().getShardId();
+
+      ZkShardTerms terms = zkController.getShardTerms(collection, shardId);
+      if (terms == null) {
+        return false;
+      }
+      try {
+        terms.refreshTerms(-1);
+      } catch (Exception e) {
+        log.warn("Could not refresh shard terms for {}/{} during down-data-bearing-peer check", collection, shardId, e);
+      }
+      if (terms.getHighestTerm() <= 0) {
+        return false;
+      }
+
+      DocCollection coll = zkController.getZkStateReader().getClusterState().getCollectionOrNull(collection);
+      if (coll == null) return false;
+      Slice slice = coll.getSlice(shardId);
+      if (slice == null) return false;
+
+      for (Replica r : slice) {
+        if (r.getName().equals(coreName)) continue;
+        if (r.getType() == Replica.Type.PULL) continue;
+        if (zkController.getZkStateReader().isNodeLive(r.getNodeName())) continue; // only DOWN peers
+        // getState() uses published=true, so shortState=1 (LEADER) resolves to ACTIVE here -- both count.
+        Replica.State rState = r.getState();
+        if (rState == Replica.State.LEADER || rState == Replica.State.ACTIVE) {
+          return true;
+        }
+        if (terms.getTerm(r.getName()) > 0) {
+          return true;
+        }
+      }
+      return false;
+    } catch (Exception e) {
+      log.warn("Error checking for a down data-bearing peer; not blocking recovery", e);
       return false;
     }
   }

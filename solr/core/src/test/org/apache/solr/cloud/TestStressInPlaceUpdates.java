@@ -451,6 +451,14 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
         //
         // what we can do however, is commit all completed updates, and *then* compare solr search results
         // against the (new) committed model....
+        //
+        // The writer threads' commits are probabilistic, so the last few operations may not have been
+        // committed when invokeAll returned. Without a final hard commit here the searcher reflects only
+        // those in-run commits while committedModel (snapshotted below) includes every completed op, so a
+        // doc that was committed-as-added then deleted (uncommitted) shows up in search but is pruned from
+        // the model -> spurious "Doc found but missing/deleted from model". All writers have finished
+        // (invokeAll above), so the model is now stable; commit, THEN snapshot, so the two align.
+        leaderClient.commit();
 
         committedModel = new HashMap<>(model);
 

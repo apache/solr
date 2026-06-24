@@ -147,6 +147,13 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     waitForState("Timeout waiting for replica win the election", collectionName, (liveNodes, collectionState) -> {
+      // State can be delivered as null to the predicate (e.g. a transient removal notification or
+      // before the first state fetch completes); treat null as "not yet matched" and keep waiting,
+      // matching the framework predicates (e.g. expectedShardsAndActiveReplicas). Without this the
+      // watcher path NPEs and waitForState reports "Last available state: null".
+      if (collectionState == null) {
+        return false;
+      }
       Replica newLeader = collectionState.getSlice("s1").getLeader();
       if (newLeader == null) {
         return false;

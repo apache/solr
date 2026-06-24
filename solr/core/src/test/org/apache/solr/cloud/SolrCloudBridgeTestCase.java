@@ -1045,6 +1045,22 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
   }
 
+  private java.util.TreeSet<String> fetchAllIds(String baseUrl) throws Exception {
+    java.util.TreeSet<String> ids = new java.util.TreeSet<>();
+    try (Http2SolrClient rc = new Http2SolrClient.Builder(baseUrl).build()) {
+      SolrQuery q = new SolrQuery("*:*");
+      q.add("distrib", "false");
+      q.add("fl", "id");
+      q.setRows(100000);
+      org.apache.solr.common.SolrDocumentList docs = rc.query(q).getResults();
+      for (org.apache.solr.common.SolrDocument d : docs) {
+        Object id = d.getFirstValue("id");
+        if (id != null) ids.add(String.valueOf(id));
+      }
+    }
+    return ids;
+  }
+
   protected void checkShardConsistency(String shardName) throws Exception {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     DocCollection coll = zkStateReader.getClusterState().getCollection(COLLECTION);
@@ -1062,6 +1078,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     // genuine consistency defect and must fail. Note getState() treats LEADER as ACTIVE.
     long baselineCount = -1;
     String baselineReplica = null;
+    String baselineBaseUrl = null;
     for (Replica replica : slice.getReplicas()) {
       if (!liveNodes.contains(replica.getNodeName())) {
         continue;
@@ -1077,7 +1094,42 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       if (baselineCount < 0) {
         baselineCount = cnt;
         baselineReplica = replica.getName();
-      } else {
+        baselineBaseUrl = baseUrl;
+      } else if (baselineCount != cnt) {
+        // DIVERGENCE DIAGNOSTIC: dump which doc ids differ so the lost-update can be traced through
+        // the per-node OUTPUT logs (grep the id across leader-forward / recovery events).
+        try {
+          java.util.TreeSet<String> baseIds = fetchAllIds(baselineBaseUrl);
+          java.util.TreeSet<String> thisIds = fetchAllIds(baseUrl);
+          java.util.TreeSet<String> missingHere = new java.util.TreeSet<>(baseIds);
+          missingHere.removeAll(thisIds);
+          java.util.TreeSet<String> extraHere = new java.util.TreeSet<>(thisIds);
+          extraHere.removeAll(baseIds);
+          log.error("DIVERGENCE shard={} baseline={}({}) replica={}({}) missingOnReplica={} extraOnReplica={}",
+              shardName, baselineReplica, baselineCount, replica.getName(), cnt, missingHere, extraHere);
+          // FLT-INVESTIGATION (temporary; revert before commit): tie the divergence to leadership + terms.
+          String termsJson;
+          try {
+            byte[] td = cloudClient.getZkStateReader().getZkClient()
+                .getData("/collections/" + COLLECTION + "/terms/" + shardName,
+                    (org.apache.zookeeper.Watcher) null, (org.apache.zookeeper.data.Stat) null, true);
+            termsJson = td == null ? "null" : new String(td, java.nio.charset.StandardCharsets.UTF_8);
+          } catch (Exception te) {
+            termsJson = "err:" + te;
+          }
+          StringBuilder rs = new StringBuilder();
+          for (Replica r : slice.getReplicas()) {
+            rs.append(r.getName()).append("[state=").append(r.getState())
+                .append(",raw=").append(r.getRawState()).append(",type=").append(r.getType())
+                .append(",node=").append(r.getNodeName())
+                .append(",live=").append(liveNodes.contains(r.getNodeName())).append("] ");
+          }
+          Replica ldr = slice.getLeader();
+          log.error("DIVERGENCE-STATE shard={} leader={} terms={} replicas={}", shardName,
+              ldr == null ? "null" : ldr.getName(), termsJson, rs);
+        } catch (Exception diagEx) {
+          log.error("DIVERGENCE diagnostic failed", diagEx);
+        }
         assertEquals("Shard " + shardName + " replica " + replica.getName()
                 + " count mismatch vs " + baselineReplica,
             baselineCount, cnt);
@@ -1246,21 +1298,11 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
 
   protected void restartZk(int pauseMillis) throws Exception {
     log.info("Restarting ZK with a pause of {}ms in between", pauseMillis);
-    ZkTestServer zkServer = cluster.getZkServer();
-    final int port = zkServer.getPort();
-    final Path zkDir = zkServer.getZkDir();
-
-    // shutdownForRestart re-grabs the port with an internal placeholder socket the instant the
-    // listening socket closes, holding it across the down-window so no foreign test JVM can steal
-    // it; the replacement server releases it microseconds before it rebinds. Without this, under
-    // heavy parallel load a freed port is grabbed by another JVM and held for its whole run,
-    // blowing the 30s rebind-retry budget ("Timeout waiting for zk test server to start").
-    zkServer.shutdownForRestart();
-
-    Thread.sleep(pauseMillis);
-
-    ZkTestServer newZkServer = new ZkTestServer(zkDir, port);
-    newZkServer.run(false);
+    // Delegate to the cluster so its single ZkTestServer reference is updated. Building a local
+    // replacement here (as this used to) leaked the live server: the cluster kept pointing at the
+    // already-shut-down original, so the next restart shut down the corpse and the previous live
+    // server kept the port forever -> "Error trying to run ZK Test Server" on the same-port rebind.
+    cluster.restartZk(pauseMillis);
   }
 
   // ---------------------------------------------------------------------------

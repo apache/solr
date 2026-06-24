@@ -50,8 +50,15 @@ class SingleThreadedCSVLoader extends CSVLoaderBase {
     templateAdd.setReq(req);
     templateAdd.overwrite = overwrite;
     templateAdd.commitWithin = commitWithin;
-    SolrInputDocument doc = SolrInputDocument.THREAD_LOCAL_SolrInputDocument.get();
-    doc.clear();
+    // Each row must get its own SolrInputDocument instance. The populated doc is handed to
+    // processAdd, which for a non-local (forward-to-leader / leader-to-replica) update enqueues an
+    // ASYNCHRONOUS distributed request that references this same doc by reference (see
+    // SolrCmdDistributor.distribAdd -> uReq.add(cmd.solrDoc, ...)). That async request is serialized
+    // on another thread AFTER processAdd returns. A thread-local doc that is clear()'d and
+    // repopulated for the next row would be mutated out from under that in-flight forward, corrupting
+    // the forwarded payload (e.g. leaking a later row's leader-assigned _version_ onto an earlier
+    // forwarded doc -> spurious 409 version conflicts, or silent leader/replica divergence).
+    SolrInputDocument doc = new SolrInputDocument();
     doAdd(line, vals, doc, templateAdd);
   }
 }

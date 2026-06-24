@@ -323,7 +323,7 @@ public class ZkShardTerms extends DoNotWrap implements Closeable {
    * @param coreNodeName of the replica
    * @return
    */
-  ShardTerms registerTerm(String coreNodeName) throws KeeperException, InterruptedException {
+  public ShardTerms registerTerm(String coreNodeName) throws KeeperException, InterruptedException {
     ShardTerms newTerms;
     while ((newTerms = terms.get().registerTerm(coreNodeName)) != null) {
       if (saveTerms(newTerms)) break;

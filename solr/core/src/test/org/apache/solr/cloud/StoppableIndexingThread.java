@@ -92,7 +92,12 @@ public class StoppableIndexingThread extends StoppableThread {
           if (controlClient != null) controlClient.deleteById(toDelete);
           cloudClient.deleteById(toDelete);
         } catch (Exception e) {
-          log.warn("Delete failed for {}", toDelete, e);
+          // Adds/deletes failing while ChaosMonkey is killing nodes is EXPECTED and happens
+          // hundreds of thousands of times in a long chaos run. Log at DEBUG (suppressed in the
+          // test log config) — logging every failure at WARN bloats captured output to tens of MB
+          // per run and OOMs the gradle daemon when beasting. The failure is still recorded in
+          // deleteFails and surfaced in the aggregate summary at the end of the run.
+          if (log.isDebugEnabled()) log.debug("Delete failed for {}: {}", toDelete, e.toString());
           synchronized (deleteFails) { deleteFails.add(toDelete); }
           fails.incrementAndGet();
         }
@@ -139,7 +144,10 @@ public class StoppableIndexingThread extends StoppableThread {
         Thread.currentThread().interrupt();
         return;
       } catch (Exception e) {
-        log.warn("Add failed for {}", docId, e);
+        // Expected while ChaosMonkey kills nodes (see the delete catch above) — log at DEBUG, not
+        // WARN: a chaos run fails hundreds of thousands of adds and per-failure WARN logging bloats
+        // beast output to tens of MB and OOMs the gradle daemon. Still recorded in addFails / fails.
+        if (log.isDebugEnabled()) log.debug("Add failed for {}: {}", docId, e.toString());
         synchronized (addFails) { addFails.add(docId); }
         fails.incrementAndGet();
       }

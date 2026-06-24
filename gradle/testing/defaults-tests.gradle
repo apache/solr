@@ -108,6 +108,16 @@ allprojects {
       jvmArgs '--illegal-access=deny'
       // Agrona (org.agrona.IoUtil), used by the custom memory-mapped TransactionLog, reflects into sun.nio.ch
       jvmArgs '--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED'
+      // This fork's javabin response path marshals into Agrona direct (off-heap) buffers
+      // (ExpandableDirectBufferOutputStream / ExpandableDirectByteBuffer). When such a buffer grows,
+      // agrona allocateDirect's a new buffer and abandons the old one (reclaimed only by GC/Cleaner),
+      // so a heavy query loop with large responses (e.g. TestDistributedStatsComponentCardinality's
+      // HLL stats) churns off-heap memory faster than the Cleaner reclaims it. Without an explicit
+      // cap, MaxDirectMemorySize defaults to the heap size (tests.heapsize=512m), which is too tight
+      // and the server OOMs with "Direct buffer memory" mid-response -> the stream is reset and the
+      // client sees cancel_stream_error. This is a CAP (not a reservation): tests that don't use
+      // direct memory are unaffected.
+      jvmArgs '-XX:MaxDirectMemorySize=1g'
 
       systemProperty 'java.util.logging.config.file', file("${resources}/logging.properties")
       systemProperty 'java.awt.headless', 'true'
@@ -170,28 +180,54 @@ allprojects {
 
       // Set up custom test output handler.
       def resultsHistoryRoot = file("${buildDir}/test-results-history")
-      def maxResultHistory = (project.findProperty('tests.resulthistory') ?: '5') as Integer
+      def maxResultHistory = (project.findProperty('tests.resulthistory') ?: '20') as Integer
+      def junitXmlDir = reports.junitXml.destination
+      def archivedProjectName = project.name
       doFirst {
-        // Preserve the PREVIOUS run's full results (TEST-*.xml + outputs/) before this run clobbers them.
-        // Gradle overwrites per-class XML in place and we delete the outputs dir just below, so without
-        // this a flaky or failed run's logs vanish the next time any overlapping test runs. Snapshot the
-        // current results into a timestamped history slot and keep only the most recent N snapshots, so a
-        // run's logs are only lost after N more runs. Tune with -Ptests.resulthistory=N (0 disables).
-        def resultsDir = reports.junitXml.destination
-        if (maxResultHistory > 0 && resultsDir.exists() && (resultsDir.listFiles()?.length ?: 0) > 0) {
-          resultsHistoryRoot.mkdirs()
-          def stamp = new java.text.SimpleDateFormat('yyyyMMdd-HHmmss-SSS').format(new Date())
-          project.copy {
-            from resultsDir
-            into new File(resultsHistoryRoot, stamp)
-          }
-          def snaps = (resultsHistoryRoot.listFiles()?.findAll { it.isDirectory() } ?: []).toList().sort { it.name }
-          if (snaps.size() > maxResultHistory) {
-            snaps.take(snaps.size() - maxResultHistory).each { project.delete(it) }
-          }
-        }
+        // The previous run's results are archived by its own finalizer (below), so we no longer snapshot
+        // here -- just clear the live outputs dir so this run starts clean and stale OUTPUT-*.txt from a
+        // previously-run class don't linger and get mis-attributed.
         project.delete testOutputsDir
       }
+      // ARCHIVE this run's results via a FINALIZER task (not a doLast). With ignoreFailures=false a failing
+      // Test task throws from its main action, which SKIPS any doLast on that task -- i.e. the artifacts
+      // would be dropped exactly when a test fails and we need them. A finalizer runs regardless of whether
+      // the finalized task passed or failed. This preserves TEST-*.xml + outputs/ before the next run
+      // overwrites build/test-results/test in place. FAILED runs land under test-results-history/failures/
+      // and are NEVER auto-pruned (a flaky failure is always recoverable); PASSED runs land under
+      // .../passes/ and keep only the most recent N. Tune with -Ptests.resulthistory=N (0 disables pass
+      // archiving; failures are always kept).
+      def archiveResults = project.tasks.register("${name}ArchiveResults") {
+        doLast {
+          def resultsDir = junitXmlDir
+          def xmls = resultsDir.exists()
+              ? (resultsDir.listFiles()?.findAll { it.name.startsWith('TEST-') && it.name.endsWith('.xml') } ?: [])
+              : []
+          if (!xmls.isEmpty()) {
+            boolean anyFail = xmls.any { f ->
+              def m = (f.text =~ /failures="(\d+)" errors="(\d+)"/)
+              m.find() ? ((m.group(1) as Integer) > 0 || (m.group(2) as Integer) > 0) : false
+            }
+            def stamp = new java.text.SimpleDateFormat('yyyyMMdd-HHmmss-SSS').format(new Date())
+            def bucket = new File(resultsHistoryRoot, anyFail ? 'failures' : 'passes')
+            bucket.mkdirs()
+            def dest = new File(bucket, "${stamp}-${archivedProjectName}-${anyFail ? 'FAIL' : 'PASS'}")
+            project.copy {
+              from resultsDir
+              into dest
+              exclude 'binary/**'
+            }
+            if (!anyFail && maxResultHistory > 0) {
+              def snaps = (bucket.listFiles()?.findAll { it.isDirectory() } ?: []).toList().sort { it.name }
+              if (snaps.size() > maxResultHistory) {
+                snaps.take(snaps.size() - maxResultHistory).each { project.delete(it) }
+              }
+            }
+            logger.lifecycle("Archived ${anyFail ? 'FAILED' : 'passed'} test results -> ${dest}")
+          }
+        }
+      }
+      finalizedBy archiveResults
 
       def spillDir = getTemporaryDir().toPath()
       def listener = new ErrorReportingTestListener(test.testLogging, spillDir, testOutputsDir.toPath(), verboseMode)

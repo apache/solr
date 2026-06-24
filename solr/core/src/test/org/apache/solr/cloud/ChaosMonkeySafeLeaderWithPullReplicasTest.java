@@ -206,6 +206,20 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends SolrCloudBridgeTe
       log.info("collection state: {}", printClusterStateInfo(COLLECTION)); // logOk
     }
 
+    // Final hard commit once indexing has stopped, BEFORE waiting for replicas and checking
+    // consistency. The periodic StoppableCommitThread commits mid-run, but the indexing threads keep
+    // adding docs after its last commit. Those trailing docs are durable in the leader's tlog and
+    // visible to the leader's NRT searcher (q=*:*), but they are NOT yet in any index commit point --
+    // so PULL replicas (which can only replicate a commit point) cannot see them, and
+    // waitForReplicationFromReplicas only matches the leader's last-commit indexVersion, which never
+    // advances to include those trailing docs without a new commit. That leaves the leader serving
+    // more docs than the replicas can replicate -> the flaky "PULL replica count short of the leader"
+    // mismatch, even though no docs were lost. Forcing a final commit rolls the trailing tlog docs into
+    // a new commit point the replicas then replicate, quiescing the cluster so every live ACTIVE replica
+    // converges to the same committed view. Mirrors the explicit commit() the sibling
+    // ChaosMonkeySafeLeaderTest / ChaosMonkeyNothingIsSafeWithPullReplicasTest run before the check.
+    commit();
+
     waitForReplicationFromReplicas(COLLECTION, cloudClient.getZkStateReader(), new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
 //    waitForAllWarmingSearchers();
 

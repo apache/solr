@@ -24,7 +24,6 @@ import java.util.List;
 import junit.framework.AssertionFailedError;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -44,9 +43,13 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   public static final String SPECIAL = ""; 
 
   public DistributedFacetPivotLargeTest() {
-    // we need DVs on point fields to compute stats & facets
+    // we need DVs on point fields to compute stats & facets. @BeforeClass setupTestCases() ->
+    // newRandomConfig() -> randomizeNumericTypesProperties() has already chosen points vs trie and
+    // a random dv setting by the time this constructor runs, so force dv on when points are in use.
+    // Do NOT re-call randomizeNumericTypesProperties() here: it re-rolls the dv sysprop and would
+    // clobber this force ~50% of the time, leaving point fields without docValues -> pivot/stat
+    // faceting throws "Can't facet on a PointField without docValues".
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
-    SolrTestCaseJ4.randomizeNumericTypesProperties();
   }
   
   @Test

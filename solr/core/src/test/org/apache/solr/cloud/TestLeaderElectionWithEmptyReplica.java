@@ -116,7 +116,13 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     // bring the old leader node back up
     replicaJetty.start();
 
-    cluster.waitForActiveCollection(COLLECTION_NAME, 1, 2);
+    // This is a restart scenario (kill leader -> add empty replica -> restart old leader). Full
+    // convergence requires overseer leadership handoff (the killed node was the overseer), the empty
+    // replica declining leadership via the SOLR-9504 guard and waiting out leaderVoteWait (5s), and
+    // the restarted leader re-registering and re-winning the shard election. That legitimately takes
+    // longer than the default 10s wait, so the collection occasionally was still mid-convergence when
+    // the wait expired (~10% flaky TimeoutException here). Give it the restart-test-standard 60s.
+    cluster.waitForActiveCollection(COLLECTION_NAME, 60, java.util.concurrent.TimeUnit.SECONDS, 1, 2);
 
     // now query each replica and check for consistency
     assertConsistentReplicas(solrClient, solrClient.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlice("s1"));

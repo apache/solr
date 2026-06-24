@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.embedded.PortReservations;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -666,6 +667,10 @@ public class MiniSolrCloudCluster {
       solrClient = null;
       solrZkClient = null;
       zkStateReader = null;
+      // No restart is in flight at full cluster shutdown, so drop any port placeholders still held by
+      // nodes that stopped without restarting — otherwise they would accumulate across test methods
+      // sharing this JVM (see PortReservations / JettySolrRunner.doClose).
+      PortReservations.releaseAll();
       assert ObjectReleaseTracker.getInstance().release(this);
     }
 
@@ -749,6 +754,33 @@ public class MiniSolrCloudCluster {
         log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());
       }
     }
+  }
+
+  /**
+   * Restart the embedded ZooKeeper on the SAME port, updating this cluster's server reference.
+   *
+   * <p>Callers MUST go through here rather than building their own {@link ZkTestServer} and running
+   * it: {@link #zkServer} is the single source of truth used by every later {@code getZkServer()}
+   * call (including subsequent restarts and final shutdown). A previous version of {@code restartZk}
+   * in the test base created a local replacement and never wrote it back, so the cluster kept
+   * pointing at the already-shut-down original. The SECOND restart then "shut down" that corpse
+   * (a fast no-op) while the actually-live server from the first restart kept listening on the port
+   * forever — every following same-port rebind failed its whole retry budget with
+   * "Address already in use" ("Error trying to run ZK Test Server"). Reassigning the field here
+   * closes that leak.
+   */
+  public void restartZk(int pauseMillis) throws Exception {
+    ZkTestServer current = this.zkServer;
+    Path zkDir = current.getZkDir();
+    int port = current.getPort();
+    // shutdownForRestart holds the port across the down-window (see ZkTestServer / PortReservations).
+    current.shutdownForRestart();
+    if (pauseMillis > 0) {
+      Thread.sleep(pauseMillis);
+    }
+    ZkTestServer replacement = new ZkTestServer(zkDir, port);
+    replacement.run(false);
+    this.zkServer = replacement;
   }
 
   public  void injectChaos(Random random) throws Exception {

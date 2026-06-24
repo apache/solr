@@ -434,6 +434,15 @@ public class SolrCmdDistributor implements Closeable {
               log.info("Stream cancelled code={}", code);
               if (code != 200) {
                 allErrors.put(req, error);
+              } else {
+                // FLT-INVESTIGATION (temporary; revert before commit): a cancelled forward reported
+                // with code=200 is currently treated as success and NOT recorded as an error, so
+                // doFinish never sees it, never bumps the target's shard term, and the replica silently
+                // diverges (suspected source of MISSING docs on a follower under ChaosMonkey node-kills).
+                log.error("FLT-DROP cancelled-as-success node={} docid={} code={} retries={} cmd={}",
+                    req.node.getUrl(),
+                    (req.cmd instanceof AddUpdateCommand ? ((AddUpdateCommand) req.cmd).getPrintableId() : "n/a"),
+                    code, req.retries, req.cmd);
               }
               return;
             }

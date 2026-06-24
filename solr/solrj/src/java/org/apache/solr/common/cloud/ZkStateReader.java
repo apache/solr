@@ -2216,27 +2216,6 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
     TimeOut timeout = new TimeOut(wait, unit, TimeSource.NANO_TIME);
 
     DocCollection state = watchedCollectionStates.get(collection);
-    //
-//        DocCollection state = watchedCollectionStates.compute(collection, (c, coll) -> {
-//          ClusterState.CollectionRef docCollection = lazyCollectionStates.remove(collection);
-//          if (docCollection != null) {
-//            return docCollection.get().join();
-//          }
-//          return coll;
-//        });
-//    if (state == null) {
-//      collectionWatches.compute(collection, (k, v) -> {
-//        if (v == null) {
-//          LazyCollectionRef docRef = new LazyCollectionRef(collection);
-//          lazyCollectionStates.put(collection, docRef);
-//          return null;
-//        }
-//        zkStateReaderQueue.fetchStateUpdates(collection, false).thenAcceptAsync(docCollection -> {
-//          updateWatchedCollection(collection, new ClusterState.CollectionRef(docCollection));
-//        }, ParWork.getRootSharedExecutor());
-//        return v;
-//      });
-//    }
 
     if (predicate.matches(getLiveNodes(), watchedCollectionStates.get(collection))) {
       return;

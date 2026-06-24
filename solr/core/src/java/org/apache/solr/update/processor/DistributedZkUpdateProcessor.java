@@ -861,8 +861,16 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             log.debug("skip url:{} cause its term is less than leader", replica.getCoreUrl());
 
             skippedCoreNodeNames.add(replica.getName());
-          } else if (!zkController.getZkStateReader().getLiveNodes().contains(replica.getNodeName()) || (replica.getState() == Replica.State.DOWN)
-              || (replica.getState() == Replica.State.RECOVERING || (replica.getState() == Replica.State.RECOVERY_FAILED))) {
+          } else if (!zkController.getZkStateReader().getLiveNodes().contains(replica.getNodeName()) || (replica.getState() == Replica.State.DOWN)) {
+            // Do NOT skip RECOVERING / RECOVERY_FAILED replicas. A recovering replica opens an update
+            // buffer (RecoveryStrategy.doSyncOrReplicateRecovery -> ulog.bufferUpdates) and relies on the
+            // leader continuing to forward live updates so they accumulate in that buffer and are replayed
+            // after PeerSync/replication catches up the gap. Skipping them leaves a permanent hole for any
+            // add/delete the leader applies between the recovery snapshot point and the replica publishing
+            // ACTIVE, which is exactly the symmetric divergence the ChaosMonkey tests hit. The term-based
+            // skipSendingUpdatesTo gate above already excludes replicas that are too far behind to buffer
+            // (term < max); a replica that has started recovering has its term raised to max by
+            // startRecovering, so it correctly passes that gate and must receive forwards.
             skippedCoreNodeNames.add(replica.getName());
           } else {
             nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), replica, collection, shardId, maxRetriesToFollowers));
@@ -949,6 +957,20 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
       Slice slice = slices.get(sliceEntry.getKey());
       Replica replica = docCollection.getLeader(slice.getName(), zkController.zkStateReader.getLiveNodes());
+      if (replica == null) {
+        // The slice leader may have only just been (re)elected and not yet propagated into the
+        // cluster-state snapshot captured for this request. Without retrying, a client commit can
+        // silently skip a shard whose leader just changed -- leaving the freshly-elected leader's
+        // searcher stale (durable docs present, but never opened), so queries against that shard
+        // return 0. Briefly wait for the live leader to become known before giving up on the shard.
+        try {
+          replica = zkController.getZkStateReader().getLeaderRetry(collectionName, slice.getName(), 5000);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        } catch (TimeoutException e) {
+          // no live leader within the timeout -- fall through and skip this shard as before
+        }
+      }
       if (replica != null) {
         if (zkController.getZkStateReader().isNodeLive(replica.getNodeName()) && types.contains(replica.getType()) && (replica.getState() == Replica.State.ACTIVE || replica.getState() == Replica.State.BUFFERING)) {
           urls.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), replica, collectionName, slice.getName()));
@@ -1380,6 +1402,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           needBump.add(replicaName);
         }
       }
+      // FLT-INVESTIGATION (temporary; revert before commit). flagged minus bumped == skipped because
+      // that replica was already recovering.
+      log.error("FLT-BUMP leader={} shard={} flaggedForRecovery={} actuallyBumping={} terms={}",
+          desc.getName(), cloudDesc.getShardId(), replicasShouldBeInLowerTerms, needBump,
+          zkShardTerms.getShardTerms());
       if (!needBump.isEmpty()) {
         try {
           zkShardTerms.ensureTermsIsHigher(desc.getName(), needBump);
@@ -1387,6 +1414,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
+    } else if (!replicasShouldBeInLowerTerms.isEmpty()) {
+      // FLT-INVESTIGATION (temporary; revert before commit): replicas had failed forwards but we did
+      // NOT bump their term -- either we are no longer the leader, terms unregistered, or zkShardTerms
+      // is null. These replicas silently diverge with no recovery trigger (the suspected mechanism).
+      log.error("FLT-BUMP-SKIP shard={} flaggedButNotBumped={} zkShardTermsNull={} registered={}",
+          cloudDesc.getShardId(), replicasShouldBeInLowerTerms, (zkShardTerms == null),
+          (zkShardTerms != null && zkShardTerms.registered(desc.getName())));
     }
     handleReplicationFactor();
     if (0 < errorsForClient.size()) {

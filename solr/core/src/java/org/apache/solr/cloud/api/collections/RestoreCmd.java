@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
@@ -379,6 +380,38 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(shard.getName(), Slice.State.ACTIVE.toString());
       }
       ocmh.overseer.offerStateUpdate((Utils.toJSON(new ZkNodeProps(propMap))));
+    }
+
+    // RESTORECORE copies the leader's index via file copy (not the update path), so each restored
+    // leader's shard term is never bumped off 0. RestoreCoreOp tries to bump it
+    // (ensureHighestTermsAreNotZero) at the end of RESTORECORE, but that runs as a RACE against the
+    // leader core's own finishRegistration -> registerTerm: when RESTORECORE wins, the /terms node is
+    // still empty, so ensureHighestTermsAreNotZero (which only rewrites EXISTING entries) bumps
+    // nothing and the leader settles at term 0. The empty replicas added below then register at term 0
+    // too, read as "highest term, not recovering" (canBecomeLeader) and take the in-sync short-circuit
+    // in ZkController.finishRegistration -> publish ACTIVE WITHOUT recovering the index, so they stay
+    // empty and a distributed query routed to one returns partial/zero docs (TestSolrCloudSnapshots
+    // restore-then-verify flakes depending on replica selection). Bump each restored leader's term
+    // above 0 HERE -- after the leader has registered (its term is in /terms) and before the extra
+    // replicas are added -- so the empty replicas are strictly below the leader and actually recover
+    // the restored index.
+    for (Slice slice : restoreCollection.getSlices()) {
+      try (ZkShardTerms shardTerms =
+          new ZkShardTerms(restoreCollectionName, slice.getName(), zkStateReader.getZkClient())) {
+        // ensureHighestTermsAreNotZero only REWRITES existing /terms entries, so if the restored
+        // leader core's own (async) registerTerm has not landed in ZK yet the bump is a silent no-op
+        // and the leader settles at 0 -- then the empty replicas added next read as in-sync and skip
+        // recovery (publish ACTIVE empty). Register the leader's term entry explicitly first
+        // (registerTerm is idempotent: a no-op if already present), so the map is non-empty and the
+        // subsequent bump reliably moves the leader to term 1 regardless of that race.
+        for (Replica r : slice.getReplicas()) {
+          shardTerms.registerTerm(r.getName());
+        }
+        shardTerms.ensureHighestTermsAreNotZero();
+      } catch (Exception e) {
+        log.warn("Could not bump shard terms for restored shard {}; added replicas may need to "
+            + "recover via the normal path", slice.getName(), e);
+      }
     }
 
     if (totalReplicasPerShard > 1) {

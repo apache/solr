@@ -337,20 +337,7 @@ public class ChaosMonkey {
       cjetty = shardToLeaderJetty.get(slice);
     } else {
       List<CloudJettyRunner> jetties = shardToJetty.get(slice);
-      // get random node
-      int attempt = 0;
-      while (true) {
-        attempt++;
-        int index = chaosRandom.nextInt(jetties.size());
-        cjetty = jetties.get(index);
-        if (canKillIndexer || getTypeForJetty(slice, cjetty) == Replica.Type.PULL) {
-          break;
-        } else if (attempt > 20) {
-          monkeyLog("Can't kill indexer nodes (nrt or tlog replicas) and couldn't find a random pull node after 20 attempts - monkey cannot kill :(");
-          return null;
-        }
-      }
-      
+
       ZkNodeProps leader = null;
       try {
         leader = zkStateReader.getLeaderRetry(collection, slice);
@@ -359,24 +346,40 @@ public class ChaosMonkey {
         return null;
       }
 
-      // cluster state can be stale - also go by our 'near real-time' is leader prop
-      boolean rtIsLeader;
-      CoreContainer cc = cjetty.jetty.getCoreContainer();
-      if (cc != null) {
-        try (SolrCore core = cc.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
-          rtIsLeader = core != null;
-        }
-      } else {
-        return null;
-      }
+      // Get a random node, retrying past picks we must not kill: a wrong replica type, or -- on a
+      // safe-leader run -- the shard leader. Previously a single random pick that landed on the leader
+      // aborted the entire chaos tick (returned null). Across a short run on a small cluster (few
+      // non-leader candidates) that could leave stops==0 for the whole run and trip the "no jetties
+      // were stopped" assertion. Keep trying within the attempt budget so we reliably find a killable
+      // non-leader victim whenever one exists, instead of wasting the tick.
+      cjetty = null;
+      int attempt = 0;
+      while (true) {
+        attempt++;
+        CloudJettyRunner candidate = jetties.get(chaosRandom.nextInt(jetties.size()));
+        boolean killableType = canKillIndexer || getTypeForJetty(slice, candidate) == Replica.Type.PULL;
 
-      boolean isLeader = leader.getStr(ZkStateReader.NODE_NAME_PROP).equals(cjetty.nodeName)
-          || rtIsLeader;
-      if (!aggressivelyKillLeaders && isLeader) {
-        // we don't kill leaders...
-        monkeyLog("abort! I don't kill leaders");
-        return null;
-      } 
+        // cluster state can be stale - also go by our 'near real-time' is leader prop
+        boolean isLeader = leader != null
+            && leader.getStr(ZkStateReader.NODE_NAME_PROP).equals(candidate.nodeName);
+        if (!isLeader && leader != null) {
+          CoreContainer cc = candidate.jetty.getCoreContainer();
+          if (cc != null) {
+            try (SolrCore core = cc.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
+              isLeader = core != null;
+            }
+          }
+        }
+
+        boolean mustNotKillLeader = !aggressivelyKillLeaders && isLeader;
+        if (killableType && !mustNotKillLeader) {
+          cjetty = candidate;
+          break;
+        } else if (attempt > 20) {
+          monkeyLog("couldn't find a killable non-leader victim after 20 attempts - monkey cannot kill :(");
+          return null;
+        }
+      }
     }
 
     if (cjetty.jetty.getLocalPort() == -1) {
@@ -421,18 +424,22 @@ public class ChaosMonkey {
       
       Slice slice = docCollection.getSlice(sliceName);
       
-      ZkNodeProps props = slice.getReplicasMap().get(cloudJetty.coreNodeName);
-      if (props == null) {
+      Replica replica = slice.getReplicasMap().get(cloudJetty.coreNodeName);
+      if (replica == null) {
         throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + slice.getReplicasMap().keySet());
       }
-      
-      final Replica.State state = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP));
-      final Replica.Type replicaType = Replica.Type.valueOf(props.getStr(ZkStateReader.REPLICA_TYPE));
-      final String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
-      
+
+      // This fork strips STATE_PROP from the Replica prop map (live state lives in the StateUpdates
+      // channel), so props.getStr(STATE_PROP) is always null -> getState(null) is never ACTIVE. Use
+      // replica.getState() (published=true, treats LEADER as ACTIVE). Reading STATE_PROP here made the
+      // monkey see 0 active indexers and refuse every kill -> "no jetties were stopped" flake.
+      final Replica.State state = replica.getState();
+      final Replica.Type replicaType = replica.getType();
+      final String nodeName = replica.getNodeName();
+
       if (cloudJetty.jetty.isRunning()
           && state == Replica.State.ACTIVE
-          && (replicaType == Replica.Type.TLOG || replicaType == Replica.Type.NRT) 
+          && (replicaType == Replica.Type.TLOG || replicaType == Replica.Type.NRT)
           && zkStateReader.isNodeLive(nodeName)) {
         numIndexersFoundInShard++;
       }
@@ -447,14 +454,15 @@ public class ChaosMonkey {
       
       Slice slice = docCollection.getSlice(sliceName);
       
-      ZkNodeProps props = slice.getReplicasMap().get(cloudJetty.coreNodeName);
-      if (props == null) {
+      Replica replica = slice.getReplicasMap().get(cloudJetty.coreNodeName);
+      if (replica == null) {
         throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + slice.getReplicasMap().keySet());
       }
-      
-      final Replica.State state = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP));
-      final String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
-      
+
+      // This fork strips STATE_PROP (see canKillIndexer); read live state via replica.getState().
+      final Replica.State state = replica.getState();
+      final String nodeName = replica.getNodeName();
+
       if (cloudJetty.jetty.isRunning()
           && state == Replica.State.ACTIVE
           && zkStateReader.isNodeLive(nodeName)) {
