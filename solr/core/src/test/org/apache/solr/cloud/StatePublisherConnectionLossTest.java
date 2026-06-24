@@ -20,6 +20,7 @@ import static org.apache.solr.SolrTestCaseUtil.expectThrows;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -27,12 +28,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.CreateMode;
@@ -128,5 +132,69 @@ public class StatePublisherConnectionLossTest extends SolrTestCaseJ4 {
     assertFalse(
         "terminal persist failure must clear dedup so the retry is not suppressed",
         (boolean) isDuplicatePublish.invoke(sp, core, DOWN, now));
+  }
+
+  /**
+   * Review P0 #1: when the durable persist exhausts ZooKeeper connection-loss retries,
+   * {@code ZkCmdExecutor} wraps the failure in a {@link SolrException}. The old worker run loop only
+   * logged that and the freshly-bulked batch was dropped — permanently losing edge-triggered
+   * transitions. The publisher must instead RETAIN the failed batch and retry it until ZK accepts it.
+   *
+   * <p>This drives the real {@code Worker.persistDurably} (initial persist fails, batch parked not
+   * dropped) and {@code Worker.flushPendingBatches} (retry succeeds, batch drained) via reflection,
+   * asserting no batch is lost and {@code create()} is attempted exactly twice.
+   */
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testFailedPersistParksBatchAndRetriesUntilDurable() throws Exception {
+    ZkStateReader reader = mock(ZkStateReader.class);
+    SolrZkClient zk = mock(SolrZkClient.class);
+    when(reader.getZkClient()).thenReturn(zk);
+    // First durable create() fails as ZkCmdExecutor's retry-exhaustion SolrException; the retry (via
+    // flushPendingBatches) succeeds. doReturn(null) is return-type agnostic for the create() overload.
+    doThrow(
+            new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Could not complete ZooKeeper operation after 5 retries"))
+        .doReturn(null)
+        .when(zk)
+        .create(anyString(), any(byte[].class), any(CreateMode.class), anyBoolean());
+
+    StatePublisher sp = new StatePublisher(reader, null);
+
+    Class<?> workerClass = Class.forName("org.apache.solr.cloud.StatePublisher$Worker");
+    Constructor<?> workerCtor = workerClass.getDeclaredConstructor(StatePublisher.class);
+    workerCtor.setAccessible(true);
+    Object worker = workerCtor.newInstance(sp);
+
+    Method persistDurably = workerClass.getDeclaredMethod("persistDurably", Map.class);
+    persistDurably.setAccessible(true);
+    Method flushPendingBatches = workerClass.getDeclaredMethod("flushPendingBatches");
+    flushPendingBatches.setAccessible(true);
+
+    Field pendingField = StatePublisher.class.getDeclaredField("pendingBatches");
+    pendingField.setAccessible(true);
+    ArrayDeque<Map> pending = (ArrayDeque<Map>) pendingField.get(sp);
+
+    Map<String, Object> bulk = new HashMap<>();
+    bulk.put("operation", "state");
+    bulk.put("3-7", Integer.toString(DOWN));
+
+    // First persist fails -> the batch must be PARKED (not dropped) and the failure surfaced.
+    InvocationTargetException ite =
+        expectThrows(
+            InvocationTargetException.class, () -> persistDurably.invoke(worker, bulk));
+    assertTrue(
+        "failed durable persist must surface a SolrException, got: " + ite.getCause(),
+        ite.getCause() instanceof SolrException);
+    assertEquals("the failed batch must be retained for retry, not dropped", 1, pending.size());
+
+    // The next worker loop flushes the parked batch; create() now succeeds, so it drains.
+    flushPendingBatches.invoke(worker);
+    assertTrue("a durably-persisted batch must be removed from the retry buffer", pending.isEmpty());
+
+    // create() attempted exactly twice: the failed initial persist + the successful retry. No loss.
+    verify(zk, times(2))
+        .create(anyString(), any(byte[].class), any(CreateMode.class), anyBoolean());
   }
 }

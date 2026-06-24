@@ -1,0 +1,207 @@
+= The StateUpdates Delta State Plane
+:toc: macro
+:toclevels: 3
+
+toc::[]
+
+== Purpose and scope
+
+This note documents the *delta state plane* — the append-structured replacement for
+per-collection full-`state.json` (`_statupdates`) rewrites used to publish replica state in this
+fork. It is the only intended path for replica-state propagation: there is no legacy
+`_statupdates` migration or fallback. A node that comes up against a collection with no state-plane
+manifest treats the collection as having no published live state yet, not as a signal to read a
+legacy channel.
+
+The design goal is that *a single replica-state change costs work proportional to the change*, not
+to the size of the collection:
+
+* publishing one replica's transition appends one small delta to one shard's log — it does not
+  rewrite the whole collection's state;
+* a reader that watches a collection fetches only the *changed shard's* ring on a state event, not
+  every shard;
+* notification delivery reaches only the nodes that watch the affected collection, not the whole
+  cluster.
+
+== ZooKeeper layout
+
+For a collection `C` with shard `S`:
+
+[cols="1,3"]
+|===
+| Path | Contents
+
+| `/collections/C/_scn`
+| Structure version marker (the *structure plane*). Bumped on structural change
+  (create/modify/split/replica add/remove). Distinct from the state plane below.
+
+| `/collections/C/state/manifest`
+| Collection-level switch onto the delta plane. Its presence is what tells a reader "this collection
+  publishes live state via the plane." A change here folds *all* shards (a collection-wide refresh).
+
+| `/collections/C/state/shards/S/deltas`
+| The per-shard *ring*: an ordered run of `StateDelta` records (the `ShardStateLog`).
+
+| `/collections/C/state/shards/S/snapshot`
+| The per-shard compaction *base*: the folded effective state as of some `(epoch, seq)`, written
+  before the ring is trimmed past it.
+|===
+
+Path construction lives in `StatePlanePaths`; both the writer (`StatePlaneWriter`,
+`ZkStateWriter`) and the reader (`StatePlaneReader`, `ZkStateReaderQueue`) route through it, so the
+layout has a single source of truth.
+
+== Record model
+
+`StateDelta` carries:
+
+* an `(epoch, seq)` position,
+* one or more `(replicaId, shortState)` entries,
+* optional explicit *demotions* (replicas to move off `LEADER`).
+
+`shortState` is validated in `1..6` and preserves raw `LEADER` as `1`. State collapse
+(`LEADER -> ACTIVE` for `published=true` reads) happens at the `Replica` layer, not in the plane —
+the plane stores the true short state.
+
+`ShardStateLog` is the per-shard ring: `epoch`, `baseSeq`, `lastSeq`, `writerId`, and the ordered
+`entries`. `writerId` is *writer-side fencing/diagnostics only*; readers must trust `(epoch, seq)`
+ordering, never `writerId`.
+
+== Ownership, epoch and seq
+
+* *Epoch* identifies a writer incarnation for a shard. A higher epoch always wins.
+* *Seq* orders deltas within an epoch. Within one epoch, a higher seq wins.
+* A reader's position is therefore a per-shard `(epoch, seq)` cursor (`StatePlaneCursors`), *not* a
+  single global ZK `Stat.version`. This matters because after the first compaction fold the ZK
+  `Stat.version` permanently outruns logical `seq`; comparing delta-plane progress to delta-plane
+  progress (via the cursor's monotone `generation`, surfaced as
+  `DocCollection.getStatePlaneGeneration()`) keeps the `updateWatchedCollection` clobber guard
+  correct.
+
+=== Writer fencing at append (do not rely on a local predicate alone)
+
+A stale writer (an overseer that lost the election but has not noticed) must not be able to append.
+`StatePlaneWriter.publish(...)` calls `ElectionFence.ownsElectionAuthoritative()` *before* it
+appends. The authoritative implementation (`ZkStateWriter.OverseerElectionFence`) reads the live
+children of `/overseer/overseer_elect/election`, computes the minimum candidate sequence, and
+appends only if that minimum equals this overseer's own candidate sequence. It degrades to the weak
+local `!overseer.isClosed()` predicate only when ZK cannot be consulted (null seq / null
+`ZkController` / ZK error) — a fail-safe, not the primary check. CAS on the ZK node version is the
+second line of defense: a racing writer loses the `setData`.
+
+== Publish path (writer)
+
+For an ordinary replica-state publish, `StatePlaneWriter.publish(...)`:
+
+. reads the target shard's ring;
+. verifies election ownership (fencing, above);
+. computes the shard's *effective* state from `snapshot + deltas`;
+. computes demotions implied by any new leader;
+. suppresses a true no-op (identical effective state);
+. appends one `StateDelta`;
+. CAS-`setData` using the expected ZK version.
+
+Retries on `BadVersion`, `ConnectionLoss`, and `SessionExpired` are *idempotent*: each retry
+re-reads effective state, so re-applying a transition that already landed is a no-op rather than a
+double-apply.
+
+=== Writer hot-path effective-state cache
+
+Reconstructing effective state by folding `snapshot + all deltas` on every publish is
+O(replicas-in-shard). The writer keeps a writer-local per-shard effective cache (`ShardEffective`:
+`lastSeq`, the `replicaId -> shortState` map, and the current leader id) keyed by shard. A publish
+reuses the cache when its `lastSeq` matches the ring; otherwise it rebuilds once and caches. After a
+successful `setData` the cache is advanced incrementally (apply demotions, apply promotions,
+re-derive the leader, bump `lastSeq`) — so the steady-state publish does not re-fold the whole
+shard. Leader demotion is O(1) via the cached current-leader id instead of a full scan.
+
+== Compaction
+
+Compaction bounds ring growth. The order is *crash-safe*:
+
+. write the `snapshot` (the folded base) first;
+. then CAS-trim the ring to drop deltas at or below the snapshot's `(epoch, seq)`.
+
+If a crash happens between the two steps, the snapshot is ahead of the (un-trimmed) ring: a reader
+folds `snapshot + remaining deltas` and still converges to the same effective state — the trim is
+pure space reclamation, never a correctness step.
+
+== Catch-up and apply (reader)
+
+A reader advances each shard's cursor only when a delta is *strictly ahead* of the current position
+(higher epoch, or equal epoch and higher seq). A re-fired or duplicate watch therefore cannot
+regress an already-applied cursor — this is the core duplicate-suppression mechanism on the read
+side. `StatePublisher` adds a second, write-side dedup window (`solr.statePublisher.dedupMaxAgeMs`)
+so an identical re-submit within the window is not republished.
+
+=== Deferred replay buffer (bounded)
+
+A delta can name a `replicaId` that local *structure* (`state.json`) has not yet materialized —
+`DocCollection.updateState` is a silent no-op for an absent id, so the advancing cursor would
+otherwise strand the transition. `StatePlaneCursors` buffers such skipped transitions
+(`shard -> replicaId -> shortState`) and flushes one once structure seeds the id, maintaining a
+single-`LEADER`-per-shard invariant so a stale buffered leader cannot be resurrected after a handoff.
+
+The buffer is *FIFO-bounded* (`solr.statePlane.maxDeferredEntries`, default 50000). A transition
+whose id never materializes (e.g. a replica deleted before its buffered `DOWN` could apply) is
+evicted oldest-first — safe, because a never-materialized id is one whose replica is gone, so its
+buffered transition is moot.
+
+== Notification: scoped subscriptions
+
+State-plane events must not be delivered cluster-wide. `ZkStateReader` uses two kinds of watch:
+
+* a *broad, NON-recursive* `PERSISTENT` watch on `/collections` that delivers only collection
+  add/remove. Because it is non-recursive it reports a child-list change with no per-child path, so
+  `process()` reconciles the live children against the known set (`refreshCollectionSet`);
+* a *scoped, recursive* `PERSISTENT_RECURSIVE` watch on `/collections/C` for each collection this
+  node is interested in. This is what delivers `C`'s structure (`_scn`) and high-frequency
+  state-plane leaf events (`deltas`/`snapshot`/`manifest`).
+
+Scoped-watch lifecycle:
+
+* *registered* on first interest — `registerCore` / `registerDocCollectionWatcher`
+  (`registerStatePlaneWatch`); registration happens before the catch-up fetch so no event between
+  the fetch and the armed watch can be lost;
+* *released* when the collection is deleted — `colectionRemoved` (`unregisterStatePlaneWatch`,
+  async, safe on the event thread);
+* *re-armed* after a ZK session reconnect — `createClusterStateWatchersAndUpdate` clears the
+  client-side intent set and re-registers every interested collection (ZK drops watches on a new
+  session).
+
+The watch lifetime intentionally mirrors the `process()` gate (`watchedCollectionStates ||
+collectionWatches`): a lingering cached collection keeps receiving pushes exactly as before, while
+an uninterested node is never woken for another collection's leaf change. Net effect: notification
+delivery scales with the collections a node hosts/watches, not with the whole cluster.
+
+== Queue durability and unknown-id handling
+
+Two failure paths that used to be lossy:
+
+* *Publish retention.* When the durable persist of a state batch exhausts ZK connection-loss
+  retries, `ZkCmdExecutor` surfaces a `SolrException` (not a `KeeperException`). `StatePublisher`
+  now *parks* the failed batch in a bounded retry queue
+  (`solr.statePublisher.maxPendingBatches`) and re-drains it on the next worker pass, instead of
+  logging and dropping it. Edge-triggered transitions are not lost.
+
+* *Unknown collection id.* When `ZkStateWriter` is handed a state update for a collection id it does
+  not yet know, it must not delete the durable queue item on the mere hope of a later republish.
+  `writeStateUpdatesInternal` *retains* the item (throws, so `WorkQueueWatcher` leaves it for
+  reprocess) until either structure lands or a bounded attempt count / a known-removed id proves the
+  incarnation is gone. `enqueueStructureChange` republishes any armed ids once the structure for that
+  id lands, so a genuinely-arriving collection converges without operator intervention.
+
+`StatePublisher` also rejects an *unresolvable* (still-null after fallback) replica id rather than
+enqueuing a null-keyed transition.
+
+== Known limitations and deliberate omissions
+
+* *No `_statupdates` legacy path.* The legacy full-`state.json` update channel is removed, not
+  bridged. This is intentional: the delta plane is the only publish path.
+* *Scoped-watch release is delete-scoped, not interest-scoped.* A node keeps a collection's scoped
+  watch until the collection is deleted (mirroring the `process()` gate), not until its last local
+  core/watcher goes away. This trades a small, bounded set of idle watches (only for collections the
+  node actually touched) for exact preservation of the previous delivery semantics and simpler
+  lifecycle reasoning.
+* *Compaction trim is best-effort under contention.* A losing CAS on the trim simply leaves extra
+  deltas for the next compaction; it never blocks publishes.

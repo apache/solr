@@ -541,32 +541,31 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
           collectionAdded(collection);
         }
 
-        // ADR (finding #7 — deferred, no correctness impact): every node delivers state-plane leaf
-        // changes (deltas/snapshot/manifest) through this single cluster-wide PERSISTENT_RECURSIVE watch
-        // and then filters locally in process(). A scoped design would instead register a per-collection
-        // (or per-shard) data watch when a collectionWatch is added, tear it down on removal, and
-        // re-register on reconnect — so an uninterested node would never be woken for another collection's
-        // leaf change. We deliberately defer that here because:
-        //   1. This watch is load-bearing and multi-purpose: the same recursive subscription also delivers
-        //      collection add/remove (parts.length==2 NodeCreated/NodeDeleted) and structure `_scn` changes.
-        //      Carving state-plane delivery out into scoped subscriptions requires a full watch-lifecycle
-        //      subsystem (add on collectionWatch registration, remove on deregistration, re-add on session
-        //      reconnect, plus lazy-collection handling) with its own failure modes.
-        //   2. The remaining cost for an uninterested node is just CPU, not ZK I/O: process() rejects an
-        //      unwatched collection's leaf event with a single O(1) containsKey on parts[1]
-        //      (watchedCollectionStates / collectionWatches) BEFORE any getData/fetch. No node does
-        //      O(replicas) work for a collection it does not watch.
-        //   3. US-4 already removed the expensive half: a watching node now fetches only the changed
-        //      shard's ring (targeted mode) instead of re-reading every shard, so the N×ZK-read
-        //      amplification this finding was most concerned about is gone. What is left is a per-node
-        //      hashmap lookup on the watcher thread — a micro-optimization, not a correctness or scaling
-        //      cliff — which is why scoped subscriptions are deferred rather than built now.
-        // Net tradeoff, stated plainly: the DATA FETCH is now shard-scoped, but NOTIFICATION DELIVERY is
-        // still broad — every high-frequency state-plane leaf event is delivered as a ZK watch event to
-        // every node holding this recursive watch, which then filters by collection locally. This is an
-        // accepted interim limit; closing it requires the per-collection scoped-subscription subsystem in
-        // (1).
-        zkClient.addWatch(ZkStateReader.COLLECTIONS_ZKNODE, this, AddWatchMode.PERSISTENT_RECURSIVE, true);
+        // Scoped state-plane subscriptions (review finding #4): the broad watch on /collections is
+        // NON-recursive (PERSISTENT, not PERSISTENT_RECURSIVE), so it delivers ONLY collection
+        // add/remove — a NodeChildrenChanged on /collections, reconciled by refreshCollectionSet().
+        // High-frequency state-plane leaf events (deltas/snapshot/manifest) and structure `_scn` are
+        // NOT delivered cluster-wide any more; they arrive through per-collection PERSISTENT_RECURSIVE
+        // watches registered on /collections/<coll> ONLY for collections this node is interested in
+        // (registerStatePlaneWatch, driven by registerCore / registerDocCollectionWatcher and torn down
+        // by colectionRemoved). An uninterested node is never woken for another collection's leaf change,
+        // so notification delivery now scales with the collections a node hosts/watches, not with the
+        // whole cluster. The per-collection watch lifetime intentionally mirrors the process() gate
+        // (watchedCollectionStates || collectionWatches): registered on first interest, released on
+        // collection deletion — so a lingering cached collection keeps receiving pushes exactly as before.
+        zkClient.addWatch(ZkStateReader.COLLECTIONS_ZKNODE, this, AddWatchMode.PERSISTENT, true);
+
+        // Re-establish per-collection scoped watches after a session reconnect (ZK drops watches on a
+        // new session). statePlaneWatched tracks the client-side intent only; clear it and rebuild from
+        // the live interest set so the synchronous addWatch below actually re-arms each one in ZK. The
+        // interest set is collectionWatches (active local cores/watchers) ONLY: a collection this node has
+        // churned away from had its scoped watch torn down by releaseLocalInterest, and must not be
+        // resurrected on reconnect. registerStatePlaneWatch issues a catch-up fetch as it re-arms, so each
+        // still-interested collection re-syncs any change missed during the disconnect.
+        statePlaneWatched.clear();
+        for (String collection : collectionWatches.keySet()) {
+          registerStatePlaneWatch(collection);
+        }
 
         refreshAliases(aliasesManager);
 
@@ -625,6 +624,16 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
             colectionRemoved(parts[1]);
           }
           break;
+        case NodeChildrenChanged:
+          // The non-recursive /collections watch (finding #4) reports add/remove as a child-list change
+          // with no per-child path; reconcile the live children against the known set. The scoped
+          // per-collection recursive watches also fire NodeChildrenChanged for sub-directories (e.g.
+          // .../state/shards) — those are ignored here (length>1); their data changes arrive as
+          // NodeCreated/NodeDataChanged on the leaves below.
+          if (parts.length == 1 && parts[0].equals(ZkStateReader.COLLECTIONS_ZKNODE.substring(1))) {
+            refreshCollectionSet();
+          }
+          break;
         case NodeDataChanged:
           if (log.isDebugEnabled()) {
             log.debug("NodeDataChanged lastPart={} collection={} watchedCollectionStates={} collectionWatches={} lazyCollectionStates={}", parts[parts.length - 1], parts[1], watchedCollectionStates,
@@ -672,6 +681,9 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
 
   private void colectionRemoved(String collection) {
     log.debug("Collection removed {}", collection);
+    // The collection is gone — drop its scoped state-plane watch (finding #4). Safe from the event
+    // thread: removeWatches is async and a NoWatcher result is ignored.
+    unregisterStatePlaneWatch(collection);
     if (collectionRemovedListener != null) {
       collectionRemovedListener.removed(collection);
     }
@@ -719,6 +731,130 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
 
     notifyCloudCollectionsListeners();
     lastFetchedCollectionSet.set(getCurrentCollections());
+  }
+
+  // Collections for which this node holds a scoped per-collection PERSISTENT_RECURSIVE watch on
+  // /collections/<coll> (review finding #4). Client-side intent tracker that keeps addWatch idempotent
+  // and lets a reconnect rebuild the ZK-side watches from scratch.
+  private final Set<String> statePlaneWatched = ConcurrentHashMap.newKeySet();
+
+  /**
+   * Register a scoped recursive watch on {@code /collections/<collection>} so this node receives that
+   * collection's structure (`_scn`) and high-frequency state-plane leaf events (deltas/snapshot/manifest)
+   * WITHOUT the broad cluster-wide fanout (review finding #4). Idempotent and best-effort: a transient ZK
+   * failure is logged and the intent dropped so a later interest registration (or reconnect) retries.
+   */
+  private void registerStatePlaneWatch(String collection) {
+    if (closed || collection == null) {
+      return;
+    }
+    if (statePlaneWatched.add(collection)) {
+      try {
+        // retryOnConnLoss=true: addWatch blocks until ZK confirms, so on return the watch is armed and
+        // no post-registration leaf event can be missed.
+        zkClient.addWatch(
+            COLLECTIONS_ZKNODE + "/" + collection, this, AddWatchMode.PERSISTENT_RECURSIVE, true);
+      } catch (Exception e) {
+        statePlaneWatched.remove(collection);
+        log.warn("Could not register scoped state-plane watch for collection {}", collection, e);
+        return;
+      }
+      // Catch up on any state-plane change that landed while this collection had no scoped watch —
+      // first interest, or interest regained after a churn teardown (review finding #4). The armed
+      // watch covers all FUTURE leaf events; this fetch covers the gap so a re-interested watcher never
+      // misses a transition that completed during the unwatched window. Best-effort + idempotent.
+      try {
+        if (zkStateReaderQueue != null) {
+          zkStateReaderQueue.fetchStateUpdates(collection, false);
+        }
+      } catch (Exception e) {
+        log.debug("Scoped-watch catch-up fetch failed for collection {}", collection, e);
+      }
+    }
+  }
+
+  /** Tear down the scoped recursive watch for {@code collection} (review finding #4); best-effort. */
+  private void unregisterStatePlaneWatch(String collection) {
+    if (collection == null || !statePlaneWatched.remove(collection)) {
+      return;
+    }
+    try {
+      // Async removal: a NoWatcher result (watch already gone with the deleted node) is reported via rc
+      // and ignored — never thrown — so this is safe to call from the ZK event thread (colectionRemoved).
+      zkClient.removeWatches(
+          COLLECTIONS_ZKNODE + "/" + collection,
+          this,
+          Watcher.WatcherType.Any,
+          true,
+          (rc, path, ctx) -> {},
+          "");
+    } catch (Exception e) {
+      log.debug("Could not remove scoped state-plane watch for collection {}", collection, e);
+    }
+  }
+
+  /**
+   * The node has dropped its last local interest (core or watcher) in {@code collection} while the
+   * collection still exists cluster-wide (review finding #4). Release the scoped recursive watch so this
+   * node stops receiving — and reprocessing — the collection's high-frequency state-plane leaf events
+   * (the whole point of scoping). This is the teardown half that makes the fanout reduction real for a
+   * node that has churned away from a collection (core moved, watcher removed) without that collection
+   * being deleted cluster-wide.
+   *
+   * <p>The cached entry in {@code watchedCollectionStates} is intentionally NOT dropped here: it is still
+   * read synchronously by an immediately-firing registration ({@code registerCollectionStateWatcher}'s
+   * on-register live-nodes notify), so removing it would surface a transient null to a watcher predicate.
+   * Staleness of that retained-but-unwatched entry is bounded — {@link #registerStatePlaneWatch} issues a
+   * catch-up fetch whenever interest (and the scoped watch) returns, re-materializing current state.
+   */
+  private void releaseLocalInterest(String collection) {
+    unregisterStatePlaneWatch(collection);
+    // The scoped-watch arm/release is NOT atomic with the collectionWatches membership decision that
+    // routed us here (review finding #4). A concurrent registerCore / registerDocCollectionWatcher for the
+    // same collection can re-create the collectionWatches entry AND skip its own arm (statePlaneWatched
+    // still held the collection in the window before this teardown removed it) — leaving the collection
+    // interested-but-unwatched, which would stall state-plane delivery to a freshly-hosted core. Resolve it
+    // by re-checking interest AFTER the teardown: if a register raced us, re-arm. This turns the lost update
+    // into a self-correcting reconcile — registerStatePlaneWatch is idempotent and its catch-up fetch covers
+    // any gap, and because this teardown removed the collection from statePlaneWatched first, the re-add here
+    // (or the racing register's own add) is guaranteed to win exactly once. Teardown is the reconciler.
+    if (collectionWatches.containsKey(collection)) {
+      registerStatePlaneWatch(collection);
+    }
+  }
+
+  /**
+   * Reconcile the local collection set against the authoritative children of {@code /collections}
+   * (review finding #4). The non-recursive /collections watch reports add/remove only as a child-list
+   * change with no per-child path, so we diff: new children become known (collectionAdded), vanished
+   * children are removed (colectionRemoved).
+   */
+  private void refreshCollectionSet() {
+    if (closed) {
+      return;
+    }
+    try {
+      List<String> children = zkClient.getChildren(COLLECTIONS_ZKNODE, null, true);
+      Set<String> live = new HashSet<>(children);
+      Set<String> known = getCurrentCollections();
+      for (String collection : children) {
+        if (!known.contains(collection)) {
+          collectionAdded(collection);
+        }
+      }
+      for (String collection : known) {
+        if (!live.contains(collection)) {
+          colectionRemoved(collection);
+        }
+      }
+    } catch (KeeperException.NoNodeException e) {
+      // /collections itself is gone — nothing to reconcile.
+    } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
+      // A reconnect will re-run createClusterStateWatchersAndUpdate and reconcile from scratch.
+      log.debug("Transient ZK error reconciling collection set; reconnect will recover", e);
+    } catch (Exception e) {
+      log.warn("Could not reconcile collection set after a /collections child change", e);
+    }
   }
 
   private void addSecurityNodeWatcher(final Callable<Pair<byte[], Stat>> callback) throws KeeperException, InterruptedException {
@@ -1816,6 +1952,8 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
         v.coreRefCount.incrementAndGet();
         return v;
       });
+      // This node now hosts a core for the collection — arm its scoped state-plane watch (finding #4).
+      registerStatePlaneWatch(collection);
     }
   }
 
@@ -1841,6 +1979,7 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
 
     if (coreName == null || registeredCores.remove(coreName)) {
 
+      boolean[] removed = {false};
       collectionWatches.compute(collection, (k, v) -> {
 
         if (v == null) return v;
@@ -1849,10 +1988,14 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
           log.debug("no longer watch collection {}", collection);
           LazyCollectionRef docRef = new LazyCollectionRef(collection);
           lazyCollectionStates.put(collection, docRef);
+          removed[0] = true;
           return null;
         }
         return v;
       });
+      if (removed[0]) {
+        releaseLocalInterest(collection);
+      }
     }
   }
 
@@ -1953,6 +2096,9 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
       v.coreRefCount.incrementAndGet();
       return v;
     });
+    // Arm the scoped state-plane watch BEFORE the catch-up fetch below so no leaf event between the
+    // fetch and the watch can be lost (finding #4).
+    registerStatePlaneWatch(collection);
 
     DocCollection state = watchedCollectionStates.get(collection);
 
@@ -2315,6 +2461,7 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
       throw new IllegalArgumentException(COLLECTION_CANNOT_BE_NULL);
     }
 
+    boolean[] removed = {false};
     collectionWatches.compute(collection, (k, v) -> {
 
       if (v == null) return v;
@@ -2336,10 +2483,14 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
           LazyCollectionRef docRef = new LazyCollectionRef(collection);
           lazyCollectionStates.put(collection, docRef);
         }
+        removed[0] = true;
         return null;
       }
       return v;
     });
+    if (removed[0]) {
+      releaseLocalInterest(collection);
+    }
 
   }
 

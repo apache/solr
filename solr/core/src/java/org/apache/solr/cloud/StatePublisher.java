@@ -106,6 +106,21 @@ public class StatePublisher implements Closeable {
 
   private final LinkedTransferQueue<Map> workQueue = new LinkedTransferQueue<>();
 
+  // Bounded retry buffer for batches whose durable persist to the overseer queue did NOT succeed
+  // (review P0 #1). A state batch is edge-triggered: once the Worker has drained its constituent
+  // messages from workQueue and bulked them, this batch is the ONLY in-memory record of those
+  // transitions. processMessage persists synchronously with retryOnConnLoss=true, but ZkCmdExecutor
+  // gives up after a finite retry count and wraps the failure as a SolrException — which previously
+  // fell through to the run loop's catch(Exception) and the freshly-built bulkMessage was simply
+  // dropped, permanently losing those transitions (no caller re-emits an edge-triggered change). A
+  // batch that fails to persist is now parked here and retried on subsequent worker loops (after
+  // waitForConnected) until ZK accepts it. Bounded so a permanent outage cannot exhaust heap; on
+  // overflow the OLDEST parked batch is dropped with a loud error (last-resort backstop only reachable
+  // under a sustained, multi-thousand-batch outage). Touched only by the single Worker thread.
+  private static final int MAX_PENDING_BATCHES =
+      Integer.getInteger("solr.statePublisher.maxPendingBatches", 10000);
+  private final java.util.ArrayDeque<Map> pendingBatches = new java.util.ArrayDeque<>();
+
   private volatile Worker worker;
 
   private volatile boolean terminated;
@@ -127,6 +142,11 @@ public class StatePublisher implements Closeable {
         bulkMessage.put(OPERATION, "state");
         int pollTime = 250;
         try {
+          // P0 #1: retry any batch parked by a prior failed durable persist BEFORE accepting new work.
+          // If ZK is still unavailable this throws; the run-loop catch waits for reconnect and the
+          // parked batches remain for the next loop, so no edge-triggered transition is dropped.
+          flushPendingBatches();
+
           try {
             log.debug("State publisher will poll for 5 seconds");
             message = workQueue.poll(5000, TimeUnit.MILLISECONDS);
@@ -173,7 +193,7 @@ public class StatePublisher implements Closeable {
           }
 
           if (bulkMessage.size() > 1) {
-            processMessage(bulkMessage);
+            persistDurably(bulkMessage);
           } else {
             log.debug("No messages to publish, loop");
           }
@@ -284,6 +304,47 @@ public class StatePublisher implements Closeable {
         throw e;
       }
     }
+
+    /**
+     * Persist a freshly-bulked batch durably, RETAINING it for retry instead of dropping it if the
+     * durable create does not succeed (review P0 #1). On success returns normally. On a terminal
+     * KeeperException (e.g. SessionExpired) or a SolrException (ZkCmdExecutor connection-loss retry
+     * exhaustion) the batch is parked in {@link #pendingBatches} and the exception is re-thrown so the
+     * run loop waits for reconnect before {@link #flushPendingBatches()} retries it. InterruptedException
+     * propagates without parking — an interrupt means shutdown, where replicas re-register on restart.
+     */
+    private void persistDurably(Map bulkMessage) throws KeeperException, InterruptedException {
+      try {
+        processMessage(bulkMessage);
+      } catch (KeeperException | SolrException e) {
+        parkBatch(bulkMessage);
+        throw e;
+      }
+    }
+
+    /**
+     * Re-attempt every parked batch in FIFO order. Stops at the first failure — leaving that batch at
+     * the FRONT so ordering and at-least-once delivery are preserved — and rethrows so the run loop
+     * waits for reconnect. Each success drops the batch from the buffer. Re-delivery of an already-applied
+     * transition is harmless: the writer suppresses no-ops and the reader applies state idempotently.
+     */
+    private void flushPendingBatches() throws KeeperException, InterruptedException {
+      while (!pendingBatches.isEmpty()) {
+        Map batch = pendingBatches.peekFirst();
+        processMessage(batch); // throws -> batch stays parked at the front; surfaced to the run loop.
+        pendingBatches.pollFirst(); // durable now — drop it.
+      }
+    }
+
+    /** Park a batch for retry, dropping the OLDEST under sustained overflow to bound memory (P0 #1). */
+    private void parkBatch(Map bulkMessage) {
+      if (pendingBatches.size() >= MAX_PENDING_BATCHES) {
+        Map dropped = pendingBatches.pollFirst();
+        log.error("StatePublisher pending-batch buffer full ({}); dropping OLDEST unpersisted state "
+            + "batch to bound memory under a sustained ZK outage: {}", MAX_PENDING_BATCHES, dropped);
+      }
+      pendingBatches.addLast(bulkMessage);
+    }
   }
 
   public StatePublisher(ZkStateReader zkStateReader, CoreContainer cc) {
@@ -340,6 +401,19 @@ public class StatePublisher implements Closeable {
             if (id != null) {
               stateMessage.getProperties().putIfAbsent("id", id);
             }
+          }
+
+          // P2 #1: the fallback lookup may still leave id null (the core did not resolve to a replica
+          // in cluster state — e.g. a stale/renamed core, or the structure is not yet locally visible).
+          // Reject here rather than enqueue a null-id message: bulkMessage() would otherwise
+          // put(null, shortState) into the batch, and WorkQueueWatcher.processStateUpdateReplica assumes
+          // a non-null "collId-replicaId" key — so an unresolved id silently corrupts the batch. The
+          // caller re-publishes once the replica is registered/visible.
+          if (id == null) {
+            log.error("Published state could not resolve a replica id (core='{}', collection='{}'); "
+                + "rejecting to avoid a null-id batch entry: {}", core, collection, stateMessage);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Unresolvable replica id for published state " + stateMessage);
           }
 
           // Bounded dedup. LEADER is NEVER dedup-suppressed: a LEADER publish is the repair mechanism for the single

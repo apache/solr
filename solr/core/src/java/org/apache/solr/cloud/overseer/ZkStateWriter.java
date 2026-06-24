@@ -47,7 +47,10 @@ import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.api.collections.Assign;
+import org.apache.solr.cloud.LeaderElector;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -97,6 +100,35 @@ public class ZkStateWriter {
    * map, which is always safe — just larger.
    */
   private final Map<Integer, Set<Integer>> pendingChangedIds = new ConcurrentHashMap<>(64);
+
+  /**
+   * Bounded record of collection ids whose structure was REMOVED (review P0 #2, option 3). A replica
+   * state update whose collection id is unknown is normally retained — its overseer queue item is held
+   * for reprocess — on the assumption the structure simply has not landed yet. But if the collection
+   * was deleted, that id can never resolve, so the update is dropped cleanly instead of poisoning the
+   * queue. Collection ids are monotonic and never reused, so only the most recent removals need to be
+   * remembered to tell "deleted" from "not yet landed". synchronizedSet: written under collLock in
+   * {@link #removeCollection}, read from the taskZkWriterExecutor in {@link #writeStateUpdatesInternal}.
+   */
+  private static final int REMOVED_COLL_IDS_CAP =
+      Integer.getInteger("solr.zkStateWriter.removedCollIdsCap", 8192);
+  private final Set<Integer> removedCollIds = Collections.synchronizedSet(
+      Collections.newSetFromMap(new java.util.LinkedHashMap<Integer, Boolean>(256, 0.75f, false) {
+        @Override protected boolean removeEldestEntry(Map.Entry<Integer, Boolean> eldest) {
+          return size() > REMOVED_COLL_IDS_CAP;
+        }
+      }));
+
+  /**
+   * Bounded backstop for review P0 #2: how many times a state update for an unknown collection id is
+   * retained for reprocess before it is dropped as orphaned (a stale item from a long-dead incarnation
+   * this overseer never observed being removed, so it is in neither idToCollection nor removedCollIds).
+   * Cleared the moment the id resolves (structure lands) or is removed. Self-bounding — entries are
+   * removed on resolve/remove/drop.
+   */
+  private static final int MAX_UNKNOWN_ID_ATTEMPTS =
+      Integer.getInteger("solr.zkStateWriter.maxUnknownIdAttempts", 50);
+  private final Map<Integer, Integer> unknownIdAttempts = new ConcurrentHashMap<>();
 
 //  Map<Long,List<ZkStateWriter.StateUpdate>> sliceStates = new ConcurrentHashMap<>();
 
@@ -180,6 +212,43 @@ public class ZkStateWriter {
         return Long.parseLong(ringWriterId) > mine.longValue();
       } catch (NumberFormatException nfe) {
         return false; // unparseable ring writerId is never fencing
+      }
+    }
+
+    /**
+     * ZK-authoritative election ownership (review P1 #5). The overseer leader is the LOWEST live
+     * candidate sequence under {@code /overseer/overseer_elect/election}; {@link Overseer#getElectionSeq()}
+     * is this overseer's candidate sequence. If the current minimum live candidate sequence is not ours,
+     * a newer overseer has taken over (our candidate node is gone, or a re-election occurred) and this
+     * writer is stale — fence it out, even though it may not yet be marked closed and even if the new
+     * overseer has not yet written this shard's ring. Degrades to the local liveness check in minimal
+     * setups (no election seq / no ZkController) and falls back to it on a transient ZK read error — a
+     * new overseer cannot have been elected while ZK is unreachable, so the local check suffices there.
+     */
+    @Override public boolean ownsElectionAuthoritative() {
+      if (overseer.isClosed()) return false;
+      Integer mySeq = overseer.getElectionSeq();
+      if (mySeq == null) return true; // minimal/test setup — fence effectively disabled.
+      ZkController zkc = overseer.getZkController();
+      if (zkc == null) return true;
+      try {
+        List<String> children = zkc.getZkClient()
+            .getChildren(Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE, null, true);
+        int min = Integer.MAX_VALUE;
+        for (String c : children) {
+          try {
+            int s = LeaderElector.getSeq(c);
+            if (s < min) min = s;
+          } catch (RuntimeException malformed) {
+            // A child whose name has no parseable sequence (shouldn't happen) — ignore it.
+          }
+        }
+        // No live candidates visible -> cannot prove staleness; don't fence on absence.
+        return min == Integer.MAX_VALUE || min == mySeq.intValue();
+      } catch (KeeperException | InterruptedException e) {
+        if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+        log.warn("overseer election validation read failed; falling back to local liveness check", e);
+        return !overseer.isClosed();
       }
     }
   }
@@ -793,6 +862,24 @@ public class ZkStateWriter {
         collLock.unlock();
       }
 
+      // Structure for this id has now landed in cs (review P0 #2, option 2). Flush any replica-state
+      // updates that arrived BEFORE the structure and were held armed in pendingChangedIds /
+      // stateUpdates: a single-collection republish appends them to the delta plane NOW rather than
+      // waiting for an unrelated later write or relying solely on queue-item reprocess. This must run
+      // after cs.put (publishToStatePlane needs the collection present in cs to map replicas to shards),
+      // i.e. after the locked block above. Best-effort + async (taskZkWriterExecutor); the retained
+      // queue item is the durable backstop and publishToStatePlane is idempotent.
+      final int landedId = docCollection.getId();
+      unknownIdAttempts.remove(landedId);
+      if (pendingChangedIds.containsKey(landedId) || stateUpdates.containsKey(landedId)) {
+        try {
+          writeStateUpdatesInternal(Collections.singleton(landedId), 1);
+        } catch (RuntimeException republishEx) {
+          log.warn("structure-landing republish for collection id {} failed; the retained queue item "
+              + "will reprocess it", landedId, republishEx);
+        }
+      }
+
     } catch (Exception e) {
       log.error("Exception while queuing update", e);
       throw e;
@@ -1039,6 +1126,11 @@ public class ZkStateWriter {
           deindexCollection(removed.getId());
           stateUpdates.remove(removed.getId());
           idToCollection.remove(removed.getId());
+          // Record the removed incarnation so a late replica-state update for this id is dropped cleanly
+          // rather than retained-for-reprocess forever (review P0 #2, option 3).
+          removedCollIds.add(removed.getId());
+          pendingChangedIds.remove(removed.getId());
+          unknownIdAttempts.remove(removed.getId());
           // The structure for this id will never land now; drop any deferred leader-demotion ids so the
           // map does not leak an entry keyed by a dead collection id.
           pendingLeaderDemotions.remove(removed.getId());
@@ -1484,16 +1576,35 @@ public class ZkStateWriter {
       futures.add(CompletableFuture.runAsync(() -> {
 
         if (collection == null) {
-          // Unknown collection id: the structure change for collId has not landed yet (or the collection
-          // was removed). Returning early — and crucially NOT draining pendingChangedIds / stateUpdates —
-          // leaves this id's changed set and in-memory states armed, so enqueueStructureChange's
-          // structure-landing republish (writeStateUpdatesInternal for that id) publishes them once
-          // idToCollection resolves. We complete normally (not exceptionally) so WorkQueueWatcher deletes
-          // the queue item rather than reprocessing it forever: a null-collection key would otherwise NPE
-          // in stateWriteThrottles.compute / publishToStatePlane and poison the queue (finding #6).
-          log.debug("writeStateUpdates: no collection mapping for id {} yet; deferring to structure-change republish", collId);
-          return;
+          // Unknown collection id (review P0 #2). Two cases:
+          //  (a) the collection was REMOVED (in removedCollIds) — its id will never resolve. Drop the
+          //      armed state and complete NORMALLY so WorkQueueWatcher deletes the queue item (option 3).
+          //      Same disposition once an id has been retained past the bounded attempt cap, which guards
+          //      a stale item from a long-dead incarnation this overseer never observed being removed.
+          //  (b) the structure simply has not LANDED yet — keep pendingChangedIds / stateUpdates armed
+          //      and complete EXCEPTIONALLY so WorkQueueWatcher RETAINS the queue item for reprocess
+          //      (option 1). enqueueStructureChange republishes the armed ids the moment the structure
+          //      lands (option 2), and the reprocessed item also resolves then. Both are idempotent.
+          // The previous code always returned normally here, letting the durable queue item be deleted
+          // though no delta was ever appended — a silent lost update if the overseer failed over before a
+          // later write flushed the in-memory state.
+          int attempts = unknownIdAttempts.merge(collId, 1, Integer::sum);
+          if (removedCollIds.contains(collId) || attempts > MAX_UNKNOWN_ID_ATTEMPTS) {
+            unknownIdAttempts.remove(collId);
+            pendingChangedIds.remove(collId);
+            stateUpdates.remove(collId);
+            log.warn("writeStateUpdates: dropping state update for unknown collection id {} ({}); "
+                    + "structure will never land",
+                collId, removedCollIds.contains(collId) ? "collection removed" : "orphaned past cap");
+            return;
+          }
+          log.debug("writeStateUpdates: structure for collection id {} not yet known (attempt {}); "
+              + "retaining queue item for reprocess", collId, attempts);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "structure for collection id " + collId + " not yet known; retaining for reprocess");
         }
+        // Structure resolved — clear any unknown-id retry accounting for this id.
+        unknownIdAttempts.remove(collId);
 
         ActionThrottle writeThrottle = stateWriteThrottles.compute(collection, (s, throttle) -> {
           if (throttle == null) {

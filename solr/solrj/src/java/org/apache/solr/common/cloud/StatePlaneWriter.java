@@ -102,12 +102,47 @@ public class StatePlaneWriter {
          * {@code null}/equal ring writerId is never fencing.
          */
         boolean isFencedBy(String ringWriterId);
+
+        /**
+         * ZK-authoritative ownership check (review P1 #5): true iff this writer still owns the overseer
+         * election in ZooKeeper right now. Stronger than {@link #stillElected()} (a local liveness flag):
+         * it rejects a stale writer that lost leadership but is not yet marked closed, even when the new
+         * owner has not yet written this shard's ring (so {@code ring.writerId} cannot reveal the
+         * staleness). Default delegates to {@link #stillElected()} for fences with no ZK election
+         * (e.g. unit-test fences).
+         */
+        default boolean ownsElectionAuthoritative() {
+            return stillElected();
+        }
     }
 
     /** Thrown when this writer is no longer elected or has been fenced out by a newer election (D4). */
     public static class FencedException extends RuntimeException {
         public FencedException(String message) {
             super(message);
+        }
+    }
+
+    /**
+     * Writer-local cached effective state for one shard (review P1 #3). The hot write path used to
+     * decode the per-shard snapshot and {@code reconstruct} the WHOLE replica map on every publish —
+     * O(replicas-in-shard) per single-replica transition. Instead the elected writer (the only one that
+     * may append, per the per-shard lock + election fence) keeps the effective map in memory and updates
+     * it incrementally as it appends. {@code lastSeq} is the ring {@code lastSeq} this map reflects; the
+     * cache is reused only when the freshly-read ring still has that {@code lastSeq} — otherwise (first
+     * publish on this shard after takeover, or a concurrent append seen as a changed lastSeq) it is
+     * rebuilt from snapshot + ring exactly as before. {@code currentLeaderId} is the O(1)
+     * stale-leader-demotion index (the single replica at raw {@code LEADER}, or {@code null}). All
+     * fields are read/written only under the owning shard's lock.
+     */
+    private static final class ShardEffective {
+        long lastSeq;
+        final Map<Integer, Integer> states;
+        Integer currentLeaderId;
+        ShardEffective(long lastSeq, Map<Integer, Integer> states, Integer currentLeaderId) {
+            this.lastSeq = lastSeq;
+            this.states = states;
+            this.currentLeaderId = currentLeaderId;
         }
     }
 
@@ -124,6 +159,14 @@ public class StatePlaneWriter {
 
     /** Per-(coll,shard) last-compaction wall clock (millis) for the time-based trigger. */
     private final ConcurrentHashMap<String, Long> lastCompactionMillis = new ConcurrentHashMap<>();
+
+    /**
+     * Per-(coll,shard) writer-local effective-state cache (review P1 #3). Lazily built on first publish
+     * to a shard (or after a detected divergence) and advanced incrementally per append, so steady-state
+     * publishes skip the snapshot decode + full-map reconstruct. Bounded by the shards this overseer
+     * incarnation publishes to; rebuilt fresh on takeover (a new overseer constructs a new writer).
+     */
+    private final ConcurrentHashMap<String, ShardEffective> effectiveCache = new ConcurrentHashMap<>();
 
     /** Local epoch cursor; rebased up when a ring is seen at a higher epoch. */
     private volatile int localEpoch = 0;
@@ -168,6 +211,16 @@ public class StatePlaneWriter {
         final ReentrantLock lock = shardLocks.computeIfAbsent(coll + "/" + shard, k -> new ReentrantLock());
         lock.lock();
         try {
+            // Authoritative election fence (review P1 #5): confirm we still OWN the overseer election in
+            // ZK before appending. The per-attempt fence.stillElected() below is only a local liveness
+            // flag, and ring.writerId fencing cannot reveal a stale writer when the new overseer has not
+            // yet written THIS shard's ring. The authoritative check rejects a stale overseer that lost
+            // leadership but is not yet marked closed. Done once per publish (not per CAS retry) to bound
+            // the extra ZK read.
+            if (!fence.ownsElectionAuthoritative()) {
+                throw new FencedException("no longer the elected overseer (authoritative); refusing to append "
+                        + deltaPath);
+            }
             for (int attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
                 try {
                     Stat stat = new Stat();
@@ -196,12 +249,25 @@ public class StatePlaneWriter {
                     int epoch = Math.max(localEpoch, ring.epoch);
                     if (ring.epoch > localEpoch) localEpoch = ring.epoch;
 
-                    // ---- Effective state = snapshot baseline + ring deltas. ----
-                    Map<Integer, Integer> effective = effectiveState(coll, collPath, shard, ring);
+                    // ---- Effective state (review P1 #3): served from the writer-local per-shard cache so
+                    //      a steady-state publish does NOT decode the snapshot and reconstruct the whole
+                    //      shard map every time. Valid iff it reflects the ring we just read
+                    //      (ce.lastSeq == ring.lastSeq); otherwise (first publish on this shard after
+                    //      takeover, or a concurrent append detected via a changed lastSeq) rebuild it from
+                    //      snapshot + ring exactly as before. Held under the per-shard lock. ----
+                    final String cacheKey = coll + "/" + shard;
+                    ShardEffective ce = effectiveCache.get(cacheKey);
+                    if (ce == null || ce.lastSeq != ring.lastSeq) {
+                        Map<Integer, Integer> rebuilt = effectiveState(coll, collPath, shard, ring);
+                        ce = new ShardEffective(ring.lastSeq, rebuilt, findLeader(coll, shard, rebuilt));
+                        effectiveCache.put(cacheKey, ce);
+                    }
+                    final Map<Integer, Integer> effective = ce.states;
 
-                    // ---- Compute pending demotions FIRST (D5). ----
+                    // ---- Compute pending demotions FIRST (D5). Stale-leader demotion uses the O(1)
+                    //      per-shard current-leader index, not a full-map scan (review P1 #3). ----
                     List<Integer> pendingDemotions = computePendingDemotions(
-                            effective, promos, explicitDemotions);
+                            effective, ce.currentLeaderId, promos, explicitDemotions);
 
                     // ---- No-op ONLY when promotions change nothing AND no pending demotions. ----
                     if (pendingDemotions.isEmpty() && isStateNoop(effective, promos)) {
@@ -256,6 +322,24 @@ public class StatePlaneWriter {
 
                     // ---- CAS: setData with expectedVersion. retryOnConnLoss=false so we own the retry. ----
                     zkClient.setData(deltaPath, out, stat.getVersion(), false);
+
+                    // Append succeeded — advance the writer-local effective cache incrementally (review
+                    // P1 #3) so the next publish reuses it with no snapshot read or full reconstruct.
+                    // Compaction (below) preserves both lastSeq and effective state, so the cache stays
+                    // valid across it. Demotions land as ACTIVE; promotions overwrite; the LEADER index is
+                    // re-derived from the applied changes (single-leader-per-shard invariant).
+                    for (Integer demoteId : pendingDemotions) {
+                        ce.states.put(demoteId, ACTIVE);
+                    }
+                    for (StateDelta.Entry promo : promos) {
+                        ce.states.put(promo.replicaId, promo.shortState);
+                        if (promo.shortState == LEADER) ce.currentLeaderId = promo.replicaId;
+                    }
+                    if (ce.currentLeaderId != null) {
+                        Integer ls = ce.states.get(ce.currentLeaderId);
+                        if (ls == null || ls != LEADER) ce.currentLeaderId = null;
+                    }
+                    ce.lastSeq = seq;
 
                     if (log.isDebugEnabled()) {
                         log.debug("publish appended delta for {}/{}: epoch={} seq={} promos={} demotions={} baseSeq={} entries={} ver={}->{}",
@@ -474,6 +558,7 @@ public class StatePlaneWriter {
      * a stale LEADER lingers still emits the demotion — never a two-leaders no-op.
      */
     private List<Integer> computePendingDemotions(Map<Integer, Integer> effective,
+                                                  Integer currentLeaderId,
                                                   List<StateDelta.Entry> promotions,
                                                   List<Integer> explicitDemotions) {
         // Use a set-like ordered structure to dedup while preserving order.
@@ -482,21 +567,42 @@ public class StatePlaneWriter {
             Integer cur = effective.get(id);
             if (cur == null || cur != ACTIVE) demoted.put(id, Boolean.TRUE);
         }
+        // Stale-leader demotion (D5): if this delta promotes a LEADER, demote the shard's CURRENT leader
+        // via the O(1) per-shard current-leader index (review P1 #3) instead of scanning the whole
+        // effective map. The single-leader-per-shard invariant (enforced by this very demotion under the
+        // per-shard lock + election fence) makes the index sufficient.
+        boolean leaderPromo = false;
         for (StateDelta.Entry promo : promotions) {
-            if (promo.shortState != LEADER) continue;
-            // Demote any OTHER replica in this shard currently at LEADER (raw==1).
-            for (Map.Entry<Integer, Integer> e : effective.entrySet()) {
-                if (e.getKey() == promo.replicaId) continue;
-                if (e.getValue() != null && e.getValue() == LEADER) {
-                    demoted.put(e.getKey(), Boolean.TRUE);
-                }
-            }
+            if (promo.shortState == LEADER) { leaderPromo = true; break; }
+        }
+        if (leaderPromo && currentLeaderId != null) {
+            demoted.put(currentLeaderId, Boolean.TRUE);
         }
         // A replica being promoted in this same delta is never simultaneously demoted.
         for (StateDelta.Entry promo : promotions) {
             demoted.remove(promo.replicaId);
         }
         return new ArrayList<>(demoted.keySet());
+    }
+
+    /**
+     * Find the single replica at raw {@code LEADER} in a freshly-reconstructed effective map (review
+     * P1 #3 rebuild path). O(replicas-in-shard), but only on a cache miss (takeover / divergence), never
+     * on the steady-state hot path. Warns if the single-leader-per-shard invariant is violated.
+     */
+    private Integer findLeader(String coll, String shard, Map<Integer, Integer> effective) {
+        Integer leader = null;
+        for (Map.Entry<Integer, Integer> e : effective.entrySet()) {
+            if (e.getValue() != null && e.getValue() == LEADER) {
+                if (leader != null) {
+                    log.warn("statePlane {}/{}: more than one replica at LEADER in effective state "
+                            + "({} and {}); using the latter as the current-leader index",
+                            coll, shard, leader, e.getKey());
+                }
+                leader = e.getKey();
+            }
+        }
+        return leader;
     }
 
     /** True iff every promotion already matches the effective state (nothing would change). */

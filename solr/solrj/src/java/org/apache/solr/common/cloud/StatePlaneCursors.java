@@ -16,11 +16,18 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.lang.invoke.MethodHandles;
+import java.util.AbstractMap;
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Per-shard {@code (epoch, seq)} reader cursors for the StateUpdates delta plane (PR-3 reader).
@@ -36,6 +43,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class StatePlaneCursors {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   // shard -> {epoch, seq}
   private final Map<String, long[]> cursors = new ConcurrentHashMap<>();
 
@@ -49,6 +58,24 @@ public final class StatePlaneCursors {
   // structure seeds the id, and maintains a single-LEADER-per-shard invariant within the buffer so a
   // stale buffered leader cannot be resurrected after a handoff.
   private final Map<String, Map<Integer, Integer>> deferred = new ConcurrentHashMap<>();
+
+  /**
+   * Bound for the deferred replay buffer (review P2 #2). A skipped transition whose replica id NEVER
+   * materializes in structure (e.g. a replica deleted before its buffered DOWN could apply) would
+   * otherwise accumulate forever. The buffer is FIFO-bounded to this many total entries; real structure
+   * races resolve in well under the cap, and evicting the eldest stranded entry is safe — a
+   * never-materialized id is one whose replica is gone, so its buffered transition is moot.
+   */
+  private static final int MAX_DEFERRED =
+      Integer.getInteger("solr.statePlane.maxDeferredEntries", 50000);
+
+  // Guards the bound bookkeeping (liveDeferred + deferredOrder) so it stays consistent with `deferred`.
+  private final Object deferredLock = new Object();
+  // Total live deferred entries across all shards (guarded by deferredLock).
+  private int liveDeferred;
+  // FIFO insertion order of deferred (shard, replicaId) keys for eviction. May hold tombstones for
+  // already-undeferred keys; they are skipped at eviction and periodically compacted away.
+  private final Deque<Map.Entry<String, Integer>> deferredOrder = new ArrayDeque<>();
 
   public StatePlaneCursors() {}
 
@@ -79,17 +106,65 @@ public final class StatePlaneCursors {
 
   /** Record a replica-state transition skipped because its id is not yet in local structure (finding #3). */
   public void defer(String shard, int replicaId, int shortState) {
-    deferred.computeIfAbsent(shard, k -> new ConcurrentHashMap<>()).put(replicaId, shortState);
+    synchronized (deferredLock) {
+      Map<Integer, Integer> m = deferred.computeIfAbsent(shard, k -> new ConcurrentHashMap<>());
+      Integer prev = m.put(replicaId, shortState);
+      if (prev == null) {
+        liveDeferred++;
+        deferredOrder.addLast(new AbstractMap.SimpleImmutableEntry<>(shard, replicaId));
+        enforceDeferredBound();
+      }
+    }
   }
 
   /** Drop a deferred entry once it has been applied (or superseded). */
   public void undefer(String shard, int replicaId) {
-    Map<Integer, Integer> m = deferred.get(shard);
-    if (m != null) {
-      m.remove(replicaId);
-      if (m.isEmpty()) {
-        deferred.remove(shard);
+    synchronized (deferredLock) {
+      Map<Integer, Integer> m = deferred.get(shard);
+      if (m != null) {
+        if (m.remove(replicaId) != null) {
+          liveDeferred--;
+        }
+        if (m.isEmpty()) {
+          deferred.remove(shard);
+        }
       }
+      // The matching deferredOrder entry becomes a tombstone, reclaimed at eviction/compaction time.
+    }
+  }
+
+  /** Must hold {@link #deferredLock}. Evict oldest LIVE deferred entries until at or below the cap. */
+  private void enforceDeferredBound() {
+    while (liveDeferred > MAX_DEFERRED) {
+      Map.Entry<String, Integer> oldest = deferredOrder.pollFirst();
+      if (oldest == null) {
+        liveDeferred = 0; // order/live drift guard (should not be reachable)
+        break;
+      }
+      Map<Integer, Integer> m = deferred.get(oldest.getKey());
+      if (m != null && m.remove(oldest.getValue()) != null) {
+        if (m.isEmpty()) {
+          deferred.remove(oldest.getKey());
+        }
+        liveDeferred--;
+        if (log.isWarnEnabled()) {
+          log.warn(
+              "statePlane deferred replay buffer exceeded {} entries; evicted oldest deferred "
+                  + "transition (shard={}, replicaId={}) — it never materialized in structure",
+              MAX_DEFERRED, oldest.getKey(), oldest.getValue());
+        }
+      }
+      // else: tombstone (already undeferred) — just drop the order entry and continue.
+    }
+    // Reclaim tombstone bloat: if the order deque has grown far beyond the live set, rebuild it.
+    if (deferredOrder.size() > 2 * MAX_DEFERRED
+        && deferredOrder.size() > 4 * Math.max(1, liveDeferred)) {
+      deferredOrder.clear();
+      deferred.forEach(
+          (shard, m) ->
+              m.forEach(
+                  (rid, st) ->
+                      deferredOrder.addLast(new AbstractMap.SimpleImmutableEntry<>(shard, rid))));
     }
   }
 
@@ -117,7 +192,19 @@ public final class StatePlaneCursors {
   public StatePlaneCursors copy() {
     StatePlaneCursors c = new StatePlaneCursors();
     cursors.forEach((shard, pos) -> c.cursors.put(shard, new long[] {pos[0], pos[1]}));
-    deferred.forEach((shard, m) -> c.deferred.put(shard, new ConcurrentHashMap<>(m)));
+    synchronized (deferredLock) {
+      deferred.forEach(
+          (shard, m) -> {
+            Map<Integer, Integer> cm = new ConcurrentHashMap<>(m);
+            c.deferred.put(shard, cm);
+            // c is unpublished here, so populate its bound bookkeeping directly (no lock needed).
+            cm.forEach(
+                (rid, st) -> {
+                  c.liveDeferred++;
+                  c.deferredOrder.addLast(new AbstractMap.SimpleImmutableEntry<>(shard, rid));
+                });
+          });
+    }
     c.generation.set(generation.get());
     return c;
   }
@@ -135,8 +222,20 @@ public final class StatePlaneCursors {
     // Carry forward other's deferred replays so a structure refresh that adopts these cursors does not
     // drop a transition still pending a structure catch-up (finding #3). Other (the ahead instance) wins
     // on conflict.
-    other.deferred.forEach((shard, m) ->
-        deferred.computeIfAbsent(shard, k -> new ConcurrentHashMap<>()).putAll(m));
+    synchronized (deferredLock) {
+      other.deferred.forEach(
+          (shard, m) -> {
+            Map<Integer, Integer> mine = deferred.computeIfAbsent(shard, k -> new ConcurrentHashMap<>());
+            m.forEach(
+                (rid, st) -> {
+                  if (mine.put(rid, st) == null) {
+                    liveDeferred++;
+                    deferredOrder.addLast(new AbstractMap.SimpleImmutableEntry<>(shard, rid));
+                  }
+                });
+          });
+      enforceDeferredBound();
+    }
     int og = other.generation.get();
     if (og > generation.get()) {
       generation.set(og);

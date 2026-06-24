@@ -72,6 +72,74 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     });
   }
 
+  /**
+   * Review finding #4 (architect re-verification, race "c"): the scoped state-plane watch must converge to
+   * "armed iff this node is locally interested" even when registerCore/unregisterCore for the SAME
+   * collection race across threads. The arm/release is not atomic with the collectionWatches membership
+   * decision, so a self-correcting recheck in releaseLocalInterest reconciles a lost update. Assert the
+   * quiescent invariant collectionWatches.containsKey(C) == statePlaneWatched.contains(C).
+   */
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testScopedWatchTracksInterestUnderConcurrentChurn() throws Exception {
+    final String collection = "concurrentChurn";
+    CollectionAdminRequest.createCollection(collection, "config", 1, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collection, 1, 1);
+
+    final ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
+    final java.lang.reflect.Field f = ZkStateReader.class.getDeclaredField("statePlaneWatched");
+    f.setAccessible(true);
+    final java.util.Set<String> statePlaneWatched = (java.util.Set<String>) f.get(reader);
+
+    final int threads = 8;
+    final int iters = 150;
+    final CountDownLatch start = new CountDownLatch(1);
+    final java.util.concurrent.atomic.AtomicReference<Throwable> err =
+        new java.util.concurrent.atomic.AtomicReference<>();
+    final Thread[] workers = new Thread[threads];
+    for (int t = 0; t < threads; t++) {
+      final String core = "churnCore_" + t; // distinct per thread; the race is on the shared collection
+      workers[t] = new Thread(() -> {
+        try {
+          start.await();
+          for (int i = 0; i < iters; i++) {
+            reader.registerCore(collection, core);
+            reader.unregisterCore(collection, core);
+          }
+        } catch (Throwable th) {
+          err.compareAndSet(null, th);
+        }
+      });
+      workers[t].start();
+    }
+    start.countDown();
+    for (Thread w : workers) {
+      w.join();
+    }
+    assertNull("worker thread threw", err.get());
+
+    // Quiescent (all threads joined): every register was balanced by its unregister, so the collection is
+    // not locally interesting and the scoped watch must have been reconciled away — no interested-but-
+    // unwatched stall, no armed-but-uninterested leak.
+    assertEquals(
+        "scoped watch must be armed iff the collection is locally watched",
+        reader.watched(collection),
+        statePlaneWatched.contains(collection));
+    assertFalse("balanced churn must leave no local interest", reader.watched(collection));
+
+    // A lone register must leave it interested AND armed (the race's failure mode was interested-but-unwatched).
+    reader.registerCore(collection, "finalCore");
+    assertTrue(reader.watched(collection));
+    assertTrue("a hosted core must hold an armed scoped watch", statePlaneWatched.contains(collection));
+
+    reader.unregisterCore(collection, "finalCore");
+    assertFalse(reader.watched(collection));
+    assertFalse("releasing the last interest must release the scoped watch", statePlaneWatched.contains(collection));
+
+    CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
+  }
+
   @Test
   public void testCollectionWatchWithShutdownOfActiveNode() throws Exception {
     doTestCollectionWatchWithNodeShutdown(false);
