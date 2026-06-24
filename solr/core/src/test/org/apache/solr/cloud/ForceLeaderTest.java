@@ -193,9 +193,12 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
   @Override
   protected CloudSolrClient createCloudClient(String defaultCollection) {
-    boolean shardLeadersOnly = false; // this test requires we use any replica
-    return createNewCloudSolrClient(
-        zkServer.getZkHost(), TEST_COLLECTION, shardLeadersOnly, 30_000, 120_000);
+    // Use non-randomized builder; this test requires deterministic routing:
+    // shardLeadersOnly=true (default), directUpdatesToLeadersOnly=false.
+    return new CloudSolrClient.Builder(zkServer.getZkAddress())
+        .withDefaultCollection(defaultCollection)
+        .sendDirectUpdatesToAnyShardReplica()
+        .build();
   }
 
   private void putNonLeadersIntoLowerTerm(
@@ -312,7 +315,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
         CollectionAdminRequest.forceLeaderElection(collectionName, shard);
 
     try (var cloudClient =
-        createNewCloudSolrClient(zkServer.getZkHost(), null, true, 3_000, 60_000)) {
+        createNewCloudSolrClient(zkServer.getZkAddress(), null, true, 3_000, 60_000)) {
       cloudClient.request(forceLeader);
     }
   }
