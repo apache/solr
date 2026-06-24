@@ -21,18 +21,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.SolrTestUtil;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ShardStateLog;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.StateDelta;
+import org.apache.solr.common.cloud.StateDeltaCodec;
 import org.apache.solr.common.cloud.StatePlanePaths;
 import org.apache.solr.common.cloud.StatePlaneWriter;
+import org.apache.solr.common.cloud.StateSnapshot;
 import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.CreateMode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -500,5 +505,46 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         assertFalse("fenced lazy create must not create ring",
             zkClient.exists(StatePlanePaths.shardDeltas(collPath, "s1")));
     }
+
+
+  @Test
+  public void seedShardRejectsExistingNoManifestBootstrapWithWrongIdentity() throws Exception {
+    String coll = "bootstrapIdentity";
+    String shard = "s1";
+    String collPath = StatePlanePaths.collectionPath(coll);
+    String snapshotPath = StatePlanePaths.shardSnapshot(collPath, shard);
+    String ringPath = StatePlanePaths.shardDeltas(collPath, shard);
+
+    StateSnapshot wrongSnapshot =
+        new StateSnapshot(99L, coll, 1, shard, 0L, Collections.emptyMap());
+    ShardStateLog wrongRing =
+        new ShardStateLog("99", shard, 1, 0L, 0L, "oldWriter", Collections.emptyList());
+    zkClient.makePath(
+        snapshotPath,
+        StateDeltaCodec.encodeStateSnapshot(wrongSnapshot),
+        CreateMode.PERSISTENT,
+        null,
+        true,
+        true);
+    zkClient.makePath(
+        ringPath,
+        StateDeltaCodec.encodeShardStateLog(wrongRing),
+        CreateMode.PERSISTENT,
+        null,
+        true,
+        true);
+
+    SolrException error = null;
+    try {
+      writer("newWriter").seedShard(coll, shard, "100", 1, Map.of(1, 2));
+    } catch (SolrException e) {
+      error = e;
+    }
+    assertTrue("expected SolrException", error != null);
+    assertTrue(error.getMessage(), error.getMessage().contains("mismatched identity"));
+    assertFalse(
+        "manifest must not be published over mismatched no-manifest bootstrap data",
+        zkClient.exists(StatePlanePaths.manifest(collPath), true));
+  }
 
 }

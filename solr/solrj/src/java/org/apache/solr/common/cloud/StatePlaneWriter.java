@@ -760,20 +760,118 @@ public class StatePlaneWriter {
         setLocalEpoch(epoch);
         String collPath = StatePlanePaths.collectionPath(coll);
         StateSnapshot snap = new StateSnapshot(Long.parseLong(collectionIncarnation), coll, epoch, shard, 0L, states);
-        createIfAbsent(StatePlanePaths.shardSnapshot(collPath, shard), StateDeltaCodec.encodeStateSnapshot(snap));
+        createIfAbsent(
+                StatePlanePaths.shardSnapshot(collPath, shard),
+                StateDeltaCodec.encodeStateSnapshot(snap),
+                existingBytes ->
+                        validateBootstrapSnapshot(
+                                StatePlanePaths.shardSnapshot(collPath, shard),
+                                existingBytes,
+                                coll,
+                                shard,
+                                collectionIncarnation));
         ShardStateLog empty = new ShardStateLog(collectionIncarnation, shard, epoch, 0L, 0L, fence.writerId(), Collections.emptyList());
-        createIfAbsent(StatePlanePaths.shardDeltas(collPath, shard), StateDeltaCodec.encodeShardStateLog(empty));
+        createIfAbsent(
+                StatePlanePaths.shardDeltas(collPath, shard),
+                StateDeltaCodec.encodeShardStateLog(empty),
+                existingBytes ->
+                        validateBootstrapRing(
+                                StatePlanePaths.shardDeltas(collPath, shard),
+                                existingBytes,
+                                coll,
+                                shard,
+                                collectionIncarnation));
+    }
+
+    @FunctionalInterface
+    private interface ExistingBootstrapValidator {
+        void validate(byte[] existingBytes) throws KeeperException, InterruptedException, IOException;
+    }
+
+    private void validateBootstrapSnapshot(
+            String path, byte[] existingBytes, String coll, String shard, String collectionIncarnation)
+            throws IOException {
+        StateSnapshot snapshot = StateDeltaCodec.decodeStateSnapshot(existingBytes);
+        validateBootstrapIdentity(
+                "snapshot",
+                path,
+                Long.toString(snapshot.collectionId),
+                snapshot.collectionName,
+                snapshot.shard,
+                collectionIncarnation,
+                coll,
+                shard);
+    }
+
+    private void validateBootstrapRing(
+            String path, byte[] existingBytes, String coll, String shard, String collectionIncarnation)
+            throws IOException {
+        ShardStateLog ring = StateDeltaCodec.decodeShardStateLog(existingBytes);
+        validateBootstrapIdentity(
+                "ring",
+                path,
+                ring.collectionId,
+                null,
+                ring.shardId,
+                collectionIncarnation,
+                coll,
+                shard);
+    }
+
+    private void validateBootstrapIdentity(
+            String kind,
+            String path,
+            String existingCollectionId,
+            String existingCollectionName,
+            String existingShard,
+            String collectionIncarnation,
+            String coll,
+            String shard) {
+        if (!collectionIncarnation.equals(existingCollectionId)
+                || !shard.equals(existingShard)
+                || (existingCollectionName != null && !coll.equals(existingCollectionName))) {
+            throw new SolrException(
+                    SolrException.ErrorCode.SERVER_ERROR,
+                    "statePlane bootstrap found existing "
+                            + kind
+                            + " znode with mismatched identity at "
+                            + path
+                            + ": expected collection="
+                            + coll
+                            + ", collectionId="
+                            + collectionIncarnation
+                            + ", shard="
+                            + shard
+                            + " but found collection="
+                            + existingCollectionName
+                            + ", collectionId="
+                            + existingCollectionId
+                            + ", shard="
+                            + existingShard);
+        }
     }
 
     private void createIfAbsent(String path, byte[] bytes)
-            throws KeeperException, InterruptedException {
+            throws KeeperException, InterruptedException, IOException {
+        createIfAbsent(path, bytes, null);
+    }
+
+    private void createIfAbsent(String path, byte[] bytes, ExistingBootstrapValidator validator)
+            throws KeeperException, InterruptedException, IOException {
         try {
-            requireAuthoritativeOwnership("create state-plane znode");
+            // Seeding is a state-plane mutation. Check ownership immediately before makePath so a
+            // stale overseer cannot publish no-manifest bootstrap znodes for the wrong incarnation.
+            requireAuthoritativeOwnership("create " + path);
             zkClient.makePath(path, bytes, CreateMode.PERSISTENT, true);
-        } catch (KeeperException.NodeExistsException nee) {
-            if (log.isDebugEnabled()) {
-                log.debug("seed: {} already exists; keeping existing state (no empty-baseline overwrite)", path);
+        } catch (KeeperException.NodeExistsException e) {
+            if (validator == null) {
+                log.debug("statePlane seed: existing {}, preserving existing data", path);
+                return;
             }
+            byte[] existingBytes = zkClient.getData(path, null, new Stat(), true);
+            validator.validate(existingBytes);
+            log.debug("statePlane seed: existing {} matched bootstrap identity", path);
         }
     }
+
 }
