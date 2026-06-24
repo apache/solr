@@ -6,12 +6,9 @@ toc::[]
 
 == Purpose and scope
 
-This note documents the *delta state plane* — the append-structured replacement for
-per-collection full-`state.json` (`_statupdates`) rewrites used to publish replica state in this
-fork. It is the only intended path for replica-state propagation: there is no legacy
-`_statupdates` migration or fallback. A node that comes up against a collection with no state-plane
-manifest treats the collection as having no published live state yet, not as a signal to read a
-legacy channel.
+The state-plane is the sole live replica-state propagation path in this fork. A node
+that comes up against a collection with no state-plane manifest treats that as
+"no published live state yet."
 
 The design goal is that *a single replica-state change costs work proportional to the change*, not
 to the size of the collection:
@@ -191,13 +188,13 @@ Two failure paths that used to be lossy:
   incarnation is gone. `enqueueStructureChange` republishes any armed ids once the structure for that
   id lands, so a genuinely-arriving collection converges without operator intervention.
 
-`StatePublisher` also rejects an *unresolvable* (still-null after fallback) replica id rather than
+`StatePublisher` also rejects an *unresolvable* (still-null after direct id resolution) replica id rather than
 enqueuing a null-keyed transition.
 
 == Known limitations and deliberate omissions
 
-* *No `_statupdates` legacy path.* The legacy full-`state.json` update channel is removed, not
-  bridged. This is intentional: the delta plane is the only publish path.
+* *State-plane-only live state.* Replica live-state propagation is state-plane only; a
+  missing state-plane manifest means no published live state yet.
 * *Scoped-watch release is interest-scoped.* A node arms a collection's scoped watch when the first
   local core/watcher becomes interested and releases it when the last local interest goes away;
   collection deletion is an additional teardown path. Transient `addWatch` failures retain wanted
