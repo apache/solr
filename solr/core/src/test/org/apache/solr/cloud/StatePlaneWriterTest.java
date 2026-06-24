@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.ShardStateLog;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -435,6 +436,69 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         }
         assertNotNull("writer with older local epoch must be fenced by the durable ring epoch", thrown);
         assertEquals(2L, readRing("cEpoch", "s1").lastSeq);
+    }
+
+    @Test
+    public void seedShardRequiresAuthoritativeOwnershipBeforeCreate() throws Exception {
+        StatePlaneWriter w = new StatePlaneWriter(zkClient, new AlwaysElectedFence("seed-stale") {
+            @Override
+            public boolean ownsElectionAuthoritative() {
+                return false;
+            }
+        });
+
+        SolrTestCaseUtil.expectThrows(
+            StatePlaneWriter.FencedException.class,
+            "seedShard should be fenced before creating state-plane znodes",
+            () -> w.seedShard("seedFence", "s1", COLL_ID, 1, Collections.emptyMap()));
+
+        String collPath = StatePlanePaths.collectionPath("seedFence");
+        assertFalse("fenced seed must not create snapshot",
+            zkClient.exists(StatePlanePaths.shardSnapshot(collPath, "s1")));
+        assertFalse("fenced seed must not create ring",
+            zkClient.exists(StatePlanePaths.shardDeltas(collPath, "s1")));
+    }
+
+    @Test
+    public void manifestSeedRequiresAuthoritativeOwnershipBeforeCreate() throws Exception {
+        StatePlaneWriter w = new StatePlaneWriter(zkClient, new AlwaysElectedFence("manifest-stale") {
+            @Override
+            public boolean ownsElectionAuthoritative() {
+                return false;
+            }
+        });
+
+        SolrTestCaseUtil.expectThrows(
+            StatePlaneWriter.FencedException.class,
+            "writeManifestSeeded should be fenced before creating the manifest",
+            () -> w.writeManifestSeeded("manifestFence", 1, Arrays.asList("s1")));
+
+        String collPath = StatePlanePaths.collectionPath("manifestFence");
+        assertFalse("fenced manifest seed must not create manifest",
+            zkClient.exists(StatePlanePaths.manifest(collPath)));
+    }
+
+    @Test
+    public void lazyRingCreateRequiresAuthoritativeOwnershipAfterNoNode() throws Exception {
+        StatePlaneWriter.ElectionFence fence = new AlwaysElectedFence("lazy-stale") {
+            private int authoritativeChecks;
+
+            @Override
+            public boolean ownsElectionAuthoritative() {
+                authoritativeChecks++;
+                return authoritativeChecks == 1;
+            }
+        };
+        StatePlaneWriter w = new StatePlaneWriter(zkClient, fence);
+
+        SolrTestCaseUtil.expectThrows(
+            StatePlaneWriter.FencedException.class,
+            "publish should be fenced before lazy-creating the missing ring",
+            () -> w.publish("lazyFence", "s1", COLL_ID, promo(10, ACTIVE), null));
+
+        String collPath = StatePlanePaths.collectionPath("lazyFence");
+        assertFalse("fenced lazy create must not create ring",
+            zkClient.exists(StatePlanePaths.shardDeltas(collPath, "s1")));
     }
 
 }

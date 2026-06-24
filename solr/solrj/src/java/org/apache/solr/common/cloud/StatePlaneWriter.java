@@ -724,6 +724,7 @@ public class StatePlaneWriter {
         byte[] bytes = StateDeltaCodec.encodeShardStateLog(empty);
         try {
             // makePath creates intermediate nodes (state, shards, shards/<shard>) and the deltas leaf.
+            requireAuthoritativeOwnership("lazy-create state-plane ring");
             zkClient.makePath(deltaPath, bytes, CreateMode.PERSISTENT, true);
         } catch (KeeperException.NodeExistsException nee) {
             // Another writer raced us; fine.
@@ -767,6 +768,7 @@ public class StatePlaneWriter {
     private void createIfAbsent(String path, byte[] bytes)
             throws KeeperException, InterruptedException {
         try {
+            requireAuthoritativeOwnership("create state-plane znode");
             zkClient.makePath(path, bytes, CreateMode.PERSISTENT, true);
         } catch (KeeperException.NodeExistsException nee) {
             if (log.isDebugEnabled()) {
