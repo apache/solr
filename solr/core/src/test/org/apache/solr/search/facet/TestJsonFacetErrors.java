@@ -21,12 +21,14 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class TestJsonFacetErrors extends SolrTestCaseHS {
 
   private static SolrInstances servers; // for distributed testing
@@ -36,10 +38,6 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   public static void beforeTests() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
     JSONTestUtil.failRepeatedKeys = true;
-
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
 
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }

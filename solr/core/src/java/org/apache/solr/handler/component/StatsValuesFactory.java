@@ -37,9 +37,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.StatsField.Stat;
+import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.DatePointField;
 import org.apache.solr.schema.EnumFieldType;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumericField;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
@@ -70,13 +72,17 @@ public class StatsValuesFactory {
 
     final FieldType fieldType = sf.getType(); // TODO: allow FieldType to provide impl.
 
-    if (TrieDateField.class.isInstance(fieldType) || DatePointField.class.isInstance(fieldType)) {
+    if (TrieDateField.class.isInstance(fieldType)
+        || DateField.class.isInstance(fieldType)
+        || DatePointField.class.isInstance(fieldType)) {
       DateStatsValues statsValues = new DateStatsValues(statsField);
       if (sf.multiValued()) {
         return new SortedDateStatsValues(statsValues, statsField);
       }
       return statsValues;
-    } else if (TrieField.class.isInstance(fieldType) || PointField.class.isInstance(fieldType)) {
+    } else if (TrieField.class.isInstance(fieldType)
+        || PointField.class.isInstance(fieldType)
+        || NumericField.class.isInstance(fieldType)) {
 
       NumericStatsValues statsValue = new NumericStatsValues(statsField);
       if (sf.multiValued()) {

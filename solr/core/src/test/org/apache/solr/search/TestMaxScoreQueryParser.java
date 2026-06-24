@@ -64,6 +64,9 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
       if (Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
         expected = IndexOrDocValuesQuery.class;
       }
+    } else if (Boolean.getBoolean(NUMERIC_FULL_SYSPROP)
+        && Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
+      expected = IndexOrDocValuesQuery.class;
     }
     assertThat(q, Matchers.instanceOf(expected));
   }
