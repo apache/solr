@@ -54,6 +54,7 @@ public class StatePublisher implements Closeable {
 
   public static final String OPERATION = "op";
   private volatile boolean closed;
+  private volatile SolrException terminalFailure;
   private volatile ExecutorService workerExec;
 
   private static class CacheEntry {
@@ -336,12 +337,17 @@ public class StatePublisher implements Closeable {
       }
     }
 
-    /** Park a batch for retry, dropping the OLDEST under sustained overflow to bound memory (P0 #1). */
+    /** Park a batch for retry. Overflow is fail-closed, never lossy (strict no-loss semantics). */
     private void parkBatch(Map bulkMessage) {
       if (pendingBatches.size() >= MAX_PENDING_BATCHES) {
-        Map dropped = pendingBatches.pollFirst();
-        log.error("StatePublisher pending-batch buffer full ({}); dropping OLDEST unpersisted state "
-            + "batch to bound memory under a sustained ZK outage: {}", MAX_PENDING_BATCHES, dropped);
+        SolrException failure = new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "StatePublisher pending-batch buffer full (" + MAX_PENDING_BATCHES
+                + "); refusing to drop unpersisted state transitions");
+        terminalFailure = failure;
+        closed = true;
+        log.error("StatePublisher pending-batch buffer full ({}); failing closed instead of "
+            + "dropping unpersisted state batch: {}", MAX_PENDING_BATCHES, bulkMessage);
+        throw failure;
       }
       pendingBatches.addLast(bulkMessage);
     }
@@ -357,6 +363,10 @@ public class StatePublisher implements Closeable {
     // Reject submits after close(): the worker has consumed its TERMINATE pill and exited, so anything
     // enqueued now is silently dropped (and workerExec may be null if start() never ran). A late
     // registration finishing during shutdown must not pretend to publish onto a dead worker.
+    SolrException failure = terminalFailure;
+    if (failure != null) {
+      throw failure;
+    }
     if (closed) {
       log.warn("Skipping state publish; StatePublisher is closed message={}", stateMessage);
       return;

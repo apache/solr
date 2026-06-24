@@ -198,10 +198,17 @@ enqueuing a null-keyed transition.
 
 * *No `_statupdates` legacy path.* The legacy full-`state.json` update channel is removed, not
   bridged. This is intentional: the delta plane is the only publish path.
-* *Scoped-watch release is delete-scoped, not interest-scoped.* A node keeps a collection's scoped
-  watch until the collection is deleted (mirroring the `process()` gate), not until its last local
-  core/watcher goes away. This trades a small, bounded set of idle watches (only for collections the
-  node actually touched) for exact preservation of the previous delivery semantics and simpler
-  lifecycle reasoning.
+* *Scoped-watch release is interest-scoped.* A node arms a collection's scoped watch when the first
+  local core/watcher becomes interested and releases it when the last local interest goes away;
+  collection deletion is an additional teardown path. Transient `addWatch` failures retain wanted
+  watch intent and retry arming, with a catch-up fetch after a successful arm covering the unwatched
+  window.
+* *Publisher retry overflow is fail-closed, not lossy.* The in-memory pending-batch retry buffer is
+  bounded, but overflow refuses to evict unpersisted transitions: the publisher records a terminal
+  failure and closes rather than dropping the oldest batch.
+* *Unknown collection ids are retried until resolved or proven removed.* A state update for a
+  collection id whose structure has not landed yet keeps the durable queue item live. The writer
+  drops deferred state only when the collection incarnation is known removed; there is no attempt-cap
+  orphan drop.
 * *Compaction trim is best-effort under contention.* A losing CAS on the trim simply leaves extra
   deltas for the next compaction; it never blocks publishes.

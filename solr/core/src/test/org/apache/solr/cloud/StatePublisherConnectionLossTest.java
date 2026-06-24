@@ -197,4 +197,52 @@ public class StatePublisherConnectionLossTest extends SolrTestCaseJ4 {
     verify(zk, times(2))
         .create(anyString(), any(byte[].class), any(CreateMode.class), anyBoolean());
   }
+  @Test
+  public void testPendingBatchOverflowFailsClosedWithoutDroppingOldest() throws Exception {
+    StatePublisher sp = new StatePublisher(mock(ZkStateReader.class), null);
+
+    Field maxField = StatePublisher.class.getDeclaredField("MAX_PENDING_BATCHES");
+    maxField.setAccessible(true);
+    int maxPendingBatches = maxField.getInt(null);
+
+    Field pendingField = StatePublisher.class.getDeclaredField("pendingBatches");
+    pendingField.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    java.util.Deque<java.util.Map<String, Object>> pendingBatches =
+        (java.util.Deque<java.util.Map<String, Object>>) pendingField.get(sp);
+
+    java.util.Map<String, Object> oldest = new java.util.HashMap<>();
+    oldest.put("id", "oldest");
+    pendingBatches.addLast(oldest);
+    for (int i = 1; i < maxPendingBatches; i++) {
+      java.util.Map<String, Object> batch = new java.util.HashMap<>();
+      batch.put("id", "batch-" + i);
+      pendingBatches.addLast(batch);
+    }
+
+    Class<?> workerClass = Class.forName("org.apache.solr.cloud.StatePublisher$Worker");
+    Constructor<?> workerCtor = workerClass.getDeclaredConstructor(StatePublisher.class);
+    workerCtor.setAccessible(true);
+    Object worker = workerCtor.newInstance(sp);
+    Method parkBatch = workerClass.getDeclaredMethod("parkBatch", java.util.Map.class);
+    parkBatch.setAccessible(true);
+    java.util.Map<String, Object> overflow = new java.util.HashMap<>();
+    overflow.put("id", "overflow");
+
+    java.lang.reflect.InvocationTargetException thrown =
+        expectThrows(
+            java.lang.reflect.InvocationTargetException.class, () -> parkBatch.invoke(worker, overflow));
+    assertTrue(thrown.getCause() instanceof SolrException);
+    assertSame("overflow must not evict the oldest unpersisted batch", oldest, pendingBatches.peekFirst());
+    assertEquals("overflow must not silently grow or drop the retry buffer", maxPendingBatches, pendingBatches.size());
+
+    Field terminalFailure = StatePublisher.class.getDeclaredField("terminalFailure");
+    terminalFailure.setAccessible(true);
+    assertSame(thrown.getCause(), terminalFailure.get(sp));
+
+    Field closed = StatePublisher.class.getDeclaredField("closed");
+    closed.setAccessible(true);
+    assertTrue("publisher must fail closed instead of dropping unpersisted transitions", closed.getBoolean(sp));
+  }
+
 }

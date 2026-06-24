@@ -121,13 +121,11 @@ public class ZkStateWriter {
 
   /**
    * Bounded backstop for review P0 #2: how many times a state update for an unknown collection id is
-   * retained for reprocess before it is dropped as orphaned (a stale item from a long-dead incarnation
+   * retained for reprocess until the collection id is proven removed (a stale item from a long-dead incarnation
    * this overseer never observed being removed, so it is in neither idToCollection nor removedCollIds).
    * Cleared the moment the id resolves (structure lands) or is removed. Self-bounding — entries are
    * removed on resolve/remove/drop.
    */
-  private static final int MAX_UNKNOWN_ID_ATTEMPTS =
-      Integer.getInteger("solr.zkStateWriter.maxUnknownIdAttempts", 50);
   private final Map<Integer, Integer> unknownIdAttempts = new ConcurrentHashMap<>();
 
 //  Map<Long,List<ZkStateWriter.StateUpdate>> sliceStates = new ConcurrentHashMap<>();
@@ -1579,7 +1577,7 @@ public class ZkStateWriter {
           // Unknown collection id (review P0 #2). Two cases:
           //  (a) the collection was REMOVED (in removedCollIds) — its id will never resolve. Drop the
           //      armed state and complete NORMALLY so WorkQueueWatcher deletes the queue item (option 3).
-          //      Same disposition once an id has been retained past the bounded attempt cap, which guards
+          //      Same disposition once an id has been retained past the bounded removed-collection proof, which guards
           //      a stale item from a long-dead incarnation this overseer never observed being removed.
           //  (b) the structure simply has not LANDED yet — keep pendingChangedIds / stateUpdates armed
           //      and complete EXCEPTIONALLY so WorkQueueWatcher RETAINS the queue item for reprocess
@@ -1589,13 +1587,13 @@ public class ZkStateWriter {
           // though no delta was ever appended — a silent lost update if the overseer failed over before a
           // later write flushed the in-memory state.
           int attempts = unknownIdAttempts.merge(collId, 1, Integer::sum);
-          if (removedCollIds.contains(collId) || attempts > MAX_UNKNOWN_ID_ATTEMPTS) {
+          if (removedCollIds.contains(collId)) {
             unknownIdAttempts.remove(collId);
             pendingChangedIds.remove(collId);
             stateUpdates.remove(collId);
             log.warn("writeStateUpdates: dropping state update for unknown collection id {} ({}); "
                     + "structure will never land",
-                collId, removedCollIds.contains(collId) ? "collection removed" : "orphaned past cap");
+                collId, removedCollIds.contains(collId) ? "collection removed" : "not yet proven removed");
             return;
           }
           log.debug("writeStateUpdates: structure for collection id {} not yet known (attempt {}); "

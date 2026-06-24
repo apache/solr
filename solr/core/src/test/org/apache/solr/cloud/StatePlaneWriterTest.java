@@ -339,4 +339,53 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         assertEquals("seeded ring is empty (state lives in snapshot)", 0, ring.entries.size());
         assertEquals(7, ring.epoch);
     }
+    @Test
+    public void authoritativeFenceIsRecheckedImmediatelyBeforeCas() throws Exception {
+        class LoseBeforeCasFence implements StatePlaneWriter.ElectionFence {
+            int authoritativeChecks;
+
+            @Override
+            public boolean stillElected() {
+                return true;
+            }
+
+            @Override
+            public String writerId() {
+                return "e1";
+            }
+
+            @Override
+            public boolean isFencedBy(String ringWriterId) {
+                return false;
+            }
+
+            @Override
+            public boolean ownsElectionAuthoritative() {
+                authoritativeChecks++;
+                return authoritativeChecks == 1;
+            }
+        }
+
+        LoseBeforeCasFence fence = new LoseBeforeCasFence();
+        StatePlaneWriter w = new StatePlaneWriter(zkClient, fence);
+
+        StatePlaneWriter.FencedException thrown = null;
+        try {
+            w.publish(
+                "freshFence",
+                "sX",
+                Collections.singletonList(new StateDelta.Entry(100, 2)),
+                Collections.emptyList());
+        } catch (StatePlaneWriter.FencedException e) {
+            thrown = e;
+        }
+        assertNotNull("publish must fail before CAS after authoritative ownership is lost", thrown);
+
+        assertEquals("pre-loop and pre-CAS authoritative checks must both run", 2, fence.authoritativeChecks);
+        String deltaPath = StatePlanePaths.shardDeltas(StatePlanePaths.collectionPath("freshFence"), "sX");
+        if (zkClient.exists(deltaPath)) {
+            assertEquals("stale writer must not append a delta after losing authoritative ownership", 0, readRing("freshFence", "sX").lastSeq);
+        }
+    }
+
 }

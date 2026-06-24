@@ -733,9 +733,13 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
     lastFetchedCollectionSet.set(getCurrentCollections());
   }
 
-  // Collections for which this node holds a scoped per-collection PERSISTENT_RECURSIVE watch on
-  // /collections/<coll> (review finding #4). Client-side intent tracker that keeps addWatch idempotent
-  // and lets a reconnect rebuild the ZK-side watches from scratch.
+  // Collections for which this node currently wants a scoped per-collection PERSISTENT_RECURSIVE
+  // watch on /collections/<coll>.  This is local-interest intent, retained across transient addWatch
+  // failures and reconnects so watch arming can be retried without waiting for another registration.
+  private final Set<String> statePlaneWatchWanted = ConcurrentHashMap.newKeySet();
+
+  // Collections whose scoped state-plane watch is known to be armed in ZooKeeper for the current
+  // session.  Cleared on reconnect and rebuilt from local interest / wanted-watch intent.
   private final Set<String> statePlaneWatched = ConcurrentHashMap.newKeySet();
 
   /**
@@ -748,50 +752,83 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
     if (closed || collection == null) {
       return;
     }
-    if (statePlaneWatched.add(collection)) {
-      try {
-        // retryOnConnLoss=true: addWatch blocks until ZK confirms, so on return the watch is armed and
-        // no post-registration leaf event can be missed.
-        zkClient.addWatch(
-            COLLECTIONS_ZKNODE + "/" + collection, this, AddWatchMode.PERSISTENT_RECURSIVE, true);
-      } catch (Exception e) {
-        statePlaneWatched.remove(collection);
-        log.warn("Could not register scoped state-plane watch for collection {}", collection, e);
-        return;
-      }
-      // Catch up on any state-plane change that landed while this collection had no scoped watch —
-      // first interest, or interest regained after a churn teardown (review finding #4). The armed
-      // watch covers all FUTURE leaf events; this fetch covers the gap so a re-interested watcher never
-      // misses a transition that completed during the unwatched window. Best-effort + idempotent.
-      try {
-        if (zkStateReaderQueue != null) {
-          zkStateReaderQueue.fetchStateUpdates(collection, false);
-        }
-      } catch (Exception e) {
-        log.debug("Scoped-watch catch-up fetch failed for collection {}", collection, e);
-      }
-    }
+    statePlaneWatchWanted.add(collection);
+    armStatePlaneWatch(collection);
   }
 
-  /** Tear down the scoped recursive watch for {@code collection} (review finding #4); best-effort. */
+  private void armStatePlaneWatch(String collection) {
+    if (closed || collection == null || !statePlaneWatchWanted.contains(collection)) {
+      return;
+    }
+    if (!statePlaneWatched.add(collection)) {
+      return;
+    }
+    try {
+      // retryOnConnLoss=true: addWatch blocks until ZK confirms, so on return the watch is armed and
+      // no post-registration leaf event can be missed.
+      zkClient.addWatch(
+          COLLECTIONS_ZKNODE + "/" + collection, this, AddWatchMode.PERSISTENT_RECURSIVE, true);
+    } catch (Exception e) {
+      statePlaneWatched.remove(collection);
+      log.warn(
+          "Could not register scoped state-plane watch for collection {}; will retry while local interest remains",
+          collection,
+          e);
+      retryStatePlaneWatchRegistration(collection);
+      return;
+    }
+
+    // Catch up on any state-plane change that landed while this collection had no scoped watch —
+    // first interest, or interest regained after a churn teardown (review finding #4). The armed
+    // watch covers all FUTURE leaf events; this fetch covers the gap so a re-interested watcher never
+    // misses a transition that completed during the unwatched window. Best-effort + idempotent.
+    try {
+      if (zkStateReaderQueue != null) {
+        zkStateReaderQueue.fetchStateUpdates(collection, true);
+      }
+    } catch (Exception e) {
+      log.debug("Scoped-watch catch-up fetch failed for collection {}", collection, e);
+    }
+    log.debug("Scoped-watch registered for collection {}", collection);
+  }
+
+  private void retryStatePlaneWatchRegistration(String collection) {
+    CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS)
+        .execute(
+            () -> {
+              if (!closed
+                  && collection != null
+                  && statePlaneWatchWanted.contains(collection)
+                  && !statePlaneWatched.contains(collection)) {
+                armStatePlaneWatch(collection);
+              }
+            });
+  }
+
   private void unregisterStatePlaneWatch(String collection) {
-    if (collection == null || !statePlaneWatched.remove(collection)) {
+    if (collection == null) {
+      return;
+    }
+    statePlaneWatchWanted.remove(collection);
+    if (!statePlaneWatched.remove(collection)) {
       return;
     }
     try {
       // Async removal: a NoWatcher result (watch already gone with the deleted node) is reported via rc
-      // and ignored — never thrown — so this is safe to call from the ZK event thread (colectionRemoved).
+      // and ignored — never thrown — so this is safe to call from the ZK event thread (collectionRemoved).
       zkClient.removeWatches(
           COLLECTIONS_ZKNODE + "/" + collection,
           this,
           Watcher.WatcherType.Any,
           true,
           (rc, path, ctx) -> {},
-          "");
+          null);
     } catch (Exception e) {
-      log.debug("Could not remove scoped state-plane watch for collection {}", collection, e);
+      log.debug(
+          "Could not remove scoped state-plane watch for collection {}", collection, e);
     }
   }
+
 
   /**
    * The node has dropped its last local interest (core or watcher) in {@code collection} while the

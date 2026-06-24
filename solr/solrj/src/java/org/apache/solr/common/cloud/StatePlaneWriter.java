@@ -321,7 +321,15 @@ public class StatePlaneWriter {
                     byte[] out = StateDeltaCodec.encodeShardStateLog(newRing);
 
                     // ---- CAS: setData with expectedVersion. retryOnConnLoss=false so we own the retry. ----
-                    zkClient.setData(deltaPath, out, stat.getVersion(), false);
+                    // Re-check authoritative overseer ownership immediately before the mutating CAS. The
+          // pre-loop check bounds ordinary work, but leadership may transfer after the ring read and
+          // before setData; in that window ring.writerId may still name this writer until the new
+          // overseer publishes to this shard. Do not append from that stale window.
+          if (!fence.ownsElectionAuthoritative()) {
+            throw new FencedException(
+                "no longer the elected overseer (authoritative); refusing to append " + deltaPath);
+          }
+          zkClient.setData(deltaPath, out, stat.getVersion(), false);
 
                     // Append succeeded — advance the writer-local effective cache incrementally (review
                     // P1 #3) so the next publish reuses it with no snapshot read or full reconstruct.
