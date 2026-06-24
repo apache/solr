@@ -63,6 +63,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.metrics.Metrics;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.jctools.maps.NonBlockingHashMap;
@@ -93,7 +94,7 @@ public class ZkStateWriter {
 
   /**
    * collectionId -&gt; the set of replica internalIds whose state changed since the last delta-plane
-   * publish for that collection (finding #1). Every path that mutates {@link #stateUpdates} records the
+   * publish for that collection. Every path that mutates {@link #stateUpdates} records the
    * touched ids here; {@link #writeStateUpdatesInternal} drains the set and publishes a delta carrying
    * ONLY those replicas (plus writer-computed demotions) instead of the whole collection map. A drain
    * that finds no entry (e.g. {@link #stop()} / takeover republish) falls back to publishing the full
@@ -102,7 +103,7 @@ public class ZkStateWriter {
   private final Map<Integer, Set<Integer>> pendingChangedIds = new ConcurrentHashMap<>(64);
 
   /**
-   * Bounded record of collection ids whose structure was REMOVED (review P0 #2, option 3). A replica
+   * Bounded record of collection ids whose structure was REMOVED. A replica
    * state update whose collection id is unknown is normally retained — its overseer queue item is held
    * for reprocess — on the assumption the structure simply has not landed yet. But if the collection
    * was deleted, that id can never resolve, so the update is dropped cleanly instead of poisoning the
@@ -112,6 +113,7 @@ public class ZkStateWriter {
    */
   private static final int REMOVED_COLL_IDS_CAP =
       Integer.getInteger("solr.zkStateWriter.removedCollIdsCap", 8192);
+  private static final String REMOVED_COLL_ID_TOMBSTONES = "/overseer/stateplane_removed_ids";
   private final Set<Integer> removedCollIds = Collections.synchronizedSet(
       Collections.newSetFromMap(new java.util.LinkedHashMap<Integer, Boolean>(256, 0.75f, false) {
         @Override protected boolean removeEldestEntry(Map.Entry<Integer, Boolean> eldest) {
@@ -120,13 +122,12 @@ public class ZkStateWriter {
       }));
 
   /**
-   * Bounded backstop for review P0 #2: how many times a state update for an unknown collection id is
+   * Bounded backstop for how many times a state update for an unknown collection id is
    * retained for reprocess until the collection id is proven removed (a stale item from a long-dead incarnation
    * this overseer never observed being removed, so it is in neither idToCollection nor removedCollIds).
    * Cleared the moment the id resolves (structure lands) or is removed. Self-bounding — entries are
    * removed on resolve/remove/drop.
    */
-  private final Map<Integer, Integer> unknownIdAttempts = new ConcurrentHashMap<>();
 
 //  Map<Long,List<ZkStateWriter.StateUpdate>> sliceStates = new ConcurrentHashMap<>();
 
@@ -140,7 +141,7 @@ public class ZkStateWriter {
 
   private final Map<String,DocCollection> cs = new ConcurrentHashMap<>(64);
 
-  // finding #6: node-down/recovery must scale O(replicas_on_node), not O(all collections * all replicas).
+  // node-down/recovery must scale O(replicas_on_node), not O(all collections * all replicas).
   // Primary query index: nodeName -> (collectionId -> immutable snapshot of replica internal ids that the
   // node hosts for that collection). Maintained only on structure changes (the points where a DocCollection
   // lands in or leaves {@link #cs}), so it can never drift from cluster state.
@@ -214,39 +215,63 @@ public class ZkStateWriter {
     }
 
     /**
-     * ZK-authoritative election ownership (review P1 #5). The overseer leader is the LOWEST live
+     * ZK-authoritative election ownership. The overseer leader is the lowest live
      * candidate sequence under {@code /overseer/overseer_elect/election}; {@link Overseer#getElectionSeq()}
      * is this overseer's candidate sequence. If the current minimum live candidate sequence is not ours,
      * a newer overseer has taken over (our candidate node is gone, or a re-election occurred) and this
      * writer is stale — fence it out, even though it may not yet be marked closed and even if the new
-     * overseer has not yet written this shard's ring. Degrades to the local liveness check in minimal
-     * setups (no election seq / no ZkController) and falls back to it on a transient ZK read error — a
-     * new overseer cannot have been elected while ZK is unreachable, so the local check suffices there.
+     * overseer has not yet written this shard's ring. If ownership cannot be verified, fail closed.
      */
     @Override public boolean ownsElectionAuthoritative() {
-      if (overseer.isClosed()) return false;
       Integer mySeq = overseer.getElectionSeq();
-      if (mySeq == null) return true; // minimal/test setup — fence effectively disabled.
+      if (mySeq == null) {
+        log.warn("statePlane: refusing append because overseer election sequence is unavailable");
+        return false;
+      }
       ZkController zkc = overseer.getZkController();
-      if (zkc == null) return true;
+      if (zkc == null) {
+        log.warn("statePlane: refusing append because overseer election sequence {} cannot be "
+            + "verified without a ZkController", mySeq);
+        return false;
+      }
       try {
         List<String> children = zkc.getZkClient()
             .getChildren(Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE, null, true);
-        int min = Integer.MAX_VALUE;
-        for (String c : children) {
+        if (children == null || children.isEmpty()) {
+          log.warn("statePlane: refusing append because no live overseer election candidates were visible");
+          return false;
+        }
+        Integer lowestSeq = null;
+        String lowestChild = null;
+        for (String child : children) {
+          int seq;
           try {
-            int s = LeaderElector.getSeq(c);
-            if (s < min) min = s;
+            seq = LeaderElector.getSeq(child);
           } catch (RuntimeException malformed) {
-            // A child whose name has no parseable sequence (shouldn't happen) — ignore it.
+            log.warn("statePlane: refusing append because election child '{}' has no parseable sequence",
+                child, malformed);
+            return false;
+          }
+          if (lowestSeq == null || seq < lowestSeq) {
+            lowestSeq = seq;
+            lowestChild = child;
           }
         }
-        // No live candidates visible -> cannot prove staleness; don't fence on absence.
-        return min == Integer.MAX_VALUE || min == mySeq.intValue();
-      } catch (KeeperException | InterruptedException e) {
-        if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-        log.warn("overseer election validation read failed; falling back to local liveness check", e);
-        return !overseer.isClosed();
+        boolean owns = mySeq.equals(lowestSeq);
+        if (!owns) {
+          log.warn("statePlane: refusing append because overseer election sequence {} is not the "
+              + "authoritative live child {} (seq={})", mySeq, lowestChild, lowestSeq);
+        }
+        return owns && stillElected();
+      } catch (KeeperException | RuntimeException e) {
+        log.warn("statePlane: refusing append because authoritative overseer election ownership "
+            + "could not be verified", e);
+        return false;
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.warn("statePlane: refusing append because authoritative overseer election ownership "
+            + "verification was interrupted", e);
+        return false;
       }
     }
   }
@@ -275,6 +300,48 @@ public class ZkStateWriter {
    * lock during the synchronous ZK round trip. When the collection's structure is not yet known the
    * state stays in the in-memory map and is published in full on a later write once structure exists.
    */
+  private String removedCollectionIdPath(int collId) {
+    return REMOVED_COLL_ID_TOMBSTONES + "/" + collId;
+  }
+
+  private void ensurePersistentPath(String path) throws KeeperException, InterruptedException {
+    if (reader.getZkClient().exists(path, true)) {
+      return;
+    }
+    try {
+      reader.getZkClient().create(path, new byte[0], CreateMode.PERSISTENT, true);
+    } catch (KeeperException.NodeExistsException e) {
+      // Idempotent across repeated delete processing or takeover replay.
+    }
+  }
+
+  private void markCollectionIdRemovedDurably(int collId) {
+    try {
+      ensurePersistentPath("/overseer");
+      ensurePersistentPath(REMOVED_COLL_ID_TOMBSTONES);
+      byte[] marker = Integer.toString(collId).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      try {
+        reader.getZkClient().create(removedCollectionIdPath(collId), marker, CreateMode.PERSISTENT, true);
+      } catch (KeeperException.NodeExistsException e) {
+        // Idempotent across repeated delete processing or takeover replay.
+      }
+    } catch (KeeperException | InterruptedException e) {
+      if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Failed to persist removed collection-id tombstone for " + collId, e);
+    }
+  }
+
+  private boolean isCollectionIdRemovedDurably(int collId) {
+    try {
+      return reader.getZkClient().exists(removedCollectionIdPath(collId), true);
+    } catch (KeeperException | InterruptedException e) {
+      if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Could not verify removed collection-id tombstone for " + collId, e);
+    }
+  }
+
   private void publishToStatePlane(String collection, Map<Integer,Integer> fullMap) {
     DocCollection dc = cs.get(collection);
     if (dc == null) {
@@ -286,7 +353,7 @@ public class ZkStateWriter {
       // Structure not yet known but there ARE replica-state changes to persist. Do NOT report success:
       // the caller already drained these ids from pendingChangedIds, so a normal return would let the
       // durability future complete and WorkQueueWatcher delete the queue item before anything was
-      // appended — a durable loss (finding #1). Fail the publish so the future completes exceptionally;
+      // appended — a durable loss. Fail the publish so the future completes exceptionally;
       // writeStateUpdatesInternal re-arms the drained ids and the queue item is held for reprocess until
       // the DocCollection lands (at which point this collection's states publish in full).
       throw new RuntimeException("statePlane: structure for " + collection
@@ -300,7 +367,7 @@ public class ZkStateWriter {
     // Group changed-replica states by shard. The shard for each changed internalId is resolved in O(1)
     // through DocCollection's idToReplica index (getReplicaById) rather than scanning every slice/replica.
     // The old nested scan made a single-replica publish O(replicas_in_collection) and a node-down publish
-    // O(changed_ids x replicas_in_collection); this is O(changed_ids). (finding #3)
+    // O(changed_ids x replicas_in_collection); this is O(changed_ids).
     Map<String,List<StateDelta.Entry>> byShard = new LinkedHashMap<>();
     for (Map.Entry<Integer,Integer> e : fullMap.entrySet()) {
       Integer internalId = e.getKey();
@@ -362,7 +429,7 @@ public class ZkStateWriter {
       // is absent is durable-but-unreachable (readers treat a missing manifest as "plane not seeded" and
       // no-op). Propagate so publishToStatePlane aborts BEFORE appending any delta, completes its publish
       // future exceptionally, and WorkQueueWatcher leaves the queue item for reprocess — the seed (and the
-      // delta it gates) is retried on the next publish. (finding #1)
+      // delta it gates) is retried on the next publish.
       log.warn("statePlane: could not seed delta manifest for {} (publish held back; will retry)", collection, e);
       throw new RuntimeException("Failed to seed delta-plane manifest for " + collection, e);
     }
@@ -457,7 +524,7 @@ public class ZkStateWriter {
    * MUST gate any queue-item delete on BOTH this future and the {@link #writeStateUpdates} append future:
    * a pure UPDATESHARDSTATE item adds no collection id to the replica-state set, so its append future is
    * trivially complete and, without this gate, the item could be deleted before its slice-state write is
-   * durable. (finding #2)
+   * durable.
    */
   public CompletableFuture<Void> enqueueStateUpdates(Map<Integer,Map<Integer,Integer>> replicaStates,  Map<Integer,List<ZkStateWriter.StateUpdate>> sliceStates) {    log.debug("enqueue state updates");
 
@@ -485,7 +552,7 @@ public class ZkStateWriter {
         return map;
       });
 
-      // Record the touched ids so the next publish carries only these entries (finding #1). Accumulate
+      // Record the touched ids so the next publish carries only these entries. Accumulate
       // INSIDE compute so the add is atomic against writeStateUpdatesInternal's remove() drain — a
       // computeIfAbsent()+addAll() could add to an already-drained (orphaned) set and lose the id.
       pendingChangedIds.compute(collectionId, (k, set) -> {
@@ -544,7 +611,7 @@ public class ZkStateWriter {
     });
 
     // Structure (slice-state / UPDATESHARDSTATE) writes scheduled below are async; collect their futures
-    // so the returned aggregate lets the caller gate queue-item deletion on their durability. (finding #2)
+    // so the returned aggregate lets the caller gate queue-item deletion on their durability.
     final List<Future<?>> structureWrites = new ArrayList<>();
 
     sliceStates.forEach((collectionId, updates) -> {
@@ -591,7 +658,7 @@ public class ZkStateWriter {
    * gate a slice-state (UPDATESHARDSTATE) queue-item delete on the durability of the structure write it
    * triggered. Runs the (brief) join on the zkWriter executor so the calling thread is never blocked; an
    * empty list short-circuits to an already-complete future so the common replica-state-only path never
-   * touches the executor. (finding #2)
+   * touches the executor.
    */
   private CompletableFuture<Void> awaitAll(List<Future<?>> futures) {
     if (futures.isEmpty()) {
@@ -860,7 +927,7 @@ public class ZkStateWriter {
         collLock.unlock();
       }
 
-      // Structure for this id has now landed in cs (review P0 #2, option 2). Flush any replica-state
+      // Structure for this id has now landed in cs. Flush any replica-state
       // updates that arrived BEFORE the structure and were held armed in pendingChangedIds /
       // stateUpdates: a single-collection republish appends them to the delta plane NOW rather than
       // waiting for an unrelated later write or relying solely on queue-item reprocess. This must run
@@ -868,7 +935,6 @@ public class ZkStateWriter {
       // i.e. after the locked block above. Best-effort + async (taskZkWriterExecutor); the retained
       // queue item is the durable backstop and publishToStatePlane is idempotent.
       final int landedId = docCollection.getId();
-      unknownIdAttempts.remove(landedId);
       if (pendingChangedIds.containsKey(landedId) || stateUpdates.containsKey(landedId)) {
         try {
           writeStateUpdatesInternal(Collections.singleton(landedId), 1);
@@ -901,7 +967,7 @@ public class ZkStateWriter {
     // The state.json write is async (setData with a ZK callback), so the returned future must be
     // completed FROM that callback — completing it when this submit body returns would signal
     // durability before ZK has acked the write, letting WorkQueueWatcher delete the queue item too
-    // early (finding #2). write() completes `result` on the state.json callback (success) or chains a
+    // early. write() completes `result` on the state.json callback (success) or chains a
     // rescheduled attempt's future into it (on a retriable ZK rc), so the future tracks real durability.
     CompletableFuture<Void> result = new CompletableFuture<>();
     ParWork.submit("zkStateWriter#writePendingUpdates", () -> {
@@ -986,7 +1052,7 @@ public class ZkStateWriter {
               // during shutdown (mirrors the writer-loop close guard above).
               if (!overseer.isClosed() && !reader.getZkClient().isClosed()) {
                 // Retriable rc — reschedule and propagate THAT attempt's durability into this future,
-                // so `result` completes only when state.json is actually persisted (finding #2).
+                // so `result` completes only when state.json is actually persisted.
                 overseer.getZkStateWriter().writeStructureUpdates(coll).whenComplete((v, ex) -> {
                   if (ex == null) {
                     result.complete(null);
@@ -1013,7 +1079,7 @@ public class ZkStateWriter {
               }
               // state.json is durable here. The _scn node is a best-effort change-notification trigger
               // whose failure does NOT affect state.json durability, so the durability future completes
-              // on state.json success regardless of the SCN outcome (finding #2).
+              // on state.json success regardless of the SCN outcome.
               result.complete(null);
             }
           }, "state.json");
@@ -1132,10 +1198,10 @@ public class ZkStateWriter {
           stateUpdates.remove(removed.getId());
           idToCollection.remove(removed.getId());
           // Record the removed incarnation so a late replica-state update for this id is dropped cleanly
-          // rather than retained-for-reprocess forever (review P0 #2, option 3).
+          // rather than retained-for-reprocess forever.
           removedCollIds.add(removed.getId());
+          markCollectionIdRemovedDurably(removed.getId());
           pendingChangedIds.remove(removed.getId());
-          unknownIdAttempts.remove(removed.getId());
           // The structure for this id will never land now; drop any deferred leader-demotion ids so the
           // map does not leak an entry keyed by a dead collection id.
           pendingLeaderDemotions.remove(removed.getId());
@@ -1205,7 +1271,7 @@ public class ZkStateWriter {
 
   /**
    * Returns, for a node, the (collectionId -&gt; replica internal ids) it hosts, so node-down/recovery can
-   * mark exactly that node's replicas without scanning every collection (finding #6). The returned map and
+   * mark exactly that node's replicas without scanning every collection. The returned map and
    * its value sets are live/immutable snapshots; callers must not mutate them. Iteration is weakly
    * consistent (matches the prior cluster-state-snapshot scan's eventual-consistency semantics).
    */
@@ -1257,7 +1323,7 @@ public class ZkStateWriter {
 
       int[] highId = new int[1];
       // This ZkStateWriter is a per-node singleton re-init()'d on every overseer re-election; rebuild the
-      // node-placement index from scratch so a prior incarnation's placements cannot linger (finding #6).
+      // node-placement index from scratch so a prior incarnation's placements cannot linger.
       nodeReplicas.clear();
       collectionNodes.clear();
 
@@ -1354,7 +1420,7 @@ public class ZkStateWriter {
         if (lostLiveNodes.isEmpty()) {
           return false;
         }
-        // finding #6: resolve the affected replicas through the nodeName->placement index so this scales
+        // resolve the affected replicas through the nodeName->placement index so this scales
         // O(replicas on the lost nodes), not O(all collections * all replicas). Aggregate per collection so
         // each collection's stateUpdates entry is computed exactly once.
         Map<Integer,Set<Integer>> downByColl = new HashMap<>();
@@ -1381,7 +1447,7 @@ public class ZkStateWriter {
               // ACTIVE to every reader until the RECOVERYNODE update landed, letting waitForState-style
               // checks race past an in-progress recovery.
               integerIntegerMap.put(internalId, Replica.State.getShortState(Replica.State.DOWN));
-              // Record the downed replica so the publish carries only these DOWN entries (finding #1),
+              // Record the downed replica so the publish carries only these DOWN entries,
               // not the whole collection map. Drained by writeStateUpdatesInternal.
               pendingChangedIds.compute(collId, (k, set) -> {
                 Set<Integer> s = (set == null) ? ConcurrentHashMap.newKeySet() : set;
@@ -1434,7 +1500,7 @@ public class ZkStateWriter {
       // not-yet-expired stale session can transiently leave more than one, and getChildren order is
       // undefined — so picking children.get(0) could re-assert a STALE leader. Select the most recently
       // created registration (highest czxid), i.e. the latest election winner, skipping non-numeric or
-      // raced-away children defensively (finding #9).
+      // raced-away children defensively.
       if (children.size() > 1) {
         log.warn("Leader reconciliation: {} leader-registration children under {} {}; choosing most recent",
             children.size(), leaderPath, children);
@@ -1471,7 +1537,7 @@ public class ZkStateWriter {
         m.put(leaderInternalId, leaderShort);
         return m;
       });
-      // Record the re-asserted leader so the subsequent publish carries only this entry (finding #1).
+      // Record the re-asserted leader so the subsequent publish carries only this entry.
       pendingChangedIds.compute(docState.getId(), (k, set) -> {
         Set<Integer> s = (set == null) ? ConcurrentHashMap.newKeySet() : set;
         s.add(leaderInternalId);
@@ -1490,7 +1556,7 @@ public class ZkStateWriter {
 
   /**
    * Enqueue a delta-plane publish for {@code collIds} and return a future that completes once that
-   * publish is DURABLE in ZooKeeper (finding #5). The Worker coalesces queued units into batched
+   * publish is DURABLE in ZooKeeper. The Worker coalesces queued units into batched
    * {@link #writeStateUpdatesInternal} calls and completes every unit's future when its batch's
    * publish finishes (exceptionally if the publish failed). {@link WorkQueueWatcher} gates the overseer
    * queue-item delete on this future so an item is never removed before its state is durably appended.
@@ -1567,7 +1633,7 @@ public class ZkStateWriter {
 
   /**
    * Schedule a per-collection delta-plane publish for each id in {@code collIds} and return a future
-   * that completes once ALL of those publishes have durably appended to ZK (finding #5). Each publish
+   * that completes once ALL of those publishes have durably appended to ZK. Each publish
    * runs as a {@link CompletableFuture#runAsync} task on the {@code taskZkWriterExecutor}; a task that
    * throws completes its future exceptionally, which propagates through the aggregate so the queue-item
    * delete is held back and the item is reprocessed.
@@ -1581,33 +1647,22 @@ public class ZkStateWriter {
       futures.add(CompletableFuture.runAsync(() -> {
 
         if (collection == null) {
-          // Unknown collection id (review P0 #2). Two cases:
-          //  (a) the collection was REMOVED (in removedCollIds) — its id will never resolve. Drop the
-          //      armed state and complete NORMALLY so WorkQueueWatcher deletes the queue item (option 3).
-          //  (b) the structure simply has not LANDED yet — keep pendingChangedIds / stateUpdates armed
-          //      and complete EXCEPTIONALLY so WorkQueueWatcher RETAINS the queue item for reprocess
-          //      (option 1). enqueueStructureChange republishes the armed ids the moment the structure
-          //      lands (option 2), and the reprocessed item also resolves then. Both are idempotent.
-          // The previous code always returned normally here, letting the durable queue item be deleted
-          // though no delta was ever appended — a silent lost update if the overseer failed over before a
-          // later write flushed the in-memory state.
-          int attempts = unknownIdAttempts.merge(collId, 1, Integer::sum);
-          if (removedCollIds.contains(collId)) {
-            unknownIdAttempts.remove(collId);
+          // If the collection was removed, drop its pending state and let WorkQueueWatcher delete the
+          // queue item. If the structure has not landed yet, keep the pending state armed and fail the
+          // write so WorkQueueWatcher retains the queue item for reprocess. enqueueStructureChange
+          // republishes the armed ids when the structure lands, and the reprocessed item resolves then.
+          if ((removedCollIds.contains(collId) || isCollectionIdRemovedDurably(collId))) {
             pendingChangedIds.remove(collId);
             stateUpdates.remove(collId);
             log.warn("writeStateUpdates: dropping state update for unknown collection id {} "
                 + "(collection removed); structure will never land", collId);
             return;
           }
-          log.debug("writeStateUpdates: structure for collection id {} not yet known (attempt {}); "
-              + "retaining queue item for reprocess", collId, attempts);
+          log.debug("writeStateUpdates: structure for collection id {} not yet known; "
+              + "retaining queue item for reprocess", collId);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "structure for collection id " + collId + " not yet known; retaining for reprocess");
         }
-        // Structure resolved — clear any unknown-id retry accounting for this id.
-        unknownIdAttempts.remove(collId);
-
         ActionThrottle writeThrottle = stateWriteThrottles.compute(collection, (s, throttle) -> {
           if (throttle == null) {
             return new ActionThrottle("zkstatewriter", Integer.getInteger("solr.zkstateWriteThrottle", 0));
@@ -1618,8 +1673,8 @@ public class ZkStateWriter {
         writeThrottle.minimumWaitBetweenActions();
         writeThrottle.markAttemptingAction();
 
-        // Drain the changed-id set for this collection (finding #1). Non-null -> publish only those
-        // replicas' current states (the writer computes any stale-leader demotions itself, D5). Null ->
+        // Drain the changed-id set for this collection. Non-null -> publish only those
+        // replicas' current states (the writer computes any stale-leader demotions itself). Null ->
         // no per-id tracking for this write (stop()/takeover or any untracked caller) -> full-map
         // republish, which is always safe, just larger.
         final Set<Integer> changed = pendingChangedIds.remove(collId);
@@ -1654,7 +1709,7 @@ public class ZkStateWriter {
           // seed failed). Re-arm the drained ids so a subsequent write re-publishes them — the in-memory
           // stateUpdates map still holds their states. The exception also completes this future
           // exceptionally so WorkQueueWatcher holds the queue item for reprocess. Without re-arming, a
-          // post-drain failure would permanently lose these ids from the delta plane. (finding #1)
+          // post-drain failure would permanently lose these ids from the delta plane.
           if (changed != null && !changed.isEmpty()) {
             pendingChangedIds.compute(collId, (k, set) -> {
               Set<Integer> s = (set == null) ? ConcurrentHashMap.newKeySet() : set;
