@@ -19,28 +19,29 @@ package org.apache.solr.common.cloud;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * An ordered ring of {@link StateDelta} entries for one shard, stored as a single ZK node.
+ * Bounded per-shard CAS ring of {@link StateDelta} entries stored in one ZK node.
  *
- * <p>{@code lastSeq} is the authoritative high-water mark (D2: decoupled from ZK {@code Stat.version},
- * which is a CAS token only — it permanently outruns logical seq after the first compaction fold).
- *
- * <p>{@code writerId} is a writer-side fence + diagnostics identifier (D4). Readers MUST NOT
- * validate {@code writerId}; readers trust {@code (epoch, seq)} ordering only.
+ * <p>{@code writerId} is a writer-side fence and diagnostic identifier. Readers do not validate
+ * writer ids; they validate the durable collection/shard identity and then advance by {@code (epoch, seq)}.
  */
 public final class ShardStateLog {
-
+    /** Collection incarnation id for this shard log. */
+    public final String collectionId;
+    /** Shard name for this log. */
+    public final String shardId;
     public final int epoch;
     public final long baseSeq;
-    /** High-water mark — authoritative seq, correct even on an empty post-fold ring (D2). */
     public final long lastSeq;
-    /** Overseer election id for writer-side fencing (D4). Readers must not validate. */
     public final String writerId;
     public final List<StateDelta> entries;
 
-    public ShardStateLog(int epoch, long baseSeq, long lastSeq, String writerId,
-                         List<StateDelta> entries) {
+    public ShardStateLog(String collectionId, String shardId, int epoch, long baseSeq, long lastSeq,
+                         String writerId, List<StateDelta> entries) {
+        this.collectionId = collectionId;
+        this.shardId = shardId;
         this.epoch = epoch;
         this.baseSeq = baseSeq;
         this.lastSeq = lastSeq;
@@ -48,35 +49,41 @@ public final class ShardStateLog {
         this.entries = Collections.unmodifiableList(new ArrayList<>(entries));
     }
 
-    /**
-     * Returns {@link #lastSeq} — the authoritative high-water mark.
-     * Correct on an empty post-fold ring (D2: seq decoupled from Stat.version).
-     */
     public long maxSeq() {
         return lastSeq;
     }
 
-    /**
-     * Applies all entries with {@code (epoch, seq) > (cursorEpoch, cursorSeq)} to {@code dc},
-     * calling {@code dc.updateState(replicaId, shortState)} for each qualifying entry.
-     * Demotions are applied before promotions within each delta (reader ordering invariant).
-     * Idempotent: the same delta applied twice is suppressed by cursor advancement.
-     */
+    public void validateIdentity(DocCollection dc, String shard) {
+        if (collectionId == null) {
+            throw new IllegalStateException("state-plane ring is missing collectionId");
+        }
+        if (shardId == null) {
+            throw new IllegalStateException("state-plane ring is missing shardId");
+        }
+        if (dc.getId() == null || !collectionId.equals(String.valueOf(dc.getId()))) {
+            throw new IllegalStateException("state-plane ring collectionId mismatch ring="
+                    + collectionId + " current=" + dc.getId());
+        }
+        if (!Objects.equals(shardId, shard)) {
+            throw new IllegalStateException("state-plane ring shardId mismatch ring=" + shardId + " current=" + shard);
+        }
+    }
+
     public void applyAfter(int cursorEpoch, long cursorSeq, DocCollection dc) {
+        validateIdentity(dc, shardId);
         List<StateDelta> sorted = new ArrayList<>(entries);
         Collections.sort(sorted);
         int curEpoch = cursorEpoch;
         long curSeq = cursorSeq;
         for (StateDelta delta : sorted) {
+            delta.validateIdentity(dc, shardId);
             if (delta.isStale(curEpoch, curSeq)) continue;
-            // Demotions first, then promotions (ordering invariant for leader-flap correctness)
             for (Integer demotedId : delta.demotedReplicaIds) {
                 dc.updateState(demotedId, delta.demotedShortState);
             }
             for (StateDelta.Entry entry : delta.entries) {
                 dc.updateState(entry.replicaId, entry.shortState);
             }
-            // Advance cursor to suppress double-apply of the same (epoch, seq)
             curEpoch = delta.epoch;
             curSeq = delta.seq;
         }

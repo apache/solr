@@ -42,6 +42,7 @@ import org.junit.Test;
  * Short states: LEADER=1, ACTIVE=2, BUFFERING=3, RECOVERING=4, DOWN=5, RECOVERY_FAILED=6.
  */
 public class StatePlaneWriterTest extends SolrTestCaseJ4 {
+  private static final String COLL_ID = "101";
 
     private static final int LEADER = 1;
     private static final int ACTIVE = 2;
@@ -91,11 +92,11 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         return Collections.singletonList(new StateDelta.Entry(replicaId, shortState));
     }
 
-    /** Publishing ONE replica update writes ONE delta to the per-shard deltas ring, no full _statupdates. */
+    /** Publishing ONE replica update writes ONE delta to the per-shard deltas ring. */
     @Test
     public void casAppend() throws Exception {
         StatePlaneWriter w = writer("e1");
-        boolean appended = w.publish("c1", "s1", promo(10, ACTIVE), null);
+        boolean appended = w.publish("c1", "s1", COLL_ID, promo(10, ACTIVE), null);
         assertTrue("first publish should append", appended);
 
         ShardStateLog ring = readRing("c1", "s1");
@@ -106,17 +107,14 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         assertEquals(10, d.entries.get(0).replicaId);
         assertEquals(ACTIVE, d.entries.get(0).shortState);
 
-        // DELTA-mode writer never writes the legacy full-map _statupdates node.
-        String legacy = StatePlanePaths.collectionPath("c1") + "/_statupdates";
-        assertFalse("no legacy _statupdates write", zkClient.exists(legacy));
     }
 
     /** A duplicate publish of an already-current state is an idempotent no-op (no new delta). */
     @Test
     public void duplicateSuppressed() throws Exception {
         StatePlaneWriter w = writer("e1");
-        assertTrue(w.publish("c1", "s1", promo(10, ACTIVE), null));
-        boolean second = w.publish("c1", "s1", promo(10, ACTIVE), null);
+        assertTrue(w.publish("c1", "s1", COLL_ID, promo(10, ACTIVE), null));
+        boolean second = w.publish("c1", "s1", COLL_ID, promo(10, ACTIVE), null);
         assertFalse("duplicate of current state is suppressed", second);
         assertEquals("still only one delta", 1, readRing("c1", "s1").entries.size());
         assertEquals(1L, readRing("c1", "s1").lastSeq);
@@ -133,15 +131,15 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         // writer-local effective cache with lastSeq=0 and replica 10 already ACTIVE.
         java.util.Map<Integer, Integer> seeded = new java.util.HashMap<>();
         seeded.put(10, ACTIVE);
-        w.seedShard(coll, shard, 1, seeded);
-        assertFalse(w.publish(coll, shard, "incarnation-1", promo(10, ACTIVE), null));
+        w.seedShard(coll, shard, COLL_ID, 1, seeded);
+        assertFalse(w.publish(coll, shard, "101", promo(10, ACTIVE), null));
         assertEquals(0L, readRing(coll, shard).lastSeq);
 
         // Delete the collection state-plane znodes and recreate the same name. The fresh ring also
         // starts at lastSeq=0. If the cache were keyed only by collection name/shard, the first needed
         // ACTIVE delta would be suppressed as a stale no-op from the previous incarnation.
         zkClient.clean(StatePlanePaths.collectionPath(coll));
-        assertTrue(w.publish(coll, shard, "incarnation-2", promo(10, ACTIVE), null));
+        assertTrue(w.publish(coll, shard, "202", promo(10, ACTIVE), null));
         ShardStateLog recreated = readRing(coll, shard);
         assertEquals("new incarnation must append its own first delta", 1L, recreated.lastSeq);
         assertEquals(1, recreated.entries.size());
@@ -153,11 +151,11 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
     @Test
     public void badVersionRetryIdempotent() throws Exception {
         StatePlaneWriter w = writer("e1");
-        w.publish("c1", "s1", promo(10, ACTIVE), null);
-        w.publish("c1", "s1", promo(10, RECOVERING), null);
+        w.publish("c1", "s1", COLL_ID, promo(10, ACTIVE), null);
+        w.publish("c1", "s1", COLL_ID, promo(10, RECOVERING), null);
         // Re-publishing the older ACTIVE state is NOT a no-op (state differs) and appends forward;
         // but re-publishing the CURRENT state is suppressed — the property that makes a retry safe.
-        boolean noop = w.publish("c1", "s1", promo(10, RECOVERING), null);
+        boolean noop = w.publish("c1", "s1", COLL_ID, promo(10, RECOVERING), null);
         assertFalse("re-publish of current effective state is a no-op (retry cannot regress)", noop);
         ShardStateLog ring = readRing("c1", "s1");
         // Effective state of replica 10 is RECOVERING (the latest), never regressed back to ACTIVE.
@@ -169,8 +167,8 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
     @Test
     public void leaderDemotionEntryActive() throws Exception {
         StatePlaneWriter w = writer("e1");
-        w.publish("c1", "s1", promo(10, LEADER), null);          // replica 10 is leader
-        w.publish("c1", "s1", promo(11, LEADER), null);          // replica 11 takes over
+        w.publish("c1", "s1", COLL_ID, promo(10, LEADER), null);          // replica 10 is leader
+        w.publish("c1", "s1", COLL_ID, promo(11, LEADER), null);          // replica 11 takes over
         ShardStateLog ring = readRing("c1", "s1");
         StateDelta last = ring.entries.get(ring.entries.size() - 1);
         assertEquals("11 promoted to LEADER", LEADER, last.entries.get(0).shortState);
@@ -183,14 +181,14 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
     @Test
     public void leaderRepublishStillDemotesStaleLeader() throws Exception {
         StatePlaneWriter w = writer("e1");
-        w.publish("c1", "s1", promo(10, LEADER), null);
+        w.publish("c1", "s1", COLL_ID, promo(10, LEADER), null);
         // Simulate a session-loss wedge: replica 11 also recorded LEADER (stale) via a raw append.
-        w.publish("c1", "s1", promo(11, LEADER), Collections.emptyList());
+        w.publish("c1", "s1", COLL_ID, promo(11, LEADER), Collections.emptyList());
         // The previous call already demoted 10. Now there is exactly one leader (11). Re-publish 11
         // as LEADER: state-noop for 11, but if a stale leader still existed it must be demoted.
         // Force a stale-leader situation: publish 10 LEADER again (demotes 11), then re-publish 10.
-        w.publish("c1", "s1", promo(10, LEADER), null); // 10 leader again, demotes 11
-        boolean republish = w.publish("c1", "s1", promo(10, LEADER), null); // already leader, no stale
+        w.publish("c1", "s1", COLL_ID, promo(10, LEADER), null); // 10 leader again, demotes 11
+        boolean republish = w.publish("c1", "s1", COLL_ID, promo(10, LEADER), null); // already leader, no stale
         assertFalse("no stale leader → republish of sole leader is a no-op", republish);
 
         // Now create a genuine stale-leader: directly append a second LEADER without demotion is not
@@ -219,7 +217,7 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
                 start.await();
                 for (int i = 0; i < perThread; i++) {
                     // distinct states so each is a real transition, never a no-op
-                    w.publish("c1", "s1", promo(100, i % 2 == 0 ? ACTIVE : RECOVERING), null);
+                    w.publish("c1", "s1", COLL_ID, promo(100, i % 2 == 0 ? ACTIVE : RECOVERING), null);
                 }
             } catch (Throwable t) { err.compareAndSet(null, t); }
         };
@@ -227,7 +225,7 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
             try {
                 start.await();
                 for (int i = 0; i < perThread; i++) {
-                    w.publish("c1", "s1", promo(200, i % 2 == 0 ? DOWN : ACTIVE), null);
+                    w.publish("c1", "s1", COLL_ID, promo(200, i % 2 == 0 ? DOWN : ACTIVE), null);
                 }
             } catch (Throwable t) { err.compareAndSet(null, t); }
         };
@@ -256,26 +254,24 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         batch.add(new StateDelta.Entry(10, DOWN));
         batch.add(new StateDelta.Entry(11, DOWN));
         batch.add(new StateDelta.Entry(12, DOWN));
-        boolean appended = w.publish("c1", "s1", batch, null);
+        boolean appended = w.publish("c1", "s1", COLL_ID, batch, null);
         assertTrue(appended);
 
         ShardStateLog ring = readRing("c1", "s1");
         assertEquals("ONE delta for the whole node-down batch, not one-per-replica", 1, ring.entries.size());
         assertEquals("multi-entry delta carries all 3 replicas", 3, ring.entries.get(0).entries.size());
-        // Not a full-map collection write: no _statupdates node.
-        assertFalse(zkClient.exists(StatePlanePaths.collectionPath("c1") + "/_statupdates"));
     }
 
     /** DOWNNODE/RECOVERYNODE-style fan-out across shards each produce their own bounded delta. */
     @Test
     public void downnodeRecoverynodeFanout() throws Exception {
         StatePlaneWriter w = writer("e1");
-        w.publish("c1", "s1", promo(10, DOWN), null);
-        w.publish("c1", "s2", promo(20, DOWN), null);
+        w.publish("c1", "s1", COLL_ID, promo(10, DOWN), null);
+        w.publish("c1", "s2", COLL_ID, promo(20, DOWN), null);
         assertEquals(1, readRing("c1", "s1").entries.size());
         assertEquals(1, readRing("c1", "s2").entries.size());
         // recovery
-        w.publish("c1", "s1", promo(10, RECOVERING), null);
+        w.publish("c1", "s1", COLL_ID, promo(10, RECOVERING), null);
         assertEquals(2, readRing("c1", "s1").entries.size());
         assertEquals(RECOVERING,
                 readRing("c1", "s1").entries.get(1).entries.get(0).shortState);
@@ -287,7 +283,7 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         String deltaPath = StatePlanePaths.shardDeltas(StatePlanePaths.collectionPath("fresh"), "sX");
         assertFalse("ring does not exist yet", zkClient.exists(deltaPath));
         StatePlaneWriter w = writer("e1");
-        assertTrue(w.publish("fresh", "sX", promo(1, ACTIVE), null));
+        assertTrue(w.publish("fresh", "sX", COLL_ID, promo(1, ACTIVE), null));
         assertTrue("ring lazily created", zkClient.exists(deltaPath));
         assertEquals(1, readRing("fresh", "sX").entries.size());
     }
@@ -304,11 +300,11 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         seeded.put(10, ACTIVE);
         seeded.put(11, ACTIVE);
         seeded.put(12, ACTIVE);
-        w.seedShard("c1", "s1", 1, seeded);
+        w.seedShard("c1", "s1", COLL_ID, 1, seeded);
         assertEquals("seeded ring is empty (state lives in snapshot)", 0, readRing("c1", "s1").entries.size());
 
         // Only replica 11 transitions. The caller (ZkStateWriter) now passes ONLY this entry.
-        assertTrue(w.publish("c1", "s1", promo(11, RECOVERING), null));
+        assertTrue(w.publish("c1", "s1", COLL_ID, promo(11, RECOVERING), null));
 
         ShardStateLog ring = readRing("c1", "s1");
         assertEquals("exactly one appended delta", 1, ring.entries.size());
@@ -330,10 +326,10 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         java.util.Map<Integer, Integer> seeded = new java.util.HashMap<>();
         seeded.put(10, LEADER);
         seeded.put(11, ACTIVE);
-        w.seedShard("c1", "s1", 1, seeded);
+        w.seedShard("c1", "s1", COLL_ID, 1, seeded);
 
         // Publish ONLY the new leader's entry — the prior leader (10) is NOT passed by the caller.
-        assertTrue(w.publish("c1", "s1", promo(11, LEADER), null));
+        assertTrue(w.publish("c1", "s1", COLL_ID, promo(11, LEADER), null));
 
         ShardStateLog ring = readRing("c1", "s1");
         StateDelta last = ring.entries.get(ring.entries.size() - 1);
@@ -353,7 +349,7 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         java.util.Map<Integer, Integer> states = new java.util.HashMap<>();
         states.put(10, LEADER);
         states.put(11, ACTIVE);
-        w.seedShard("seedc", "s1", 7, states);
+        w.seedShard("seedc", "s1", COLL_ID, 7, states);
         // snapshot + deltas exist; manifest not yet.
         assertTrue(zkClient.exists(StatePlanePaths.shardSnapshot(collPath, "s1")));
         assertTrue(zkClient.exists(StatePlanePaths.shardDeltas(collPath, "s1")));
@@ -401,7 +397,7 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
             w.publish(
                 "freshFence",
                 "sX",
-                Collections.singletonList(new StateDelta.Entry(100, 2)),
+                COLL_ID, Collections.singletonList(new StateDelta.Entry(100, 2)),
                 Collections.emptyList());
         } catch (StatePlaneWriter.FencedException e) {
             thrown = e;
@@ -413,6 +409,32 @@ public class StatePlaneWriterTest extends SolrTestCaseJ4 {
         if (zkClient.exists(deltaPath)) {
             assertEquals("stale writer must not append a delta after losing authoritative ownership", 0, readRing("freshFence", "sX").lastSeq);
         }
+    }
+
+
+    public void testReplacementWriterAdvancesExistingRingEpochAndFencesOlderWriter() throws Exception {
+        StatePlaneWriter first = writer("overseer-10");
+        first.setLocalEpoch(10);
+        assertTrue(first.publish("cEpoch", "s1", COLL_ID, promo(10, ACTIVE), Collections.emptyList()));
+        assertEquals(10, readRing("cEpoch", "s1").epoch);
+
+        StatePlaneWriter replacement = writer("overseer-11");
+        replacement.setLocalEpoch(11);
+        assertTrue(replacement.publish("cEpoch", "s1", COLL_ID, promo(11, ACTIVE), Collections.emptyList()));
+        ShardStateLog replacementRing = readRing("cEpoch", "s1");
+        assertEquals(11, replacementRing.epoch);
+        assertEquals(2L, replacementRing.lastSeq);
+
+        StatePlaneWriter stale = writer("overseer-10-stale");
+        stale.setLocalEpoch(10);
+        StatePlaneWriter.FencedException thrown = null;
+        try {
+            stale.publish("cEpoch", "s1", COLL_ID, promo(12, ACTIVE), Collections.emptyList());
+        } catch (StatePlaneWriter.FencedException e) {
+            thrown = e;
+        }
+        assertNotNull("writer with older local epoch must be fenced by the durable ring epoch", thrown);
+        assertEquals(2L, readRing("cEpoch", "s1").lastSeq);
     }
 
 }

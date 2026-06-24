@@ -57,6 +57,8 @@ public class StatePlaneReaderTest extends SolrTestCaseJ4 {
   private static final int LEADER = 1;
   private static final int ACTIVE = 2;
   private static final int RECOVERING = 4;
+  private static final String COLL_ID = "101";
+
 
   // ---- builders ----
 
@@ -77,20 +79,28 @@ public class StatePlaneReaderTest extends SolrTestCaseJ4 {
     Map<String, Slice> slices = new HashMap<>();
     slices.put(shard, slice);
     Map<String, Object> collProps = new HashMap<>();
-    collProps.put("id", -1L);
+    collProps.put("id", Integer.valueOf(COLL_ID));
     // DocCollection ctor runs setStates(): seeds the live StateUpdates map from each replica's
     // published state and links each replica to its AtomicInteger, so updateState(id, ..) mutates it.
     return new DocCollection(name, slices, collProps, CompositeIdRouter.DEFAULT);
   }
 
   private static StateDelta delta(int epoch, long seq, int promoteId, int promoteState) {
-    return new StateDelta(epoch, seq,
+    return delta("s1", epoch, seq, promoteId, promoteState);
+  }
+
+  private static StateDelta delta(String shard, int epoch, long seq, int promoteId, int promoteState) {
+    return new StateDelta(COLL_ID, shard, epoch, seq,
         Collections.singletonList(new StateDelta.Entry(promoteId, promoteState)),
         Collections.emptyList(), ACTIVE);
   }
 
   private static ShardStateLog ring(int epoch, long baseSeq, long lastSeq, StateDelta... deltas) {
-    return new ShardStateLog(epoch, baseSeq, lastSeq, "writer-e1", Arrays.asList(deltas));
+    return ring("s1", epoch, baseSeq, lastSeq, deltas);
+  }
+
+  private static ShardStateLog ring(String shard, int epoch, long baseSeq, long lastSeq, StateDelta... deltas) {
+    return new ShardStateLog(COLL_ID, shard, epoch, baseSeq, lastSeq, "writer-e1", Arrays.asList(deltas));
   }
 
   private static Replica.State raw(DocCollection dc, int id) {
@@ -165,7 +175,7 @@ public class StatePlaneReaderTest extends SolrTestCaseJ4 {
     Map<Integer, Integer> base = new HashMap<>();
     base.put(101, ACTIVE);
     base.put(102, ACTIVE);
-    StateSnapshot snapshot = new StateSnapshot(2, "s1", 5, base);
+    StateSnapshot snapshot = new StateSnapshot(Long.parseLong(COLL_ID), "c3", 2, "s1", 5, base);
 
     // Ring at epoch=2 advancing past the snapshot: seq=6 promotes 102->LEADER, seq=7 moves 101->RECOVERING.
     ShardStateLog log = ring(2, 5, 7, delta(2, 6, 102, LEADER), delta(2, 7, 101, RECOVERING));
@@ -300,7 +310,7 @@ public class StatePlaneReaderTest extends SolrTestCaseJ4 {
     base.put(101, ACTIVE);
     base.put(102, ACTIVE);
     base.put(999, ACTIVE); // present in the snapshot, absent from structure -> must be skipped
-    StateSnapshot snapshot = new StateSnapshot(2, "s1", 5, base);
+    StateSnapshot snapshot = new StateSnapshot(Long.parseLong(COLL_ID), "c8", 2, "s1", 5, base);
 
     // Ring advances past the snapshot: seq=6 promotes 102->LEADER, seq=7 moves 101->RECOVERING.
     ShardStateLog log = ring(2, 5, 7, delta(2, 6, 102, LEADER), delta(2, 7, 101, RECOVERING));
@@ -339,8 +349,8 @@ public class StatePlaneReaderTest extends SolrTestCaseJ4 {
     // generation was numerically higher, regressing the leader to the DOWN baseline forever.
     final int S2_LEADER_ID = 2;
     StateSnapshot s2snap =
-        new StateSnapshot(1, "s2", 0, Collections.singletonMap(S2_LEADER_ID, LEADER));
-    ShardStateLog s2ring = ring(1, 0, 1, delta(1, 1, S2_LEADER_ID, LEADER));
+        new StateSnapshot(Long.parseLong(COLL_ID), "collection1", 1, "s2", 0, Collections.singletonMap(S2_LEADER_ID, LEADER));
+    ShardStateLog s2ring = ring("s2", 1, 0, 1, delta("s2", 1, 1, S2_LEADER_ID, LEADER));
 
     // prev: structure does NOT yet contain id=2 (un-seeded) -> folding s2's ring skips id=2.
     DocCollection prev = collection("collection1", "s2", new int[] {}, new Replica.State[] {});
@@ -493,4 +503,62 @@ public class StatePlaneReaderTest extends SolrTestCaseJ4 {
     assertEquals("exactly one visible leader survives the handoff replay", 1, rawLeaderCount(dc2, "s1"));
     assertFalse("the buffer drained after the replay", cursors.hasDeferred("s1"));
   }
+
+
+
+    private static void assertFailsClosed(Runnable action) {
+        try {
+            action.run();
+            fail("state-plane identity mismatch should fail closed");
+        } catch (IllegalStateException expected) {
+            // expected
+        }
+    }
+
+    public void testRingCollectionIdentityMismatchFailsClosed() {
+        DocCollection dc = collection(
+            "collection1", "s1", new int[] {10}, new Replica.State[] {Replica.State.ACTIVE});
+        ShardStateLog badRing = new ShardStateLog(
+            "202", "s1", 1, 0L, 1L, "writer-e1",
+            Collections.singletonList(delta("s1", 1, 1, 10, ACTIVE)));
+
+        assertFailsClosed(
+            () -> StatePlaneReader.applyRing(dc, "s1", badRing, new StatePlaneCursors()));
+    }
+
+    public void testRingShardIdentityMismatchFailsClosed() {
+        DocCollection dc = collection(
+            "collection1", "s1", new int[] {10}, new Replica.State[] {Replica.State.ACTIVE});
+        ShardStateLog badRing = new ShardStateLog(
+            COLL_ID, "s2", 1, 0L, 1L, "writer-e1",
+            Collections.singletonList(delta("s2", 1, 1, 10, ACTIVE)));
+
+        assertFailsClosed(
+            () -> StatePlaneReader.applyRing(dc, "s1", badRing, new StatePlaneCursors()));
+    }
+
+    public void testDeltaIdentityMismatchFailsClosed() {
+        DocCollection dc = collection(
+            "collection1", "s1", new int[] {10}, new Replica.State[] {Replica.State.ACTIVE});
+        StateDelta wrongShardDelta = new StateDelta(
+            COLL_ID, "s2", 1, 1L, Collections.singletonList(new StateDelta.Entry(10, ACTIVE)), Collections.emptyList(), ACTIVE);
+        ShardStateLog ring = new ShardStateLog(
+            COLL_ID, "s1", 1, 0L, 1L, "writer-e1", Collections.singletonList(wrongShardDelta));
+
+        assertFailsClosed(
+            () -> StatePlaneReader.applyRing(dc, "s1", ring, new StatePlaneCursors()));
+    }
+
+    public void testSnapshotIdentityMismatchFailsClosed() {
+        DocCollection dc = collection(
+            "collection1", "s1", new int[] {10}, new Replica.State[] {Replica.State.ACTIVE});
+        ShardStateLog ring = ring("s1", 1, 0L, 0L);
+        StateSnapshot wrongCollectionSnapshot = new StateSnapshot(
+            Long.parseLong(COLL_ID), "otherCollection", 1, "s1", 0L, Collections.emptyMap());
+
+        assertFailsClosed(
+            () -> StatePlaneReader.applySnapshotAndDeltas(
+                dc, "s1", wrongCollectionSnapshot, ring, new StatePlaneCursors()));
+    }
+
 }

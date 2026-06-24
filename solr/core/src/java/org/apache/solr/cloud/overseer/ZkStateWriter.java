@@ -291,6 +291,7 @@ public class ZkStateWriter {
         w = statePlaneWriter;
         if (w == null) {
           w = new StatePlaneWriter(reader.getZkClient(), new OverseerElectionFence(overseer));
+          w.setLocalEpoch(seedEpoch());
           statePlaneWriter = w;
         }
       }
@@ -496,7 +497,7 @@ public class ZkStateWriter {
       for (Slice s : dc.getSlices()) {
         final String shard = s.getName();
         shards.add(shard);
-        w.seedShard(collection, shard, epoch, Collections.emptyMap());
+        w.seedShard(collection, shard, String.valueOf(dc.getId()), epoch, Collections.emptyMap());
       }
       // Manifest LAST — the authoritative switch the reader gates on.
       w.writeManifestSeeded(collection, epoch, shards);

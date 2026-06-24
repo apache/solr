@@ -55,6 +55,7 @@ import org.junit.Test;
  * <p>Short states (raw): LEADER=1, ACTIVE=2, RECOVERING=4, DOWN=5.
  */
 public class StatePlaneReaderQueueTest extends SolrTestCaseJ4 {
+  private static final String COLL_ID = "101";
 
   private static final int LEADER = 1;
   private static final int ACTIVE = 2;
@@ -111,7 +112,7 @@ public class StatePlaneReaderQueueTest extends SolrTestCaseJ4 {
     Map<String, Slice> slices = new HashMap<>();
     slices.put(shard, slice);
     Map<String, Object> collProps = new HashMap<>();
-    collProps.put("id", -1L);
+    collProps.put("id", Integer.valueOf(COLL_ID));
     return new DocCollection(name, slices, collProps, CompositeIdRouter.DEFAULT);
   }
 
@@ -148,7 +149,7 @@ public class StatePlaneReaderQueueTest extends SolrTestCaseJ4 {
     slices.put(shardA, buildSlice(name, shardA, idsA));
     slices.put(shardB, buildSlice(name, shardB, idsB));
     Map<String, Object> collProps = new HashMap<>();
-    collProps.put("id", -1L);
+    collProps.put("id", Integer.valueOf(COLL_ID));
     return new DocCollection(name, slices, collProps, CompositeIdRouter.DEFAULT);
   }
 
@@ -163,10 +164,10 @@ public class StatePlaneReaderQueueTest extends SolrTestCaseJ4 {
     Map<Integer, Integer> seed = new HashMap<>();
     seed.put(201, ACTIVE);
     seed.put(202, ACTIVE);
-    w.seedShard(coll, "s1", epoch, seed);
+    w.seedShard(coll, "s1", COLL_ID, epoch, seed);
     w.writeManifestSeeded(coll, epoch, Arrays.asList("s1"));
     // A live transition AFTER seeding: 202 becomes the leader.
-    w.publish(coll, "s1", Collections.singletonList(new StateDelta.Entry(202, LEADER)),
+    w.publish(coll, "s1", COLL_ID, Collections.singletonList(new StateDelta.Entry(202, LEADER)),
         Collections.emptyList());
 
     DocCollection dc = collection(coll, "s1", new int[] {201, 202},
@@ -185,7 +186,7 @@ public class StatePlaneReaderQueueTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoopWhenManifestAbsent() throws Exception {
-    final String coll = "fallbackc";
+    final String coll = "unseededc";
 
     // No state plane manifest for this collection. The reader switches onto live state only via the
     // delta-plane manifest, so with no manifest present apply() must be a no-op.
@@ -217,12 +218,12 @@ public class StatePlaneReaderQueueTest extends SolrTestCaseJ4 {
     Map<Integer, Integer> seedS2 = new HashMap<>();
     seedS2.put(301, ACTIVE);
     seedS2.put(302, ACTIVE);
-    w.seedShard(coll, "s1", epoch, seedS1);
-    w.seedShard(coll, "s2", epoch, seedS2);
+    w.seedShard(coll, "s1", COLL_ID, epoch, seedS1);
+    w.seedShard(coll, "s2", COLL_ID, epoch, seedS2);
     w.writeManifestSeeded(coll, epoch, Arrays.asList("s1", "s2"));
     // A live LEADER transition on EACH shard.
-    w.publish(coll, "s1", Collections.singletonList(new StateDelta.Entry(202, LEADER)), Collections.emptyList());
-    w.publish(coll, "s2", Collections.singletonList(new StateDelta.Entry(302, LEADER)), Collections.emptyList());
+    w.publish(coll, "s1", COLL_ID, Collections.singletonList(new StateDelta.Entry(202, LEADER)), Collections.emptyList());
+    w.publish(coll, "s2", COLL_ID, Collections.singletonList(new StateDelta.Entry(302, LEADER)), Collections.emptyList());
 
     DocCollection dc = twoShardCollection(coll, "s1", new int[] {201, 202}, "s2", new int[] {301, 302});
 
@@ -249,9 +250,9 @@ public class StatePlaneReaderQueueTest extends SolrTestCaseJ4 {
     Map<Integer, Integer> seed = new HashMap<>();
     seed.put(401, ACTIVE);
     seed.put(402, ACTIVE);
-    w.seedShard(coll, "s1", epoch, seed);
+    w.seedShard(coll, "s1", COLL_ID, epoch, seed);
     w.writeManifestSeeded(coll, epoch, Arrays.asList("s1"));
-    w.publish(coll, "s1", Collections.singletonList(new StateDelta.Entry(402, LEADER)), Collections.emptyList());
+    w.publish(coll, "s1", COLL_ID, Collections.singletonList(new StateDelta.Entry(402, LEADER)), Collections.emptyList());
 
     DocCollection dc = collection(coll, "s1", new int[] {401, 402},
         new Replica.State[] {Replica.State.ACTIVE, Replica.State.ACTIVE});

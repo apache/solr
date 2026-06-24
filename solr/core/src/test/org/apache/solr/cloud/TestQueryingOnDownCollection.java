@@ -176,7 +176,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
       for (Replica replica : slice.getReplicas()) {
         downs.add(new StateDelta.Entry(replica.getInternalId(), 5)); // 5 = DOWN
       }
-      forceDown.publish(COLLECTION_NAME, slice.getName(), downs, Collections.emptyList());
+      forceDown.publish(COLLECTION_NAME, slice.getName(), String.valueOf(liveCollection.getId()), downs, Collections.emptyList());
     }
     cluster.getZkClient().setData("/collections/" + COLLECTION_NAME + "/" + ZkStateReader.STRUCTURE_CHANGE_NOTIFIER, (byte[]) null
         , true);

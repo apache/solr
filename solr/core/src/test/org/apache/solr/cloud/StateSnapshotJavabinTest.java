@@ -40,7 +40,7 @@ public class StateSnapshotJavabinTest extends SolrTestCaseJ4 {
         states.put(1, 2); // ACTIVE
         states.put(2, 1); // LEADER (raw shortState=1)
         states.put(3, 4); // RECOVERING
-        StateSnapshot snap = new StateSnapshot(7, "shard1", 42L, states);
+        StateSnapshot snap = new StateSnapshot(101L, "c1", 7, "shard1", 42L, states);
 
         byte[] bytes = StateDeltaCodec.encodeStateSnapshot(snap);
         StateSnapshot decoded = StateDeltaCodec.decodeStateSnapshot(bytes);
@@ -60,7 +60,7 @@ public class StateSnapshotJavabinTest extends SolrTestCaseJ4 {
         Map<Integer, Integer> states = new HashMap<>();
         states.put(1, 2); // ACTIVE
         states.put(2, 1); // LEADER
-        StateSnapshot snap = new StateSnapshot(1, "shard1", 0L, states);
+        StateSnapshot snap = new StateSnapshot(101L, "c1", 1, "shard1", 0L, states);
 
         byte[] bytes = StateDeltaCodec.encodeStateSnapshot(snap);
         StateSnapshot decoded = StateDeltaCodec.decodeStateSnapshot(bytes);
@@ -69,7 +69,7 @@ public class StateSnapshotJavabinTest extends SolrTestCaseJ4 {
         assertEquals(1, (int) decoded.replicaStates.get(2));
 
         // Now reconstruct: replica 3 promoted to LEADER, replica 2 demoted to ACTIVE
-        StateDelta promote = new StateDelta(1, 1L,
+        StateDelta promote = new StateDelta("101", "shard1", 1, 1L,
                 Collections.singletonList(new StateDelta.Entry(3, 1 /* LEADER */)),
                 Arrays.asList(2), // demote replica 2
                 2 /* ACTIVE, D14 */);
@@ -84,13 +84,13 @@ public class StateSnapshotJavabinTest extends SolrTestCaseJ4 {
     public void reconstructOutOfOrderDeltas() throws Exception {
         Map<Integer, Integer> states = new HashMap<>();
         states.put(1, 2); // ACTIVE
-        StateSnapshot snap = new StateSnapshot(1, "shard1", 0L, states);
+        StateSnapshot snap = new StateSnapshot(101L, "c1", 1, "shard1", 0L, states);
 
         // Deltas delivered out of order
-        StateDelta d2 = new StateDelta(1, 2L,
+        StateDelta d2 = new StateDelta("101", "shard1", 1, 2L,
                 Collections.singletonList(new StateDelta.Entry(1, 4 /* RECOVERING */)),
                 Collections.emptyList(), 2);
-        StateDelta d1 = new StateDelta(1, 1L,
+        StateDelta d1 = new StateDelta("101", "shard1", 1, 1L,
                 Collections.singletonList(new StateDelta.Entry(2, 5 /* DOWN */)),
                 Collections.emptyList(), 2);
 
@@ -104,9 +104,9 @@ public class StateSnapshotJavabinTest extends SolrTestCaseJ4 {
     public void reconstructIsIdempotent() throws Exception {
         Map<Integer, Integer> states = new HashMap<>();
         states.put(1, 2); // ACTIVE
-        StateSnapshot snap = new StateSnapshot(1, "shard1", 0L, states);
+        StateSnapshot snap = new StateSnapshot(101L, "c1", 1, "shard1", 0L, states);
 
-        StateDelta d = new StateDelta(1, 1L,
+        StateDelta d = new StateDelta("101", "shard1", 1, 1L,
                 Collections.singletonList(new StateDelta.Entry(1, 4 /* RECOVERING */)),
                 Collections.emptyList(), 2);
 
@@ -119,18 +119,18 @@ public class StateSnapshotJavabinTest extends SolrTestCaseJ4 {
     public void reconstructSkipsStaleDeltas() throws Exception {
         Map<Integer, Integer> states = new HashMap<>();
         states.put(1, 5); // DOWN (captured in snapshot at seq=10)
-        StateSnapshot snap = new StateSnapshot(1, "shard1", 10L, states);
+        StateSnapshot snap = new StateSnapshot(101L, "c1", 1, "shard1", 10L, states);
 
         // Delta at seq=8 is before the snapshot baseline — must be ignored
-        StateDelta stale = new StateDelta(1, 8L,
+        StateDelta stale = new StateDelta("101", "shard1", 1, 8L,
                 Collections.singletonList(new StateDelta.Entry(1, 2 /* ACTIVE */)),
                 Collections.emptyList(), 2);
         // Delta at seq=10 equals baseSeq — also stale (already captured)
-        StateDelta atBase = new StateDelta(1, 10L,
+        StateDelta atBase = new StateDelta("101", "shard1", 1, 10L,
                 Collections.singletonList(new StateDelta.Entry(1, 2 /* ACTIVE */)),
                 Collections.emptyList(), 2);
         // Delta at seq=11 is fresh
-        StateDelta fresh = new StateDelta(1, 11L,
+        StateDelta fresh = new StateDelta("101", "shard1", 1, 11L,
                 Collections.singletonList(new StateDelta.Entry(1, 4 /* RECOVERING */)),
                 Collections.emptyList(), 2);
 
@@ -141,7 +141,7 @@ public class StateSnapshotJavabinTest extends SolrTestCaseJ4 {
     @Test
     public void perShardFieldPreserved() throws Exception {
         // Verifies per-shard identity (D1): shard name is part of the encoded snapshot
-        StateSnapshot snap = new StateSnapshot(0, "shard2", 0L, Collections.emptyMap());
+        StateSnapshot snap = new StateSnapshot(101L, "c1", 0, "shard2", 0L, Collections.emptyMap());
         StateSnapshot decoded = StateDeltaCodec.decodeStateSnapshot(
                 StateDeltaCodec.encodeStateSnapshot(snap));
         assertEquals("shard2", decoded.shard);
@@ -169,15 +169,12 @@ public class StateSnapshotJavabinTest extends SolrTestCaseJ4 {
     }
 
     @Test
-    public void legacyConstructorDefaultsIdentity() throws Exception {
-        // The 4-arg constructor stays valid and round-trips with default identity (-1 / null).
-        StateSnapshot snap = new StateSnapshot(1, "shard1", 0L, Collections.emptyMap());
-        assertEquals(-1L, snap.collectionId);
-        assertNull(snap.collectionName);
+    public void requiredIdentityRoundTrips() throws Exception {
+        StateSnapshot snap = new StateSnapshot(101L, "c1", 1, "shard1", 0L, Collections.emptyMap());
         StateSnapshot decoded = StateDeltaCodec.decodeStateSnapshot(
                 StateDeltaCodec.encodeStateSnapshot(snap));
-        assertEquals(-1L, decoded.collectionId);
-        assertNull(decoded.collectionName);
+        assertEquals(101L, decoded.collectionId);
+        assertEquals("c1", decoded.collectionName);
     }
 
     @Test
@@ -185,11 +182,11 @@ public class StateSnapshotJavabinTest extends SolrTestCaseJ4 {
         // Verify the raw decoded flat states list comes back as a List (fastutil), never int[]
         Map<Integer, Integer> states = new HashMap<>();
         states.put(1, 2);
-        StateSnapshot snap = new StateSnapshot(1, "shard1", 0L, states);
+        StateSnapshot snap = new StateSnapshot(101L, "c1", 1, "shard1", 0L, states);
         byte[] bytes = StateDeltaCodec.encodeStateSnapshot(snap);
 
         List<?> rawTuple = (List<?>) StateDeltaCodec.decode(bytes);
-        Object rawFlat = rawTuple.get(3);
+        Object rawFlat = rawTuple.get(5);
         assertTrue("flat states must be a List", rawFlat instanceof List);
         assertFalse("flat states must not be int[]", rawFlat instanceof int[]);
     }

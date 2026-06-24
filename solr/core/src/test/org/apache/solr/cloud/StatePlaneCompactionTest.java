@@ -47,6 +47,7 @@ import org.junit.Test;
  * <p>Short states: LEADER=1, ACTIVE=2, BUFFERING=3, RECOVERING=4, DOWN=5.
  */
 public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
+  private static final String COLL_ID = "101";
 
     private static final int LEADER = 1;
     private static final int ACTIVE = 2;
@@ -119,7 +120,7 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
         ShardStateLog ring = readRing(coll, shard);
         StateSnapshot snap = readSnapshot(coll, shard);
         if (snap == null) {
-            snap = new StateSnapshot(-1L, coll, ring.epoch, shard, ring.baseSeq, Collections.emptyMap());
+            snap = new StateSnapshot(Long.parseLong(COLL_ID), coll, ring.epoch, shard, ring.baseSeq, Collections.emptyMap());
         }
         return snap.reconstruct(ring.entries);
     }
@@ -132,11 +133,11 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
         assertNull("no snapshot before any compaction", readSnapshot("c1", "s1"));
 
         // 5 real transitions across two replicas → the 5th append (ring size == COMPACT_AFTER) folds.
-        w.publish("c1", "s1", promo(10, ACTIVE), null);      // seq1
-        w.publish("c1", "s1", promo(11, ACTIVE), null);      // seq2
-        w.publish("c1", "s1", promo(10, RECOVERING), null);  // seq3
-        w.publish("c1", "s1", promo(11, DOWN), null);        // seq4
-        w.publish("c1", "s1", promo(10, DOWN), null);        // seq5 -> compaction at upToSeq=5
+        w.publish("c1", "s1", COLL_ID, promo(10, ACTIVE), null);      // seq1
+        w.publish("c1", "s1", COLL_ID, promo(11, ACTIVE), null);      // seq2
+        w.publish("c1", "s1", COLL_ID, promo(10, RECOVERING), null);  // seq3
+        w.publish("c1", "s1", COLL_ID, promo(11, DOWN), null);        // seq4
+        w.publish("c1", "s1", COLL_ID, promo(10, DOWN), null);        // seq5 -> compaction at upToSeq=5
 
         StateSnapshot snap = readSnapshot("c1", "s1");
         assertNotNull("snapshot written by compaction", snap);
@@ -165,7 +166,7 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
     public void deltasDeletedOnlyAfterSnapshotDurable() throws Exception {
         StatePlaneWriter w = writer("e1");
         for (int i = 0; i < COMPACT_AFTER; i++) {
-            w.publish("c2", "s1", promo(10, i % 2 == 0 ? ACTIVE : RECOVERING), null);
+            w.publish("c2", "s1", COLL_ID, promo(10, i % 2 == 0 ? ACTIVE : RECOVERING), null);
         }
         ShardStateLog ring = readRing("c2", "s1");
         StateSnapshot snap = readSnapshot("c2", "s1");
@@ -188,11 +189,11 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
     public void readerCatchUpFromCompactedSnapshot() throws Exception {
         StatePlaneWriter w = writer("e1");
         for (int i = 0; i < COMPACT_AFTER; i++) {
-            w.publish("c3", "s1", promo(10, i % 2 == 0 ? ACTIVE : RECOVERING), null);
+            w.publish("c3", "s1", COLL_ID, promo(10, i % 2 == 0 ? ACTIVE : RECOVERING), null);
         } // compaction at upToSeq=5, snapshot {10: ACTIVE}, ring empty
         // Two more post-compaction deltas (seq6, seq7) so the reader folds snapshot + remaining deltas.
-        w.publish("c3", "s1", promo(10, DOWN), null);        // seq6
-        w.publish("c3", "s1", promo(11, BUFFERING), null);   // seq7
+        w.publish("c3", "s1", COLL_ID, promo(10, DOWN), null);        // seq6
+        w.publish("c3", "s1", COLL_ID, promo(11, BUFFERING), null);   // seq7
 
         ShardStateLog ring = readRing("c3", "s1");
         StateSnapshot snap = readSnapshot("c3", "s1");
@@ -221,10 +222,10 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
     public void interruptedCompactionLosesNoState() throws Exception {
         StatePlaneWriter w = writer("e1");
         // Drive 4 deltas — one short of the compaction trigger, so the ring still holds all 4.
-        w.publish("c4", "s1", promo(10, ACTIVE), null);      // seq1
-        w.publish("c4", "s1", promo(10, RECOVERING), null);  // seq2
-        w.publish("c4", "s1", promo(11, DOWN), null);        // seq3
-        w.publish("c4", "s1", promo(10, DOWN), null);        // seq4
+        w.publish("c4", "s1", COLL_ID, promo(10, ACTIVE), null);      // seq1
+        w.publish("c4", "s1", COLL_ID, promo(10, RECOVERING), null);  // seq2
+        w.publish("c4", "s1", COLL_ID, promo(11, DOWN), null);        // seq3
+        w.publish("c4", "s1", COLL_ID, promo(10, DOWN), null);        // seq4
         ShardStateLog ring = readRing("c4", "s1");
         assertEquals("no compaction yet (under the trigger)", 4, ring.entries.size());
 
@@ -233,9 +234,9 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
         // Simulate a CRASH between snapshot-write and delta-delete: write a snapshot folding the whole
         // ring (upToSeq = lastSeq) but leave every delta in place (the delete never happened).
         Map<Integer, Integer> folded =
-                new StateSnapshot(-1L, "c4", ring.epoch, "s1", ring.baseSeq, Collections.emptyMap())
+                new StateSnapshot(Long.parseLong(COLL_ID), "c4", ring.epoch, "s1", ring.baseSeq, Collections.emptyMap())
                         .reconstruct(ring.entries);
-        StateSnapshot crashSnap = new StateSnapshot(-1L, "c4", ring.epoch, "s1", ring.lastSeq, folded);
+        StateSnapshot crashSnap = new StateSnapshot(Long.parseLong(COLL_ID), "c4", ring.epoch, "s1", ring.lastSeq, folded);
         String snapPath = StatePlanePaths.shardSnapshot(StatePlanePaths.collectionPath("c4"), "s1");
         zkClient.makePath(snapPath, StateDeltaCodec.encodeStateSnapshot(crashSnap),
                 org.apache.zookeeper.CreateMode.PERSISTENT, true);
@@ -250,7 +251,7 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
         assertEquals("replica 11 still DOWN", Integer.valueOf(DOWN), after.get(11));
 
         // A subsequent normal publish still moves forward correctly off the crash snapshot + ring.
-        assertTrue(w.publish("c4", "s1", promo(11, ACTIVE), null));
+        assertTrue(w.publish("c4", "s1", COLL_ID, promo(11, ACTIVE), null));
         assertEquals("forward progress after recovery", Integer.valueOf(ACTIVE), effective("c4", "s1").get(11));
     }
 
@@ -260,7 +261,7 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
     public void compactionRaceWithNewDeltaDoesNotRegress() throws Exception {
         StatePlaneWriter w = writer("e1");
         for (int i = 0; i < COMPACT_AFTER; i++) {
-            w.publish("c5", "s1", promo(10, i % 2 == 0 ? ACTIVE : RECOVERING), null);
+            w.publish("c5", "s1", COLL_ID, promo(10, i % 2 == 0 ? ACTIVE : RECOVERING), null);
         } // compaction at upToSeq=5
         StateSnapshot snap = readSnapshot("c5", "s1");
         assertEquals(5L, snap.upToSeq());
@@ -268,7 +269,7 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
         assertEquals("high-water never regresses across compaction", 5L, lastSeqAfterCompaction);
 
         // A new delta lands AFTER compaction: it must take seq > upToSeq and win — never be folded away.
-        assertTrue(w.publish("c5", "s1", promo(10, LEADER), null)); // seq6
+        assertTrue(w.publish("c5", "s1", COLL_ID, promo(10, LEADER), null)); // seq6
         ShardStateLog ring = readRing("c5", "s1");
         assertEquals("new delta got seq strictly above the compacted upToSeq", 6L, ring.lastSeq);
         StateDelta newest = ring.entries.get(ring.entries.size() - 1);
@@ -280,12 +281,12 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
 
         // A re-publish of the already-current state is a no-op — a retry cannot regress (CAS safety).
         assertFalse("re-publish of current state is an idempotent no-op",
-                w.publish("c5", "s1", promo(10, LEADER), null));
+                w.publish("c5", "s1", COLL_ID, promo(10, LEADER), null));
         assertEquals("still LEADER, never regressed", Integer.valueOf(LEADER), effective("c5", "s1").get(10));
 
         // A second writer (overseer takeover) can append safely on top of the compacted snapshot.
         StatePlaneWriter w2 = writer("e2");
-        assertTrue(w2.publish("c5", "s1", promo(10, DOWN), null)); // seq7
+        assertTrue(w2.publish("c5", "s1", COLL_ID, promo(10, DOWN), null)); // seq7
         assertEquals("cross-writer seq monotonic past compaction", 7L, readRing("c5", "s1").lastSeq);
         assertEquals(Integer.valueOf(DOWN), effective("c5", "s1").get(10));
     }
@@ -301,10 +302,10 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
         try {
             StatePlaneWriter w = writer("e1");
             // First publish establishes the per-shard timer baseline (no compaction yet).
-            w.publish("c6", "s1", promo(10, ACTIVE), null); // seq1
+            w.publish("c6", "s1", COLL_ID, promo(10, ACTIVE), null); // seq1
             Thread.sleep(20); // exceed the 1ms threshold
             // Second publish: elapsed >= compactAfterMillis → compaction folds despite count < 1000.
-            w.publish("c6", "s1", promo(10, RECOVERING), null); // seq2 -> time-triggered compaction
+            w.publish("c6", "s1", COLL_ID, promo(10, RECOVERING), null); // seq2 -> time-triggered compaction
             StateSnapshot snap = readSnapshot("c6", "s1");
             assertNotNull("time-based trigger compacted under the count threshold", snap);
             assertEquals("snapshot folded up to the latest seq", 2L, snap.upToSeq());
@@ -335,19 +336,19 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
             StatePlaneWriter w = writer("e1"); // reads ringCap=3 at construction
             final String coll = "hc1", shard = "s1";
 
-            w.publish(coll, shard, promo(10, ACTIVE), null);     // seq1
+            w.publish(coll, shard, COLL_ID, promo(10, ACTIVE), null);     // seq1
             assertNoGap(coll, shard);
-            w.publish(coll, shard, promo(11, ACTIVE), null);     // seq2
+            w.publish(coll, shard, COLL_ID, promo(11, ACTIVE), null);     // seq2
             assertNoGap(coll, shard);
-            w.publish(coll, shard, promo(12, ACTIVE), null);     // seq3 (ring size == cap, no trim yet)
+            w.publish(coll, shard, COLL_ID, promo(12, ACTIVE), null);     // seq3 (ring size == cap, no trim yet)
             assertNoGap(coll, shard);
             assertNull("under the cap, no hard-cap fold yet", readSnapshot(coll, shard));
 
-            w.publish(coll, shard, promo(10, RECOVERING), null); // seq4 -> over cap -> fold+trim
+            w.publish(coll, shard, COLL_ID, promo(10, RECOVERING), null); // seq4 -> over cap -> fold+trim
             assertNoGap(coll, shard);
-            w.publish(coll, shard, promo(11, DOWN), null);       // seq5 -> over cap -> fold+trim
+            w.publish(coll, shard, COLL_ID, promo(11, DOWN), null);       // seq5 -> over cap -> fold+trim
             assertNoGap(coll, shard);
-            w.publish(coll, shard, promo(12, RECOVERING), null); // seq6 -> over cap -> fold+trim
+            w.publish(coll, shard, COLL_ID, promo(12, RECOVERING), null); // seq6 -> over cap -> fold+trim
             assertNoGap(coll, shard);
 
             ShardStateLog ring = readRing(coll, shard);
@@ -396,11 +397,11 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
             StatePlaneWriter w = new FoldFailingWriter(zkClient, new AlwaysElectedFence("e1"));
             final String coll = "hc2", shard = "s1";
 
-            w.publish(coll, shard, promo(20, ACTIVE), null);      // seq1
-            w.publish(coll, shard, promo(21, ACTIVE), null);      // seq2
-            w.publish(coll, shard, promo(22, ACTIVE), null);      // seq3 (== cap)
-            w.publish(coll, shard, promo(23, RECOVERING), null);  // seq4 over cap, fold fails -> no trim
-            w.publish(coll, shard, promo(24, DOWN), null);        // seq5 over cap, fold fails -> no trim
+            w.publish(coll, shard, COLL_ID, promo(20, ACTIVE), null);      // seq1
+            w.publish(coll, shard, COLL_ID, promo(21, ACTIVE), null);      // seq2
+            w.publish(coll, shard, COLL_ID, promo(22, ACTIVE), null);      // seq3 (== cap)
+            w.publish(coll, shard, COLL_ID, promo(23, RECOVERING), null);  // seq4 over cap, fold fails -> no trim
+            w.publish(coll, shard, COLL_ID, promo(24, DOWN), null);        // seq5 over cap, fold fails -> no trim
 
             ShardStateLog ring = readRing(coll, shard);
             assertNull("fold never succeeded -> no snapshot written", readSnapshot(coll, shard));
@@ -434,9 +435,9 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
 
     private static ShardStateLog ringWith(int epoch, long lastSeq, String writerId, int replicaId, int shortState) {
         List<StateDelta> entries = new ArrayList<>();
-        entries.add(new StateDelta(epoch, lastSeq, promo(replicaId, shortState),
+        entries.add(new StateDelta(COLL_ID, "s1", epoch, lastSeq, promo(replicaId, shortState),
                 Collections.emptyList(), ACTIVE));
-        return new ShardStateLog(epoch, 0L, lastSeq, writerId, entries);
+        return new ShardStateLog(COLL_ID, "s1", epoch, 0L, lastSeq, writerId, entries);
     }
 
     /**
@@ -455,7 +456,7 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
         Map<Integer, Integer> newerStates = new HashMap<>();
         newerStates.put(10, DOWN);
         newerStates.put(11, LEADER);
-        StateSnapshot newer = new StateSnapshot(-1L, coll, 0, shard, 100L, newerStates);
+        StateSnapshot newer = new StateSnapshot(Long.parseLong(COLL_ID), coll, 0, shard, 100L, newerStates);
         String snapPath = StatePlanePaths.shardSnapshot(collPath, shard);
         zkClient.makePath(snapPath, StateDeltaCodec.encodeStateSnapshot(newer),
                 org.apache.zookeeper.CreateMode.PERSISTENT, true);
@@ -485,7 +486,7 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
         final String coll = "mono2", shard = "s1";
         final String collPath = StatePlanePaths.collectionPath(coll);
 
-        StateSnapshot older = new StateSnapshot(-1L, coll, 0, shard, 5L,
+        StateSnapshot older = new StateSnapshot(Long.parseLong(COLL_ID), coll, 0, shard, 5L,
                 Collections.singletonMap(10, ACTIVE));
         String snapPath = StatePlanePaths.shardSnapshot(collPath, shard);
         zkClient.makePath(snapPath, StateDeltaCodec.encodeStateSnapshot(older),

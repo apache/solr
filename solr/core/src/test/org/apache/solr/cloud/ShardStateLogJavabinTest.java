@@ -33,7 +33,7 @@ public class ShardStateLogJavabinTest extends SolrTestCaseJ4 {
     @Test
     public void lastSeqOnEmptyRing() {
         // An empty post-fold ring must still report a correct lastSeq (D2)
-        ShardStateLog log = new ShardStateLog(1, 50L, 50L, "overseer-1", Collections.emptyList());
+        ShardStateLog log = new ShardStateLog("101", "s1", 1, 50L, 50L, "overseer-1", Collections.emptyList());
         assertEquals("lastSeq must equal the provided value on empty ring", 50L, log.lastSeq);
         assertEquals("maxSeq() must return lastSeq on empty ring", 50L, log.maxSeq());
     }
@@ -41,22 +41,22 @@ public class ShardStateLogJavabinTest extends SolrTestCaseJ4 {
     @Test
     public void maxSeqIsLastSeq() {
         // maxSeq() must always return lastSeq, not derived from entries (D2)
-        StateDelta d = new StateDelta(1, 30L,
+        StateDelta d = new StateDelta("101", "s1", 1, 30L,
                 Collections.singletonList(new StateDelta.Entry(1, 2)),
                 Collections.emptyList(), 2);
-        ShardStateLog log = new ShardStateLog(1, 0L, 99L, "overseer-1", Collections.singletonList(d));
+        ShardStateLog log = new ShardStateLog("101", "s1", 1, 0L, 99L, "overseer-1", Collections.singletonList(d));
         assertEquals("maxSeq() must be lastSeq regardless of entry seq values", 99L, log.maxSeq());
     }
 
     @Test
     public void roundTrip() throws Exception {
-        StateDelta d1 = new StateDelta(1, 1L,
+        StateDelta d1 = new StateDelta("101", "s1", 1, 1L,
                 Collections.singletonList(new StateDelta.Entry(1, 2)),
                 Collections.emptyList(), 2);
-        StateDelta d2 = new StateDelta(1, 2L,
+        StateDelta d2 = new StateDelta("101", "s1", 1, 2L,
                 Collections.singletonList(new StateDelta.Entry(2, 1)), // LEADER
                 Arrays.asList(1), 2); // demote replica 1
-        ShardStateLog log = new ShardStateLog(1, 0L, 2L, "election-42",
+        ShardStateLog log = new ShardStateLog("101", "s1", 1, 0L, 2L, "election-42",
                 Arrays.asList(d1, d2));
 
         byte[] bytes = StateDeltaCodec.encodeShardStateLog(log);
@@ -82,7 +82,7 @@ public class ShardStateLogJavabinTest extends SolrTestCaseJ4 {
 
     @Test
     public void emptyEntriesRoundTrip() throws Exception {
-        ShardStateLog log = new ShardStateLog(5, 100L, 200L, "writer-7", Collections.emptyList());
+        ShardStateLog log = new ShardStateLog("101", "s1", 5, 100L, 200L, "writer-7", Collections.emptyList());
         ShardStateLog decoded = StateDeltaCodec.decodeShardStateLog(
                 StateDeltaCodec.encodeShardStateLog(log));
         assertEquals(5, decoded.epoch);
@@ -92,4 +92,26 @@ public class ShardStateLogJavabinTest extends SolrTestCaseJ4 {
         assertTrue(decoded.entries.isEmpty());
         assertEquals(200L, decoded.maxSeq());
     }
+
+    public void testIdentityRoundTrip() throws Exception {
+        StateDelta delta = new StateDelta("22", "s2", 3, 9L,
+                Collections.singletonList(new StateDelta.Entry(5, StateDelta.ACTIVE)),
+                Collections.singletonList(4), 2);
+        ShardStateLog original = new ShardStateLog("22", "s2", 3, 8L, 9L, "overseer-9",
+                Collections.singletonList(delta));
+
+        ShardStateLog decoded = StateDeltaCodec.decodeShardStateLog(
+                StateDeltaCodec.encodeShardStateLog(original));
+
+        assertEquals("22", decoded.collectionId);
+        assertEquals("s2", decoded.shardId);
+        assertEquals(original.epoch, decoded.epoch);
+        assertEquals(original.baseSeq, decoded.baseSeq);
+        assertEquals(original.lastSeq, decoded.lastSeq);
+        assertEquals(original.writerId, decoded.writerId);
+        assertEquals(1, decoded.entries.size());
+        assertEquals("22", decoded.entries.get(0).collectionId);
+        assertEquals("s2", decoded.entries.get(0).shardId);
+    }
+
 }

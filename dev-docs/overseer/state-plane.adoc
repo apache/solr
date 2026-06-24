@@ -13,7 +13,7 @@ that comes up against a collection with no state-plane manifest treats that as
 The design goal is that *a single replica-state change costs work proportional to the change*, not
 to the size of the collection:
 
-* publishing one replica's transition appends one small delta to one shard's log — it does not
+* publishing one replica's transition records one small delta in one shard's bounded CAS ring — it does not
   rewrite the whole collection's state;
 * a reader that watches a collection fetches only the *changed shard's* ring on a state event, not
   every shard;
@@ -75,13 +75,13 @@ ordering, never `writerId`.
   `DocCollection.getStatePlaneGeneration()`) keeps the `updateWatchedCollection` clobber guard
   correct.
 
-=== Writer fencing at append (do not rely on a local predicate alone)
+=== Writer fencing at ring write (do not rely on a local predicate alone)
 
-A stale writer (an overseer that lost the election but has not noticed) must not be able to append.
+A stale writer (an overseer that lost the election but has not noticed) must not be able to write the ring.
 `StatePlaneWriter.publish(...)` calls `ElectionFence.ownsElectionAuthoritative()` *before* it
-appends. The authoritative implementation (`ZkStateWriter.OverseerElectionFence`) reads the live
+writes. The authoritative implementation (`ZkStateWriter.OverseerElectionFence`) reads the live
 children of `/overseer/overseer_elect/election`, computes the minimum candidate sequence, and
-appends only if that minimum equals this overseer's own candidate sequence. It degrades to the weak
+writes only if that minimum equals this overseer's own candidate sequence. It degrades to the weak
 local `!overseer.isClosed()` predicate only when ZK cannot be consulted (null seq / null
 `ZkController` / ZK error) — a fail-safe, not the primary check. CAS on the ZK node version is the
 second line of defense: a racing writer loses the `setData`.
@@ -95,7 +95,7 @@ For an ordinary replica-state publish, `StatePlaneWriter.publish(...)`:
 . computes the shard's *effective* state from `snapshot + deltas`;
 . computes demotions implied by any new leader;
 . suppresses a true no-op (identical effective state);
-. appends one `StateDelta`;
+. records one `StateDelta`;
 . CAS-`setData` using the expected ZK version.
 
 Retries on `BadVersion`, `ConnectionLoss`, and `SessionExpired` are *idempotent*: each retry
@@ -184,8 +184,8 @@ Two failure paths that used to be lossy:
 * *Unknown collection id.* When `ZkStateWriter` is handed a state update for a collection id it does
   not yet know, it must not delete the durable queue item on the mere hope of a later republish.
   `writeStateUpdatesInternal` *retains* the item (throws, so `WorkQueueWatcher` leaves it for
-  reprocess) until either structure lands or a bounded attempt count / a known-removed id proves the
-  incarnation is gone. `enqueueStructureChange` republishes any armed ids once the structure for that
+  reprocess) until either structure lands or a durable removed-id tombstone proves the
+  collection id is orphaned across overseer failover. `enqueueStructureChange` republishes any armed ids once the structure for that
   id lands, so a genuinely-arriving collection converges without operator intervention.
 
 `StatePublisher` also rejects an *unresolvable* (still-null after direct id resolution) replica id rather than
@@ -209,3 +209,15 @@ enqueuing a null-keyed transition.
   orphan drop.
 * *Compaction trim is best-effort under contention.* A losing CAS on the trim simply leaves extra
   deltas for the next compaction; it never blocks publishes.
+
+=== Log implementation: bounded per-shard CAS ring
+
+The state plane is a logical per-shard delta log implemented as one bounded ZooKeeper node per
+shard (`state/shards/<shard>/deltas`). Each publish reads the current ring, records one logical
+`StateDelta`, and writes the new `ShardStateLog` back with ZooKeeper version CAS. This is
+intentional: the fork avoids unbounded per-delta child znodes and child-list fanout. Compaction
+folds committed prefixes into the per-shard snapshot and then CAS-trims the ring.
+
+This fork publishes live replica state only through the state plane. A missing
+state-plane manifest means "no published live state yet"; it never means "read an older
+live-state source."

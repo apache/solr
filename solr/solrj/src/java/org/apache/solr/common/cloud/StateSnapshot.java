@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Per-shard state snapshot (D1: per-shard, not per-collection — avoids the 1 MB per-collection
@@ -31,9 +32,9 @@ import java.util.Map;
  */
 public final class StateSnapshot {
 
-    /** Collection identity (D4): the numeric collection id, or {@code -1} when unknown/legacy-seeded. */
+    /** Collection incarnation id for this shard snapshot. */
     public final long collectionId;
-    /** Collection identity (D4): the collection name, or {@code null} when unknown/legacy-seeded. */
+    /** Collection name for this shard snapshot. */
     public final String collectionName;
     public final int epoch;
     public final String shard;
@@ -47,11 +48,6 @@ public final class StateSnapshot {
     /** Maps replicaId → raw shortState. LEADER is preserved as shortState=1. */
     public final Map<Integer, Integer> replicaStates;
 
-    /** Back-compat constructor without explicit collection identity (collectionId=-1, name=null). */
-    public StateSnapshot(int epoch, String shard, long baseSeq, Map<Integer, Integer> replicaStates) {
-        this(-1L, null, epoch, shard, baseSeq, replicaStates);
-    }
-
     /**
      * Full constructor carrying collection identity (D4). {@code baseSeq} IS the {@code upToSeq} — the
      * seq up to which deltas are folded into {@code replicaStates}.
@@ -64,6 +60,30 @@ public final class StateSnapshot {
         this.shard = shard;
         this.baseSeq = baseSeq;
         this.replicaStates = Collections.unmodifiableMap(new HashMap<>(replicaStates));
+    }
+
+    public void validateIdentity(DocCollection dc, String shard) {
+        if (collectionId < 0) {
+            throw new IllegalStateException("state-plane snapshot is missing collectionId");
+        }
+        if (collectionName == null) {
+            throw new IllegalStateException("state-plane snapshot is missing collectionName");
+        }
+        if (this.shard == null) {
+            throw new IllegalStateException("state-plane snapshot is missing shard");
+        }
+        if (dc.getId() == null || !String.valueOf(collectionId).equals(String.valueOf(dc.getId()))) {
+            throw new IllegalStateException("state-plane snapshot collectionId mismatch snapshot="
+                    + collectionId + " current=" + dc.getId());
+        }
+        if (!Objects.equals(collectionName, dc.getName())) {
+            throw new IllegalStateException("state-plane snapshot collectionName mismatch snapshot="
+                    + collectionName + " current=" + dc.getName());
+        }
+        if (!Objects.equals(this.shard, shard)) {
+            throw new IllegalStateException("state-plane snapshot shard mismatch snapshot="
+                    + this.shard + " current=" + shard);
+        }
     }
 
     /** The seq up to which deltas are already folded into this snapshot (== {@link #baseSeq}). */

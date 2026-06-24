@@ -98,6 +98,7 @@ public final class StatePlaneReader {
    */
   public static boolean applyRing(DocCollection dc, String shard, ShardStateLog ring,
                                   StatePlaneCursors cursors) {
+    ring.validateIdentity(dc, shard);
     long[] cur = cursors.get(shard);
     int curEpoch = (int) cur[0];
     long curSeq = cur[1];
@@ -111,6 +112,7 @@ public final class StatePlaneReader {
 
     boolean applied = false;
     for (StateDelta d : sorted) {
+      d.validateIdentity(dc, shard);
       if (d.isStale(curEpoch, curSeq)) {
         continue;
       }
@@ -144,8 +146,17 @@ public final class StatePlaneReader {
     // finding #3: replay resolvable previously-skipped transitions before rebasing from the snapshot.
     flushDeferred(dc, shard, cursors);
 
+    ring.validateIdentity(dc, shard);
+    if (snapshot != null) {
+      snapshot.validateIdentity(dc, shard);
+    }
+    for (StateDelta d : ring.entries) {
+      d.validateIdentity(dc, shard);
+    }
+
     StateSnapshot base = snapshot != null ? snapshot
-        : new StateSnapshot(ring.epoch, shard, ring.baseSeq, Collections.emptyMap());
+        : new StateSnapshot(Long.parseLong(ring.collectionId), dc.getName(), ring.epoch, shard,
+            ring.baseSeq, Collections.emptyMap());
     Map<Integer, Integer> effective = base.reconstruct(ring.entries);
 
     if (log.isDebugEnabled()) {

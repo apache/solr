@@ -35,7 +35,7 @@ public class StateDeltaJavabinTest extends SolrTestCaseJ4 {
     public void roundTrip() throws Exception {
         StateDelta.Entry e1 = new StateDelta.Entry(1, 2); // replicaId=1, ACTIVE
         StateDelta.Entry e2 = new StateDelta.Entry(2, 1); // replicaId=2, LEADER
-        StateDelta original = new StateDelta(3, 42L,
+        StateDelta original = new StateDelta("101", "s1", 3, 42L,
                 Arrays.asList(e1, e2),
                 Arrays.asList(7, 8),
                 2 /* demotedShortState = ACTIVE */);
@@ -56,14 +56,14 @@ public class StateDeltaJavabinTest extends SolrTestCaseJ4 {
 
     @Test
     public void deserializesEntriesAsListInterface() throws Exception {
-        StateDelta delta = new StateDelta(1, 1L,
+        StateDelta delta = new StateDelta("101", "s1", 1, 1L,
                 Collections.singletonList(new StateDelta.Entry(10, 2)),
                 Collections.emptyList(), 2);
         byte[] bytes = StateDeltaCodec.encodeStateDelta(delta);
 
         // Inspect the raw javabin-decoded tuple — entries_list must come back as List, not int[] or raw array
         List<?> rawTuple = (List<?>) StateDeltaCodec.decode(bytes);
-        Object rawEntries = rawTuple.get(2);
+        Object rawEntries = rawTuple.get(4);
         assertTrue("entries must be a List", rawEntries instanceof List);
         List<?> entriesList = (List<?>) rawEntries;
         assertFalse("entries must not be an int[]", rawEntries instanceof int[]);
@@ -74,13 +74,13 @@ public class StateDeltaJavabinTest extends SolrTestCaseJ4 {
 
     @Test
     public void demotedIdsAreListNotArray() throws Exception {
-        StateDelta delta = new StateDelta(1, 1L,
+        StateDelta delta = new StateDelta("101", "s1", 1, 1L,
                 Collections.emptyList(),
                 Arrays.asList(3, 5, 7), 2);
         byte[] bytes = StateDeltaCodec.encodeStateDelta(delta);
 
         List<?> rawTuple = (List<?>) StateDeltaCodec.decode(bytes);
-        Object rawDemoted = rawTuple.get(3);
+        Object rawDemoted = rawTuple.get(5);
         // Must be a List (fastutil ObjectArrayList from javabin), never int[]
         assertTrue("demotedReplicaIds must be a List", rawDemoted instanceof List);
         assertFalse("demotedReplicaIds must not be an int[]", rawDemoted instanceof int[]);
@@ -94,7 +94,7 @@ public class StateDeltaJavabinTest extends SolrTestCaseJ4 {
     @Test
     public void boundedSingleEntry() throws Exception {
         // Single-entry delta — the typical AC#3 "bounded delta" case
-        StateDelta delta = new StateDelta(0, 1L,
+        StateDelta delta = new StateDelta("101", "s1", 0, 1L,
                 Collections.singletonList(new StateDelta.Entry(99, 4 /* RECOVERING */)),
                 Collections.emptyList(), 2);
         byte[] bytes = StateDeltaCodec.encodeStateDelta(delta);
@@ -115,7 +115,7 @@ public class StateDeltaJavabinTest extends SolrTestCaseJ4 {
                 new StateDelta.Entry(2, 5), // DOWN
                 new StateDelta.Entry(3, 5)  // DOWN
         );
-        StateDelta delta = new StateDelta(2, 10L, entries, Collections.emptyList(), 2);
+        StateDelta delta = new StateDelta("101", "s1", 2, 10L, entries, Collections.emptyList(), 2);
         StateDelta decoded = StateDeltaCodec.decodeStateDelta(StateDeltaCodec.encodeStateDelta(delta));
 
         assertEquals(3, decoded.entries.size());
@@ -167,6 +167,25 @@ public class StateDeltaJavabinTest extends SolrTestCaseJ4 {
     }
 
     private static StateDelta makeDelta(int epoch, long seq) {
-        return new StateDelta(epoch, seq, Collections.emptyList(), Collections.emptyList(), 2);
+        return new StateDelta("101", "s1", epoch, seq, Collections.emptyList(), Collections.emptyList(), 2);
     }
+
+    public void testIdentityRoundTrip() throws Exception {
+        StateDelta original = new StateDelta("17", "shardA", 5, 42L,
+                Collections.singletonList(new StateDelta.Entry(101, StateDelta.ACTIVE)),
+                Collections.singletonList(7), 3);
+
+        StateDelta decoded = StateDeltaCodec.decodeStateDelta(StateDeltaCodec.encodeStateDelta(original));
+
+        assertEquals("17", decoded.collectionId);
+        assertEquals("shardA", decoded.shardId);
+        assertEquals(original.epoch, decoded.epoch);
+        assertEquals(original.seq, decoded.seq);
+        assertEquals(original.entries.size(), decoded.entries.size());
+        assertEquals(original.entries.get(0).replicaId, decoded.entries.get(0).replicaId);
+        assertEquals(original.entries.get(0).shortState, decoded.entries.get(0).shortState);
+        assertEquals(original.demotedReplicaIds, decoded.demotedReplicaIds);
+        assertEquals(original.demotedShortState, decoded.demotedShortState);
+    }
+
 }

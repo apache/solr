@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -45,7 +46,7 @@ import org.slf4j.LoggerFactory;
  *   <li><b>fence</b> (D4): re-check "am I still the elected overseer" AND reject a ring owned by a
  *       higher election id ({@code writerId} — election id, NOT epoch). {@code writerId} is a
  *       <b>writer-side fence + diagnostics only</b>; readers MUST NEVER validate it;
- *   <li>rebase the local epoch cursor if {@code ring.epoch > localEpoch};
+ *   <li>reject the append if {@code ring.epoch > localEpoch};
  *   <li><b>compute pending demotions first</b> (D5) — a stale leader is demoted to {@code ACTIVE(2)}
  *       (D14) in the SAME delta as the promotion, so reader-visible state shows exactly one leader;
  *   <li>no-op ONLY when the promotions change no effective state AND there are no pending demotions
@@ -223,19 +224,14 @@ public class StatePlaneWriter {
      *                   stale-leader demotion for a LEADER promotion is computed automatically (D5).
      * @return true if a delta was appended; false if the publish was an idempotent no-op.
      */
-    public boolean publish(String coll, String shard, List<StateDelta.Entry> promotions,
-                           List<Integer> demotions) {
-        return publish(coll, shard, null, promotions, demotions);
-    }
-
     /**
      * Publish replica state for one shard with a caller-supplied collection incarnation id.
-     *
-     * <p>The id is used only for writer-local cache isolation. The durable state-plane layout remains
-     * collection-name based.
      */
     public boolean publish(String coll, String shard, String collectionIncarnation,
                            List<StateDelta.Entry> promotions, List<Integer> demotions) {
+        if (collectionIncarnation == null) {
+            throw new IllegalArgumentException("collectionIncarnation is required for state-plane publish");
+        }
         final String collPath = StatePlanePaths.collectionPath(coll);
         final String deltaPath = StatePlanePaths.shardDeltas(collPath, shard);
         final List<StateDelta.Entry> promos =
@@ -264,7 +260,7 @@ public class StatePlaneWriter {
                         data = zkClient.getData(deltaPath, null, stat, true);
                     } catch (KeeperException.NoNodeException nne) {
                         // D17: lazy-create the skeleton + empty ring, then retry.
-                        lazyCreateRing(collPath, shard);
+                        lazyCreateRing(collPath, shard, collectionIncarnation);
                         continue;
                     }
 
@@ -281,6 +277,12 @@ public class StatePlaneWriter {
                     }
 
                     // ---- Rebase epoch cursor if the ring is ahead. epoch never bumps per-write. ----
+                    if (ring.epoch > localEpoch) {
+                        throw new FencedException(
+                                "ring " + deltaPath + " is at epoch " + ring.epoch
+                                        + " ahead of local writer epoch " + localEpoch + "; refusing to append");
+                    }
+
                     int epoch = Math.max(localEpoch, ring.epoch);
                     if (ring.epoch > localEpoch) localEpoch = ring.epoch;
 
@@ -315,7 +317,7 @@ public class StatePlaneWriter {
 
                     // ---- Append one delta (seq = lastSeq + 1, D2; demoted→ACTIVE, D14). ----
                     long seq = ring.lastSeq + 1;
-                    StateDelta delta = new StateDelta(epoch, seq, promos, pendingDemotions, ACTIVE);
+                    StateDelta delta = new StateDelta(collectionIncarnation, shard, epoch, seq, promos, pendingDemotions, ACTIVE);
 
                     List<StateDelta> newEntries = new ArrayList<>(ring.entries);
                     newEntries.add(delta);
@@ -353,6 +355,8 @@ public class StatePlaneWriter {
                     }
 
                     ShardStateLog newRing = new ShardStateLog(
+                            ring.collectionId != null ? ring.collectionId : collectionIncarnation,
+                            ring.shardId != null ? ring.shardId : shard,
                             epoch, newBaseSeq, seq, fence.writerId(), newEntries);
                     byte[] out = StateDeltaCodec.encodeShardStateLog(newRing);
 
@@ -427,7 +431,8 @@ public class StatePlaneWriter {
             throws KeeperException, InterruptedException, IOException {
         StateSnapshot snapshot = readSnapshot(collPath, shard);
         if (snapshot == null) {
-            snapshot = new StateSnapshot(-1L, coll, ring.epoch, shard, ring.baseSeq, Collections.emptyMap());
+            snapshot = new StateSnapshot(Long.parseLong(ring.collectionId), coll, ring.epoch, shard,
+                    ring.baseSeq, Collections.emptyMap());
         }
         return new LinkedHashMap<>(snapshot.reconstruct(ring.entries));
     }
@@ -506,7 +511,7 @@ public class StatePlaneWriter {
                 long upToSeq = ring.lastSeq;
                 StateSnapshot oldSnap = readSnapshot(collPath, shard);
                 if (oldSnap == null) {
-                    oldSnap = new StateSnapshot(-1L, coll, ring.epoch, shard, ring.baseSeq,
+                    oldSnap = new StateSnapshot(Long.parseLong(ring.collectionId), coll, ring.epoch, shard, ring.baseSeq,
                             Collections.emptyMap());
                 }
                 Map<Integer, Integer> folded = oldSnap.reconstruct(ring.entries);
@@ -519,7 +524,8 @@ public class StatePlaneWriter {
 
                 // (2) THEN CAS-trim the ring: baseSeq advances to upToSeq, folded deltas removed.
                 ShardStateLog trimmed = new ShardStateLog(
-                        ring.epoch, upToSeq, ring.lastSeq, fence.writerId(), Collections.emptyList());
+                        ring.collectionId, ring.shardId, ring.epoch, upToSeq, ring.lastSeq,
+                        fence.writerId(), Collections.emptyList());
                 zkClient.setData(deltaPath, StateDeltaCodec.encodeShardStateLog(trimmed),
                         stat.getVersion(), false);
 
@@ -550,6 +556,41 @@ public class StatePlaneWriter {
         log.warn("statePlane compaction exhausted {} CAS attempts for {}", MAX_CAS_ATTEMPTS, deltaPath);
     }
 
+    /**
+     * Writes a shard snapshot only when it advances durable coverage. The snapshot is the
+     * reconstruction base for the bounded CAS ring, so regressive stale-writer overwrites must
+     * be rejected even if a later ring CAS would fail.
+     */
+    private void writeSnapshotMonotonic(String collPath, String shard, StateSnapshot newSnap)
+            throws KeeperException, InterruptedException, IOException {
+        String snapPath = StatePlanePaths.shardSnapshot(collPath, shard);
+        byte[] newBytes = StateDeltaCodec.encodeStateSnapshot(newSnap);
+
+        for (int attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
+            Stat stat = new Stat();
+            try {
+                byte[] currentBytes = zkClient.getData(snapPath, null, stat, true);
+                StateSnapshot current = StateDeltaCodec.decodeStateSnapshot(currentBytes);
+                if (current != null && current.upToSeq() >= newSnap.upToSeq()) {
+                    return;
+                }
+                zkClient.setData(snapPath, newBytes, stat.getVersion(), true);
+                return;
+            } catch (KeeperException.NoNodeException nne) {
+                try {
+                    zkClient.makePath(snapPath, newBytes, CreateMode.PERSISTENT, true);
+                    return;
+                } catch (KeeperException.NodeExistsException exists) {
+                    // Lost the create race; loop and apply the monotonic version check.
+                }
+            } catch (KeeperException.BadVersionException bve) {
+                // Concurrent snapshot writer; loop and re-check coverage.
+            }
+        }
+
+        throw new KeeperException.BadVersionException(snapPath);
+    }
+
     private StateSnapshot readSnapshot(String collPath, String shard)
             throws KeeperException, InterruptedException, IOException {
         String snapPath = StatePlanePaths.shardSnapshot(collPath, shard);
@@ -576,7 +617,8 @@ public class StatePlaneWriter {
         try {
             StateSnapshot oldSnap = readSnapshot(collPath, shard);
             if (oldSnap == null) {
-                oldSnap = new StateSnapshot(-1L, coll, ring.epoch, shard, ring.baseSeq, Collections.emptyMap());
+                oldSnap = new StateSnapshot(Long.parseLong(ring.collectionId), coll, ring.epoch, shard, ring.baseSeq,
+                        Collections.emptyMap());
             }
             long upToSeq = ring.lastSeq;
             Map<Integer, Integer> folded = oldSnap.reconstruct(ring.entries);
@@ -663,10 +705,10 @@ public class StatePlaneWriter {
      * Lazy-create the {@code state/shards/<shard>/deltas} skeleton with an empty ring (D17).
      * Idempotent — concurrent creators tolerate NodeExists.
      */
-    private void lazyCreateRing(String collPath, String shard)
+    private void lazyCreateRing(String collPath, String shard, String collectionIncarnation)
             throws KeeperException, InterruptedException, IOException {
         String deltaPath = StatePlanePaths.shardDeltas(collPath, shard);
-        ShardStateLog empty = new ShardStateLog(localEpoch, 0L, 0L, fence.writerId(),
+        ShardStateLog empty = new ShardStateLog(collectionIncarnation, shard, localEpoch, 0L, 0L, fence.writerId(),
                 Collections.emptyList());
         byte[] bytes = StateDeltaCodec.encodeShardStateLog(empty);
         try {
@@ -684,106 +726,33 @@ public class StatePlaneWriter {
      * empty seed at collection create). Write order is <b>snapshot → deltas(empty) → manifest LAST</b>;
      * {@code manifest.seeded==true} is the reader's switch onto the delta plane and is published last.
      */
-    public void seedShard(String coll, String shard, int epoch, Map<Integer, Integer> states)
+    /**
+     * Publishes the state-plane manifest after all shard snapshots/rings are durable. The manifest is
+     * intentionally small metadata: readers use its existence as the switch onto this fork's state
+     * plane and discover the authoritative shard set from state.json.
+     */
+    public void writeManifestSeeded(String coll, int epoch, List<String> shards)
             throws KeeperException, InterruptedException, IOException {
-        String collPath = StatePlanePaths.collectionPath(coll);
-        setLocalEpoch(epoch);
-        // 1) snapshot (carry the collection name as identity; numeric id unknown at seed → -1)
-        StateSnapshot snap = new StateSnapshot(-1L, coll, epoch, shard, 0L,
-                states == null ? Collections.emptyMap() : states);
-        createIfAbsent(StatePlanePaths.shardSnapshot(collPath, shard),
-                StateDeltaCodec.encodeStateSnapshot(snap));
-        // 2) deltas (empty)
-        ShardStateLog empty = new ShardStateLog(epoch, 0L, 0L, fence.writerId(), Collections.emptyList());
-        createIfAbsent(StatePlanePaths.shardDeltas(collPath, shard),
-                StateDeltaCodec.encodeShardStateLog(empty));
+        Map<String, Object> manifest = new LinkedHashMap<>();
+        manifest.put("epoch", epoch);
+        manifest.put("seeded", Boolean.TRUE);
+        manifest.put("shards", new ArrayList<>(shards));
+        createIfAbsent(StatePlanePaths.manifest(StatePlanePaths.collectionPath(coll)), Utils.toJSON(manifest));
     }
 
-    /**
-     * Publish the manifest LAST (the reader's switch onto the delta plane). Callers invoke this after
-     * every shard of a collection has been seeded via {@link #seedShard}.
-     */
-    public void writeManifestSeeded(String coll, int epoch, List<String> shardHints)
-            throws KeeperException, InterruptedException, IOException {
-        String collPath = StatePlanePaths.collectionPath(coll);
-        List<Object> manifest = new ArrayList<>(3);
-        manifest.add(epoch);
-        manifest.add(Boolean.TRUE); // seeded — published LAST, the reader's switch onto the delta plane
-        manifest.add(shardHints == null ? Collections.emptyList() : new ArrayList<>(shardHints));
-        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-        new org.apache.solr.common.util.JavaBinCodec()
-                .marshal(manifest, new org.apache.solr.common.util.FastOutputStream(baos));
-        createIfAbsent(StatePlanePaths.manifest(collPath), baos.toByteArray());
-    }
-
-    /**
-     * CAS-safe, monotonic shard-snapshot write. A snapshot must never regress in coverage: a stale
-     * writer that computed a lower {@code upToSeq} must not overwrite a newer writer's
-     * higher-coverage snapshot. Combined with a trimmed ring, a regressed snapshot opens an
-     * unreconstructable gap between {@code snapshot.upToSeq} and {@code ring.baseSeq}. The election
-     * fence narrows but does not close this window (a not-yet-fenced stale writer can still issue the
-     * write), so the snapshot write itself is made monotonic here:
-     * <ul>
-     *   <li>absent — create it;</li>
-     *   <li>existing coverage {@code >= newSnap.upToSeq} — skip (never regress; the existing snapshot
-     *       already covers at least this prefix);</li>
-     *   <li>otherwise CAS-overwrite at the read version, retrying on BadVersion (a concurrent writer
-     *       advanced it — re-read and re-evaluate the monotonic guard).</li>
-     * </ul>
-     * On exhaustion it rethrows the last {@link KeeperException.BadVersionException}; both callers
-     * ({@link #compactShard}, {@link #foldCommittedRingIntoSnapshot}) treat a thrown
-     * {@code KeeperException} as "fold not durable" and fall back safely (no ring trim).
-     */
-    private void writeSnapshotMonotonic(String collPath, String shard, StateSnapshot newSnap)
-            throws KeeperException, InterruptedException, IOException {
-        final String snapPath = StatePlanePaths.shardSnapshot(collPath, shard);
-        KeeperException.BadVersionException lastBve = null;
-        for (int attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
-            Stat stat = new Stat();
-            byte[] cur;
-            try {
-                cur = zkClient.getData(snapPath, null, stat, true);
-            } catch (KeeperException.NoNodeException nne) {
-                try {
-                    zkClient.makePath(snapPath, StateDeltaCodec.encodeStateSnapshot(newSnap),
-                            CreateMode.PERSISTENT, true);
-                    return;
-                } catch (KeeperException.NodeExistsException nee) {
-                    continue; // raced a creator — re-read and treat as an existing node
-                }
-            }
-            StateSnapshot existing = StateDeltaCodec.decodeStateSnapshot(cur);
-            if (existing != null && existing.upToSeq() >= newSnap.upToSeq()) {
-                if (log.isDebugEnabled()) {
-                    log.debug("snapshot {} already covers upToSeq {} >= {}; skip regressive write",
-                            snapPath, existing.upToSeq(), newSnap.upToSeq());
-                }
-                return;
-            }
-            try {
-                zkClient.setData(snapPath, StateDeltaCodec.encodeStateSnapshot(newSnap),
-                        stat.getVersion(), false);
-                return;
-            } catch (KeeperException.BadVersionException bve) {
-                lastBve = bve;
-                if (log.isDebugEnabled()) log.debug("snapshot CAS BadVersion on {}; retry {}", snapPath, attempt);
-            }
+    public void seedShard(String coll, String shard, String collectionIncarnation, int epoch, Map<Integer, Integer> states)
+            throws IOException, KeeperException, InterruptedException {
+        if (collectionIncarnation == null) {
+            throw new IllegalArgumentException("collectionIncarnation is required for state-plane seed");
         }
-        if (lastBve != null) throw lastBve;
+        setLocalEpoch(epoch);
+        String collPath = StatePlanePaths.collectionPath(coll);
+        StateSnapshot snap = new StateSnapshot(Long.parseLong(collectionIncarnation), coll, epoch, shard, 0L, states);
+        createIfAbsent(StatePlanePaths.shardSnapshot(collPath, shard), StateDeltaCodec.encodeStateSnapshot(snap));
+        ShardStateLog empty = new ShardStateLog(collectionIncarnation, shard, epoch, 0L, 0L, fence.writerId(), Collections.emptyList());
+        createIfAbsent(StatePlanePaths.shardDeltas(collPath, shard), StateDeltaCodec.encodeShardStateLog(empty));
     }
 
-    /**
-     * Create-only seed write: create {@code path} with the empty/seed {@code bytes} <b>only if it does
-     * not already exist</b>, and never overwrite an existing node. Seeding establishes an empty baseline
-     * (snapshot, empty ring, manifest) on first collection bring-up. Once a shard's ring or snapshot
-     * exists — from a prior seed, or from a real {@link #publish} that raced in between {@link
-     * org.apache.solr.cloud.overseer.ZkStateWriter}'s absent-manifest check and this write — it must not
-     * be clobbered back to an empty baseline. The previous unconditional {@code setData(-1)} could
-     * overwrite a non-empty ring/snapshot with the empty seed, durably dropping already-published state
-     * at the plane switch. A NodeExists outcome is the success case (another seeder or a real writer
-     * already established the node); {@code makePath} with {@code failOnExists=true} surfaces it and we
-     * leave the existing node intact.
-     */
     private void createIfAbsent(String path, byte[] bytes)
             throws KeeperException, InterruptedException {
         try {

@@ -29,7 +29,7 @@ package org.apache.solr.common.cloud;
  *       reader may fall before it must force a snapshot catch-up instead of an incremental fold.
  * </ul>
  *
- * <p>Relationship to the legacy {@code solr.statePlane.ringCap}
+ * <p>Relationship to {@code solr.statePlane.ringCap}
  * ({@link StatePlaneWriter#RING_CAP_SYSPROP}): {@code ringCap} remains a <b>hard safety cap</b> on
  * ring depth (a blind-trim backstop that never folds into the snapshot). {@link #compactAfterCount()}
  * is the real compaction trigger and should normally be {@code <= ringCap}; with compaction active a
