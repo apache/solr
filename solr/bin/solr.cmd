@@ -1038,6 +1038,18 @@ IF "%GC_TUNE%"=="" (
     -XX:+ExplicitGCInvokesConcurrent
 )
 
+REM Security agent: detect agent JAR and add -javaagent: if present and not skipped.
+REM Set SOLR_SECURITY_AGENT_SKIP=true to disable the agent (for troubleshooting only).
+REM Agent reads its configuration (SOLR_SECURITY_AGENT_MODE, SOLR_SECURITY_AGENT_EXTRA_POLICY,
+REM and policy file variables like SOLR_HOME) directly from env vars -- no -D flags needed.
+set AGENT_SM_OPTS=
+IF NOT "%SOLR_SECURITY_AGENT_SKIP%"=="true" (
+  IF EXIST "%SOLR_SERVER_DIR%\lib\ext\solr-agent-sm-*.jar" (
+    FOR %%F IN ("%SOLR_SERVER_DIR%\lib\ext\solr-agent-sm-*.jar") DO SET "AGENT_JAR=%%F"
+    SET "AGENT_SM_OPTS=-javaagent:!AGENT_JAR!"
+  )
+)
+
 REM Add vector optimizations module
 set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
 
@@ -1113,6 +1125,7 @@ IF NOT "%SOLR_ADDL_ARGS%"=="" set "START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%"
 IF NOT "%SOLR_HOST_ADVERTISE_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ADVERTISE_ARG%"
 IF NOT "%SCRIPT_SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SCRIPT_SOLR_OPTS%"
 IF NOT "%SOLR_OPTS_INTERNAL%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS_INTERNAL%"
+IF NOT "!AGENT_SM_OPTS!"=="" set "START_OPTS=!AGENT_SM_OPTS! %START_OPTS%"
 IF NOT "!SECURITY_MANAGER_OPTS!"=="" set "START_OPTS=%START_OPTS% !SECURITY_MANAGER_OPTS!"
 IF "%SOLR_SSL_ENABLED%"=="true" (
   set "SSL_PORT_PROP=-Dsolr.jetty.https.port=%SOLR_PORT_LISTEN%"

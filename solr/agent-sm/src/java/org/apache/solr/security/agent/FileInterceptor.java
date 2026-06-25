@@ -1,0 +1,267 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.security.agent;
+
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.spi.FileSystemProvider;
+import java.util.Collection;
+import java.util.Set;
+import net.bytebuddy.asm.Advice;
+
+/**
+ * ByteBuddy {@link Advice} interceptor for file-system operations.
+ *
+ * <p>This file was derived from the OpenSearch project and modified. See {@code NOTICE.txt} for
+ * attribution.
+ */
+public class FileInterceptor {
+
+  /** FileInterceptor */
+  public FileInterceptor() {}
+
+  /**
+   * Guard to prevent re-entrant calls: set to {@code true} while symlink resolution is in progress
+   * on the current thread, so that any file operation triggered by {@code toRealPath()} is not
+   * intercepted again (which would cause infinite recursion).
+   */
+  static final ThreadLocal<Boolean> IN_SYMLINK_RESOLVE = ThreadLocal.withInitial(() -> false);
+
+  /**
+   * Resolves a path to its real, symlink-free form for policy checks. Falls back to {@link
+   * Path#toAbsolutePath() toAbsolutePath().normalize()} when (a) the path does not exist yet, or
+   * (b) {@code toRealPath()} itself triggers a re-entrant interception (detected via {@link
+   * #IN_SYMLINK_RESOLVE}).
+   */
+  public static String resolveRealPath(Path path) {
+    if (Boolean.TRUE.equals(IN_SYMLINK_RESOLVE.get())) {
+      return path.toAbsolutePath().normalize().toString();
+    }
+    IN_SYMLINK_RESOLVE.set(true);
+    try {
+      return path.toRealPath().toString();
+    } catch (IOException | SecurityException e) {
+      // Path does not exist yet, or the Old Java SecurityManager blocked checkRead() on the
+      // resolved real path — fall back to the normalized (non-symlink-resolved) path.
+      return path.toAbsolutePath().normalize().toString();
+    } finally {
+      IN_SYMLINK_RESOLVE.set(false);
+    }
+  }
+
+  /**
+   * Intercepts file operations.
+   *
+   * @param args arguments
+   * @param method method
+   * @throws Exception exceptions
+   */
+  @Advice.OnMethodEnter
+  public static void intercept(@Advice.AllArguments Object[] args, @Advice.Origin Method method)
+      throws Exception {
+    if (!AgentPolicy.isInitialized()) return;
+    final AgentPolicy policy = AgentPolicy.getInstance();
+
+    FileSystemProvider provider = null;
+    String filePath = null;
+    if (args.length > 0 && args[0] instanceof String pathStr) {
+      filePath = Path.of(pathStr).toAbsolutePath().normalize().toString();
+    } else if (args.length > 0 && args[0] instanceof Path path) {
+      filePath = resolveRealPath(path);
+      provider = path.getFileSystem().provider();
+    }
+
+    if (filePath == null) {
+      return; // No valid file path found
+    }
+
+    if (provider != null && policy.trustedFileSystems().contains(provider.getScheme())) {
+      return;
+    }
+
+    final StackWalker walker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
+    final String caller = walker.getCallerClass().getName();
+
+    final String name = method.getName();
+    // "move" and "copy" are handled separately below (both endpoints must be checked).
+    boolean isMutating = name.equals("write") || name.startsWith("create");
+    final boolean isDelete = !isMutating && name.startsWith("delete");
+
+    // This is Windows implementation of UNIX Domain Sockets (close)
+    boolean isUnixSocketCaller = false;
+    if (isDelete == true) {
+      final Collection<Class<?>> chain = walker.walk(StackCallerClassChainExtractor.INSTANCE);
+      for (final Class<?> cls : chain) {
+        if (cls.getName().equalsIgnoreCase("sun.nio.ch.PipeImpl$Initializer$LoopbackConnector")) {
+          isUnixSocketCaller = true;
+          break;
+        }
+      }
+    }
+
+    if (isDelete == true && isUnixSocketCaller == true) {
+      // Unix domain socket cleanup — local IPC, always allow
+      return;
+    } else {
+      String targetFilePath = null;
+      if (isMutating == false && isDelete == false) {
+        if (name.equals("newByteChannel") == true || name.equals("open") == true) {
+          if (args.length > 1) {
+            if (args[1] instanceof OpenOption[] opts) {
+              for (final OpenOption opt : opts) {
+                if (opt != StandardOpenOption.READ) {
+                  isMutating = true;
+                  break;
+                }
+              }
+            } else if (args[1] instanceof Set<?> opts) {
+              @SuppressWarnings("unchecked")
+              final Set<OpenOption> options = (Set<OpenOption>) args[1];
+              for (final OpenOption opt : options) {
+                if (opt != StandardOpenOption.READ) {
+                  isMutating = true;
+                  break;
+                }
+              }
+            } else if (args[1] instanceof Object[] opts) {
+              for (final Object opt : opts) {
+                if (opt != StandardOpenOption.READ) {
+                  isMutating = true;
+                  break;
+                }
+              }
+            } else {
+              isMutating = true; // unknown option type — treat conservatively as mutating
+            }
+          }
+        } else if (name.equals("copy") == true || name.equals("move") == true) {
+          if (args.length > 1 && args[1] instanceof String pathStr) {
+            targetFilePath = Path.of(pathStr).toAbsolutePath().normalize().toString();
+          } else if (args.length > 1 && args[1] instanceof Path path) {
+            targetFilePath = resolveRealPath(path);
+          }
+        }
+      }
+
+      // Handle FileChannel.open() and newByteChannel() — check read/write permissions
+      if (name.equals("open") || name.equals("newByteChannel")) {
+        final String action = isMutating ? "write" : "read";
+        enforceFileAccess(
+            policy,
+            filePath,
+            action,
+            isMutating
+                ? SecurityViolationLogger.ViolationType.FILE_WRITE
+                : SecurityViolationLogger.ViolationType.FILE_READ,
+            caller,
+            "Denied "
+                + (isMutating ? "OPEN (read/write)" : "OPEN (read)")
+                + " access to file: "
+                + filePath);
+        return; // fully handled; do not fall through
+      }
+
+      // Handle Files.copy() — source requires read, destination requires write
+      if (name.equals("copy")) {
+        enforceFileAccess(
+            policy,
+            filePath,
+            "read",
+            SecurityViolationLogger.ViolationType.FILE_READ,
+            caller,
+            "Denied COPY (read) access to file: " + filePath);
+        if (targetFilePath != null) {
+          enforceFileAccess(
+              policy,
+              targetFilePath,
+              "write",
+              SecurityViolationLogger.ViolationType.FILE_WRITE,
+              caller,
+              "Denied COPY (write) access to file: " + targetFilePath);
+        }
+        return; // fully handled; do not fall through
+      }
+
+      // Handle Files.move() — source requires delete, destination requires write
+      if (name.equals("move")) {
+        enforceFileAccess(
+            policy,
+            filePath,
+            "delete",
+            SecurityViolationLogger.ViolationType.FILE_DELETE,
+            caller,
+            "Denied MOVE (delete source) access to file: " + filePath);
+        if (targetFilePath != null) {
+          enforceFileAccess(
+              policy,
+              targetFilePath,
+              "write",
+              SecurityViolationLogger.ViolationType.FILE_WRITE,
+              caller,
+              "Denied MOVE (write destination) access to file: " + targetFilePath);
+        }
+        return; // fully handled; do not fall through
+      }
+
+      // Remaining mutating operations (write, createFile, createDirectories, createLink)
+      if (isMutating) {
+        enforceFileAccess(
+            policy,
+            filePath,
+            "write",
+            SecurityViolationLogger.ViolationType.FILE_WRITE,
+            caller,
+            "Denied WRITE access to file: " + filePath);
+      }
+
+      // File deletion operations
+      if (isDelete) {
+        enforceFileAccess(
+            policy,
+            filePath,
+            "delete",
+            SecurityViolationLogger.ViolationType.FILE_DELETE,
+            caller,
+            "Denied DELETE access to file: " + filePath);
+      }
+    }
+  }
+
+  /**
+   * Shared enforcement: checks whether the policy permits {@code action} on {@code resolvedPath}.
+   * Increments the file violation counter and logs; throws {@link SecurityException} in enforce
+   * mode. Used by both the {@link #intercept} advice and the test-side check helpers.
+   */
+  public static void enforceFileAccess(
+      AgentPolicy policy,
+      String resolvedPath,
+      String action,
+      SecurityViolationLogger.ViolationType violationType,
+      String caller,
+      String securityMessage) {
+    if (!policy.isPathPermitted(resolvedPath, action)) {
+      ViolationMetricsReporter.incrementFile();
+      SecurityViolationLogger.log(violationType, resolvedPath, caller, policy.enforcementMode());
+      if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
+        throw new SecurityException(securityMessage);
+      }
+    }
+  }
+}

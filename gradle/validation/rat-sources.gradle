@@ -164,6 +164,12 @@ allprojects {
           // Exclude github stuff (templates, workflows).
           exclude ".github"
 
+          // Exclude speckit planning artifacts and Claude Code tooling.
+          exclude "specs/**"
+          exclude ".claude/**"
+          exclude ".specify/**"
+          exclude "CLAUDE.md"
+
           exclude "dev-tools/scripts/cloud.sh"
           exclude "dev-tools/scripts/README.md"
           exclude "dev-tools/scripts/create_line_file_docs.py"
@@ -211,6 +217,11 @@ allprojects {
           exclude "src/test-files/**/external_eff"
           exclude "src/test-files/**/*.incl"
           exclude "src/test-files/**/*-snippet-*.xml"
+          break
+
+        case ":solr:agent-sm":
+          // Test-programs are tiny standalone programs for BATS tests, not shipped artifacts.
+          exclude "src/test-programs/**"
           break
 
         case ":solr:server":

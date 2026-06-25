@@ -1,0 +1,135 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Solr Security Agent — default production policy
+//
+// This file is the bundled default policy for the Solr security agent. It should not be edited
+// by operators. To grant additional permissions for your deployment, use the operator extension
+// file at: ${server.dir}/etc/agent-security-extra.policy (or the path set by
+// SOLR_SECURITY_AGENT_EXTRA_POLICY / -Dsolr.security.agent.extra.policy).
+//
+// Syntax: JDK-style .policy files with Solr variable substitution.
+// Supported variables: ${solr.solr.home}, ${solr.data.home}, ${solr.logs.dir}, ${solr.install.dir},
+//                      ${solr.install.symDir}, ${java.io.tmpdir}, ${java.home},
+//                      ${solr.port.listen}, ${solr.zk.port}
+//
+// For documentation see the Solr Reference Guide: Security Agent.
+
+// ---------------------------------------------------------------------------
+// Global grant — applies to all code running in the Solr JVM
+// ---------------------------------------------------------------------------
+grant {
+
+  // --- File system access ---
+
+  // Solr installation directory: read-only (JARs, modules, Jetty config, etc.)
+  // Both the real path and the symlinked path are permitted so that installations where
+  // /opt/solr -> /opt/solr-X.Y.Z/ work correctly regardless of which form is presented to
+  // FileInterceptor. When the Old Java SecurityManager is active, toRealPath() may fall back
+  // to toAbsolutePath().normalize(), producing the symlinked form; both entries are needed.
+  permission java.io.FilePermission "${solr.install.dir}/-",    "read";
+  permission java.io.FilePermission "${solr.install.symDir}/-", "read";
+
+  // Solr home: read-only (config files, schema, solrconfig.xml, etc.)
+  permission java.io.FilePermission "${solr.solr.home}/-", "read";
+
+  // Solr data and index directories: full read/write/delete
+  permission java.io.FilePermission "${solr.data.home}/-", "read,write,delete";
+
+  // Log directory: write access for log files
+  permission java.io.FilePermission "${solr.logs.dir}/-", "read,write,delete";
+
+  // Temporary files: full access (sort buffers, merged segments, etc.)
+  permission java.io.FilePermission "${java.io.tmpdir}/-", "read,write,delete";
+
+  // JDK runtime libraries: read-only (class loading, native libs, etc.)
+  permission java.io.FilePermission "${java.home}/-", "read";
+
+  // Linux pseudo-filesystems: read-only access for JVM internals (e.g. memory-mapping checks,
+  // network configuration, kernel parameters). These paths do not exist on macOS/Windows and
+  // their presence in a cross-platform policy is harmless.
+  permission java.io.FilePermission "/proc/-", "read";
+  permission java.io.FilePermission "/sys/-",  "read";
+
+  // --- RuntimePermission: exitVM / exec ---
+  //
+  // No exitVM grants are present in this default policy. This is intentional:
+  //   - The Solr CLI tools (bin/solr foo bar) are not launched with -javaagent and therefore
+  //     do not need an exitVM grant.
+  //   - The running Solr backend (Jetty) is expected to shut down via graceful thread completion
+  //     (ShutdownHook, server.stop()), not via System.exit(). Calling System.exit() from a plugin
+  //     is the threat model, not the server itself.
+  //   - In WARN mode (the default) any unapproved System.exit() call is logged but permitted.
+  //     In ENFORCE mode it is blocked. Operators who need to allow a specific JAR or class to call
+  //     System.exit() should add a codeBase-scoped RuntimePermission "exitVM" grant in
+  //     agent-security-extra.policy.
+  //
+  // Similarly, no exec grants are present because the Solr server does not spawn child processes
+  // in its normal operation. Plugin code that needs process spawning must be explicitly granted.
+
+  // --- Outbound network access ---
+
+  // Loopback addresses: unconditionally permitted (inter-thread, localhost HTTP, embedded ZK)
+  permission java.net.SocketPermission "localhost:1-65535",  "connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:1-65535", "connect,resolve";
+  permission java.net.SocketPermission "[::1]:1-65535",     "connect,resolve";
+
+  // Intra-cluster connectivity
+  // Any host on the Solr HTTP port is permitted, covering all current and future cluster nodes
+  // without requiring a static node list at startup. Similarly for the ZooKeeper port.
+  permission java.net.SocketPermission "*:${solr.port.listen}", "connect,resolve";
+  permission java.net.SocketPermission "*:${solr.zk.port}",    "connect,resolve";
+
+};
+
+// ---------------------------------------------------------------------------
+// Per-module codeBase grants for bundled modules that make outbound network calls
+//
+// Each of the five pre-permitted modules below has its external endpoint controlled exclusively
+// by a node or cluster administrator (not by collection-level config), making a wildcard grant
+// safe from SSRF abuse.
+//
+// NOTE: The 'extraction' module is intentionally excluded because its Tika Server URL is
+// configurable at CONFIG_EDIT privilege level (collection admin). Operators using remote Tika
+// must add an explicit host-locked entry in agent-security-extra.policy. See the extraction
+// module documentation for a ready-to-paste example.
+// ---------------------------------------------------------------------------
+
+// jwt-auth: OIDC/JWKS endpoint configured via security.json (requires Solr SECURITY_EDIT admin)
+grant codeBase "file:${solr.install.dir}/modules/jwt-auth/-" {
+  permission java.net.SocketPermission "*", "connect,resolve";
+};
+
+// opentelemetry: OTLP collector endpoint configured via env var or solr.xml (node admin only)
+grant codeBase "file:${solr.install.dir}/modules/opentelemetry/-" {
+  permission java.net.SocketPermission "*", "connect,resolve";
+};
+
+// s3-repository: Amazon S3 / S3-compatible endpoint configured via solr.xml backup handler (node admin)
+grant codeBase "file:${solr.install.dir}/modules/s3-repository/-" {
+  permission java.net.SocketPermission "*", "connect,resolve";
+};
+
+// gcs-repository: Google Cloud Storage endpoint configured via solr.xml backup handler (node admin)
+grant codeBase "file:${solr.install.dir}/modules/gcs-repository/-" {
+  permission java.net.SocketPermission "*", "connect,resolve";
+};
+
+// cross-dc-manager: Apache Kafka brokers configured via env var / system property / ZooKeeper (admin)
+grant codeBase "file:${solr.install.dir}/modules/cross-dc-manager/-" {
+  permission java.net.SocketPermission "*", "connect,resolve";
+};

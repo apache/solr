@@ -1,0 +1,134 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java-library'
+
+description = 'Apache Solr Security Agent'
+
+dependencies {
+  // ByteBuddy references SpotBugs annotations in its class files; needed to suppress -Xlint:classfile
+  // Not included in the release so exclude from license/checksum checks.
+  compileOnly libs.spotbugs.annotations
+
+  // !! DO NOT ADD SLF4J OR OTHER LOGGING JARS !!
+  // They are on Boot-Class-Path and initialise the logging binding before Log4j2 loads,
+  // permanently caching a NOP logger and preventing solr.log from being written.
+
+  // ByteBuddy for bytecode instrumentation - bundled into the fat agent JAR
+  implementation libs.bytebuddy
+  // byte-buddy-agent is the Java agent JAR itself; not directly imported in compiled classes
+  // but required at runtime for agent loading and bundled into the fat JAR.
+  implementation libs.bytebuddy.agent
+  permitUnusedDeclared libs.bytebuddy.agent
+
+
+  // Test dependencies - NOT bundled
+  testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:core')
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.junit.junit
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.hamcrest.hamcrest
+  // These are used indirectly via SolrTestCase (test-framework) and randomized runner base classes;
+  // the static analyzer does not see direct usage in agent-sm test sources.
+  permitTestUnusedDeclared project(':solr:core')
+  permitTestUnusedDeclared libs.apache.lucene.testframework
+  permitTestUnusedDeclared libs.carrotsearch.randomizedtesting.runner
+  permitTestUnusedDeclared libs.hamcrest.hamcrest
+}
+
+// Build a self-contained fat JAR so the agent can run before Solr's classpath is set up.
+// ByteBuddy is bundled; Solr classes are NOT included.
+//
+// Build a fat JAR so all agent classes (and ByteBuddy) are available on Boot-Class-Path before
+// the application main class loads. SLF4J is intentionally excluded from this JAR's dependencies:
+// placing SLF4J on Boot-Class-Path would initialise it before Log4j2 is loaded, permanently
+// caching a NOP logger and preventing solr.log from being created.
+jar {
+  manifest {
+    attributes(
+      'Premain-Class':           'org.apache.solr.security.agent.SolrAgentEntryPoint',
+      'Agent-Class':             'org.apache.solr.security.agent.SolrAgentEntryPoint',
+      'Can-Redefine-Classes':    'true',
+      'Can-Retransform-Classes': 'true',
+      'Boot-Class-Path':         archiveFileName
+    )
+  }
+
+  // Bundle runtime dependencies (ByteBuddy) into the fat agent JAR.
+  // Test dependencies are excluded because they are not on runtimeClasspath.
+  from {
+    configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+  }
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// Copy the built agent JAR to server/lib/ext/ so startup scripts can find it at
+// ${SOLR_SERVER_DIR}/lib/ext/solr-agent-sm-*.jar, and so the dev distribution works.
+def agentJarTarget = file("${rootDir}/solr/server/lib/ext")
+
+task copyAgentJar(type: Copy, dependsOn: jar) {
+  description = 'Copies the agent fat JAR to solr/server/lib/ext/ for startup-script detection'
+  group = 'build'
+  from jar.outputs
+  into agentJarTarget
+  // Keep only the current version; remove stale versions on each build.
+  doFirst {
+    delete fileTree(agentJarTarget) { include 'solr-agent-sm-*.jar' }
+  }
+}
+
+// spotbugs-annotations is compileOnly and not included in the release.
+configurations.jarValidation {
+  exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+}
+
+assemble.dependsOn copyAgentJar
+
+// ---------------------------------------------------------------------------
+// Test programs — standalone Java programs compiled for BATS integration tests.
+// These have no Solr/ByteBuddy dependencies; pure JDK APIs only.
+// ---------------------------------------------------------------------------
+sourceSets {
+  testPrograms {
+    java.srcDirs = ['src/test-programs/java']
+  }
+}
+
+// These are tiny standalone programs with no annotation-processor needs.
+// Disabling annotation processing prevents the auto-created testProgramsAnnotationProcessor
+// configuration from pulling in error-prone and friends, which are not in the lock file.
+tasks.named('compileTestProgramsJava') {
+  options.annotationProcessorPath = files()
+}
+
+// Error-prone must also be disabled for compileTestProgramsJava: its Gradle plugin uses
+// tasks.withType(JavaCompile) and would inject -Xplugin:ErrorProne, but the
+// testProgramsAnnotationProcessor configuration has no errorprone JAR on it.
+plugins.withId(libs.plugins.ltgt.errorprone.get().pluginId) {
+  tasks.named('compileTestProgramsJava') {
+    options.errorprone.enabled = false
+  }
+}
+
+task testProgramsJar(type: Jar) {
+  description = 'JAR of standalone violation programs used by BATS integration tests'
+  group = 'build'
+  archiveClassifier = 'test-programs'
+  from sourceSets.testPrograms.output
+}
+

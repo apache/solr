@@ -221,6 +221,21 @@ REM You can also tweak via standard JDK files such as ~\.java.policy, see https:
 REM This is experimental!
 REM set SOLR_SECURITY_MANAGER_ENABLED=true
 
+REM --- Solr Security Agent ---
+REM The Solr security agent replaces the deprecated Java Security Manager with ByteBuddy-based
+REM enforcement. The agent JAR is auto-detected at server\lib\ext\solr-agent-sm-*.jar and activated
+REM automatically. See the Solr Reference Guide for full documentation.
+
+REM Enforcement mode: "warn" (log violations, allow operation — default) or
+REM                   "enforce" (log violations, block operation with SecurityException).
+REM set SOLR_SECURITY_AGENT_MODE=warn
+
+REM Set to "true" to completely disable the security agent (for troubleshooting only).
+REM set SOLR_SECURITY_AGENT_SKIP=false
+
+REM Path to the operator extension policy file (default: server\etc\agent-security-extra.policy).
+REM set SOLR_SECURITY_AGENT_EXTRA_POLICY=C:\path\to\custom-agent-security-extra.policy
+
 REM This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
 REM change the value to false. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 REM scripts.

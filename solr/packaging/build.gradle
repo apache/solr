@@ -266,6 +266,7 @@ task downloadBats(type: NpmTask) {
 task integrationTests(type: BatsTask) {
   dependsOn installFullDist
   dependsOn downloadBats
+  dependsOn ':solr:agent-sm:testProgramsJar'
 
   def integrationTestOutput = "$buildDir/test-output"
   def solrHome = "$integrationTestOutput/solr-home"
@@ -302,6 +303,7 @@ task integrationTests(type: BatsTask) {
   }
 
   environment SOLR_TIP: distDir.toString()
+  environment AGENT_TEST_PROGRAMS_JAR: project(':solr:agent-sm').tasks.named('testProgramsJar').get().archiveFile.get().asFile
   environment SOLR_HOME: solrHome
   environment SOLR_PID_DIR: solrHome
   environment SOLR_PORT_LISTEN: solrPort

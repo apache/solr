@@ -37,6 +37,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - Use the project's custom `EnvUtils` to read system properties. It auto converts env.var SOLR_FOO_BAR to system property solr.foo.bar
 - Be careful to not add non-essential logging! If you add slf4j log calls, make sure to wrap debug/trace level calls in `logger.isXxxEnabled()` clause
 - Validate user input. For file paths, always call `myCoreContainer.assertPathAllowed(myPath)` before using
+- Do not use Fully Qualified Class Names (FQCNs) in code unless absolutely necessary; do use imports.
 
 ## Running Tests
 
@@ -63,7 +64,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - For major or breaking changes, add a prominent note in reference guide major-changes-in-solr-X.adoc
 - Always consider whether a reference-guide page needs updating due to the new/changed features. Target audience is end user
 - For changes to build system and other developer-focused changes, consider updating or adding docs in dev-docs/ folder
-- Keep all documentation including javadoc concise
+- Keep all documentation including javadoc concise and not overly verbose, do not add a comment if it states the obvious.
 - New classes should have some javadocs
 - Changes should not have code comments communicating the change, which are instead great comments to leave for code review / commentary
 
