@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
+import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -1003,6 +1004,32 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   @Test
+  public void testUploadWithBlankFile() throws Exception {
+    // Uploads a zip containing a blank (0-byte) file using STORED method with an EXT descriptor.
+    // Java's ZipInputStream cannot read this format, but ZipFile can.
+    // Verifies the upload succeeds and the empty file is stored in the configset.
+    final String configSetName = "blank-file-configset";
+    final String suffix = "-suffix";
+    final Path zipFile = createTempZipWithStoredEntryAndExtDescriptor();
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
+            .build()) {
+      long res = uploadGivenConfigSet(zipFile, configSetName, suffix, null, true, false, true);
+      assertEquals("Upload of configset with blank file should succeed", 0L, res);
+      assertTrue(
+          "blank.txt should have been uploaded to the configset",
+          zkClient.exists("/configs/" + configSetName + suffix + "/blank.txt"));
+      assertArrayEquals(
+          "blank.txt in configset should be empty",
+          new byte[0],
+          zkClient.getData("/configs/" + configSetName + suffix + "/blank.txt", null, null));
+    }
+  }
+
+  @Test
   public void testGetFile() throws Exception {
     String configSetName = "regular";
     String configSetSuffix = "testGetFile";
@@ -1329,6 +1356,99 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * Creates a zip file (in the temp directory) containing an empty file entry that uses the STORED
+   * compression method with the EXT descriptor flag set. Some zip tools produce this format for
+   * empty (0-byte) files, e.g., when using {@code touch conf/blank.txt} followed by {@code zip -r
+   * ...}. Java's {@link java.util.zip.ZipInputStream} cannot read this combination, but {@link
+   * java.util.zip.ZipFile} handles it correctly by reading from the central directory.
+   */
+  private Path createTempZipWithStoredEntryAndExtDescriptor() throws IOException {
+    final Path zipFile = createTempFile("configset-blank", "zip");
+    // Build a valid ZIP file manually with one STORED entry that has the EXT (data descriptor)
+    // flag set (flag bit 3 = 0x08). Java's ZipInputStream rejects this combination.
+    // All multi-byte fields are little-endian.
+    byte[] fileName = "blank.txt".getBytes(UTF_8);
+    int fileNameLen = fileName.length; // 9
+
+    // Offsets for computing central directory offset
+    // Local file header size: 30 + fileNameLen
+    int localHeaderSize = 30 + fileNameLen;
+    // Data descriptor size: 16 (with signature)
+    int dataDescriptorSize = 16;
+    // Central directory header size: 46 + fileNameLen
+    int centralDirHeaderSize = 46 + fileNameLen;
+    int centralDirOffset = localHeaderSize + dataDescriptorSize; // = 55
+
+    try (DataOutputStream dos = new DataOutputStream(Files.newOutputStream(zipFile))) {
+      // --- Local file header ---
+      dos.write(new byte[] {0x50, 0x4b, 0x03, 0x04}); // signature PK\x03\x04
+      dos.write(new byte[] {0x14, 0x00}); // version needed = 20
+      dos.write(new byte[] {0x08, 0x00}); // flag: bit 3 (data descriptor / EXT)
+      dos.write(new byte[] {0x00, 0x00}); // compression method: STORED
+      dos.write(new byte[] {0x00, 0x00}); // last mod time
+      dos.write(new byte[] {0x00, 0x00}); // last mod date
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // CRC-32 (0, deferred to data descriptor)
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // compressed size (deferred)
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // uncompressed size (deferred)
+      dos.write(new byte[] {(byte) fileNameLen, 0x00}); // file name length
+      dos.write(new byte[] {0x00, 0x00}); // extra field length
+      dos.write(fileName); // file name "blank.txt"
+      // (no file data — the file is empty)
+
+      // --- Data descriptor (EXT record) ---
+      dos.write(new byte[] {0x50, 0x4b, 0x07, 0x08}); // signature PK\x07\x08
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // CRC-32 (0 for empty file)
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // compressed size
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // uncompressed size
+
+      // --- Central directory header ---
+      dos.write(new byte[] {0x50, 0x4b, 0x01, 0x02}); // signature PK\x01\x02
+      dos.write(new byte[] {0x14, 0x00}); // version made by
+      dos.write(new byte[] {0x14, 0x00}); // version needed
+      dos.write(new byte[] {0x08, 0x00}); // flag (same as local header)
+      dos.write(new byte[] {0x00, 0x00}); // compression method: STORED
+      dos.write(new byte[] {0x00, 0x00}); // last mod time
+      dos.write(new byte[] {0x00, 0x00}); // last mod date
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // CRC-32
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // compressed size
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // uncompressed size
+      dos.write(new byte[] {(byte) fileNameLen, 0x00}); // file name length
+      dos.write(new byte[] {0x00, 0x00}); // extra field length
+      dos.write(new byte[] {0x00, 0x00}); // file comment length
+      dos.write(new byte[] {0x00, 0x00}); // disk number start
+      dos.write(new byte[] {0x00, 0x00}); // internal file attributes
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // external file attributes
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // local header relative offset (= 0)
+      dos.write(fileName); // file name "blank.txt"
+
+      // --- End of central directory record ---
+      dos.write(new byte[] {0x50, 0x4b, 0x05, 0x06}); // signature PK\x05\x06
+      dos.write(new byte[] {0x00, 0x00}); // disk number
+      dos.write(new byte[] {0x00, 0x00}); // disk with start of central directory
+      dos.write(new byte[] {0x01, 0x00}); // entries on this disk
+      dos.write(new byte[] {0x01, 0x00}); // total entries
+      // size of central directory
+      dos.write(
+          new byte[] {
+            (byte) (centralDirHeaderSize & 0xFF),
+            (byte) ((centralDirHeaderSize >> 8) & 0xFF),
+            (byte) ((centralDirHeaderSize >> 16) & 0xFF),
+            (byte) ((centralDirHeaderSize >> 24) & 0xFF)
+          });
+      // offset of central directory
+      dos.write(
+          new byte[] {
+            (byte) (centralDirOffset & 0xFF),
+            (byte) ((centralDirOffset >> 8) & 0xFF),
+            (byte) ((centralDirOffset >> 16) & 0xFF),
+            (byte) ((centralDirOffset >> 24) & 0xFF)
+          });
+      dos.write(new byte[] {0x00, 0x00}); // comment length
+    }
+    return zipFile;
   }
 
   private static void zipWithForbiddenContent(Path directory, Path zipfile) throws IOException {
