@@ -474,7 +474,12 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   public void blockUntilFinished() throws IOException {
 
-    lock = new CountDownLatch(1);
+    // Use a local for OUR latch. blockUntilFinished can be called concurrently (e.g. a safeStop while a
+    // commit path also blocks). Counting down/ nulling the shared `lock` field directly let a second
+    // caller stomp the first caller's latch -- the first finally then counted down the wrong latch
+    // (hanging request() threads awaiting the stomped one) and the second finally NPE'd on a null `lock`.
+    CountDownLatch myLock = new CountDownLatch(1);
+    lock = myLock;
     try {
 
       waitForEmptyQueue();
@@ -533,8 +538,12 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         }
 
     } finally {
-      lock.countDown();
-      lock = null;
+      myLock.countDown();
+      // Only clear the shared field if it still references our latch; a concurrent
+      // blockUntilFinished may have installed its own, and we must not null that out.
+      if (lock == myLock) {
+        lock = null;
+      }
     }
   }
 
