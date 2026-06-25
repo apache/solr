@@ -103,6 +103,10 @@ public class TransactionLog implements Closeable {
 
   AtomicInteger refcount = new AtomicInteger(1);
 
+  // This tlog's live LogReader count, kept in lockstep with the process-wide BufferMetrics
+  // activeReaders gauge so forceClose() can drain the gauge for readers it abandons (review L3).
+  private final AtomicInteger activeReaders = new AtomicInteger();
+
 
   Object2IntMap<String> globalStringMap =  Object2IntMaps.synchronize(new Object2IntOpenHashMap<>());
 
@@ -977,6 +981,27 @@ public class TransactionLog implements Closeable {
     });
   }
 
+  /**
+   * Acquire a LogReader-style active-reader slot: bump this tlog's tally and the process-wide gauge in
+   * lockstep so {@link #forceClose()} can later drain the gauge for readers it abandons (review L3).
+   */
+  private void acquireActiveReader() {
+    activeReaders.incrementAndGet();
+    BufferMetrics.getInstance().incrementActiveReaders();
+  }
+
+  /**
+   * Release an active-reader slot. Decrements the process-wide gauge only if this tlog's tally still
+   * counts the reader; if {@link #forceClose()} already drained the tally (abandoned readers) the
+   * global decrement is skipped so the gauge never goes negative (review findings L3 + M5). Idempotent
+   * per reader via the caller's own guard.
+   */
+  private void releaseActiveReader() {
+    if (activeReaders.getAndUpdate(n -> n > 0 ? n - 1 : n) > 0) {
+      BufferMetrics.getInstance().decrementActiveReaders();
+    }
+  }
+
   /** returns the current position in the log file */
   public long position() {
     fosLock.lock();
@@ -1086,6 +1111,14 @@ public class TransactionLog implements Closeable {
         // unmap-while-refcount-positive path.
         log.error("Error: Forcing close of {}", this);
         BufferMetrics.getInstance().incrementForcedCloseCount();
+        // L3: drain the process-wide active-reader gauge for the readers we are abandoning, so a
+        // forced close does not leave the gauge inflated for the rest of the JVM. A late
+        // LogReader/FSReverseReader.close() then finds the per-tlog tally already 0 and skips its
+        // global decrement (releaseActiveReader), so the gauge never goes negative.
+        int abandonedReaders = activeReaders.getAndSet(0);
+        for (int i = 0; i < abandonedReaders; i++) {
+          BufferMetrics.getInstance().decrementActiveReaders();
+        }
         refcount.set(0);
         close();
       }
@@ -1135,24 +1168,37 @@ public class TransactionLog implements Closeable {
   public class LogReader {
     protected DirectMemBufferedInputStream fis;
     private final LogCodec codec = new LogCodec(resolver);
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     public LogReader(long startingPos) {
       incref();
       // Dedicated active-reader gauge. NOT derived from refcount: refcount also counts the
       // structural self-reference (starts at 1) and UpdateLog's many structural increfs, so it
-      // would over-count live readers. Increment here at the reader incref site, decrement in close().
-      BufferMetrics.getInstance().incrementActiveReaders();
+      // would over-count live readers. Bump here at the reader incref site (tracked per-tlog so
+      // forceClose can drain abandoned readers), decrement in close().
+      acquireActiveReader();
+      boolean opened = false;
       fosLock.lock();
       try {
         //fos.flushBuffer();
      //   channel.position(startingPos);
         fis = new DirectMemBufferedInputStream(buffer,  raf.length());
+        opened = true;
 
         // fos.flushBuffer();
       } catch (IOException ioException) {
         throw new RuntimeIOException(ioException);
       } finally {
         fosLock.unlock();
+        if (!opened) {
+          // The reader open failed (e.g. raf.length() on a channel a concurrent forceClose closed),
+          // so roll back the incref + active-reader gauge taken above. Otherwise the tlog refcount
+          // never reaches zero (blocking the mapped-file unmap) and the activeReaders gauge stays
+          // inflated for the rest of the JVM (review finding M5). Done after the unlock so decref()
+          // (which may close/unmap at refcount 0) never runs under fosLock.
+          releaseActiveReader();
+          decref();
+        }
       }
 
     }
@@ -1247,8 +1293,12 @@ public class TransactionLog implements Closeable {
     }
 
     public void close() {
-      BufferMetrics.getInstance().decrementActiveReaders();
-      decref();
+      // Idempotent: releaseActiveReader()/decref() must run at most once per reader, else a
+      // double-close double-decrements the active-reader tally/gauge or the refcount.
+      if (closed.compareAndSet(false, true)) {
+        releaseActiveReader();
+        decref();
+      }
     }
 
     @Override
@@ -1351,12 +1401,14 @@ public class TransactionLog implements Closeable {
 
     int nextLength;  // length of the next record (the next one closer to the start of the log file)
     long prevPos;    // where we started reading from last time (so prevPos - nextLength == start of next record)
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     public FSReverseReader() throws IOException {
       incref();
-      // Dedicated active-reader gauge (see LogReader): decremented in close().
-      BufferMetrics.getInstance().incrementActiveReaders();
+      // Dedicated active-reader gauge (see LogReader): tracked per-tlog, decremented in close().
+      acquireActiveReader();
 
+      boolean opened = false;
       long sz;
       fosLock.lock();
       try {
@@ -1366,9 +1418,16 @@ public class TransactionLog implements Closeable {
 
         sz = fos.size();
         log.info("reverse reader size={} filesz={}", sz, raf.length());
+        opened = true;
         //  assert sz == channel.size() : "sz:" + sz + " ch:" + channel.size();
       } finally {
         fosLock.unlock();
+        if (!opened) {
+          // ctor failed (raf.length()/fos.size() on a channel a concurrent forceClose closed) -> roll
+          // back the incref + active-reader gauge so we don't leak (review findings M5 + L3).
+          releaseActiveReader();
+          decref();
+        }
       }
 
 
@@ -1444,8 +1503,11 @@ public class TransactionLog implements Closeable {
     }
 
     public void close() {
-      BufferMetrics.getInstance().decrementActiveReaders();
-      decref();
+      // Idempotent (see LogReader.close): release the active-reader slot and refcount at most once.
+      if (closed.compareAndSet(false, true)) {
+        releaseActiveReader();
+        decref();
+      }
     }
 
     @Override

@@ -201,10 +201,30 @@ public class StatePublisher implements Closeable {
             break;
           }
         } catch (KeeperException.ConnectionLossException e) {
+          // M4: once close() has set closed, stop the park-and-retry loop instead of waiting for
+          // reconnect again. Otherwise, with ZK unreachable and batches parked, the worker spins
+          // flushPendingBatches() -> ConnectionLoss -> waitForConnected forever, never reaching poll()
+          // to consume the TERMINATE pill, so close()'s awaitTermination times out and the thread is
+          // killed mid-spin with pendingBatches unflushed.
+          if (closed) {
+            break;
+          }
           log.warn("connection loss to zk", e);
           zkStateReader.getZkClient().getConnectionManager().waitForConnected();
         } catch (Exception e) {
           log.error("Exception in StatePublisher run loop", e);
+          if (closed) {
+            break;
+          }
+          // L1: a terminal / non-ConnectionLoss KeeperException (e.g. SessionExpired, NoAuth) lands here
+          // with no backoff (unlike the ConnectionLoss branch above), so with work still queued the loop
+          // would hot-spin retrying the failing persist. Pause briefly before retrying.
+          try {
+            Thread.sleep(250);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            break;
+          }
         }
       }
     }
@@ -435,7 +455,9 @@ public class StatePublisher implements Closeable {
           // STOP recovery"). Suppressing a repeat LEADER within the 30s age window left getLeader()
           // returning empty for the shard, wedging recovery (TestTlogReplica). LEADER is already treated
           // as flush-immediately (bulkMessage returns pollTime=1), so it must always reach the plane.
-          if (id != null && state != Replica.State.LEADER) {
+          // id is provably non-null here (the id==null check above throws), so this only excludes
+          // LEADER from dedup — see the comment above on why LEADER must never be suppressed.
+          if (state != Replica.State.LEADER) {
             int shortState = Replica.State.getShortState(state);
             if (isDuplicatePublish(id, shortState, System.currentTimeMillis())) {
               cacheHits.mark();

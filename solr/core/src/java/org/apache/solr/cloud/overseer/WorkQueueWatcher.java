@@ -187,9 +187,12 @@ public class WorkQueueWatcher extends QueueWatcher {
         // must be applied as structure changes here. Never let an unrecognized op throw: that would abort
         // the whole batch and (since the item is then not deleted) be reprocessed forever, permanently
         // poisoning the overseer state-update queue.
-        applyCollectionStateUpdate(op, message);
-        // Structure changes are applied synchronously via writePendingUpdates().get() — already durable.
-        durableByKey.put(key, CompletableFuture.completedFuture(null));
+        // Record the REAL outcome of the (synchronous) structure write: applyCollectionStateUpdate
+        // returns an exceptionally-completed future if the write failed, so the second pass leaves the
+        // queue item for reprocess instead of recording a completed future and deleting it — which would
+        // silently drop the structure change (e.g. a reindex readOnly flag or a migrate routing rule)
+        // when writePendingUpdates fails on shutdown / null reader / a synchronous throw (finding S3).
+        durableByKey.put(key, applyCollectionStateUpdate(op, message));
       } else {
         switch (overseerAction) {
           case STATE:
@@ -286,7 +289,7 @@ public class WorkQueueWatcher extends QueueWatcher {
    * carries {@link OverseerAction} STATE/UPDATESHARDSTATE messages; these collection actions carry a
    * {@link CollectionParams.CollectionAction} instead and must be applied as a structure change here.
    */
-  private void applyCollectionStateUpdate(String op, ZkNodeProps message) {
+  private CompletableFuture<Void> applyCollectionStateUpdate(String op, ZkNodeProps message) {
     CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(op);
     if (action == CollectionParams.CollectionAction.MODIFYCOLLECTION) {
       String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
@@ -294,7 +297,7 @@ public class WorkQueueWatcher extends QueueWatcher {
         ClusterState cs = overseer.getZkStateWriter().getClusterstate(collection);
         if (cs == null || cs.getCollectionOrNull(collection) == null) {
           log.warn("MODIFYCOLLECTION state update for unknown collection {}: {}", collection, message);
-          return;
+          return CompletableFuture.completedFuture(null);
         }
         cs = CollectionMutator.modifyCollection(cs, message);
         DocCollection docColl = cs.getCollectionOrNull(collection);
@@ -305,14 +308,19 @@ public class WorkQueueWatcher extends QueueWatcher {
             f.get();
           }
         }
+        return CompletableFuture.completedFuture(null);
       } catch (InterruptedException e) {
         ParWork.propagateInterrupt(e);
         throw new AlreadyClosedException(e);
       } catch (Exception e) {
+        // Do NOT swallow: a failed structure write must leave the queue item for reprocess (finding
+        // S3). Returning an exceptionally-completed future signals the second pass to keep the item.
         log.error("Failed applying MODIFYCOLLECTION state update for {}: {}", collection, message, e);
+        return CompletableFuture.failedFuture(e);
       }
     } else {
       log.warn("Ignoring unsupported overseer state-update op={} contents={}", op, message);
+      return CompletableFuture.completedFuture(null);
     }
   }
 

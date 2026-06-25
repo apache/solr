@@ -1862,6 +1862,60 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
+  /**
+   * Ensure the log is in BUFFERING state for a (re)starting recovery, WITHOUT discarding an
+   * already-present buffer tlog.
+   *
+   * <p>{@link #bufferUpdates()} unconditionally {@link #dropBufferTlog()}s + {@link #deleteBufferLogs()}.
+   * That is correct for a fresh recovery, but on a recovery RETRY after an errored leader-tlog
+   * catch-up replay it loses data (review finding C1): {@link LogReplayer}'s {@code finally} has
+   * already flipped the state to {@link State#ACTIVE} even though {@link #applyLeaderTlogThenBuffer}
+   * kept the buffer tlog (it only drops it on an error-free replay), so the window-forwarded updates
+   * are still un-applied and live only in that buffer. Inferring "already buffering" from
+   * {@link #getState()} therefore misses this case and the next {@code bufferUpdates()} would drop
+   * those updates permanently. Detect the buffer directly instead: if one is present, re-enter
+   * BUFFERING and keep it (new forwarded updates append to it and the next replay re-applies the whole
+   * set); otherwise start a fresh buffer exactly like {@link #bufferUpdates()}.
+   */
+  public void ensureBuffering() {
+    AtomicBoolean skip = new AtomicBoolean(false);
+    versionInfo.blockUpdates();
+    try {
+      state.getAndUpdate(state1 -> {
+        if (state1 != State.ACTIVE && state1 != State.BUFFERING) {
+          // APPLYING_BUFFERED / REPLAYING etc.: a replay is mid-flight, don't disturb it.
+          log.warn("Unexpected state for ensureBuffering: {}, Ignoring request", state1);
+          skip.set(true);
+        }
+        return state1;
+      });
+      if (skip.get()) {
+        return;
+      }
+
+      boolean haveBuffer;
+      tlogLock.lock();
+      try {
+        haveBuffer = bufferTlog != null;
+      } finally {
+        tlogLock.unlock();
+      }
+
+      if (!haveBuffer) {
+        // No un-applied buffer to preserve -> clean start, identical to bufferUpdates().
+        dropBufferTlog();
+        deleteBufferLogs();
+      }
+
+      recoveryInfo = new RecoveryInfo();
+      log.debug("Ensuring buffering updates (preserveExistingBuffer={}). {}", haveBuffer, this);
+
+      state.set(State.BUFFERING);
+    } finally {
+      versionInfo.unblockUpdates();
+    }
+  }
+
   /** Returns true if we were able to drop buffered updates and return to the ACTIVE state */
   public boolean dropBufferedUpdates() {
     AtomicBoolean skip = new AtomicBoolean();
@@ -1967,11 +2021,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     replayer.hideReplayFromSearch = !openSearcher;
     return cs.submit(() -> {
       replayer.run();
-      // WHY: doReplay() breaks out of its loop early on cancelApplyBufferUpdate || isClosed,
-      // leaving un-applied updates in the buffer tlog. Dropping it unconditionally would lose
-      // those updates while the replica still transitions ACTIVE. Only drop once the buffered
-      // updates were actually replayed to completion.
-      if (!cancelApplyBufferUpdate && !isClosed) {
+      // Only drop the buffer once everything replayed cleanly. doReplay() breaks out of its loop
+      // early on cancelApplyBufferUpdate || isClosed, and a record may error (recoveryInfo.errors++
+      // or .failed) -- in any of those cases keep the buffer intact so the recovery retry can
+      // re-apply it. Dropping it on error would publish ACTIVE with that buffered update lost
+      // (review finding M1; mirrors applyLeaderTlogThenBuffer's clean-completion gate).
+      if (!cancelApplyBufferUpdate && !isClosed
+          && !recoveryInfo.failed && recoveryInfo.errors == 0) {
         dropBufferTlog();
       }
     }, recoveryInfo);

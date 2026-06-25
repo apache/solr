@@ -70,6 +70,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -820,14 +821,13 @@ public class SolrZkClient implements Closeable {
     Set<String> nodeAlreadyExistsPaths = ConcurrentHashMap.newKeySet();
 
     CountDownLatch latch = new CountDownLatch(pathsToMake.size());
-    int[] code = new int[1];
-    String[] path = new String[1];
-    boolean[]  failed = new boolean[1];
-    boolean[] nodata = new boolean[1];
+    // Capture the FIRST non-NODEEXISTS create failure across all the concurrent callbacks. This used
+    // to be single-slot arrays (code/path/failed/nodata) reset at the top of each loop iteration while
+    // prior iterations' callbacks were still running on the ZK EventThread, so a later iteration's reset
+    // (or a success) could clobber a captured error and mkDirs would return success with a node never
+    // created (review finding H2). One immutable, atomically-set record removes the race.
+    AtomicReference<MkDirsError> firstError = new AtomicReference<>();
     for (String makePath : pathsToMake) {
-      path[0] = null;
-      nodata[0] = false;
-      code[0] = 0;
       if (!(!makePath.isEmpty() && makePath.charAt(0) == '/')) makePath = "/" + makePath;
 
       byte[] data = dataMap.get(makePath);
@@ -844,7 +844,7 @@ public class SolrZkClient implements Closeable {
 
 
       connManager.getKeeper().create(makePath, data, zkACLProvider.getACLsToAdd(makePath), createMode,
-          new MkDirsCallback(nodeAlreadyExistsPaths, path, code, failed, nodata, data, latch), "");
+          new MkDirsCallback(nodeAlreadyExistsPaths, firstError, latch), "");
     }
 
 
@@ -865,19 +865,11 @@ public class SolrZkClient implements Closeable {
           "Timeout waiting for mkDirs operations to complete paths=" + paths);
     }
 
-    // MRM TODO:, still haackey, do fails right
-    if (code[0] != 0 && code[0] != KeeperException.Code.NODEEXISTS.intValue()) {
-      KeeperException e = KeeperException.create(KeeperException.Code.get(code[0]), path[0]);
-      throw e;
-//      if (e instanceof NodeExistsException && (nodata[0])) {
-//        // okay
-//        log.warn("Node aready exists", e);
-//        //printLayout();
-//        throw e;
-//      } else {
-//        log.error("Could not create start cluster zk nodes", e);
-//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not create start cluster zk nodes", e);
-//      }
+    // Surface the first real (non-NODEEXISTS) create failure so the caller does not proceed on an
+    // incomplete path tree.
+    MkDirsError err = firstError.get();
+    if (err != null) {
+      throw KeeperException.create(KeeperException.Code.get(err.code), err.path);
     }
 
     // A node that already existed was skipped by create() above (NODEEXISTS), so any explicit data
@@ -1496,11 +1488,16 @@ public class SolrZkClient implements Closeable {
   }
 
   public void removeWatches(String path, Watcher watcher, Watcher.WatcherType watcherType, boolean local, AsyncCallback.VoidCallback cb, Object ctx) {
-    connManager.getKeeper().removeWatches(path, watcher, watcherType, local, cb, ctx);
+    // addWatch() stores wrapWatcher(watcher) (a ProcessWatchWithExecutor); ZK matches watchers by
+    // equals/hashCode, which on the wrapper delegate to the inner watcher but return false for a raw
+    // (non-wrapper) argument. So we must wrap symmetrically here or the stored wrapper never matches
+    // and ZK returns NoWatcher -> the (recursive) watch leaks forever (review finding H1).
+    connManager.getKeeper().removeWatches(path, watcher == null ? null : wrapWatcher(watcher), watcherType, local, cb, ctx);
   }
 
   public void removeWatches(String path, Watcher watcher, Watcher.WatcherType watcherType, boolean local) throws KeeperException, InterruptedException {
-    connManager.getKeeper().removeWatches(path, watcher, watcherType, local);
+    // Wrap symmetrically with addWatch (see the overload above) so the stored wrapper matches.
+    connManager.getKeeper().removeWatches(path, watcher == null ? null : wrapWatcher(watcher), watcherType, local);
   }
 
   public void removeAllWatches(String path) throws KeeperException, InterruptedException {
@@ -1587,20 +1584,12 @@ public class SolrZkClient implements Closeable {
 
   private static class MkDirsCallback implements AsyncCallback.Create2Callback {
     private final Set<String> nodeAlreadyExistsPaths;
-    private final String[] path;
-    private final int[] code;
-    private final boolean[] failed;
-    private final boolean[] nodata;
-    private final byte[] data;
+    private final AtomicReference<MkDirsError> firstError;
     private final CountDownLatch latch;
 
-    public MkDirsCallback(Set<String> nodeAlreadyExistsPaths, String[] path, int[] code, boolean[] failed, boolean[] nodata, byte[] data, CountDownLatch latch) {
+    public MkDirsCallback(Set<String> nodeAlreadyExistsPaths, AtomicReference<MkDirsError> firstError, CountDownLatch latch) {
       this.nodeAlreadyExistsPaths = nodeAlreadyExistsPaths;
-      this.path = path;
-      this.code = code;
-      this.failed = failed;
-      this.nodata = nodata;
-      this.data = data;
+      this.firstError = firstError;
       this.latch = latch;
     }
 
@@ -1614,13 +1603,10 @@ public class SolrZkClient implements Closeable {
             nodeAlreadyExistsPaths.add(zkpath);
           } else {
             log.warn("create znode {} failed due to: {}", zkpath, keCode);
-            if (path[0] == null) {
-              // capture the first error for reporting back
-              code[0] = rc;
-              failed[0] = true;
-              path[0] = "" + zkpath;
-              nodata[0] = data == null;
-            }
+            // Record the first real failure atomically across all concurrent callbacks (review
+            // finding H2). compareAndSet keeps the first failure and is safe against the EventThread
+            // racing the caller, unlike the old single-slot arrays reset per loop iteration.
+            firstError.compareAndSet(null, new MkDirsError(rc, zkpath));
           }
         } else {
           log.debug("Created znode at path: {}", zkpath);
@@ -1630,6 +1616,17 @@ public class SolrZkClient implements Closeable {
           latch.countDown();
         }
       }
+    }
+  }
+
+  /** First non-NODEEXISTS failure captured during an async mkDirs batch (review finding H2). */
+  private static final class MkDirsError {
+    final int code;
+    final String path;
+
+    MkDirsError(int code, String path) {
+      this.code = code;
+      this.path = path;
     }
   }
 

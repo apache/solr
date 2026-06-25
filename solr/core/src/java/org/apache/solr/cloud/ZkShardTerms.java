@@ -85,6 +85,12 @@ public class ZkShardTerms extends DoNotWrap implements Closeable {
   // (E5-1 lost wakeup). All reads/writes of running+checkAgain now happen under this lock.
   private final ReentrantLock ourLock = new ReentrantLock();
   private boolean checkAgain = false;
+  // OR-accumulated pending "refresh ZK before notifying" request, consumed at the top of each worker
+  // iteration. The worker used to capture the first caller's refreshFirst for its whole lifetime, so a
+  // refreshFirst=true request (a NodeDataChanged watch lowering our term) that coalesced into a worker
+  // started with refreshFirst=false only set checkAgain -> the re-loop notified against STALE in-memory
+  // terms and never refresh()ed, leaving the replica ACTIVE while genuinely behind (review finding H4).
+  private boolean pendingRefresh = false;
   private boolean running;
 
   private volatile boolean closed;
@@ -117,10 +123,12 @@ public class ZkShardTerms extends DoNotWrap implements Closeable {
       return;
     }
     // Claim the gate under the lock. If a worker is already running, record that another round is
-    // needed and return; the running worker will observe checkAgain under the same lock before it
-    // exits, so the request can never be stranded (E5-1).
+    // needed (and OR-in this caller's refresh request so it is not lost) and return; the running
+    // worker will observe checkAgain + pendingRefresh under the same lock before it exits, so the
+    // request can never be stranded (E5-1) and its refresh is never dropped (H4).
     ourLock.lock();
     try {
+      pendingRefresh |= refreshFirst;
       if (running) {
         checkAgain = true;
         return;
@@ -133,7 +141,17 @@ public class ZkShardTerms extends DoNotWrap implements Closeable {
     ParWork.getRootSharedExecutor().submit(() -> {
       try {
         while (true) {
-          if (refreshFirst) refresh();
+          // Consume the accumulated refresh request for THIS iteration under the lock, so a
+          // refreshFirst=true that coalesced in (even mid-iteration) still forces a ZK re-read.
+          boolean doRefresh;
+          ourLock.lock();
+          try {
+            doRefresh = pendingRefresh;
+            pendingRefresh = false;
+          } finally {
+            ourLock.unlock();
+          }
+          if (doRefresh) refresh();
           onTermUpdates(this.terms.get());
 
           // Decide whether to loop again or exit, atomically with respect to producers setting

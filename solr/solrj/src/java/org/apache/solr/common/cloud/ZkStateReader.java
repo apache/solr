@@ -861,6 +861,14 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
     // (or the racing register's own add) is guaranteed to win exactly once. Teardown is the reconciler.
     if (collectionWatches.containsKey(collection)) {
       registerStatePlaneWatch(collection);
+    } else {
+      // No remaining local interest and the scoped watch is gone, so nothing will deliver leaf events
+      // (delta/snapshot/manifest) for this collection any more — the broad /collections watch is
+      // non-recursive. Drop the cached state too; otherwise process()'s gate and getCollectionRef would
+      // keep serving this now-unwatched entry as authoritative, and it would stay indefinitely stale
+      // (a reconnect re-arms scoped watches only from collectionWatches, not from watchedCollectionStates,
+      // so it is never refreshed) — review finding M7. On the next access the collection resolves fresh.
+      watchedCollectionStates.remove(collection);
     }
   }
 
@@ -2487,10 +2495,15 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
       if (v == null) return v;
 
       log.debug("remove doc collection watcher");
-      // registerDocCollectionWatcher increments coreRefCount; this must mirror that decrement or
-      // canBeRemoved (needs refCount<=0) never holds and the watch leaks (collection never goes lazy).
-      if (v.coreRefCount.get() > 0) v.coreRefCount.decrementAndGet();
-      v.stateWatchers.remove(watcher);
+      // registerDocCollectionWatcher adds the watcher AND increments coreRefCount exactly once, so
+      // decrement ONLY when this watcher was actually present. A double-remove of the same watcher
+      // (e.g. registerCollectionStateWatcher auto-removed it because the predicate already matched,
+      // then waitForState's finally removes it again) would otherwise over-decrement coreRefCount past
+      // a live core's registration, driving canBeRemoved true and tearing down a watch still in use
+      // (review finding H6).
+      if (v.stateWatchers.remove(watcher) && v.coreRefCount.get() > 0) {
+        v.coreRefCount.decrementAndGet();
+      }
       if (v.canBeRemoved(watchedCollectionStates.size())) {
         log.debug("no longer watch collection {}", collection);
         // Only downgrade to a lazy ref for a collection we actually resolved real state for. A

@@ -861,16 +861,22 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             log.debug("skip url:{} cause its term is less than leader", replica.getCoreUrl());
 
             skippedCoreNodeNames.add(replica.getName());
-          } else if (!zkController.getZkStateReader().getLiveNodes().contains(replica.getNodeName()) || (replica.getState() == Replica.State.DOWN)) {
-            // Do NOT skip RECOVERING / RECOVERY_FAILED replicas. A recovering replica opens an update
-            // buffer (RecoveryStrategy.doSyncOrReplicateRecovery -> ulog.bufferUpdates) and relies on the
-            // leader continuing to forward live updates so they accumulate in that buffer and are replayed
-            // after PeerSync/replication catches up the gap. Skipping them leaves a permanent hole for any
+          } else if (!zkController.getZkStateReader().getLiveNodes().contains(replica.getNodeName())
+              || replica.getState() == Replica.State.DOWN
+              || replica.getState() == Replica.State.RECOVERY_FAILED) {
+            // Skip not-live / DOWN / RECOVERY_FAILED replicas, but NOT RECOVERING. A RECOVERING replica
+            // opens an update buffer (RecoveryStrategy -> ulog.ensureBuffering) and relies on the leader
+            // continuing to forward live updates so they accumulate in that buffer and are replayed after
+            // PeerSync/replication catches up the gap. Skipping it would leave a permanent hole for any
             // add/delete the leader applies between the recovery snapshot point and the replica publishing
-            // ACTIVE, which is exactly the symmetric divergence the ChaosMonkey tests hit. The term-based
-            // skipSendingUpdatesTo gate above already excludes replicas that are too far behind to buffer
+            // ACTIVE -- the symmetric divergence the ChaosMonkey tests hit. The term-based
+            // skipSendingUpdatesTo gate above already excludes replicas too far behind to buffer
             // (term < max); a replica that has started recovering has its term raised to max by
-            // startRecovering, so it correctly passes that gate and must receive forwards.
+            // startRecovering, so it passes that gate and must receive forwards.
+            // RECOVERY_FAILED is different: the strategy has GIVEN UP and closed (recoveryFailed()), so
+            // NOTHING replays its buffer. Forwarding to it just fills a buffer that is never drained (or
+            // applies onto a stale index) and returns success, fooling the leader into treating a failed
+            // replica as a healthy forward target -- so re-exclude it (review finding S2).
             skippedCoreNodeNames.add(replica.getName());
           } else {
             nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), replica, collection, shardId, maxRetriesToFollowers));
@@ -1402,11 +1408,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           needBump.add(replicaName);
         }
       }
-      // FLT-INVESTIGATION (temporary; revert before commit). flagged minus bumped == skipped because
-      // that replica was already recovering.
-      log.error("FLT-BUMP leader={} shard={} flaggedForRecovery={} actuallyBumping={} terms={}",
-          desc.getName(), cloudDesc.getShardId(), replicasShouldBeInLowerTerms, needBump,
-          zkShardTerms.getShardTerms());
       if (!needBump.isEmpty()) {
         try {
           zkShardTerms.ensureTermsIsHigher(desc.getName(), needBump);
@@ -1414,13 +1415,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
-    } else if (!replicasShouldBeInLowerTerms.isEmpty()) {
-      // FLT-INVESTIGATION (temporary; revert before commit): replicas had failed forwards but we did
-      // NOT bump their term -- either we are no longer the leader, terms unregistered, or zkShardTerms
-      // is null. These replicas silently diverge with no recovery trigger (the suspected mechanism).
-      log.error("FLT-BUMP-SKIP shard={} flaggedButNotBumped={} zkShardTermsNull={} registered={}",
-          cloudDesc.getShardId(), replicasShouldBeInLowerTerms, (zkShardTerms == null),
-          (zkShardTerms != null && zkShardTerms.registered(desc.getName())));
     }
     handleReplicationFactor();
     if (0 < errorsForClient.size()) {

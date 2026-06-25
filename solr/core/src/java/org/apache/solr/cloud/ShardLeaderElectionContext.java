@@ -377,22 +377,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         throw new AlreadyClosedException();
       }
 
-      // FLT-INVESTIGATION (temporary; revert before commit): record the decisive state at the moment
-      // this replica commits to leadership -- a replica winning with stale/empty local data (or via the
-      // setTermToMax bypass) is the suspected source of the ChaosMonkey "extra docs on a follower"
-      // divergence (a former/stale leader's un-replicated writes never get reconciled away).
-      try {
-        boolean hasLocalDataDbg = false;
-        try (UpdateLog.RecentUpdates ru = core.getUpdateHandler().getUpdateLog().getRecentUpdates()) {
-          hasLocalDataDbg = ru.getVersions(1) != null && !ru.getVersions(1).isEmpty();
-        }
-        log.error("FLT-ELECT becoming leader core={} shard={} setTermToMax={} weAreReplacement={} hasLocalData={} success={} terms={}",
-            coreName, shardId, setTermToMax, weAreReplacement, hasLocalDataDbg, success,
-            zkShardTerms != null ? zkShardTerms.getTerms() : null);
-      } catch (Exception fltDbg) {
-        log.error("FLT-ELECT trace failed core={}", coreName, fltDbg);
-      }
-
       boolean leaderSuccess = super.runLeaderProcess(context, weAreReplacement, 0);
       if (!leaderSuccess) {
         return false;

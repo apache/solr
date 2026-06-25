@@ -59,6 +59,21 @@ public class DirectMemBufferedInputStream extends JavaBinInputStream implements 
     }
 
     /**
+     * Bound a read against the logical written {@code length} and fail with {@link EOFException}
+     * before touching the mapped buffer. The mapping has pre-grown slack beyond the written size
+     * (and beyond {@code raf.length()}), so an unchecked {@code buffer.getX(position)} past the
+     * logical end either reads zero/stale slack (silent garbage) or, with a torn length field,
+     * walks past the mapping capacity into a native SIGSEGV that {@code catch(Throwable)} cannot
+     * catch. Throwing EOFException here lets {@code LogReader.next()}'s torn-record tolerance treat
+     * it as a clean end-of-log.
+     */
+    private void ensureAvailable(long n) throws EOFException {
+        if (position + n > length) {
+            throw new EOFException();
+        }
+    }
+
+    /**
      * The offset within the underlying buffer at which to start.
      *
      * @return offset within the underlying buffer at which to start.
@@ -100,6 +115,7 @@ public class DirectMemBufferedInputStream extends JavaBinInputStream implements 
 
     @Override
     public void readFully(byte b[], int off, int len) throws IOException {
+        ensureAvailable(len);
         buffer.getBytes(position, b, off, len);
         position += len;
     }
@@ -117,6 +133,7 @@ public class DirectMemBufferedInputStream extends JavaBinInputStream implements 
 
     @Override
     public byte readByte() throws IOException {
+        ensureAvailable(BitUtil.SIZE_OF_BYTE);
         return buffer.getByte(position++);
     }
 
@@ -131,19 +148,22 @@ public class DirectMemBufferedInputStream extends JavaBinInputStream implements 
 
     @Override
     public short readShort() throws IOException {
+        ensureAvailable(BitUtil.SIZE_OF_SHORT);
         var s = buffer.getShort(position, ByteOrder.LITTLE_ENDIAN);
         position += BitUtil.SIZE_OF_SHORT;
         return s;
     }
 
     @Override
-    public void readFully(JavaBinInputStream dis, byte[] bytes) {
+    public void readFully(JavaBinInputStream dis, byte[] bytes) throws IOException {
+      ensureAvailable(bytes.length);
       buffer.getBytes(position, bytes);
       position += bytes.length;
     }
 
     @Override
     public int readUnsignedShort() throws IOException {
+        ensureAvailable(BitUtil.SIZE_OF_SHORT);
         var s = buffer.getShort(position, ByteOrder.LITTLE_ENDIAN);
         position += BitUtil.SIZE_OF_SHORT;
         return s;
@@ -155,12 +175,14 @@ public class DirectMemBufferedInputStream extends JavaBinInputStream implements 
     }
 
     public int readInt() throws IOException {
+        ensureAvailable(BitUtil.SIZE_OF_INT);
         var i = buffer.getInt(position, ByteOrder.LITTLE_ENDIAN);
         position += BitUtil.SIZE_OF_INT;
         return i;
     }
 
     public int getInt() throws IOException {
+        ensureAvailable(BitUtil.SIZE_OF_INT);
         var i = buffer.getInt(position, ByteOrder.LITTLE_ENDIAN);
         position += BitUtil.SIZE_OF_INT;
         return i;
@@ -168,6 +190,7 @@ public class DirectMemBufferedInputStream extends JavaBinInputStream implements 
 
     @Override
     public long readLong() throws IOException {
+        ensureAvailable(BitUtil.SIZE_OF_LONG);
         var l = buffer.getLong(position, ByteOrder.LITTLE_ENDIAN);
         position += BitUtil.SIZE_OF_LONG;
         return l;
@@ -175,6 +198,7 @@ public class DirectMemBufferedInputStream extends JavaBinInputStream implements 
 
     @Override
     public float readFloat() throws IOException {
+        ensureAvailable(BitUtil.SIZE_OF_FLOAT);
         var f = buffer.getFloat(position, ByteOrder.LITTLE_ENDIAN);
         position += BitUtil.SIZE_OF_FLOAT;
         return f;
@@ -182,6 +206,7 @@ public class DirectMemBufferedInputStream extends JavaBinInputStream implements 
 
     @Override
     public double readDouble() throws IOException {
+        ensureAvailable(BitUtil.SIZE_OF_DOUBLE);
         var d = buffer.getDouble(position, ByteOrder.LITTLE_ENDIAN);
         position += BitUtil.SIZE_OF_DOUBLE;
         return d;

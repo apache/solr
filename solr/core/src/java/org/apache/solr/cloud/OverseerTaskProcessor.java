@@ -30,6 +30,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -212,11 +213,23 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     try {
       List<String> children = zkClient.getChildren(Overseer.OVERSEER_ELECT + "/leader", null, true);
       if (children == null || children.isEmpty()) return null;
-      // WHY: during an overseer handoff there can be two transient ephemeral children;
-      // the leader is the lowest sequence node, so sort before picking (get(0) was unsorted
-      // and could return a stale id). Mirrors getSortedElectionNodes.
-      LeaderElector.sortSeqs(children);
-      return children.get(0); // the child node name IS the leader id
+      if (children.size() == 1) return children.get(0); // the child node name IS the leader id
+      // During an overseer handoff there can briefly be two ephemeral children (the departing
+      // leader's node has not expired yet). These are BARE ids (replica.getInternalId()), not
+      // -n_ sequence nodes, so LeaderElector.getSeq/sortSeqs cannot order them and would throw
+      // IllegalStateException. Pick the most recently created node (highest czxid) — that is the
+      // current leader; the stale one belongs to the departing overseer.
+      String leader = null;
+      long newestCzxid = Long.MIN_VALUE;
+      for (String child : children) {
+        Stat stat = zkClient.exists(Overseer.OVERSEER_ELECT + "/leader/" + child, null, true);
+        if (stat == null) continue; // raced away before we could stat it
+        if (stat.getCzxid() > newestCzxid) {
+          newestCzxid = stat.getCzxid();
+          leader = child;
+        }
+      }
+      return leader != null ? leader : children.get(0);
     } catch (KeeperException.NoNodeException e) {
       return null;
     }

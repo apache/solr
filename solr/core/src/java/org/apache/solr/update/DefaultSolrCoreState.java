@@ -349,9 +349,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   public void closeIndexWriter(SolrCore core, boolean rollback) throws IOException {
     lock(iwLock.writeLock());
     // On success the writeLock is intentionally held and released later by openIndexWriter (see base
-    // class javadoc). But if changeWriter throws (e.g. IOException closing the old writer) openIndexWriter
-    // is never reached, so we must release the writeLock here or it leaks permanently and every later
-    // update/commit (which needs the lock) hangs forever.
+    // class javadoc). The catch below releases it if changeWriter throws, so a leaked writeLock can
+    // never hang every later update/commit. NOTE: here openNewWriter=false, and changeWriter's
+    // close-old-writer path swallows commit/rollback IOExceptions (via ParWork.propagateInterrupt) --
+    // only its open-new-writer branch (not taken here) throws -- so in practice this guard covers an
+    // unexpected unchecked throw rather than the close IOException an earlier comment implied.
     try {
       changeWriter(core, rollback, false,false);
     } catch (Throwable t) {
@@ -689,11 +691,12 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     // the leader has no fresh commit) can leave the follower stale/empty -- previously masked by a hard
     // commit-on-leader that fsynced the leader's uncommitted docs into a new commit point (the *:*
     // leak). Opening the buffer here guarantees every update forwarded once the leader sees BUFFERING
-    // lands in the buffer (replayed at the end of recovery), never the live index, and never *:*. Done
-    // only if we are not already BUFFERING, since bufferUpdates() drops any existing buffer tlog.
+    // lands in the buffer (replayed at the end of recovery), never the live index, and never *:*.
+    // ensureBuffering() (not bufferUpdates()) so a buffer already holding un-applied window-forwarded
+    // updates from a prior errored-replay retry is preserved rather than dropped (review finding C1).
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-    if (ulog != null && ulog.getState() != UpdateLog.State.BUFFERING) {
-      ulog.bufferUpdates();
+    if (ulog != null) {
+      ulog.ensureBuffering();
     }
 
     core.getCoreContainer().getZkController().publish(core.getCoreDescriptor(), Replica.State.BUFFERING);

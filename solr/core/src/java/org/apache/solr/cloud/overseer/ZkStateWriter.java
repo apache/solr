@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.StateDelta;
@@ -175,6 +177,8 @@ public class ZkStateWriter {
 
   /** Lazily built on first publish to the per-shard delta plane (the only state-update representation). */
   private volatile StatePlaneWriter statePlaneWriter;
+  // The election fence handed to statePlaneWriter; kept so stop() can open the final-flush bypass.
+  private volatile OverseerElectionFence electionFence;
 
   /**
    * D2 (PR-4): collections whose delta-plane snapshot+manifest this writer has already ensured during
@@ -201,9 +205,17 @@ public class ZkStateWriter {
    */
   private static final class OverseerElectionFence implements StatePlaneWriter.ElectionFence {
     private final Overseer overseer;
+    // Set for the bounded ZkStateWriter.stop() final-flush window. Overseer.close()/closeAndDone()
+    // sets closed=true BEFORE the final flush runs, which makes stillElected() (=!isClosed) false and
+    // would fence out the last buffered state on a clean handoff (review finding H3). During the final
+    // flush we are still the elected owner until we relinquish the election znode, so treat ourselves
+    // as elected. This only relaxes the LOCAL liveness flag; the ZK-authoritative
+    // ownsElectionAuthoritative() (owns) check and isFencedBy(ring.writerId) still fence out a
+    // genuinely stale writer before any actual ring write.
+    private volatile boolean finalFlush = false;
     OverseerElectionFence(Overseer overseer) { this.overseer = overseer; }
 
-    @Override public boolean stillElected() { return !overseer.isClosed(); }
+    @Override public boolean stillElected() { return finalFlush || !overseer.isClosed(); }
 
     @Override public String writerId() {
       Integer seq = overseer.getElectionSeq();
@@ -290,9 +302,11 @@ public class ZkStateWriter {
       synchronized (this) {
         w = statePlaneWriter;
         if (w == null) {
-          w = new StatePlaneWriter(reader.getZkClient(), new OverseerElectionFence(overseer));
+          OverseerElectionFence f = new OverseerElectionFence(overseer);
+          w = new StatePlaneWriter(reader.getZkClient(), f);
           w.setLocalEpoch(seedEpoch());
           statePlaneWriter = w;
+          electionFence = f;
         }
       }
     }
@@ -1425,6 +1439,12 @@ public class ZkStateWriter {
 
       Map<String,ClusterState.CollectionRef> collectionRefs = reader.getCollectionRefs();
 
+      // Collect the collection ids whose leader we re-assert from ZK so we can publish them AFTER the
+      // loop and AWAIT durability with bounded retry (review finding M2). Firing the publish
+      // fire-and-forget per collection lost the reconciled LEADER on a transient publish failure in a
+      // quiescent cluster: the ids were re-armed but nothing flushed them again, so readers hung.
+      final List<Integer> reconciledCollIds = new ArrayList<>();
+
       collectionRefs.forEach((collectionName, docStateRef) -> {
         final DocCollection docState;
         try {
@@ -1463,7 +1483,8 @@ public class ZkStateWriter {
           // republishes LEADER into the delta plane, repairing any promotion lost in the handoff window.
           reconcileLeadersFromZk(collectionName, docState);
 
-          writeStateUpdatesInternal(Collections.singleton(docState.getId()), 1);
+          // Defer the publish to after the loop so we can await durability with bounded retry (M2).
+          reconciledCollIds.add(docState.getId());
         } else {
 //          Map<Integer,Integer> su = stateUpdates.get(docState.getId());
 //          if (su != null) {
@@ -1505,6 +1526,12 @@ public class ZkStateWriter {
         docAssign.replicaAssignCnt.set(max);
 
       });
+
+      // M2: publish the leaders re-asserted from ZK and AWAIT durability with bounded retry, rather than
+      // firing fire-and-forget. The publish-failure path re-arms pendingChangedIds but nothing else
+      // would flush it in a quiescent post-takeover cluster, stranding the reconciled LEADER off the
+      // delta plane (readers hang in getLeaderRetry).
+      publishReconciledLeaders(reconciledCollIds);
 
       ID.set(highId[0]);
 
@@ -1576,6 +1603,42 @@ public class ZkStateWriter {
   // shard-leader registration node lives on the winning replica's ZK session and survives the
   // handoff, so it is the authoritative source of the current leader. Re-assert that replica as
   // LEADER into stateUpdates so the subsequent writeStateUpdatesInternal republishes it. Idempotent.
+  /** Bounded retries for the takeover reconcile-leader publish (review finding M2). */
+  private static final int RECONCILE_PUBLISH_MAX_TRIES = 3;
+  private static final long RECONCILE_PUBLISH_TIMEOUT_MS = 10000;
+
+  /**
+   * Publish the leaders re-asserted by {@link #reconcileLeadersFromZk} to the delta plane and AWAIT
+   * durability, retrying a bounded number of times (review finding M2). {@link #writeStateUpdatesInternal}
+   * re-arms the failed ids in {@code pendingChangedIds} on a publish failure, so each retry republishes
+   * them; an already-durable id simply re-publishes its current state (idempotent). On exhausting the
+   * retries the ids stay armed so a later write can still flush them — strictly better than the old
+   * fire-and-forget, which left them stranded with no retry trigger.
+   */
+  private void publishReconciledLeaders(Collection<Integer> collIds) {
+    if (collIds == null || collIds.isEmpty()) {
+      return;
+    }
+    Set<Integer> ids = new HashSet<>(collIds);
+    for (int attempt = 1; attempt <= RECONCILE_PUBLISH_MAX_TRIES; attempt++) {
+      try {
+        writeStateUpdatesInternal(ids, attempt).get(RECONCILE_PUBLISH_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        return; // all reconciled leaders durably on the delta plane
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new AlreadyClosedException(e);
+      } catch (ExecutionException | TimeoutException e) {
+        if (attempt == RECONCILE_PUBLISH_MAX_TRIES) {
+          log.error("Leader reconciliation publish did not become durable after {} attempts for collIds={}; "
+              + "ids remain armed for a later flush", RECONCILE_PUBLISH_MAX_TRIES, ids, e);
+        } else {
+          log.warn("Leader reconciliation publish failed (attempt {}/{}) for collIds={}; retrying",
+              attempt, RECONCILE_PUBLISH_MAX_TRIES, ids, e);
+        }
+      }
+    }
+  }
+
   private void reconcileLeadersFromZk(String collectionName, DocCollection docState) {
     int leaderShort = Replica.State.getShortState(Replica.State.LEADER);
     for (Slice slice : docState.getSlices()) {
@@ -1697,6 +1760,17 @@ public class ZkStateWriter {
 
     // Final flush: publish whatever state is still buffered in the in-memory map and wait (bounded) for
     // it to be durable, so a clean overseer handoff does not drop the last updates.
+    if (!stateUpdates.isEmpty()) {
+      // Overseer.close()/closeAndDone() already set closed=true, so without this the publish below is
+      // fenced out by stillElected() and the buffered state is silently dropped (review finding H3).
+      // Open the final-flush bypass on the fence (ensuring it exists first); ZK-authoritative ownership
+      // still fences a genuinely stale writer.
+      statePlaneWriter();
+      OverseerElectionFence f = electionFence;
+      if (f != null) {
+        f.finalFlush = true;
+      }
+    }
     try {
       writeStateUpdatesInternal(stateUpdates.keySet(), 1).get(10000, TimeUnit.MILLISECONDS);
     } catch (ExecutionException | TimeoutException e) {
@@ -1735,12 +1809,25 @@ public class ZkStateWriter {
    * delete is held back and the item is reprocessed.
    */
   private CompletableFuture<Void> writeStateUpdatesInternal(Set<Integer> collIds, int tryCnt) {
+    return CompletableFuture.allOf(
+        writeStateUpdatesPerCollection(collIds, tryCnt).values().toArray(new CompletableFuture[0]));
+  }
+
+  /**
+   * Schedule a per-collection delta-plane publish for each id in {@code collIds} and return a map of
+   * {@code collId -> its own publish future}, so a caller can gate durability PER collection rather than
+   * on the coalesced batch (review finding M3): one collection's publish failure must not hold back the
+   * queue-item deletes of the other collections in the same batch that succeeded. Each publish runs as a
+   * {@link CompletableFuture#runAsync} task on the {@code taskZkWriterExecutor}; a task that throws
+   * completes its own future exceptionally.
+   */
+  private Map<Integer, CompletableFuture<Void>> writeStateUpdatesPerCollection(Set<Integer> collIds, int tryCnt) {
     log.debug("writeStateUpdates for {}", collIds);
-    List<CompletableFuture<Void>> futures = new ArrayList<>(collIds.size());
+    Map<Integer, CompletableFuture<Void>> futures = new HashMap<>(Math.max(2, collIds.size()));
     for (Integer collId : collIds) {
       String collection = idToCollection.get(collId);
 
-      futures.add(CompletableFuture.runAsync(() -> {
+      futures.put(collId, CompletableFuture.runAsync(() -> {
 
         if (collection == null) {
           // If the collection was removed, drop its pending state and let WorkQueueWatcher delete the
@@ -1818,7 +1905,7 @@ public class ZkStateWriter {
       }, overseer.getTaskZkWriterExecutor()));
     }
 
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    return futures;
   }
 
   private final LinkedTransferQueue<WriteUnit> workQueue = new LinkedTransferQueue<>();
@@ -1845,9 +1932,11 @@ public class ZkStateWriter {
             log.warn("state publisher hit exception polling", e);
           }
           Set<Integer> bulkMessage = ConcurrentHashMap.newKeySet();
-          // Futures of every coalesced unit in this batch; completed (or failed) together once the
-          // batch's publish is durable. WorkQueueWatcher gates queue-item deletes on these.
-          List<CompletableFuture<Void>> pendingDone = new ArrayList<>();
+          // The WriteUnits coalesced into this batch. Each unit's `done` future is completed on the
+          // outcome of ITS OWN collection(s) only -- NOT the whole batch (review finding M3): a publish
+          // failure for one collection must not hold back the queue-item deletes of the others that
+          // succeeded (which would reprocess them every watch cycle).
+          List<WriteUnit> pendingUnits = new ArrayList<>();
           if (message != null) {
             log.debug("Got state message {}", message);
 
@@ -1857,7 +1946,7 @@ public class ZkStateWriter {
               terminated = true;
               pollTime = 0;
             } else {
-              pollTime = bulkMessage(message, bulkMessage, pendingDone);
+              pollTime = bulkMessage(message, bulkMessage, pendingUnits);
             }
 
             while (true) {
@@ -1874,7 +1963,7 @@ public class ZkStateWriter {
                   terminated = true;
                   pollTime = 0;
                 } else {
-                  pollTime = bulkMessage(message, bulkMessage, pendingDone);
+                  pollTime = bulkMessage(message, bulkMessage, pendingUnits);
                 }
               } else {
                 break;
@@ -1882,25 +1971,39 @@ public class ZkStateWriter {
             }
           }
 
-          if (bulkMessage.size() > 0 || !pendingDone.isEmpty()) {
-            CompletableFuture<Void> batch;
+          if (bulkMessage.size() > 0 || !pendingUnits.isEmpty()) {
+            Map<Integer, CompletableFuture<Void>> perCollection;
             try {
-              batch = writeStateUpdatesInternal(bulkMessage, 1);
+              perCollection = writeStateUpdatesPerCollection(bulkMessage, 1);
             } catch (Throwable t) {
               log.error("Exception scheduling state-plane publish for {}", bulkMessage, t);
-              batch = new CompletableFuture<>();
-              batch.completeExceptionally(t);
-            }
-            final List<CompletableFuture<Void>> toComplete = pendingDone;
-            batch.whenComplete((v, ex) -> {
-              for (CompletableFuture<Void> d : toComplete) {
-                if (ex == null) {
-                  d.complete(null);
-                } else {
-                  d.completeExceptionally(ex);
-                }
+              CompletableFuture<Void> failed = new CompletableFuture<>();
+              failed.completeExceptionally(t);
+              perCollection = new HashMap<>();
+              for (Integer collId : bulkMessage) {
+                perCollection.put(collId, failed);
               }
-            });
+            }
+            final Map<Integer, CompletableFuture<Void>> perColl = perCollection;
+            for (WriteUnit unit : pendingUnits) {
+              if (unit.done == null) {
+                continue;
+              }
+              // Complete this unit on allOf its OWN collections' publish futures, so a sibling
+              // collection's failure in the same batch can't fail this (durable) unit (M3).
+              CompletableFuture<?>[] unitFutures = unit.collIds.stream()
+                  .map(perColl::get)
+                  .filter(Objects::nonNull)
+                  .toArray(CompletableFuture[]::new);
+              final WriteUnit u = unit;
+              CompletableFuture.allOf(unitFutures).whenComplete((v, ex) -> {
+                if (ex == null) {
+                  u.done.complete(null);
+                } else {
+                  u.done.completeExceptionally(ex);
+                }
+              });
+            }
           }
 
         } catch (Exception e) {
@@ -1909,10 +2012,10 @@ public class ZkStateWriter {
       }
     }
 
-    private int bulkMessage(WriteUnit unit, Set<Integer> bulkColIds, List<CompletableFuture<Void>> pendingDone) {
+    private int bulkMessage(WriteUnit unit, Set<Integer> bulkColIds, List<WriteUnit> pendingUnits) {
       bulkColIds.addAll(unit.collIds);
       if (unit.done != null) {
-        pendingDone.add(unit.done);
+        pendingUnits.add(unit);
       }
       return 50;
     }

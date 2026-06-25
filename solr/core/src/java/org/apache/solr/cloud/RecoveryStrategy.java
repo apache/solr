@@ -846,14 +846,15 @@ public class RecoveryStrategy implements Runnable, Closeable {
             close = true;
             return false;
           }
-          // Recalling bufferUpdates() drops the existing buffer tlog. Locus-1
-          // (DefaultSolrCoreState.sendFullPrep) already opened the buffer BEFORE this replica published
-          // BUFFERING, so the updates the leader forwarded during the prep-recovery handshake are
-          // already accumulating in it. Only open a fresh buffer if we are not already BUFFERING --
-          // otherwise we would drop those window-forwarded updates and reopen the data-loss/leak window.
-          if (ulog.getState() != UpdateLog.State.BUFFERING) {
-            ulog.bufferUpdates();
-          }
+          // Locus-1 (DefaultSolrCoreState.sendFullPrep) already opened the buffer BEFORE this replica
+          // published BUFFERING, so the updates the leader forwarded during the prep-recovery handshake
+          // are already accumulating in it. We must (re)enter BUFFERING WITHOUT dropping that buffer.
+          // Calling bufferUpdates() here would dropBufferTlog(); on a recovery RETRY after an errored
+          // leader-tlog catch-up replay the LogReplayer's finally has flipped state to ACTIVE while the
+          // buffer still holds the un-applied window-forwarded updates (applyLeaderTlogThenBuffer keeps
+          // the buffer on error), so bufferUpdates() would lose them permanently (review finding C1).
+          // ensureBuffering() preserves any present buffer and only starts a fresh one when none exists.
+          ulog.ensureBuffering();
 
           log.debug("Begin buffering updates. core=[{}]", coreName);
 
@@ -1226,10 +1227,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
         } catch (TimeoutException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
-        // On the leader-tlog catch-up path a record-level error must also fail the recovery: the
-        // buffer is only dropped on an error-free replay (see applyLeaderTlogThenBuffer), so treating
-        // errors>0 as success would publish ACTIVE with the buffer's updates still un-applied.
-        if (report.failed || (leader != null && report.errors > 0)) {
+        // A record-level error must fail the recovery on BOTH replay paths: the buffer is only
+        // dropped on an error-free replay (see applyLeaderTlogThenBuffer / applyBufferedUpdates), so
+        // treating errors>0 as success would publish ACTIVE with the buffer's updates still un-applied
+        // (review finding M1: the old gate only failed when leader!=null, letting the PeerSync
+        // buffer-replay path swallow per-record errors and go ACTIVE with a dropped update).
+        if (report.failed || report.errors > 0) {
           SolrException.log(log, "Replay failed");
           throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
         }
