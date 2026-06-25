@@ -199,6 +199,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private static final Logger slowLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".SlowRequest");
   private final CoreDescriptor coreDescriptor;
   private volatile Future[] initSearcherFuture;
+  // Set if the async initSearcher(prev) task threw; lets the reload waiter below stop spinning and fail
+  // the reload instead of looping forever on a never-assigned initSearcherFuture.
+  private volatile Throwable initSearcherError;
   private final boolean newCore;
   private final DirectoryFactory directoryFactory;
   private volatile String name;
@@ -1204,6 +1207,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             initSearcherFuture = initSearcher(prev);
           } catch (Exception e) {
            log.error("Exception in initSearcher", e);
+           initSearcherError = e;
           }
           timeInitSearcher.done();
 
@@ -1341,12 +1345,21 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         StopWatch timeWaitForSearcher = StopWatch.getStopWatch(this + "-startCore-waitForSearcher");
         // MRM TODO: - wait before publish active?
         if (isReloaded && !solrConfig.useColdSearcher) {
-          while (initSearcherFuture == null) {
+          // Wait for the async initSearcher(prev) task to either assign the future or record a failure.
+          // Without the error check this loop spins forever (and swallowed the interrupt, so it was
+          // uninterruptible) whenever initSearcher threw — e.g. IndexNotFoundException during a reload.
+          while (initSearcherFuture == null && initSearcherError == null) {
             try {
               Thread.sleep(30);
             } catch (InterruptedException e) {
-
+              Thread.currentThread().interrupt();
+              throw new SolrException(ErrorCode.SERVER_ERROR,
+                  "Interrupted waiting for searcher init during core reload", e);
             }
+          }
+          if (initSearcherError != null) {
+            throw new SolrException(ErrorCode.SERVER_ERROR,
+                "Error opening new searcher during core reload", initSearcherError);
           }
 
           try {
