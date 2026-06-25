@@ -14,7 +14,7 @@
 # limitations under the License.
 [versions]
 adobe-testing-s3mock = "3.12.0"
-amazon-awssdk = "2.42.34"
+amazon-awssdk = "2.42.37"
 # @keep Antora version used in ref-guide
 antora = "3.1.12"
 # @keep Most recent commit as of 2025-08-03, this repo does not have tags
@@ -35,11 +35,11 @@ apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.9.2"
-apache-log4j = "2.25.3"
+apache-log4j = "2.25.4"
 apache-lucene = "10.4.0"
 apache-opennlp = "2.5.9"
 apache-rat = "0.15"
-apache-tika = "3.2.3"
+apache-tika = "3.3.0"
 apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.5"
 # @keep for version alignment
@@ -79,7 +79,7 @@ decompose = "3.3.0"
 diffplug-spotless = "8.3.0"
 # @keep Use for dockerfile JRE version
 dockerfile-baseimage-java = "25"
-dropwizard-metrics = "4.2.33"
+dropwizard-metrics = "4.2.38"
 eclipse-ecj = "3.39.0"
 eclipse-jetty = "12.0.34"
 # @keep jgit version used by git-status.gradle
@@ -97,13 +97,13 @@ google-cloud-bom = "0.261.0"
 google-errorprone = "2.41.0"
 # @keep for version alignment
 google-gson = "2.13.1"
-google-guava = "33.5.0-jre"
+google-guava = "33.6.0-jre"
 # @keep for version alignment
 google-j2objc = "3.1"
 # @keep This is GJF version for spotless/ tidy.
 google-javaformat = "1.18.1"
 # @keep for version alignment
-google-protobuf = "3.25.8"
+google-protobuf = "4.34.1"
 # @keep Gradle version to run the build
 gradle = "8.10"
 grpc = "1.80.0"
