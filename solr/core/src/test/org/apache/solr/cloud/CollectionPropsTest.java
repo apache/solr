@@ -255,6 +255,16 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     @Override
     public boolean onStateChanged(Map<String, String> collectionProperties) {
       log.info("{}: state changed...", name);
+      // Snapshot the self-remove decision at ENTRY, before publishing props/notifying below.
+      // Otherwise this races the test thread: this method sets props and notifyAll()s, which unblocks
+      // a waitForProp() the test is sitting in; the test then returns and sets selfRemoveOnTrigger=true
+      // for the NEXT change -- but this in-flight onStateChanged has not yet reached its `return`, so it
+      // would read the just-set true and self-remove on the CURRENT (older) notification instead of the
+      // next one. That dropped the watcher before the next value's notification was even built, so it
+      // never observed that value (CollectionPropsTest.testMultipleWatchers: watcher2 self-removed on
+      // value2 and never saw value3, ~50-67% flaky). Reading the flag here pins removal to the
+      // notification for which it was actually requested.
+      final boolean removeAfterThis = selfRemoveOnTrigger;
       if (forceReadPropsFromZk) {
         final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
         props = Map.copyOf(zkStateReader.getCollectionProperties(collectionName));
@@ -273,7 +283,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
       log.info("{}: done", name);
       // In this fork a CollectionPropsWatcher is removed by returning true from onStateChanged
       // (there is no public ZkStateReader.removeCollectionPropsWatcher); honor that contract.
-      return selfRemoveOnTrigger;
+      return removeAfterThis;
     }
 
     private Map<String, String> getProps() {
