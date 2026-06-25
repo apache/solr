@@ -807,6 +807,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
         if (isSubShardLeader) {
+          // We are the leader of a CONSTRUCTION/RECOVERY sub-shard receiving a live update forwarded
+          // from the parent leader. The routed `slice`/`shardId` above is the *parent* (active) slice
+          // that owns this id's hash range during the split, NOT our sub-shard. Forwarding to our own
+          // sub-shard replicas requires our own shardId; otherwise the forward loop below targets the
+          // parent slice's replicas and our sub-shard replica never receives the live update.
+          shardId = cloudDesc.getShardId();
           leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
         }
       }
