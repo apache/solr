@@ -1239,7 +1239,7 @@ public class CoreContainer implements Closeable {
     return coresLocator;
   }
 
-  protected SolrCore registerCore(CoreDescriptor cd, SolrCore core, boolean closeOld) {
+  protected Future<?> registerCore(CoreDescriptor cd, SolrCore core, boolean closeOld) {
 
     log.debug("registerCore name={}", cd.getName());
 
@@ -1260,22 +1260,20 @@ public class CoreContainer implements Closeable {
       return null;
     } else {
       log.info("replacing core name={}", cd.getName());
-      if (closeOld) {
-        if (old != null) {
-          SolrCore finalCore = old;
-          try {
-            Future<?> future = solrCoreExecutor.submit(() -> {
-              if (log.isDebugEnabled()) {
-                log.debug("Closing replaced core {}", cd.getName());
-              }
-              finalCore.closeAndWait();
-            });
-          } catch (RejectedExecutionException e) {
-            finalCore.close();
-          }
+      if (closeOld && old != null) {
+        SolrCore finalCore = old;
+        try {
+          return solrCoreExecutor.submit(() -> {
+            if (log.isDebugEnabled()) {
+              log.debug("Closing replaced core {}", cd.getName());
+            }
+            finalCore.closeAndWait();
+          });
+        } catch (RejectedExecutionException e) {
+          finalCore.close();
         }
       }
-      return old;
+      return null;
     }
   }
 
@@ -1848,7 +1846,20 @@ public class CoreContainer implements Closeable {
                 }
               }
 
-              registerCore(cd, newCore, true);
+              Future<?> oldCoreCloseFuture = registerCore(cd, newCore, true);
+              // Join the old-core async close before returning: it tears down the IndexWriter/
+              // searcher on the shared physical dataDir; letting it race a subsequent commit on
+              // the new core produces two IndexFileDeleters on the same Directory ->
+              // NoSuchFileException on segments/segment files (SuggestComponentTest pattern).
+              if (oldCoreCloseFuture != null) {
+                try {
+                  oldCoreCloseFuture.get(30, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                } catch (ExecutionException | TimeoutException e) {
+                  log.warn("Old core close did not finish before reload returned", e);
+                }
+              }
 
               success = true;
               corestate.successReloads.increment();

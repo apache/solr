@@ -2068,6 +2068,21 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           } catch (ExecutionException | TimeoutException e) {
             log.warn("initSearcher task did not finish before core close", e);
           }
+          // initTask completing means initSearcherFuture is now assigned.
+          // initSearcherFuture[0] is the registerSearcher future on the single-threaded
+          // searcherExecutor; firstSearcher listeners run before it in that queue.
+          // Join it so listener tasks (e.g. suggester buildOnStartup) finish before
+          // we tear down the IndexWriter / Directory below.
+          Future[] searcherFutures = initSearcherFuture;
+          if (searcherFutures != null && searcherFutures[0] != null) {
+            try {
+              searcherFutures[0].get(30, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+            } catch (ExecutionException | TimeoutException e) {
+              log.warn("searcherExecutor task did not finish before core close", e);
+            }
+          }
         }
 
         try (ParWork closer = new ParWork(this, true)) {
