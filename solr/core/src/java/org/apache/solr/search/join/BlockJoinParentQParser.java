@@ -175,7 +175,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
     }
 
     // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
-    // For root: (*:* -_nest_path_:*)
+    // For root: {!field f=_nest_path_ v='/'}
     final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
 
     // constrain child query: (+<original_child> +{!prefix f="_nest_path_" v="<parentPath>/"})
@@ -206,7 +206,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * </ul>
    *
    * <p>Equivalent to: {@code (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})} For root ({@code
-   * /}): {@code (*:* -_nest_path_:*)}
+   * /}): {@code {!field f=_nest_path_ v='/'}}
    */
   protected Query buildAllParentsFilterFromPath(String parentPath) {
     if (parentPath.equals("/") || parentPath.isEmpty()) {

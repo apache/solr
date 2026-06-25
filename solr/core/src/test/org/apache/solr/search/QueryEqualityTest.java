@@ -698,7 +698,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     final String parent_path = "/aa/bb";
     try (SolrQueryRequest req =
         req(
-            "parent_filt", "({!field f='_nest_path_' v='" + parent_path + "/'})",
+            "parent_filt", "(*:* -{!prefix f='_nest_path_' v='" + parent_path + "/'})",
             "child_q", "(+foo +{!prefix f='_nest_path_' v='" + parent_path + "/'})",
             "parent_q", "(+bar +{!field f='_nest_path_' v='" + parent_path + "'})")) {
 
