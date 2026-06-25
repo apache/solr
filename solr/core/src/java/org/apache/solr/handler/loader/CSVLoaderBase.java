@@ -409,6 +409,18 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
       doc.addField(rowId, line + rowIdOffset);
     }
     template.solrDoc = doc;
-    processor.processAdd(template);
+    // The MultiThreadCVS worker threads all share this single `processor` instance. A
+    // DistributedUpdateProcessor is per-request stateful and NOT thread-safe: setupRequest()
+    // writes per-doc routing fields (isLeader / forwardToLeader / nodes / clusterState ...) that
+    // versionAdd() and doDistribAdd() then read. Running processAdd() concurrently lets one row's
+    // setupRequest() clobber another's isLeader, so an s2-bound doc can observe isLeader=true,
+    // run leader-logic, get an s1 leader-clock _version_ stamped into its doc, and forward that to
+    // the s2 leader as a TOLEADER update -> spurious 409 "version conflict ... actual=-1". Serialize
+    // the dispatch on the shared processor so each row's routing+versioning is atomic. The parsing
+    // and per-row doc build above still run in parallel, and the distributed forward is dispatched
+    // asynchronously by SolrCmdDistributor, so no network I/O is held under this lock.
+    synchronized (processor) {
+      processor.processAdd(template);
+    }
   }
 }
