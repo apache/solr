@@ -160,13 +160,30 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   $scope.errorHandler = function (e) {
     var error = e.data && e.data.error ? e.data.error : null;
     if (error && error.msg) {
-      $scope.securityAPIError = error.msg;
-      $scope.securityAPIErrorDetails = e.data.errorDetails;
+      var allMessages = [];
+      if (error.details && Array.isArray(error.details)) {
+        error.details.forEach(function(detail) {
+          if (detail.errorMessages && Array.isArray(detail.errorMessages)) {
+            allMessages = allMessages.concat(detail.errorMessages);
+          }
+        });
+      }
+      $scope.securityAPIError = allMessages.length > 0 ? allMessages[0] : error.msg;
+      $scope.securityAPIErrorDetails = allMessages.length > 1 ? allMessages.slice(1).join("\n") : null;
     } else if (e.data && e.data.message) {
       $scope.securityAPIError = e.data.message;
-      $scope.securityAPIErrorDetails = JSON.stringify(e.data);
+      $scope.securityAPIErrorDetails = null;
     }
   };
+
+  // Security API command errors (HTTP 4xx/5xx) are broadcast by the global httpInterceptor;
+  // show them in this panel's error dialog rather than the generic page-header banner.
+  $scope.$on('securityApiError', function (event, rejection) {
+    $scope.errorHandler(rejection);
+  });
+  $scope.$on('securityApiClearError', function () {
+    $scope.closeErrorDialog();
+  });
 
   $scope.showHelp = function (id) {
     if ($scope.helpId && ($scope.helpId === id || id === '')) {
@@ -409,12 +426,6 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
 
     if (password.length < 15 && !password.match(strongPasswordRegex)) {
       $scope.validationError = "Password not strong enough! Must have length >= 15 or contain at least one lowercase letter, one uppercase letter, one digit, and one of these special characters: !@#$%^&*_-[]()";
-      return false;
-    }
-
-    var username = $scope.upsertUser.username ? $scope.upsertUser.username.trim() : "";
-    if (password === username) {
-      $scope.validationError = "Password must not be the same as the username";
       return false;
     }
 

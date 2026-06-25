@@ -28,14 +28,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.zookeeper.KeeperException;
@@ -227,7 +230,9 @@ public class AuthTool extends ToolBase {
             } while (password.isEmpty());
           }
 
-          if (username.equals(password)) {
+          if (username.equals(password)
+              && !EnvUtils.getPropertyAsBool(
+                  Sha256AuthenticationProvider.ALLOW_USER_AS_PASSWORD_PROP, false)) {
             CLIO.err(
                 "Error: username and password must not be identical."
                     + " This credential would never authenticate.");
@@ -292,15 +297,20 @@ public class AuthTool extends ToolBase {
           updateIncludeFileEnableAuth(includeFile, basicAuthConfFile);
           final String successMessage =
               String.format(
-                  Locale.ROOT, "Successfully enabled basic auth with username [%s].", username);
+                  Locale.ROOT,
+                  "Successfully enabled basic auth with username [%s] assigned to all roles (superadmin, admin, index, search).",
+                  username);
           echo(successMessage);
           if (!updateIncludeFileOnly) {
+            Map<String, String> templateUsers = new LinkedHashMap<>();
+            templateUsers.put("admin", "admin, index, search");
+            templateUsers.put("index", "index, search");
+            templateUsers.put("search", "search");
+            templateUsers.remove(username);
             CLIO.out(
                 "\nIMPORTANT: The following template users have been created with NO password set"
                     + " and cannot log in until passwords are assigned:");
-            CLIO.out("  - admin  (roles: admin, index, search)");
-            CLIO.out("  - index  (roles: index, search)");
-            CLIO.out("  - search (roles: search)");
+            templateUsers.forEach((u, roles) -> CLIO.out("  - " + u + "  (roles: " + roles + ")"));
             CLIO.out(
                 "Set their passwords using the Admin UI Security page or the authentication API.");
           }

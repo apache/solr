@@ -18,6 +18,8 @@ package org.apache.solr.schema;
 
 import static java.util.Arrays.asList;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
@@ -27,7 +29,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -56,7 +57,7 @@ import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.ConfigNode;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -66,9 +67,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrCore;
@@ -78,7 +77,6 @@ import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.uninverting.UninvertingReader;
-import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -143,8 +141,8 @@ public class IndexSchema {
   private static final Set<String> FIELDTYPE_KEYS = Set.of("fieldtype", "fieldType");
   private static final Set<String> FIELD_KEYS = Set.of("dynamicField", "field");
 
-  protected Cache<String, SchemaField> dynamicFieldCache =
-      new ConcurrentLRUCache<>(10000, 8000, 9000, 100, false, false, null);
+  protected final Cache<String, SchemaField> dynamicFieldCache =
+      Caffeine.newBuilder().initialCapacity(100).maximumSize(10000).build();
 
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;
@@ -1388,7 +1386,7 @@ public class IndexSchema {
   public SchemaField getFieldOrNull(String fieldName) {
     SchemaField f = fields.get(fieldName);
     if (f != null) return f;
-    f = dynamicFieldCache.get(fieldName);
+    f = dynamicFieldCache.getIfPresent(fieldName);
     if (f != null) return f;
 
     for (DynamicField df : dynamicFields) {
@@ -1557,7 +1555,7 @@ public class IndexSchema {
     return getNamedPropertyValues(null, new MapSolrParams(Map.of()));
   }
 
-  public static class SchemaProps implements MapSerializable {
+  public static class SchemaProps implements MapWriter {
     private static final String SOURCE_FIELD_LIST = IndexSchema.SOURCE + "." + CommonParams.FL;
     private static final String DESTINATION_FIELD_LIST =
         IndexSchema.DESTINATION + "." + CommonParams.FL;
@@ -1683,12 +1681,13 @@ public class IndexSchema {
     }
 
     @Override
-    public Map<String, Object> toMap(Map<String, Object> map) {
-      return Stream.of(Handler.values())
-          .filter(it -> name == null || it.nameLower.equals(name))
-          .map(it -> new Pair<>(it.realName, it.fun.apply(this)))
-          .filter(it -> it.second() != null)
-          .collect(Collectors.toMap(Pair::first, Pair::second, (v1, v2) -> v2, LinkedHashMap::new));
+    public void writeMap(EntryWriter ew) throws IOException {
+      for (Handler it : Handler.values()) {
+        if (name == null || it.nameLower.equals(name)) {
+          Object val = it.fun.apply(this);
+          if (val != null) ew.put(it.realName, val);
+        }
+      }
     }
   }
 
@@ -1699,7 +1698,9 @@ public class IndexSchema {
                   SchemaProps.Handler::getNameLower, SchemaProps.Handler::getRealName));
 
   public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
-    return new SchemaProps(name, params, this).toMap(new LinkedHashMap<>());
+    // Must remain a SimpleOrderedMap (with SOM-valued entries preserved) — SchemaXmlWriter casts
+    // nested values to SimpleOrderedMap when persisting managed schemas.
+    return new SimpleOrderedMap<>(new SchemaProps(name, params, this));
   }
 
   /**

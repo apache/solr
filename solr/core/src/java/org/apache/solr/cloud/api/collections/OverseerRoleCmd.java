@@ -60,8 +60,8 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
       // No Overseer (not accessible from Collection API command execution in any case) so this
       // command can't be run...
       log.error(
-          "Cluster is running with distributed Collection API execution. Ignoring Collection API operation "
-              + operation); // nowarn
+          "Cluster is running with distributed Collection API execution. Ignoring Collection API operation {}",
+          operation);
       return;
     }
     ZkStateReader zkStateReader = ccc.getZkStateReader();

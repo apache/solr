@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +34,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Ignore;
 
 /**
@@ -247,7 +247,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
               List<Map> mapDocs = new ArrayList<>();
               for (SolrInputDocument doc : docs) {
-                mapDocs.add(doc.toMap(new LinkedHashMap<>()));
+                mapDocs.add(new SimpleOrderedMap(doc));
               }
 
               ObjectMapper cborMapper =
@@ -281,9 +281,12 @@ public class SolrExampleCborTest extends SolrExampleTests {
         return "cbor";
       }
 
+      private static final Set<String> CONTENT_TYPES =
+          Set.of("application/cbor", "application/octet-stream");
+
       @Override
       public Set<String> getContentTypes() {
-        return Set.of("application/cbor", "application/octet-stream");
+        return CONTENT_TYPES;
       }
 
       @Override
