@@ -80,7 +80,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
   protected NamedList<?> initParams;
   private final Map<String, QueryAndResponseCombiner> combiners = new HashMap<>();
   private int maxCombinerQueries;
-  private int maxQueryDepth;
   private static final String RESPONSE_PER_QUERY_KEY = "response_per_query";
 
   @Override
@@ -93,7 +92,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     super.init(args);
     this.initParams = args;
     this.maxCombinerQueries = CombinerParams.DEFAULT_MAX_COMBINER_QUERIES;
-    this.maxQueryDepth = CombinerParams.DEFAULT_MAX_QUERY_DEPTH;
   }
 
   @Override
@@ -125,10 +123,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     if (maxQueries != null) {
       this.maxCombinerQueries = Integer.parseInt(maxQueries.toString());
     }
-    Object maxDepth = initParams.get("maxQueryDepth");
-    if (maxDepth != null) {
-      this.maxQueryDepth = Integer.parseInt(maxDepth.toString());
-    }
     combiners.computeIfAbsent(
         CombinerParams.RECIPROCAL_RANK_FUSION,
         key -> {
@@ -153,7 +147,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
             SolrException.ErrorCode.BAD_REQUEST,
             "Too many queries to combine: limit is " + maxCombinerQueries);
       }
-      rb.shards_rows = resolveQueryDepth(params);
       for (String queryKey : queriesToCombineKeys) {
         final var unparsedQuery = params.get(queryKey);
         ResponseBuilder rbNew = new ResponseBuilder(rb.req, new SolrQueryResponse(), rb.components);
@@ -165,34 +158,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       }
     }
     super.prepare(rb);
-  }
-
-  /**
-   * Resolves {@link CombinerParams#COMBINER_QUERY_DEPTH} for this request. Returns {@code -1} when
-   * unset (legacy behavior: shards return {@code start + rows} per subquery, so the candidate pool
-   * shifts with the page). When set, validates the value is positive and within the configured
-   * {@code maxQueryDepth}.
-   */
-  private int resolveQueryDepth(SolrParams params) {
-    Integer depthParam = params.getInt(CombinerParams.COMBINER_QUERY_DEPTH);
-    if (depthParam == null) {
-      return -1;
-    }
-    if (depthParam <= 0) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          CombinerParams.COMBINER_QUERY_DEPTH + " must be a positive integer");
-    }
-    if (depthParam > maxQueryDepth) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          CombinerParams.COMBINER_QUERY_DEPTH
-              + "="
-              + depthParam
-              + " exceeds configured maxQueryDepth="
-              + maxQueryDepth);
-    }
-    return depthParam;
   }
 
   /**
@@ -358,8 +323,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     // Used to filter per-query docs so that RRF doesn't reintroduce docs
     // excluded by collapse at the shard level.
     Map<String, Set<Object>> combinedDocIdsPerShard = HashMap.newHashMap(sreq.responses.size());
-    int queryDepth = resolveQueryDepth(rb.req.getParams());
-    int perQueryQueueSize = Math.max(ss.getOffset() + ss.getCount(), queryDepth);
+    int perQueryQueueSize = Math.max(ss.getOffset() + ss.getCount(), rb.shards_rows);
     // TODO: to be parallelized outer loop
     for (int queryIndex = 0; queryIndex < queriesToCombineKeys.length; queryIndex++) {
       int failedShardCount = 0;

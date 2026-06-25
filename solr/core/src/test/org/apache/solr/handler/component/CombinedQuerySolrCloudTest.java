@@ -223,9 +223,9 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
           "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
         }""";
     rsp = query(CommonParams.JSON, jsonQueryLimit2, CommonParams.QT, "/search");
-    // assert improper ordering due to lack of queryDepth
+    // assert proper ordering due to presence of shards.rows
     assertFieldValues(rsp.getResults(), id, "7", "2");
-    String jsonQueryDepth =
+    String jsonQueryWithShardRows =
         """
         {
           "queries": {
@@ -234,11 +234,11 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
           },
           "limit": 2,
           "fields": ["id", "score", "title"],
-          "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"], "combiner.queryDepth": 10}
+          "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"], "shards.rows": 10}
         }""";
-    rsp = query(CommonParams.JSON, jsonQueryDepth, CommonParams.QT, "/search");
-    // assert proper ordering due to presence of queryDepth
+    rsp = query(CommonParams.JSON, jsonQueryWithShardRows, CommonParams.QT, "/search");
     assertFieldValues(rsp.getResults(), id, "5", "7");
+    // assert improper ordering due to lack of shards.rows
     String jsonQueryPage =
         """
         {

@@ -1,5 +1,5 @@
-title: Add combiner.queryDepth to limit per-subquery result depth with CombinedQueryComponent (RRF)
-type: added
+title: use shards.rows for per-subquery candidate pool depth with CombinedQueryComponent (RRF)
+type: fixed
 authors:
   - name: Sonu Sharma
     nick: ercsonusharma
