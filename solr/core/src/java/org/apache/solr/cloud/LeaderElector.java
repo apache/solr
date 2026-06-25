@@ -240,6 +240,20 @@ public class LeaderElector implements Closeable {
       watcher = new ElectionWatcher(context.getLeaderSeqPath(), watchedNode, context);
       Stat exists = zkClient.exists(watchedNode, watcher);
 
+      if (exists == null) {
+        // The predecessor we meant to watch was deleted between our getChildren() above and this
+        // exists() call (e.g. that replica's session expired / it was killed in this window). The
+        // watch we just set is now armed for that node's (re)creation, which will never come -- so
+        // the NodeDeleted event we are waiting for as a follower will never fire and we would hang
+        // in the election line forever. Re-run checkIfIamLeader: re-read the line -- with the
+        // predecessor gone we may now be at the head and able to become leader. This mirrors
+        // upstream Solr's `if (stat == null) checkIfIamLeader(...)` re-check (the fork had dropped
+        // both this guard and the equivalent else-branch in ElectionWatcher.process, so a sole
+        // survivor whose predecessor died in this exact window hung leaderless ~2/8 runs --
+        // LeaderElectionIntegrationTest.testSimpleSliceLeaderElection).
+        return true;
+      }
+
       if (log.isDebugEnabled()) log.debug("Watching path {} to know if I could be the leader, my node is {}", watchedNode, context.getLeaderSeqPath());
 
       return false;

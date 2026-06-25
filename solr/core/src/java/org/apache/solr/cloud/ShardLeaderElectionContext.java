@@ -316,9 +316,23 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           } else if (anotherReplicaHasData(zkShardTerms, coreName)) {
             // SOLR-9504: PeerSync found no live peers, but another replica in the shard has data
             // (visible via cluster-state or shard terms). An empty replica must not seize leadership
-            // while a data-bearing replica exists, even if that replica is currently down.
-            log.info("We failed sync, have no versions, and no live peers responded, but another replica in this shard has data. Not becoming leader to avoid data loss {}", coreName);
-            return false;
+            // WHILE a data-bearing replica can still return -- doing so makes it recover FROM us and
+            // lose committed data. But this must NOT be a permanent refusal: if the data-bearing
+            // replica never comes back within leaderVoteWait we MUST become leader anyway, else the
+            // shard hangs leaderless forever (the sole live -- but empty -- survivor loops rejoining
+            // election indefinitely; LeaderElectionIntegrationTest.testSimpleSliceLeaderElection
+            // expires the leader of an empty collection then kills every other replica, and the
+            // survivor must re-lead). Mirror the success-path SOLR-9504 handling above: honor
+            // leaderVoteWait, yield only if a better live candidate actually participates, otherwise
+            // lead. Data-bearing peers still hold higher terms, so a live one returning during the
+            // wait wins via replicasWithHigherTermParticipated (TestCloudConsistency protection).
+            ZkShardTerms waitTerms = zkShardTerms != null ? zkShardTerms : zkController.getShardTerms(collection, shardId);
+            if (!waitForEligibleBecomeLeaderAfterTimeout(waitTerms, coreName, leaderVoteWait)) {
+              log.info("We failed sync, have no versions, a down replica has data, and a better candidate returned within leaderVoteWait; yielding election {}", coreName);
+              return false;
+            }
+            log.info("We failed sync, have no versions, a down replica had data, but none returned within leaderVoteWait; becoming leader anyway {}", coreName);
+            success = true;
           } else {
             log.info("We failed sync, but we have no versions - we can't sync in that case - we did not find versions on other replicas, so become leader anyway {}", coreName);
             success = true;

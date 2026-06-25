@@ -1427,6 +1427,24 @@ public class ZkStateWriter {
       terminated = false;
       workQueue.clear();
 
+      // Reset the cached per-shard delta-plane writer on every re-election. statePlaneWriter() is a
+      // lazy one-time cache that seeds localEpoch = seedEpoch() (the overseer election sequence) ONLY
+      // at construction; it is never re-seeded. This ZkStateWriter is a per-node singleton reused
+      // across overseer tenures, so a writer built during an EARLIER tenure keeps that tenure's stale
+      // localEpoch. When this node loses overseer leadership (e.g. ZK session expiry) another overseer
+      // advances the durable per-shard delta ring to a higher epoch; on re-winning, the stale-epoch
+      // writer is then permanently fenced ("ring ... is at epoch N ahead of local writer epoch M;
+      // refusing to append") and can never publish the new shard-leader state -- readers hang forever
+      // in getLeaderRetry (LeaderElectionIntegrationTest.testSimpleSliceLeaderElection: expire the
+      // collection's leader, kill the other replicas, the survivor wins shard+overseer election but
+      // its state never reaches the plane). Null it (and the fence/manifest fast-skip) so the next
+      // publish rebuilds it with setLocalEpoch(seedEpoch()) at the CURRENT (higher) election sequence
+      // -- honoring this file's own "a new overseer constructs a new writer" contract. manifestEnsured
+      // is only an in-process fast-skip (ensureManifestSeeded re-checks ZK), safe to clear.
+      statePlaneWriter = null;
+      electionFence = null;
+      manifestEnsured.clear();
+
       Worker worker = new Worker();
       workerExec = Executors.newSingleThreadExecutor(new SolrNamedThreadFactory("ZKStateWriter", true));
       workerExec.submit(worker);
