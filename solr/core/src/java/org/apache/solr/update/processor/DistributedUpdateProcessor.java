@@ -1247,6 +1247,23 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
         }
 
+        // A sub-shard leader reaches this (non-leaderLogic) branch because setupRequest sets
+        // isLeader=false / isSubShardLeader=true for it. Unlike the add path -- which always calls
+        // doDistribAdd when getNodes() is non-empty (see the getNodes()||leaderLogic guard in versionAdd)
+        // -- the delete path only invokes doDistribDeleteById inside the leaderLogic branch above, so a
+        // sub-shard leader applied the delete locally but never forwarded it to its own sub-shard
+        // replicas. The replica then keeps a doc the sub-shard leader deleted (ShardSplitTest: replica
+        // numFound > leader numFound after a live split). Forward the delete to our sub-shard replicas
+        // here, mirroring the add path; doDistribDeleteById's "if (nodes != null)" block re-sends it
+        // FROMLEADER (the isLeader-only getSubShardLeaders block is skipped since isLeader is false).
+        if (isSubShardLeader) {
+          try {
+            doDistribDeleteById(cmd);
+          } catch (IOException e) {
+            log.error("doDistribDeleteById failed forwarding to sub-shard replicas", e);
+          }
+        }
+
         if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
           cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
         }

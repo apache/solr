@@ -369,7 +369,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (log.isDebugEnabled()) {
         log.debug("Not a shard or sub shard leader docId={}",  cmd.getPrintableId());
       }
-      if (!forwardToLeader) {
+      // A sub-shard leader lands here (the isLeader && !isSubShardLeader block above is skipped for it),
+      // but it must still fall through to the `nodes` block below to forward the update to its own
+      // sub-shard replicas (setupRequest populated `nodes` for the isSubShardLeader case). Only a pure
+      // follower that is NOT forwarding to a leader has nothing left to do and can return early; returning
+      // here for a sub-shard leader silently drops every live update to its sub-shard replica, leaving it
+      // permanently behind the sub-shard leader (ShardSplitTest sub-shard divergence).
+      if (!forwardToLeader && !isSubShardLeader) {
         return;
       }
     }
