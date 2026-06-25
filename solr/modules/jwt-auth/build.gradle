@@ -35,7 +35,7 @@ dependencies {
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-jetty')
 
-  implementation libs.bc.jose4j
+  implementation libs.nimbusds.josejwt
 
   implementation libs.eclipse.jetty.client
   implementation libs.eclipse.jetty.http
@@ -62,7 +62,6 @@ dependencies {
 
   testImplementation libs.bouncycastle.bcpkix
   testImplementation libs.bouncycastle.bcprov
-  testImplementation libs.nimbusds.josejwt
   testImplementation libs.squareup.okhttp3.mockwebserver
   testImplementation libs.squareup.okhttp3.okhttp
   testRuntimeOnly libs.netty.codechttp

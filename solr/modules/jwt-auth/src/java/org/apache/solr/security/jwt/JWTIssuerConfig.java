@@ -18,6 +18,11 @@
 package org.apache.solr.security.jwt;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.util.DefaultResourceRetriever;
+import com.nimbusds.jose.util.Resource;
+import com.nimbusds.jose.util.ResourceRetriever;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,9 +31,14 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.security.cert.X509Certificate;
+import java.text.ParseException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,16 +46,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.jose4j.http.Get;
-import org.jose4j.http.SimpleResponse;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.JsonWebKeySet;
-import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,10 +74,10 @@ public class JWTIssuerConfig {
   private static HttpsJwksFactory httpsJwksFactory = new HttpsJwksFactory(3600, 5000);
   private String iss;
   private String aud;
-  private JsonWebKeySet jsonWebKeySet;
+  private JWKSet jsonWebKeySet;
   private String name;
   private List<String> jwksUrl;
-  private List<HttpsJwks> httpsJwks;
+  private List<JwkSetFetcher> httpsJwks;
   private String wellKnownUrl;
   private WellKnownDiscoveryConfig wellKnownDiscoveryConfig;
   private String clientId;
@@ -82,6 +90,9 @@ public class JWTIssuerConfig {
       EnvUtils.getPropertyAsBool("solr.auth.jwt.outbound.http.enabled", false);
   public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG =
       "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.outbound.http.enabled=true to allow HTTP for test purposes.";
+  static final int JWKS_CONNECT_TIMEOUT_MS = 5_000;
+  static final int JWKS_READ_TIMEOUT_MS = 10_000;
+
   private static final String DEFAULT_AUTHORIZATION_FLOW =
       "implicit"; // 'implicit' to be deprecated
   private static final Set<String> VALID_AUTHORIZATION_FLOWS =
@@ -183,7 +194,7 @@ public class JWTIssuerConfig {
   }
 
   /**
-   * Setter that takes a jwk config object, parses it into a {@link JsonWebKeySet} and sets it
+   * Setter that takes a jwk config object, parses it into a {@link JWKSet} and sets it
    *
    * @param jwksObject the config object to parse
    */
@@ -193,7 +204,7 @@ public class JWTIssuerConfig {
       if (jwksObject != null) {
         jsonWebKeySet = parseJwkSet((Map<String, Object>) jwksObject);
       }
-    } catch (JoseException e) {
+    } catch (ParseException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Failed parsing parameter 'jwk' for issuer " + getName(),
@@ -202,17 +213,13 @@ public class JWTIssuerConfig {
   }
 
   @SuppressWarnings("unchecked")
-  protected static JsonWebKeySet parseJwkSet(Map<String, Object> jwkObj) throws JoseException {
-    JsonWebKeySet webKeySet = new JsonWebKeySet();
+  protected static JWKSet parseJwkSet(Map<String, Object> jwkObj) throws ParseException {
+    String json = Utils.toJSONString(jwkObj);
     if (jwkObj.containsKey("keys")) {
-      List<Object> jwkList = (List<Object>) jwkObj.get("keys");
-      for (Object jwkO : jwkList) {
-        webKeySet.addJsonWebKey(JsonWebKey.Factory.newJwk((Map<String, Object>) jwkO));
-      }
+      return JWKSet.parse(json);
     } else {
-      webKeySet = new JsonWebKeySet(JsonWebKey.Factory.newJwk(jwkObj));
+      return new JWKSet(JWK.parse(json));
     }
-    return webKeySet;
   }
 
   private WellKnownDiscoveryConfig fetchWellKnown(URL wellKnownUrl) {
@@ -273,7 +280,7 @@ public class JWTIssuerConfig {
     return this;
   }
 
-  public List<HttpsJwks> getHttpsJwks() {
+  public List<JwkSetFetcher> getHttpsJwks() {
     if (httpsJwks == null) {
       httpsJwks = httpsJwksFactory.createList(getJwksUrls());
     }
@@ -281,7 +288,7 @@ public class JWTIssuerConfig {
   }
 
   /**
-   * Set the factory to use when creating HttpsJwks objects
+   * Set the factory to use when creating JwkSetFetcher objects
    *
    * @param httpsJwksFactory factory with custom settings
    */
@@ -289,11 +296,11 @@ public class JWTIssuerConfig {
     JWTIssuerConfig.httpsJwksFactory = httpsJwksFactory;
   }
 
-  public JsonWebKeySet getJsonWebKeySet() {
+  public JWKSet getJsonWebKeySet() {
     return jsonWebKeySet;
   }
 
-  public JWTIssuerConfig setJsonWebKeySet(JsonWebKeySet jsonWebKeySet) {
+  public JWTIssuerConfig setJsonWebKeySet(JWKSet jsonWebKeySet) {
     this.jsonWebKeySet = jsonWebKeySet;
     return this;
   }
@@ -385,7 +392,11 @@ public class JWTIssuerConfig {
     putIfNotNull(config, PARAM_TOKEN_ENDPOINT, tokenEndpoint);
     putIfNotNull(config, PARAM_AUTHORIZATION_FLOW, authorizationFlow);
     if (jsonWebKeySet != null) {
-      putIfNotNull(config, PARAM_JWK, jsonWebKeySet.getJsonWebKeys());
+      Map<String, Object> jwkSetMap = new HashMap<>();
+      jwkSetMap.put(
+          "keys",
+          jsonWebKeySet.getKeys().stream().map(JWK::toJSONObject).collect(Collectors.toList()));
+      putIfNotNull(config, PARAM_JWK, jwkSetMap);
     }
     return config;
   }
@@ -424,14 +435,6 @@ public class JWTIssuerConfig {
     return jwkConfigured > 0;
   }
 
-  private static void disableHostVerificationIfLocalhost(URL url, Get httpGet) {
-    InetAddress loopbackAddress = InetAddress.getLoopbackAddress();
-    if (loopbackAddress.getCanonicalHostName().equals(url.getHost())
-        || loopbackAddress.getHostName().equals(url.getHost())) {
-      httpGet.setHostnameVerifier((hostname, session) -> true);
-    }
-  }
-
   public void setTrustedCerts(Collection<X509Certificate> trustedCerts) {
     this.trustedCerts = trustedCerts;
   }
@@ -439,6 +442,112 @@ public class JWTIssuerConfig {
   @VisibleForTesting
   public Collection<X509Certificate> getTrustedCerts() {
     return this.trustedCerts;
+  }
+
+  /** Builds an SSL socket factory trusting the given certificates. */
+  static SSLSocketFactory buildSSLSocketFactory(Collection<X509Certificate> trustedCerts) {
+    try {
+      KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+      ks.load(null, null);
+      int i = 0;
+      for (X509Certificate cert : trustedCerts) {
+        ks.setCertificateEntry("trusted-cert-" + i++, cert);
+      }
+      TrustManagerFactory tmf =
+          TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      tmf.init(ks);
+      SSLContext sslContext = SSLContext.getInstance("TLS");
+      sslContext.init(null, tmf.getTrustManagers(), null);
+      return sslContext.getSocketFactory();
+    } catch (GeneralSecurityException | IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Failed to build custom SSL context", e);
+    }
+  }
+
+  /**
+   * Builds a ResourceRetriever with an optional custom SSL trust store. Uses a custom
+   * implementation when trusted certs are configured; in that case hostname verification is also
+   * bypassed for loopback hosts. Otherwise uses the default DefaultResourceRetriever.
+   */
+  static ResourceRetriever buildResourceRetriever(
+      Collection<X509Certificate> trustedCerts, URL url) {
+    if (trustedCerts == null) {
+      return new DefaultResourceRetriever();
+    }
+    SSLSocketFactory ssf = buildSSLSocketFactory(trustedCerts);
+    InetAddress loopback = InetAddress.getLoopbackAddress();
+    boolean disableHostnameVerification =
+        loopback.getCanonicalHostName().equals(url.getHost())
+            || loopback.getHostName().equals(url.getHost());
+    return resourceUrl -> {
+      URLConnection conn = resourceUrl.openConnection();
+      conn.setConnectTimeout(JWKS_CONNECT_TIMEOUT_MS);
+      conn.setReadTimeout(JWKS_READ_TIMEOUT_MS);
+      if (conn instanceof HttpsURLConnection httpsConn) {
+        httpsConn.setSSLSocketFactory(ssf);
+        if (disableHostnameVerification) {
+          httpsConn.setHostnameVerifier((hostname, session) -> true);
+        }
+      }
+      try (InputStream in = conn.getInputStream()) {
+        String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        return new Resource(content, conn.getContentType());
+      }
+    };
+  }
+
+  /** Fetches and caches a JWK set from a remote URL using nimbus-jose-jwt's ResourceRetriever. */
+  public static class JwkSetFetcher {
+    private final String url;
+    private final ResourceRetriever retriever;
+    private final long cacheDurationSeconds;
+    private final long refreshReprieveThresholdMs;
+    private JWKSet cachedSet;
+    private Instant cacheExpiry = Instant.EPOCH;
+    private Instant lastRefreshTime = Instant.EPOCH;
+
+    JwkSetFetcher(
+        String url,
+        ResourceRetriever retriever,
+        long cacheDurationSeconds,
+        long refreshReprieveThresholdMs) {
+      this.url = url;
+      this.retriever = retriever;
+      this.cacheDurationSeconds = cacheDurationSeconds;
+      this.refreshReprieveThresholdMs = refreshReprieveThresholdMs;
+    }
+
+    public synchronized List<JWK> getKeys() throws IOException, ParseException {
+      if (cachedSet == null || Instant.now().isAfter(cacheExpiry)) {
+        refresh();
+      }
+      return cachedSet.getKeys();
+    }
+
+    /**
+     * Fetches fresh keys from the remote JWK endpoint. Calls within the refresh reprieve window are
+     * ignored to avoid hammering the IdP on repeated unknown-key requests.
+     */
+    public synchronized void refresh() throws IOException, ParseException {
+      Instant now = Instant.now();
+      if (cachedSet != null
+          && now.isBefore(lastRefreshTime.plusMillis(refreshReprieveThresholdMs))) {
+        return;
+      }
+      try {
+        Resource resource = retriever.retrieveResource(URI.create(url).toURL());
+        cachedSet = JWKSet.parse(resource.getContent());
+        cacheExpiry = now.plusSeconds(cacheDurationSeconds);
+        lastRefreshTime = now;
+      } catch (MalformedURLException e) {
+        throw new IOException("Malformed JWK URL: " + url, e);
+      }
+    }
+
+    public String getLocation() {
+      return url;
+    }
   }
 
   public static class HttpsJwksFactory {
@@ -460,34 +569,22 @@ public class JWTIssuerConfig {
       this.trustedCerts = trustedCerts;
     }
 
-    /*
-     * While the class name is HttpsJwks, it actually works with plain http formatted url as well.
-     *
-     * @param url the Url to connect to for JWK details.
-     */
-    private HttpsJwks create(String url) {
+    private JwkSetFetcher create(String url) {
       final URL jwksUrl;
       try {
         jwksUrl = URI.create(url).toURL();
         checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
-      } catch (MalformedURLException e) {
+      } catch (MalformedURLException | IllegalArgumentException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Url " + url + " configured in " + PARAM_JWKS_URL + " is not a valid URL");
       }
-      HttpsJwks httpsJkws = new HttpsJwks(url);
-      httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
-      httpsJkws.setRefreshReprieveThreshold(refreshReprieveThreshold);
-      if (trustedCerts != null) {
-        Get getWithCustomTrust = new Get();
-        getWithCustomTrust.setTrustedCertificates(trustedCerts);
-        disableHostVerificationIfLocalhost(jwksUrl, getWithCustomTrust);
-        httpsJkws.setSimpleHttpGet(getWithCustomTrust);
-      }
-      return httpsJkws;
+
+      ResourceRetriever retriever = buildResourceRetriever(trustedCerts, jwksUrl);
+      return new JwkSetFetcher(url, retriever, jwkCacheDuration, refreshReprieveThreshold);
     }
 
-    public List<HttpsJwks> createList(List<String> jwkUrls) {
+    public List<JwkSetFetcher> createList(List<String> jwkUrls) {
       return jwkUrls.stream().map(this::create).collect(Collectors.toList());
     }
   }
@@ -529,13 +626,10 @@ public class JWTIssuerConfig {
         if ("file".equals(url.getProtocol())) {
           return parse(url.openStream());
         } else {
-          Get httpGet = new Get();
-          if (trustedCerts != null) {
-            httpGet.setTrustedCertificates(trustedCerts);
-            disableHostVerificationIfLocalhost(url, httpGet);
-          }
-          SimpleResponse resp = httpGet.get(url.toString());
-          return parse(new ByteArrayInputStream(resp.getBody().getBytes(StandardCharsets.UTF_8)));
+          ResourceRetriever retriever = buildResourceRetriever(trustedCerts, url);
+          Resource resp = retriever.retrieveResource(url);
+          return parse(
+              new ByteArrayInputStream(resp.getContent().getBytes(StandardCharsets.UTF_8)));
         }
       } catch (IOException e) {
         throw new SolrException(

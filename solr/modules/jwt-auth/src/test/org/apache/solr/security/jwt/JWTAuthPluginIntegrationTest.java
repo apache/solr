@@ -19,6 +19,12 @@ package org.apache.solr.security.jwt;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.security.jwt.JWTAuthPluginTest.JWT_TEST_PATH;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jwt.SignedJWT;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,13 +68,6 @@ import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.HttpClient;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jwk.RsaJsonWebKey;
-import org.jose4j.jwk.RsaJwkGenerator;
-import org.jose4j.jws.AlgorithmIdentifiers;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.lang.JoseException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -89,7 +88,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   private static Path pemFilePath;
   private static Path wrongPemFilePath;
   private static String jwtStaticTestToken;
-  private static JsonWebSignature jws;
+  private static SignedJWT jws;
   private static String jwtTokenWrongSignature;
   private static MockOAuth2Server mockOAuth2Server;
 
@@ -335,8 +334,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
             .intValue());
   }
 
-  static String getBearerAuthHeader(JsonWebSignature jws) throws JoseException {
-    return "Bearer " + jws.getCompactSerialization();
+  static String getBearerAuthHeader(SignedJWT jws) {
+    return "Bearer " + jws.serialize();
   }
 
   private void assertAuthMetricsMinimums(
@@ -428,24 +427,21 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
             + "  \"n\": \"jeyrvOaZrmKWjyNXt0myAc_pJ1hNt3aRupExJEx1ewPaL9J9HFgSCjMrYxCB1ETO1NDyZ3nSgjZis-jHHDqBxBjRdq_t1E2rkGFaYbxAyKt220Pwgme_SFTB9MXVrFQGkKyjmQeVmOmV6zM3KK8uMdKQJ4aoKmwBcF5Zg7EZdDcKOFgpgva1Jq-FlEsaJ2xrYDYo3KnGcOHIt9_0NQeLsqZbeWYLxYni7uROFncXYV5FhSJCeR4A_rrbwlaCydGxE0ToC_9HNYibUHlkJjqyUhAgORCbNS8JLCJH8NUi5sDdIawK9GTSyvsJXZ-QHqo4cMUuxWV5AJtaRGghuMUfqQ\"\n"
             + "}";
 
-    PublicJsonWebKey jwk = RsaJsonWebKey.Factory.newPublicJwk(jwkJSON);
-    JwtClaims claims = JWTAuthPluginTest.generateClaims();
-    jws = new JsonWebSignature();
-    jws.setPayload(claims.toJson());
-    jws.setKey(jwk.getPrivateKey());
-    jws.setKeyIdHeaderValue(jwk.getKeyId());
-    jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+    RSAKey jwk = RSAKey.parse(jwkJSON);
+    jws =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(jwk.getKeyID()).build(),
+            JWTAuthPluginTest.generateClaims());
+    jws.sign(new RSASSASigner(jwk));
+    jwtStaticTestToken = jws.serialize();
 
-    jwtStaticTestToken = jws.getCompactSerialization();
-
-    PublicJsonWebKey jwk2 = RsaJwkGenerator.generateJwk(2048);
-    jwk2.setKeyId("k2");
-    JsonWebSignature jws2 = new JsonWebSignature();
-    jws2.setPayload(claims.toJson());
-    jws2.setKey(jwk2.getPrivateKey());
-    jws2.setKeyIdHeaderValue(jwk2.getKeyId());
-    jws2.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-    jwtTokenWrongSignature = jws2.getCompactSerialization();
+    RSAKey jwk2 = new RSAKeyGenerator(2048).keyID("k2").generate();
+    SignedJWT jws2 =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(jwk2.getKeyID()).build(),
+            JWTAuthPluginTest.generateClaims());
+    jws2.sign(new RSASSASigner(jwk2));
+    jwtTokenWrongSignature = jws2.serialize();
   }
 
   private void getAndFail(String url, String token) {
@@ -522,8 +518,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     myCluster.waitForActiveCollection(collectionName, 2, 2);
   }
 
-  private void executeCommand(
-      HttpClient httpClient, String url, String payload, JsonWebSignature jws) throws Exception {
+  private void executeCommand(HttpClient httpClient, String url, String payload, SignedJWT jws)
+      throws Exception {
 
     // HACK: work around for SOLR-13464...
     //
@@ -533,7 +529,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     final Set<Map.Entry<String, Object>> initialPlugins =
         getAuthPluginsInUseForCluster(url).entrySet();
 
-    String authHeaderValue = jws != null ? "Bearer " + jws.getCompactSerialization() : null;
+    String authHeaderValue = jws != null ? "Bearer " + jws.serialize() : null;
     var rsp =
         httpClient
             .POST(url)
