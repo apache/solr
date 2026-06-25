@@ -90,6 +90,32 @@ Core architectural departures from upstream Apache Solr:
 
 Re-ignoring with a comment is only a temporary holding state, not a resolution.
 
+### No failure is a "one-off" — every failing suite gets root-caused
+
+There is no such thing as a one-off failure. Every single failing suite from any run
+(nightly or otherwise) must be addressed — never dismissed as "rare", "a one-off", "just
+load", or "didn't recur". **Load is not an excuse**: the app runs under far higher load in
+production than these tests, so a load-induced failure is a real correctness/concurrency bug.
+
+For rare failures that don't reproduce on a plain re-run, **hunt them with the `beast` task**
+— it hammers ONE test class in parallel with itself:
+
+```
+./gradlew beast \
+    -Ptests.beast.class=<fully.qualified.TestClass> \
+    -Ptests.beast.iters=<N total iterations> \
+    [-Ptests.beast.parallelism=<P concurrent, default tests.jvms>] \
+    [-Ptests.beast.method=<singleMethod>]
+```
+
+Failures land in `<module>/build/test-results/beast/OUTPUT-<DuplicateClass>.txt`. If a flake
+doesn't surface, **increase parallelism and iterations** (e.g. bump `tests.beast.iters` and
+`tests.beast.parallelism`) until it does — then root-cause and fix it. (Caveat: a beast
+duplicate is a subclass, so only `@Inherited` class-level annotations apply; `final`/`abstract`
+classes can't be beasted. A handful of tests have a tmpdir-collision artifact under beast's
+multi-JVM duplicates — verify a beast repro is the same bug as the original failure, not a
+beast-only artifact, before chasing it.)
+
 ## Overseer / StateUpdates architecture — what to know
 
 The classic Overseer queue (`ClusterStateUpdater`) is replaced. Key classes:
@@ -326,11 +352,14 @@ Tests that did this and still failed: see `solr-ref-test-enablement.md` for the 
 
 ### DisjunctionMaxQuery ordering (edismax)
 
-Lucene 9.0.0 `DisjunctionMaxQuery` uses an unordered `Multiset` for disjuncts. Any test
-that asserts an exact `toString()` containing `|` disjunct order will fail seed-dependently
-(~14/33 tests fail per run on varying seeds). There is no Solr-side fix. Tests in
-`TestExtendedDismaxParser` that assert exact query strings remain `@Ignore`'d. Do not
-re-investigate.
+Lucene 9.0.0 `DisjunctionMaxQuery` uses an unordered `Multiset` for disjuncts, so a test that
+asserts an exact `toString()` containing `|` disjunct order fails seed-dependently (~14/33 per
+run on varying seeds). There is no Solr-side fix for the ordering itself — but per the test
+policy above, leaving these `@Ignore`'d is not an acceptable end-state. The resolution is to
+**adapt** each assertion to be order-insensitive (compare the disjunct set, not the exact
+string) or **delete** the exact-string check where it adds nothing beyond ordering. The
+ordering is the only non-determinism here; any OTHER `TestExtendedDismaxParser` failure is a
+real bug to root-cause, not this.
 
 ### Debugging inside MiniSolrCloudCluster
 
