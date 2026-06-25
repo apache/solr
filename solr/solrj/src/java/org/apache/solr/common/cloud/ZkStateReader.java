@@ -849,6 +849,21 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
    * catch-up fetch whenever interest (and the scoped watch) returns, re-materializing current state.
    */
   private void releaseLocalInterest(String collection) {
+    // Keep the scoped state-plane watch armed while a cached entry for this collection is still served
+    // from watchedCollectionStates. Dropping the last DocCollectionWatcher (e.g. a satisfied
+    // waitForState predicate self-removing) clears collectionWatches but intentionally RETAINS the cached
+    // watchedCollectionStates entry (see method javadoc), and getClusterState() serves that retained entry
+    // (getCollectionRefs overlays watchedCollectionStates on top of the lazy ref). Tearing the watch down
+    // here would freeze that cached state at its last-applied delta: a consumer that polls getClusterState()
+    // without registering its own watcher (e.g. HttpPartitionTest.waitForState) would then never observe a
+    // later transition (a replica publishing DOWN during a partition), because no leaf event is delivered
+    // and interest never returns to trigger registerStatePlaneWatch's catch-up fetch — the staleness the
+    // javadoc calls "bounded" is in fact unbounded for that consumer (ForceLeaderTest DOWN timeout). The
+    // watch is still released on the genuine no-more-interest path: colectionRemoved (collection deleted
+    // cluster-wide) drops the cached entry AND unregisters the watch directly.
+    if (watchedCollectionStates.containsKey(collection)) {
+      return;
+    }
     unregisterStatePlaneWatch(collection);
     // The scoped-watch arm/release is NOT atomic with the collectionWatches membership decision that
     // routed us here (review finding #4). A concurrent registerCore / registerDocCollectionWatcher for the
