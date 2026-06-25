@@ -282,13 +282,21 @@ public class StatePlaneWriter {
                                 + ring.writerId + "'; fenced out");
                     }
 
-                    // ---- Rebase epoch cursor if the ring is ahead. epoch never bumps per-write. ----
-                    if (ring.epoch > localEpoch) {
+                    // ---- Epoch cursor reconciliation. epoch never bumps per-write. ----
+                    // Two cases when the durable ring is at a higher epoch than this writer:
+                    //   (1) Bootstrap takeover: a freshly-constructed writer (localEpoch == 0 — never
+                    //       seeded an epoch via setLocalEpoch/seedShard) is the elected overseer taking
+                    //       over a ring another overseer already advanced. It must adopt (rebase to) the
+                    //       ring's epoch and proceed — a new overseer always starts at localEpoch 0.
+                    //   (2) Stale established writer: a writer that explicitly adopted an epoch
+                    //       (localEpoch > 0) and now sees the ring advanced past it has been superseded
+                    //       by a newer election. With AlwaysElectedFence-style fences isFencedBy() cannot
+                    //       reveal this, so the durable ring epoch is the authoritative fence — reject.
+                    if (ring.epoch > localEpoch && localEpoch > 0) {
                         throw new FencedException(
                                 "ring " + deltaPath + " is at epoch " + ring.epoch
                                         + " ahead of local writer epoch " + localEpoch + "; refusing to append");
                     }
-
                     int epoch = Math.max(localEpoch, ring.epoch);
                     if (ring.epoch > localEpoch) localEpoch = ring.epoch;
 

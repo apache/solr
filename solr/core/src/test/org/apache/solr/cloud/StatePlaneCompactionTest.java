@@ -541,7 +541,15 @@ public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
 
                 @Override
                 public boolean ownsElectionAuthoritative() {
-                    return ++authoritativeChecks <= 2;
+                    // The publish path on a not-yet-existing ring spends three authoritative-ownership
+                    // checks before the post-append compaction, and we want the APPEND to land but the
+                    // compaction to be fenced:
+                    //   #1 publish pre-loop guard                 -> true
+                    //   #2 lazyCreateRing (ring does not exist)   -> true  (creates the empty ring)
+                    //   #3 publish pre-CAS guard                  -> true  -> delta APPENDS (size == 1)
+                    //   #4 compaction work guard (post-append)    -> false -> compaction FENCED
+                    // so the ring keeps its single delta and no snapshot znode is ever written.
+                    return ++authoritativeChecks <= 3;
                 }
             }
 

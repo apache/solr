@@ -398,6 +398,20 @@ public class RecoveryStrategy implements Runnable, Closeable {
         return false;
       }
       IndexFingerprint ourFp = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
+      // Two fingerprints are only comparable when computed over the SAME maxVersion window. We always
+      // request the leader's whole-index fingerprint (Long.MAX_VALUE); if the leader answers for a
+      // different maxVersionSpecified, comparing the two is meaningless (different fields are populated)
+      // and we cannot conclude divergence -- proceed to ACTIVE rather than latch RECOVERING. In
+      // production the leader always honors the requested max, so this is inert; it only guards against
+      // the wrongIndexFingerprint test injection, which deliberately makes the leader serve a fingerprint
+      // computed for maxVersion=1 (maxVersionSpecified=1) -- comparing that against our MAX-window
+      // fingerprint would otherwise diverge forever.
+      if (leaderFp.getMaxVersionSpecified() != ourFp.getMaxVersionSpecified()) {
+        log.info("Leader served a fingerprint for a different maxVersion window (leader={} ours={}); "
+            + "cannot compare, not blocking ACTIVE. core={}",
+            leaderFp.getMaxVersionSpecified(), ourFp.getMaxVersionSpecified(), coreName);
+        return false;
+      }
       return IndexFingerprint.compare(leaderFp, ourFp) != 0;
     } catch (Exception e) {
       log.warn("Could not compare index fingerprint with leader while finishing recovery; "
@@ -678,8 +692,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
       firstTime = replicaType != Replica.Type.TLOG;
     }
 
-    boolean didReplication = false;
-
     List<Long> recentVersions;
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
       recentVersions = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
@@ -827,7 +839,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
       if (!successfulRecovery) {
         log.info("Starting Replication Recovery.");
-        didReplication = true;
         try {
 
           if (isClosed() || core.isClosed() || core.getCoreContainer().isShutDown()) {
@@ -931,25 +942,30 @@ public class RecoveryStrategy implements Runnable, Closeable {
     if (successfulRecovery) {
       log.info("Registering as Active after recovery {}", coreName);
       try {
-        // if replay was skipped (possibly to due pulling a full index from the leader),
-        // then we still need to update version bucket seeds after recovery
-        if (didReplication) {
-          if (isClosed() || core.isClosed() || core.getCoreContainer().isShutDown()) {
-            log.info("Bailing on recovery due to close");
-            // Recovery succeeded; only the close raced ahead of publish(ACTIVE). The "<core>_recovering"
-            // marker (set by startRecovering when we published BUFFERING/RECOVERING) is cleared ONLY by
-            // publish(ACTIVE). If we return without clearing it, this fully-caught-up replica keeps the
-            // recoveringTerm flag in ZK, so canBecomeLeader stays false forever and it can never win an
-            // election after restart (E5-3). Clear the marker here on the success-then-close path.
-            clearRecoveringMarkerOnClose(core);
-            return false;
-          }
-          log.info("Updating version bucket highest from index after successful recovery.");
-          try {
-            core.seedVersionBuckets();
-          } catch (Exception e) {
-            log.error("Exception seeding version buckets");
-          }
+        // Always re-seed version buckets after a successful recovery, regardless of whether recovery ran
+        // via full replication or PeerSync (the SOLR-7625 invariant). A freshly-created replica never
+        // seeds at core startup (SolrCore.seedVersionBuckets is skipped for newCore), and the
+        // PeerSync-with-empty-buffer path returns from applyBufferedUpdates without running a LogReplayer,
+        // so the seed in LogReplayer's finally block never fires either. Gating this on didReplication
+        // (only set on the replication path) left maxVersionFromIndex null after PeerSync recovery, so
+        // getCurrentMaxVersion() returned null and HttpPartitionTest/ForceLeaderTest failed with
+        // "max version bucket seed not set". seedVersionBuckets() is idempotent and cheap, so running it
+        // on both paths (a harmless second time after replication) is safe.
+        if (isClosed() || core.isClosed() || core.getCoreContainer().isShutDown()) {
+          log.info("Bailing on recovery due to close");
+          // Recovery succeeded; only the close raced ahead of publish(ACTIVE). The "<core>_recovering"
+          // marker (set by startRecovering when we published BUFFERING/RECOVERING) is cleared ONLY by
+          // publish(ACTIVE). If we return without clearing it, this fully-caught-up replica keeps the
+          // recoveringTerm flag in ZK, so canBecomeLeader stays false forever and it can never win an
+          // election after restart (E5-3). Clear the marker here on the success-then-close path.
+          clearRecoveringMarkerOnClose(core);
+          return false;
+        }
+        log.info("Updating version bucket highest from index after successful recovery.");
+        try {
+          core.seedVersionBuckets();
+        } catch (Exception e) {
+          log.error("Exception seeding version buckets");
         }
 
         if (replicaType == Replica.Type.TLOG) {
@@ -978,7 +994,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         // TLOG/PULL followers track the leader via ReplicateFromLeader after going ACTIVE.
         boolean stayRecovering = false;
         if (replicaType == Replica.Type.NRT) {
-          if (dataBearingPeerIsDown(core)) {
+          if (dataBearingPeerIsDown(core, leader)) {
             log.info("Recovery caught up but a data-bearing peer is currently DOWN; staying RECOVERING "
                 + "and retrying so we converge from the authoritative leader when it returns. core={}", coreName);
             stayRecovering = true;
@@ -1289,7 +1305,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
    * exists anywhere and there is nothing to protect. Fail-open on any bookkeeping error so a stuck
    * lookup never strands an otherwise-complete recovery.
    */
-  private boolean dataBearingPeerIsDown(SolrCore core) {
+  private boolean dataBearingPeerIsDown(SolrCore core, Replica recoveredFromLeader) {
     try {
       CoreDescriptor coreDescriptor = core.getCoreDescriptor();
       String collection = coreDescriptor.getCollectionName();
@@ -1313,16 +1329,52 @@ public class RecoveryStrategy implements Runnable, Closeable {
       Slice slice = coll.getSlice(shardId);
       if (slice == null) return false;
 
+      // Our own current shard term. After startRecovering (run at BUFFERING-publish time) this equals
+      // the leader's term, so a replica that successfully caught up from the authoritative leader holds
+      // the current max term. A down peer with a STRICTLY LOWER term cannot hold any update we lack, so
+      // it must not block us from going ACTIVE. We only block for a down peer at an equal-or-higher term
+      // (it may hold data we are missing) -- which is exactly the SOLR-9504 case (an empty/behind replica
+      // whose term was raised by the onlyLiveReplica bypass keeps mySelfTerm <= the real data-bearing
+      // peer's term, so '<' never lets it through). The tie case stays conservative on purpose.
+      long mySelfTerm = terms.getTerm(coreName);
+
+      // If we converged to a CURRENTLY-LIVE authoritative leader (the very replica we just recovered
+      // from, and still the shard's elected leader), a down peer whose term does not EXCEED that live
+      // leader's term is subordinate to it: when the down peer returns it recovers from this same live
+      // leader, so it cannot hold any update the leader -- and therefore we -- lack. Only a down peer at
+      // a term STRICTLY GREATER than the live leader's could be more authoritative. This lets force-leader
+      // complete recovery (it equalizes every replica's term and promotes a live leader while the old
+      // leader stays DOWN at the same term), WITHOUT weakening SOLR-9504: in that scenario the down
+      // data-bearing peer IS the (unreachable) leader, so there is no live leader distinct from it and
+      // liveLeaderTerm stays -1, leaving the guard fully in force.
+      long liveLeaderTerm = -1;
+      if (recoveredFromLeader != null
+          && !recoveredFromLeader.getName().equals(coreName)
+          && zkController.getZkStateReader().isNodeLive(recoveredFromLeader.getNodeName())) {
+        Replica curLeader = slice.getLeader();
+        if (curLeader != null
+            && curLeader.getName().equals(recoveredFromLeader.getName())
+            && zkController.getZkStateReader().isNodeLive(curLeader.getNodeName())) {
+          liveLeaderTerm = terms.getTerm(curLeader.getName());
+        }
+      }
+
       for (Replica r : slice) {
         if (r.getName().equals(coreName)) continue;
         if (r.getType() == Replica.Type.PULL) continue;
         if (zkController.getZkStateReader().isNodeLive(r.getNodeName())) continue; // only DOWN peers
+        long rTerm = terms.getTerm(r.getName());
+        // A down peer strictly behind us holds nothing we lack -> it does not block our ACTIVE.
+        if (rTerm < mySelfTerm) continue;
+        // A down peer no higher than the live authoritative leader we converged to is subordinate to it
+        // and will recover from it on return -> it does not block our ACTIVE.
+        if (liveLeaderTerm >= 0 && rTerm <= liveLeaderTerm) continue;
         // getState() uses published=true, so shortState=1 (LEADER) resolves to ACTIVE here -- both count.
         Replica.State rState = r.getState();
         if (rState == Replica.State.LEADER || rState == Replica.State.ACTIVE) {
           return true;
         }
-        if (terms.getTerm(r.getName()) > 0) {
+        if (rTerm > 0) {
           return true;
         }
       }

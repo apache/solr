@@ -368,6 +368,11 @@ public class CoreContainer implements Closeable {
     this.zkClient = zkClient;
     this.coresLocator = locator;
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
+    // Seed solrHome from the config here, not only in load(). Some callers (e.g. ZkCLI bootstrap)
+    // construct a CoreContainer and call getSolrHome()/bootstrapConf() WITHOUT calling load(), which
+    // previously left solrHome null -> NullPointerException in getSolrHome(). load() re-assigns the
+    // same value, so this is a safe, idempotent seed.
+    this.solrHome = config.getSolrHome();
 
     assert ObjectReleaseTracker.getInstance().track(this);
     assert (closeTracker = new CloseTracker()) != null;
