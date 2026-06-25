@@ -178,6 +178,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
@@ -199,6 +200,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private static final Logger slowLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".SlowRequest");
   private final CoreDescriptor coreDescriptor;
   private volatile Future[] initSearcherFuture;
+  // The async initSearcher(prev) task submitted to the GLOBAL ParWork shared pool. doClose() joins this
+  // before releasing the searcher / IndexWriter / Directory: initSearcher opens a reader (and on the
+  // close+recreate reload path the directory is reused on disk), so letting close/recreate race the
+  // in-flight open lets two IndexFileDeleters touch the same physical dir -> NoSuchFileException on a
+  // segments/segment file. The container shutdown drains its own executors but NOT this global pool.
+  private volatile Future<?> initSearcherTask;
   // Set if the async initSearcher(prev) task threw; lets the reload waiter below stop spinning and fail
   // the reload instead of looping forever on a never-assigned initSearcherFuture.
   private volatile Throwable initSearcherError;
@@ -787,10 +794,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         throw new AlreadyClosedException();
       }
       core = new SolrCore(coreContainer, name, coreConfig, cd, dataDir, updateHandler, solrDelPolicy, currentCore, true, false);
-      core.start();
-      // we open a new IndexWriter to pick up the latest config
+      // Reopen the IndexWriter to pick up the latest config (analyzer/codec/mergePolicy) BEFORE start().
+      // The reloaded core shares the OLD core's SolrCoreState (and its still-open writer); start()'s async
+      // initSearcher opens a searcher whose NRT reader binds to whatever writer the shared state currently
+      // holds. In the OLD order this newIndexWriter ran AFTER start(): changeWriter would commit()+rollback()
+      // the live writer and build a SECOND IndexWriter (hence a second IndexFileDeleter) on the SAME
+      // Directory while start()'s just-cached searcher still referenced the rolled-back commit -> two
+      // deleters race on the shared dataDir -> NoSuchFileException on a segments/segment file (corrupting the
+      // dir for every later core/test; intermittent under load, e.g. SuggestComponentTest). Swapping the
+      // writer first means exactly one writer/deleter generation owns the dir and the searcher binds to the
+      // new (latest-config) writer -- and config changes are still picked up (AnalysisAfterCoreReloadTest).
       core.updateHandler.getSolrCoreState().newIndexWriter(core, false, false);
-      //   core.getSearcher(true, false, null, true);
+      core.start();
       success = true;
       return core;
     } finally {
@@ -1201,7 +1216,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         timeMetricProducerUpdateHanndler.done();
 
 
-        ParWork.getRootSharedExecutor().submit(() -> {
+        initSearcherTask = ParWork.getRootSharedExecutor().submit(() -> {
           StopWatch timeInitSearcher = new StopWatch(this + "-initSearcher");
           try {
             initSearcherFuture = initSearcher(prev);
@@ -2037,6 +2052,22 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         if (searcherReadyLatch != null) {
           searcherReadyLatch.countDown();
+        }
+
+        // Join the async initSearcher(prev) task (global ParWork pool) before tearing down the searcher /
+        // IndexWriter / Directory below. It opens a reader and mutates the index dir's IndexFileDeleter;
+        // the latch was just released so the task can finish. Letting close race that open lets a second
+        // IndexFileDeleter touch the same physical dir (acute on the close+recreate reload path, which
+        // reuses the dataDir on disk) -> NoSuchFileException on a segments/segment file.
+        Future<?> initTask = initSearcherTask;
+        if (initTask != null) {
+          try {
+            initTask.get(30, TimeUnit.SECONDS);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          } catch (ExecutionException | TimeoutException e) {
+            log.warn("initSearcher task did not finish before core close", e);
+          }
         }
 
         try (ParWork closer = new ParWork(this, true)) {
