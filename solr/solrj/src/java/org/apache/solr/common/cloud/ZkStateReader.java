@@ -861,15 +861,10 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
     // (or the racing register's own add) is guaranteed to win exactly once. Teardown is the reconciler.
     if (collectionWatches.containsKey(collection)) {
       registerStatePlaneWatch(collection);
-    } else {
-      // No remaining local interest and the scoped watch is gone, so nothing will deliver leaf events
-      // (delta/snapshot/manifest) for this collection any more — the broad /collections watch is
-      // non-recursive. Drop the cached state too; otherwise process()'s gate and getCollectionRef would
-      // keep serving this now-unwatched entry as authoritative, and it would stay indefinitely stale
-      // (a reconnect re-arms scoped watches only from collectionWatches, not from watchedCollectionStates,
-      // so it is never refreshed) — review finding M7. On the next access the collection resolves fresh.
-      watchedCollectionStates.remove(collection);
     }
+    // The cached watchedCollectionStates entry is intentionally retained — see the method javadoc.
+    // (M7 reconsidered evicting it here, but registerCollectionStateWatcher's immediately-firing
+    // registration reads it synchronously, so evicting surfaces a transient null to a watcher predicate.)
   }
 
   /**

@@ -1453,6 +1453,18 @@ public class TransactionLog implements Closeable {
 
       int thisLength = nextLength;
 
+      // Torn-trailing-record tolerance (review finding P7), mirroring LogReader.next(): this fork's
+      // tlog is a live memory-mapped file and the NRT leader-tlog catch-up copies a leader tlog that
+      // can end mid-fill, so the seeded length (read from the absolute file tail) can be garbage. A
+      // non-positive length is not a real record (recordStart<0 below already rejects an over-large
+      // one) -- stop cleanly rather than seeking forward and decoding slack as the "most recent" update
+      // (which would feed a bogus version into PeerSync / RTG).
+      if (thisLength <= 0) {
+        log.warn("Stopping reverse tlog read at torn record (non-positive length {}) file={} pos={}",
+            thisLength, tlogFile, prevPos);
+        return null;
+      }
+
       long recordStart = prevPos - thisLength;  // back up to the beginning of the next record
 
       if (recordStart < 0) return null;
@@ -1488,7 +1500,17 @@ public class TransactionLog implements Closeable {
         // assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the data (and we currently skip reading SolrInputDocument
         log.info("theNextLen={} readRecAt={}", nextLength, recordStart);
 
-        obj = codec.readVal(fis);
+        try {
+          obj = codec.readVal(fis);
+        } catch (Throwable t) {
+          // A torn record decodes to garbage (absurd string/array length -> OOM, or a type tag that
+          // decodes to the wrong type); with the bounded DirectMemBufferedInputStream primitives it
+          // surfaces as EOFException. Stop cleanly instead of returning a bogus most-recent record
+          // (review finding P7, mirrors LogReader.next()).
+          log.warn("Stopping reverse tlog read at torn record (read failed) file={} recordStart={}",
+              tlogFile, recordStart, t);
+          return null;
+        }
       } finally {
         mapLock.readLock().unlock();
       }

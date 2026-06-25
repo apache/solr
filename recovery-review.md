@@ -455,3 +455,28 @@ fetch-retry budget** and schedules no re-fetch.
 *39 candidates were verified and REFUTED (intentional fork design — state-plane-only live state,
 `LEADER`→`ACTIVE` collapse, replica-name-is-core-name, fences/no-ops with explanatory comments — or
 guarded elsewhere); they are not listed.*
+
+---
+
+## Fix pass — dispositions
+
+All **21 CONFIRMED** findings (C1, H1–H6, M1–M7, L1–L4, S1–S3) are fixed in commit `842df9805b0`
+(focused tests for S1, H5, C1; the rest verified via compile + the overseer/recovery/tlog suites).
+
+The **PLAUSIBLE** set is, per this review's own framing, "needs a decision or a repro, not a blind
+fix." Dispositions:
+
+| # | Disposition | Rationale |
+|---|-------------|-----------|
+| P7 | **FIXED** | Clearly-safe hardening with no behavior change on valid logs: `FSReverseReader.next()` now rejects a non-positive record length and wraps `readVal` in `catch(Throwable)` → clean stop, mirroring `LogReader.next()` and pairing with the H5 bounds checks. |
+| P2 | **Documented (not a term change)** | `recoveryFailed()` lowers no term, but the `recoveringTerm` flag set by `startRecovering` lingers on `RECOVERY_FAILED`, so `canBecomeLeader()` is already `false` (flag present) — the normal election path is blocked; only the unavoidable sole-live-replica bypass (ignores terms) remains. Term demotion would neither help nor be needed. Residual ("no re-trigger of recovery") is a behavioral decision. |
+| P1 | **Needs repro** | `drainPendingLeaderDemotions` nondeterminism requires confirming an A→B→C leader-deferral with no intervening reconcile is reachable before changing the (carefully fenced) drain order. |
+| P3 | **Accepted residual** | `close()` commit-on-`tryLock`-timeout is already documented as accepted; changing it risks the final-commit path. |
+| P4/P5 | **Tradeoff — needs decision** | `replicaDivergesFromLeader` fail-open vs fail-closed is a genuine tradeoff (P4 wants fail-closed; P5 is the converse retry-budget burn). Picking one needs a product decision + repro. |
+| P6 | **Needs repro** | `saveTerms` BadVersion wedge depends on a cached `ZkShardTerms` surviving same-name recreation without `collectionToTerms.remove`; confirm the cache-survival path first. |
+| P8 | **Needs repro** | `markReplicasDown` compute-in-compute lock-ordering inversion needs a churn repro to confirm reachability before restructuring the CHM locking. |
+| P9 | **Gated on debug flag** | Fail-open only under `-Dsolr.disableFingerprint=true` (a non-default test/debug escape hatch); the default `doFingerprint=true` path catches it. Making the escape hatch fail-closed changes its intended semantics. |
+| P10 | **Defense-in-depth; reader self-heals** | The O(1) `currentLeaderId` demotes one leader; a second raw LEADER (an upstream invariant violation) is self-healed by the reader's full-scan `applyRing`. Re-scanning in the hot publish path isn't worth the risk for an invariant-violation-only case. |
+| P11 | **Tradeoff — needs decision** | On a term-bump failure, the choices are fail the restore (drastic; partial index already copied), proceed under-replicated, or the current proceed-then-recover. Which is correct is a product decision. |
+| S4 | **Needs repro** | Treating an incarnation/identity mismatch as transient-retryable needs the same-name-recreate window (ring lags new `state.json`) reproduced first to avoid masking a real terminal mismatch. |
+
