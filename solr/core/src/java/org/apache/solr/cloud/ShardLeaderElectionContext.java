@@ -190,17 +190,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             return false;
           }
         } else {
-          // SOLR-9504: sole live replica but NOT highest term. Don't let an empty/behind replica
-          // seize leadership and truncate real data when the up-to-date leader returns. Only bypass
-          // if we have our own data; otherwise wait for a higher-term replica (currently down) to return.
-          boolean haveData = false;
-          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-          if (ulog != null) {
-            try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-              haveData = recentUpdates != null && !recentUpdates.getVersions(1).isEmpty();
-            }
-          }
-          if (!haveData && anotherReplicaHasHigherTerm(zkShardTerms, coreName)) {
+          // SOLR-9504: sole live replica but NOT highest term. Don't let a behind replica seize
+          // leadership and truncate real data when the up-to-date leader returns. If ANY other replica
+          // (currently down) holds a strictly higher term it is more up-to-date than us -- it has
+          // committed updates we lack -- so honor leaderVoteWait for it to return and lead, regardless
+          // of whether we happen to hold *some* local data. (Having docs 1..N-1 but missing doc N is
+          // exactly the out-of-sync case TestCloudConsistency.testOutOfSyncReplicasCannotBecomeLeader*
+          // guards: the down leader carries the higher term, so we must not bypass on "haveData".)
+          // If no higher-term replica exists, or none returns within leaderVoteWait, we become leader
+          // anyway -- standard semantics for a permanently lost leader (LeaderVoteWaitTimeoutTest).
+          if (anotherReplicaHasHigherTerm(zkShardTerms, coreName)) {
             if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreName, leaderVoteWait)) {
               return false;
             }
