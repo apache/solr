@@ -764,9 +764,20 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
     if (closed || collection == null || !statePlaneWatchWanted.contains(collection)) {
       return;
     }
-    if (!statePlaneWatched.add(collection)) {
-      return;
-    }
+    // statePlaneWatched tracks whether the scoped watch is armed in the CURRENT ZK session. It is
+    // cleared on reconnect (createClusterStateWatchersAndUpdate) so re-arming works after a session
+    // change. But a session can expire and be re-established BEFORE that reconnect handler runs and
+    // clears the set — a consumer registering interest in that window (e.g. waitForState ->
+    // registerDocCollectionWatcher) would find this collection still flagged as armed from the dead
+    // session, skip BOTH re-arming the (now-defunct) ZK watch AND the catch-up fetch, and end up with
+    // a phantom watch that delivers no future leaf events and stale state that never catches up
+    // (ZkFailoverTest.testRestartZkWhenClusterDown: a shard's leader promotion published during the ZK
+    // restart was never folded, leaving that shard stuck DOWN at the client). So do NOT gate on the
+    // add()-transition: always (re)arm the watch (addWatch PERSISTENT_RECURSIVE is idempotent) and
+    // always issue the catch-up fetch on registration. This path runs only on genuine interest
+    // registration (registerCore / registerDocCollectionWatcher / reconnect re-arm / release reconcile),
+    // not per leaf event, so the redundant work for an already-armed live session is bounded.
+    statePlaneWatched.add(collection);
     try {
       // retryOnConnLoss=true: addWatch blocks until ZK confirms, so on return the watch is armed and
       // no post-registration leaf event can be missed.
@@ -782,10 +793,11 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
       return;
     }
 
-    // Catch up on any state-plane change that landed while this collection had no scoped watch —
-    // first interest, or interest regained after a churn teardown (review finding #4). The armed
-    // watch covers all FUTURE leaf events; this fetch covers the gap so a re-interested watcher never
-    // misses a transition that completed during the unwatched window. Best-effort + idempotent.
+    // Catch up on any state-plane change that landed while this collection had no (live) scoped watch —
+    // first interest, interest regained after a churn teardown (review finding #4), or a session change
+    // that silently invalidated the previous watch. The armed watch covers all FUTURE leaf events; this
+    // fetch covers the gap so a re-interested watcher never misses a transition that completed during the
+    // unwatched window. Best-effort + idempotent.
     try {
       if (zkStateReaderQueue != null) {
         zkStateReaderQueue.fetchStateUpdates(collection, true);
