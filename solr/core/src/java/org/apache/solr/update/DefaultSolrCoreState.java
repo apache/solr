@@ -95,6 +95,21 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private volatile RecoveryStrategy recoveryStrat;
 
+  // Serializes RecoveryStrategy.run() so at most ONE strategy ever executes against this core's
+  // UpdateLog at a time. The async prep-recovery handshake (doRecovery sets recoveryRunning=true,
+  // then sendPrepRecoveryCmd runs the BUFFERING handshake asynchronously and only later submits the
+  // RecoveryTask) opens a window where a second doRecovery (e.g. checkRecovery from ZkRegistration
+  // racing RecoveringCoreTermWatcher's term-change trigger) calls cancelRecovery() while recoveryStrat
+  // is still null -- a no-op -- and a cancelled-but-not-yet-exited strategy (blocked deep in a
+  // PeerSync/IndexFetcher network call) can still be running when the resubmitted task starts a fresh
+  // one. Two strategies then race ulog.ensureBuffering()/applyBufferedUpdates()/dropBufferTlog() on the
+  // same buffer: one drains+drops the buffer holding the leader's in-flight forwarded updates while the
+  // other (and the leader's live fan-out) is still filling it, permanently losing those docs
+  // (PeerSyncReplicationTest: expected:<204> but was:<154> -- 50 forwarded docs dropped;
+  // ChaosMonkeySafeLeaderTest off-by-one; LeaderFailoverAfterPartitionTest). This lock makes a second
+  // strategy wait until the first has fully completed (buffer drained/dropped cleanly) before it
+  // begins, so no two recoveries ever manipulate the buffer concurrently.
+  private final ReentrantLock recoveryExecLock = new ReentrantLock(true);
 
   private volatile boolean lastReplicationSuccess = true;
 
@@ -987,11 +1002,19 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         recoveryThrottle.minimumWaitBetweenActions();
         recoveryThrottle.markAttemptingAction();
 
-        recoveryStrat = recoveryStrategyBuilder.create(corecontainer, coreDescriptor, DefaultSolrCoreState.this);
-        recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
-        recoveryStrat.setFirstLeader(firstLeader);
+        // Hold recoveryExecLock for the WHOLE strategy run so a second RecoveryTask cannot start a
+        // concurrent strategy that races this one on the UpdateLog buffer (see field comment). A
+        // cancelled prior strategy releases the lock when it exits, so the wait is bounded.
+        recoveryExecLock.lock();
+        try {
+          recoveryStrat = recoveryStrategyBuilder.create(corecontainer, coreDescriptor, DefaultSolrCoreState.this);
+          recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
+          recoveryStrat.setFirstLeader(firstLeader);
 
-        recoveryStrat.run();
+          recoveryStrat.run();
+        } finally {
+          recoveryExecLock.unlock();
+        }
 
         if (log.isDebugEnabled()) log.debug("Running recovery");
 
