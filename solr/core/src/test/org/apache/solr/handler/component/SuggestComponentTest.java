@@ -215,13 +215,13 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     
     // validate that this suggester is not storing the lookup
     assertEquals(suggester, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[8]/str[@name='name']", false));
-    assertNull(h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[8]/str[@name='storeDir']", false));
+        configVal("//searchComponent[@name='suggest']/lst[8]/str[@name='name']", false));
+    assertNull(configVal("//searchComponent[@name='suggest']/lst[8]/str[@name='storeDir']", false));
     
     // validate that this suggester only builds manually and has not buildOnStartup parameter
     assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[8]/str[@name='buildOnCommit']", true));
-    assertNull(h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[8]/str[@name='buildOnStartup']", false));
+        configVal("//searchComponent[@name='suggest']/lst[8]/str[@name='buildOnCommit']", true));
+    assertNull(configVal("//searchComponent[@name='suggest']/lst[8]/str[@name='buildOnStartup']", false));
     
     reloadCore(random().nextBoolean());
     
@@ -265,14 +265,14 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     
     // validate that this suggester is storing the lookup
     assertEquals(suggester, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[7]/str[@name='name']", false));
+        configVal("//searchComponent[@name='suggest']/lst[7]/str[@name='name']", false));
     assertEquals(suggester, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[7]/str[@name='storeDir']", false));
+        configVal("//searchComponent[@name='suggest']/lst[7]/str[@name='storeDir']", false));
     
     // validate that this suggester only builds manually and has not buildOnStartup parameter
     assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[7]/str[@name='buildOnCommit']", true));
-    assertNull(h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[7]/str[@name='buildOnStartup']", false));
+        configVal("//searchComponent[@name='suggest']/lst[7]/str[@name='buildOnCommit']", true));
+    assertNull(configVal("//searchComponent[@name='suggest']/lst[7]/str[@name='buildOnStartup']", false));
     
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
@@ -350,15 +350,15 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     
     // validate that this suggester is storing the lookup
     assertEquals(suggester, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[6]/str[@name='name']", false));
+        configVal("//searchComponent[@name='suggest']/lst[6]/str[@name='name']", false));
     assertEquals(suggester, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[6]/str[@name='storeDir']", false));
+        configVal("//searchComponent[@name='suggest']/lst[6]/str[@name='storeDir']", false));
     
     // validate that this suggester only builds manually
     assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[6]/str[@name='buildOnCommit']", true));
+        configVal("//searchComponent[@name='suggest']/lst[6]/str[@name='buildOnCommit']", true));
     assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[6]/str[@name='buildOnStartup']", true));
+        configVal("//searchComponent[@name='suggest']/lst[6]/str[@name='buildOnStartup']", true));
     
     // build the suggester manually
     assertQ(req("qt", rh, 
@@ -409,18 +409,18 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     
     // the test relies on useColdSearcher=false
     assertFalse("Precondition not met for test. useColdSearcher must be false", 
-        h.getCore().getSolrConfig().useColdSearcher);
+        coldSearcher());
     
     // validate that this suggester is not storing the lookup and buildOnStartup is not set
     assertEquals(suggesterFuzzy, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[3]/str[@name='name']", false));
-    assertNull(h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[3]/str[@name='storeDir']", false));
+        configVal("//searchComponent[@name='suggest']/lst[3]/str[@name='name']", false));
+    assertNull(configVal("//searchComponent[@name='suggest']/lst[3]/str[@name='storeDir']", false));
     
     // assert that buildOnStartup=false
     assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[3]/str[@name='buildOnStartup']", false));
+        configVal("//searchComponent[@name='suggest']/lst[3]/str[@name='buildOnStartup']", false));
     assertEquals("true", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[3]/str[@name='buildOnCommit']", false));
+        configVal("//searchComponent[@name='suggest']/lst[3]/str[@name='buildOnCommit']", false));
     
     // verify that this suggester is built (there was a commit in setUp)
     assertQ(req("qt", rh, 
@@ -464,12 +464,12 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     
     // repeat the test with "suggest_fuzzy_doc_dict_build_startup", it is exactly the same but with buildOnStartup=true
     assertEquals(suggestStartup, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[5]/str[@name='name']", false));
-    assertNull(h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[5]/str[@name='storeDir']", false));
+        configVal("//searchComponent[@name='suggest']/lst[5]/str[@name='name']", false));
+    assertNull(configVal("//searchComponent[@name='suggest']/lst[5]/str[@name='storeDir']", false));
     assertEquals("true", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[5]/str[@name='buildOnStartup']", false));
+        configVal("//searchComponent[@name='suggest']/lst[5]/str[@name='buildOnStartup']", false));
     assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[5]/str[@name='buildOnCommit']", false));
+        configVal("//searchComponent[@name='suggest']/lst[5]/str[@name='buildOnCommit']", false));
     
     // reload the core
     reloadCore(createNewCores);
@@ -509,12 +509,37 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         );
   }
   
+  // Read a solrconfig value without leaking a core reference. h.getCore() increments the core's
+  // refCount; the bare "h.getCore().getSolrConfig()..." idiom never closes it, so the leaked refs
+  // pile up and keep the core from reaching refCount 0 at reload/close time (see reloadCore).
+  private static Object configVal(String xpath, boolean errIfMissing) {
+    try (SolrCore core = h.getCore()) {
+      return core.getSolrConfig().getVal(xpath, errIfMissing);
+    }
+  }
+
+  private static boolean coldSearcher() {
+    try (SolrCore core = h.getCore()) {
+      return core.getSolrConfig().useColdSearcher;
+    }
+  }
+
   private static void reloadCore(boolean createNewCore) throws Exception {
     if (createNewCore) {
-      CoreContainer cores = h.getCoreContainer();
-      SolrCore core = h.getCore();
-      String dataDir1 = core.getDataDir();
-      CoreDescriptor cd = core.getCoreDescriptor();
+      // h.getCore() hands back the core with its refCount incremented; it MUST be closed before
+      // h.close() or the old core can never reach refCount 0. closeAndWait() then abandons it after a
+      // bounded timeout (force-closed via container shutdown with refCount still > 0) while its
+      // IndexWriter / IndexFileDeleter / Directory are still live, so createCore() opens a SECOND
+      // Directory + IndexFileDeleter on the SAME on-disk dataDir. Under lockType=single (a
+      // per-Directory-instance lock) nothing fences the two generations, so one generation's deferred
+      // IFD refresh deletes a segments_N the other just wrote -> NoSuchFileException / numFound=0
+      // (the reload-corruption flakiness). Read what we need, then release the ref so the old core
+      // closes cleanly (refCount 0 -> doClose, which already joins the async searcher work) before the
+      // new generation opens. Use try-with-resources for the same reason on the post-create reads.
+      String dataDir1;
+      try (SolrCore core = h.getCore()) {
+        dataDir1 = core.getDataDir();
+      }
       // Drain any in-flight warming searcher / async suggester build before closing, otherwise close()
       // can race a background merge and the recreated core (same dataDir) opens onto a half-written
       // index (NoSuchFileException on a *.tmp segment -> "IndexWriter is closed" cascade across the
@@ -522,9 +547,9 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
       waitForWarming();
       h.close();
       createCore();
-      SolrCore createdCore = h.getCore();
-      assertEquals(dataDir1, createdCore.getDataDir());
-      assertEquals(createdCore, h.getCore());
+      try (SolrCore createdCore = h.getCore()) {
+        assertEquals(dataDir1, createdCore.getDataDir());
+      }
     } else {
       h.reload();
     }
