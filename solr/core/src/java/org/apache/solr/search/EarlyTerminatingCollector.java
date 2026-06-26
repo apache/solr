@@ -58,7 +58,9 @@ public class EarlyTerminatingCollector extends FilterCollector {
     assert null != delegate;
     this.maxDocsToCollect = maxDocsToCollect;
     this.pendingDocsToCollect = docsToCollect;
-    this.chunkSize = Math.min(100, maxDocsToCollect / 10);
+    // chunkSize must be at least 1 (small maxDocsToCollect would otherwise divide-by-zero
+    // in the modulo check below).
+    this.chunkSize = Math.max(1, Math.min(100, maxDocsToCollect / 10));
   }
 
   @Override
@@ -74,9 +76,9 @@ public class EarlyTerminatingCollector extends FilterCollector {
         numCollectedLocally++;
         terminatedEarly = numCollectedLocally >= maxDocsToCollect;
         if (pendingDocsToCollect != null) {
-          pendingDocsToCollect.increment();
           if (numCollectedLocally % chunkSize == 0) {
-            final long overallCollectedDocCount = pendingDocsToCollect.intValue();
+            pendingDocsToCollect.add(chunkSize);
+            final long overallCollectedDocCount = pendingDocsToCollect.longValue();
             terminatedEarly = overallCollectedDocCount >= maxDocsToCollect;
           }
         }

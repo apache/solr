@@ -21,7 +21,15 @@ import java.util.Locale;
 /**
  * Thrown by {@link EarlyTerminatingCollector} when the maximum to abort the scoring / collection
  * process early, when the specified maximum number of documents were collected.
+ *
+ * <p>This is a control-flow exception only — it is caught at the search entry point and its
+ * formatted {@link #getMessage() message} plus {@link #getNumberCollected()}, {@link
+ * #getNumberScanned()}, and {@link #getApproximateTotalHits(int)} are inspected, but the stack
+ * trace itself is never used. We skip {@link #fillInStackTrace()} to keep early-termination cheap,
+ * matching the Lucene {@code CollectionTerminatedException} and {@code
+ * TimeLimitingBulkScorer.TimeExceededException} convention.
  */
+@SuppressWarnings("serial")
 public class EarlyTerminatingCollectorException extends RuntimeException {
   private static final long serialVersionUID = 5939241340763428118L;
   private final int numberScanned;
@@ -39,6 +47,12 @@ public class EarlyTerminatingCollectorException extends RuntimeException {
 
     this.numberCollected = numberCollected;
     this.numberScanned = numberScanned;
+  }
+
+  @Override
+  public Throwable fillInStackTrace() {
+    // never re-thrown so we can save the expensive stacktrace
+    return this;
   }
 
   /**
