@@ -1,8 +1,0 @@
-title: use shards.rows for per-subquery candidate pool depth with CombinedQueryComponent (RRF)
-type: fixed
-authors:
-  - name: Sonu Sharma
-    nick: ercsonusharma
-links:
-  - name: SOLR-18290
-    url: https://issues.apache.org/jira/browse/SOLR-18290

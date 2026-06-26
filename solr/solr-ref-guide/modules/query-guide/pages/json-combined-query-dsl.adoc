@@ -76,6 +76,11 @@ The query structure is similar to JSON Query DSL except for how multiple queries
 `combiner.rrf.k` | Default: `60`::
    The k parameter in the RRF algorithm.
 
+[NOTE]
+====
+Consider setting `shards.rows` to at least your deepest expected `offset + limit` to enlarge the per-shard candidate pool used for fusion, giving more consistent ordering across pages.
+====
+
 === Example
 
 Below is an example with sample JSON query payload:
