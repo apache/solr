@@ -98,7 +98,7 @@ google-autovalue = "1.11.0"
 google-cloud-bom = "0.261.0"
 google-errorprone = "2.41.0"
 # @keep for version alignment
-google-gson = "2.13.1"
+google-gson = "2.14.0"
 google-guava = "33.6.0-jre"
 # @keep for version alignment
 google-j2objc = "3.1"
