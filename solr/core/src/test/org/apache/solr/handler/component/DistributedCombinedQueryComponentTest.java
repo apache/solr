@@ -199,16 +199,28 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
     QueryResponse rsp = query(CommonParams.JSON, jsonQueryAll, CommonParams.QT, "/search");
+    // ideal ordering
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6", "3", "10", "4");
-    String jsonQueryLimit4 =
+    String jsonQueryLimit1 =
         "{\"queries\":"
             + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
             + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
-            + "\"limit\":4,"
+            + "\"limit\":1,"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
-    rsp = query(CommonParams.JSON, jsonQueryLimit4, CommonParams.QT, "/search");
-    assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6");
+    rsp = query(CommonParams.JSON, jsonQueryLimit1, CommonParams.QT, "/search");
+    // assert proper ordering due to presence of shards.rows
+    assertFieldValues(rsp.getResults(), id, "7");
+    String jsonQueryWithShardRows =
+        "{\"queries\":"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
+            + "\"limit\":1,"
+            + "\"fields\":[\"id\",\"score\",\"title\"],"
+            + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"],\"shards.rows\":10}}";
+    rsp = query(CommonParams.JSON, jsonQueryWithShardRows, CommonParams.QT, "/search");
+    assertFieldValues(rsp.getResults(), id, "5");
+    // assert improper ordering due to lack of shards.rows
     String jsonQueryPage =
         "{\"queries\":"
             + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
@@ -281,6 +293,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @throws Exception if any unexpected error occurs during the test execution.
    */
   @Test
+  @ShardsFixed(num = 2)
   public void testElevatedQueriesWithFacetAndHighlights() throws Exception {
     prepareIndexDocs();
     String jsonQuery =

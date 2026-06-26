@@ -327,13 +327,14 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     // excluded by collapse at the shard level.
     Map<String, Set<Object>> combinedDocIdsPerShard =
         CollectionUtil.newHashMap(sreq.responses.size());
+    int perQueryQueueSize = Math.max(ss.getOffset() + ss.getCount(), rb.shards_rows);
     // TODO: to be parallelized outer loop
     for (int queryIndex = 0; queryIndex < queriesToCombineKeys.length; queryIndex++) {
       int failedShardCount = 0;
       long queryNumFound = 0;
       long queryApproximateTotalHits = 0;
       final ShardDocQueue queuePerQuery =
-          newShardDocQueue(rb.req.getSearcher(), sortFields, ss.getOffset() + ss.getCount());
+          newShardDocQueue(rb.req.getSearcher(), sortFields, perQueryQueueSize);
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
         NamedList<?> responseHeader;
