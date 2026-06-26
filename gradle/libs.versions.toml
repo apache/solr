@@ -165,7 +165,7 @@ navsecurity = "5.0.1"
 netty = "4.2.15.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.77.Final"
-nimbusds-josejwt = "10.5"
+nimbusds-josejwt = "10.9.1"
 nlopez-compose = "0.5.7"
 nodegradle-node = "7.1.0"
 # @keep Node JS version used in node.gradle (LTS)
