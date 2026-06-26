@@ -1,6 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :solr:cross-dc-manager:dependencies --write-locks
 at.yawk.lz4:lz4-java:1.10.1=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.4=jarValidation,testCompileClasspath,testRuntimeClasspath
 com.carrotsearch:hppc:0.10.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
@@ -75,8 +76,8 @@ io.netty:netty-common:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspa
 io.netty:netty-handler-proxy:4.2.15.Final=jarValidation,runtimeClasspath,runtimeLibs,testRuntimeClasspath
 io.netty:netty-handler:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 io.netty:netty-resolver:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
-io.netty:netty-tcnative-boringssl-static:2.0.75.Final=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
-io.netty:netty-tcnative-classes:2.0.75.Final=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
+io.netty:netty-tcnative-boringssl-static:2.0.77.Final=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
+io.netty:netty-tcnative-classes:2.0.77.Final=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 io.netty:netty-transport-classes-epoll:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 io.netty:netty-transport-native-epoll:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 io.netty:netty-transport-native-unix-common:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
@@ -237,4 +238,4 @@ org.slf4j:jcl-over-slf4j:2.0.17=jarValidation,runtimeClasspath,runtimeLibs,solrP
 org.slf4j:jul-to-slf4j:2.0.17=solrPlatformLibs
 org.slf4j:slf4j-api:2.0.17=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 org.xerial.snappy:snappy-java:1.1.10.8=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
-empty=apiHelper,apiHelperTest,compileOnlyHelper,compileOnlyHelperTest,missingdoclet,packaging,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,signatures
+empty=missingdoclet,packaging

@@ -72,7 +72,6 @@ commons-cli = "1.11.0"
 commons-codec = "1.21.0"
 commons-io = "2.21.0"
 compose = "1.8.2"
-cutterslade-analyze = "1.10.0"
 cuvs-java = "25.10.0"
 cuvs-lucene = "25.10.0"
 decompose = "3.3.0"
@@ -105,7 +104,7 @@ google-javaformat = "1.18.1"
 # @keep for version alignment
 google-protobuf = "4.34.1"
 # @keep Gradle version to run the build
-gradle = "8.10"
+gradle = "9.6.0"
 grpc = "1.80.0"
 # @keep Gulp version used in ref-guide
 gulp-cli = "3.1.0"
@@ -161,7 +160,7 @@ mvikotlin = "4.3.0"
 navsecurity = "5.0.1"
 netty = "4.2.15.Final"
 # @keep for version alignment
-netty-tcnative = "2.0.75.Final"
+netty-tcnative = "2.0.77.Final"
 nimbusds-josejwt = "10.5"
 nlopez-compose = "0.4.27"
 nodegradle-node = "7.1.0"
@@ -199,7 +198,6 @@ xerial-snappy = "1.1.10.8"
 [plugins]
 benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benmanes-versions" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-cutterslade-analyze = { id = "ca.cutterslade.analyze", version.ref = "cutterslade-analyze" }
 diffplug-spotless = { id = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
 jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "compose" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

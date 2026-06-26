@@ -48,7 +48,7 @@ configurations {
 }
 
 dependencies {
-  project(":solr:modules").childProjects.values().stream().map {project -> project.path}.each {
+  rootProject.project(":solr:modules").childProjects.values().stream().map {project -> project.path}.each {
     module -> modules project(path: module, configuration: "packaging")
   }
 
@@ -114,7 +114,7 @@ distributions {
         filesMatching([
             "scripts/**",
         ]) {copy ->
-          copy.setMode(0755)
+          copy.permissions { unix("0755") }
         }
       })
 
@@ -124,7 +124,7 @@ distributions {
           "**/bin/solr",
           "**/bin/systemd/solr.service",
       ]) {copy ->
-        copy.setMode(0755)
+        copy.permissions { unix("0755") }
       }
 
     }
@@ -144,7 +144,7 @@ distributions {
         filesMatching([
             "bin/*",
         ]) {copy ->
-          copy.setMode(0755)
+          copy.permissions { unix("0755") }
         }
       })
     }
@@ -311,7 +311,7 @@ task integrationTests(type: BatsTask) {
   environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
 }
 
-class BatsTask extends Exec {
+abstract class BatsTask extends Exec {
   // Note: testDir is marked @Internal because it's a String configuration property, not a trackable input.
   // The task using BatsTask should explicitly declare inputs.dir(testDir) in its configuration.
   @Internal
