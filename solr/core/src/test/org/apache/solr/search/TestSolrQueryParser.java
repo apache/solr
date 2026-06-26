@@ -1901,4 +1901,32 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       }
     }
   }
+
+  @Test
+  public void testNestedPureNegativeQuery() throws Exception {
+    // Standard sample data with completely unique field values to isolate matches
+    assertU(adoc("id", "9414", "v_t", "pureneg foo bar"));
+    assertU(adoc("id", "9415", "v_t", "pureneg foo baz"));
+    assertU(adoc("id", "9416", "v_t", "pureneg baz"));
+    assertU(commit());
+
+    // Top-level negative query must exclude 'bar' but successfully find our other docs
+    // Force sort by ID so the array index expectations always line up perfectly
+    assertJQ(
+        req("q", "v_t:pureneg AND -v_t:bar", "df", "v_t", "sort", "id asc"),
+        "/response/docs/[0]/id=='9415'",
+        "/response/docs/[1]/id=='9416'");
+
+    // Nested pure negative query inside a parenthesized group with AND
+    assertJQ(
+        req("q", "v_t:pureneg AND v_t:foo AND (-v_t:bar)", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9415'");
+
+    // Nested pure negative query using explicit NOT syntax
+    assertJQ(
+        req("q", "v_t:pureneg AND v_t:foo AND (NOT v_t:bar)", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9415'");
+  }
 }

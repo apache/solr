@@ -1,0 +1,8 @@
+type: fixed
+title: Fix pure negative (NOT) sub-expression queries in lucene QParser
+authors:
+  - name: Abhishek Umarjikar
+    nick: abumarjikar
+links:
+  - name: SOLR-18256
+    url: https://issues.apache.org/jira/browse/SOLR-18256
