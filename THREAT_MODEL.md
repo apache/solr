@@ -28,7 +28,9 @@
 - **Status:** DRAFT — under maintainer review (2026-06-10). Not yet ratified.
 - **Version binding:** versioned with the project.
 - **Reporting cross-reference:** §8-violating findings via the ASF security
-  process ([`SECURITY.md`](SECURITY.md)); §3/§9 findings closed citing this doc.
+  process ([`SECURITY.md`](SECURITY.md)) — reach the Solr PMC security group at
+  security@solr.apache.org (see <https://solr.apache.org/security-reporting.html>);
+  §3/§9 findings closed citing this doc.
 - **Provenance legend:** *(documented)* / *(maintainer)* / *(inferred)* — each
   *(inferred)* has a §14 open question.
 - **Draft confidence:** ~22 documented / 0 maintainer / 24 inferred.
@@ -197,6 +199,11 @@ move a finding to `OUT-OF-MODEL: non-default-build` vs remain `VALID`.
 
 - **Enable authentication + authorization** (or strictly network-isolate Solr);
   never expose an unauthenticated instance.
+- **Never place Solr in a public-facing network zone / DMZ.** Keep it in a
+  firewalled internal zone, the same way you would a database — Solr is not
+  designed to be internet-facing. *(maintainer — janhoy.)*
+- **Always enable TLS/SSL** for client and inter-node traffic, to avoid leaking
+  sensitive data or authentication credentials on the wire. *(maintainer — janhoy.)*
 - **Lock down the admin/config/Collections/package APIs** to admins via authz.
 - **Keep risky features disabled** unless you accept the risk; restrict remote
   streaming / `shards` to known hosts (SSRF).
