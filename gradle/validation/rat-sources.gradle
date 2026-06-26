@@ -50,11 +50,6 @@ Set<String> loadGitTrackedFiles() {
   rootProject.ext.ratGitTrackedFiles = null
 
   def dotGit = new File(rootProject.projectDir, ".git")
-  if (dotGit.isFile()) {
-    // git worktrees use a .git file — jgit does not fully support them
-    logger.warn("WARNING: git worktrees are not supported by jgit — RAT git-tracking filter disabled.")
-    return null
-  }
   if (!dotGit.isDirectory()) {
     return null // not a git repository
   }
