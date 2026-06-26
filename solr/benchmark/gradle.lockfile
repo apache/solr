@@ -1,6 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :solr:benchmark:dependencies --write-locks
 com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.4=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.carrotsearch:hppc:0.10.0=jarValidation,runtimeClasspath,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.21=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
@@ -41,8 +42,8 @@ io.netty:netty-codec-base:4.2.15.Final=compileClasspath,jarValidation,runtimeCla
 io.netty:netty-common:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 io.netty:netty-handler:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 io.netty:netty-resolver:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-io.netty:netty-tcnative-boringssl-static:2.0.75.Final=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-io.netty:netty-tcnative-classes:2.0.75.Final=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+io.netty:netty-tcnative-boringssl-static:2.0.77.Final=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+io.netty:netty-tcnative-classes:2.0.77.Final=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 io.netty:netty-transport-classes-epoll:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 io.netty:netty-transport-native-epoll:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 io.netty:netty-transport-native-unix-common:4.2.15.Final=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
@@ -162,4 +163,4 @@ org.semver4j:semver4j:6.0.0=jarValidation,runtimeClasspath,testRuntimeClasspath
 org.slf4j:jcl-over-slf4j:2.0.17=jarValidation,runtimeClasspath,testRuntimeClasspath
 org.slf4j:slf4j-api:2.0.17=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.xerial.snappy:snappy-java:1.1.10.8=jarValidation,runtimeClasspath,testRuntimeClasspath
-empty=apiHelper,apiHelperTest,compileOnlyHelper,compileOnlyHelperTest,missingdoclet,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared
+empty=missingdoclet
