@@ -195,10 +195,7 @@ public class CollectionsRepairEventListener
                         newPositions.put(coll.getName(), positions);
                       } catch (Exception e) {
                         log.warn(
-                            "Exception computing positions for {}/{}: {}",
-                            coll.getName(),
-                            shard,
-                            e.getMessage());
+                            "Exception computing positions for {}/{}", coll.getName(), shard, e);
                       }
                     });
               });
@@ -229,10 +226,7 @@ public class CollectionsRepairEventListener
           try {
             solrClient.request(addReplica);
           } catch (Exception e) {
-            log.warn(
-                "Exception calling ADDREPLICA {}: {}",
-                addReplica.getParams().toQueryString(),
-                e.getMessage());
+            log.warn("Exception calling ADDREPLICA {}", addReplica.getParams().toQueryString(), e);
           }
         });
   }
