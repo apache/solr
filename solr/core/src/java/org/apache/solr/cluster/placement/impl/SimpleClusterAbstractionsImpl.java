@@ -257,7 +257,6 @@ class SimpleClusterAbstractionsImpl {
         case CONSTRUCTION -> ShardState.CONSTRUCTION;
         case RECOVERY -> ShardState.RECOVERY;
         case RECOVERY_FAILED -> ShardState.RECOVERY_FAILED;
-        default -> throw new RuntimeException("Unexpected " + state);
       };
     }
 
@@ -383,7 +382,6 @@ class SimpleClusterAbstractionsImpl {
         case NRT -> ReplicaType.NRT;
         case TLOG -> ReplicaType.TLOG;
         case PULL -> ReplicaType.PULL;
-        default -> throw new RuntimeException("Unexpected " + type);
       };
     }
 
@@ -393,7 +391,6 @@ class SimpleClusterAbstractionsImpl {
         case DOWN -> ReplicaState.DOWN;
         case RECOVERING -> ReplicaState.RECOVERING;
         case RECOVERY_FAILED -> ReplicaState.RECOVERY_FAILED;
-        default -> throw new RuntimeException("Unexpected " + state);
       };
     }
 
@@ -438,7 +435,6 @@ class SimpleClusterAbstractionsImpl {
         case NRT -> org.apache.solr.common.cloud.Replica.Type.NRT;
         case TLOG -> org.apache.solr.common.cloud.Replica.Type.TLOG;
         case PULL -> org.apache.solr.common.cloud.Replica.Type.PULL;
-        default -> throw new IllegalArgumentException("Unknown " + type);
       };
     }
 
