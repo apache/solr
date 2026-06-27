@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_SECURITY_CONF_PATH;
 import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
@@ -100,9 +101,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   public Name getPermissionName(AuthorizationContext request) {
     var params = request.getParams();
     String path = normalizePath(params.get(PATH, ""));
-    boolean returnsContent =
-        params.getBool(PARAM_DETAIL, false) || params.getBool(PARAM_DUMP, false);
-    if ("/security.json".equalsIgnoreCase(path) && returnsContent) {
+    if (path.equals(SOLR_SECURITY_CONF_PATH)
+        || (params.getBool(PARAM_DUMP, false) && "/".equals(path))) {
       return Name.SECURITY_READ_PERM;
     } else {
       return Name.ZK_READ_PERM;
@@ -433,9 +433,14 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
    * @return JSON string representing the ZooKeeper path data
    */
   private ZkBaseResponseBuilder handlePathViewRequest(SolrParams params) {
+    // Extract path parameter
     String path = normalizePath(params.get(PATH));
+
+    // Extract display options
     boolean detail = params.getBool(PARAM_DETAIL, false);
     boolean dump = params.getBool(PARAM_DUMP, false);
+
+    // Create response builder for specific path
     return new ZkPathResponseBuilder(cores.getZkController(), path, detail, dump);
   }
 
