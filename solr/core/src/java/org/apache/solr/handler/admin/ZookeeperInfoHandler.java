@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_SECURITY_CONF_PATH;
 import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CommonParams.WT;
@@ -82,6 +83,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class ZookeeperInfoHandler extends RequestHandlerBase {
   private static final String PARAM_DETAIL = "detail";
+  private static final String PARAM_DUMP = "dump";
   private final CoreContainer cores;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -108,8 +110,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   public Name getPermissionName(AuthorizationContext request) {
     var params = request.getParams();
     String path = normalizePath(params.get(PATH, ""));
-    String detail = params.get(PARAM_DETAIL, "false");
-    if ("/security.json".equalsIgnoreCase(path) && "true".equalsIgnoreCase(detail)) {
+    if (path.equals(SOLR_SECURITY_CONF_PATH)
+        || (params.getBool(PARAM_DUMP, false) && "/".equals(path))) {
       return Name.SECURITY_READ_PERM;
     } else {
       return Name.ZK_READ_PERM;
@@ -374,17 +376,14 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       }
     }
 
-    String path = params.get(PATH);
+    String path = normalizePath(params.get(PATH));
 
     if (params.get("addr") != null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Illegal parameter \"addr\"");
     }
 
-    String detailS = params.get(PARAM_DETAIL);
-    boolean detail = detailS != null && detailS.equals("true");
-
-    String dumpS = params.get("dump");
-    boolean dump = dumpS != null && dumpS.equals("true");
+    boolean detail = params.getBool(PARAM_DETAIL, false);
+    boolean dump = params.getBool(PARAM_DUMP, false);
 
     int start = params.getInt("start", 0); // Note start ignored if rows not specified
     int rows = params.getInt("rows", -1);
@@ -428,8 +427,12 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   }
 
   @SuppressForbidden(reason = "JDK String class doesn't offer a stripEnd equivalent")
-  private String normalizePath(String path) {
-    return StringUtils.stripEnd(path, "/");
+  String normalizePath(String path) {
+    if (path == null) {
+      return "/";
+    }
+    String normalized = StringUtils.stripEnd(path.trim(), "/");
+    return normalized.isEmpty() ? "/" : normalized;
   }
 
   // --------------------------------------------------------------------------------------
@@ -472,20 +475,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     void print(String path) throws IOException {
       if (zkClient == null) {
         return;
-      }
-
-      // normalize path
-      if (path == null) {
-        path = "/";
-      } else {
-        path = path.trim();
-        if (path.length() == 0) {
-          path = "/";
-        }
-      }
-
-      if (path.endsWith("/") && path.length() > 1) {
-        path = path.substring(0, path.length() - 1);
       }
 
       int idx = path.lastIndexOf('/');
