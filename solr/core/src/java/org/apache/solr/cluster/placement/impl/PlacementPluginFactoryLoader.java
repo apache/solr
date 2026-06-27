@@ -108,22 +108,17 @@ public class PlacementPluginFactoryLoader {
           "Default replica placement plugin set in {} to {}",
           PLACEMENTPLUGIN_DEFAULT_SYSPROP,
           defaultPluginId);
-      switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
-        case "simple":
-          return new SimplePlacementFactory();
-        case "affinity":
-          return new AffinityPlacementFactory();
-        case "minimizecores":
-          return new MinimizeCoresPlacementFactory();
-        case "random":
-          return new RandomPlacementFactory();
-        default:
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Invalid value for system property '"
-                  + PLACEMENTPLUGIN_DEFAULT_SYSPROP
-                  + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
-      }
+      return switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
+        case "simple" -> new SimplePlacementFactory();
+        case "affinity" -> new AffinityPlacementFactory();
+        case "minimizecores" -> new MinimizeCoresPlacementFactory();
+        case "random" -> new RandomPlacementFactory();
+        default -> throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Invalid value for system property '"
+                + PLACEMENTPLUGIN_DEFAULT_SYSPROP
+                + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
+      };
     } else {
       // TODO: Consider making the ootb default AffinityPlacementFactory, see
       // https://issues.apache.org/jira/browse/SOLR-16492
