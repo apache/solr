@@ -27,20 +27,12 @@ import java.util.Map;
 public class PlacementModificationException extends PlacementException {
   private final Map<String, String> rejectedModifications = new HashMap<>();
 
-  public PlacementModificationException() {
-    super();
-  }
-
   public PlacementModificationException(String message) {
     super(message);
   }
 
   public PlacementModificationException(String message, Throwable cause) {
     super(message, cause);
-  }
-
-  public PlacementModificationException(Throwable cause) {
-    super(cause);
   }
 
   /**
