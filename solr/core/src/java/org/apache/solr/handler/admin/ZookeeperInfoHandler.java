@@ -44,9 +44,9 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
-import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice.SliceStateProps;
+import org.apache.solr.common.cloud.SolrCuratorEvent;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
@@ -250,7 +250,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
    * data, this object watches the /collections znode, which will change if a collection is added or
    * removed.
    */
-  static final class PagedCollectionSupport implements Watcher, Comparator<String>, OnReconnect {
+  static final class PagedCollectionSupport
+      implements Watcher, Comparator<String>, SolrCuratorEvent.EventAction {
 
     // this is the full merged list of collections from ZooKeeper
     private List<String> cachedCollections;
@@ -335,7 +336,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
     /** Called after a ZooKeeper session expiration occurs */
     @Override
-    public void onReconnect() {
+    public void respond() {
       // we need to re-establish the watcher on the collections list after session expires
       synchronized (this) {
         cachedCollections = null;
@@ -378,7 +379,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         ZkController zkController = cores.getZkController();
         if (zkController != null) {
           // Get notified when the ZK session expires (so we can clear cached collections)
-          zkController.addOnReconnectListener(pagingSupport);
+          zkController.addExpiredReconnectionListener(pagingSupport);
         }
       }
     }
