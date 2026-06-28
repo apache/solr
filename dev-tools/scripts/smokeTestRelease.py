@@ -392,7 +392,7 @@ def testChangelogMd(dir, version):
     content = f.read()
 
   # Verify that the changelog contains the current version
-  if 'v%s' % version not in content and version not in content:
+  if 'SNAPSHOT' not in version and 'v%s' % version not in content and version not in content:
     raise RuntimeError('Version %s not found in CHANGELOG.md' % version)
 
 reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
@@ -751,7 +751,7 @@ def testSolrExample(binaryDistPath, javaPath, isSlim):
     if s.find('"numFound":%d,' % (8 if isSlim else 3)) == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
-    s = load('http://localhost:%d/api/cores' % port)
+    s = load('http://localhost:%d/api/cores?wt=json' % port)
     if s.find('"status":0,') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query api v2 on solr example instance failed')
