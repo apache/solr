@@ -141,7 +141,7 @@ joda-time = "2.14.2"
 junit = "4.13.2"
 kotlin = "2.3.20"
 # @keep for version alignment
-kotlinx-atomicfu = "0.31.0"
+kotlinx-atomicfu = "0.33.0"
 # @keep for version alignment
 kotlinx-browser = "0.5.0"
 kotlinx-coroutines = "1.11.0"
