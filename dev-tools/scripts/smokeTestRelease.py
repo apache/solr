@@ -312,7 +312,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   if openApiURL is None:
     if isSigned:
       stopGpgAgent(gpgHomeDir, logfile)
-    raise RuntimeError('solr is missing OpenAPI specification' % version)
+    raise RuntimeError('solr is missing OpenAPI specification')
   testOpenApi(version, openApiURL)
 
 
@@ -636,14 +636,14 @@ def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs):
   testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java_home, False)
 
   if java.run_alt_javas:
-    for run_alt_java, alt_java_version in zip(java.run_alt_javas, java.alt_java_versions):
+    for run_alt_java, alt_java_home, alt_java_version in zip(java.run_alt_javas, java.alt_java_homes, java.alt_java_versions):
       print("    run tests w/ Java %s and testArgs='%s'..." % (alt_java_version, testArgs))
       run_alt_java('./gradlew --no-daemon clean test %s' % testArgs, '%s/test-java%s.log' % (unpackPath, alt_java_version))
       print("    run integration tests w/ Java %s" % alt_java_version)
       run_alt_java('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest-java%s.log' % (unpackPath, alt_java_version))
       print("    build binary release w/ Java %s" % alt_java_version)
       run_alt_java('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble-java%s.log' % (unpackPath, alt_java_version))
-      testSolrExample("%s/solr/packaging/build/dev" % unpackPath, run_alt_java, False)
+      testSolrExample("%s/solr/packaging/build/dev" % unpackPath, alt_java_home, False)
 
   testChangelogMd('.', version)
 
@@ -684,7 +684,7 @@ def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
   testSolrExample(javaBaseVersionUnpackPath, java.java_home, isSlim)
 
   if java.run_alt_javas:
-    for run_alt_java, alt_java_version in zip(java.run_alt_javas, java.alt_java_versions):
+    for run_alt_java, alt_java_home, alt_java_version in zip(java.run_alt_javas, java.alt_java_homes, java.alt_java_versions):
       print('    copying unpacked distribution for Java %s ...' % alt_java_version)
       javaAltVersionUnpackPath = '%s-java%s' % (unpackPath, alt_java_version)
       if os.path.exists(javaAltVersionUnpackPath):
@@ -692,7 +692,7 @@ def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
       shutil.copytree(unpackPath, javaAltVersionUnpackPath)
       os.chdir(javaAltVersionUnpackPath)
       print('    test solr example w/ Java %s...' % alt_java_version)
-      testSolrExample(javaAltVersionUnpackPath, run_alt_java, isSlim)
+      testSolrExample(javaAltVersionUnpackPath, alt_java_home, isSlim)
 
   os.chdir(unpackPath)
   testChangelogMd('.', version)
