@@ -70,7 +70,7 @@ carrotsearch-hppc = "0.10.0"
 carrotsearch-randomizedtesting = "2.8.4"
 # @keep for version alignment
 checkerframework = "3.54.0"
-codehaus-woodstox = "4.2.2"
+codehaus-woodstox = "4.3.0"
 commons-cli = "1.11.0"
 commons-codec = "1.21.0"
 commons-io = "2.21.0"
