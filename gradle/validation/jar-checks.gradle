@@ -130,7 +130,6 @@ subprojects {
         if (excludeRules && excludeRules.size() > 0) {
           conf = conf.copyRecursive()
           conf.canBeResolved = true
-          conf.canBeConsumed = true
           excludeRuleMaps.forEach {conf.exclude(it)}
         }
         if (conf.canBeResolved) {
