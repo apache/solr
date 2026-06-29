@@ -70,11 +70,13 @@ public class ActiveTaskQuerySupport {
 
     ShardResponse shardResponse = shardHandler.takeCompletedOrError();
     if (shardResponse != null && shardResponse.getShard() != null) {
-      shardHandler.cancelAll();
-      if (shardResponse.getException() instanceof SolrException) {
-        throw (SolrException) shardResponse.getException();
+      if (shardResponse.getException() != null) {
+        shardHandler.cancelAll();
+        if (shardResponse.getException() instanceof SolrException) {
+          throw (SolrException) shardResponse.getException();
+        }
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, shardResponse.getException());
       }
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, shardResponse.getException());
     }
 
     if (taskId != null) {
