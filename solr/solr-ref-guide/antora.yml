@@ -50,7 +50,7 @@ asciidoc:
     dep-version-dropwizard: '4.2.26'
     dep-version-hadoop: '3.4.1'
     dep-version-log4j: '2.21.0'
-    dep-version-opennlp: '1.9.4'
+    dep-version-opennlp: '1.9.5'
     dep-version-tika: '1.28.5'
     dep-version-zookeeper: '3.9.4'
     dep-version-lucene: '9.12.3'

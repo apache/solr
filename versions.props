@@ -58,6 +58,8 @@ org.apache.kafka:*=3.9.2
 org.apache.kerby:*=2.1.0
 org.apache.logging.log4j:*=2.26.0
 org.apache.lucene:*=9.12.3
+# Override the OpenNLP tools version that Solr would otherwise inherit from Lucene
+org.apache.opennlp:opennlp-tools=1.9.5
 org.apache.poi:*=5.5.1
 org.apache.tika:*=3.3.0
 org.apache.tomcat:annotations-api=6.0.53

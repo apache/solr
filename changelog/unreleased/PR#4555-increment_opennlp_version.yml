@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Increment OpenNLP to 1.9.5 fixing some CVE's
+type: dependency_update # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+links:
+  - name: PR#4555
+    url: https://github.com/apache/solr/pull/4555
