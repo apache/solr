@@ -686,17 +686,14 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
         if (verbose) {
           return params(
               "q", "{!parent which=$parent_filt v=$child_q}",
-              "parent_filt", "{!field f=_nest_path_ v=$fieldQ}",
-              "fieldQ", "/",
+              "parent_filt", "(*:* -_nest_path_:*)",
               "child_q", "(+" + inner_child_query + " +_nest_path_:*)");
         } else {
           return params(
               "q",
-              "{!parent which='{!field f=_nest_path_ v=$fieldQ}'}(+"
+              "{!parent which='{!field f=_nest_path_ v=/}'}(+"
                   + inner_child_query
-                  + " +_nest_path_:*)",
-              "fieldQ",
-              "/");
+                  + " +_nest_path_:*)");
         }
       } // else...
 
@@ -786,17 +783,14 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
         if (verbose) {
           return params(
               "q", "{!child of=$parent_filt v=$parent_q})",
-              "parent_filt", "{!field f=_nest_path_ v=$fieldQ}",
-              "fieldQ", "/",
+              "parent_filt", "(*:* -_nest_path_:*)",
               "parent_q", "(+" + inner_parent_query + " -_nest_path_:*)");
         } else {
           return params(
               "q",
-              "{!child of='{!field f=_nest_path_ v=$fieldQ}'}(+"
+              "{!child of='{!field f=_nest_path_ v=/}'}(+"
                   + inner_parent_query
-                  + " -_nest_path_:*)",
-              "fieldQ",
-              "/");
+                  + " -_nest_path_:*)");
         }
       } // else...
 
