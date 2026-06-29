@@ -30,7 +30,6 @@ import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.handler.component.ActiveTaskQuerySupport;
-import org.apache.solr.handler.component.ActiveTasksListHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -66,7 +65,8 @@ public class ActiveTask extends JerseyResource implements TasksApi {
     return response;
   }
 
-  public static List<ActiveTaskDetails> getActiveTasksOnThisShard(SolrQueryRequest solrQueryRequest) {
+  public static List<ActiveTaskDetails> getActiveTasksOnThisShard(
+      SolrQueryRequest solrQueryRequest) {
     Iterator<Map.Entry<String, String>> iterator =
         solrQueryRequest.getCore().getCancellableQueryTracker().getActiveQueriesGenerated();
 

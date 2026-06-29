@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.client.api.model.TaskStatusResponse.TaskStatus.ACTIVE;
 import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
 
 import java.util.Collection;
@@ -24,7 +23,6 @@ import java.util.List;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
-import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -50,7 +48,9 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
       if (isShardedRequest) {
         rsp.add("taskStatus", taskStatus);
       } else {
-        rsp.add("taskStatus", "id: " + taskStatusCheckID + ", status: " + (taskStatus ? "active" : "inactive"));
+        rsp.add(
+            "taskStatus",
+            "id: " + taskStatusCheckID + ", status: " + (taskStatus ? "active" : "inactive"));
       }
 
     } else {

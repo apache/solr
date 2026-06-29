@@ -1,5 +1,29 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.QT;
+import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -8,14 +32,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.api.ActiveTask;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.QT;
-import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
 
 public class ActiveTaskQuerySupport {
   private static final String ACTIVE_TASK_LIST_HANDLER_PATH = "/tasks/list";
@@ -44,12 +60,17 @@ public class ActiveTaskQuerySupport {
     return new TaskQueryResult(ActiveTask.getActiveTasksOnThisShard(req), false);
   }
 
-  private static TaskQueryResult distributedResult(SolrQueryRequest req, String taskId) throws Exception {
-    final ShardHandler shardHandler = req.getCoreContainer().getShardHandlerFactory().getShardHandler();
-    final ResponseBuilder responseBuilder = TaskManagementHandler.buildResponseBuilder(req, new SolrQueryResponse(), List.of());
+  private static TaskQueryResult distributedResult(SolrQueryRequest req, String taskId)
+      throws Exception {
+    final ShardHandler shardHandler =
+        req.getCoreContainer().getShardHandlerFactory().getShardHandler();
+    final ResponseBuilder responseBuilder =
+        TaskManagementHandler.buildResponseBuilder(req, new SolrQueryResponse(), List.of());
     shardHandler.prepDistributed(responseBuilder);
 
-    if (!responseBuilder.isDistrib || responseBuilder.shards == null || responseBuilder.shards.length ==0) {
+    if (!responseBuilder.isDistrib
+        || responseBuilder.shards == null
+        || responseBuilder.shards.length == 0) {
       return localResult(req, taskId);
     }
 
@@ -58,7 +79,7 @@ public class ActiveTaskQuerySupport {
     shardRequest.actualShards = shardRequest.shards;
     shardRequest.responses = new ArrayList<>(shardRequest.actualShards.length);
 
-    for (String shard: shardRequest.actualShards) {
+    for (String shard : shardRequest.actualShards) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(QT, ACTIVE_TASK_LIST_HANDLER_PATH);
       if (taskId != null) {
@@ -83,7 +104,6 @@ public class ActiveTaskQuerySupport {
       return new TaskQueryResult(List.of(), mergeTaskStatus(shardRequest.responses));
     }
     return new TaskQueryResult(mergeTaskList(shardRequest.responses), false);
-
   }
 
   private static boolean shouldDistributed(SolrQueryRequest req) {
@@ -95,7 +115,7 @@ public class ActiveTaskQuerySupport {
   }
 
   private static boolean mergeTaskStatus(List<ShardResponse> responses) {
-    for (ShardResponse shardResponse: responses) {
+    for (ShardResponse shardResponse : responses) {
       Object taskStatus = shardResponse.getSolrResponse().getResponse().get("taskStatus");
       if (taskStatus instanceof Boolean && (Boolean) taskStatus) {
         return true;
@@ -107,7 +127,6 @@ public class ActiveTaskQuerySupport {
     }
     return false;
   }
-
 
   @SuppressWarnings("unchecked")
   private static List<ActiveTaskDetails> mergeTaskList(List<ShardResponse> responses) {
@@ -123,12 +142,6 @@ public class ActiveTaskQuerySupport {
             mergedTasks.put(taskId, taskQuery == null ? null : taskQuery.toString());
           }
         }
-      } else if (taskList instanceof Map) {
-        for (Map.Entry<?, ?> entry : ((Map<?, ?>) taskList).entrySet()) {
-          if (entry.getKey() != null) {
-            mergedTasks.put(entry.getKey().toString(), entry.getValue() == null ? null : entry.getValue().toString());
-          }
-        }
       }
     }
 
@@ -138,7 +151,6 @@ public class ActiveTaskQuerySupport {
     }
 
     return mergedTaskList;
-
   }
 
   private static final class TaskQueryResult {

@@ -293,8 +293,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
             .filter(j -> j.getNodeName().equals(shard2Leader.getNodeName()))
             .findFirst()
             .orElseThrow(() -> new AssertionError("No Jetty found for shard 2 leader"));
-    try (SolrCore shard2Core =
-        shard2Jetty.getCoreContainer().getCore(shard2Leader.getCoreName())) {
+    try (SolrCore shard2Core = shard2Jetty.getCoreContainer().getCore(shard2Leader.getCoreName())) {
       assertNotNull("Could not open shard 2 core", shard2Core);
       ModifiableSolrParams fakeParams = new ModifiableSolrParams();
       fakeParams.set(CommonParams.QUERY_UUID, taskId);
