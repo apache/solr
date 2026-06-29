@@ -1904,10 +1904,11 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
   @Test
   public void testNestedPureNegativeQuery() throws Exception {
+
     // Standard sample data with completely unique field values to isolate matches
-    assertU(adoc("id", "9414", "v_t", "pureneg foo bar"));
-    assertU(adoc("id", "9415", "v_t", "pureneg foo baz"));
-    assertU(adoc("id", "9416", "v_t", "pureneg baz"));
+    assertU(adoc("id", "9414", "v_t", "pureneg foo bar", "type_t", "negativetest"));
+    assertU(adoc("id", "9415", "v_t", "pureneg foo baz", "type_t", "negativetest"));
+    assertU(adoc("id", "9416", "v_t", "pureneg baz", "type_t", "negativetest"));
     assertU(commit());
 
     // Top-level negative query must exclude 'bar' but successfully find our other docs
@@ -1928,5 +1929,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         req("q", "v_t:pureneg AND v_t:foo AND (NOT v_t:bar)", "df", "v_t"),
         "/response/numFound==1",
         "/response/docs/[0]/id=='9415'");
+
+    assertJQ(
+        req("q", "v_t:pureneg NOT v_t:foo", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9416'");
+
+    assertJQ(
+        req("q", "NOT v_t:pureneg", "df", "v_t", "fq", "type_t:negativetest"),
+        "/response/numFound==0");
   }
 }
