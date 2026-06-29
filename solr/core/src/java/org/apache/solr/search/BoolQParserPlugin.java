@@ -22,7 +22,6 @@ import java.util.Map;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
@@ -50,10 +49,8 @@ public class BoolQParserPlugin extends QParserPlugin {
       @Override
       protected BooleanQuery parseImpl() throws SyntaxError {
         BooleanQuery query = super.parseImpl();
-        SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
-        String minShouldMatch = SolrPluginUtils.parseMinShouldMatch(req.getSchema(), solrParams);
-        boolean mmAutoRelax = params.getBool(DisMaxParams.MM_AUTORELAX, false);
-        return SolrPluginUtils.setMinShouldMatch(query, minShouldMatch, mmAutoRelax);
+        String minShouldMatch = SolrPluginUtils.parseMinShouldMatch(req.getSchema(), localParams);
+        return SolrPluginUtils.setMinShouldMatch(query, minShouldMatch, false);
       }
 
       @Override
@@ -73,11 +70,10 @@ public class BoolQParserPlugin extends QParserPlugin {
       @Override
       protected Map<QParser, BooleanClause.Occur> clauses() throws SyntaxError {
         IdentityHashMap<QParser, BooleanClause.Occur> clauses = new IdentityHashMap<>();
-        SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
-        addQueries(clauses, solrParams.getParams("must"), BooleanClause.Occur.MUST);
-        addQueries(clauses, solrParams.getParams("must_not"), BooleanClause.Occur.MUST_NOT);
-        addQueries(clauses, solrParams.getParams("filter"), BooleanClause.Occur.FILTER);
-        addQueries(clauses, solrParams.getParams("should"), BooleanClause.Occur.SHOULD);
+        addQueries(clauses, localParams.getParams("must"), BooleanClause.Occur.MUST);
+        addQueries(clauses, localParams.getParams("must_not"), BooleanClause.Occur.MUST_NOT);
+        addQueries(clauses, localParams.getParams("filter"), BooleanClause.Occur.FILTER);
+        addQueries(clauses, localParams.getParams("should"), BooleanClause.Occur.SHOULD);
         return clauses;
       }
 
