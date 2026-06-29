@@ -1,4 +1,6 @@
 import java.nio.charset.Charset
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -116,7 +118,10 @@ configure(project(":solr:core")) {
 }
 
 // We always regenerate, no need to declare outputs.
-class JavaCCTask extends DefaultTask {
+abstract class JavaCCTask extends DefaultTask {
+  @Inject
+  abstract ExecOperations getExecOperations()
+
   @InputFile
   File javaccFile
 
@@ -164,7 +169,7 @@ class JavaCCTask extends DefaultTask {
     logger.lifecycle("Recompiling JavaCC: ${project.rootDir.relativePath(javaccFile)}")
 
     def output = new ByteArrayOutputStream()
-    def result = project.javaexec {
+    def result = execOperations.javaexec {
       classpath {
         project.rootProject.configurations.javacc
       }
