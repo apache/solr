@@ -103,6 +103,8 @@ allprojects {
     group = 'Verification'
     description = 'Runs Apache Rat checks.'
 
+    ratClasspath.from(rootProject.configurations.ratDeps)
+
     def defaultScanFileTree = project.fileTree(projectDir, {
       // Only check files tracked by git — skip untracked/gitignored files
       // (IDE artifacts, AI assistant configs, etc.)
@@ -255,10 +257,12 @@ class RatTask extends DefaultTask {
   final RegularFileProperty xmlReport = project.objects.fileProperty().convention(
       project.layout.buildDirectory.file("rat/rat-report.xml"))
 
+  @InputFiles
+  final ConfigurableFileCollection ratClasspath = project.objects.fileCollection()
+
   def generateReport(File reportFile) {
     // Set up ant rat task.
-    def ratClasspath = project.rootProject.configurations.ratDeps.asPath
-    ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', classpath: ratClasspath)
+    ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', classpath: ratClasspath.asPath)
 
     // Collect all output files for debugging.
     String inputFileList = inputFileTrees.get().collectMany {fileTree ->

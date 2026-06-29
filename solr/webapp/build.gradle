@@ -144,7 +144,7 @@ task finalizeJsBundleDir(type: Sync) {
 }
 
 war {
-  webAppDirName = "web"
+  from("web")
 
   from(configurations.generatedJSClientBundle, {
     into "libs/solr"

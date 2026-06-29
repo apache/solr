@@ -1,6 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :solr:solr-ref-guide:dependencies --write-locks
 com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.4=testCompileClasspath,testRuntimeClasspath
 com.carrotsearch:hppc:0.10.0=testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.21=testCompileClasspath,testRuntimeClasspath
@@ -41,8 +42,8 @@ io.netty:netty-codec-base:4.2.15.Final=testCompileClasspath,testRuntimeClasspath
 io.netty:netty-common:4.2.15.Final=testCompileClasspath,testRuntimeClasspath
 io.netty:netty-handler:4.2.15.Final=testCompileClasspath,testRuntimeClasspath
 io.netty:netty-resolver:4.2.15.Final=testCompileClasspath,testRuntimeClasspath
-io.netty:netty-tcnative-boringssl-static:2.0.75.Final=testCompileClasspath,testRuntimeClasspath
-io.netty:netty-tcnative-classes:2.0.75.Final=testCompileClasspath,testRuntimeClasspath
+io.netty:netty-tcnative-boringssl-static:2.0.77.Final=testCompileClasspath,testRuntimeClasspath
+io.netty:netty-tcnative-classes:2.0.77.Final=testCompileClasspath,testRuntimeClasspath
 io.netty:netty-transport-classes-epoll:4.2.15.Final=testCompileClasspath,testRuntimeClasspath
 io.netty:netty-transport-native-epoll:4.2.15.Final=testCompileClasspath,testRuntimeClasspath
 io.netty:netty-transport-native-unix-common:4.2.15.Final=testCompileClasspath,testRuntimeClasspath
@@ -172,4 +173,4 @@ org.semver4j:semver4j:6.0.0=testRuntimeClasspath
 org.slf4j:jcl-over-slf4j:2.0.17=testRuntimeClasspath
 org.slf4j:slf4j-api:2.0.17=testCompileClasspath,testRuntimeClasspath
 org.xerial.snappy:snappy-java:1.1.10.8=testRuntimeClasspath
-empty=apiHelper,apiHelperTest,compileClasspath,compileClasspathCopy,compileOnlyHelper,compileOnlyHelperTest,jarValidation,localPlaybook,missingdoclet,officialPlaybook,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,refGuide,runtimeClasspath,runtimeClasspathCopy,testCompileClasspathCopy,testRuntimeClasspathCopy
+empty=compileClasspath,compileClasspathCopy,jarValidation,localPlaybook,missingdoclet,officialPlaybook,refGuide,runtimeClasspath,runtimeClasspathCopy,testCompileClasspathCopy,testRuntimeClasspathCopy
