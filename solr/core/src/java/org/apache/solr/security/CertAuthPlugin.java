@@ -38,6 +38,8 @@ public class CertAuthPlugin extends AuthenticationPlugin {
   private static final String PARAM_PRINCIPAL_RESOLVER = "principalResolver";
   private static final String PARAM_CLASS = "class";
   private static final String PARAM_PARAMS = "params";
+  private static final String OLD_REQUEST_ATTRIBUTE_NAME="javax.servlet.request.X509Certificate";
+  private static final String CURRENT_REQUEST_ATTRIBUTE_NAME="jakarta.servlet.request.X509Certificate";
 
   private static final CertPrincipalResolver DEFAULT_PRINCIPAL_RESOLVER =
       certificate -> certificate.getSubjectX500Principal();
@@ -102,7 +104,10 @@ public class CertAuthPlugin extends AuthenticationPlugin {
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws Exception {
     X509Certificate[] certs =
-        (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+        (X509Certificate[]) request.getAttribute(CURRENT_REQUEST_ATTRIBUTE_NAME);
+    if (certs == null || certs.length == 0) {
+      certs=(X509Certificate[]) request.getAttribute(OLD_REQUEST_ATTRIBUTE_NAME);
+    }
     if (certs == null || certs.length == 0) {
       return sendError(response, "require certificate");
     }
