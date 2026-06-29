@@ -101,9 +101,10 @@
       "groupName": "Admin UI libraries"
     },
     {
-      "description": "Group all GitHub Actions upgrades together in same PR",
+      "description": "Group all GitHub Actions upgrades together in same PR, checked once per month",
       "matchManagers": ["github-actions"],
-      "groupName": "GitHub Actions"
+      "groupName": "GitHub Actions",
+      "schedule": ["before 9am on the first day of the month"]
     }
   ],
   "schedule": ["* * * * 0"],
