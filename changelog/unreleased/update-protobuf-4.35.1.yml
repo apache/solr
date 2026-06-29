@@ -1,0 +1,7 @@
+title: Update com.google.protobuf:* to v4.35.1 (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4460
+  url: https://github.com/apache/solr/pull/4460

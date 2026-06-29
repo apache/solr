@@ -1,0 +1,7 @@
+title: Update io.opentelemetry:opentelemetry-bom to v1.63.0 (and okhttp to v5.3.2) (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3646
+  url: https://github.com/apache/solr/pull/3646

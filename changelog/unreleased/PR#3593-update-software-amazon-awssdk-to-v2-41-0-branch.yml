@@ -1,6 +1,0 @@
-title: Update software.amazon.awssdk:* to v2.42.37 (branch_9x)
-authors:
-- name: solrbot
-links:
-- name: PR#3593
-  url: https://github.com/apache/solr/pull/3593
