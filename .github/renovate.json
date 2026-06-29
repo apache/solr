@@ -99,6 +99,11 @@
       "description": "Group these UI dependency upgrades together in same PR",
       "matchPackagePrefixes": ["com.arkivanov", "org.jetbrains.compose"],
       "groupName": "Admin UI libraries"
+    },
+    {
+      "description": "Group all GitHub Actions upgrades together in same PR",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
     }
   ],
   "schedule": ["* * * * 0"],
