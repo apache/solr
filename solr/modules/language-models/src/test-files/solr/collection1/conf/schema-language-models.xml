@@ -25,7 +25,11 @@
   <fieldType name="knn_vector_byte_encoding" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" vectorEncoding="BYTE"/>
   <fieldType name="high_dimensional_float_knn_vector" class="solr.DenseVectorField" vectorDimension="2048" similarityFunction="cosine" vectorEncoding="FLOAT32"/>
   <fieldType name="high_dimensional_byte_knn_vector" class="solr.DenseVectorField" vectorDimension="2048" similarityFunction="cosine" vectorEncoding="BYTE"/>
-  <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
+  <fieldType name="plong"   class="solr.LongPointField"   useDocValuesAsStored="false"/>
+  <fieldType name="pint"    class="solr.IntPointField"    useDocValuesAsStored="false"/>
+  <fieldType name="pfloat"  class="solr.FloatPointField"  useDocValuesAsStored="false"/>
+  <fieldType name="pdouble" class="solr.DoublePointField" useDocValuesAsStored="false"/>
+  <fieldType name="pdate"   class="solr.DatePointField"   useDocValuesAsStored="false"/>
   <dynamicField name="*_s"   type="string"   indexed="true"  stored="true" />
   <dynamicField name="*_vector1024" type="knn_vector" indexed="true" stored="true"  />
 
@@ -36,11 +40,49 @@
   <field name="2048_byte_vector" type="high_dimensional_byte_knn_vector" indexed="true" stored="true" />
   <field name="2048_float_vector" type="high_dimensional_float_knn_vector" indexed="true" stored="true" />
   <field name="string_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="output_sortable_text" type="sortable_text_type"   indexed="true" stored="true" multiValued="false"/>
+  <field name="body_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="tags_field" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
+  <field name="enriched_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="enriched_field_multi" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
+
+  <!-- single-valued output fields for each supported type -->
+  <field name="output_long"    type="plong"   indexed="true" stored="true" multiValued="false"/>
+  <field name="output_int"     type="pint"    indexed="true" stored="true" multiValued="false"/>
+  <field name="output_float"   type="pfloat"  indexed="true" stored="true" multiValued="false"/>
+  <field name="output_double"  type="pdouble" indexed="true" stored="true" multiValued="false"/>
+  <field name="output_boolean" type="boolean" indexed="true" stored="true" multiValued="false"/>
+  <field name="output_date"    type="pdate"   indexed="true" stored="true" multiValued="false"/>
+
+  <!-- multivalued output fields for each supported type -->
+  <field name="output_long_multi"    type="plong"   indexed="true" stored="true" multiValued="true"/>
+  <field name="output_int_multi"     type="pint"    indexed="true" stored="true" multiValued="true"/>
+  <field name="output_float_multi"   type="pfloat"  indexed="true" stored="true" multiValued="true"/>
+  <field name="output_double_multi"  type="pdouble" indexed="true" stored="true" multiValued="true"/>
+  <field name="output_boolean_multi" type="boolean" indexed="true" stored="true" multiValued="true"/>
+  <field name="output_date_multi"    type="pdate"   indexed="true" stored="true" multiValued="true"/>
+
+  <!-- output fields for an unsupported type -->
+  <field name="output_binary"     type="binary"   indexed="true"  stored="true"  multiValued="false"/>
+
+  <!-- output fields for types that would be implicitly supported via class inheritance, but are intentionally disabled -->
+  <field name="output_uuid"          type="uuid_type"            indexed="true" stored="true" multiValued="false"/>
+  <field name="output_nest_path"     type="nest_path_type"       indexed="true" stored="true" multiValued="false"/>
 
   <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
   <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
   <copyField source="*" dest="_text_"/>
   <field name="vectorised" type="boolean" indexed="true" stored="false" docValues="true" default="false"/>
+  <field name="enriched" type="boolean" indexed="true" stored="false" docValues="true" default="false"/>
+
+  <fieldType name="binary"            class="solr.BinaryField"/>
+  <fieldType name="uuid_type"         class="solr.UUIDField"/>
+  <fieldType name="nest_path_type"    class="solr.NestPathField"/>
+  <fieldType name="sortable_text_type" class="solr.SortableTextField">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
 
   <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100" multiValued="true">
     <analyzer type="index">
