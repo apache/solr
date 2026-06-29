@@ -67,21 +67,7 @@ jobs:
             tag-suffix: '-java21'
 
           # branch_9_11 - Gradle on JDK17, Docker images with JRE17 (default) and JRE21
-          - branch: branch_9_11
-            gradle-jdk: 17
-            dist: full
-            base-image: eclipse-temurin:17-jre-jammy
-            tag-suffix: ''
-          - branch: branch_9_11
-            gradle-jdk: 17
-            dist: slim
-            base-image: eclipse-temurin:17-jre-jammy
-            tag-suffix: ''
-          - branch: branch_9_11
-            gradle-jdk: 17
-            dist: full
-            base-image: eclipse-temurin:21-jre-jammy
-            tag-suffix: '-java21'
+          # SEE SOURCE CONTROL HISTORY TO RE-ENABLE
 
     env:
       DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
@@ -93,7 +79,7 @@ jobs:
           ref: ${{ matrix.branch }}
 
       - name: Set up Java (JDK ${{ matrix.gradle-jdk }})
-        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
           distribution: temurin
           java-version: ${{ matrix.gradle-jdk }}
