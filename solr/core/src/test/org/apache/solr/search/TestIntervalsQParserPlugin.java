@@ -29,31 +29,44 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testIntervalsReturnsNoResults() throws Exception {
+  public void testIntervalsNoJsonQueryParam() throws Exception {
     assertU(adoc("id", "1", "v_t", "hello world"));
     assertU(commit());
 
-    // The parser always returns MatchNoDocsQuery for now, so numFound must be 0
+    // Without a json_query param the parser returns MatchNoDocsQuery
     assertQ(
-        "intervals qparser should return no docs",
-        req("q", "{!intervals json_query=myQuery}"),
+        "intervals qparser without json_query should return no docs",
+        req("q", "{!intervals}"),
         "//result[@numFound='0']");
   }
 
   @Test
-  public void testIntervalsWithJsonQueriesPassThrough() throws Exception {
-    assertU(adoc("id", "2", "v_t", "foo bar"));
+  public void testIntervalsTermMatchesDocument() throws Exception {
+    assertU(adoc("id", "10", "v_t", "foo bar"));
+    assertU(adoc("id", "11", "v_t", "baz qux"));
     assertU(commit());
 
-    // json_queries is accepted as a top-level JSON DSL key and the json_query param names an entry;
-    // the parser still returns MatchNoDocsQuery (not yet implemented), so numFound must be 0
+    // {v_t: "foo"} produces IntervalQuery("v_t", Intervals.term("foo"))
     assertQ(
-        "intervals qparser with json_queries should return no docs",
+        "intervals qparser with {field:term} should match documents containing the term",
+        req("q", "{!intervals json_query=myQuery}", "json", "{json_queries:{myQuery:{v_t:foo}}}"),
+        "//result[@numFound='1']",
+        "//doc/str[@name='id'][.='10']");
+  }
+
+  @Test
+  public void testIntervalsNoMatchingTerm() throws Exception {
+    assertU(adoc("id", "20", "v_t", "hello world"));
+    assertU(commit());
+
+    // Term not present in any document
+    assertQ(
+        "intervals qparser with non-matching term should return no docs",
         req(
             "q",
             "{!intervals json_query=myQuery}",
             "json",
-            "{json_queries:{myQuery:{term:{f:v_t,value:foo}}}}"),
+            "{json_queries:{myQuery:{v_t:zzznomatch}}}"),
         "//result[@numFound='0']");
   }
 }
