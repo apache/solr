@@ -179,7 +179,7 @@ opentelemetry-runtime-telemetry = "2.22.0-alpha"
 oshai-logging = "8.0.4"
 # @keep for version alignment
 ow2-asm = "9.10.1"
-owasp-dependencycheck = "12.1.3"
+owasp-dependencycheck = "12.2.2"
 # @keep for version alignment
 perfmark = "0.27.0"
 prometheus-metrics = "1.1.0"
