@@ -1,8 +1,0 @@
-# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Update com.google.protobuf:protobuf-java to v4.34.1
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#4322
-  url: https://github.com/apache/solr/pull/4322
