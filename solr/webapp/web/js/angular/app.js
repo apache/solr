@@ -330,6 +330,15 @@ solrAdminApp.config([
           onSelect: '&'
         },
         link: function(scope, element, attrs) {
+            // Bind once; previously this was inside the $watch which stacked listeners
+            // on every data change and could fire synchronously during a digest,
+            // triggering $rootScope:inprog.
+            element.on("select_node.jstree", function (event, data) {
+                scope.$applyAsync(function() {
+                  scope.onSelect({url: data.node.a_attr.href, data: data});
+                });
+            });
+
             scope.$watch("data", function(newValue, oldValue) {
               if (newValue && !jQuery.isEmptyObject(newValue)) {
                   var treeConfig = {
@@ -339,7 +348,7 @@ solrAdminApp.config([
                     }
                   };
 
-                  var tree = $(element).jstree(treeConfig);
+                  $(element).jstree(treeConfig);
 
                   // This is done to ensure that the data can be refreshed if it is updated behind the scenes.
                   // Putting the data in the treeConfig makes it stack and doesn't update.
@@ -347,13 +356,6 @@ solrAdminApp.config([
                   $(element).jstree(true).refresh();
 
                   $(element).jstree('open_node','li:first');
-                  if (tree) {
-                      element.bind("select_node.jstree", function (event, data) {
-                          scope.$apply(function() {
-                            scope.onSelect({url: data.node.a_attr.href, data: data});
-                          });
-                      });
-                  }
                 }
             }, true);
         }
