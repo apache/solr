@@ -1,4 +1,4 @@
-title: Update bytebuddy to v1.18.10
+title: Update bytebuddy to v1.18.10-jdk5
 type: dependency_update
 authors:
 - name: solrbot
