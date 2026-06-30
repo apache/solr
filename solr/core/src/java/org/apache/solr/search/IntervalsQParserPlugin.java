@@ -26,6 +26,7 @@ import org.apache.lucene.queries.intervals.Intervals;
 import org.apache.lucene.queries.intervals.IntervalsSource;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -90,7 +91,8 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         String field = entry.getKey();
         Map<String, Object> fieldRule =
             asStringObjectMap(
-                entry.getValue(), "intervals query for field '" + field + "' in '" + jsonQueryName + "'");
+                entry.getValue(),
+                "intervals query for field '" + field + "' in '" + jsonQueryName + "'");
         IntervalsSource source = parseRuleObject(fieldRule, field);
         return new IntervalQuery(field, source);
       }
@@ -103,7 +105,8 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         }
         Map.Entry<String, Object> entry = ruleObject.entrySet().iterator().next();
         String ruleName = entry.getKey();
-        Map<String, Object> ruleParams = asStringObjectMap(entry.getValue(), "rule '" + ruleName + "'");
+        Map<String, Object> ruleParams =
+            asStringObjectMap(entry.getValue(), "rule '" + ruleName + "'");
 
         return switch (ruleName) {
           case "match" -> parseMatchRule(ruleParams, topField);
@@ -112,9 +115,8 @@ public class IntervalsQParserPlugin extends QParserPlugin {
           case "fuzzy" -> parseFuzzyRule(ruleParams, topField);
           case "all_of" -> parseAllOfRule(ruleParams, topField);
           case "any_of" -> parseAnyOfRule(ruleParams, topField);
-          default ->
-              throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST, "Unsupported intervals rule: " + ruleName);
+          default -> throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Unsupported intervals rule: " + ruleName);
         };
       }
 
@@ -147,7 +149,7 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         String field = useField == null ? topField : useField;
         Analyzer analyzer = resolveAnalyzer(params, field, "prefix");
         String normalizedPrefix = normalizeMultiTerm(field, prefix, analyzer);
-        IntervalsSource source = Intervals.prefix(new org.apache.lucene.util.BytesRef(normalizedPrefix));
+        IntervalsSource source = Intervals.prefix(new BytesRef(normalizedPrefix));
         if (useField != null) {
           source = Intervals.fixField(useField, source);
         }
@@ -160,7 +162,7 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         String field = useField == null ? topField : useField;
         Analyzer analyzer = resolveAnalyzer(params, field, "wildcard");
         String normalizedPattern = normalizeMultiTerm(field, pattern, analyzer);
-        IntervalsSource source = Intervals.wildcard(new org.apache.lucene.util.BytesRef(normalizedPattern));
+        IntervalsSource source = Intervals.wildcard(new BytesRef(normalizedPattern));
         if (useField != null) {
           source = Intervals.fixField(useField, source);
         }
@@ -229,7 +231,8 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         }
         List<IntervalsSource> parsed = new ArrayList<>(rawIntervals.size());
         for (Object intervalObj : rawIntervals) {
-          parsed.add(parseRuleObject(asStringObjectMap(intervalObj, "intervals array element"), topField));
+          parsed.add(
+              parseRuleObject(asStringObjectMap(intervalObj, "intervals array element"), topField));
         }
         return parsed;
       }
@@ -263,14 +266,12 @@ public class IntervalsQParserPlugin extends QParserPlugin {
           case "not_containing" -> Intervals.notContaining(source, other);
           case "not_overlapping" -> Intervals.nonOverlapping(source, other);
           case "overlapping" -> Intervals.overlapping(source, other);
-          default ->
-              throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST, "Unsupported filter operator: " + op);
+          default -> throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Unsupported filter operator: " + op);
         };
       }
 
-      private Analyzer resolveAnalyzer(
-          Map<String, Object> params, String field, String ruleName) {
+      private Analyzer resolveAnalyzer(Map<String, Object> params, String field, String ruleName) {
         String analyzerName = getOptionalString(params, "analyzer", ruleName);
         if (analyzerName == null) {
           return req.getSchema().getQueryAnalyzer();
@@ -299,7 +300,7 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         if (effective == null) {
           return term;
         }
-        org.apache.lucene.util.BytesRef analyzed = TextField.analyzeMultiTerm(field, term, effective);
+        BytesRef analyzed = TextField.analyzeMultiTerm(field, term, effective);
         return analyzed == null ? term : analyzed.utf8ToString();
       }
 
@@ -422,7 +423,12 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         }
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "Rule '" + context + "' expects boolean parameter '" + key + "', got " + describeType(val));
+            "Rule '"
+                + context
+                + "' expects boolean parameter '"
+                + key
+                + "', got "
+                + describeType(val));
       }
 
       private int getInt(Map<String, Object> map, String key, int defaultValue, String context) {
@@ -439,18 +445,18 @@ public class IntervalsQParserPlugin extends QParserPlugin {
           } catch (NumberFormatException e) {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
-                "Rule '"
-                    + context
-                    + "' expects integer parameter '"
-                    + key
-                    + "', got "
-                    + s,
+                "Rule '" + context + "' expects integer parameter '" + key + "', got " + s,
                 e);
           }
         }
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "Rule '" + context + "' expects integer parameter '" + key + "', got " + describeType(val));
+            "Rule '"
+                + context
+                + "' expects integer parameter '"
+                + key
+                + "', got "
+                + describeType(val));
       }
 
       private String describeType(Object value) {
