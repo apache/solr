@@ -1,4 +1,4 @@
-title: Update software.amazon.awssdk:* to v2.46.18 (branch_9x)
+title: Update software.amazon.awssdk:* to v2.46.18
 type: dependency_update
 authors:
 - name: solrbot

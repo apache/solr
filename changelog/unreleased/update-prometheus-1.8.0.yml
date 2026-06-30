@@ -1,4 +1,4 @@
-title: Update io.prometheus:prometheus* to v1.8.0 (branch_9x)
+title: Update io.prometheus:prometheus* to v1.8.0
 type: dependency_update
 authors:
 - name: solrbot

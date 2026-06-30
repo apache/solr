@@ -1,4 +1,4 @@
-title: Update org.slf4j:* to v2.0.18 (branch_9x)
+title: Update org.slf4j:* to v2.0.18
 type: dependency_update
 authors:
 - name: solrbot

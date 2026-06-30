@@ -1,4 +1,4 @@
-title: Update io.netty:netty* to v4.2.15.Final (branch_9x)
+title: Update io.netty:netty* to v4.2.15.Final
 type: dependency_update
 authors:
 - name: solrbot
