@@ -209,7 +209,13 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     int sigStart = header.lastIndexOf(' ');
 
     String data = header.substring(0, sigStart);
-    byte[] sig = Base64.getDecoder().decode(header.substring(sigStart + 1));
+    byte[] sig;
+    try {
+      sig = Base64.getDecoder().decode(header.substring(sigStart + 1));
+    } catch (IllegalArgumentException e) {
+      log.warn("Could not parse signature in SolrAuthV2 header as base64");
+      return null;
+    }
     PKIHeaderData rv = validateSignature(data, sig, key, false);
     if (rv == null) {
       log.warn("Failed to verify signature, trying after refreshing the key ");

@@ -1,0 +1,7 @@
+title: PKIAuthenticationPlugin now rejects a SolrAuthV2 header with a malformed signature using a 401 response, instead of returning a 500
+type: fixed
+authors:
+  - name: Jan Høydahl
+links:
+  - name: PR#4553
+    url: https://github.com/apache/solr/pull/4553
