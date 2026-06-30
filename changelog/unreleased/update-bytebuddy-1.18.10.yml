@@ -1,4 +1,4 @@
-title: Update net.bytebuddy:* to v1.18.10-jdk5 (branch_9x)
+title: Update net.bytebuddy:* to v1.18.10
 type: dependency_update
 authors:
 - name: solrbot
