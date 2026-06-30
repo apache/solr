@@ -35,6 +35,8 @@
 
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
+  <field name="vector_single" type="knn_vector" indexed="true" stored="true"/>
+  <field name="vector_multivalued" type="knn_vector" indexed="true" stored="true" multiValued="true"/>
 
   <!-- required to test updates nested inplaceUpdates -->
   <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false"/>
@@ -42,6 +44,7 @@
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
   <fieldType name="_nest_path_" class="solr.NestPathField" />
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" />
 
   <!-- Point Fields -->
   <fieldType name="int" class="solr.IntPointField"/>
