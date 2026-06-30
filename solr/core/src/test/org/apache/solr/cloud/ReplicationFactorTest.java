@@ -491,7 +491,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   }
 
   private int runAndGetAchievedRf(String collectionName, UpdateRequest up) throws Exception {
-    // This test may fail due to http proxy port manipulation, make sure we retry like sendDocsWithRetry/doDelete
+    // This test may fail due to http proxy port manipulation, make sure we retry like
+    // sendDocsWithRetry/doDelete
     final int maxRetries = 5;
     int numRetries = 0;
     while (true) {
