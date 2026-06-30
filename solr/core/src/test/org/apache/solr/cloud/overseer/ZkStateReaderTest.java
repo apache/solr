@@ -111,7 +111,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    fixture = setupTestFixture(getTestName(), -1);
+    fixture = setupTestFixture(getSaferTestName(), -1);
   }
 
   @Override
@@ -482,7 +482,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
   public void testForciblyRefreshAllClusterStateCompressed() throws Exception {
     fixture.close();
-    fixture = setupTestFixture(getTestName(), 0);
+    fixture = setupTestFixture(getSaferTestName(), 0);
     ZkStateWriter writer = fixture.writer;
     ZkStateReader reader = fixture.reader;
 

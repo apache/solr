@@ -352,7 +352,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
                 + "/admin/collections?action=CREATEALIAS"
                 + "&wt=json"
                 + "&name="
-                + getTestName()
+                + getSaferTestName()
                 + "&collections=collection1meta,collection2meta"
                 + "&router.field=evt_dt"
                 + "&router.name=time"
