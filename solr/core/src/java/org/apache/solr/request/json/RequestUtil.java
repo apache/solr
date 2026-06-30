@@ -254,6 +254,10 @@ public class RequestUtil {
                 SolrException.ErrorCode.BAD_REQUEST,
                 "Expected Map for 'queries', received " + queriesJsonObj);
           }
+        } else if ("json_queries".equals(key)) {
+          // passed through as a parsed object for use by SearchComponent.prepare() at subordinate
+          // nodes; not processed here
+          continue;
         } else if ("params".equals(key) || "facet".equals(key)) {
           // handled elsewhere
           continue;
