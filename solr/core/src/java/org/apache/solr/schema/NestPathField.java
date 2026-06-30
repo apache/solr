@@ -76,6 +76,15 @@ public class NestPathField extends SortableTextField {
           "Field " + field.getName() + " cannot be queried with a null.");
     }
 
+    if (externalVal.contains("\\")) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Field "
+              + field.getName()
+              + " query value contains backslashes ('\\'). "
+              + "For root document queries, pass the raw single slash '/' without escaping.");
+    }
+
     if (externalVal.isEmpty() || "/".equals(externalVal)) {
       return new BooleanQuery.Builder()
           .add(MatchAllDocsQuery.INSTANCE, BooleanClause.Occur.MUST)
