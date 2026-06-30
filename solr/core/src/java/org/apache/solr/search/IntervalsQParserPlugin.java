@@ -43,6 +43,7 @@ import org.apache.solr.schema.TextField;
  */
 public class IntervalsQParserPlugin extends QParserPlugin {
   public static final String NAME = "intervals";
+  private static final int DEFAULT_FUZZY_MAX_EXPANSIONS = Intervals.DEFAULT_MAX_EXPANSIONS;
 
   /** Local param that names the entry in {@code json_queries} to use. */
   public static final String JSON_QUERY_PARAM = "json_query";
@@ -187,7 +188,7 @@ public class IntervalsQParserPlugin extends QParserPlugin {
                 maxEdits,
                 prefixLength,
                 transpositions,
-                Intervals.DEFAULT_MAX_EXPANSIONS);
+                DEFAULT_FUZZY_MAX_EXPANSIONS);
         if (useField != null) {
           source = Intervals.fixField(useField, source);
         }
