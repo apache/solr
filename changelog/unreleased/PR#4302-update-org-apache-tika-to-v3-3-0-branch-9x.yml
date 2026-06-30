@@ -1,7 +1,0 @@
-title: Update org.apache.tika:* to v3.3.0 (branch_9x)
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#4302
-  url: https://github.com/apache/solr/pull/4302

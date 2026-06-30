@@ -19,6 +19,17 @@ apply plugin: 'java-library'
 
 description = 'GCS Backup Repository'
 
+configurations.all {
+    // Cloud Monitoring / OpenTelemetry metrics export is only wired up for the gRPC
+    // transport. Solr uses the HTTP transport (see GCSConfigParser), so these libs are
+    // never loaded. Exclude them everywhere (incl. test, via google-cloud-nio) to avoid
+    // shipping unused dependencies.
+    exclude group: 'com.google.cloud', module: 'google-cloud-monitoring'
+    exclude group: 'com.google.api.grpc', module: 'proto-google-cloud-monitoring-v3'
+    exclude group: 'com.google.cloud.opentelemetry'
+    exclude group: 'io.opentelemetry.contrib', module: 'opentelemetry-gcp-resources'
+}
+
 dependencies {
     api project(':solr:core')
     implementation project(':solr:solrj')

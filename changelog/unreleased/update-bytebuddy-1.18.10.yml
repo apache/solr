@@ -1,0 +1,7 @@
+title: Update net.bytebuddy:* to v1.18.10
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4384
+  url: https://github.com/apache/solr/pull/4384

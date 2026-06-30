@@ -2778,14 +2778,20 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   protected String getSaferTestName() {
-    // test names can hold additional info, like the test seed
-    // only take to first space
+    // test names can hold additional info, like the test seed:
+    //   "testFoo {seed=[...]}" (older runners) or "testFoo[seed=[...]]" (randomizedtesting 2.9+)
+    // keep only the method name, up to the first space or '['
     String testName = getTestName();
-    int index = testName.indexOf(' ');
-    if (index > 0) {
-      testName = testName.substring(0, index);
+    int index = testName.length();
+    int space = testName.indexOf(' ');
+    if (space > 0) {
+      index = space;
     }
-    return testName;
+    int bracket = testName.indexOf('[');
+    if (bracket > 0 && bracket < index) {
+      index = bracket;
+    }
+    return testName.substring(0, index);
   }
 
   @BeforeClass
