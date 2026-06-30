@@ -462,6 +462,7 @@ public class ResponseBuilder {
     cmd.setQuery(wrap(getQuery()))
         .setFilterList(getFilters())
         .setSort(getSortSpec().getSort())
+        .setSortSchemaFields(getSortSpec().getSchemaFields())
         .setOffset(getSortSpec().getOffset())
         .setLen(getSortSpec().getCount())
         .setFlags(getFieldFlags())

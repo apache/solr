@@ -80,9 +80,11 @@ public class XMLResponseParser extends ResponseParser {
     return "xml";
   }
 
+  private static final Set<String> CONTENT_TYPES = Set.of("application/xml");
+
   @Override
   public Set<String> getContentTypes() {
-    return Set.of(XML_CONTENT_TYPE);
+    return CONTENT_TYPES;
   }
 
   public NamedList<Object> processResponse(Reader in) {

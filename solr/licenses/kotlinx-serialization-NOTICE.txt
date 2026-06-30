@@ -1,0 +1,2 @@
+kotlinx.serialization
+Copyright 2017-2023 JetBrains s.r.o and respective authors and developers

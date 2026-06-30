@@ -41,7 +41,6 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -157,7 +156,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         builder
             .withDefaultCollection(collectionName)
             .sendUpdatesOnlyToShardLeaders()
-            .withHttpClient(((CloudJettySolrClient) cloudClient).getHttpClient())
+            .withHttpClient(cloudClient.getHttpClient())
             .build()) {
       StoppableIndexingThread thread =
           new StoppableIndexingThread(controlClient, client, "i1", true);

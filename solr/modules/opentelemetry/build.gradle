@@ -47,6 +47,8 @@ dependencies {
   compileOnly libs.apache.tomcat.annotationsapi
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj-jetty')
+  testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
   testImplementation libs.opentelemetry.sdk.trace
   testImplementation libs.opentelemetry.sdk.testing

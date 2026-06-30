@@ -259,7 +259,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
               () -> {
                 new UpdateRequest().deleteByQuery("*:*").process(aNewClient, COLLECTION);
               });
-      assertTrue(e.getMessage(), e.getMessage().contains("Authentication failed"));
+      assertEquals(401, e.code()); // Authentication failed
     } finally {
       aNewClient.close();
       cluster.stopJettySolrRunner(aNewJetty);

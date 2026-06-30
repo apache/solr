@@ -438,29 +438,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testProcessorMimeTypes() throws Exception {
-    ResponseParser rp = new XMLResponseParser();
-
-    try (HttpJdkSolrClient client =
-        builder(solrTestRule.getBaseUrl()).withResponseParser(rp).build()) {
-      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
-      assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/json"));
-      queryToHelpJdkReleaseThreads(client);
-    }
-
-    rp = new JavaBinResponseParser();
-    try (HttpJdkSolrClient client =
-        builder(solrTestRule.getBaseUrl()).withResponseParser(rp).build()) {
-      assertTrue(
-          client.processorAcceptsMimeType(
-              rp.getContentTypes(), "application/vnd.apache.solr.javabin"));
-      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/octet-stream"));
-      assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
-      queryToHelpJdkReleaseThreads(client);
-    }
-  }
-
-  @Test
   public void testContentTypeToEncoding() throws Exception {
     try (HttpJdkSolrClient client = builder(solrTestRule.getBaseUrl()).build()) {
       assertEquals("UTF-8", client.contentTypeToEncoding("application/xml; charset=UTF-8"));

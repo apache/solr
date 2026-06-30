@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.response.json;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.client.solrj.response.ResponseParser;
@@ -55,8 +54,10 @@ public class JsonMapResponseParser extends ResponseParser {
     return list;
   }
 
+  private static final Set<String> CONTENT_TYPES = Set.of("application/json");
+
   @Override
-  public Collection<String> getContentTypes() {
-    return Set.of("application/json");
+  public Set<String> getContentTypes() {
+    return CONTENT_TYPES;
   }
 }

@@ -16,11 +16,10 @@
  */
 
 plugins {
+  id 'java-library'
   alias(libs.plugins.swagger3.core)
   alias(libs.plugins.openapi.generator)
 }
-
-apply plugin: 'java-library'
 
 description = 'API - Interfaces and classes used to represent Solrs APIs'
 

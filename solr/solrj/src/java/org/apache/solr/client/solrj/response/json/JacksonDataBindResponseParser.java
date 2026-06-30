@@ -20,9 +20,8 @@ package org.apache.solr.client.solrj.response.json;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
@@ -47,9 +46,11 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
     return "json";
   }
 
+  private static final Set<String> CONTENT_TYPES = Set.of("application/json");
+
   @Override
-  public Collection<String> getContentTypes() {
-    return List.of("application/json");
+  public Set<String> getContentTypes() {
+    return CONTENT_TYPES;
   }
 
   // TODO it'd be nice if the ResponseParser could receive the mime type so it can parse

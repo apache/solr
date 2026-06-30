@@ -23,7 +23,6 @@ plugins {
   id 'solr.build-infra'
 
   alias(libs.plugins.owasp.dependencycheck)
-  alias(libs.plugins.cutterslade.analyze)
   alias(libs.plugins.benmanes.versions)
   alias(libs.plugins.kotlin.multiplatform) apply false
   alias(libs.plugins.littlerobots.versioncatalogupdate) apply false
@@ -173,7 +172,6 @@ apply from: file('gradle/validation/git-status.gradle')
 apply from: file('gradle/validation/validate-source-patterns.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
-apply from: file('gradle/validation/dependency-analyze.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')

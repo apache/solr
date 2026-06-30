@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.Locale;
+import java.util.Set;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -28,6 +30,23 @@ import org.apache.solr.common.util.NamedList;
  */
 public abstract class ResponseParser {
 
+  protected ResponseParser() {
+    assert validateContentTypes();
+  }
+
+  private boolean validateContentTypes() {
+    Collection<String> contentTypes = getContentTypes();
+    assert contentTypes == getContentTypes()
+        : getClass().getName() + ".getContentTypes() must return the same instance on every call";
+    for (String ct : contentTypes) {
+      assert !ct.contains(";") && ct.equals(ct.toLowerCase(Locale.ROOT))
+          : getClass().getName()
+              + ".getContentTypes() must return lowercase MIME types without semicolons, got: "
+              + ct;
+    }
+    return true;
+  }
+
   /** The writer type placed onto the request as the {@code wt} param. */
   public abstract String getWriterType(); // for example: wt=XML, JSON, etc
 
@@ -35,10 +54,16 @@ public abstract class ResponseParser {
       throws IOException;
 
   /**
-   * A well-behaved ResponseParser will return the content-types it supports.
+   * Returns the MIME types this parser supports. Return an empty set to disable. Implementations
+   * must:
    *
-   * @return the content-type values that this parser is capable of parsing. Never null. Empty means
-   *     no enforcement.
+   * <ul>
+   *   <li>Returns the same instance (same reference on every call).
+   *   <li>Use only lowercase MIME types without charset or other parameters (no semicolons)
+   *   <li>
+   * </ul>
+   *
+   * @return the MIME types that this parser is capable of parsing. Never null.
    */
-  public abstract Collection<String> getContentTypes();
+  public abstract Set<String> getContentTypes();
 }
