@@ -39,4 +39,21 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         req("q", "{!intervals json_query=myQuery}"),
         "//result[@numFound='0']");
   }
+
+  @Test
+  public void testIntervalsWithJsonQueriesPassThrough() throws Exception {
+    assertU(adoc("id", "2", "v_t", "foo bar"));
+    assertU(commit());
+
+    // json_queries is accepted as a top-level JSON DSL key and the json_query param names an entry;
+    // the parser still returns MatchNoDocsQuery (not yet implemented), so numFound must be 0
+    assertQ(
+        "intervals qparser with json_queries should return no docs",
+        req(
+            "q",
+            "{!intervals json_query=myQuery}",
+            "json",
+            "{json_queries:{myQuery:{term:{f:v_t,value:foo}}}}"),
+        "//result[@numFound='0']");
+  }
 }
