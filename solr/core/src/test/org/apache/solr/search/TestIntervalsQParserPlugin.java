@@ -41,32 +41,68 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testIntervalsTermMatchesDocument() throws Exception {
+  public void testIntervalsMatchRuleMatchesDocument() throws Exception {
     assertU(adoc("id", "10", "v_t", "foo bar"));
     assertU(adoc("id", "11", "v_t", "baz qux"));
     assertU(commit());
 
-    // {v_t: "foo"} produces IntervalQuery("v_t", Intervals.term("foo"))
+    // {v_t:{match:{query:"foo"}}} produces an IntervalQuery on v_t
     assertQ(
-        "intervals qparser with {field:term} should match documents containing the term",
-        req("q", "{!intervals json_query=myQuery}", "json", "{json_queries:{myQuery:{v_t:foo}}}"),
+        "intervals qparser with match rule should match documents containing the term",
+        req(
+            "q",
+            "{!intervals json_query=myQuery}",
+            "json",
+            "{json_queries:{myQuery:{v_t:{match:{query:foo}}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='10']");
   }
 
   @Test
-  public void testIntervalsNoMatchingTerm() throws Exception {
+  public void testIntervalsAllOfAnyOfNamedQuery() throws Exception {
+    assertU(adoc("id", "30", "title_t", "alpha beta gamma delta"));
+    assertU(adoc("id", "31", "title_t", "alpha beta epsilon delta"));
+    assertU(adoc("id", "32", "title_t", "alpha zeta gamma delta"));
+    assertU(commit());
+
+    assertQ(
+        "intervals qparser should support field -> all_of with nested any_of from a named json_query",
+        req(
+            "q",
+            "{!intervals json_query=second_query}",
+            "json",
+            "{json_queries:{"
+                + "second_query:{"
+                + "title_t:{"
+                + "all_of:{"
+                + "ordered:true,"
+                + "intervals:["
+                + "{match:{query:'alpha beta', max_gaps:0, ordered:true}},"
+                + "{any_of:{intervals:["
+                + "{match:{query:'gamma delta', max_gaps:0, ordered:true}},"
+                + "{match:{query:'epsilon delta', max_gaps:0, ordered:true}}"
+                + "]}}"
+                + "]"
+                + "}"
+                + "}"
+                + "}"
+                + "}}"),
+        "//result[@numFound='2']");
+  }
+
+  @Test
+  public void testIntervalsNoMatchingRule() throws Exception {
     assertU(adoc("id", "20", "v_t", "hello world"));
     assertU(commit());
 
-    // Term not present in any document
+    // Match rule text not present in any document
     assertQ(
-        "intervals qparser with non-matching term should return no docs",
+        "intervals qparser with non-matching rule should return no docs",
         req(
             "q",
             "{!intervals json_query=myQuery}",
             "json",
-            "{json_queries:{myQuery:{v_t:zzznomatch}}}"),
+            "{json_queries:{myQuery:{v_t:{match:{query:zzznomatch}}}}}"),
         "//result[@numFound='0']");
   }
 }
