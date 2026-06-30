@@ -98,7 +98,6 @@ kotlin {
             implementation(project.dependencies.platform(libs.ktor.bom))
             implementation(libs.ktor.client.auth)
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.cio)
             implementation(libs.ktor.client.contentNegotiation)
             implementation(libs.ktor.client.serialization.json)
             implementation(libs.squareup.okio)
@@ -114,8 +113,15 @@ kotlin {
             implementation(libs.ktor.client.mock)
         }
 
+        val wasmJsMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.js)
+            }
+        }
+
         val desktopMain by getting {
             dependencies {
+                implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.server.core)
                 implementation(libs.ktor.server.cio)
                 implementation(libs.ktor.server.htmlBuilder)

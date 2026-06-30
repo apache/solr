@@ -444,6 +444,7 @@ ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktor" }
 ktor-client-auth = { module = "io.ktor:ktor-client-auth" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio" }
 ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation" }
+ktor-client-js = { module = "io.ktor:ktor-client-js" }
 ktor-client-core = { module = "io.ktor:ktor-client-core" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock" }
 ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json" }
