@@ -27,8 +27,12 @@ import java.util.Set;
 /** Response from /node/system */
 public class NodeSystemResponse extends SolrJerseyResponse {
 
+  @JsonProperty public NodeSystemInfo nodeInfo;
+
   // TODO The typing here is kindof wonky - can I tighten 'Object' here to be NodeSystemResponse or
   // will Jackson choke on that?
+  // Or rather, change 'Object' to 'NodeSystemInfo', if Jackson can read it from the remote
+  // 'NodeSystemResponse'?
   public Map<String, Object> remoteNodeData;
 
   @JsonAnyGetter
@@ -41,30 +45,33 @@ public class NodeSystemResponse extends SolrJerseyResponse {
     remoteNodeData.put(field, value);
   }
 
-  @JsonProperty public String host;
-  @JsonProperty public String node;
-  @JsonProperty public String mode;
-  @JsonProperty public String zkHost;
+  /** wrapper around the node info */
+  public static class NodeSystemInfo {
+    @JsonProperty public String host;
+    @JsonProperty public String node;
+    @JsonProperty public String mode;
+    @JsonProperty public String zkHost;
 
-  @JsonProperty("solr_home")
-  public String solrHome;
+    @JsonProperty("solr_home")
+    public String solrHome;
 
-  @JsonProperty("core_root")
-  public String coreRoot;
+    @JsonProperty("core_root")
+    public String coreRoot;
 
-  @JsonProperty public String environment;
+    @JsonProperty public String environment;
 
-  @JsonProperty(value = "environment_label")
-  public String environmentLabel;
+    @JsonProperty(value = "environment_label")
+    public String environmentLabel;
 
-  @JsonProperty(value = "environment_color")
-  public String environmentColor;
+    @JsonProperty(value = "environment_color")
+    public String environmentColor;
 
-  @JsonProperty public Lucene lucene;
-  @JsonProperty public JVM jvm;
-  @JsonProperty public Security security;
-  @JsonProperty public GPU gpu;
-  @JsonProperty public Map<String, Object> system;
+    @JsonProperty public Lucene lucene;
+    @JsonProperty public JVM jvm;
+    @JsonProperty public Security security;
+    @JsonProperty public GPU gpu;
+    @JsonProperty public Map<String, Object> system;
+  }
 
   /** /node/system/security */
   public static class Security {
