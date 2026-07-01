@@ -2,7 +2,7 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 # To regenerate this file, run: ./gradlew :solr:modules:ltr:dependencies --write-locks
-com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.4=jarValidation,testCompileClasspath,testRuntimeClasspath
+com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.9.1=jarValidation,testCompileClasspath,testRuntimeClasspath
 com.carrotsearch:hppc:0.10.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.22=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-core:2.22.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
