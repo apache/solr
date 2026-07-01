@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -344,20 +345,15 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testIntervalsBackwardCompatFieldInJsonQuery() throws Exception {
+  public void testIntervalsLegacyFieldInJsonQueryThrows() throws Exception {
     assertU(adoc("id", "160", "v_ws", "bkc_alpha bkc_beta"));
-    assertU(adoc("id", "161", "v_ws", "bkc_gamma bkc_delta"));
     assertU(commit());
 
-    // Old format {field: rule_object} still works when df is absent
-    assertQ(
-        "backward-compatible {field: rule} format should still work when df is absent",
-        req(
-            "q",
-            "{!intervals json_query=q1}",
-            "json",
-            "{json_queries:{q1:{v_ws:{term:{value:bkc_alpha}}}}}"),
-        "//result[@numFound='1']",
-        "//doc/str[@name='id'][.='160']");
+    // Old {field: rule_object} format is no longer supported; missing df should throw
+    assertQEx(
+        "legacy {field: rule} format without df should throw BAD_REQUEST",
+        "requires a 'df' parameter",
+        req("q", "{!intervals json_query=q1}", "json", "{json_queries:{q1:{v_ws:{term:{value:bkc_alpha}}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 }
