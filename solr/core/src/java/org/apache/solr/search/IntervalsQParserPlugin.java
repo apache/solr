@@ -154,8 +154,8 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         String prefix = requireString(params, "prefix", "prefix");
         String useField = getOptionalString(params, "use_field", "prefix");
         String field = useField == null ? topField : useField;
-        Analyzer analyzer = resolveAnalyzer(params, field, "prefix");
-        String normalizedPrefix = normalizeMultiTerm(field, prefix, analyzer);
+Analyzer analyzer = params.get("analyzer") == null ? null : resolveAnalyzer(params, field, "prefix");
+String normalizedPrefix = normalizeMultiTerm(field, prefix, analyzer);
         IntervalsSource source = Intervals.prefix(new BytesRef(normalizedPrefix));
         if (useField != null) {
           source = Intervals.fixField(useField, source);
