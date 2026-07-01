@@ -419,9 +419,13 @@ public class EnumFieldType extends PrimitiveFieldType {
     fields.add(field);
     final long longValue = field.numericValue().longValue();
     if (sf.multiValued()) {
-      fields.add(new SortedNumericDocValuesField(sf.getName(), longValue));
+      fields.add(
+          DocValuesFieldUtil.createSortedNumericDocValuesField(
+              sf.getName(), longValue, sf.hasDocValuesSkipList()));
     } else {
-      fields.add(new NumericDocValuesField(sf.getName(), longValue));
+      fields.add(
+          DocValuesFieldUtil.createNumericDocValuesField(
+              sf.getName(), longValue, sf.hasDocValuesSkipList()));
     }
     return fields;
   }
