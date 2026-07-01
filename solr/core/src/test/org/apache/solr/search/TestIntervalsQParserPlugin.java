@@ -46,14 +46,14 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
     assertU(adoc("id", "11", "v_t", "baz qux"));
     assertU(commit());
 
-    // {v_t:{match:{query:"foo"}}} produces an IntervalQuery on v_t
+    // field specified via df local param; json_query is the rule object directly
     assertQ(
         "intervals qparser with match rule should match documents containing the term",
         req(
             "q",
-            "{!intervals json_query=myQuery}",
+            "{!intervals json_query=myQuery df=v_t}",
             "json",
-            "{json_queries:{myQuery:{v_t:{match:{query:foo}}}}}"),
+            "{json_queries:{myQuery:{match:{query:foo}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='10']");
   }
@@ -66,14 +66,13 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertQ(
-        "intervals qparser should support field -> all_of with nested any_of from a named json_query",
+        "intervals qparser should support all_of with nested any_of via df local param",
         req(
             "q",
-            "{!intervals json_query=second_query}",
+            "{!intervals json_query=second_query df=title_t}",
             "json",
             "{json_queries:{"
                 + "second_query:{"
-                + "title_t:{"
                 + "all_of:{"
                 + "ordered:true,"
                 + "intervals:["
@@ -85,7 +84,6 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
                 + "]"
                 + "}"
                 + "}"
-                + "}"
                 + "}}"),
         "//result[@numFound='2']");
   }
@@ -95,14 +93,14 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
     assertU(adoc("id", "20", "v_t", "hello world"));
     assertU(commit());
 
-    // Match rule text not present in any document
+    // Match rule text not present in any document; field via df local param
     assertQ(
         "intervals qparser with non-matching rule should return no docs",
         req(
             "q",
-            "{!intervals json_query=myQuery}",
+            "{!intervals json_query=myQuery df=v_t}",
             "json",
-            "{json_queries:{myQuery:{v_t:{match:{query:zzznomatch}}}}}"),
+            "{json_queries:{myQuery:{match:{query:zzznomatch}}}}"),
         "//result[@numFound='0']");
   }
 
@@ -116,9 +114,9 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "term rule should match documents containing the exact term",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
-            "{json_queries:{q1:{v_ws:{term:{value:trm_apple}}}}}"),
+            "{json_queries:{q1:{term:{value:trm_apple}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='40']");
   }
@@ -133,9 +131,9 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "phrase rule with terms array should match documents with exact phrase",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
-            "{json_queries:{q1:{v_ws:{phrase:{terms:[phrA_quick,phrA_brown,phrA_fox]}}}}}"),
+            "{json_queries:{q1:{phrase:{terms:[phrA_quick,phrA_brown,phrA_fox]}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='50']");
   }
@@ -150,10 +148,10 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "phrase rule with intervals array should match documents with the phrase in order",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
-            "{json_queries:{q1:{v_ws:{phrase:{intervals:"
-                + "[{term:{value:phrB_quick}},{term:{value:phrB_brown}},{term:{value:phrB_fox}}]}}}}}"),
+            "{json_queries:{q1:{phrase:{intervals:"
+                + "[{term:{value:phrB_quick}},{term:{value:phrB_brown}},{term:{value:phrB_fox}}]}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='52']");
   }
@@ -169,9 +167,9 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "regexp rule should match documents with terms matching the pattern",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
-            "{json_queries:{q1:{v_ws:{regexp:{pattern:'rx_ca.*'}}}}}"),
+            "{json_queries:{q1:{regexp:{pattern:'rx_ca.*'}}}}"),
         "//result[@numFound='2']");
   }
 
@@ -187,10 +185,10 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "range rule should match documents with terms in the given range",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
-            "{json_queries:{q1:{v_ws:{range:{lower_term:rng_bbbb,upper_term:rng_cccc,"
-                + "include_lower:true,include_upper:true}}}}}"),
+            "{json_queries:{q1:{range:{lower_term:rng_bbbb,upper_term:rng_cccc,"
+                + "include_lower:true,include_upper:true}}}}"),
         "//result[@numFound='2']",
         "//doc/str[@name='id'][.='71']",
         "//doc/str[@name='id'][.='72']");
@@ -207,10 +205,10 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "max_width rule should filter intervals by maximum width",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
-            "{json_queries:{q1:{v_ws:{max_width:{width:2,source:"
-                + "{all_of:{ordered:true,intervals:[{term:{value:mwd_alpha}},{term:{value:mwd_beta}}]}}}}}}}"),
+            "{json_queries:{q1:{max_width:{width:2,source:"
+                + "{all_of:{ordered:true,intervals:[{term:{value:mwd_alpha}},{term:{value:mwd_beta}}]}}}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='80']");
   }
@@ -226,9 +224,9 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "extend rule should extend intervals by specified positions",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
-            "{json_queries:{q1:{v_ws:{extend:{source:{term:{value:ext_three}},before:2,after:2}}}}}"),
+            "{json_queries:{q1:{extend:{source:{term:{value:ext_three}},before:2,after:2}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='90']");
   }
@@ -244,10 +242,10 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "unordered_no_overlaps rule should match documents containing both terms without overlap",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
-            "{json_queries:{q1:{v_ws:{unordered_no_overlaps:{intervals:"
-                + "[{term:{value:uno_foo}},{term:{value:uno_bar}}]}}}}}"),
+            "{json_queries:{q1:{unordered_no_overlaps:{intervals:"
+                + "[{term:{value:uno_foo}},{term:{value:uno_bar}}]}}}}"),
         "//result[@numFound='2']");
   }
 
@@ -262,10 +260,10 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "within rule should match documents where source appears within N positions of reference",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
-            "{json_queries:{q1:{v_ws:{within:{source:{term:{value:wth_alpha}},"
-                + "positions:1,reference:{term:{value:wth_beta}}}}}}}"),
+            "{json_queries:{q1:{within:{source:{term:{value:wth_alpha}},"
+                + "positions:1,reference:{term:{value:wth_beta}}}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='110']");
   }
@@ -282,10 +280,10 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "not_within rule should match documents where source is not within N positions of reference",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
-            "{json_queries:{q1:{v_ws:{not_within:{source:{term:{value:nwt_alpha}},"
-                + "positions:1,reference:{term:{value:nwt_beta}}}}}}}"),
+            "{json_queries:{q1:{not_within:{source:{term:{value:nwt_alpha}},"
+                + "positions:1,reference:{term:{value:nwt_beta}}}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='120']");
   }
@@ -303,10 +301,10 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "at_least rule should match documents containing at least N of the given sources",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
-            "{json_queries:{q1:{v_ws:{at_least:{min_should_match:2,intervals:"
-                + "[{term:{value:atl_alpha}},{term:{value:atl_beta}},{term:{value:atl_gamma}}]}}}}}"),
+            "{json_queries:{q1:{at_least:{min_should_match:2,intervals:"
+                + "[{term:{value:atl_alpha}},{term:{value:atl_beta}},{term:{value:atl_gamma}}]}}}}"),
         "//result[@numFound='2']");
   }
 
@@ -319,9 +317,47 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "no_intervals rule should match no documents",
         req(
             "q",
+            "{!intervals json_query=q1 df=v_ws}",
+            "json",
+            "{json_queries:{q1:{no_intervals:{reason:testing}}}}"),
+        "//result[@numFound='0']");
+  }
+
+  @Test
+  public void testIntervalsDfFallbackFromQueryParam() throws Exception {
+    assertU(adoc("id", "150", "v_ws", "dfp_alpha dfp_beta"));
+    assertU(adoc("id", "151", "v_ws", "dfp_gamma dfp_delta"));
+    assertU(commit());
+
+    // df supplied as a regular query param (not a local param) should be used as the field
+    assertQ(
+        "df query param (not local param) should be used as the field when df is absent in local params",
+        req(
+            "q",
+            "{!intervals json_query=q1}",
+            "df",
+            "v_ws",
+            "json",
+            "{json_queries:{q1:{term:{value:dfp_alpha}}}}"),
+        "//result[@numFound='1']",
+        "//doc/str[@name='id'][.='150']");
+  }
+
+  @Test
+  public void testIntervalsBackwardCompatFieldInJsonQuery() throws Exception {
+    assertU(adoc("id", "160", "v_ws", "bkc_alpha bkc_beta"));
+    assertU(adoc("id", "161", "v_ws", "bkc_gamma bkc_delta"));
+    assertU(commit());
+
+    // Old format {field: rule_object} still works when df is absent
+    assertQ(
+        "backward-compatible {field: rule} format should still work when df is absent",
+        req(
+            "q",
             "{!intervals json_query=q1}",
             "json",
-            "{json_queries:{q1:{v_ws:{no_intervals:{reason:testing}}}}}"),
-        "//result[@numFound='0']");
+            "{json_queries:{q1:{v_ws:{term:{value:bkc_alpha}}}}}"),
+        "//result[@numFound='1']",
+        "//doc/str[@name='id'][.='160']");
   }
 }
