@@ -69,7 +69,6 @@ dependencies {
     transitive = false // most things don't want or already have
   }
   implementation libs.opentelemetry.sdk.metrics // prometheus exporter needs
-  permitUnusedDeclared libs.opentelemetry.sdk.metrics
   implementation libs.prometheus.metrics.model
 
   implementation libs.jakarta.servlet.api

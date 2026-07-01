@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: The build now uses Gradle 9.6.0 (upgraded from 8.10).
+type: other
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18289
+    url: https://issues.apache.org/jira/browse/SOLR-18289

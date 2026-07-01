@@ -6,3 +6,6 @@ authors:
 links:
   - name: SOLR-17319
     url: https://issues.apache.org/jira/browse/SOLR-17319
+  - name: SOLR-18290
+    url: https://issues.apache.org/jira/browse/SOLR-18290
+
