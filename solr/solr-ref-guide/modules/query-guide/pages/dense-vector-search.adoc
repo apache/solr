@@ -126,8 +126,10 @@ Here's how `DenseVectorField` can be configured with the advanced hyperparameter
 +
 (advanced) Specifies the underlying knn algorithm to use
 +
-Accepted values: `hnsw`, `cagra_hnsw` (requires GPU acceleration setup).
-
+Accepted values: `hnsw`, `flat`, `cagra_hnsw` (requires GPU acceleration setup).
++
+The `flat` algorithm stores vectors without building an HNSW graph. This avoids the indexing overhead of graph construction, but does not support the `{!knn}` query parser. Use `vectorSimilarity()` function queries to score and rank documents by vector similarity. See <<Flat Vector Index>> for details.
++
 Please note that the `knnAlgorithm` accepted values may change in future releases.
 
 `vectorEncoding`::
@@ -835,6 +837,17 @@ The final ranked list of results will have the first pass score(main query `q`) 
 
 Details about using the ReRank Query Parser can be found in the xref:query-guide:query-re-ranking.adoc[Query Re-Ranking] section.
 ====
+
+
+== Flat Vector Index
+
+Setting `knnAlgorithm="flat"` stores vectors without building an HNSW graph, avoiding the indexing cost of graph construction.
+
+Flat fields do not support the `{!knn}`, `{!knn_text_to_vector}`, or `{!vectorSimilarity}` query parsers.
+Use `vectorSimilarity()` function queries to score and rank by similarity:
+
+[source]
+q={!func}vectorSimilarity(vector,[1.0, 2.0, 3.0, 4.0])&fl=id,score
 
 
 == Indexing Multi-Vectors for Late Interaction
