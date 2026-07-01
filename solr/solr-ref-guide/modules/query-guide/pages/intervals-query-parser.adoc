@@ -61,7 +61,7 @@ Each rule object contains exactly one key that identifies the rule type, mapped 
 
 === `match`
 
-Analyses query text and matches documents where the resulting tokens appear according to positional constraints.
+Analyzes query text and matches documents where the resulting tokens appear according to positional constraints.
 
 [%autowidth,frame=none]
 |===
@@ -85,7 +85,7 @@ Analyses query text and matches documents where the resulting tokens appear acco
 |`use_field`
 |No
 |—
-|Analyse using a different field's analyzer and match against that field.
+|Analyze using a different field's analyzer and match against that field.
 
 |`analyzer`
 |No
