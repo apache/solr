@@ -82,7 +82,10 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     expectThrows(AzureBlobException.class, () -> client.length(dirPath));
   }
 
-  /** {@code listDir()} returns immediate children only — both files and sub-directory markers. */
+  /**
+   * {@code listDir()} returns immediate children only — both files and sub-directories, with
+   * sub-directory entries returned as bare names (no trailing delimiter).
+   */
   @Test
   public void testListDirectory() throws Exception {
     String dirPath = "list-directory-test/";
@@ -92,8 +95,8 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     String[] files = client.listDir(dirPath);
     assertEquals("Directory should be empty initially", 0, files.length);
 
-    String[] fileNames = {"file1.txt", "file2.txt", "subdir/"};
-    for (String fileName : fileNames) {
+    String[] toCreate = {"file1.txt", "file2.txt", "subdir/"};
+    for (String fileName : toCreate) {
       String fullPath = dirPath + fileName;
       if (fileName.endsWith("/")) {
         client.createDirectory(fullPath);
@@ -103,17 +106,19 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     }
 
     files = client.listDir(dirPath);
-    assertEquals("Should list all files and directories", fileNames.length, files.length);
+    assertEquals("Should list all files and directories", toCreate.length, files.length);
 
-    for (String fileName : fileNames) {
+    // Directory children are listed without a trailing slash.
+    String[] expectedNames = {"file1.txt", "file2.txt", "subdir"};
+    for (String expected : expectedNames) {
       boolean found = false;
       for (String listedFile : files) {
-        if (fileName.equals(listedFile)) {
+        if (expected.equals(listedFile)) {
           found = true;
           break;
         }
       }
-      assertTrue("Should find file: " + fileName, found);
+      assertTrue("Should find entry: " + expected, found);
     }
   }
 
@@ -347,12 +352,12 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     String[] files = client.listDir(dirPath);
     for (String file : files) {
       String fullPath = dirPath + file;
-      if (file.endsWith("/")) {
-        // It's a directory
-        allFiles.add(fullPath);
-        listAllRecursive(fullPath, allFiles);
+      // listDir returns bare names, so probe the type to decide whether to recurse.
+      if (client.isDirectory(fullPath)) {
+        String dirFullPath = fullPath + "/";
+        allFiles.add(dirFullPath);
+        listAllRecursive(dirFullPath, allFiles);
       } else {
-        // It's a file
         allFiles.add(fullPath);
       }
     }

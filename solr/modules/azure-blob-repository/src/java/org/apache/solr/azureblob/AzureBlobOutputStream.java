@@ -38,8 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 class AzureBlobOutputStream extends OutputStream {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  static final int BLOCK_SIZE = 4 * 1024 * 1024;
+  private static final int BLOCK_SIZE = 4 * 1024 * 1024;
 
   private final BlobClient blobClient;
   private final String blobPath;
@@ -220,7 +219,7 @@ class AzureBlobOutputStream extends OutputStream {
 
       try {
         BlockBlobClient blockBlobClient = blobClient.getBlockBlobClient();
-        blockBlobClient.commitBlockList(blockIds);
+        blockBlobClient.commitBlockList(blockIds, true);
       } catch (BlobStorageException e) {
         throw new IOException(
             "Failed to commit block list", AzureBlobStorageClient.handleBlobException(e));

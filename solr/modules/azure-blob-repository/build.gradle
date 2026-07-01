@@ -65,7 +65,7 @@ dependencies {
   testImplementation libs.commonsio.commonsio
   
   testImplementation libs.azure.core.http.okhttp
-  testImplementation libs.squareup.okhttp3.okhttp
+  testImplementation libs.squareup.okhttp3.okhttp.jvm
 
   // Testcontainers for Azurite integration testing
   testImplementation libs.testcontainers

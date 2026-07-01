@@ -848,6 +848,13 @@ An example configuration, placed in `solr.xml`, can be seen below:
 </backup>
 ----
 
+[NOTE]
+====
+To avoid keeping secrets (connection strings, account keys, SAS tokens) in `solr.xml`, any of the options below may instead be supplied as a Java system property (or environment variable) of the same name.
+A value provided that way takes precedence over the one in `solr.xml`, so the sensitive element can be omitted from the file entirely.
+For example, set `-Dazure.blob.connection.string=...` on the Solr command line and leave only `azure.blob.container.name` in `solr.xml`.
+====
+
 AzureBlobBackupRepository accepts the following options (in `solr.xml`) for configuration:
 
 `azure.blob.container.name`::

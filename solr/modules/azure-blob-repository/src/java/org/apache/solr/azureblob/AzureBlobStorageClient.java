@@ -222,6 +222,8 @@ public class AzureBlobStorageClient {
                 int slashIndex = s.indexOf(BLOB_FILE_PATH_DELIMITER);
                 return slashIndex == -1 || slashIndex == s.length() - 1;
               })
+          .map(s -> s.endsWith(BLOB_FILE_PATH_DELIMITER) ? s.substring(0, s.length() - 1) : s)
+          .distinct()
           .toArray(String[]::new);
     } catch (BlobStorageException e) {
       throw handleBlobException(e);
@@ -579,7 +581,7 @@ public class AzureBlobStorageClient {
         : "";
   }
 
-  String sanitizedPath(String path) throws AzureBlobException {
+  String sanitizedPath(String path) {
     String sanitizedPath = path.trim();
     while (sanitizedPath.startsWith(BLOB_FILE_PATH_DELIMITER)) {
       sanitizedPath = sanitizedPath.substring(1).trim();
@@ -621,12 +623,14 @@ public class AzureBlobStorageClient {
             e.getErrorCode(),
             e.getMessage());
 
-    log.error(errMessage);
-
     if (e.getStatusCode() == HTTP_NOT_FOUND) {
+      if (log.isDebugEnabled()) {
+        log.debug(errMessage);
+      }
       return new AzureBlobNotFoundException(errMessage, e);
-    } else {
-      return new AzureBlobException(errMessage, e);
     }
+
+    log.error(errMessage);
+    return new AzureBlobException(errMessage, e);
   }
 }
