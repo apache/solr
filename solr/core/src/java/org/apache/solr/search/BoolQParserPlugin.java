@@ -70,10 +70,11 @@ public class BoolQParserPlugin extends QParserPlugin {
       @Override
       protected Map<QParser, BooleanClause.Occur> clauses() throws SyntaxError {
         IdentityHashMap<QParser, BooleanClause.Occur> clauses = new IdentityHashMap<>();
-        addQueries(clauses, localParams.getParams("must"), BooleanClause.Occur.MUST);
-        addQueries(clauses, localParams.getParams("must_not"), BooleanClause.Occur.MUST_NOT);
-        addQueries(clauses, localParams.getParams("filter"), BooleanClause.Occur.FILTER);
-        addQueries(clauses, localParams.getParams("should"), BooleanClause.Occur.SHOULD);
+        SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
+        addQueries(clauses, solrParams.getParams("must"), BooleanClause.Occur.MUST);
+        addQueries(clauses, solrParams.getParams("must_not"), BooleanClause.Occur.MUST_NOT);
+        addQueries(clauses, solrParams.getParams("filter"), BooleanClause.Occur.FILTER);
+        addQueries(clauses, solrParams.getParams("should"), BooleanClause.Occur.SHOULD);
         return clauses;
       }
 
