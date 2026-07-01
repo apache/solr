@@ -64,14 +64,12 @@ public class DistributedQParserTest extends SolrCloudTestCase {
   @Test
   public void testDismaxQParser() throws Exception {
     QueryResponse response =
-        new QueryRequest(
-                params("q", "quick", "defType", "dismax", "qf", "subject", "fl", "id"))
+        new QueryRequest(params("q", "quick", "defType", "dismax", "qf", "subject", "fl", "id"))
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(2, response.getResults().getNumFound());
 
     response =
-        new QueryRequest(
-                params("q", "brown dog", "defType", "dismax", "qf", "subject", "fl", "id"))
+        new QueryRequest(params("q", "brown dog", "defType", "dismax", "qf", "subject", "fl", "id"))
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(3, response.getResults().getNumFound());
   }
@@ -79,14 +77,12 @@ public class DistributedQParserTest extends SolrCloudTestCase {
   @Test
   public void testEdismaxQParser() throws Exception {
     QueryResponse response =
-        new QueryRequest(
-                params("q", "quick", "defType", "edismax", "qf", "subject", "fl", "id"))
+        new QueryRequest(params("q", "quick", "defType", "edismax", "qf", "subject", "fl", "id"))
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(2, response.getResults().getNumFound());
 
     response =
-        new QueryRequest(
-                params("q", "brown dog", "defType", "edismax", "qf", "subject", "fl", "id"))
+        new QueryRequest(params("q", "brown dog", "defType", "edismax", "qf", "subject", "fl", "id"))
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(3, response.getResults().getNumFound());
   }
