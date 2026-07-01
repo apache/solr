@@ -42,6 +42,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.index.DocValuesSkipIndexType;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.Term;
@@ -1148,6 +1150,26 @@ public abstract class FieldType extends FieldProperties {
     if (field.hasDocValues()) {
       checkSupportsDocValues();
     }
+    if (field.docValuesSkipIndexType() != DocValuesSkipIndexType.NONE) {
+      if (!field.hasDocValues()) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Field " + field.getName() + " cannot use skipList=true without docValues=true");
+      }
+      final DocValuesType docValuesType = getDocValuesTypeForSkipIndex(field);
+      if (docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Field "
+                + field.getName()
+                + " of type "
+                + this
+                + " cannot use skipList=true because it is currently only supported on PointField"
+                + "-based numeric and date fields; docValues type "
+                + docValuesType
+                + " is unsupported");
+      }
+    }
     if (field.isLarge() && field.multiValued()) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Field type " + this + " is 'large'; can't support multiValued");
@@ -1165,6 +1187,16 @@ public abstract class FieldType extends FieldProperties {
   protected void checkSupportsDocValues() {
     throw new SolrException(
         ErrorCode.SERVER_ERROR, "Field type " + this + " does not support doc values");
+  }
+
+  /**
+   * Returns the concrete docValues type used for the field when indexing. Field types that support
+   * {@code skipList=true} must override this method so schema validation can reject unsupported
+   * docValues shapes during core load. The default implementation means the field type does not
+   * currently support {@code skipList=true}.
+   */
+  protected DocValuesType getDocValuesTypeForSkipIndex(SchemaField field) {
+    return DocValuesType.NONE;
   }
 
   /**
