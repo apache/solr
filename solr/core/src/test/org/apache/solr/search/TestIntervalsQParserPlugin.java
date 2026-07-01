@@ -364,8 +364,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testIntervalsNestedAlternativeOutperformsXmlSpans() throws Exception {
     assertU(adoc("id", "170", "v_t", "cmplorem cmpthe cmpdomain cmpis cmpipsum"));
-    assertU(
-        adoc("id", "171", "v_t", "cmplorem cmpthe cmpdomain cmpname cmpsystem cmpis cmpipsum"));
+    assertU(adoc("id", "171", "v_t", "cmplorem cmpthe cmpdomain cmpname cmpsystem cmpis cmpipsum"));
     assertU(
         adoc("id", "172", "v_t", "cmplorem cmpthe cmpdomain cmpblame cmpsystem cmpis cmpipsum"));
     assertU(commit());

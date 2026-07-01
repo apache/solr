@@ -104,7 +104,7 @@ Analyzes query text and matches documents where the resulting tokens appear acco
 |`filter`
 |No
 |—
-|A <<_filter_operators,filter operator>> to apply after matching.
+|A <<filter-operators,filter operator>> to apply after matching.
 |===
 
 Example:
@@ -383,7 +383,7 @@ Matches documents where all supplied intervals match in the same field, optional
 |`filter`
 |No
 |—
-|A <<_filter_operators,filter operator>> to apply after matching.
+|A <<filter-operators,filter operator>> to apply after matching.
 |===
 
 Example — ordered phrase with a gap:
@@ -418,7 +418,7 @@ Matches documents where at least one of the supplied intervals matches.
 |`filter`
 |No
 |—
-|A <<_filter_operators,filter operator>> to apply after matching.
+|A <<filter-operators,filter operator>> to apply after matching.
 |===
 
 Example:
