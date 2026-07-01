@@ -426,15 +426,17 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
-ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
-ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
-ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
-ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
-ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
-ktor-server-htmlBuilder = { module = "io.ktor:ktor-server-html-builder", version.ref = "ktor" }
+ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktor" }
+ktor-client-auth = { module = "io.ktor:ktor-client-auth" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio" }
+ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation" }
+ktor-client-core = { module = "io.ktor:ktor-client-core" }
+ktor-client-js = { module = "io.ktor:ktor-client-js" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock" }
+ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json" }
+ktor-server-cio = { module = "io.ktor:ktor-server-cio" }
+ktor-server-core = { module = "io.ktor:ktor-server-core" }
+ktor-server-htmlBuilder = { module = "io.ktor:ktor-server-html-builder" }
 langchain4j-bom = { module = "dev.langchain4j:langchain4j-bom", version.ref = "langchain4j-bom" }
 langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j-core" }
