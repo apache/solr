@@ -1,0 +1,7 @@
+title: Update AWS SDK to v2.46.17
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4579
+  url: https://github.com/apache/solr/pull/4579
