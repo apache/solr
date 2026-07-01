@@ -18,6 +18,7 @@ package org.apache.solr.azureblob;
 
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 
 public class AzureBlobBackupRepositoryConfig {
 
@@ -54,6 +55,12 @@ public class AzureBlobBackupRepositoryConfig {
   }
 
   public AzureBlobStorageClient buildClient() {
+    if (StrUtils.isNullOrEmpty(containerName)) {
+      throw new IllegalArgumentException(
+          "Missing required configuration '"
+              + CONTAINER_NAME
+              + "' for the Azure Blob backup repository");
+    }
     return new AzureBlobStorageClient(
         containerName,
         connectionString,

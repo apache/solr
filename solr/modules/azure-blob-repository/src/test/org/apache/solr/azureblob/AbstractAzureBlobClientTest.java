@@ -37,8 +37,6 @@ import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.utility.DockerImageName;
 
 /** Abstract class for tests with Azure Blob Storage emulator. */
 @ThreadLeakFilters(
@@ -50,10 +48,7 @@ import org.testcontainers.utility.DockerImageName;
     })
 public class AbstractAzureBlobClientTest extends SolrTestCase {
 
-  private static final String AZURITE_IMAGE = "mcr.microsoft.com/azure-storage/azurite:3.35.0";
-  private static final int BLOB_SERVICE_PORT = 10000;
-
-  private static GenericContainer<?> azuriteContainer;
+  private static AzuriteTestContainer azurite;
   private static OkHttpClient sharedOkHttpClient;
   private static String connectionString;
 
@@ -62,15 +57,10 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
 
   protected AzureBlobStorageClient client;
 
-  @SuppressWarnings("resource")
   @BeforeClass
   public static void setUpClass() {
     try {
-      azuriteContainer =
-          new GenericContainer<>(DockerImageName.parse(AZURITE_IMAGE))
-              .withExposedPorts(BLOB_SERVICE_PORT)
-              .withCommand("azurite-blob", "--blobHost", "0.0.0.0", "--skipApiVersionCheck");
-      azuriteContainer.start();
+      azurite = AzuriteTestContainer.start();
       sharedOkHttpClient = new OkHttpClient.Builder().build();
     } catch (Throwable t) {
       Assume.assumeNoException("Docker/Testcontainers not available; skipping Azure tests", t);
@@ -81,20 +71,17 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
   public void setUpClient() throws Exception {
     setAzureTestCredentials();
 
-    String blobServiceUrl = getBlobServiceUrl();
-    connectionString =
-        "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint="
-            + blobServiceUrl
-            + "/devstoreaccount1;";
+    URI blobServiceUri = new URI(getBlobServiceUrl());
+    connectionString = azurite.connectionString();
 
     proxy = new SocketProxy();
-    proxy.open(new URI(blobServiceUrl));
+    proxy.open(blobServiceUri);
 
     HttpClient httpClient = new OkHttpAsyncHttpClientBuilder(sharedOkHttpClient).build();
 
+    // Route the client through the proxy so tests can simulate connection loss.
     String proxiedConn =
-        connectionString.replace(
-            ":" + azuriteContainer.getMappedPort(BLOB_SERVICE_PORT), ":" + proxy.getListenPort());
+        connectionString.replace(":" + blobServiceUri.getPort(), ":" + proxy.getListenPort());
 
     BlobServiceClient blobServiceClient =
         new BlobServiceClientBuilder()
@@ -137,13 +124,9 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
 
   @AfterClass
   public static void afterAll() {
-    if (azuriteContainer != null) {
-      try {
-        azuriteContainer.stop();
-        azuriteContainer.close();
-      } catch (Throwable ignored) {
-      }
-      azuriteContainer = null;
+    if (azurite != null) {
+      azurite.stop();
+      azurite = null;
     }
     sharedOkHttpClient = null;
   }
@@ -165,10 +148,7 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
   }
 
   String getBlobServiceUrl() {
-    return "http://"
-        + azuriteContainer.getHost()
-        + ":"
-        + azuriteContainer.getMappedPort(BLOB_SERVICE_PORT);
+    return azurite.blobEndpoint();
   }
 
   public static class OkHttpThreadLeakFilterTest implements ThreadFilter {

@@ -53,7 +53,6 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String BLOB_SCHEME = "blob";
-  private static final int CHUNK_SIZE = 16 * 1024 * 1024;
   private static final int COPY_BUFFER_SIZE = 8192;
 
   private AzureBlobStorageClient client;
@@ -121,6 +120,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       throw new IllegalArgumentException("URI must begin with 'blob:' scheme");
     }
 
+    // If paths contain unnecessary '/' separators, they'll be removed by URI.normalize()
     String path = baseUri + "/" + String.join("/", pathComponents);
     return URI.create(path).normalize();
   }
@@ -170,30 +170,26 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
     Objects.requireNonNull(path, "cannot delete with a null URI");
     Objects.requireNonNull(files, "cannot delete with a null files collection");
 
-    String basePath = getBlobPath(path);
-
-    if (!client.isDirectory(basePath)) {
-      int lastSlash = basePath.lastIndexOf('/');
-      basePath = lastSlash >= 0 ? basePath.substring(0, lastSlash) : "";
-    }
-
-    final String prefix;
-    if (basePath.isEmpty() || basePath.endsWith("/")) {
-      prefix = basePath;
-    } else {
-      prefix = basePath + "/";
-    }
-
     Set<String> fullPaths =
         files.stream()
-            .map(file -> prefix + file.replaceFirst("^/+", ""))
+            .map(file -> resolve(path, file))
+            .map(this::getBlobPath)
             .collect(Collectors.toSet());
 
     if (log.isDebugEnabled()) {
       log.debug("Delete files '{}'", fullPaths);
     }
 
-    client.delete(fullPaths);
+    try {
+      client.delete(fullPaths);
+    } catch (AzureBlobNotFoundException e) {
+      // Deleting files that are already absent is a no-op at the repository level, matching the
+      // lenient behavior of the local-filesystem and S3 repositories. Any present files in the
+      // batch were still removed before this was thrown.
+      if (log.isDebugEnabled()) {
+        log.debug("Some files requested for deletion were already absent", e);
+      }
+    }
   }
 
   @Override
@@ -352,7 +348,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
 
     try (InputStream inputStream = client.pullStream(blobPath);
         IndexOutput indexOutput = dest.createOutput(destFileName, IOContext.DEFAULT)) {
-      byte[] buffer = new byte[CHUNK_SIZE];
+      byte[] buffer = new byte[COPY_BUFFER_SIZE];
       int len;
       while ((len = inputStream.read(buffer)) != -1) {
         indexOutput.writeBytes(buffer, 0, len);
@@ -377,7 +373,10 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
     if (!BLOB_SCHEME.equalsIgnoreCase(uri.getScheme())) {
       throw new IllegalArgumentException("URI must begin with 'blob:' scheme");
     }
-    return uri.getPath();
+    // Depending on the scheme, the first path element may be parsed as the URI host (e.g.
+    // "blob://dir/file" -> host="dir"). Fold it back into the path, mirroring S3BackupRepository.
+    String host = uri.getHost();
+    return host == null ? uri.getPath() : host + uri.getPath();
   }
 
   private void writeFooter(long checksum, OutputStream outputStream) throws IOException {

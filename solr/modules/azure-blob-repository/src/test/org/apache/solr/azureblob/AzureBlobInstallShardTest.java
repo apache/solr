@@ -16,222 +16,86 @@
  */
 package org.apache.solr.azureblob;
 
-import java.nio.charset.StandardCharsets;
-import org.junit.Test;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
+import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
+import org.apache.solr.cloud.api.collections.AbstractInstallShardTest;
+import org.apache.solr.handler.admin.api.InstallShardData;
+import org.junit.AfterClass;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 
-public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
+/**
+ * Tests validating that the 'Install Shard API' works when used with {@link
+ * AzureBlobBackupRepository}, backed by an Azurite emulator.
+ *
+ * @see org.apache.solr.cloud.api.collections.AbstractInstallShardTest
+ * @see InstallShardData
+ */
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({"SimpleText"})
+@ThreadLeakLingering(linger = 10)
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      AbstractAzureBlobClientTest.OkHttpThreadLeakFilterTest.class,
+    })
+public class AzureBlobInstallShardTest extends AbstractInstallShardTest {
 
-  @Test
-  public void testInstallShard() throws Exception {
-    String shardPath = "install-shard-test/";
+  private static final String CONTAINER_NAME = "install-shard-test";
 
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "index/");
-    client.createDirectory(shardPath + "conf/");
+  private static AzuriteTestContainer azurite;
 
-    pushContent(shardPath + "index/segments_1", "Shard index segments");
-    pushContent(shardPath + "index/_0.cfs", "Shard index file");
-    pushContent(shardPath + "conf/solrconfig.xml", "Shard configuration");
-    pushContent(shardPath + "conf/schema.xml", "Shard schema");
+  private static final String BACKUP_REPOSITORY_XML =
+      "  <backup>\n"
+          + "    <repository name=\"trackingBackupRepository\" class=\"org.apache.solr.core.TrackingBackupRepository\"> \n"
+          + "      <str name=\"delegateRepoName\">azure</str>\n"
+          + "    </repository>\n"
+          + "    <repository name=\"errorBackupRepository\" class=\""
+          + AbstractIncrementalBackupTest.ErrorThrowingTrackingBackupRepository.class.getName()
+          + "\"> \n"
+          + "      <str name=\"delegateRepoName\">azure</str>\n"
+          + "      <str name=\"hostPort\">${hostPort:8983}</str>\n"
+          + "    </repository>\n"
+          + "    <repository name=\"azure\" class=\"org.apache.solr.azureblob.AzureBlobBackupRepository\"> \n"
+          + "      <str name=\"azure.blob.container.name\">CONTAINER</str>\n"
+          + "      <str name=\"azure.blob.connection.string\">CONNECTION_STRING</str>\n"
+          + "    </repository>\n"
+          + "  </backup>\n";
 
-    assertTrue("Shard directory should exist", client.pathExists(shardPath));
-    assertTrue("Index directory should exist", client.pathExists(shardPath + "index/"));
-    assertTrue("Conf directory should exist", client.pathExists(shardPath + "conf/"));
-    assertTrue("Segments file should exist", client.pathExists(shardPath + "index/segments_1"));
-    assertTrue("Index file should exist", client.pathExists(shardPath + "index/_0.cfs"));
-    assertTrue("Config file should exist", client.pathExists(shardPath + "conf/solrconfig.xml"));
-    assertTrue("Schema file should exist", client.pathExists(shardPath + "conf/schema.xml"));
+  private static final String SOLR_XML =
+      AbstractInstallShardTest.defaultSolrXmlTextWithBackupRepository(BACKUP_REPOSITORY_XML);
+
+  @BeforeClass
+  public static void setupClass() throws Exception {
+    try {
+      azurite = AzuriteTestContainer.start();
+    } catch (Throwable t) {
+      Assume.assumeNoException("Docker/Testcontainers not available; skipping Azure tests", t);
+    }
+    azurite.createContainerIfMissing(CONTAINER_NAME);
+
+    configureCluster(2) // nodes
+        .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
+        .withSolrXml(
+            SOLR_XML
+                .replace("CONTAINER", CONTAINER_NAME)
+                .replace("CONNECTION_STRING", azurite.connectionString()))
+        .configure();
+
+    bootstrapBackupRepositoryData("/");
   }
 
-  @Test
-  public void testInstallShardWithMultipleIndexFiles() throws Exception {
-    String shardPath = "multi-index-shard-test/";
-    String[] indexFiles = {"segments_1", "_0.cfs", "_0.cfe", "_0.si", "_1.cfs", "_1.cfe", "_1.si"};
-
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "index/");
-
-    for (String indexFile : indexFiles) {
-      pushContent(shardPath + "index/" + indexFile, "Index file content: " + indexFile);
+  @AfterClass
+  public static void tearDownClass() {
+    if (azurite != null) {
+      azurite.stop();
+      azurite = null;
     }
-
-    for (String indexFile : indexFiles) {
-      assertTrue(
-          "Index file should exist: " + indexFile,
-          client.pathExists(shardPath + "index/" + indexFile));
-    }
-  }
-
-  @Test
-  public void testInstallShardWithDataFiles() throws Exception {
-    String shardPath = "data-shard-test/";
-    String[] dataFiles = {
-      "tlog.0000000000000000001", "tlog.0000000000000000002", "tlog.0000000000000000003"
-    };
-
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "data/");
-
-    for (String dataFile : dataFiles) {
-      pushContent(shardPath + "data/" + dataFile, "Transaction log: " + dataFile);
-    }
-
-    for (String dataFile : dataFiles) {
-      assertTrue(
-          "Data file should exist: " + dataFile, client.pathExists(shardPath + "data/" + dataFile));
-    }
-  }
-
-  @Test
-  public void testInstallShardWithConfiguration() throws Exception {
-    String shardPath = "config-shard-test/";
-    String solrConfig =
-        "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
-            + "<config>\n"
-            + "  <luceneMatchVersion>LATEST</luceneMatchVersion>\n"
-            + "  <directoryFactory class=\"solr.NRTCachingDirectoryFactory\"/>\n"
-            + "</config>";
-
-    String schema =
-        "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
-            + "<schema name=\"test\" version=\"1.6\">\n"
-            + "  <field name=\"id\" type=\"string\" indexed=\"true\" stored=\"true\" required=\"true\" multiValued=\"false\" />\n"
-            + "</schema>";
-
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "conf/");
-
-    pushContent(shardPath + "conf/solrconfig.xml", solrConfig);
-    pushContent(shardPath + "conf/schema.xml", schema);
-
-    assertTrue("Solr config should exist", client.pathExists(shardPath + "conf/solrconfig.xml"));
-    assertTrue("Schema should exist", client.pathExists(shardPath + "conf/schema.xml"));
-
-    try (var input = client.pullStream(shardPath + "conf/solrconfig.xml")) {
-      byte[] buffer = new byte[1024];
-      int bytesRead = input.read(buffer);
-      String readContent = new String(buffer, 0, bytesRead, StandardCharsets.UTF_8);
-      assertTrue(
-          "Solr config should contain expected content",
-          readContent.contains("luceneMatchVersion"));
-    }
-  }
-
-  @Test
-  public void testInstallShardWithLargeIndex() throws Exception {
-    String shardPath = "large-index-shard-test/";
-    StringBuilder largeContent = new StringBuilder();
-    for (int i = 0; i < 50000; i++) {
-      largeContent.append("Index data line ").append(i).append("\n");
-    }
-
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "index/");
-
-    pushContent(shardPath + "index/large-index.cfs", largeContent.toString());
-
-    assertTrue(
-        "Large index file should exist", client.pathExists(shardPath + "index/large-index.cfs"));
-    assertEquals(
-        "Large index file length should match",
-        largeContent.length(),
-        client.length(shardPath + "index/large-index.cfs"));
-  }
-
-  @Test
-  public void testInstallShardWithBinaryIndex() throws Exception {
-    String shardPath = "binary-index-shard-test/";
-    byte[] binaryData = new byte[2048];
-    for (int i = 0; i < binaryData.length; i++) {
-      binaryData[i] = (byte) (i % 256);
-    }
-
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "index/");
-
-    pushContent(shardPath + "index/binary-index.cfs", binaryData);
-
-    assertTrue(
-        "Binary index file should exist", client.pathExists(shardPath + "index/binary-index.cfs"));
-    assertEquals(
-        "Binary index file length should match",
-        binaryData.length,
-        client.length(shardPath + "index/binary-index.cfs"));
-  }
-
-  @Test
-  public void testInstallShardWithNestedStructure() throws Exception {
-    String shardPath = "nested-shard-test/";
-
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "index/");
-    client.createDirectory(shardPath + "conf/");
-    client.createDirectory(shardPath + "data/");
-    client.createDirectory(shardPath + "logs/");
-
-    pushContent(shardPath + "index/segments_1", "Segments file");
-    pushContent(shardPath + "conf/solrconfig.xml", "Config file");
-    pushContent(shardPath + "data/tlog.1", "Transaction log");
-    pushContent(shardPath + "logs/solr.log", "Log file");
-
-    assertTrue("Root shard should exist", client.pathExists(shardPath));
-    assertTrue("Index directory should exist", client.pathExists(shardPath + "index/"));
-    assertTrue("Conf directory should exist", client.pathExists(shardPath + "conf/"));
-    assertTrue("Data directory should exist", client.pathExists(shardPath + "data/"));
-    assertTrue("Logs directory should exist", client.pathExists(shardPath + "logs/"));
-    assertTrue("Segments file should exist", client.pathExists(shardPath + "index/segments_1"));
-    assertTrue("Config file should exist", client.pathExists(shardPath + "conf/solrconfig.xml"));
-    assertTrue("Transaction log should exist", client.pathExists(shardPath + "data/tlog.1"));
-    assertTrue("Log file should exist", client.pathExists(shardPath + "logs/solr.log"));
-  }
-
-  @Test
-  public void testInstallShardWithMetadata() throws Exception {
-    String shardPath = "metadata-shard-test/";
-    String metadata =
-        "{\n"
-            + "  \"shardId\": \"shard1\",\n"
-            + "  \"coreName\": \"test-core\",\n"
-            + "  \"version\": \"1.0\",\n"
-            + "  \"timestamp\": \"2023-01-01T00:00:00Z\"\n"
-            + "}";
-
-    client.createDirectory(shardPath);
-
-    pushContent(shardPath + "shard-metadata.json", metadata);
-    pushContent(shardPath + "index/segments_1", "Index segments");
-
-    assertTrue("Metadata file should exist", client.pathExists(shardPath + "shard-metadata.json"));
-    assertTrue("Index file should exist", client.pathExists(shardPath + "index/segments_1"));
-
-    try (var input = client.pullStream(shardPath + "shard-metadata.json")) {
-      byte[] buffer = new byte[1024];
-      int bytesRead = input.read(buffer);
-      String readContent = new String(buffer, 0, bytesRead, StandardCharsets.UTF_8);
-      assertTrue("Metadata should contain shard ID", readContent.contains("shard1"));
-      assertTrue("Metadata should contain core name", readContent.contains("test-core"));
-    }
-  }
-
-  @Test
-  public void testInstallShardCleanup() throws Exception {
-    String shardPath = "cleanup-shard-test/";
-
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "index/");
-    client.createDirectory(shardPath + "conf/");
-
-    pushContent(shardPath + "index/segments_1", "Index segments");
-    pushContent(shardPath + "conf/solrconfig.xml", "Config file");
-
-    assertTrue("Shard should exist", client.pathExists(shardPath));
-
-    client.deleteDirectory(shardPath);
-
-    assertFalse("Shard should not exist after cleanup", client.pathExists(shardPath));
-    assertFalse(
-        "Index directory should not exist after cleanup", client.pathExists(shardPath + "index/"));
-    assertFalse(
-        "Conf directory should not exist after cleanup", client.pathExists(shardPath + "conf/"));
   }
 }
