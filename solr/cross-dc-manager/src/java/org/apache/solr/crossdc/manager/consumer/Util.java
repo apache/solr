@@ -19,7 +19,6 @@ package org.apache.solr.crossdc.manager.consumer;
 import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -89,7 +88,8 @@ public class Util {
           for (TopicPartition topicPartition : topicPartitions) {
             if (topicPartition.topic().equals(topic)) {
               long endOffset = consumer.position(topicPartition);
-              long committedOffset = consumer.committed(Set.of(topicPartition)).get(topicPartition).offset();
+              long committedOffset =
+                  consumer.committed(Set.of(topicPartition)).get(topicPartition).offset();
               long updatesInQueue = endOffset - committedOffset;
 
               log.info("Topic: {}", topic);
