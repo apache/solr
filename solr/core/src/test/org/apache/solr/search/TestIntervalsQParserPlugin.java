@@ -353,7 +353,11 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
     assertQEx(
         "legacy {field: rule} format without df should throw BAD_REQUEST",
         "requires a 'df' parameter",
-        req("q", "{!intervals json_query=q1}", "json", "{json_queries:{q1:{v_ws:{term:{value:bkc_alpha}}}}}"),
+        req(
+            "q",
+            "{!intervals json_query=q1}",
+            "json",
+            "{json_queries:{q1:{v_ws:{term:{value:bkc_alpha}}}}}"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 }
