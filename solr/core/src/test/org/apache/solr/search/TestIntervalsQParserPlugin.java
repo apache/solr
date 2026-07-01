@@ -349,13 +349,15 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
     assertU(adoc("id", "160", "v_ws", "bkc_alpha bkc_beta"));
     assertU(commit());
 
-    // Old {field: rule_object} format is no longer supported; missing df should throw
+    // Old {field: rule_object} format is no longer supported: even with a valid df, the field
+    // name is mistaken for an (unsupported) rule name since rule objects must be
+    // {rule_name: {...}}, not {field_name: {...}}.
     assertQEx(
-        "legacy {field: rule} format without df should throw BAD_REQUEST",
-        "requires a 'df' parameter",
+        "legacy {field: rule} format should throw BAD_REQUEST for an unrecognized rule name",
+        "Unsupported intervals rule: v_ws",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals json_query=q1 df=v_ws}",
             "json",
             "{json_queries:{q1:{v_ws:{term:{value:bkc_alpha}}}}}"),
         SolrException.ErrorCode.BAD_REQUEST);
@@ -363,28 +365,32 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void testIntervalsNestedAlternativeOutperformsXmlSpans() throws Exception {
-    assertU(adoc("id", "170", "v_t", "cmplorem cmpthe cmpdomain cmpis cmpipsum"));
-    assertU(adoc("id", "171", "v_t", "cmplorem cmpthe cmpdomain cmpname cmpsystem cmpis cmpipsum"));
+    // v_ws (text_ws) is a plain whitespace-tokenized field with no stemming/synonym/word-delimiter
+    // filters, so the literal terms used in the raw SpanTerm/term rules below match the indexed
+    // tokens exactly.
+    assertU(adoc("id", "170", "v_ws", "cmplorem cmpthe cmpdomain cmpis cmpipsum"));
     assertU(
-        adoc("id", "172", "v_t", "cmplorem cmpthe cmpdomain cmpblame cmpsystem cmpis cmpipsum"));
+        adoc("id", "171", "v_ws", "cmplorem cmpthe cmpdomain cmpname cmpsystem cmpis cmpipsum"));
+    assertU(
+        adoc("id", "172", "v_ws", "cmplorem cmpthe cmpdomain cmpblame cmpsystem cmpis cmpipsum"));
     assertU(commit());
 
     assertQ(
         "xmlparser SpanNear with nested SpanOr/SpanNear misses one nested match",
         req(
             "q",
-            "{!xmlparser df=v_t}"
-                + "<SpanNear slop=\"0\" inOrder=\"true\" fieldName=\"v_t\">"
-                + "<SpanTerm fieldName=\"v_t\">cmpthe</SpanTerm>"
+            "{!xmlparser df=v_ws}"
+                + "<SpanNear slop=\"0\" inOrder=\"true\" fieldName=\"v_ws\">"
+                + "<SpanTerm fieldName=\"v_ws\">cmpthe</SpanTerm>"
                 + "<SpanOr>"
-                + "<SpanTerm fieldName=\"v_t\">cmpdomain</SpanTerm>"
+                + "<SpanTerm fieldName=\"v_ws\">cmpdomain</SpanTerm>"
                 + "<SpanNear slop=\"0\" inOrder=\"true\">"
-                + "<SpanTerm fieldName=\"v_t\">cmpdomain</SpanTerm>"
-                + "<SpanTerm fieldName=\"v_t\">cmpname</SpanTerm>"
-                + "<SpanTerm fieldName=\"v_t\">cmpsystem</SpanTerm>"
+                + "<SpanTerm fieldName=\"v_ws\">cmpdomain</SpanTerm>"
+                + "<SpanTerm fieldName=\"v_ws\">cmpname</SpanTerm>"
+                + "<SpanTerm fieldName=\"v_ws\">cmpsystem</SpanTerm>"
                 + "</SpanNear>"
                 + "</SpanOr>"
-                + "<SpanTerm fieldName=\"v_t\">cmpis</SpanTerm>"
+                + "<SpanTerm fieldName=\"v_ws\">cmpis</SpanTerm>"
                 + "</SpanNear>"),
         "//result[@numFound='1']");
 
@@ -392,9 +398,12 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "intervals handles the same nested alternative and finds both valid matches",
         req(
             "q",
-            "{!intervals json_query=cmpq df=v_t}",
+            "{!intervals json_query=cmpq df=v_ws}",
             "json",
-            "{json_queries:{cmpq:{all_of:{ordered:true,intervals:["
+            // max_gaps:0 mirrors the xmlparser query's slop="0": the whole sequence must be
+            // contiguous, so doc 172 (where cmpblame/cmpsystem separate cmpdomain from cmpis)
+            // is correctly excluded even though it contains "cmpdomain" in isolation.
+            "{json_queries:{cmpq:{all_of:{ordered:true,max_gaps:0,intervals:["
                 + "{term:{value:cmpthe}},"
                 + "{any_of:{intervals:["
                 + "{term:{value:cmpdomain}},"
