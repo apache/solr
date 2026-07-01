@@ -21,13 +21,9 @@ import static org.hamcrest.core.Is.is;
 import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.core.AbstractBadConfigTestBase;
-import org.junit.Before;
 import org.junit.Test;
 
 public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBase {
-  @Before
-  public void init() {}
-
   @Test
   public void fieldTypeDefinition_invalidBitSize_shouldThrowException() throws Exception {
     assertConfigs(
@@ -159,5 +155,13 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     } finally {
       deleteCore();
     }
+  }
+
+  @Test
+  public void fieldDefinition_flatAlgorithm_shouldThrowException() throws Exception {
+    assertConfigs(
+        "solrconfig-basic.xml",
+        "bad-schema-densevector-flat-scalarQuantized.xml",
+        "knnAlgorithm 'flat' is not supported for ScalarQuantizedDenseVectorField");
   }
 }

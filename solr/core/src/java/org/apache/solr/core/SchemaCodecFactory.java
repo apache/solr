@@ -129,7 +129,8 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
             if (fieldType instanceof DenseVectorField) {
               DenseVectorField vectorField = (DenseVectorField) fieldType;
               final String knnAlgorithm = vectorField.getKnnAlgorithm();
-              if (!DenseVectorField.HNSW_ALGORITHM.equals(knnAlgorithm)) {
+              if (!DenseVectorField.HNSW_ALGORITHM.equals(knnAlgorithm)
+                  && !DenseVectorField.FLAT_ALGORITHM.equals(knnAlgorithm)) {
                 throw new SolrException(
                     ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm is not supported");
               }

@@ -45,6 +45,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.Solr101FlatVectorFormat;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
@@ -66,6 +67,7 @@ import org.slf4j.LoggerFactory;
 public class DenseVectorField extends FloatPointField {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String HNSW_ALGORITHM = "hnsw";
+  public static final String FLAT_ALGORITHM = "flat";
   public static final String DEFAULT_KNN_ALGORITHM = HNSW_ALGORITHM;
   static final String KNN_VECTOR_DIMENSION = "vectorDimension";
   static final String KNN_ALGORITHM = "knnAlgorithm";
@@ -344,7 +346,11 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public KnnVectorsFormat buildKnnVectorsFormat() {
-    return new Lucene99HnswVectorsFormat(hnswMaxConn, hnswBeamWidth);
+    if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
+      return new Solr101FlatVectorFormat();
+    } else {
+      return new Lucene99HnswVectorsFormat(hnswMaxConn, hnswBeamWidth);
+    }
   }
 
   @Override
@@ -368,6 +374,13 @@ public class DenseVectorField extends FloatPointField {
 
   public Query getKnnVectorQuery(
       String fieldName, String vectorToSearch, int topK, Query filterQuery) {
+
+    if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "KNN vector queries are not supported for fields using knnAlgorithm=\"flat\". "
+              + "Use vectorSimilarity() function queries instead.");
+    }
 
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
