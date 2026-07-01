@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queries.intervals.IntervalQuery;
 import org.apache.lucene.queries.intervals.Intervals;
@@ -40,44 +39,13 @@ import org.apache.solr.schema.TextField;
  * {@code {!intervals json_query=foobar df=title}}.
  *
  * <p>The {@code json_query} local param names an entry in the {@code json_queries} map (passed via
- * the JSON DSL). The format of the named query is detected automatically:
- *
- * <ul>
- *   <li><b>New format</b>: the top-level key is a rule name (e.g., {@code match}, {@code all_of}).
- *       The target field is read from the {@code df} local param, falling back to the {@code df}
- *       query param. Example: {@code {all_of: {...}}} with {@code df=title}.
- *   <li><b>Legacy format</b>: the top-level key is a field name. Example: {@code {title: {all_of:
- *       {...}}}}.
- * </ul>
+ * the JSON DSL). The top-level key of the named query must be a rule name (e.g., {@code match},
+ * {@code all_of}). The target field is read from the {@code df} local param, falling back to the
+ * {@code df} query param. Example: {@code {all_of: {...}}} with {@code df=title}.
  */
 public class IntervalsQParserPlugin extends QParserPlugin {
   public static final String NAME = "intervals";
   private static final int DEFAULT_FUZZY_MAX_EXPANSIONS = Intervals.DEFAULT_MAX_EXPANSIONS;
-
-  /**
-   * The set of known interval rule names. Used to detect whether a json_query entry is in the new
-   * field-via-{@code df} format (top-level key is a rule name) or the legacy {@code {field_name:
-   * rule_object}} format.
-   */
-  private static final Set<String> RULE_NAMES =
-      Set.of(
-          "match",
-          "prefix",
-          "wildcard",
-          "fuzzy",
-          "all_of",
-          "any_of",
-          "term",
-          "phrase",
-          "regexp",
-          "range",
-          "max_width",
-          "extend",
-          "unordered_no_overlaps",
-          "not_within",
-          "within",
-          "at_least",
-          "no_intervals");
 
   /** Local param that names the entry in {@code json_queries} to use. */
   public static final String JSON_QUERY_PARAM = "json_query";
@@ -114,41 +82,14 @@ public class IntervalsQParserPlugin extends QParserPlugin {
 
         Map<String, Object> queryDefMap = asStringObjectMap(queryDef, "json query definition");
 
-        String field;
-        Map<String, Object> fieldRule;
-        if (queryDefMap.size() == 1
-            && RULE_NAMES.contains(queryDefMap.entrySet().iterator().next().getKey())) {
-          // New format: the top-level key is a rule name, so the json_query value is the rule
-          // object directly. The target field must be supplied via the df local param or the df
-          // query param.
-          field = getParam(CommonParams.DF);
-          if (field == null || field.isEmpty()) {
-            throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST,
-                "json_query '"
-                    + jsonQueryName
-                    + "' is in field-free format but no 'df' parameter was provided");
-          }
-          fieldRule = queryDefMap;
-        } else {
-          // Legacy format: json_query value is {field_name: rule_object}.
-          if (queryDefMap.size() != 1) {
-            throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST,
-                "Expected exactly one {field: intervals_rule} entry in json_query '"
-                    + jsonQueryName
-                    + "', got "
-                    + queryDefMap.size());
-          }
-          Map.Entry<String, Object> entry = queryDefMap.entrySet().iterator().next();
-          field = entry.getKey();
-          fieldRule =
-              asStringObjectMap(
-                  entry.getValue(),
-                  "intervals query for field '" + field + "' in '" + jsonQueryName + "'");
+        String field = getParam(CommonParams.DF);
+        if (field == null || field.isEmpty()) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "json_query '" + jsonQueryName + "' requires a 'df' parameter to specify the field");
         }
 
-        IntervalsSource source = parseRuleObject(fieldRule, field);
+        IntervalsSource source = parseRuleObject(queryDefMap, field);
         return new IntervalQuery(field, source);
       }
 

@@ -46,31 +46,6 @@ q={!intervals json_query=myQuery df=title}
 }
 ----
 
-=== Field embedded in the query (legacy)
-
-For backward compatibility, the named entry may wrap the rule object in a single-key map whose key is the field name.
-In this case the `df` parameter is not required.
-
-[source,text]
-----
-q={!intervals json_query=myQuery}
-----
-
-[source,json]
-----
-{
-  "json_queries": {
-    "myQuery": {
-      "title": {
-        "match": { "query": "apache solr" }
-      }
-    }
-  }
-}
-----
-
-The parser detects the format automatically: if the top-level key of the named entry is a known rule name (e.g., `match`, `all_of`, `term`), the `df` format is used; otherwise the field is taken from the top-level key.
-
 == Parameters
 
 `json_query`::
@@ -90,8 +65,7 @@ Names an entry in the `json_queries` map that defines the interval query to exec
 |===
 +
 The field to run the interval query against.
-Required when the named `json_queries` entry uses the field-free format where the top-level key is a rule name.
-May be specified as a local param inside `{! }` or as a regular query param.
+Required; may be specified as a local param inside `{! }` or as a regular query param.
 
 == Interval Rules
 
