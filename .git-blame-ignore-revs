@@ -35,3 +35,6 @@ c99af207c761ec34812ef1cc3054eb2804b7448b
 
 # Gradle reformat PR #4037
 92792f735615c1f628da6cf7fa408f29ca1f7485
+
+# SOLR-18296 [google java formatter applied]
+71bb2cd3f8404460d09d2de449fdff2cc24266c1
