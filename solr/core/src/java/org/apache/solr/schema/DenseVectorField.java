@@ -592,12 +592,13 @@ public class DenseVectorField extends FloatPointField {
 
   private Query getSeededQuery(Query knnQuery, Query seed) {
     return switch (knnQuery) {
-      case SolrKnnFloatVectorQuery knnFloatQuery -> SeededKnnVectorQuery.fromFloatQuery(
-          knnFloatQuery, seed);
-      case SolrKnnByteVectorQuery knnByteQuery -> SeededKnnVectorQuery.fromByteQuery(
-          knnByteQuery, seed);
-      default -> throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Invalid type of knn query");
+      case SolrKnnFloatVectorQuery knnFloatQuery ->
+          SeededKnnVectorQuery.fromFloatQuery(knnFloatQuery, seed);
+      case SolrKnnByteVectorQuery knnByteQuery ->
+          SeededKnnVectorQuery.fromByteQuery(knnByteQuery, seed);
+      default ->
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, "Invalid type of knn query");
     };
   }
 
@@ -606,24 +607,30 @@ public class DenseVectorField extends FloatPointField {
         (earlyTermination.getSaturationThreshold() != null
             && earlyTermination.getPatience() != null);
     return switch (knnQuery) {
-      case SolrKnnFloatVectorQuery knnFloatQuery -> useExplicitParams
-          ? PatienceKnnVectorQuery.fromFloatQuery(
-              knnFloatQuery,
-              earlyTermination.getSaturationThreshold(),
-              earlyTermination.getPatience())
-          : PatienceKnnVectorQuery.fromFloatQuery(knnFloatQuery);
-      case SolrKnnByteVectorQuery knnByteQuery -> useExplicitParams
-          ? PatienceKnnVectorQuery.fromByteQuery(
-              knnByteQuery,
-              earlyTermination.getSaturationThreshold(),
-              earlyTermination.getPatience())
-          : PatienceKnnVectorQuery.fromByteQuery(knnByteQuery);
-      case SeededKnnVectorQuery seedQuery -> useExplicitParams
-          ? PatienceKnnVectorQuery.fromSeededQuery(
-              seedQuery, earlyTermination.getSaturationThreshold(), earlyTermination.getPatience())
-          : PatienceKnnVectorQuery.fromSeededQuery(seedQuery);
-      default -> throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Invalid type of knn query");
+      case SolrKnnFloatVectorQuery knnFloatQuery ->
+          useExplicitParams
+              ? PatienceKnnVectorQuery.fromFloatQuery(
+                  knnFloatQuery,
+                  earlyTermination.getSaturationThreshold(),
+                  earlyTermination.getPatience())
+              : PatienceKnnVectorQuery.fromFloatQuery(knnFloatQuery);
+      case SolrKnnByteVectorQuery knnByteQuery ->
+          useExplicitParams
+              ? PatienceKnnVectorQuery.fromByteQuery(
+                  knnByteQuery,
+                  earlyTermination.getSaturationThreshold(),
+                  earlyTermination.getPatience())
+              : PatienceKnnVectorQuery.fromByteQuery(knnByteQuery);
+      case SeededKnnVectorQuery seedQuery ->
+          useExplicitParams
+              ? PatienceKnnVectorQuery.fromSeededQuery(
+                  seedQuery,
+                  earlyTermination.getSaturationThreshold(),
+                  earlyTermination.getPatience())
+              : PatienceKnnVectorQuery.fromSeededQuery(seedQuery);
+      default ->
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, "Invalid type of knn query");
     };
   }
 }
