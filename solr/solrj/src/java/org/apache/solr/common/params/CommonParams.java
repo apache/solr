@@ -36,12 +36,13 @@ public interface CommonParams {
   String TZ = "TZ";
 
   /**
-   * the Request Handler (formerly known as the Query Type) - which Request Handler should handle
-   * the request.
+   * the Request Handler (formerly known as the Query Type) to route to as seen in solrconfig.xml.
    *
-   * @deprecated route requests by path instead, not using this parameter
+   * <p>Note: in a standard request, the handler is the last path component of the URL, not this
+   * parameter. This parameter is used for special cases when there is no path like a warming query
+   * or streaming expressions or some other places.
    */
-  @Deprecated String QT = "qt";
+  String QT = "qt";
 
   /** the response writer type - the format of the response */
   String WT = "wt";
