@@ -32,7 +32,7 @@ The named entry in `json_queries` is then the rule object directly, with no fiel
 q={!intervals json_query=myQuery df=title}
 ----
 
-[source,json]
+[source,text]
 ----
 json={
   "json_queries": {
@@ -724,7 +724,7 @@ Find documents where the `title` field contains the phrase "apache solr" followe
 q={!intervals json_query=titleQuery df=title}
 ----
 
-[source,json]
+[source,text]
 ----
 json={
   "json_queries": {
