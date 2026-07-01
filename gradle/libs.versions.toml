@@ -52,6 +52,7 @@ asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
 asciidoctor-tabs = "1.0.0-beta.6"
 azagniotov-langdetect = "12.5.2"
+azure-sdk-bom = "1.3.6"
 # @keep bats-assert (node) version used in packaging
 bats-assert = "2.0.0"
 # @keep bats-core (node) version used in packaging
@@ -297,6 +298,13 @@ apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", versio
 # @keep transitive dependency for version alignment
 apiguardian-api = { module = "org.apiguardian:apiguardian-api", version.ref = "apiguardian" }
 azagniotov-langdetect = { module = "io.github.azagniotov:language-detection", version.ref = "azagniotov-langdetect" }
+azure-core = { module = "com.azure:azure-core" }
+azure-core-http-okhttp = { module = "com.azure:azure-core-http-okhttp" }
+azure-identity = { module = "com.azure:azure-identity" }
+azure-sdk-bom = { module = "com.azure:azure-sdk-bom", version.ref = "azure-sdk-bom" }
+azure-storage-blob = { module = "com.azure:azure-storage-blob" }
+azure-storage-blob-batch = { module = "com.azure:azure-storage-blob-batch" }
+azure-storage-common = { module = "com.azure:azure-storage-common" }
 bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
 benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
@@ -502,6 +510,8 @@ ow2-asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "ow2-asm" 
 ow2-asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "ow2-asm" }
 # @keep transitive dependency for version alignment
 perfmark-api = { module = "io.perfmark:perfmark-api", version.ref = "perfmark" }
+# Version managed by azure-sdk-bom
+projectreactor-core = { module = "io.projectreactor:reactor-core" }
 prometheus-metrics-expositionformats = { module = "io.prometheus:prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
 prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus-metrics" }
 quicktheories-quicktheories = { module = "org.quicktheories:quicktheories", version.ref = "quicktheories" }
