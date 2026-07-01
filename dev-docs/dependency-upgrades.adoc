@@ -76,25 +76,11 @@ every couple of months, a monthly cadence keeps the number of open dependency PR
 wants to be on the very latest right before a release can temporarily switch to a more frequent schedule (e.g.
 `["* * * * 0"]` for weekly) by editing `renovate.json`.
 
-To further cut down on the number of tiny PRs, upgrades are *grouped*. The groups are derived from how the libraries
-are actually wired together in the build (shared BOMs, shared version keys, and functional coupling between modules),
-so that artifacts which must stay version-compatible always land in the same PR:
-
-* *Admin UI* - the Kotlin-Multiplatform / Compose stack in `solr/ui` (compose, androidx, kotlin(x), decompose,
-  essenty, mvikotlin, ktor, kotlin-logging); the Compose compiler plugin is version-locked to the Kotlin release.
-* *Web server stack* - Jetty, the Jakarta EE APIs, and Jersey (JAX-RS) with its HK2 DI, wired together via
-  `jersey-container-jetty-http` in `solr/core`.
-* *gRPC and Netty* - gRPC with Netty (its transport) and protobuf; shared by both the OTel OTLP exporter and the GCS client.
-* *Telemetry* - OpenTelemetry plus the Prometheus metrics libraries it exports to.
-* *Google Cloud* - the GCS client stack (cloud/api/auth + BOM), kept separate from the gRPC transport it consumes.
-* *Jackson & Woodstox*, *Logging* (Log4j + SLF4J + Disruptor), *ZooKeeper & Curator*, *Calcite*,
-  *Apache HttpComponents*, *AWS SDK*, *OkHttp & Okio*, and *GitHub Actions*.
-* Everything else that does not belong to a family has its *minor and patch* bumps bundled into two catch-all PRs:
-  "all non-major dependencies" and "all non-major test dependencies". This is the bulk of the churn reduction.
-* *Major* version bumps are never grouped into the catch-all buckets - each major update gets its own PR so it can
-  be reviewed and merged (or skipped) individually, since majors tend to conflict and need more scrutiny. Renovate
-  also splits a major bump of any grouped family into its own "... (major)" PR.
-* Lucene follows the Lucene release and jetty *major* bumps are done manually, so both are left out of the bot.
+To further cut down on the number of tiny PRs, upgrades are *grouped*. There are a handful of logical groups for
+libraries that must stay version-compatible (e.g. Admin UI, Web server stack, Logging), and then two large
+catch-all groups - "all non-major dependencies" and "all non-major test dependencies" - that bundle the *minor and
+patch* bumps of everything else. *Major* bumps are never grouped; each gets its own PR for individual review. See
+`renovate.json` for the exact group definitions.
 
 If an upgrade is decided, simply merge (and backport) the PR. To skip an upgrade, close the PR. If a PR is left open,
 it will be re-used and auto updated whenever a newer patch- or minor version gets available. Thus, one can reduce
