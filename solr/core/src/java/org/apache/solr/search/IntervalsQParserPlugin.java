@@ -116,6 +116,17 @@ public class IntervalsQParserPlugin extends QParserPlugin {
           case "fuzzy" -> parseFuzzyRule(ruleParams, topField);
           case "all_of" -> parseAllOfRule(ruleParams, topField);
           case "any_of" -> parseAnyOfRule(ruleParams, topField);
+          case "term" -> parseTermRule(ruleParams, topField);
+          case "phrase" -> parsePhraseRule(ruleParams, topField);
+          case "regexp" -> parseRegexpRule(ruleParams, topField);
+          case "range" -> parseRangeRule(ruleParams, topField);
+          case "max_width" -> parseMaxWidthRule(ruleParams, topField);
+          case "extend" -> parseExtendRule(ruleParams, topField);
+          case "unordered_no_overlaps" -> parseUnorderedNoOverlapsRule(ruleParams, topField);
+          case "not_within" -> parseNotWithinRule(ruleParams, topField);
+          case "within" -> parseWithinRule(ruleParams, topField);
+          case "at_least" -> parseAtLeastRule(ruleParams, topField);
+          case "no_intervals" -> parseNoIntervalsRule(ruleParams);
           default -> throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST, "Unsupported intervals rule: " + ruleName);
         };
@@ -214,6 +225,155 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         List<IntervalsSource> intervals = parseIntervalsArray(params, topField, "any_of");
         IntervalsSource source = Intervals.or(intervals);
         return applyFilter(source, params.get("filter"), topField);
+      }
+
+      private IntervalsSource parseTermRule(Map<String, Object> params, String topField) {
+        String value = requireString(params, "value", "term");
+        String useField = getOptionalString(params, "use_field", "term");
+        IntervalsSource source = Intervals.term(value);
+        if (useField != null) {
+          source = Intervals.fixField(useField, source);
+        }
+        return source;
+      }
+
+      private IntervalsSource parsePhraseRule(Map<String, Object> params, String topField) {
+        Object termsObj = params.get("terms");
+        Object intervalsObj = params.get("intervals");
+        if (termsObj == null && intervalsObj == null) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Rule 'phrase' requires either 'terms' (string array) or 'intervals' (rule array)");
+        }
+        if (termsObj != null) {
+          if (!(termsObj instanceof List<?>)) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Rule 'phrase' requires 'terms' to be an array of strings");
+          }
+          List<?> rawTerms = (List<?>) termsObj;
+          String[] terms = new String[rawTerms.size()];
+          for (int i = 0; i < rawTerms.size(); i++) {
+            Object t = rawTerms.get(i);
+            if (!(t instanceof String)) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "Rule 'phrase' requires all 'terms' elements to be strings, got "
+                      + describeType(t));
+            }
+            terms[i] = (String) t;
+          }
+          return Intervals.phrase(terms);
+        } else {
+          List<IntervalsSource> intervals = parseIntervalsArray(params, topField, "phrase");
+          return Intervals.phrase(intervals.toArray(IntervalsSource[]::new));
+        }
+      }
+
+      private IntervalsSource parseRegexpRule(Map<String, Object> params, String topField) {
+        String pattern = requireString(params, "pattern", "regexp");
+        String useField = getOptionalString(params, "use_field", "regexp");
+        int maxExpansions =
+            getInt(params, "max_expansions", Intervals.DEFAULT_MAX_EXPANSIONS, "regexp");
+        IntervalsSource source = Intervals.regexp(new BytesRef(pattern), maxExpansions);
+        if (useField != null) {
+          source = Intervals.fixField(useField, source);
+        }
+        return source;
+      }
+
+      private IntervalsSource parseRangeRule(Map<String, Object> params, String topField) {
+        String lowerTermStr = getOptionalString(params, "lower_term", "range");
+        String upperTermStr = getOptionalString(params, "upper_term", "range");
+        boolean includeLower = getBoolean(params, "include_lower", true, "range");
+        boolean includeUpper = getBoolean(params, "include_upper", false, "range");
+        int maxExpansions =
+            getInt(params, "max_expansions", Intervals.DEFAULT_MAX_EXPANSIONS, "range");
+        BytesRef lowerTerm = lowerTermStr == null ? null : new BytesRef(lowerTermStr);
+        BytesRef upperTerm = upperTermStr == null ? null : new BytesRef(upperTermStr);
+        return Intervals.range(lowerTerm, upperTerm, includeLower, includeUpper, maxExpansions);
+      }
+
+      private IntervalsSource parseMaxWidthRule(Map<String, Object> params, String topField) {
+        int width = getInt(params, "width", -1, "max_width");
+        if (width < 0) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Rule 'max_width' requires a non-negative integer 'width'");
+        }
+        IntervalsSource source = parseNestedRule(params, "source", "max_width", topField);
+        return Intervals.maxwidth(width, source);
+      }
+
+      private IntervalsSource parseExtendRule(Map<String, Object> params, String topField) {
+        int before = getInt(params, "before", 0, "extend");
+        int after = getInt(params, "after", 0, "extend");
+        IntervalsSource source = parseNestedRule(params, "source", "extend", topField);
+        return Intervals.extend(source, before, after);
+      }
+
+      private IntervalsSource parseUnorderedNoOverlapsRule(
+          Map<String, Object> params, String topField) {
+        List<IntervalsSource> intervals =
+            parseIntervalsArray(params, topField, "unordered_no_overlaps");
+        if (intervals.size() != 2) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Rule 'unordered_no_overlaps' requires exactly 2 intervals, got " + intervals.size());
+        }
+        return Intervals.unorderedNoOverlaps(intervals.get(0), intervals.get(1));
+      }
+
+      private IntervalsSource parseNotWithinRule(Map<String, Object> params, String topField) {
+        IntervalsSource source = parseNestedRule(params, "source", "not_within", topField);
+        int positions = getInt(params, "positions", -1, "not_within");
+        if (positions < 0) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Rule 'not_within' requires a non-negative integer 'positions'");
+        }
+        IntervalsSource reference = parseNestedRule(params, "reference", "not_within", topField);
+        return Intervals.notWithin(source, positions, reference);
+      }
+
+      private IntervalsSource parseWithinRule(Map<String, Object> params, String topField) {
+        IntervalsSource source = parseNestedRule(params, "source", "within", topField);
+        int positions = getInt(params, "positions", -1, "within");
+        if (positions < 0) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Rule 'within' requires a non-negative integer 'positions'");
+        }
+        IntervalsSource reference = parseNestedRule(params, "reference", "within", topField);
+        return Intervals.within(source, positions, reference);
+      }
+
+      private IntervalsSource parseAtLeastRule(Map<String, Object> params, String topField) {
+        int minShouldMatch = getInt(params, "min_should_match", -1, "at_least");
+        if (minShouldMatch < 0) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Rule 'at_least' requires a non-negative integer 'min_should_match'");
+        }
+        List<IntervalsSource> intervals = parseIntervalsArray(params, topField, "at_least");
+        return Intervals.atLeast(minShouldMatch, intervals.toArray(IntervalsSource[]::new));
+      }
+
+      private IntervalsSource parseNoIntervalsRule(Map<String, Object> params) {
+        String reason = getOptionalString(params, "reason", "no_intervals");
+        return Intervals.noIntervals(reason == null ? "no_intervals rule" : reason);
+      }
+
+      private IntervalsSource parseNestedRule(
+          Map<String, Object> params, String key, String ruleName, String topField) {
+        Object nested = params.get(key);
+        if (nested == null) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Rule '" + ruleName + "' requires '" + key + "' parameter");
+        }
+        return parseRuleObject(
+            asStringObjectMap(nested, "'" + key + "' in rule '" + ruleName + "'"), topField);
       }
 
       private List<IntervalsSource> parseIntervalsArray(
