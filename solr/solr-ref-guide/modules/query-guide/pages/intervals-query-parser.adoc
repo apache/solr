@@ -19,12 +19,37 @@
 The Intervals Query Parser (`IntervalsQParserPlugin`) builds Lucene interval queries from a JSON DSL description.
 Interval queries allow you to express positional constraints such as "these terms must appear within N positions of each other" or "this phrase must appear before that one".
 
-Invoked with the syntax `{!intervals json_query=<name>}`.
+Invoked with the syntax `{!intervals json_query=<name> df=<field>}`.
 
-== Basic Usage
+== Query Formats
 
-The parser reads query definitions from the `json_queries` map inside the JSON request body.
-Each named entry must have the form `{<field_name>: {<rule_object>}}`.
+The parser supports two formats for entries in the `json_queries` map.
+
+=== Field via `df` (preferred)
+
+Specify the target field using the `df` local param (or the `df` query param as a fallback).
+The named entry in `json_queries` is then the rule object directly, with no field wrapper.
+
+[source,text]
+----
+q={!intervals json_query=myQuery df=title}
+----
+
+[source,json]
+----
+{
+  "json_queries": {
+    "myQuery": {
+      "match": { "query": "apache solr" }
+    }
+  }
+}
+----
+
+=== Field embedded in the query (legacy)
+
+For backward compatibility, the named entry may wrap the rule object in a single-key map whose key is the field name.
+In this case the `df` parameter is not required.
 
 [source,text]
 ----
@@ -44,6 +69,8 @@ q={!intervals json_query=myQuery}
 }
 ----
 
+The parser detects the format automatically: if the top-level key of the named entry is a known rule name (e.g., `match`, `all_of`, `term`), the `df` format is used; otherwise the field is taken from the top-level key.
+
 == Parameters
 
 `json_query`::
@@ -54,6 +81,17 @@ q={!intervals json_query=myQuery}
 |===
 +
 Names an entry in the `json_queries` map that defines the interval query to execute.
+
+`df`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The field to run the interval query against.
+Required when the named `json_queries` entry uses the field-free format where the top-level key is a rule name.
+May be specified as a local param inside `{! }` or as a regular query param.
 
 == Interval Rules
 
