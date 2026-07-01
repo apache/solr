@@ -41,7 +41,9 @@ import org.eclipse.jetty.http.HttpHeader;
 class HttpSolrProxy {
   // TODO add X-Forwarded-For and with comma delimited
 
-  private static final Set<HttpHeader> HOP_BY_HOP_HEADERS =
+  // Headers not to forward: hop-by-hop, plus Host and Content-Length which the Jetty client
+  // re-derives for the upstream. Forwarding the originals makes Jetty 12.1 reject with a 400.
+  private static final Set<HttpHeader> SKIP_HEADERS =
       EnumSet.of(
           HttpHeader.CONNECTION,
           HttpHeader.KEEP_ALIVE,
@@ -49,7 +51,9 @@ class HttpSolrProxy {
           HttpHeader.PROXY_AUTHORIZATION,
           HttpHeader.TE,
           HttpHeader.TRANSFER_ENCODING,
-          HttpHeader.UPGRADE);
+          HttpHeader.UPGRADE,
+          HttpHeader.HOST,
+          HttpHeader.CONTENT_LENGTH);
 
   // Methods that shouldn't have a body according to HTTP spec
   private static final Set<String> NO_BODY_METHODS = Set.of("GET", "HEAD", "DELETE");
@@ -131,7 +135,7 @@ class HttpSolrProxy {
         .forEachRemaining(
             headerName -> {
               HttpHeader knownHeader = HttpHeader.CACHE.get(headerName); // maybe null
-              if (!HOP_BY_HOP_HEADERS.contains(knownHeader)) {
+              if (!SKIP_HEADERS.contains(knownHeader)) {
                 servletReq
                     .getHeaders(headerName)
                     .asIterator()
@@ -143,7 +147,7 @@ class HttpSolrProxy {
   private static void copyResponseHeaders(Response proxyRsp, HttpServletResponse servletRsp) {
     for (HttpField headerField : proxyRsp.getHeaders()) {
       HttpHeader knownHeader = headerField.getHeader();
-      if (!HOP_BY_HOP_HEADERS.contains(knownHeader)) {
+      if (!SKIP_HEADERS.contains(knownHeader)) {
         // HttpField: even if multiple values, it's encoded as one comma delimited value
         servletRsp.addHeader(headerField.getName(), headerField.getValue());
       }
