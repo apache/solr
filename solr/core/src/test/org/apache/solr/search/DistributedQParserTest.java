@@ -25,8 +25,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Distributed search tests for the standard query parsers: {@code lucene}, {@code dismax}, and
- * {@code edismax}.
+ * Distributed search tests for the standard query parsers: {@code lucene}, {@code dismax}, {@code
+ * edismax}, and {@code intervals}.
  */
 public class DistributedQParserTest extends SolrCloudTestCase {
 
@@ -89,5 +89,35 @@ public class DistributedQParserTest extends SolrCloudTestCase {
                 params("q", "brown dog", "defType", "edismax", "qf", "subject", "fl", "id"))
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(3, response.getResults().getNumFound());
+  }
+
+  @Test
+  public void testIntervalsQParser() throws Exception {
+    // match rule: "quick" appears in docs 1 ("quick brown fox") and 3 ("quick red dog")
+    QueryResponse response =
+        new QueryRequest(
+                params(
+                    "q",
+                    "{!intervals json_query=q1 df=subject}",
+                    "json",
+                    "{json_queries:{q1:{match:{query:quick}}}}",
+                    "fl",
+                    "id"))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(2, response.getResults().getNumFound());
+
+    // all_of ordered: "quick" then "fox" — only doc 1 ("quick brown fox") matches
+    response =
+        new QueryRequest(
+                params(
+                    "q",
+                    "{!intervals json_query=q1 df=subject}",
+                    "json",
+                    "{json_queries:{q1:{all_of:{ordered:true,"
+                        + "intervals:[{match:{query:quick}},{match:{query:fox}}]}}}}",
+                    "fl",
+                    "id"))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(1, response.getResults().getNumFound());
   }
 }
