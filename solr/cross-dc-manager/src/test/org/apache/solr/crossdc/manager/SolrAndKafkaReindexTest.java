@@ -130,12 +130,18 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
     ObjectReleaseTracker.clear();
 
     if (solrCluster1 != null) {
-      solrCluster1.getZkServer().getZkClient().printLayoutToStream(System.out);
-      solrCluster1.shutdown();
+      try {
+        solrCluster1.shutdown();
+      } catch (Exception e) {
+        log.error("Exception shutting down solrCluster1, ignoring.", e);
+      }
     }
     if (solrCluster2 != null) {
-      solrCluster2.getZkServer().getZkClient().printLayoutToStream(System.out);
-      solrCluster2.shutdown();
+      try {
+        solrCluster2.shutdown();
+      } catch (Exception e) {
+        log.error("Exception shutting down solrCluster2, ignoring.", e);
+      }
     }
 
     if (consumer != null) {
@@ -147,7 +153,7 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
         kafkaCluster.stop();
       }
     } catch (Exception e) {
-      log.error("Exception stopping Kafka cluster", e);
+      log.error("Exception stopping Kafka cluster, ignoring", e);
     }
 
     solrCluster1 = null;
