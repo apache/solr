@@ -4,7 +4,7 @@ type: added
 authors:
   - name: Mikhail Khludnev
     nick: mkhludnev
-    utl: https://home.apache.org/phonebook.html?uid=mkhl
+    url: https://home.apache.org/phonebook.html?uid=mkhl
 links:
   - name: SOLR-13764
     url: https://issues.apache.org/jira/browse/SOLR-13764
