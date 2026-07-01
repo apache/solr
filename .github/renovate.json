@@ -187,7 +187,7 @@
       "groupName": "GitHub Actions"
     }
   ],
-  "schedule": ["before 9am on the first day of the month"],
+  "schedule": ["* * * * *"],
   "prConcurrentLimit": 300,
   "prHourlyLimit": 20,
   "minimumReleaseAge": "5 days"
