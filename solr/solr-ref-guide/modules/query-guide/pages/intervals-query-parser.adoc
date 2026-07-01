@@ -58,7 +58,7 @@ Names an entry in the `json_queries` map that defines the interval query to exec
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Required |Default: none
 |===
 +
 The field to run the interval query against.
