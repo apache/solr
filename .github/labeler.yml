@@ -15,10 +15,8 @@ documentation:
         - dev-docs/**
         - solr/solr-ref-guide/**
         - solr/documentation/**
-        - help/**
-        - solr/README.adoc
-        - CONTRIBUTING.md
-        - README.md
+        - '**/README.*'
+        - '*.md'
 
 # Add 'examples' label to examples
 examples:
@@ -179,8 +177,8 @@ cat:cli:
 cat:cloud:
   - changed-files:
       - any-glob-to-any-file:
-          - '**/org/apache/solr/cloud/**'
-          - '**/org/apache/solr/cluster/**'
+          - '**/org/apache/**/cloud/**'
+          - '**/org/apache/**/cluster/**'
 
 cat:index:
   - changed-files:
