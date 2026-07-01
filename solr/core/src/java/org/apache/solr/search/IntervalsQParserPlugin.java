@@ -154,8 +154,9 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         String prefix = requireString(params, "prefix", "prefix");
         String useField = getOptionalString(params, "use_field", "prefix");
         String field = useField == null ? topField : useField;
-Analyzer analyzer = params.get("analyzer") == null ? null : resolveAnalyzer(params, field, "prefix");
-String normalizedPrefix = normalizeMultiTerm(field, prefix, analyzer);
+        Analyzer analyzer =
+            params.get("analyzer") == null ? null : resolveAnalyzer(params, field, "prefix");
+        String normalizedPrefix = normalizeMultiTerm(field, prefix, analyzer);
         IntervalsSource source = Intervals.prefix(new BytesRef(normalizedPrefix));
         if (useField != null) {
           source = Intervals.fixField(useField, source);
@@ -167,7 +168,8 @@ String normalizedPrefix = normalizeMultiTerm(field, prefix, analyzer);
         String pattern = requireString(params, "pattern", "wildcard");
         String useField = getOptionalString(params, "use_field", "wildcard");
         String field = useField == null ? topField : useField;
-        Analyzer analyzer = resolveAnalyzer(params, field, "wildcard");
+        Analyzer analyzer =
+            params.get("analyzer") == null ? null : resolveAnalyzer(params, field, "wildcard");
         String normalizedPattern = normalizeMultiTerm(field, pattern, analyzer);
         IntervalsSource source = Intervals.wildcard(new BytesRef(normalizedPattern));
         if (useField != null) {
@@ -180,7 +182,8 @@ String normalizedPrefix = normalizeMultiTerm(field, prefix, analyzer);
         String term = requireString(params, "term", "fuzzy");
         String useField = getOptionalString(params, "use_field", "fuzzy");
         String field = useField == null ? topField : useField;
-        Analyzer analyzer = resolveAnalyzer(params, field, "fuzzy");
+        Analyzer analyzer =
+            params.get("analyzer") == null ? null : resolveAnalyzer(params, field, "fuzzy");
         String normalizedTerm = normalizeMultiTerm(field, term, analyzer);
 
         String fuzziness = getOptionalString(params, "fuzziness", "fuzzy");
@@ -430,7 +433,7 @@ String normalizedPrefix = normalizeMultiTerm(field, prefix, analyzer);
       private Analyzer resolveAnalyzer(Map<String, Object> params, String field, String ruleName) {
         String analyzerName = getOptionalString(params, "analyzer", ruleName);
         if (analyzerName == null) {
-          return req.getSchema().getQueryAnalyzer();
+          return req.getSchema().getFieldTypeNoEx(field).getQueryAnalyzer();
         }
         FieldType fieldType = req.getSchema().getFieldTypeByName(analyzerName);
         if (fieldType == null) {
