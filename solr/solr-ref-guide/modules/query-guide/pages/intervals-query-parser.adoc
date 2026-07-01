@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Intervals Query Parser (`IntervalsQParserPlugin`) builds Lucene interval queries from a JSON DSL description.
+The Intervals Query Parser (`IntervalsQParserPlugin`) builds Lucene interval queries from a xref:json-request-api.adoc[JSON DSL] description.
 Interval queries allow you to express positional constraints such as "these terms must appear within N positions of each other" or "this phrase must appear before that one".
 See the https://lucene.apache.org/core/10_4_0/queries/org/apache/lucene/queries/intervals/package-summary.html[Lucene Intervals package documentation] for a detailed description of the underlying interval machinery.
 
