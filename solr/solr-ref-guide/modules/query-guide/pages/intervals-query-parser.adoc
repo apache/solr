@@ -34,7 +34,7 @@ q={!intervals json_query=myQuery df=title}
 
 [source,json]
 ----
-{
+json={
   "json_queries": {
     "myQuery": {
       "match": { "query": "apache solr" }
@@ -721,15 +721,14 @@ Find documents where the `title` field contains the phrase "apache solr" followe
 
 [source,text]
 ----
-q={!intervals json_query=titleQuery}
+q={!intervals json_query=titleQuery df=title}
 ----
 
 [source,json]
 ----
-{
+json={
   "json_queries": {
     "titleQuery": {
-      "title": {
         "all_of": {
           "ordered": true,
           "max_gaps": 5,
@@ -738,7 +737,6 @@ q={!intervals json_query=titleQuery}
             { "term":  { "value": "search" } }
           ]
         }
-      }
     }
   }
 }
