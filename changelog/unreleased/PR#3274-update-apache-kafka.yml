@@ -2,7 +2,6 @@ title: Update apache.kafka to v4
 type: dependency_update
 authors:
 - name: solrbot
-- name: Jalaz Kumar
 links:
 - name: PR#3274
   url: https://github.com/apache/solr/pull/3274
