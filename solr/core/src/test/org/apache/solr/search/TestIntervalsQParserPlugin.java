@@ -360,4 +360,51 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
             "{json_queries:{q1:{v_ws:{term:{value:bkc_alpha}}}}}"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
+
+  @Test
+  public void testIntervalsNestedAlternativeOutperformsXmlSpans() throws Exception {
+    assertU(adoc("id", "170", "v_t", "cmplorem cmpthe cmpdomain cmpis cmpipsum"));
+    assertU(
+        adoc("id", "171", "v_t", "cmplorem cmpthe cmpdomain cmpname cmpsystem cmpis cmpipsum"));
+    assertU(
+        adoc("id", "172", "v_t", "cmplorem cmpthe cmpdomain cmpblame cmpsystem cmpis cmpipsum"));
+    assertU(commit());
+
+    assertQ(
+        "xmlparser SpanNear with nested SpanOr/SpanNear misses one nested match",
+        req(
+            "q",
+            "{!xmlparser df=v_t}"
+                + "<SpanNear slop=\"0\" inOrder=\"true\" fieldName=\"v_t\">"
+                + "<SpanTerm fieldName=\"v_t\">cmpthe</SpanTerm>"
+                + "<SpanOr>"
+                + "<SpanTerm fieldName=\"v_t\">cmpdomain</SpanTerm>"
+                + "<SpanNear slop=\"0\" inOrder=\"true\">"
+                + "<SpanTerm fieldName=\"v_t\">cmpdomain</SpanTerm>"
+                + "<SpanTerm fieldName=\"v_t\">cmpname</SpanTerm>"
+                + "<SpanTerm fieldName=\"v_t\">cmpsystem</SpanTerm>"
+                + "</SpanNear>"
+                + "</SpanOr>"
+                + "<SpanTerm fieldName=\"v_t\">cmpis</SpanTerm>"
+                + "</SpanNear>"),
+        "//result[@numFound='1']");
+
+    assertQ(
+        "intervals handles the same nested alternative and finds both valid matches",
+        req(
+            "q",
+            "{!intervals json_query=cmpq df=v_t}",
+            "json",
+            "{json_queries:{cmpq:{all_of:{ordered:true,intervals:["
+                + "{term:{value:cmpthe}},"
+                + "{any_of:{intervals:["
+                + "{term:{value:cmpdomain}},"
+                + "{phrase:{terms:[cmpdomain,cmpname,cmpsystem]}}"
+                + "]}}"
+                + ",{term:{value:cmpis}}"
+                + "]}}}}"),
+        "//result[@numFound='2']",
+        "//doc/str[@name='id'][.='170']",
+        "//doc/str[@name='id'][.='171']");
+  }
 }
