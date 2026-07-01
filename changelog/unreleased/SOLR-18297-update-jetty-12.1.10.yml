@@ -1,4 +1,4 @@
-title: Upgrade Eclipse Jetty to 12.1.10. The maximum response header size now defaults to 16KB (up from 8KB) and is configurable via the solr.jetty.response.header.size.max system property.
+title: Upgrade Eclipse Jetty to 12.1.10
 type: dependency_update
 authors:
   - name: Jan Høydahl
