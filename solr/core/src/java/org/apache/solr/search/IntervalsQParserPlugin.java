@@ -154,8 +154,7 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         String prefix = requireString(params, "prefix", "prefix");
         String useField = getOptionalString(params, "use_field", "prefix");
         String field = useField == null ? topField : useField;
-        Analyzer analyzer =
-            params.get("analyzer") == null ? null : resolveAnalyzer(params, field, "prefix");
+        Analyzer analyzer = resolveMultiTermAnalyzer(params, field, "prefix");
         String normalizedPrefix = normalizeMultiTerm(field, prefix, analyzer);
         IntervalsSource source = Intervals.prefix(new BytesRef(normalizedPrefix));
         if (useField != null) {
@@ -168,8 +167,7 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         String pattern = requireString(params, "pattern", "wildcard");
         String useField = getOptionalString(params, "use_field", "wildcard");
         String field = useField == null ? topField : useField;
-        Analyzer analyzer =
-            params.get("analyzer") == null ? null : resolveAnalyzer(params, field, "wildcard");
+        Analyzer analyzer = resolveMultiTermAnalyzer(params, field, "wildcard");
         String normalizedPattern = normalizeMultiTerm(field, pattern, analyzer);
         IntervalsSource source = Intervals.wildcard(new BytesRef(normalizedPattern));
         if (useField != null) {
@@ -182,8 +180,7 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         String term = requireString(params, "term", "fuzzy");
         String useField = getOptionalString(params, "use_field", "fuzzy");
         String field = useField == null ? topField : useField;
-        Analyzer analyzer =
-            params.get("analyzer") == null ? null : resolveAnalyzer(params, field, "fuzzy");
+        Analyzer analyzer = resolveMultiTermAnalyzer(params, field, "fuzzy");
         String normalizedTerm = normalizeMultiTerm(field, term, analyzer);
 
         String fuzziness = getOptionalString(params, "fuzziness", "fuzzy");
@@ -435,6 +432,29 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         if (analyzerName == null) {
           return req.getSchema().getFieldTypeNoEx(field).getQueryAnalyzer();
         }
+        return resolveFieldType(analyzerName, ruleName).getQueryAnalyzer();
+      }
+
+      /**
+       * Resolves the analyzer to use for normalizing prefix/wildcard/fuzzy term text. Unlike {@link
+       * #resolveAnalyzer}, this uses the field type's multi-term analyzer rather than its regular
+       * query analyzer, since the term text here is a single already-tokenized value, not free text
+       * to be tokenized.
+       */
+      private Analyzer resolveMultiTermAnalyzer(
+          Map<String, Object> params, String field, String ruleName) {
+        String analyzerName = getOptionalString(params, "analyzer", ruleName);
+        FieldType fieldType =
+            analyzerName == null
+                ? req.getSchema().getFieldTypeNoEx(field)
+                : resolveFieldType(analyzerName, ruleName);
+        if (fieldType instanceof TextField textField) {
+          return textField.getMultiTermAnalyzer();
+        }
+        return null;
+      }
+
+      private FieldType resolveFieldType(String analyzerName, String ruleName) {
         FieldType fieldType = req.getSchema().getFieldTypeByName(analyzerName);
         if (fieldType == null) {
           throw new SolrException(
@@ -445,21 +465,14 @@ public class IntervalsQParserPlugin extends QParserPlugin {
                   + ruleName
                   + "'. In Solr this value must match a field type name.");
         }
-        return fieldType.getQueryAnalyzer();
+        return fieldType;
       }
 
       private String normalizeMultiTerm(String field, String term, Analyzer analyzer) {
-        Analyzer effective = analyzer;
-        if (effective == null) {
-          FieldType fieldType = req.getSchema().getFieldTypeNoEx(field);
-          if (fieldType instanceof TextField textField) {
-            effective = textField.getMultiTermAnalyzer();
-          }
-        }
-        if (effective == null) {
+        if (analyzer == null) {
           return term;
         }
-        BytesRef analyzed = TextField.analyzeMultiTerm(field, term, effective);
+        BytesRef analyzed = TextField.analyzeMultiTerm(field, term, analyzer);
         return analyzed == null ? term : analyzed.utf8ToString();
       }
 

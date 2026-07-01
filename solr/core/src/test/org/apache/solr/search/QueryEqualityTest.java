@@ -174,6 +174,17 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryIntervals() throws Exception {
+    try (SolrQueryRequest req = req("myField", "foo_s")) {
+      req.setJSON(Map.of("json_queries", Map.of("q1", Map.of("term", Map.of("value", "asdf")))));
+      assertQueryEquals(
+          IntervalsQParserPlugin.NAME,
+          req,
+          "{!intervals json_query=q1 df=$myField}",
+          "{!intervals json_query=q1 df=foo_s}");
+    }
+  }
+
   public void testQueryBoost() throws Exception {
     SolrQueryRequest req = req("df", "foo_s", "myBoost", "sum(3,foo_i)");
     try {
