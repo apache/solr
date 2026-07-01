@@ -81,10 +81,12 @@ public class ReRankQParserPlugin extends QParserPlugin {
       final Query reRankQuery, final double reRankWeight, final ReRankOperator reRankOperator) {
     assert null != reRankQuery;
     return switch (reRankQuery) {
-      case FunctionQuery functionQuery -> new ReRankDoubleValuesSourceRescorer(
-          functionQuery.getValueSource().asDoubleValuesSource(), reRankWeight, reRankOperator);
-      case FunctionScoreQuery functionQuery -> new ReRankDoubleValuesSourceRescorer(
-          functionQuery.getSource(), reRankWeight, reRankOperator);
+      case FunctionQuery functionQuery ->
+          new ReRankDoubleValuesSourceRescorer(
+              functionQuery.getValueSource().asDoubleValuesSource(), reRankWeight, reRankOperator);
+      case FunctionScoreQuery functionQuery ->
+          new ReRankDoubleValuesSourceRescorer(
+              functionQuery.getSource(), reRankWeight, reRankOperator);
       default -> new ReRankQueryRescorer(reRankQuery, reRankWeight, reRankOperator);
     };
   }
