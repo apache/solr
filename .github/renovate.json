@@ -28,6 +28,11 @@
       "versioning": "regex:^(?<major>\\d{1,4})\\.(?<minor>\\d+)(\\.(?<patch>\\d+))?$"
     },
     {
+      "description": "Byte Buddy publishes a -jdk5 backport variant alongside each release (e.g. 1.18.10-jdk5). Ignore those so we track the mainline versions (e.g. 1.18.10).",
+      "matchPackagePrefixes": ["net.bytebuddy"],
+      "allowedVersions": "!/-jdk5$/"
+    },
+    {
       "description": "CATCH-ALL: bundle all remaining minor/patch bumps of otherwise-ungrouped libraries into one PR to cut churn. Major bumps are intentionally NOT grouped here - they stay as individual PRs. The test bucket and the logical groups below override this for their packages.",
       "matchManagers": ["gradle"],
       "matchUpdateTypes": ["minor", "patch"],
