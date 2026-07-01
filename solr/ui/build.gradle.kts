@@ -180,6 +180,14 @@ compose.desktop {
     }
 }
 
+// Compose resource accessor generation is not reliably wired to all Kotlin
+// compile tasks (notably wasmJs), causing intermittent "source file not found"
+// for generated accessors. Wire it explicitly.
+val resourceAccessorTasks = tasks.matching { it.name.startsWith("generateResourceAccessorsFor") }
+tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
+    dependsOn(resourceAccessorTasks)
+}
+
 tasks.matching { task ->
     task.name in listOf(
         "allTests",
