@@ -124,119 +124,149 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals("spacey e2", e2, SolrPluginUtils.parseFieldBoosts("   \t   "));
   }
 
+
+  /* sanity: bare term with no field and no alias → TermQuery on default field */
   @Test
-  public void testDisjunctionMaxQueryParser() throws Exception {
-
-    Query out;
-    String t;
-
-    SolrQueryRequest req = req("df", "text");
-    QParser qparser = QParser.getParser("hi", "dismax", req);
-
-    DisjunctionMaxQueryParser qp =
-        new SolrPluginUtils.DisjunctionMaxQueryParser(qparser, req.getParams().get("df"));
-
-    qp.addAlias(
-        "hoss",
-        0.01f,
-        SolrPluginUtils.parseFieldBoosts("title^2.0 title_stemmed name^1.2 subject^0.5"));
-    qp.addAlias("test", 0.01f, SolrPluginUtils.parseFieldBoosts("text^2.0"));
-    qp.addAlias("unused", 1.0f, SolrPluginUtils.parseFieldBoosts("subject^0.5 sind^1.5"));
-
-    /* first some sanity tests that don't use aliasing at all */
-
-    t = "XXXXXXXX";
-    out = qp.parse(t);
+  public void testDismaxParser_bareTermUsesDefaultField() throws Exception {
+    DisjunctionMaxQueryParser qp = newDismaxParserWithAliases();
+    String t = "XXXXXXXX";
+    Query out = qp.parse(t);
     assertNotNull(t + " sanity test gave back null", out);
     assertTrue(t + " sanity test isn't TermQuery: " + out.getClass(), out instanceof TermQuery);
     assertEquals(
         t + " sanity test is wrong field",
         qp.getDefaultField(),
         ((TermQuery) out).getTerm().field());
+  }
 
-    t = "subject:XXXXXXXX";
-    out = qp.parse(t);
+  /* sanity: explicit non-aliased field → TermQuery on that field */
+  @Test
+  public void testDismaxParser_explicitFieldNoAlias() throws Exception {
+    DisjunctionMaxQueryParser qp = newDismaxParserWithAliases();
+    String t = "subject:XXXXXXXX";
+    Query out = qp.parse(t);
     assertNotNull(t + " sanity test gave back null", out);
     assertTrue(t + " sanity test isn't TermQuery: " + out.getClass(), out instanceof TermQuery);
     assertEquals(t + " sanity test is wrong field", "subject", ((TermQuery) out).getTerm().field());
+  }
 
-    /* field has untokenized type, so this should be a term anyway */
-    t = "sind:\"simple phrase\"";
-    out = qp.parse(t);
+  /* sanity: untokenized field type → still a TermQuery even with quoted phrase */
+  @Test
+  public void testDismaxParser_quotedPhraseOnUntokenizedFieldIsTermQuery() throws Exception {
+    DisjunctionMaxQueryParser qp = newDismaxParserWithAliases();
+    String t = "sind:\"simple phrase\"";
+    Query out = qp.parse(t);
     assertNotNull(t + " sanity test gave back null", out);
     assertTrue(t + " sanity test isn't TermQuery: " + out.getClass(), out instanceof TermQuery);
     assertEquals(t + " sanity test is wrong field", "sind", ((TermQuery) out).getTerm().field());
+  }
 
-    t = "subject:\"simple phrase\"";
-    out = qp.parse(t);
+  /* sanity: tokenized field with quoted phrase → PhraseQuery */
+  @Test
+  public void testDismaxParser_quotedPhraseOnTokenizedFieldIsPhraseQuery() throws Exception {
+    DisjunctionMaxQueryParser qp = newDismaxParserWithAliases();
+    String t = "subject:\"simple phrase\"";
+    Query out = qp.parse(t);
     assertNotNull(t + " sanity test gave back null", out);
     assertTrue(t + " sanity test isn't PhraseQuery: " + out.getClass(), out instanceof PhraseQuery);
     assertEquals(
         t + " sanity test is wrong field", "subject", ((PhraseQuery) out).getTerms()[0].field());
+  }
 
-    /* now some tests that use aliasing */
-
-    /* basic usage of single "term" */
-    t = "hoss:XXXXXXXX";
-    out = qp.parse(t);
+  /* basic alias use: single term on an alias mapping to 4 fields → DMQ with 4 clauses */
+  @Test
+  public void testDismaxParser_aliasedTermProducesDMQClausePerField() throws Exception {
+    DisjunctionMaxQueryParser qp = newDismaxParserWithAliases();
+    String t = "hoss:XXXXXXXX";
+    Query out = qp.parse(t);
     assertNotNull(t + " was null", out);
     assertTrue(t + " wasn't a DMQ:" + out.getClass(), out instanceof DisjunctionMaxQuery);
     assertEquals(
         t + " wrong number of clauses", 4, countItems(((DisjunctionMaxQuery) out).iterator()));
+  }
 
-    /* odd case, but should still work, DMQ of one clause */
-    t = "test:YYYYY";
-    out = qp.parse(t);
+  /* edge case: alias points to a single field → DMQ with 1 clause */
+  @Test
+  public void testDismaxParser_singleFieldAliasIsDMQWithOneClause() throws Exception {
+    DisjunctionMaxQueryParser qp = newDismaxParserWithAliases();
+    String t = "test:YYYYY";
+    Query out = qp.parse(t);
     assertNotNull(t + " was null", out);
     assertTrue(t + " wasn't a DMQ:" + out.getClass(), out instanceof DisjunctionMaxQuery);
     assertEquals(
         t + " wrong number of clauses", 1, countItems(((DisjunctionMaxQuery) out).iterator()));
+  }
 
-    /* basic usage of multiple "terms" */
-    t = "hoss:XXXXXXXX test:YYYYY";
-    out = qp.parse(t);
+  /* multiple aliased terms → BooleanQuery whose clauses are DMQs */
+  @Test
+  public void testDismaxParser_multipleAliasedTermsProduceBooleanOfDMQs() throws Exception {
+    DisjunctionMaxQueryParser qp = newDismaxParserWithAliases();
+    String t = "hoss:XXXXXXXX test:YYYYY";
+    Query out = qp.parse(t);
     assertNotNull(t + " was null", out);
     assertTrue(t + " wasn't a boolean:" + out.getClass(), out instanceof BooleanQuery);
-    {
-      BooleanQuery bq = (BooleanQuery) out;
-      List<BooleanClause> clauses = new ArrayList<>(bq.clauses());
-      assertEquals(t + " wrong number of clauses", 2, clauses.size());
-      Query sub = clauses.get(0).query();
-      assertTrue(t + " first wasn't a DMQ:" + sub.getClass(), sub instanceof DisjunctionMaxQuery);
-      assertEquals(
-          t + " first had wrong number of clauses",
-          4,
-          countItems(((DisjunctionMaxQuery) sub).iterator()));
-      sub = clauses.get(1).query();
-      assertTrue(t + " second wasn't a DMQ:" + sub.getClass(), sub instanceof DisjunctionMaxQuery);
-      assertEquals(
-          t + " second had wrong number of clauses",
-          1,
-          countItems(((DisjunctionMaxQuery) sub).iterator()));
-    }
 
-    /* a phrase and a term that is a stop word for some fields */
-    t = "hoss:\"XXXXXX YYYYY\" hoss:the";
-    out = qp.parse(t);
+    BooleanQuery bq = (BooleanQuery) out;
+    List<BooleanClause> clauses = new ArrayList<>(bq.clauses());
+    assertEquals(t + " wrong number of clauses", 2, clauses.size());
+
+    Query first = clauses.get(0).query();
+    assertTrue(t + " first wasn't a DMQ:" + first.getClass(), first instanceof DisjunctionMaxQuery);
+    assertEquals(
+        t + " first had wrong number of clauses",
+        4,
+        countItems(((DisjunctionMaxQuery) first).iterator()));
+
+    Query second = clauses.get(1).query();
+    assertTrue(
+        t + " second wasn't a DMQ:" + second.getClass(), second instanceof DisjunctionMaxQuery);
+    assertEquals(
+        t + " second had wrong number of clauses",
+        1,
+        countItems(((DisjunctionMaxQuery) second).iterator()));
+  }
+
+  /* phrase + a term that is a stop word in some of the aliased fields */
+  @Test
+  public void testDismaxParser_stopWordReducesDMQClauseCount() throws Exception {
+    DisjunctionMaxQueryParser qp = newDismaxParserWithAliases();
+    String t = "hoss:\"XXXXXX YYYYY\" hoss:the";
+    Query out = qp.parse(t);
     assertNotNull(t + " was null", out);
     assertTrue(t + " wasn't a boolean:" + out.getClass(), out instanceof BooleanQuery);
-    {
-      BooleanQuery bq = (BooleanQuery) out;
-      List<BooleanClause> clauses = new ArrayList<>(bq.clauses());
-      assertEquals(t + " wrong number of clauses", 2, clauses.size());
-      Query sub = clauses.get(0).query();
-      assertTrue(t + " first wasn't a DMQ:" + sub.getClass(), sub instanceof DisjunctionMaxQuery);
-      assertEquals(
-          t + " first had wrong number of clauses",
-          4,
-          countItems(((DisjunctionMaxQuery) sub).iterator()));
-      sub = clauses.get(1).query();
-      assertTrue(t + " second wasn't a DMQ:" + sub.getClass(), sub instanceof DisjunctionMaxQuery);
-      assertEquals(
-          t + " second had wrong number of clauses (stop words)",
-          2,
-          countItems(((DisjunctionMaxQuery) sub).iterator()));
-    }
+
+    BooleanQuery bq = (BooleanQuery) out;
+    List<BooleanClause> clauses = new ArrayList<>(bq.clauses());
+    assertEquals(t + " wrong number of clauses", 2, clauses.size());
+
+    Query first = clauses.get(0).query();
+    assertTrue(t + " first wasn't a DMQ:" + first.getClass(), first instanceof DisjunctionMaxQuery);
+    assertEquals(
+        t + " first had wrong number of clauses",
+        4,
+        countItems(((DisjunctionMaxQuery) first).iterator()));
+
+    Query second = clauses.get(1).query();
+    assertTrue(
+        t + " second wasn't a DMQ:" + second.getClass(), second instanceof DisjunctionMaxQuery);
+    assertEquals(
+        t + " second had wrong number of clauses (stop words)",
+        2,
+        countItems(((DisjunctionMaxQuery) second).iterator()));
+  }
+
+  private DisjunctionMaxQueryParser newDismaxParserWithAliases() throws Exception {
+    SolrQueryRequest req = req("df", "text");
+    QParser qparser = QParser.getParser("hi", "dismax", req);
+    DisjunctionMaxQueryParser qp =
+        new SolrPluginUtils.DisjunctionMaxQueryParser(qparser, req.getParams().get("df"));
+    qp.addAlias(
+        "hoss",
+        0.01f,
+        SolrPluginUtils.parseFieldBoosts("title^2.0 title_stemmed name^1.2 subject^0.5"));
+    qp.addAlias("test", 0.01f, SolrPluginUtils.parseFieldBoosts("text^2.0"));
+    qp.addAlias("unused", 1.0f, SolrPluginUtils.parseFieldBoosts("subject^0.5 sind^1.5"));
+    return qp;
   }
 
   private static int countItems(Iterator<?> i) {

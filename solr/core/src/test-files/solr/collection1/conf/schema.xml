@@ -156,6 +156,7 @@
     <analyzer type="query">
       <tokenizer class="solr.LetterTokenizerFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
     </analyzer>
   </fieldType>
 
