@@ -151,6 +151,11 @@
       "enabled": false
     },
     {
+      "description": "Lock cuvs-lucene below v26 - the 26.x line is compiled for JDK 22 (class file major version 66) but Solr targets JDK 21, so it fails to compile (see PR #4134). Revisit when Solr's minimum JDK is raised.",
+      "matchPackageNames": ["com.nvidia.cuvs.lucene:cuvs-lucene"],
+      "allowedVersions": "<26"
+    },
+    {
       "description": "Workaround for https://github.com/renovatebot/renovate/issues/19226",
       "matchPackageNames": ["solr:modules", "HH:mm"],
       "enabled": false
