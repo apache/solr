@@ -103,7 +103,7 @@ google-guava = "33.6.0-jre"
 # @keep for version alignment
 google-j2objc = "3.1"
 # @keep This is GJF version for spotless/ tidy.
-google-javaformat = "1.18.1"
+google-javaformat = "1.35.0"
 # @keep for version alignment
 google-protobuf = "4.35.1"
 # @keep Gradle version to run the build
