@@ -454,6 +454,76 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testIntervalsMatchRuleNonexistentDfFieldThrows() throws Exception {
+    // df names a field that doesn't exist in the schema; the match rule resolves its analyzer
+    // from this field since no analyzer/use_field override is given
+    assertQEx(
+        "match rule with a nonexistent df field should throw BAD_REQUEST",
+        "undefined field",
+        req(
+            "q",
+            "{!intervals df=no_such_field}$q1",
+            "json",
+            "{json_queries:{q1:{match:{query:foo}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void testIntervalsMatchRuleNonexistentUseFieldThrows() throws Exception {
+    // df is valid, but use_field overrides the field used to resolve the analyzer
+    assertQEx(
+        "match rule with a nonexistent use_field should throw BAD_REQUEST",
+        "undefined field",
+        req(
+            "q",
+            "{!intervals df=v_t}$q1",
+            "json",
+            "{json_queries:{q1:{match:{query:foo,use_field:no_such_field}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void testIntervalsPrefixRuleNonexistentDfFieldThrows() throws Exception {
+    // prefix/wildcard/fuzzy resolve their multi-term analyzer from the field the same way
+    assertQEx(
+        "prefix rule with a nonexistent df field should throw BAD_REQUEST",
+        "undefined field",
+        req(
+            "q",
+            "{!intervals df=no_such_field}$q1",
+            "json",
+            "{json_queries:{q1:{prefix:{prefix:foo}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void testIntervalsPrefixRuleNonexistentUseFieldThrows() throws Exception {
+    assertQEx(
+        "prefix rule with a nonexistent use_field should throw BAD_REQUEST",
+        "undefined field",
+        req(
+            "q",
+            "{!intervals df=v_ws}$q1",
+            "json",
+            "{json_queries:{q1:{prefix:{prefix:foo,use_field:no_such_field}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void testIntervalsUnknownAnalyzerFieldTypeThrows() throws Exception {
+    // an explicit 'analyzer' value that doesn't match any field type name in the schema
+    assertQEx(
+        "match rule with an unknown analyzer field type should throw BAD_REQUEST",
+        "Unknown analyzer",
+        req(
+            "q",
+            "{!intervals df=v_t}$q1",
+            "json",
+            "{json_queries:{q1:{match:{query:foo,analyzer:no_such_field_type}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
   public void testIntervalsNestedAlternativeOutperformsXmlSpans() throws Exception {
     // v_ws (text_ws) is a plain whitespace-tokenized field with no stemming/synonym/word-delimiter
     // filters, so the literal terms used in the raw SpanTerm/term rules below match the indexed

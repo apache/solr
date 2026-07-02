@@ -32,6 +32,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.json.RequestUtil;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 
 /**
@@ -104,12 +105,14 @@ public class IntervalsQParserPlugin extends QParserPlugin {
               SolrException.ErrorCode.BAD_REQUEST,
               "Query '" + jsonQueryName + "' requires a 'df' parameter to specify the field");
         }
+        SchemaField defaultField = req.getSchema().getField(field);
 
-        IntervalsSource source = parseRuleObject(queryDefMap, field);
-        return new IntervalQuery(field, source);
+        IntervalsSource source = parseRuleObject(queryDefMap, defaultField);
+        return new IntervalQuery(defaultField.getName(), source);
       }
 
-      private IntervalsSource parseRuleObject(Map<String, Object> ruleObject, String topField) {
+      private IntervalsSource parseRuleObject(
+          Map<String, Object> ruleObject, SchemaField defaultField) {
         if (ruleObject.size() != 1) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
@@ -121,83 +124,87 @@ public class IntervalsQParserPlugin extends QParserPlugin {
             asStringObjectMap(entry.getValue(), "rule '" + ruleName + "'");
 
         return switch (ruleName) {
-          case "match" -> parseMatchRule(ruleParams, topField);
-          case "prefix" -> parsePrefixRule(ruleParams, topField);
-          case "wildcard" -> parseWildcardRule(ruleParams, topField);
-          case "fuzzy" -> parseFuzzyRule(ruleParams, topField);
-          case "all_of" -> parseAllOfRule(ruleParams, topField);
-          case "any_of" -> parseAnyOfRule(ruleParams, topField);
-          case "term" -> parseTermRule(ruleParams, topField);
-          case "phrase" -> parsePhraseRule(ruleParams, topField);
-          case "regexp" -> parseRegexpRule(ruleParams, topField);
-          case "range" -> parseRangeRule(ruleParams, topField);
-          case "max_width" -> parseMaxWidthRule(ruleParams, topField);
-          case "extend" -> parseExtendRule(ruleParams, topField);
-          case "unordered_no_overlaps" -> parseUnorderedNoOverlapsRule(ruleParams, topField);
-          case "not_within" -> parseNotWithinRule(ruleParams, topField);
-          case "within" -> parseWithinRule(ruleParams, topField);
-          case "at_least" -> parseAtLeastRule(ruleParams, topField);
+          case "match" -> parseMatchRule(ruleParams, defaultField);
+          case "prefix" -> parsePrefixRule(ruleParams, defaultField);
+          case "wildcard" -> parseWildcardRule(ruleParams, defaultField);
+          case "fuzzy" -> parseFuzzyRule(ruleParams, defaultField);
+          case "all_of" -> parseAllOfRule(ruleParams, defaultField);
+          case "any_of" -> parseAnyOfRule(ruleParams, defaultField);
+          case "term" -> parseTermRule(ruleParams, defaultField);
+          case "phrase" -> parsePhraseRule(ruleParams, defaultField);
+          case "regexp" -> parseRegexpRule(ruleParams, defaultField);
+          case "range" -> parseRangeRule(ruleParams, defaultField);
+          case "max_width" -> parseMaxWidthRule(ruleParams, defaultField);
+          case "extend" -> parseExtendRule(ruleParams, defaultField);
+          case "unordered_no_overlaps" -> parseUnorderedNoOverlapsRule(ruleParams, defaultField);
+          case "not_within" -> parseNotWithinRule(ruleParams, defaultField);
+          case "within" -> parseWithinRule(ruleParams, defaultField);
+          case "at_least" -> parseAtLeastRule(ruleParams, defaultField);
           case "no_intervals" -> parseNoIntervalsRule(ruleParams);
           default -> throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST, "Unsupported intervals rule: " + ruleName);
         };
       }
 
-      private IntervalsSource parseMatchRule(Map<String, Object> params, String topField) {
+      private IntervalsSource parseMatchRule(Map<String, Object> params, SchemaField defaultField) {
         String queryText = requireString(params, "query", "match");
         int maxGaps = getInt(params, "max_gaps", -1, "match");
         boolean ordered = getBoolean(params, "ordered", false, "match");
         String useField = getOptionalString(params, "use_field", "match");
-        String analysisField = useField == null ? topField : useField;
+        SchemaField analysisField = resolveField(useField, defaultField);
 
         Analyzer analyzer = resolveAnalyzer(params, analysisField, "match");
         IntervalsSource source;
         try {
-          source = Intervals.analyzedText(queryText, analyzer, analysisField, maxGaps, ordered);
+          source =
+              Intervals.analyzedText(
+                  queryText, analyzer, analysisField.getName(), maxGaps, ordered);
         } catch (IOException e) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
-              "Failed to analyze match query text for field '" + analysisField + "'",
+              "Failed to analyze match query text for field '" + analysisField.getName() + "'",
               e);
         }
         if (useField != null) {
-          source = Intervals.fixField(useField, source);
+          source = Intervals.fixField(analysisField.getName(), source);
         }
-        return applyFilter(source, params.get("filter"), topField);
+        return applyFilter(source, params.get("filter"), defaultField);
       }
 
-      private IntervalsSource parsePrefixRule(Map<String, Object> params, String topField) {
+      private IntervalsSource parsePrefixRule(
+          Map<String, Object> params, SchemaField defaultField) {
         String prefix = requireString(params, "prefix", "prefix");
         String useField = getOptionalString(params, "use_field", "prefix");
-        String field = useField == null ? topField : useField;
+        SchemaField field = resolveField(useField, defaultField);
         Analyzer analyzer = resolveMultiTermAnalyzer(params, field, "prefix");
-        String normalizedPrefix = normalizeMultiTerm(field, prefix, analyzer);
+        String normalizedPrefix = normalizeMultiTerm(field.getName(), prefix, analyzer);
         IntervalsSource source = Intervals.prefix(new BytesRef(normalizedPrefix));
         if (useField != null) {
-          source = Intervals.fixField(useField, source);
+          source = Intervals.fixField(field.getName(), source);
         }
         return source;
       }
 
-      private IntervalsSource parseWildcardRule(Map<String, Object> params, String topField) {
+      private IntervalsSource parseWildcardRule(
+          Map<String, Object> params, SchemaField defaultField) {
         String pattern = requireString(params, "pattern", "wildcard");
         String useField = getOptionalString(params, "use_field", "wildcard");
-        String field = useField == null ? topField : useField;
+        SchemaField field = resolveField(useField, defaultField);
         Analyzer analyzer = resolveMultiTermAnalyzer(params, field, "wildcard");
-        String normalizedPattern = normalizeMultiTerm(field, pattern, analyzer);
+        String normalizedPattern = normalizeMultiTerm(field.getName(), pattern, analyzer);
         IntervalsSource source = Intervals.wildcard(new BytesRef(normalizedPattern));
         if (useField != null) {
-          source = Intervals.fixField(useField, source);
+          source = Intervals.fixField(field.getName(), source);
         }
         return source;
       }
 
-      private IntervalsSource parseFuzzyRule(Map<String, Object> params, String topField) {
+      private IntervalsSource parseFuzzyRule(Map<String, Object> params, SchemaField defaultField) {
         String term = requireString(params, "term", "fuzzy");
         String useField = getOptionalString(params, "use_field", "fuzzy");
-        String field = useField == null ? topField : useField;
+        SchemaField field = resolveField(useField, defaultField);
         Analyzer analyzer = resolveMultiTermAnalyzer(params, field, "fuzzy");
-        String normalizedTerm = normalizeMultiTerm(field, term, analyzer);
+        String normalizedTerm = normalizeMultiTerm(field.getName(), term, analyzer);
 
         String fuzziness = getOptionalString(params, "fuzziness", "fuzzy");
         int maxEdits = resolveFuzziness(fuzziness, normalizedTerm);
@@ -217,13 +224,13 @@ public class IntervalsQParserPlugin extends QParserPlugin {
                 transpositions,
                 DEFAULT_FUZZY_MAX_EXPANSIONS);
         if (useField != null) {
-          source = Intervals.fixField(useField, source);
+          source = Intervals.fixField(field.getName(), source);
         }
         return source;
       }
 
-      private IntervalsSource parseAllOfRule(Map<String, Object> params, String topField) {
-        List<IntervalsSource> intervals = parseIntervalsArray(params, topField, "all_of");
+      private IntervalsSource parseAllOfRule(Map<String, Object> params, SchemaField defaultField) {
+        List<IntervalsSource> intervals = parseIntervalsArray(params, defaultField, "all_of");
         boolean ordered = getBoolean(params, "ordered", false, "all_of");
         int maxGaps = getInt(params, "max_gaps", -1, "all_of");
 
@@ -234,26 +241,27 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         if (maxGaps >= 0) {
           source = Intervals.maxgaps(maxGaps, source);
         }
-        return applyFilter(source, params.get("filter"), topField);
+        return applyFilter(source, params.get("filter"), defaultField);
       }
 
-      private IntervalsSource parseAnyOfRule(Map<String, Object> params, String topField) {
-        List<IntervalsSource> intervals = parseIntervalsArray(params, topField, "any_of");
+      private IntervalsSource parseAnyOfRule(Map<String, Object> params, SchemaField defaultField) {
+        List<IntervalsSource> intervals = parseIntervalsArray(params, defaultField, "any_of");
         IntervalsSource source = Intervals.or(intervals);
-        return applyFilter(source, params.get("filter"), topField);
+        return applyFilter(source, params.get("filter"), defaultField);
       }
 
-      private IntervalsSource parseTermRule(Map<String, Object> params, String topField) {
+      private IntervalsSource parseTermRule(Map<String, Object> params, SchemaField defaultField) {
         String value = requireString(params, "value", "term");
         String useField = getOptionalString(params, "use_field", "term");
         IntervalsSource source = Intervals.term(value);
         if (useField != null) {
-          source = Intervals.fixField(useField, source);
+          source = Intervals.fixField(resolveField(useField, defaultField).getName(), source);
         }
         return source;
       }
 
-      private IntervalsSource parsePhraseRule(Map<String, Object> params, String topField) {
+      private IntervalsSource parsePhraseRule(
+          Map<String, Object> params, SchemaField defaultField) {
         Object termsObj = params.get("terms");
         Object intervalsObj = params.get("intervals");
         if (termsObj == null && intervalsObj == null) {
@@ -281,12 +289,13 @@ public class IntervalsQParserPlugin extends QParserPlugin {
           }
           return Intervals.phrase(terms);
         } else {
-          List<IntervalsSource> intervals = parseIntervalsArray(params, topField, "phrase");
+          List<IntervalsSource> intervals = parseIntervalsArray(params, defaultField, "phrase");
           return Intervals.phrase(intervals.toArray(IntervalsSource[]::new));
         }
       }
 
-      private IntervalsSource parseRegexpRule(Map<String, Object> params, String topField) {
+      private IntervalsSource parseRegexpRule(
+          Map<String, Object> params, SchemaField defaultField) {
         String pattern = requireString(params, "pattern", "regexp");
         String useField = getOptionalString(params, "use_field", "regexp");
         int maxExpansions =
@@ -299,12 +308,12 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         }
         IntervalsSource source = Intervals.regexp(new BytesRef(pattern), maxExpansions);
         if (useField != null) {
-          source = Intervals.fixField(useField, source);
+          source = Intervals.fixField(resolveField(useField, defaultField).getName(), source);
         }
         return source;
       }
 
-      private IntervalsSource parseRangeRule(Map<String, Object> params, String topField) {
+      private IntervalsSource parseRangeRule(Map<String, Object> params, SchemaField defaultField) {
         String lowerTermStr = getOptionalString(params, "lower_term", "range");
         String upperTermStr = getOptionalString(params, "upper_term", "range");
         boolean includeLower = getBoolean(params, "include_lower", true, "range");
@@ -322,28 +331,30 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         return Intervals.range(lowerTerm, upperTerm, includeLower, includeUpper, maxExpansions);
       }
 
-      private IntervalsSource parseMaxWidthRule(Map<String, Object> params, String topField) {
+      private IntervalsSource parseMaxWidthRule(
+          Map<String, Object> params, SchemaField defaultField) {
         int width = getInt(params, "width", -1, "max_width");
         if (width < 0) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               "Rule 'max_width' requires a non-negative integer 'width'");
         }
-        IntervalsSource source = parseNestedRule(params, "source", "max_width", topField);
+        IntervalsSource source = parseNestedRule(params, "source", "max_width", defaultField);
         return Intervals.maxwidth(width, source);
       }
 
-      private IntervalsSource parseExtendRule(Map<String, Object> params, String topField) {
+      private IntervalsSource parseExtendRule(
+          Map<String, Object> params, SchemaField defaultField) {
         int before = getInt(params, "before", 0, "extend");
         int after = getInt(params, "after", 0, "extend");
-        IntervalsSource source = parseNestedRule(params, "source", "extend", topField);
+        IntervalsSource source = parseNestedRule(params, "source", "extend", defaultField);
         return Intervals.extend(source, before, after);
       }
 
       private IntervalsSource parseUnorderedNoOverlapsRule(
-          Map<String, Object> params, String topField) {
+          Map<String, Object> params, SchemaField defaultField) {
         List<IntervalsSource> intervals =
-            parseIntervalsArray(params, topField, "unordered_no_overlaps");
+            parseIntervalsArray(params, defaultField, "unordered_no_overlaps");
         if (intervals.size() != 2) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
@@ -352,38 +363,42 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         return Intervals.unorderedNoOverlaps(intervals.get(0), intervals.get(1));
       }
 
-      private IntervalsSource parseNotWithinRule(Map<String, Object> params, String topField) {
-        IntervalsSource source = parseNestedRule(params, "source", "not_within", topField);
+      private IntervalsSource parseNotWithinRule(
+          Map<String, Object> params, SchemaField defaultField) {
+        IntervalsSource source = parseNestedRule(params, "source", "not_within", defaultField);
         int positions = getInt(params, "positions", -1, "not_within");
         if (positions < 0) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               "Rule 'not_within' requires a non-negative integer 'positions'");
         }
-        IntervalsSource reference = parseNestedRule(params, "reference", "not_within", topField);
+        IntervalsSource reference =
+            parseNestedRule(params, "reference", "not_within", defaultField);
         return Intervals.notWithin(source, positions, reference);
       }
 
-      private IntervalsSource parseWithinRule(Map<String, Object> params, String topField) {
-        IntervalsSource source = parseNestedRule(params, "source", "within", topField);
+      private IntervalsSource parseWithinRule(
+          Map<String, Object> params, SchemaField defaultField) {
+        IntervalsSource source = parseNestedRule(params, "source", "within", defaultField);
         int positions = getInt(params, "positions", -1, "within");
         if (positions < 0) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               "Rule 'within' requires a non-negative integer 'positions'");
         }
-        IntervalsSource reference = parseNestedRule(params, "reference", "within", topField);
+        IntervalsSource reference = parseNestedRule(params, "reference", "within", defaultField);
         return Intervals.within(source, positions, reference);
       }
 
-      private IntervalsSource parseAtLeastRule(Map<String, Object> params, String topField) {
+      private IntervalsSource parseAtLeastRule(
+          Map<String, Object> params, SchemaField defaultField) {
         int minShouldMatch = getInt(params, "min_should_match", -1, "at_least");
         if (minShouldMatch < 0) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               "Rule 'at_least' requires a non-negative integer 'min_should_match'");
         }
-        List<IntervalsSource> intervals = parseIntervalsArray(params, topField, "at_least");
+        List<IntervalsSource> intervals = parseIntervalsArray(params, defaultField, "at_least");
         return Intervals.atLeast(minShouldMatch, intervals.toArray(IntervalsSource[]::new));
       }
 
@@ -393,7 +408,7 @@ public class IntervalsQParserPlugin extends QParserPlugin {
       }
 
       private IntervalsSource parseNestedRule(
-          Map<String, Object> params, String key, String ruleName, String topField) {
+          Map<String, Object> params, String key, String ruleName, SchemaField defaultField) {
         Object nested = params.get(key);
         if (nested == null) {
           throw new SolrException(
@@ -401,11 +416,11 @@ public class IntervalsQParserPlugin extends QParserPlugin {
               "Rule '" + ruleName + "' requires '" + key + "' parameter");
         }
         return parseRuleObject(
-            asStringObjectMap(nested, "'" + key + "' in rule '" + ruleName + "'"), topField);
+            asStringObjectMap(nested, "'" + key + "' in rule '" + ruleName + "'"), defaultField);
       }
 
       private List<IntervalsSource> parseIntervalsArray(
-          Map<String, Object> params, String topField, String ruleName) {
+          Map<String, Object> params, SchemaField defaultField, String ruleName) {
         Object intervalsObj = params.get("intervals");
         if (!(intervalsObj instanceof List<?>)) {
           throw new SolrException(
@@ -421,13 +436,14 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         List<IntervalsSource> parsed = new ArrayList<>(rawIntervals.size());
         for (Object intervalObj : rawIntervals) {
           parsed.add(
-              parseRuleObject(asStringObjectMap(intervalObj, "intervals array element"), topField));
+              parseRuleObject(
+                  asStringObjectMap(intervalObj, "intervals array element"), defaultField));
         }
         return parsed;
       }
 
       private IntervalsSource applyFilter(
-          IntervalsSource source, Object filterObj, String topField) {
+          IntervalsSource source, Object filterObj, SchemaField defaultField) {
         if (filterObj == null) {
           return source;
         }
@@ -445,7 +461,8 @@ public class IntervalsQParserPlugin extends QParserPlugin {
               SolrException.ErrorCode.BAD_REQUEST, "Filter operator 'script' is not supported");
         }
         IntervalsSource other =
-            parseRuleObject(asStringObjectMap(entry.getValue(), "filter '" + op + "'"), topField);
+            parseRuleObject(
+                asStringObjectMap(entry.getValue(), "filter '" + op + "'"), defaultField);
         return switch (op) {
           case "after" -> Intervals.after(source, other);
           case "before" -> Intervals.before(source, other);
@@ -460,10 +477,20 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         };
       }
 
-      private Analyzer resolveAnalyzer(Map<String, Object> params, String field, String ruleName) {
+      /**
+       * Resolves the field referenced by an optional {@code use_field} rule parameter, falling back
+       * to the query's default field when absent. Throws BAD_REQUEST if {@code useField} names a
+       * field that doesn't exist in the schema.
+       */
+      private SchemaField resolveField(String useField, SchemaField defaultField) {
+        return useField == null ? defaultField : req.getSchema().getField(useField);
+      }
+
+      private Analyzer resolveAnalyzer(
+          Map<String, Object> params, SchemaField field, String ruleName) {
         String analyzerName = getOptionalString(params, "analyzer", ruleName);
         if (analyzerName == null) {
-          return req.getSchema().getFieldTypeNoEx(field).getQueryAnalyzer();
+          return field.getType().getQueryAnalyzer();
         }
         return resolveFieldType(analyzerName, ruleName).getQueryAnalyzer();
       }
@@ -475,12 +502,10 @@ public class IntervalsQParserPlugin extends QParserPlugin {
        * to be tokenized.
        */
       private Analyzer resolveMultiTermAnalyzer(
-          Map<String, Object> params, String field, String ruleName) {
+          Map<String, Object> params, SchemaField field, String ruleName) {
         String analyzerName = getOptionalString(params, "analyzer", ruleName);
         FieldType fieldType =
-            analyzerName == null
-                ? req.getSchema().getFieldTypeNoEx(field)
-                : resolveFieldType(analyzerName, ruleName);
+            analyzerName == null ? field.getType() : resolveFieldType(analyzerName, ruleName);
         if (fieldType instanceof TextField textField) {
           return textField.getMultiTermAnalyzer();
         }
