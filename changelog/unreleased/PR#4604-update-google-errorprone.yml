@@ -3,3 +3,6 @@ title: Update com.google.errorprone to 2.50.0 and fix/suppress new bug patterns 
 type: dependency_update
 authors:
   - name: Jan Høydahl
+links:
+- name: PR#4604
+  url: https://github.com/apache/solr/pull/4604
