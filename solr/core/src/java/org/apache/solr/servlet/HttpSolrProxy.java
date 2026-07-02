@@ -38,12 +38,15 @@ import org.eclipse.jetty.http.HttpHeader;
 /** Helper class for proxying the request to another Solr node. */
 // Tried to use Jetty's ProxyServlet instead but ran into inexplicable difficulties:  EOF/reset.
 // Perhaps was related to its use of ServletRequest.startAsync()/AsyncContext
+// Reference proxy servlet for comparison (Host special-casing, length-aware request body):
+// https://github.com/jetty/jetty.project/blob/jetty-12.1.x/jetty-ee11/jetty-ee11-proxy/src/main/java/org/eclipse/jetty/ee11/proxy/AbstractProxyServlet.java
 class HttpSolrProxy {
   // TODO add X-Forwarded-For and with comma delimited
 
-  // Headers not to forward: hop-by-hop, plus Host and Content-Length which the Jetty client
-  // re-derives for the upstream. Forwarding the originals makes Jetty 12.1 reject with a 400.
-  private static final Set<HttpHeader> SKIP_HEADERS =
+  // Request headers not to forward: hop-by-hop, plus HOST and CONTENT_LENGTH. The Jetty client
+  // re-derives these for the upstream (CONTENT_LENGTH via the body's getLength(); see doHttpProxy);
+  // forwarding the originals makes Jetty 12.1 reject with a 400.
+  private static final Set<HttpHeader> SKIP_REQUEST_HEADERS =
       EnumSet.of(
           HttpHeader.CONNECTION,
           HttpHeader.KEEP_ALIVE,
@@ -54,6 +57,18 @@ class HttpSolrProxy {
           HttpHeader.UPGRADE,
           HttpHeader.HOST,
           HttpHeader.CONTENT_LENGTH);
+
+  // Response headers not to forward: hop-by-hop only. CONTENT_LENGTH is kept, as onContent
+  // re-streams the body byte-for-byte, so the origin's length stays accurate.
+  private static final Set<HttpHeader> SKIP_RESPONSE_HEADERS =
+      EnumSet.of(
+          HttpHeader.CONNECTION,
+          HttpHeader.KEEP_ALIVE,
+          HttpHeader.PROXY_AUTHENTICATE,
+          HttpHeader.PROXY_AUTHORIZATION,
+          HttpHeader.TE,
+          HttpHeader.TRANSFER_ENCODING,
+          HttpHeader.UPGRADE);
 
   // Methods that shouldn't have a body according to HTTP spec
   private static final Set<String> NO_BODY_METHODS = Set.of("GET", "HEAD", "DELETE");
@@ -75,8 +90,15 @@ class HttpSolrProxy {
     // https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/jetty-httpclient/jetty-httpclient-12.0
 
     if (!NO_BODY_METHODS.contains(servletReq.getMethod())) {
+      // Report the known body length so the client frames Content-Length upstream; -1 (chunked
+      // request in) stays chunked.
       proxyReq.body(
-          new InputStreamRequestContent(servletReq.getContentType(), servletReq.getInputStream()));
+          new InputStreamRequestContent(servletReq.getContentType(), servletReq.getInputStream()) {
+            @Override
+            public long getLength() {
+              return servletReq.getContentLengthLong();
+            }
+          });
     }
 
     CompletableFuture<Result> resultFuture = new CompletableFuture<>();
@@ -135,7 +157,7 @@ class HttpSolrProxy {
         .forEachRemaining(
             headerName -> {
               HttpHeader knownHeader = HttpHeader.CACHE.get(headerName); // maybe null
-              if (!SKIP_HEADERS.contains(knownHeader)) {
+              if (!SKIP_REQUEST_HEADERS.contains(knownHeader)) {
                 servletReq
                     .getHeaders(headerName)
                     .asIterator()
@@ -147,7 +169,7 @@ class HttpSolrProxy {
   private static void copyResponseHeaders(Response proxyRsp, HttpServletResponse servletRsp) {
     for (HttpField headerField : proxyRsp.getHeaders()) {
       HttpHeader knownHeader = headerField.getHeader();
-      if (!SKIP_HEADERS.contains(knownHeader)) {
+      if (!SKIP_RESPONSE_HEADERS.contains(knownHeader)) {
         // HttpField: even if multiple values, it's encoded as one comma delimited value
         servletRsp.addHeader(headerField.getName(), headerField.getValue());
       }
