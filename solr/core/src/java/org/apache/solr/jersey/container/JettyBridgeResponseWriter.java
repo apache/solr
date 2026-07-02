@@ -58,10 +58,9 @@ public class JettyBridgeResponseWriter implements ContainerResponseWriter {
     final StatusType statusInfo = context.getStatusInfo();
     httpServletResponse.setStatus(statusInfo.getStatusCode());
 
-    // Guard is > 0, not != -1: a leftover Content-Length: 0 from V2HttpCall's empty first pass
-    // (not-found core attempt) makes Jetty 12.1 abort the cluster-fallback body it writes next.
-    if (contentLength > 0 && contentLength < Integer.MAX_VALUE) {
-      httpServletResponse.setContentLength((int) contentLength);
+    // Note: don't propagate if 0 length: V2HttpCall does an empty first pass
+    if (contentLength > 0) {
+      httpServletResponse.setContentLengthLong(contentLength);
     }
     for (final Map.Entry<String, List<String>> e : context.getStringHeaders().entrySet()) {
       for (final String value : e.getValue()) {

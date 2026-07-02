@@ -82,9 +82,9 @@ public class HttpSolrProxyTest extends SolrCloudTestCase {
   }
 
   /**
-   * When the origin declares a Content-Length, the proxied response must preserve it (rather than
-   * being forced to chunked) and it must exactly match the bytes delivered — otherwise Jetty 12.1
-   * would abort the re-streamed response with "too much content written".
+   * The proxied response must preserve the origin's Content-Length (rather than being forced to
+   * chunked) and it must exactly match the bytes delivered — otherwise Jetty 12.1 would abort the
+   * re-streamed response with "too much content written".
    */
   @Test
   public void testProxiedResponsePreservesContentLength() throws Exception {
@@ -92,9 +92,11 @@ public class HttpSolrProxyTest extends SolrCloudTestCase {
 
     HttpURLConnection direct = open(owningNode, path);
     assertEquals(200, direct.getResponseCode());
-    boolean originDeclaresLength = direct.getHeaderField("Content-Length") != null;
+    String originLen = direct.getHeaderField("Content-Length");
     direct.getInputStream().readAllBytes();
     direct.disconnect();
+    assertNotNull(
+        "Precondition: origin should frame this small response with a Content-Length", originLen);
 
     HttpURLConnection proxied = open(proxyingNode, path);
     assertEquals(200, proxied.getResponseCode());
@@ -102,15 +104,11 @@ public class HttpSolrProxyTest extends SolrCloudTestCase {
     int proxiedBodyLen = proxied.getInputStream().readAllBytes().length;
     proxied.disconnect();
 
-    if (originDeclaresLength) {
-      assertNotNull("Proxy dropped the origin's Content-Length (forced chunked)", proxiedLen);
-    }
-    if (proxiedLen != null) {
-      assertEquals(
-          "Proxied Content-Length must match the bytes delivered",
-          proxiedBodyLen,
-          Integer.parseInt(proxiedLen));
-    }
+    assertNotNull("Proxy dropped the origin's Content-Length (forced chunked)", proxiedLen);
+    assertEquals(
+        "Proxied Content-Length must match the bytes delivered",
+        proxiedBodyLen,
+        Integer.parseInt(proxiedLen));
   }
 
   private static HttpURLConnection open(JettySolrRunner node, String pathAndQuery)
