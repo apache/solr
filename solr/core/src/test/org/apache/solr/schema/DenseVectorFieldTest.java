@@ -94,6 +94,14 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
+  public void fieldDefinition_derivedStoredMultiValued_shouldThrowException() throws Exception {
+    assertConfigs(
+        "solrconfig-basic.xml",
+        "bad-schema-densevector-derived-stored-multivalued.xml",
+        "useVectorValuesAsStored is not supported for multiValued DenseVectorField: vector");
+  }
+
+  @Test
   public void fieldTypeDefinition_nullSimilarityDistance_shouldUseDefaultSimilarityEuclidean()
       throws Exception {
     try {
@@ -693,6 +701,67 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
           "/response/docs/[0]/vector_byte_encoding==[8,3,1,3]",
           "/response/docs/[0]/string_field=='test'");
 
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void denseVectorField_useVectorValuesAsStored_shouldReturnVectorsInQueryResults()
+      throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-derived-stored.xml");
+      assertU(
+          adoc(
+              sdoc(
+                  "id",
+                  "0",
+                  "vector",
+                  Arrays.asList(1.1, 2.2, 3.3, 4.4),
+                  "vector_byte_encoding",
+                  Arrays.asList(5, 6, 7, 8),
+                  "string_field",
+                  "test")));
+      assertU(commit());
+
+      assertJQ(
+          req("q", "id:0", "fl", "*"),
+          "/response/docs/[0]/vector==[1.1,2.2,3.3,4.4]",
+          "/response/docs/[0]/vector_byte_encoding==[5,6,7,8]",
+          "/response/docs/[0]/string_field=='test'");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void denseVectorField_useVectorValuesAsStored_shouldPreserveVectorsAfterAtomicUpdate()
+      throws Exception {
+    assumeTrue(
+        "update log must be enabled for atomic update",
+        Boolean.getBoolean(System.getProperty("solr.index.updatelog.enabled")));
+    try {
+      initCore("solrconfig.xml", "schema-densevector-derived-stored.xml");
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "0");
+      doc.addField("vector", Arrays.asList(1.1, 2.2, 3.3, 4.4));
+      doc.addField("vector_byte_encoding", Arrays.asList(5, 6, 7, 8));
+      doc.addField("string_field", "test");
+
+      assertU(adoc(doc));
+      assertU(commit());
+
+      SolrInputDocument updateDoc = new SolrInputDocument();
+      updateDoc.addField("id", "0");
+      updateDoc.addField("string_field", Map.of("set", "other test"));
+      assertU(adoc(updateDoc));
+      assertU(commit());
+
+      assertJQ(
+          req("q", "id:0", "fl", "*"),
+          "/response/docs/[0]/vector==[1.1,2.2,3.3,4.4]",
+          "/response/docs/[0]/vector_byte_encoding==[5,6,7,8]",
+          "/response/docs/[0]/string_field=='other test'");
     } finally {
       deleteCore();
     }
