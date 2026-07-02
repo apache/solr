@@ -32,6 +32,7 @@ ext {
   slimDistDir = file("$buildDir/solr-${version}-slim")
   devDir = file("$buildDir/dev")
   slimDevDir = file("$buildDir/dev-slim")
+  batsLibsDir = file("$buildDir/bats-libs")
 }
 
 configurations {
@@ -263,18 +264,39 @@ tasks.register('runDev', JavaExec) {
   args((project.findProperty('args') ?: '--module=http').split())
 }
 
-task downloadBats(type: NpmTask) {
+tasks.register('downloadBats') {
   group = 'Build Dependency Download'
-  args = ["install", "https://github.com/bats-core/bats-core#v1.8.2",
-                     "https://github.com/bats-core/bats-assert#v2.0.0",
-                     "https://github.com/bats-core/bats-file#v0.3.0",
-  ]
+  description =
+      'Downloads BATS and its helper libraries (bats-support, bats-assert, bats-file) used by integrationTests'
 
-  inputs.files("${project.ext.nodeProjectDir}/package.json")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-support")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-assert")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-file")
+  def batsLibs = [
+      [org: 'bats-core', repo: 'bats-core', version: '1.8.2'],
+      [org: 'ztombol', repo: 'bats-support', version: '0.2.0'],
+      [org: 'bats-core', repo: 'bats-assert', version: '2.0.0'],
+      [org: 'bats-core', repo: 'bats-file', version: '0.3.0'],
+  ]
+  def downloadDir = file("$buildDir/bats-downloads")
+
+  inputs.property('batsLibs', batsLibs)
+  outputs.dir(batsLibsDir)
+
+  doLast {
+    delete batsLibsDir
+    mkdir downloadDir
+    batsLibs.each {lib ->
+      def archiveUrl = "https://github.com/${lib.org}/${lib.repo}/archive/refs/tags/v${lib.version}.tar.gz"
+      def archiveFile = new File(downloadDir, "${lib.repo}-${lib.version}.tar.gz")
+      ant.get(src: archiveUrl, dest: archiveFile, skipexisting: true)
+      copy {
+        from(tarTree(resources.gzip(archiveFile))) {
+          // Strip the leading "<repo>-<version>/" directory that GitHub's archive adds.
+          eachFile {details -> details.path = details.path.substring(details.path.indexOf('/') + 1)}
+          includeEmptyDirs = false
+        }
+        into "$batsLibsDir/${lib.repo}"
+      }
+    }
+  }
 }
 
 task integrationTests(type: BatsTask) {
@@ -319,7 +341,7 @@ task integrationTests(type: BatsTask) {
   environment SOLR_LOGS_DIR: "$solrHome/logs"
   environment TEST_OUTPUT_DIR: integrationTestOutput
   environment TEST_FAILURE_DIR: solrTestFailuresDir
-  environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
+  environment BATS_LIB_PREFIX: batsLibsDir
 }
 
 class BatsTask extends Exec {
@@ -338,7 +360,7 @@ class BatsTask extends Exec {
   @Override
   @TaskAction
   protected void exec() {
-    executable "$project.ext.nodeProjectDir/node_modules/bats/bin/bats"
+    executable "$project.ext.batsLibsDir/bats-core/bin/bats"
 
     // Note: tests to run must be listed after all other arguments
     // Additional debugging output: -x, --verbose-run
