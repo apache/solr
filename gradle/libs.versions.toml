@@ -53,12 +53,14 @@ asciidoctor-mathjax = "0.0.9"
 asciidoctor-tabs = "1.0.0-beta.6"
 azagniotov-langdetect = "12.5.2"
 azure-sdk-bom = "1.3.6"
-# @keep bats-assert (node) version used in packaging
+# @keep bats-assert version used in packaging
 bats-assert = "2.0.0"
-# @keep bats-core (node) version used in packaging
+# @keep bats-core version used in packaging
 bats-core = "1.8.2"
-# @keep bats-file (node) version used in packaging
+# @keep bats-file version used in packaging
 bats-file = "0.3.0"
+# @keep bats-support version used in packaging
+bats-support = "0.2.0"
 bc-jose4j = "0.9.6"
 benmanes-caffeine = "3.2.3"
 benmanes-versions = "0.53.0"
@@ -70,7 +72,7 @@ carrot2-core = "4.8.1"
 carrotsearch-hppc = "0.10.0"
 carrotsearch-randomizedtesting = "2.8.4"
 # @keep for version alignment
-checkerframework = "3.54.0"
+checkerframework = "4.2.0"
 codehaus-woodstox = "4.3.0"
 commons-cli = "1.11.0"
 commons-codec = "1.22.0"
@@ -197,7 +199,6 @@ tdunning-tdigest = "3.3"
 testcontainers = "2.0.5"
 thetaphi-forbiddenapis = "3.10"
 threeten-bp = "1.7.3"
-undercouch-download = "5.7.0"
 xerial-snappy = "1.1.10.8"
 
 [plugins]
@@ -216,7 +217,6 @@ openapi-generator = { id = "org.openapi.generator", version.ref = "openapi" }
 owasp-dependencycheck = { id = "org.owasp.dependencycheck", version.ref = "owasp-dependencycheck" }
 swagger3-core = { id = "io.swagger.core.v3.swagger-gradle-plugin", version.ref = "swagger3" }
 thetaphi-forbiddenapis = { id = "de.thetaphi.forbiddenapis", version.ref = "thetaphi-forbiddenapis" }
-undercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download" }
 
 [libraries]
 adobe-testing-s3mock-junit4 = { module = "com.adobe.testing:s3mock-junit4", version.ref = "adobe-testing-s3mock" }
