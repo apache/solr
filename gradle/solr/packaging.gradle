@@ -86,7 +86,7 @@ configure(allprojects
       from({
         def externalLibs = configurations.runtimeLibs.copyRecursive {dep ->
           if (dep instanceof org.gradle.api.artifacts.ProjectDependency) {
-            return !dep.dependencyProject.path.startsWith(":solr")
+            return !dep.path.startsWith(":solr")
           } else {
             return true
           }

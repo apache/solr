@@ -32,7 +32,6 @@ import java.util.UUID;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -467,12 +466,13 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   public static Map<String, Integer> getShardToDocCountMap(
       CloudSolrClient client, DocCollection docCollection) throws SolrServerException, IOException {
     Map<String, Integer> shardToDocCount = new TreeMap<>();
-    var jettySolrClient = ((CloudJettySolrClient) client).getHttpClient();
     for (Slice slice : docCollection.getActiveSlices()) {
       long docsInShard =
           new QueryRequest("/select", params("q", "*:*", "distrib", "false"))
               .processWithBaseUrl(
-                  jettySolrClient, slice.getLeader().getBaseUrl(), slice.getLeader().getCoreName())
+                  client.getHttpClient(),
+                  slice.getLeader().getBaseUrl(),
+                  slice.getLeader().getCoreName())
               .getResults()
               .getNumFound();
       shardToDocCount.put(slice.getName(), (int) docsInShard);
