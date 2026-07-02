@@ -70,12 +70,15 @@ public class HttpSolrProxyTest extends SolrCloudTestCase {
    */
   @Test
   public void testProxiedPostWithBodySucceeds() throws Exception {
-    String body = "[{\"id\":\"1\"}]";
+    byte[] body = "[{\"id\":\"1\"}]".getBytes(UTF_8);
     HttpURLConnection conn = open(proxyingNode, "/" + COLLECTION + "/update/json?commit=true");
     conn.setRequestMethod("POST");
-    conn.setDoOutput(true); // HttpURLConnection then sends a Content-Length for our body
+    conn.setDoOutput(true);
+    conn.setFixedLengthStreamingMode(body.length); // send a deterministic Content-Length
     conn.setRequestProperty("Content-Type", "application/json");
-    conn.getOutputStream().write(body.getBytes(UTF_8));
+    try (var out = conn.getOutputStream()) {
+      out.write(body);
+    }
     assertEquals(200, conn.getResponseCode());
     conn.getInputStream().readAllBytes();
     conn.disconnect();
