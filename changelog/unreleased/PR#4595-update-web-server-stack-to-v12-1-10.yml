@@ -1,0 +1,7 @@
+title: Update Web server stack to v12.1.10
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4595
+  url: https://github.com/apache/solr/pull/4595
