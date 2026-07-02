@@ -9,6 +9,33 @@
     "fileFilters": ["solr/licenses/*.sha1"],
     "executionMode": "branch"
   },
+  "packageRules": [
+    {
+      "description": "Pin com.palantir.consistent-versions to 2.32.0; newer versions require Java 17 but branch_9x builds with Java 11",
+      "matchPackageNames": ["com.palantir.consistent-versions"],
+      "allowedVersions": "2.32.0"
+    },
+    {
+      "description": "Pin org.carrot2:carrot2-core to 4.5.1; 4.8.6 requires Java 21 but branch_9x builds with Java 11",
+      "matchPackageNames": ["org.carrot2:carrot2-core"],
+      "allowedVersions": "4.5.1"
+    },
+    {
+      "description": "Keep org.apache.hadoop on 3.4.x; 3.5.0 requires Java 17 but branch_9x builds with Java 11",
+      "matchPackagePrefixes": ["org.apache.hadoop:"],
+      "allowedVersions": "<3.5.0"
+    },
+    {
+      "description": "Pin dev.langchain4j to 0.35.0; 0.36.2 requires Java 17 but branch_9x builds with Java 11",
+      "matchPackagePrefixes": ["dev.langchain4j:"],
+      "allowedVersions": "0.35.0"
+    },
+    {
+      "description": "Keep Error Prone on 2.31.0; the build hard-pins it to 2.31.0 for JDK11 compatibility on branch_9x",
+      "matchPackagePrefixes": ["com.google.errorprone:"],
+      "allowedVersions": "2.31.0"
+    }
+  ],
   "schedule": ["* * * * *"],
   "prConcurrentLimit": 100,
   "prHourlyLimit": 10,
