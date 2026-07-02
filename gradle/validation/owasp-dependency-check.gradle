@@ -28,7 +28,7 @@ configure(rootProject) {
     formats = ['ALL']
     skipProjects = [':solr:solr-ref-guide', ':solr-missing-doclet']
     skipConfigurations = ['unifiedClasspath', 'permitUnusedDeclared']
-    suppressionFile = file("${resources}/exclusions.xml")
+    suppressionFile = "${resources}/exclusions.xml"
     analyzers {
       assemblyEnabled = false
     }
