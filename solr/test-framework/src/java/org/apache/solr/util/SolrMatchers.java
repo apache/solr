@@ -40,17 +40,17 @@ public class SolrMatchers {
    * @param <T> The type that the list being matched against will contain
    */
   public static <T> Matcher<List<? extends T>> subListMatches(
-      int fromIndex, int toIndex, Matcher<? super List<? super T>> subListMatcher) {
+      int fromIndex, int toIndex, Matcher<Iterable<? extends T>> subListMatcher) {
     return new SubListMatcher<>(fromIndex, toIndex, subListMatcher);
   }
 
   public static class SubListMatcher<T> extends TypeSafeDiagnosingMatcher<List<? extends T>> {
     private final int fromIndex;
     private final int toIndex;
-    private final Matcher<? super List<T>> matchOnSubList;
+    private final Matcher<Iterable<? extends T>> matchOnSubList;
 
     public SubListMatcher(
-        int fromIndex, int toIndex, Matcher<? super List<? super T>> matchOnSubList) {
+        int fromIndex, int toIndex, Matcher<Iterable<? extends T>> matchOnSubList) {
       super();
       this.fromIndex = fromIndex;
       this.toIndex = toIndex;
