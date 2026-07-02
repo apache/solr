@@ -20,16 +20,21 @@ The Intervals Query Parser (`IntervalsQParserPlugin`) builds Lucene interval que
 Interval queries allow you to express positional constraints such as "these terms must appear within N positions of each other" or "this phrase must appear before that one".
 See the {lucene-javadocs}/queries/org/apache/lucene/queries/intervals/package-summary.html[Lucene Intervals package documentation] for a detailed description of the underlying interval machinery.
 
-Invoked with the syntax `{!intervals json_query=<name> df=<field>}`.
+Invoked with the syntax `{!intervals df=<field>}$<name>`.
 
 == Query Format
 
 Specify the target field using the `df` local param (or the `df` query param as a fallback).
-The named entry in `json_queries` is then the rule object directly, with no field wrapper.
+The query string following the local params, `$<name>`, is *required* and names an entry in the
+`json_queries` map of the JSON request body; that entry is then the rule object directly, with no
+field wrapper.
+If the `$<name>` reference is missing or malformed, or if `json_queries` (or the named entry
+within it) is absent from the JSON request body, the query parser throws a `BAD_REQUEST` error
+explaining the expected syntax.
 
 [source,text]
 ----
-q={!intervals json_query=myQuery df=title}
+q={!intervals df=title}$myQuery
 ----
 
 [source,text]
@@ -45,13 +50,14 @@ json={
 
 == Parameters
 
-`json_query`::
+`$<name>`::
 +
 [%autowidth,frame=none]
 |===
 |Required |Default: none
 |===
 +
+The query string following the local params (e.g., `$myQuery`).
 Names an entry in the `json_queries` map that defines the interval query to execute.
 
 `df`::
@@ -721,7 +727,7 @@ Find documents where the `title` field contains the phrase "apache solr" followe
 
 [source,text]
 ----
-q={!intervals json_query=titleQuery df=title}
+q={!intervals df=title}$titleQuery
 ----
 
 [source,text]

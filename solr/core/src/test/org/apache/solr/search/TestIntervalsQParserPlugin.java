@@ -30,15 +30,59 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testIntervalsNoJsonQueryParam() throws Exception {
+  public void testIntervalsMissingQueryReferenceThrows() throws Exception {
     assertU(adoc("id", "1", "v_t", "hello world"));
     assertU(commit());
 
-    // Without a json_query param the parser returns MatchNoDocsQuery
-    assertQ(
-        "intervals qparser without json_query should return no docs",
-        req("q", "{!intervals}"),
-        "//result[@numFound='0']");
+    // Without a "$name" query string the parser must explain the required syntax
+    assertQEx(
+        "intervals qparser without a $name reference should throw BAD_REQUEST",
+        "Expected syntax",
+        req("q", "{!intervals df=v_t}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void testIntervalsMissingJsonBodyThrows() throws Exception {
+    assertU(adoc("id", "2", "v_t", "hello world"));
+    assertU(commit());
+
+    // With a $name reference but no JSON request body at all
+    assertQEx(
+        "intervals qparser without a JSON body should throw BAD_REQUEST",
+        "No JSON request body found",
+        req("q", "{!intervals df=v_t}$myQuery"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void testIntervalsMissingJsonQueriesKeyThrows() throws Exception {
+    assertU(adoc("id", "3", "v_t", "hello world"));
+    assertU(commit());
+
+    // JSON body present, but no top-level "json_queries" map
+    assertQEx(
+        "intervals qparser without a json_queries map should throw BAD_REQUEST",
+        "No 'json_queries' map found",
+        req("q", "{!intervals df=v_t}$myQuery", "json", "{params:{}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void testIntervalsMissingNamedQueryThrows() throws Exception {
+    assertU(adoc("id", "4", "v_t", "hello world"));
+    assertU(commit());
+
+    // json_queries map present, but it has no entry named "myQuery"
+    assertQEx(
+        "intervals qparser with an unresolved $name reference should throw BAD_REQUEST",
+        "Query 'myQuery' not found in 'json_queries'",
+        req(
+            "q",
+            "{!intervals df=v_t}$myQuery",
+            "json",
+            "{json_queries:{otherQuery:{match:{query:foo}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 
   @Test
@@ -47,12 +91,12 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
     assertU(adoc("id", "11", "v_t", "baz qux"));
     assertU(commit());
 
-    // field specified via df local param; json_query is the rule object directly
+    // field specified via df local param; the named json_queries entry is the rule object directly
     assertQ(
         "intervals qparser with match rule should match documents containing the term",
         req(
             "q",
-            "{!intervals json_query=myQuery df=v_t}",
+            "{!intervals df=v_t}$myQuery",
             "json",
             "{json_queries:{myQuery:{match:{query:foo}}}}"),
         "//result[@numFound='1']",
@@ -70,7 +114,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "intervals qparser should support all_of with nested any_of via df local param",
         req(
             "q",
-            "{!intervals json_query=second_query df=title_t}",
+            "{!intervals df=title_t}$second_query",
             "json",
             "{json_queries:{"
                 + "second_query:{"
@@ -99,7 +143,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "intervals qparser with non-matching rule should return no docs",
         req(
             "q",
-            "{!intervals json_query=myQuery df=v_t}",
+            "{!intervals df=v_t}$myQuery",
             "json",
             "{json_queries:{myQuery:{match:{query:zzznomatch}}}}"),
         "//result[@numFound='0']");
@@ -113,11 +157,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
 
     assertQ(
         "term rule should match documents containing the exact term",
-        req(
-            "q",
-            "{!intervals json_query=q1 df=v_ws}",
-            "json",
-            "{json_queries:{q1:{term:{value:trm_apple}}}}"),
+        req("q", "{!intervals df=v_ws}$q1", "json", "{json_queries:{q1:{term:{value:trm_apple}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='40']");
   }
@@ -132,7 +172,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "phrase rule with terms array should match documents with exact phrase",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{phrase:{terms:[phrA_quick,phrA_brown,phrA_fox]}}}}"),
         "//result[@numFound='1']",
@@ -149,7 +189,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "phrase rule with intervals array should match documents with the phrase in order",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{phrase:{intervals:"
                 + "[{term:{value:phrB_quick}},{term:{value:phrB_brown}},{term:{value:phrB_fox}}]}}}}"),
@@ -168,7 +208,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "regexp rule should match documents with terms matching the pattern",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{regexp:{pattern:'rx_ca.*'}}}}"),
         "//result[@numFound='2']");
@@ -178,7 +218,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "max_expansions",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{regexp:{pattern:'rx_ca.*',max_expansions:-1}}}}"),
         SolrException.ErrorCode.BAD_REQUEST);
@@ -196,7 +236,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "range rule should match documents with terms in the given range",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{range:{lower_term:rng_bbbb,upper_term:rng_cccc,"
                 + "include_lower:true,include_upper:true}}}}"),
@@ -209,7 +249,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "max_expansions",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{range:{lower_term:rng_bbbb,upper_term:rng_cccc,"
                 + "include_lower:true,include_upper:true,max_expansions:-1}}}}"),
@@ -227,7 +267,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "fuzzy rule should match documents with terms within the edit distance",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{fuzzy:{term:fzz_cat,fuzziness:'1'}}}}"),
         "//result[@numFound='2']",
@@ -239,7 +279,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "prefix_length",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{fuzzy:{term:fzz_cat,prefix_length:-1}}}}"),
         SolrException.ErrorCode.BAD_REQUEST);
@@ -256,7 +296,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "max_width rule should filter intervals by maximum width",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{max_width:{width:2,source:"
                 + "{all_of:{ordered:true,intervals:[{term:{value:mwd_alpha}},{term:{value:mwd_beta}}]}}}}}}"),
@@ -275,7 +315,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "extend rule should extend intervals by specified positions",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{extend:{source:{term:{value:ext_three}},before:2,after:2}}}}"),
         "//result[@numFound='1']",
@@ -293,7 +333,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "unordered_no_overlaps rule should match documents containing both terms without overlap",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{unordered_no_overlaps:{intervals:"
                 + "[{term:{value:uno_foo}},{term:{value:uno_bar}}]}}}}"),
@@ -311,7 +351,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "within rule should match documents where source appears within N positions of reference",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{within:{source:{term:{value:wth_alpha}},"
                 + "positions:1,reference:{term:{value:wth_beta}}}}}}"),
@@ -331,7 +371,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "not_within rule should match documents where source is not within N positions of reference",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{not_within:{source:{term:{value:nwt_alpha}},"
                 + "positions:1,reference:{term:{value:nwt_beta}}}}}}"),
@@ -352,7 +392,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "at_least rule should match documents containing at least N of the given sources",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{at_least:{min_should_match:2,intervals:"
                 + "[{term:{value:atl_alpha}},{term:{value:atl_beta}},{term:{value:atl_gamma}}]}}}}"),
@@ -368,7 +408,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "no_intervals rule should match no documents",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{no_intervals:{reason:testing}}}}"),
         "//result[@numFound='0']");
@@ -385,7 +425,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "df query param (not local param) should be used as the field when df is absent in local params",
         req(
             "q",
-            "{!intervals json_query=q1}",
+            "{!intervals}$q1",
             "df",
             "v_ws",
             "json",
@@ -407,7 +447,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "Unsupported intervals rule: v_ws",
         req(
             "q",
-            "{!intervals json_query=q1 df=v_ws}",
+            "{!intervals df=v_ws}$q1",
             "json",
             "{json_queries:{q1:{v_ws:{term:{value:bkc_alpha}}}}}"),
         SolrException.ErrorCode.BAD_REQUEST);
@@ -448,7 +488,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "intervals handles the same nested alternative and finds both valid matches",
         req(
             "q",
-            "{!intervals json_query=cmpq df=v_ws}",
+            "{!intervals df=v_ws}$cmpq",
             "json",
             // max_gaps:0 mirrors the xmlparser query's slop="0": the whole sequence must be
             // contiguous, so doc 172 (where cmpblame/cmpsystem separate cmpdomain from cmpis)

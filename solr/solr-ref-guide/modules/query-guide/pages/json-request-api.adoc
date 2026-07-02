@@ -254,6 +254,8 @@ curl "http://localhost:8983/solr/techproducts/query?fl=name,price&q=memory&rows=
 
 Usage of `queries` key is described in xref:json-query-dsl.adoc#additional-queries[Additional Queries].
 
+`json_queries` key is used by xref:intervals-query-parser.adoc[Intervals Query Parser].
+
 
 === Parameter Substitution / Macro Expansion
 Of course request templating via parameter substitution works fully with JSON request bodies or parameters as well.

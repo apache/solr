@@ -722,7 +722,7 @@ Note the name of the cache should be the field name prefixed by "`hash_`".
 The `IntervalsQParserPlugin` builds Lucene interval queries from a JSON DSL description.
 Interval queries express positional constraints between terms, such as requiring that terms appear within a specified number of positions of each other or in a particular order.
 
-Invoked with the syntax `{!intervals json_query=<name>}`, where `json_query` names an entry in the `json_queries` map supplied in the JSON request body.
+Invoked with the syntax `{!intervals df=<field>}$<name>`, where `$<name>` is a required reference to an entry in the `json_queries` map supplied in the JSON request body.
 
 Details of this query parser are in the section xref:intervals-query-parser.adoc[].
 

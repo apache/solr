@@ -95,7 +95,7 @@ public class DistributedQParserTest extends SolrCloudTestCase {
         new QueryRequest(
                 params(
                     "q",
-                    "{!intervals json_query=q1 df=subject}",
+                    "{!intervals df=subject}$q1",
                     "json",
                     "{json_queries:{q1:{match:{query:quick}}"
                         + (random().nextBoolean() ? ",ignore:{match:{query:lazy}}}}" : "}}"),
@@ -110,7 +110,7 @@ public class DistributedQParserTest extends SolrCloudTestCase {
         new QueryRequest(
                 params(
                     "q",
-                    "{!intervals json_query=q1 df=subject}",
+                    "{!intervals df=subject}$q1",
                     "json",
                     "{json_queries:{q1:{match:{query:lazy}}"
                         + (random().nextBoolean() ? ",ignore:{match:{query:quick}}}}" : "}}"),
@@ -125,7 +125,7 @@ public class DistributedQParserTest extends SolrCloudTestCase {
         new QueryRequest(
                 params(
                     "q",
-                    "{!intervals json_query=q1 df=subject}",
+                    "{!intervals df=subject}$q1",
                     "json",
                     "{json_queries:{q1:{all_of:{ordered:true,"
                         + "intervals:[{match:{query:quick}},{match:{query:fox}}]}}}}",
@@ -141,7 +141,7 @@ public class DistributedQParserTest extends SolrCloudTestCase {
         new QueryRequest(
                 params(
                     "q",
-                    " {!intervals json_query=q1 df=subject} {!intervals json_query=q2 df=subject}",
+                    " {!intervals df=subject}$q1 {!intervals df=subject}$q2",
                     "json",
                     "{json_queries:{q1:{match:{query:quick}},q2:{match:{query:lazy}}}}",
                     "fl",
@@ -155,7 +155,7 @@ public class DistributedQParserTest extends SolrCloudTestCase {
         new QueryRequest(
                 params(
                     "q",
-                    " +{!intervals json_query=q1 df=subject} +{!intervals json_query=q2 df=subject}",
+                    " +{!intervals df=subject}$q1 +{!intervals df=subject}$q2",
                     "json",
                     "{json_queries:{q1:{match:{query:quick}},q2:{match:{query:brown}}}}",
                     "fl",

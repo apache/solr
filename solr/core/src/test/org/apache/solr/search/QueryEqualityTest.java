@@ -180,8 +180,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       assertQueryEquals(
           IntervalsQParserPlugin.NAME,
           req,
-          "{!intervals json_query=q1 df=$myField}",
-          "{!intervals json_query=q1 df=foo_s}");
+          "{!intervals df=$myField}$q1",
+          "{!intervals df=foo_s}$q1");
     }
   }
 

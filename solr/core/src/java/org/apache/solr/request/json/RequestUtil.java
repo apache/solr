@@ -39,6 +39,12 @@ import org.noggit.ObjectBuilder;
 
 public class RequestUtil {
   /**
+   * Top-level JSON key holding the map of named query definitions, referenced elsewhere (e.g. by
+   * {@link org.apache.solr.search.IntervalsQParserPlugin}) via a {@code $name} local param value.
+   */
+  public static final String JSON_QUERIES_KEY = "json_queries";
+
+  /**
    * Set default-ish params on a SolrQueryRequest as well as do standard macro processing and JSON
    * request parsing.
    *
@@ -254,7 +260,7 @@ public class RequestUtil {
                 SolrException.ErrorCode.BAD_REQUEST,
                 "Expected Map for 'queries', received " + queriesJsonObj);
           }
-        } else if ("json_queries".equals(key)) {
+        } else if (JSON_QUERIES_KEY.equals(key)) {
           // passed through as a parsed object for use by SearchComponent.prepare() at subordinate
           // nodes; not processed here
           continue;
