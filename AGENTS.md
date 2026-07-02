@@ -70,5 +70,5 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 ## Changelog
 
 - We use the "logchange" tooling to manage our changelog. See `dev-docs/changelog.adoc` for details and conventions
-- To scaffold a new changelog entry, run `gradlew writeChangelog`, and then edit the new file located in `changelog/unreleased/`.
+- To scaffold a new changelog entry, run `gradlew writeChangelog` (JIRA) or `gradlew writeChangeLogPr` (no JIRA), and then edit the new file located in `changelog/unreleased/`.
 - Do not add a changelog entry before a JIRA issue or a Github PR is assigned, as one is required.
