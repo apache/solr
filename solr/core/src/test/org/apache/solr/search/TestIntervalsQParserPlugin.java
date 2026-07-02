@@ -172,6 +172,16 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
             "json",
             "{json_queries:{q1:{regexp:{pattern:'rx_ca.*'}}}}"),
         "//result[@numFound='2']");
+
+    assertQEx(
+        "regexp rule should reject a negative max_expansions with BAD_REQUEST",
+        "max_expansions",
+        req(
+            "q",
+            "{!intervals json_query=q1 df=v_ws}",
+            "json",
+            "{json_queries:{q1:{regexp:{pattern:'rx_ca.*',max_expansions:-1}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 
   @Test
@@ -193,6 +203,17 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         "//result[@numFound='2']",
         "//doc/str[@name='id'][.='71']",
         "//doc/str[@name='id'][.='72']");
+
+    assertQEx(
+        "range rule should reject a negative max_expansions with BAD_REQUEST",
+        "max_expansions",
+        req(
+            "q",
+            "{!intervals json_query=q1 df=v_ws}",
+            "json",
+            "{json_queries:{q1:{range:{lower_term:rng_bbbb,upper_term:rng_cccc,"
+                + "include_lower:true,include_upper:true,max_expansions:-1}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 
   @Test
