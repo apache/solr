@@ -79,10 +79,15 @@ public class NestPathField extends SortableTextField {
     if (externalVal.contains("\\")) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
+          "Field " + field.getName() + " query value contains backslashes ('\\'). ");
+    }
+
+    if (!externalVal.startsWith("/") && (externalVal.length() > 1 && externalVal.endsWith("/"))) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
           "Field "
               + field.getName()
-              + " query value contains backslashes ('\\'). "
-              + "For root document queries, pass the raw single slash '/' without escaping.");
+              + " query value must start with a forward slash ('/') and cannot contain a trailing slash.");
     }
 
     if (externalVal.isEmpty() || "/".equals(externalVal)) {
