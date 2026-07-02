@@ -25,7 +25,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.eclipse.jetty.http.HttpHeader;
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.spi.ContainerResponseWriter;
@@ -59,13 +58,12 @@ public class JettyBridgeResponseWriter implements ContainerResponseWriter {
     final StatusType statusInfo = context.getStatusInfo();
     httpServletResponse.setStatus(statusInfo.getStatusCode());
 
-    // Don't set Content-Length: Solr's QueryResponseWriters stream and can't predict the exact
-    // length, so a declared value may undercount and Jetty 12.1 aborts with "too much content
-    // written". Leaving it unset frames the response as chunked, as the v1 path already does.
+    // Guard is > 0, not != -1: a leftover Content-Length: 0 from V2HttpCall's empty first pass
+    // (not-found core attempt) makes Jetty 12.1 abort the cluster-fallback body it writes next.
+    if (contentLength > 0 && contentLength < Integer.MAX_VALUE) {
+      httpServletResponse.setContentLength((int) contentLength);
+    }
     for (final Map.Entry<String, List<String>> e : context.getStringHeaders().entrySet()) {
-      if (HttpHeader.CONTENT_LENGTH.is(e.getKey())) {
-        continue;
-      }
       for (final String value : e.getValue()) {
         httpServletResponse.addHeader(e.getKey(), value);
       }
