@@ -45,6 +45,9 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
   private List<SolrSpellChecker> checkers = new ArrayList<>();
   private boolean initialized = false;
 
+  // Analyzer does not override equals(); all checkers must share the same Analyzer instance, so
+  // identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public void addChecker(SolrSpellChecker checker) {
     if (initialized) {
       throw new IllegalStateException("Need to add checkers before calling init()");

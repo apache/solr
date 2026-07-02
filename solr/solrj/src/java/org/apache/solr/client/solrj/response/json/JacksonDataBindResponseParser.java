@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.response.json;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -68,7 +69,8 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
     if (encoding == null) {
       parsedVal = mapper.readValue(stream, typeParam);
     } else {
-      parsedVal = mapper.readValue(new InputStreamReader(stream, encoding), typeParam);
+      parsedVal =
+          mapper.readValue(new InputStreamReader(stream, Charset.forName(encoding)), typeParam);
     }
 
     final var result = new SimpleOrderedMap<Object>();

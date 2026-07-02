@@ -106,7 +106,9 @@ public class FieldComparator implements StreamComparator {
    * check only once - we can do that in the constructor of this class, create a lambda, and then execute
    * that lambda in the compare function. A bit of branch prediction savings right here.
    */
-  @SuppressWarnings({"unchecked"})
+  // leftComp == rightComp treats both-null and same-instance as equal, so identity comparison
+  // is intentional
+  @SuppressWarnings({"unchecked", "ReferenceEquality"})
   private void assignComparator() {
     if (ComparatorOrder.DESCENDING == order) {
       comparator =

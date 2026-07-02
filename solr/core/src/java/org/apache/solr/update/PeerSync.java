@@ -455,6 +455,9 @@ public class PeerSync implements SolrMetricProducer {
     }
   }
 
+  // MissedUpdatesRequest.ALREADY_IN_SYNC/UNABLE_TO_SYNC/EMPTY are unique sentinels, so identity
+  // comparison against them is intentional
+  @SuppressWarnings("ReferenceEquality")
   private boolean handleVersions(ShardResponse srsp) {
     // we retrieved the last N updates from the replica
     @SuppressWarnings({"unchecked"})
@@ -861,6 +864,9 @@ public class PeerSync implements SolrMetricProducer {
       this.nUpdates = nUpdates;
     }
 
+    // MissedUpdatesRequest.EMPTY is a unique sentinel, so identity comparison against it is
+    // intentional
+    @SuppressWarnings("ReferenceEquality")
     public MissedUpdatesRequest find(List<Long> otherVersions, Object updateFrom) {
       otherVersions.sort(absComparator);
       if (debug) {

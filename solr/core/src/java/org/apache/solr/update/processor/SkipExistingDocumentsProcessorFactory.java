@@ -191,6 +191,9 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
       return this.skipUpdateIfMissing;
     }
 
+    // RealTimeGetComponent.DELETED is a unique sentinel, so identity comparison against it is
+    // intentional
+    @SuppressWarnings("ReferenceEquality")
     boolean doesDocumentExist(BytesRef indexedDocId) {
       assert null != indexedDocId;
 

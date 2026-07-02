@@ -91,10 +91,8 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
 
   private final long maxMirroringDocSizeBytes;
 
-  /**
-   * The distributed processor downstream from us so we can establish if we're running on a leader
-   * shard
-   */
+  // The distributed processor downstream from us so we can establish if we're running on a leader
+  // shard
   // private DistributedUpdateProcessor distProc;
 
   /** Distribution phase of the incoming requests */

@@ -493,6 +493,9 @@ public class SchemaManager {
     }
   }
 
+  // same-instance check guards against self-referential cause chains, so identity comparison is
+  // intentional
+  @SuppressWarnings("ReferenceEquality")
   public static String getErrorStr(Exception e) {
     StringBuilder sb = new StringBuilder();
     Throwable cause = e;

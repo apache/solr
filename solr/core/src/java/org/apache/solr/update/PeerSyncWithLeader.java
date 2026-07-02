@@ -217,6 +217,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     }
   }
 
+  // MissedUpdatesRequest.ALREADY_IN_SYNC/UNABLE_TO_SYNC are unique sentinels, so identity
+  // comparison against them is intentional
+  @SuppressWarnings("ReferenceEquality")
   private boolean doSync(List<Long> ourUpdates, long ourLowThreshold, long ourHighThreshold) {
     // get leader's recent versions and fingerprint
     // note: by getting leader's versions later, we guarantee that leader's versions always super
@@ -246,6 +249,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     return false;
   }
 
+  // MissedUpdatesRequest.EMPTY is a unique sentinel, so identity comparison against it is
+  // intentional
+  @SuppressWarnings("ReferenceEquality")
   private MissedUpdatesRequest buildMissedUpdatesRequest(NamedList<Object> rsp) {
     // we retrieved the last N updates from the replica
     @SuppressWarnings({"unchecked"})
@@ -430,6 +436,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       this.nUpdates = nUpdates;
     }
 
+    // MissedUpdatesRequest.EMPTY is a unique sentinel, so identity comparison against it is
+    // intentional
+    @SuppressWarnings("ReferenceEquality")
     public MissedUpdatesRequest find(List<Long> leaderVersions, Object updateFrom) {
       leaderVersions.sort(absComparator);
       log.debug("{} sorted versions from {} = {}", logPrefix, updateFrom, leaderVersions);

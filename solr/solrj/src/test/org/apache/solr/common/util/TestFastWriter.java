@@ -32,6 +32,9 @@ class MemWriter extends FastWriter {
     this.r = r;
   }
 
+  // arr == buf checks whether the flushed array is the writer's own buffer instance so it can
+  // be stolen, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void flush(char[] arr, int offset, int len) throws IOException {
     if (arr == buf && offset == 0 && len == buf.length) {

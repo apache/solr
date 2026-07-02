@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastWriter;
@@ -64,13 +64,12 @@ public interface TextQueryResponseWriter extends QueryResponseWriter {
     writer.flush();
   }
 
-  private static Writer buildWriter(OutputStream outputStream, String charset)
-      throws UnsupportedEncodingException {
+  private static Writer buildWriter(OutputStream outputStream, String charset) {
     // note: OutputStreamWriter has an internal buffer; flush is needed
     Writer writer =
         (charset == null)
             ? new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)
-            : new OutputStreamWriter(outputStream, charset);
+            : new OutputStreamWriter(outputStream, Charset.forName(charset));
 
     return new FastWriter(writer); // note: buffered; therefore we need to call flush()
   }

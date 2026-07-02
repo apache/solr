@@ -154,6 +154,8 @@ public class JavabinLoader extends ContentStreamLoader {
           SolrParams params;
           AddUpdateCommand addCmd = null;
 
+          // END_OBJ is a unique sentinel, so identity comparison against it is intentional
+          @SuppressWarnings("ReferenceEquality")
           @Override
           public List<Object> readIterator(DataInputInputStream fis) throws IOException {
             while (true) {

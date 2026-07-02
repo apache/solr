@@ -320,6 +320,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   /**
    * Processes the collected data to finds the top slots, and composes it in the response NamedList.
    */
+  // "same instance" check of SlotAccs in this hot path is intentional identity comparison
+  @SuppressWarnings("ReferenceEquality")
   SimpleOrderedMap<Object> findTopSlots(
       final int numSlots,
       final int slotCardinality,
@@ -578,6 +580,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   /** Helper method used solely when looping over buckets to be returned in findTopSlots */
+  // "same instance" check against resortAcc is intentional identity comparison
+  @SuppressWarnings("ReferenceEquality")
   private void fillBucketFromSlot(SimpleOrderedMap<Object> target, Slot slot, SlotAcc resortAcc)
       throws IOException {
     final int slotOrd = slot.slot;
@@ -845,6 +849,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
 
+    // "replacement != acc" checks whether registerSweepingAccs returned the same instance
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public SlotAcc registerSweepingAccs(SweepingCountSlotAcc baseSweepingAcc) {
       final FacetFieldProcessor p = (FacetFieldProcessor) fcontext.processor;

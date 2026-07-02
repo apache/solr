@@ -34,6 +34,8 @@ public abstract class ResponseParser {
     assert validateContentTypes();
   }
 
+  // identity check is intentional: getContentTypes() must return the same cached instance
+  @SuppressWarnings("ReferenceEquality")
   private boolean validateContentTypes() {
     Collection<String> contentTypes = getContentTypes();
     assert contentTypes == getContentTypes()

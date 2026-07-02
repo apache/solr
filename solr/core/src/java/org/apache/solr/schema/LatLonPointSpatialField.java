@@ -156,6 +156,9 @@ public class LatLonPointSpatialField
       return fields;
     }
 
+    // SpatialOperation instances are enum-like static constants, so identity comparison is
+    // intentional
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public Query makeQuery(SpatialArgs args) {
       if (args.getOperation() != SpatialOperation.Intersects) {

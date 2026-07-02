@@ -64,7 +64,7 @@ public abstract class DualDoubleFunction extends ValueSource {
         return func(doc, aVals, bVals);
       }
 
-      /**
+      /*
        * True if and only if <em>all</em> of the wrapped {@link FunctionValues} <code>exists</code>
        * for the specified doc
        */

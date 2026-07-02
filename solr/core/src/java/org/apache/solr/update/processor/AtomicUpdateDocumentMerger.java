@@ -383,6 +383,9 @@ public class AtomicUpdateDocumentMerger {
    *     false is returned. A false return indicates that this update can be re-tried as a full
    *     atomic update. Returns true if the in-place update succeeds.
    */
+  // RealTimeGetComponent.DELETED is a unique sentinel, so identity comparison against it is
+  // intentional
+  @SuppressWarnings("ReferenceEquality")
   public boolean doInPlaceUpdateMerge(AddUpdateCommand cmd, Set<String> updatedFields)
       throws IOException {
     SolrInputDocument inputDoc = cmd.getSolrInputDocument();

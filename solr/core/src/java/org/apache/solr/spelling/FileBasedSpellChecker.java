@@ -19,6 +19,7 @@ package org.apache.solr.spelling;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -122,7 +123,8 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
           dictionary =
               new PlainTextDictionary(
                   new InputStreamReader(
-                      core.getResourceLoader().openResource(sourceLocation), characterEncoding));
+                      core.getResourceLoader().openResource(sourceLocation),
+                      Charset.forName(characterEncoding)));
         }
       }
 

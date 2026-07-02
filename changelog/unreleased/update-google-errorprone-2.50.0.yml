@@ -1,0 +1,5 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Update com.google.errorprone to 2.50.0 and fix/suppress new bug patterns (ReferenceEquality, JdkObsolete, NotJavadoc, TypeParameterQualifier)
+type: dependency_update
+authors:
+  - name: Jan Høydahl

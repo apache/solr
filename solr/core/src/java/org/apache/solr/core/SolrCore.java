@@ -2316,6 +2316,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
    *
    * <p>This method acquires openSearcherLock - do not call with searchLock held!
    */
+  // comparing schema instances detects a schema reload, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public RefCounted<SolrIndexSearcher> openNewSearcher(
       boolean updateHandlerReopens, boolean realtime) {
     if (isClosed()) { // catch some errors quicker
@@ -2532,6 +2534,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
    *     SolrIndexSearcher}.
    */
   // TODO waitSearcher should be an AtomicReference or something that is a more clear API
+  // comparing searcher instances detects whether the underlying searcher changed, so identity
+  // comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public RefCounted<SolrIndexSearcher> getSearcher(
       boolean forceNew,
       boolean returnSearcher,
@@ -2818,6 +2823,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   //
   // onDeckSearchers will also be decremented (it should have been incremented
   // as a result of opening a new searcher).
+  // detecting re-registration of the same searcher holder instance is intentional
+  @SuppressWarnings("ReferenceEquality")
   private void registerSearcher(RefCounted<SolrIndexSearcher> newSearcherHolder) {
     synchronized (searcherLock) {
       try {

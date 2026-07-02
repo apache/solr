@@ -1216,7 +1216,9 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
    *     TestInPlaceUpdatesStandalone#HARDCOMMIT} or {@link TestInPlaceUpdatesStandalone#SOFTCOMMIT}
    *     sentinel objects.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  // HARDCOMMIT and SOFTCOMMIT are unique sentinels, so identity comparison against them is
+  // intentional
+  @SuppressWarnings({"unchecked", "rawtypes", "ReferenceEquality"})
   public void checkReplay(final String valField, Object... commands) throws Exception {
 
     HashMap<Integer, DocInfo> model = new LinkedHashMap<>();

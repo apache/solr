@@ -105,6 +105,9 @@ class JoinQuery extends Query implements SolrSearcherRequirer {
     ResponseBuilder rb;
     ScoreMode scoreMode;
 
+    // comparing SolrCore instances by identity is intentional: we only want to reuse the
+    // passed-in searcher when the request core is the exact same core object
+    @SuppressWarnings("ReferenceEquality")
     public JoinQueryWeight(SolrIndexSearcher searcher, ScoreMode scoreMode, float boost) {
       super(JoinQuery.this, boost);
       this.scoreMode = scoreMode;
@@ -248,6 +251,9 @@ class JoinQuery extends Query implements SolrSearcherRequirer {
       return result;
     }
 
+    // `fromSearcher == toSearcher` identity checks are intentional: same-instance searchers
+    // mean a self-join, letting us reuse the same reader and liveDocs
+    @SuppressWarnings("ReferenceEquality")
     public DocSet getDocSetEnumerate() throws IOException {
       FixedBitSet resultBits = null;
 

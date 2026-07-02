@@ -78,6 +78,8 @@ public class ToTextContentHandler extends DefaultHandler {
    * @param encoding output encoding
    * @throws UnsupportedEncodingException if the encoding is unsupported
    */
+  // Constructor signature kept as-is from Tika's ToTextContentHandler public API
+  @SuppressWarnings("JdkObsolete")
   public ToTextContentHandler(OutputStream stream, String encoding)
       throws UnsupportedEncodingException {
     this(new OutputStreamWriter(stream, encoding));

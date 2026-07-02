@@ -135,6 +135,9 @@ public class SolrFeature extends Feature {
   public class SolrFeatureWeight extends FeatureWeight {
     private final Weight solrQueryWeight;
 
+    // Identity check is intentional: getDocSet() returns the cached liveDocSet instance when the
+    // filters do not narrow the result
+    @SuppressWarnings("ReferenceEquality")
     public SolrFeatureWeight(
         SolrIndexSearcher searcher,
         SolrQueryRequest request,

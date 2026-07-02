@@ -194,6 +194,8 @@ public class SolrIndexConfig implements MapWriter {
         true);
   }
 
+  // InfoStream.NO_OUTPUT is a unique sentinel, so identity comparison against it is intentional
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ew.put("useCompoundFile", useCompoundFile)

@@ -353,7 +353,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
   }
 
-  /** Specific Collection API call implementations * */
+  // Specific Collection API call implementations
 
   /**
    * Returns a SolrRequest for creating a collection

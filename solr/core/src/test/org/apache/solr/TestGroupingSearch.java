@@ -1585,6 +1585,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             + "]}}");
   }
 
+  // groupComparator may be the very same instance as sortComparator; identity check is intentional
+  @SuppressWarnings("ReferenceEquality")
   @Test
   public void testRandomGrouping() throws Exception {
     /*

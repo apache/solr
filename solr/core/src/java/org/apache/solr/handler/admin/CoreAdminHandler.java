@@ -464,6 +464,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
     }
 
+    // detects whether the cache returned our own instance or a pre-existing one, so identity
+    // comparison is intentional
+    @SuppressWarnings("ReferenceEquality")
     private void addTask(TaskObject taskObject) {
       // Ensure task ID is not already in use
       TaskObject taskInCache =

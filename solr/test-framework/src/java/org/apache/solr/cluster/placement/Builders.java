@@ -515,6 +515,9 @@ public class Builders {
       return this;
     }
 
+    // leaderReplicaBuilder is expected to be one of the builder instances in replicaBuilders, so
+    // identity comparison is intentional
+    @SuppressWarnings("ReferenceEquality")
     public Shard build(SolrCollection collection) {
       ClusterAbstractionsForTest.ShardImpl shard =
           new ClusterAbstractionsForTest.ShardImpl(shardName, collection, Shard.ShardState.ACTIVE);

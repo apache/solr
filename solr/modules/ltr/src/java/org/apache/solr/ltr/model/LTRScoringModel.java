@@ -286,6 +286,8 @@ public abstract class LTRScoringModel implements Accountable {
     }
   }
 
+  // Identity check against the IdentityNormalizer.INSTANCE singleton is intentional
+  @SuppressWarnings("ReferenceEquality")
   public Explanation getNormalizerExplanation(Explanation e, int idx) {
     Normalizer n = norms.get(idx);
     if (n != IdentityNormalizer.INSTANCE) {

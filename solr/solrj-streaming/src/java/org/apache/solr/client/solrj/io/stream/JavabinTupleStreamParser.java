@@ -43,6 +43,8 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     this.fis = initRead(is);
   }
 
+  // END_OBJ is a unique sentinel, so identity comparison against it is intentional
+  @SuppressWarnings("ReferenceEquality")
   private boolean readTillDocs() throws IOException {
     if (isObjectType(fis)) {
       if (tagByte == SOLRDOCLST) {
@@ -176,8 +178,9 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     } else return super.readObject(dis);
   }
 
+  // END_OBJ is a unique sentinel, so identity comparison against it is intentional
   @Override
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "ReferenceEquality"})
   public Map<String, Object> next() throws IOException {
     if (!atDocs) {
       atDocs = true;

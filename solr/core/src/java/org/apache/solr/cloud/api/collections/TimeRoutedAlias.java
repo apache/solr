@@ -263,7 +263,9 @@ public class TimeRoutedAlias extends RoutedAlias {
     }
   }
 
+  // Aliases is immutable and replaced wholesale on change, so identity comparison detects updates
   @Override
+  @SuppressWarnings("ReferenceEquality")
   public boolean updateParsedCollectionAliases(ZkStateReader zkStateReader, boolean contextualize) {
     final Aliases aliases = zkStateReader.getAliases();
     if (this.parsedCollectionsAliases != aliases) {

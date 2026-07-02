@@ -642,6 +642,8 @@ public class TermsComponent extends SearchComponent {
     }
   }
 
+  // TermsEnum.EMPTY is a unique sentinel, so identity comparison against it is intentional
+  @SuppressWarnings("ReferenceEquality")
   private static void collectTermStates(
       IndexReaderContext topReaderContext, TermStates[] contextArray, Term[] queryTerms)
       throws IOException {

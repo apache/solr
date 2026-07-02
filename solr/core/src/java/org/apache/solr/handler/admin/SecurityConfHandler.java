@@ -315,6 +315,9 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
           // the POST authc/authz is getting used.
           apis.add(
               new ReqHandlerToApi(this, authcSpecProvider) {
+                // detects whether the plugin instance was swapped out, so identity comparison is
+                // intentional
+                @SuppressWarnings("ReferenceEquality")
                 @Override
                 public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
                   // it is possible that the Authentication plugin is modified since the last call.
@@ -335,6 +338,9 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
               };
           apis.add(
               new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
+                // detects whether the plugin instance was swapped out, so identity comparison is
+                // intentional
+                @SuppressWarnings("ReferenceEquality")
                 @Override
                 public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
                   // it is possible that the Authorization plugin is modified since the last call.

@@ -1997,6 +1997,8 @@ public class IndexSchema {
   }
 
   /** Informs analyzers used by a fieldType. */
+  // ref comparison of analyzers is intentional: skip informing the same instance twice
+  @SuppressWarnings("ReferenceEquality")
   private void informResourceLoaderAwareObjectsForFieldType(FieldType fieldType) {
     // must inform any sub-components used in the
     // tokenizer chain if they are ResourceLoaderAware

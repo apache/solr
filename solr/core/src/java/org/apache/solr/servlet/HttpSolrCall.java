@@ -429,6 +429,9 @@ public class HttpSolrCall {
   }
 
   /** This method processes the request. */
+  // detecting whether the Error found in the cause chain is the thrown exception itself, so
+  // identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public Action call() throws IOException {
 
     if (cores == null) {

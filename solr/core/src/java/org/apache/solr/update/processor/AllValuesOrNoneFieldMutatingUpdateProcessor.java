@@ -73,6 +73,9 @@ public abstract class AllValuesOrNoneFieldMutatingUpdateProcessor
    */
   protected abstract Object mutateValue(final Object srcVal);
 
+  // SKIP_FIELD_VALUE_LIST_SINGLETON and DELETE_VALUE_SINGLETON are unique sentinels, so identity
+  // comparison against them is intentional
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected final SolrInputField mutate(final SolrInputField srcField) {
     Collection<Object> vals = srcField.getValues();

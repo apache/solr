@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -139,7 +140,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       throws IOException {
     ContentStream stream;
     if (params.get(SEPARATOR) == null) {
-      String csvStr = new String(streamBytes, charset);
+      String csvStr = new String(streamBytes, Charset.forName(charset));
       char sep = detectTSV(csvStr);
       ModifiableSolrParams modifiableSolrParams = new ModifiableSolrParams(params);
       modifiableSolrParams.set(SEPARATOR, String.valueOf(sep));
@@ -198,7 +199,8 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
       String jsonStr =
           new String(
-              readAllBytes(stream), charset != null ? charset : ContentStreamBase.DEFAULT_CHARSET);
+              readAllBytes(stream),
+              charset != null ? Charset.forName(charset) : StandardCharsets.UTF_8);
       String[] lines = jsonStr.split("\n");
       if (lines.length > 1) {
         for (String line : lines) {

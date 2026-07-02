@@ -47,6 +47,9 @@ public class CommandOperation {
     return commandData;
   }
 
+  // identity check is intentional: returns null only when the root primitive is the passed-in
+  // default sentinel instance
+  @SuppressWarnings("ReferenceEquality")
   public String getStr(String key, String def) {
     if (ROOT_OBJ.equals(key)) {
       Object obj = getRootPrimitive();

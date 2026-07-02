@@ -24,9 +24,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -214,12 +214,7 @@ public abstract class ContentStreamBase implements ContentStream {
       this.str = str;
       this.contentType = contentType;
       name = null;
-      try {
-        size = (long) str.getBytes(DEFAULT_CHARSET).length;
-      } catch (UnsupportedEncodingException e) {
-        // won't happen
-        throw new RuntimeException(e);
-      }
+      size = (long) str.getBytes(StandardCharsets.UTF_8).length;
       sourceInfo = "string";
     }
 
@@ -249,14 +244,16 @@ public abstract class ContentStreamBase implements ContentStream {
 
     @Override
     public InputStream getStream() throws IOException {
-      return new ByteArrayInputStream(str.getBytes(DEFAULT_CHARSET));
+      return new ByteArrayInputStream(str.getBytes(StandardCharsets.UTF_8));
     }
 
     /** If a charset is defined (by the contentType) use that, otherwise use a StringReader */
     @Override
     public Reader getReader() throws IOException {
       String charset = getCharsetFromContentType(contentType);
-      return charset == null ? new StringReader(str) : new InputStreamReader(getStream(), charset);
+      return charset == null
+          ? new StringReader(str)
+          : new InputStreamReader(getStream(), Charset.forName(charset));
     }
   }
 
@@ -268,8 +265,8 @@ public abstract class ContentStreamBase implements ContentStream {
   public Reader getReader() throws IOException {
     String charset = getCharsetFromContentType(getContentType());
     return charset == null
-        ? new InputStreamReader(getStream(), DEFAULT_CHARSET)
-        : new InputStreamReader(getStream(), charset);
+        ? new InputStreamReader(getStream(), StandardCharsets.UTF_8)
+        : new InputStreamReader(getStream(), Charset.forName(charset));
   }
 
   // ------------------------------------------------------------------

@@ -905,7 +905,7 @@ public class Utils {
       Class<? extends Annotation> catchAllAnnotation,
       Function<Field, String> fieldNamer)
       throws IllegalAccessException {
-    boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
+    boolean sameClassLoader = Objects.equals(c.getClassLoader(), Utils.class.getClassLoader());
     // we should not cache the class references of objects loaded from packages because they will
     // not get garbage collected
     // TODO fix that later

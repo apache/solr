@@ -1488,6 +1488,9 @@ public class ExtendedDismaxQParser extends QParser {
       }
     }
 
+    // identity fast-path: if index and query analyzers are the same instance there is
+    // no separate stopword filtering to strip, so reference comparison is intentional
+    @SuppressWarnings("ReferenceEquality")
     private Analyzer noStopwordFilterAnalyzer(String fieldName) {
       FieldType ft = parser.getReq().getSchema().getFieldType(fieldName);
       Analyzer qa = ft.getQueryAnalyzer();
