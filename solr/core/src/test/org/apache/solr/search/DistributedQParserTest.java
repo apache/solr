@@ -97,9 +97,8 @@ public class DistributedQParserTest extends SolrCloudTestCase {
                     "q",
                     "{!intervals json_query=q1 df=subject}",
                     "json",
-                    "{json_queries:{q1:{match:{query:quick}}"+
-                        (nextBoolean()? ",ignore:{match:{query:lazy}}":"")+
-                    "}}",
+                    "{json_queries:{q1:{match:{query:quick}}"
+                        + (random().nextBoolean() ? ",ignore:{match:{query:lazy}}}}" : "}}"),
                     "fl",
                     "id"))
             .process(cluster.getSolrClient(), COLLECTION);
@@ -113,8 +112,8 @@ public class DistributedQParserTest extends SolrCloudTestCase {
                     "q",
                     "{!intervals json_query=q1 df=subject}",
                     "json",
-                    "{json_queries:{q1:{match:{query:lazy}}"+
-                        (nextBoolean()? ",ignore:{match:{query:quick}}":"")+,
+                    "{json_queries:{q1:{match:{query:lazy}}"
+                        + (random().nextBoolean() ? ",ignore:{match:{query:quick}}}}" : "}}"),
                     "fl",
                     "id"))
             .process(cluster.getSolrClient(), COLLECTION);
