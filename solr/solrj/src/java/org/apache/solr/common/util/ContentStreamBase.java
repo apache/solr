@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
@@ -75,6 +76,23 @@ public abstract class ContentStreamBase implements ContentStream {
       }
     }
     return null;
+  }
+
+  /**
+   * Resolves a charset name (typically from a Content-Type header) to a {@link Charset}. Unlike
+   * {@link Charset#forName(String)}, an illegal or unsupported name results in a checked {@link
+   * UnsupportedEncodingException}, matching the behavior of the legacy {@code String}-based JDK
+   * charset APIs, so callers can treat a bad charset as an I/O error.
+   */
+  public static Charset charsetForName(String charsetName) throws UnsupportedEncodingException {
+    try {
+      return Charset.forName(charsetName);
+    } catch (IllegalArgumentException e) {
+      UnsupportedEncodingException uee =
+          new UnsupportedEncodingException("Unsupported charset: " + charsetName);
+      uee.initCause(e);
+      throw uee;
+    }
   }
 
   protected String attemptToDetermineContentType() {
@@ -253,7 +271,7 @@ public abstract class ContentStreamBase implements ContentStream {
       String charset = getCharsetFromContentType(contentType);
       return charset == null
           ? new StringReader(str)
-          : new InputStreamReader(getStream(), Charset.forName(charset));
+          : new InputStreamReader(getStream(), charsetForName(charset));
     }
   }
 
@@ -266,7 +284,7 @@ public abstract class ContentStreamBase implements ContentStream {
     String charset = getCharsetFromContentType(getContentType());
     return charset == null
         ? new InputStreamReader(getStream(), StandardCharsets.UTF_8)
-        : new InputStreamReader(getStream(), Charset.forName(charset));
+        : new InputStreamReader(getStream(), charsetForName(charset));
   }
 
   // ------------------------------------------------------------------

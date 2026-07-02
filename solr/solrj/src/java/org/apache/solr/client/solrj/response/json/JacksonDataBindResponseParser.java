@@ -20,12 +20,12 @@ package org.apache.solr.client.solrj.response.json;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -70,7 +70,8 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
       parsedVal = mapper.readValue(stream, typeParam);
     } else {
       parsedVal =
-          mapper.readValue(new InputStreamReader(stream, Charset.forName(encoding)), typeParam);
+          mapper.readValue(
+              new InputStreamReader(stream, ContentStreamBase.charsetForName(encoding)), typeParam);
     }
 
     final var result = new SimpleOrderedMap<Object>();

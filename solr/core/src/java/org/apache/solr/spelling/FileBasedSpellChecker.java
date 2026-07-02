@@ -19,7 +19,6 @@ package org.apache.solr.spelling;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
 import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -34,6 +33,7 @@ import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.spell.PlainTextDictionary;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
@@ -124,7 +124,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
               new PlainTextDictionary(
                   new InputStreamReader(
                       core.getResourceLoader().openResource(sourceLocation),
-                      Charset.forName(characterEncoding)));
+                      ContentStreamBase.charsetForName(characterEncoding)));
         }
       }
 
