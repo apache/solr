@@ -97,11 +97,29 @@ public class DistributedQParserTest extends SolrCloudTestCase {
                     "q",
                     "{!intervals json_query=q1 df=subject}",
                     "json",
-                    "{json_queries:{q1:{match:{query:quick}}}}",
+                    "{json_queries:{q1:{match:{query:quick}}"+
+                        (nextBoolean()? ",ignore:{match:{query:lazy}}":"")+
+                    "}}",
                     "fl",
                     "id"))
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(2, response.getResults().getNumFound());
+
+    // a distinct match rule: "lazy" appears only in doc 2 ("lazy brown dog") — confirm the
+    // result differs from the "quick" query above
+    QueryResponse lazyResponse =
+        new QueryRequest(
+                params(
+                    "q",
+                    "{!intervals json_query=q1 df=subject}",
+                    "json",
+                    "{json_queries:{q1:{match:{query:lazy}}"+
+                        (nextBoolean()? ",ignore:{match:{query:quick}}":"")+,
+                    "fl",
+                    "id"))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(1, lazyResponse.getResults().getNumFound());
+    assertNotEquals(response.getResults().getNumFound(), lazyResponse.getResults().getNumFound());
 
     // all_of ordered: "quick" then "fox" — only doc 1 ("quick brown fox") matches
     response =
@@ -112,6 +130,35 @@ public class DistributedQParserTest extends SolrCloudTestCase {
                     "json",
                     "{json_queries:{q1:{all_of:{ordered:true,"
                         + "intervals:[{match:{query:quick}},{match:{query:fox}}]}}}}",
+                    "fl",
+                    "id"))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(1, response.getResults().getNumFound());
+
+    // union of two top-level interval queries: "quick" (docs 1, 3) or "lazy" (doc 2) — three
+    // docs match. Note: the leading space before the first "{!" is required, otherwise the
+    // whole q string is parsed as a single set of local params rather than two clauses.
+    response =
+        new QueryRequest(
+                params(
+                    "q",
+                    " {!intervals json_query=q1 df=subject} {!intervals json_query=q2 df=subject}",
+                    "json",
+                    "{json_queries:{q1:{match:{query:quick}},q2:{match:{query:lazy}}}}",
+                    "fl",
+                    "id"))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(3, response.getResults().getNumFound());
+
+    // intersection of two top-level interval queries (using "+" to require both clauses):
+    // "quick" (docs 1, 3) and "brown" (docs 1, 2) — only doc 1 has both terms
+    response =
+        new QueryRequest(
+                params(
+                    "q",
+                    " +{!intervals json_query=q1 df=subject} +{!intervals json_query=q2 df=subject}",
+                    "json",
+                    "{json_queries:{q1:{match:{query:quick}},q2:{match:{query:brown}}}}",
                     "fl",
                     "id"))
             .process(cluster.getSolrClient(), COLLECTION);

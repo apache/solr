@@ -50,6 +50,9 @@ public class IntervalsQParserPlugin extends QParserPlugin {
   /** Local param that names the entry in {@code json_queries} to use. */
   public static final String JSON_QUERY_PARAM = "json_query";
 
+  /** Top-level JSON key holding the map of named interval query definitions. */
+  private static final String JSON_QUERIES_KEY = "json_queries";
+
   @Override
   public QParser createParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -66,9 +69,9 @@ public class IntervalsQParserPlugin extends QParserPlugin {
           return new MatchNoDocsQuery("No JSON parameters found");
         }
 
-        Object jsonQueriesObj = json.get("json_queries");
+        Object jsonQueriesObj = json.get(JSON_QUERIES_KEY);
         if (!(jsonQueriesObj instanceof Map)) {
-          return new MatchNoDocsQuery("No json_queries map found in JSON parameters");
+          return new MatchNoDocsQuery("No " + JSON_QUERIES_KEY + " map found in JSON parameters");
         }
 
         @SuppressWarnings("unchecked")
@@ -77,7 +80,11 @@ public class IntervalsQParserPlugin extends QParserPlugin {
 
         if (!(queryDef instanceof Map)) {
           return new MatchNoDocsQuery(
-              "Query '" + jsonQueryName + "' not found in json_queries or is not a map");
+              "Query '"
+                  + jsonQueryName
+                  + "' not found in "
+                  + JSON_QUERIES_KEY
+                  + " or is not a map");
         }
 
         Map<String, Object> queryDefMap = asStringObjectMap(queryDef, "json query definition");
@@ -270,6 +277,12 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         String useField = getOptionalString(params, "use_field", "regexp");
         int maxExpansions =
             getInt(params, "max_expansions", Intervals.DEFAULT_MAX_EXPANSIONS, "regexp");
+        if (maxExpansions < 0) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Rule 'regexp' requires a non-negative integer 'max_expansions', got "
+                  + maxExpansions);
+        }
         IntervalsSource source = Intervals.regexp(new BytesRef(pattern), maxExpansions);
         if (useField != null) {
           source = Intervals.fixField(useField, source);
@@ -284,6 +297,12 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         boolean includeUpper = getBoolean(params, "include_upper", false, "range");
         int maxExpansions =
             getInt(params, "max_expansions", Intervals.DEFAULT_MAX_EXPANSIONS, "range");
+        if (maxExpansions < 0) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Rule 'range' requires a non-negative integer 'max_expansions', got "
+                  + maxExpansions);
+        }
         BytesRef lowerTerm = lowerTermStr == null ? null : new BytesRef(lowerTermStr);
         BytesRef upperTerm = upperTermStr == null ? null : new BytesRef(upperTermStr);
         return Intervals.range(lowerTerm, upperTerm, includeLower, includeUpper, maxExpansions);
