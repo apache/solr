@@ -220,7 +220,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
   private HttpClient createHttpClient(Builder builder) {
     executor = builder.getExecutor();
     if (executor == null) {
-      BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
+      BlockingArrayQueue<Runnable> queue = BlockingArrayQueue.newInstance(256, Integer.MAX_VALUE);
       this.executor =
           new ExecutorUtil.MDCAwareThreadPoolExecutor(
               32, 256, 60, TimeUnit.SECONDS, queue, new SolrNamedThreadFactory("h2sc"));
