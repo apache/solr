@@ -217,6 +217,35 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testIntervalsFuzzyRule() throws Exception {
+    assertU(adoc("id", "80", "v_ws", "fzz_cat"));
+    assertU(adoc("id", "81", "v_ws", "fzz_car"));
+    assertU(adoc("id", "82", "v_ws", "fzz_dog"));
+    assertU(commit());
+
+    assertQ(
+        "fuzzy rule should match documents with terms within the edit distance",
+        req(
+            "q",
+            "{!intervals json_query=q1 df=v_ws}",
+            "json",
+            "{json_queries:{q1:{fuzzy:{term:fzz_cat,fuzziness:'1'}}}}"),
+        "//result[@numFound='2']",
+        "//doc/str[@name='id'][.='80']",
+        "//doc/str[@name='id'][.='81']");
+
+    assertQEx(
+        "fuzzy rule should reject a negative prefix_length with BAD_REQUEST",
+        "prefix_length",
+        req(
+            "q",
+            "{!intervals json_query=q1 df=v_ws}",
+            "json",
+            "{json_queries:{q1:{fuzzy:{term:fzz_cat,prefix_length:-1}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
   public void testIntervalsMaxWidthRule() throws Exception {
     assertU(adoc("id", "80", "v_ws", "mwd_alpha mwd_beta mwd_gamma"));
     assertU(adoc("id", "81", "v_ws", "mwd_alpha mwd_zeta mwd_gamma"));

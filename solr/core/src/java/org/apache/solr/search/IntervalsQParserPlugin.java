@@ -193,6 +193,11 @@ public class IntervalsQParserPlugin extends QParserPlugin {
         String fuzziness = getOptionalString(params, "fuzziness", "fuzzy");
         int maxEdits = resolveFuzziness(fuzziness, normalizedTerm);
         int prefixLength = getInt(params, "prefix_length", 0, "fuzzy");
+        if (prefixLength < 0) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Rule 'fuzzy' requires a non-negative integer 'prefix_length'");
+        }
         boolean transpositions = getBoolean(params, "transpositions", true, "fuzzy");
 
         IntervalsSource source =
