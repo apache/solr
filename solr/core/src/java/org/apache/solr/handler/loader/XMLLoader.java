@@ -23,6 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.handler.RequestHandlerUtils;
@@ -134,7 +136,9 @@ public class XMLLoader extends ContentStreamLoader {
         if (log.isTraceEnabled()) {
           log.trace(
               "body: {}",
-              new String(body, (charset == null) ? ContentStreamBase.DEFAULT_CHARSET : charset));
+              new String(
+                  body,
+                  (charset == null) ? StandardCharsets.UTF_8 : IOUtils.charsetForName(charset)));
         }
         return new ByteArrayInputStream(body);
       }
