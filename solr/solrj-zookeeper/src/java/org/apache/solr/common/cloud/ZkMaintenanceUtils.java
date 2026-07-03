@@ -332,9 +332,6 @@ public class ZkMaintenanceUtils {
         rootPath,
         new SimpleFileVisitor<Path>() {
           @Override
-          // TODO: `file == rootPath` is a genuine bug (Path compared by reference), fixed in
-          // https://github.com/apache/solr/pull/4605; remove this suppression when that PR merges
-          @SuppressWarnings("ReferenceEquality")
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
             String filename = file.getFileName().toString();

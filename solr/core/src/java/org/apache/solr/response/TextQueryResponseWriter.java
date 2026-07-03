@@ -65,9 +65,6 @@ public interface TextQueryResponseWriter extends QueryResponseWriter {
     writer.flush();
   }
 
-  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
-  // suppression when that PR merges
-  @SuppressWarnings("JdkObsolete")
   private static Writer buildWriter(OutputStream outputStream, String charset)
       throws UnsupportedEncodingException {
     // note: OutputStreamWriter has an internal buffer; flush is needed

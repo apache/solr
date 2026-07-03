@@ -79,9 +79,6 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
     return null;
   }
 
-  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
-  // suppression when that PR merges
-  @SuppressWarnings("JdkObsolete")
   private void loadExternalFileDictionary(SolrCore core, SolrIndexSearcher searcher) {
     try {
       IndexSchema schema = null == searcher ? core.getLatestSchema() : searcher.getSchema();

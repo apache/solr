@@ -135,9 +135,6 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     return new SampleDocuments(docs, contentType, fileSource);
   }
 
-  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
-  // suppression when that PR merges
-  @SuppressWarnings("JdkObsolete")
   protected List<SolrInputDocument> loadCsvDocs(
       SolrParams params, String source, byte[] streamBytes, String charset, final int maxDocsToLoad)
       throws IOException {
@@ -180,9 +177,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     return docs.stream().map(JsonLoader::buildDoc).collect(Collectors.toList());
   }
 
-  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove the
-  // JdkObsolete suppression when that PR merges
-  @SuppressWarnings({"unchecked", "JdkObsolete"})
+  @SuppressWarnings("unchecked")
   protected List<SolrInputDocument> loadJsonDocs(
       ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
     Object json;

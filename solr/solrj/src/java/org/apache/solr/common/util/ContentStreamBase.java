@@ -209,9 +209,6 @@ public abstract class ContentStreamBase implements ContentStream {
       this(str, detect(str));
     }
 
-    // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
-    // suppression when that PR merges
-    @SuppressWarnings("JdkObsolete")
     public StringStream(String str, String contentType) {
       this.str = str;
       this.contentType = contentType;
@@ -245,18 +242,12 @@ public abstract class ContentStreamBase implements ContentStream {
     }
 
     @Override
-    // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
-    // suppression when that PR merges
-    @SuppressWarnings("JdkObsolete")
     public InputStream getStream() throws IOException {
       return new ByteArrayInputStream(str.getBytes(StandardCharsets.UTF_8));
     }
 
     /** If a charset is defined (by the contentType) use that, otherwise use a StringReader */
     @Override
-    // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
-    // suppression when that PR merges
-    @SuppressWarnings("JdkObsolete")
     public Reader getReader() throws IOException {
       String charset = getCharsetFromContentType(contentType);
       return charset == null
@@ -270,9 +261,6 @@ public abstract class ContentStreamBase implements ContentStream {
    * "utf-8".
    */
   @Override
-  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
-  // suppression when that PR merges
-  @SuppressWarnings("JdkObsolete")
   public Reader getReader() throws IOException {
     String charset = getCharsetFromContentType(getContentType());
     return charset == null

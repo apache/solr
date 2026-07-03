@@ -457,9 +457,6 @@ public abstract class SolrParams
    * Returns this SolrParams as a proper URL encoded string, starting with {@code "?"}, if not
    * empty.
    */
-  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
-  // suppression when that PR merges
-  @SuppressWarnings("JdkObsolete")
   public String toQueryString() {
     final Charset charset = StandardCharsets.UTF_8;
     final StringBuilder sb = new StringBuilder(128);

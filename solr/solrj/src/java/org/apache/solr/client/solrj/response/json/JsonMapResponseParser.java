@@ -40,9 +40,7 @@ public class JsonMapResponseParser extends ResponseParser {
   }
 
   @Override
-  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove the
-  // JdkObsolete suppression when that PR merges
-  @SuppressWarnings({"unchecked", "JdkObsolete"})
+  @SuppressWarnings("unchecked")
   public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
     @SuppressWarnings({"rawtypes"})
     Map map = null;

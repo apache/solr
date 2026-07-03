@@ -127,9 +127,6 @@ public class XMLLoader extends ContentStreamLoader {
     }
   }
 
-  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
-  // suppression when that PR merges
-  @SuppressWarnings("JdkObsolete")
   private InputStream getStream(ContentStream cs, String charset) throws IOException {
     if (log.isTraceEnabled()) {
       try (InputStream is = cs.getStream()) {

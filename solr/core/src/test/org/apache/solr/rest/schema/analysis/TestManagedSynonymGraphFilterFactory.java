@@ -59,9 +59,6 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
   }
 
   @Test
-  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
-  // suppression when that PR merges
-  @SuppressWarnings("JdkObsolete")
   public void testManagedSynonyms() throws Exception {
     // this endpoint depends on at least one field type containing the following
     // declaration in the schema-rest.xml:
