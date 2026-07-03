@@ -1,0 +1,7 @@
+title: Avoid forwarding unrelated request parameters to Calcite from the /sql handler
+type: changed
+authors:
+  - name: Jan Høydahl
+links:
+  - name: PRXXXX
+    url: https://github.com/apache/solr/pull/XXXX

@@ -22,10 +22,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import org.apache.calcite.config.Lex;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -55,6 +55,8 @@ public class SQLHandler extends RequestHandlerBase
   private static String defaultWorkerCollection = null;
 
   static final String sqlNonCloudErrorMsg = "/sql handler only works in Solr Cloud mode";
+
+  static final Set<String> CONNECTION_PARAMS = Set.of("aggregationMode", "numWorkers");
 
   private boolean isCloud = false;
 
@@ -103,11 +105,12 @@ public class SQLHandler extends RequestHandlerBase
       String url = CalciteSolrDriver.CONNECT_STRING_PREFIX;
 
       Properties properties = new Properties();
-      // Add all query parameters
-      Iterator<String> parameterNamesIterator = params.getParameterNamesIterator();
-      while (parameterNamesIterator.hasNext()) {
-        String param = parameterNamesIterator.next();
-        properties.setProperty(param, params.get(param));
+      // Forward only the parameters the handler supports as connection configuration.
+      for (String param : CONNECTION_PARAMS) {
+        String value = params.get(param);
+        if (value != null) {
+          properties.setProperty(param, value);
+        }
       }
 
       // Set these last to ensure that they are set properly

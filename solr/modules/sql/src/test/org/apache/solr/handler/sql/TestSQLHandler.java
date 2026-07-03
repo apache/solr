@@ -452,6 +452,24 @@ public class TestSQLHandler extends SolrCloudTestCase {
     tuples = getTuples(sParams, baseUrl);
 
     assertEquals(0, tuples.size());
+
+    // Verify that we only forward parameters we care about
+    sParams =
+        params(
+            CommonParams.QT,
+            "/sql",
+            "typeSystem",
+            "does.not.Exist",
+            "stmt",
+            "select id, field_i, str_s from collection1 where text_t='XXXX' order by field_i desc limit 1");
+
+    tuples = getTuples(sParams, baseUrl);
+
+    assertEquals(1, tuples.size());
+    tuple = tuples.get(0);
+    assertEquals(8, tuple.getLong("id").longValue());
+    assertEquals(60, tuple.getLong("field_i").longValue());
+    assertEquals("c", tuple.get("str_s"));
   }
 
   @Test
