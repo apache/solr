@@ -176,14 +176,25 @@ private fun getMainMenuText(item: MainMenu) = when (item) {
 
 private fun getMenuIcon(item: MainMenu) = when (item) {
     MainMenu.Dashboard -> Icons.Rounded.Dashboard
+
     MainMenu.Metrics -> Icons.Rounded.Analytics
+
     MainMenu.Cluster -> Icons.Rounded.Hub
+
     MainMenu.Security -> Icons.Rounded.Security
-    MainMenu.Configsets -> Icons.Rounded.Folder // TODO Update to FolderData
+
+    MainMenu.Configsets -> Icons.Rounded.Folder
+
+    // TODO Update to FolderData
     MainMenu.Collections -> Icons.Rounded.Apps
-    MainMenu.QueriesAndOperations -> Icons.Rounded.DocumentScanner // TODO Update to OtherAdmission
+
+    MainMenu.QueriesAndOperations -> Icons.Rounded.DocumentScanner
+
+    // TODO Update to OtherAdmission
     MainMenu.Environment -> Icons.Rounded.Memory
+
     MainMenu.Logging -> Icons.AutoMirrored.Rounded.TextSnippet
+
     MainMenu.ThreadDump -> Icons.AutoMirrored.Rounded.ViewList
 }
 

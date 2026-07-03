@@ -81,6 +81,7 @@ internal class StartStoreProvider(
         override fun executeIntent(intent: Intent) {
             when (intent) {
                 is Intent.UpdateSolrUrl -> dispatch(Message.UrlUpdated(intent.url))
+
                 is Intent.Connect -> {
                     var urlValue = state().url
                     if (urlValue.isBlank()) urlValue = defaultSolrUrl()
@@ -137,6 +138,7 @@ internal class StartStoreProvider(
                     )
                 }
             }
+
             else -> dispatch(Message.ConnectionFailed(error))
         }
     }

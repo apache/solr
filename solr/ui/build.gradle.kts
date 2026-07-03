@@ -91,12 +91,12 @@ kotlin {
                 implementation(libs.mvikotlin.main)
                 implementation(libs.mvikotlin.logging)
 
-            implementation(project.dependencies.platform(libs.ktor.bom))
-            implementation(libs.ktor.client.auth)
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.contentNegotiation)
-            implementation(libs.ktor.client.serialization.json)
-            implementation(libs.squareup.okio)
+                implementation(project.dependencies.platform(libs.ktor.bom))
+                implementation(libs.ktor.client.auth)
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.contentNegotiation)
+                implementation(libs.ktor.client.serialization.json)
+                implementation(libs.squareup.okio)
 
                 implementation(libs.oshai.logging)
                 implementation(libs.slf4j.api)
