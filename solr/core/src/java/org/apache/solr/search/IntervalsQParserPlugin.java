@@ -141,8 +141,9 @@ public class IntervalsQParserPlugin extends QParserPlugin {
           case "within" -> parseWithinRule(ruleParams, defaultField);
           case "at_least" -> parseAtLeastRule(ruleParams, defaultField);
           case "no_intervals" -> parseNoIntervalsRule(ruleParams);
-          default -> throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "Unsupported intervals rule: " + ruleName);
+          default -> 
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST, "Unsupported intervals rule: " + ruleName);
         };
       }
 
@@ -472,8 +473,9 @@ public class IntervalsQParserPlugin extends QParserPlugin {
           case "not_containing" -> Intervals.notContaining(source, other);
           case "not_overlapping" -> Intervals.nonOverlapping(source, other);
           case "overlapping" -> Intervals.overlapping(source, other);
-          default -> throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "Unsupported filter operator: " + op);
+          default -> 
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST, "Unsupported filter operator: " + op);
         };
       }
 
