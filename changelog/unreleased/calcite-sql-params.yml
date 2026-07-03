@@ -3,5 +3,5 @@ type: changed
 authors:
   - name: Jan Høydahl
 links:
-  - name: PRXXXX
-    url: https://github.com/apache/solr/pull/XXXX
+  - name: PR#4607
+    url: https://github.com/apache/solr/pull/4607
