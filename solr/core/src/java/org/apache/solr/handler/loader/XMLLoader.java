@@ -23,6 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -134,7 +135,11 @@ public class XMLLoader extends ContentStreamLoader {
         if (log.isTraceEnabled()) {
           log.trace(
               "body: {}",
-              new String(body, (charset == null) ? ContentStreamBase.DEFAULT_CHARSET : charset));
+              new String(
+                  body,
+                  (charset == null)
+                      ? StandardCharsets.UTF_8
+                      : ContentStreamBase.charsetForName(charset)));
         }
         return new ByteArrayInputStream(body);
       }

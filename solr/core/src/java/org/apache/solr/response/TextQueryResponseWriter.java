@@ -70,7 +70,7 @@ public interface TextQueryResponseWriter extends QueryResponseWriter {
     Writer writer =
         (charset == null)
             ? new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)
-            : new OutputStreamWriter(outputStream, charset);
+            : new OutputStreamWriter(outputStream, ContentStreamBase.charsetForName(charset));
 
     return new FastWriter(writer); // note: buffered; therefore we need to call flush()
   }

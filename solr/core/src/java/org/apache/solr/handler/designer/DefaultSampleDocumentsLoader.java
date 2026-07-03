@@ -139,7 +139,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       throws IOException {
     ContentStream stream;
     if (params.get(SEPARATOR) == null) {
-      String csvStr = new String(streamBytes, charset);
+      String csvStr = new String(streamBytes, ContentStreamBase.charsetForName(charset));
       char sep = detectTSV(csvStr);
       ModifiableSolrParams modifiableSolrParams = new ModifiableSolrParams(params);
       modifiableSolrParams.set(SEPARATOR, String.valueOf(sep));
@@ -198,7 +198,8 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
       String jsonStr =
           new String(
-              readAllBytes(stream), charset != null ? charset : ContentStreamBase.DEFAULT_CHARSET);
+              readAllBytes(stream),
+              charset != null ? ContentStreamBase.charsetForName(charset) : StandardCharsets.UTF_8);
       String[] lines = jsonStr.split("\n");
       if (lines.length > 1) {
         for (String line : lines) {
