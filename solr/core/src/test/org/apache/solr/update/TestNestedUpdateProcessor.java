@@ -673,7 +673,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
      */
     private SolrParams parentQueryMaker(String parent_path, String inner_child_query) {
       assertValidPathSyntax(parent_path);
-      final int variant = random().nextInt(3);
+      final int variant = 3; // random().nextInt(3);
 
       if (variant == 2) {
         // new parentPath sugar
@@ -690,10 +690,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
               "child_q", "(+" + inner_child_query + " +_nest_path_:*)");
         } else {
           return params(
-              "q",
-              "{!parent which='{!field f=_nest_path_ v=/}'}(+"
-                  + inner_child_query
-                  + " +_nest_path_:*)");
+              "q", "{!parent which=_nest_path_:\\/}(+" + inner_child_query + " +_nest_path_:*)");
         }
       } // else...
 

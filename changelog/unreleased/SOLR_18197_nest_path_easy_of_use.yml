@@ -3,6 +3,8 @@ type: added
 authors:
   - name: Abhishek Umarjikar
     nick: abumarjikar
+  - name: David Smiley
+    nick: dsmiley
 links:
   - name: SOLR-18197
     url: https://issues.apache.org/jira/browse/SOLR-18197
