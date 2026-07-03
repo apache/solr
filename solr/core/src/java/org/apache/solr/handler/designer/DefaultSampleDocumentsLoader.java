@@ -43,6 +43,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.loader.CSVLoaderBase;
 import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.handler.loader.XMLLoader;
@@ -139,7 +140,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       throws IOException {
     ContentStream stream;
     if (params.get(SEPARATOR) == null) {
-      String csvStr = new String(streamBytes, ContentStreamBase.charsetForName(charset));
+      String csvStr = new String(streamBytes, IOUtils.charsetForName(charset));
       char sep = detectTSV(csvStr);
       ModifiableSolrParams modifiableSolrParams = new ModifiableSolrParams(params);
       modifiableSolrParams.set(SEPARATOR, String.valueOf(sep));
@@ -199,7 +200,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       String jsonStr =
           new String(
               readAllBytes(stream),
-              charset != null ? ContentStreamBase.charsetForName(charset) : StandardCharsets.UTF_8);
+              charset != null ? IOUtils.charsetForName(charset) : StandardCharsets.UTF_8);
       String[] lines = jsonStr.split("\n");
       if (lines.length > 1) {
         for (String line : lines) {

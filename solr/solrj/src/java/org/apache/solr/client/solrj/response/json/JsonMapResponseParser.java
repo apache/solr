@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
@@ -46,10 +46,7 @@ public class JsonMapResponseParser extends ResponseParser {
     Map map = null;
     try (InputStreamReader reader =
         new InputStreamReader(
-            body,
-            encoding == null
-                ? StandardCharsets.UTF_8
-                : ContentStreamBase.charsetForName(encoding))) {
+            body, encoding == null ? StandardCharsets.UTF_8 : IOUtils.charsetForName(encoding))) {
       ObjectBuilder builder = new ObjectBuilder(new JSONParser(reader));
       map = (Map) builder.getObject();
     } catch (JSONParser.ParseException e) {
