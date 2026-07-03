@@ -177,6 +177,16 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
             "{json_queries:{q1:{phrase:{terms:[phrA_quick,phrA_brown,phrA_fox]}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='50']");
+    // same query expressed via the top-level JSON "query" (rather than the "q" param) still
+    // resolves the intervals qparser's $q1 reference against json_queries
+    assertJQ(
+        req(
+            "json",
+            "{query:{intervals:{df:v_ws, query:$q1}}, "
+                + " json_queries:{q1:{phrase:{terms:[phrA_quick,phrA_brown,phrA_fox]}}},"
+                + " fields:id"
+                + "}"),
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'50'}]}");
   }
 
   @Test
