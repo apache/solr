@@ -85,7 +85,7 @@ diffplug-spotless = "8.7.0"
 dockerfile-baseimage-java = "25"
 dropwizard-metrics = "4.2.39"
 eclipse-ecj = "3.46.0"
-eclipse-jetty = "12.0.34"
+eclipse-jetty = "12.1.10"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.7.0.202606012155-r"
 essenty = "2.5.0"
@@ -105,7 +105,7 @@ google-guava = "33.6.0-jre"
 # @keep for version alignment
 google-j2objc = "3.1"
 # @keep This is GJF version for spotless/ tidy.
-google-javaformat = "1.18.1"
+google-javaformat = "1.35.0"
 # @keep for version alignment
 google-protobuf = "4.35.1"
 # @keep Gradle version to run the build
