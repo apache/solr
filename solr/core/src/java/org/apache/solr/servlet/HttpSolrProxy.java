@@ -41,6 +41,10 @@ import org.eclipse.jetty.http.HttpHeader;
 class HttpSolrProxy {
   // TODO add X-Forwarded-For and with comma delimited
 
+  // Headers stripped when copying in either direction. Hop-by-hop headers, plus Host (not
+  // hop-by-hop, but the client must re-derive it for the upstream, else Jetty 12.1 rejects a
+  // mismatched Host with a 400). See Jetty's reference proxy for comparison:
+  // https://github.com/jetty/jetty.project/blob/jetty-12.1.x/jetty-ee11/jetty-ee11-proxy/src/main/java/org/eclipse/jetty/ee11/proxy/AbstractProxyServlet.java
   private static final Set<HttpHeader> HOP_BY_HOP_HEADERS =
       EnumSet.of(
           HttpHeader.CONNECTION,
@@ -49,7 +53,8 @@ class HttpSolrProxy {
           HttpHeader.PROXY_AUTHORIZATION,
           HttpHeader.TE,
           HttpHeader.TRANSFER_ENCODING,
-          HttpHeader.UPGRADE);
+          HttpHeader.UPGRADE,
+          HttpHeader.HOST);
 
   // Methods that shouldn't have a body according to HTTP spec
   private static final Set<String> NO_BODY_METHODS = Set.of("GET", "HEAD", "DELETE");
@@ -71,8 +76,15 @@ class HttpSolrProxy {
     // https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/jetty-httpclient/jetty-httpclient-12.0
 
     if (!NO_BODY_METHODS.contains(servletReq.getMethod())) {
+      // Report the known body length so the client sets Content-Length upstream (mirrors Jetty's
+      // ProxyInputStreamRequestContent); -1 (chunked request in) stays chunked.
       proxyReq.body(
-          new InputStreamRequestContent(servletReq.getContentType(), servletReq.getInputStream()));
+          new InputStreamRequestContent(servletReq.getContentType(), servletReq.getInputStream()) {
+            @Override
+            public long getLength() {
+              return servletReq.getContentLengthLong();
+            }
+          });
     }
 
     CompletableFuture<Result> resultFuture = new CompletableFuture<>();
@@ -131,7 +143,9 @@ class HttpSolrProxy {
         .forEachRemaining(
             headerName -> {
               HttpHeader knownHeader = HttpHeader.CACHE.get(headerName); // maybe null
-              if (!HOP_BY_HOP_HEADERS.contains(knownHeader)) {
+              // Strip Content-Length too; it's supplied by the request body's getLength() above.
+              if (!HOP_BY_HOP_HEADERS.contains(knownHeader)
+                  && knownHeader != HttpHeader.CONTENT_LENGTH) {
                 servletReq
                     .getHeaders(headerName)
                     .asIterator()

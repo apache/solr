@@ -129,6 +129,14 @@ Its builder will dynamically detect if solr-jetty is available and use that, oth
 CommonParams.QT has been un-deprecated.
 Nonetheless, if your code makes explicit reference to "qt" when constructing a standard request, there is usually a better way.
 
+=== Embedded Jetty Configuration
+
+Solr 10.1 upgrades the embedded server to Eclipse Jetty 12.1, which removed Jetty's directory-scanning deployer (the `DeploymentManager` and `ContextProvider` classes).
+Because Solr serves a single, statically-known webapp, that webapp is now deployed directly in `server/etc/jetty.xml`, and the `server/contexts/solr-jetty-context.xml` file has been removed.
+
+Advanced users who relied on Jetty scanning the `server/contexts/` directory to auto-deploy additional context descriptors will find that this no longer happens.
+To deploy an extra context, or to customize how the Solr webapp itself is deployed, edit `server/etc/jetty.xml` directly and add the context there.
+
 === Testing Framework
 Standard `solr.xml` configuration used by `MiniSolrCloudCluster` turns off metrics by default (`metricsEnabled=false`) unlike the previous versions of Solr where metrics were enabled by default. Tests that need to access metrics should enable them by setting `System.setProperty("metricsEnabled", "true")` in test suite initialization.
 
