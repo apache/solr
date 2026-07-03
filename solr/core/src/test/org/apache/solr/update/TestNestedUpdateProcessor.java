@@ -673,7 +673,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
      */
     private SolrParams parentQueryMaker(String parent_path, String inner_child_query) {
       assertValidPathSyntax(parent_path);
-      final int variant = 3; // random().nextInt(3);
+      final int variant = random().nextInt(3);
 
       if (variant == 2) {
         // new parentPath sugar
