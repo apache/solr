@@ -380,7 +380,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   private <T> void waitFor(T expected, Supplier<T> supplier) throws InterruptedException {
     TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, new TimeSource.CurrentTimeSource());
     while (!timeOut.hasTimedOut()) {
-      if (expected == supplier.get()) return;
+      if (Objects.equals(expected, supplier.get())) return;
       Thread.sleep(100);
     }
     assertEquals(expected, supplier.get());
