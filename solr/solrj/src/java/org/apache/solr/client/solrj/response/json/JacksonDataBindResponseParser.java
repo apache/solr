@@ -25,7 +25,6 @@ import java.util.Set;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -61,6 +60,9 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
    * Parse the Json {@code stream} to the expected Java type, then, converts to a {@link NamedList}.
    */
   @Override
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+  // suppression when that PR merges
+  @SuppressWarnings("JdkObsolete")
   public NamedList<Object> processResponse(InputStream stream, String encoding) throws IOException {
     // TODO generalize to CBOR, Smile, ...
     var mapper = JacksonContentWriter.DEFAULT_MAPPER;
@@ -69,9 +71,7 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
     if (encoding == null) {
       parsedVal = mapper.readValue(stream, typeParam);
     } else {
-      parsedVal =
-          mapper.readValue(
-              new InputStreamReader(stream, ContentStreamBase.charsetForName(encoding)), typeParam);
+      parsedVal = mapper.readValue(new InputStreamReader(stream, encoding), typeParam);
     }
 
     final var result = new SimpleOrderedMap<Object>();

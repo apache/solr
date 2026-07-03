@@ -134,12 +134,15 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     return new SampleDocuments(docs, contentType, fileSource);
   }
 
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+  // suppression when that PR merges
+  @SuppressWarnings("JdkObsolete")
   protected List<SolrInputDocument> loadCsvDocs(
       SolrParams params, String source, byte[] streamBytes, String charset, final int maxDocsToLoad)
       throws IOException {
     ContentStream stream;
     if (params.get(SEPARATOR) == null) {
-      String csvStr = new String(streamBytes, ContentStreamBase.charsetForName(charset));
+      String csvStr = new String(streamBytes, charset);
       char sep = detectTSV(csvStr);
       ModifiableSolrParams modifiableSolrParams = new ModifiableSolrParams(params);
       modifiableSolrParams.set(SEPARATOR, String.valueOf(sep));
@@ -176,7 +179,9 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     return docs.stream().map(JsonLoader::buildDoc).collect(Collectors.toList());
   }
 
-  @SuppressWarnings("unchecked")
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove the
+  // JdkObsolete suppression when that PR merges
+  @SuppressWarnings({"unchecked", "JdkObsolete"})
   protected List<SolrInputDocument> loadJsonDocs(
       ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
     Object json;
@@ -198,8 +203,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
       String jsonStr =
           new String(
-              readAllBytes(stream),
-              charset != null ? ContentStreamBase.charsetForName(charset) : StandardCharsets.UTF_8);
+              readAllBytes(stream), charset != null ? charset : ContentStreamBase.DEFAULT_CHARSET);
       String[] lines = jsonStr.split("\n");
       if (lines.length > 1) {
         for (String line : lines) {

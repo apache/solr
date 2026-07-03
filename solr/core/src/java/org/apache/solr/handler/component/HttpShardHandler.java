@@ -496,7 +496,10 @@ public class HttpShardHandler extends ShardHandler {
 
     ReplicaSource replicaSource;
     if (zkController != null) {
-      boolean onlyNrt = Boolean.TRUE.equals(req.getContext().get(ONLY_NRT_REPLICAS));
+      // TODO: comparing a Boolean by reference is a genuine bug, fixed in
+      // https://github.com/apache/solr/pull/4605; remove this suppression when that PR merges
+      @SuppressWarnings("ReferenceEquality")
+      boolean onlyNrt = Boolean.TRUE == req.getContext().get(ONLY_NRT_REPLICAS);
 
       replicaSource =
           new CloudReplicaSource.Builder()

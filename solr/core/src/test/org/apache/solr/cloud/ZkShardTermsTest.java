@@ -377,10 +377,13 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     replica3Terms.close();
   }
 
+  // TODO: comparing boxed values by reference is a genuine bug, fixed in
+  // https://github.com/apache/solr/pull/4605; remove this suppression when that PR merges
+  @SuppressWarnings("ReferenceEquality")
   private <T> void waitFor(T expected, Supplier<T> supplier) throws InterruptedException {
     TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, new TimeSource.CurrentTimeSource());
     while (!timeOut.hasTimedOut()) {
-      if (Objects.equals(expected, supplier.get())) return;
+      if (expected == supplier.get()) return;
       Thread.sleep(100);
     }
     assertEquals(expected, supplier.get());

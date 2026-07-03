@@ -18,8 +18,8 @@ package org.apache.solr.common.params;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -457,21 +457,29 @@ public abstract class SolrParams
    * Returns this SolrParams as a proper URL encoded string, starting with {@code "?"}, if not
    * empty.
    */
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+  // suppression when that PR merges
+  @SuppressWarnings("JdkObsolete")
   public String toQueryString() {
-    final Charset charset = StandardCharsets.UTF_8;
-    final StringBuilder sb = new StringBuilder(128);
-    boolean first = true;
-    for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
-      final String name = it.next(), nameEnc = URLEncoder.encode(name, charset);
-      for (String val : getParams(name)) {
-        sb.append(first ? '?' : '&')
-            .append(nameEnc)
-            .append('=')
-            .append(URLEncoder.encode(val, charset));
-        first = false;
+    try {
+      final String charset = StandardCharsets.UTF_8.name();
+      final StringBuilder sb = new StringBuilder(128);
+      boolean first = true;
+      for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
+        final String name = it.next(), nameEnc = URLEncoder.encode(name, charset);
+        for (String val : getParams(name)) {
+          sb.append(first ? '?' : '&')
+              .append(nameEnc)
+              .append('=')
+              .append(URLEncoder.encode(val, charset));
+          first = false;
+        }
       }
+      return sb.toString();
+    } catch (UnsupportedEncodingException e) {
+      // impossible!
+      throw new AssertionError(e);
     }
-    return sb.toString();
   }
 
   /**

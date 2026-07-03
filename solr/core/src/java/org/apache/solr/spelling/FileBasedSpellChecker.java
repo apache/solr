@@ -33,7 +33,6 @@ import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.spell.PlainTextDictionary;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
@@ -79,6 +78,9 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
     return null;
   }
 
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+  // suppression when that PR merges
+  @SuppressWarnings("JdkObsolete")
   private void loadExternalFileDictionary(SolrCore core, SolrIndexSearcher searcher) {
     try {
       IndexSchema schema = null == searcher ? core.getLatestSchema() : searcher.getSchema();
@@ -123,8 +125,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
           dictionary =
               new PlainTextDictionary(
                   new InputStreamReader(
-                      core.getResourceLoader().openResource(sourceLocation),
-                      ContentStreamBase.charsetForName(characterEncoding)));
+                      core.getResourceLoader().openResource(sourceLocation), characterEncoding));
         }
       }
 

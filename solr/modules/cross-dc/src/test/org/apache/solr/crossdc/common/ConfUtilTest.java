@@ -22,7 +22,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -120,6 +119,9 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+  // suppression when that PR merges
+  @SuppressWarnings("JdkObsolete")
   public void testFillProperties_FromZooKeeper() throws Exception {
     Map<String, Object> properties = new HashMap<>();
 
@@ -130,7 +132,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     zkProps.setProperty("custom.zk.property", "zk-value");
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
+    OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
     zkProps.store(writer, null);
     writer.close();
     byte[] zkData = baos.toByteArray();
@@ -147,6 +149,9 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+  // suppression when that PR merges
+  @SuppressWarnings("JdkObsolete")
   public void testFillProperties_PriorityOrder() throws Exception {
     Map<String, Object> properties = new HashMap<>();
 
@@ -156,7 +161,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     zkProps.setProperty(KafkaCrossDcConf.TOPIC_NAME, "zk-topic");
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
+    OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
     zkProps.store(writer, null);
     writer.close();
     byte[] zkData = baos.toByteArray();
@@ -308,6 +313,9 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+  // suppression when that PR merges
+  @SuppressWarnings("JdkObsolete")
   public void testFillProperties_ComplexScenario() throws Exception {
     Map<String, Object> properties = new HashMap<>();
 
@@ -319,7 +327,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     zkProps.setProperty("zk.only.property", "zk-value");
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
+    OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
     zkProps.store(writer, null);
     writer.close();
     byte[] zkData = baos.toByteArray();

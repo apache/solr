@@ -27,7 +27,6 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -76,23 +75,6 @@ public abstract class ContentStreamBase implements ContentStream {
       }
     }
     return null;
-  }
-
-  /**
-   * Resolves a charset name (typically from a Content-Type header) to a {@link Charset}. Unlike
-   * {@link Charset#forName(String)}, an illegal or unsupported name results in a checked {@link
-   * UnsupportedEncodingException}, matching the behavior of the legacy {@code String}-based JDK
-   * charset APIs, so callers can treat a bad charset as an I/O error.
-   */
-  public static Charset charsetForName(String charsetName) throws UnsupportedEncodingException {
-    try {
-      return Charset.forName(charsetName);
-    } catch (IllegalArgumentException e) {
-      UnsupportedEncodingException uee =
-          new UnsupportedEncodingException("Unsupported charset: " + charsetName);
-      uee.initCause(e);
-      throw uee;
-    }
   }
 
   protected String attemptToDetermineContentType() {
@@ -228,11 +210,19 @@ public abstract class ContentStreamBase implements ContentStream {
       this(str, detect(str));
     }
 
+    // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+    // suppression when that PR merges
+    @SuppressWarnings("JdkObsolete")
     public StringStream(String str, String contentType) {
       this.str = str;
       this.contentType = contentType;
       name = null;
-      size = (long) str.getBytes(StandardCharsets.UTF_8).length;
+      try {
+        size = (long) str.getBytes(DEFAULT_CHARSET).length;
+      } catch (UnsupportedEncodingException e) {
+        // won't happen
+        throw new RuntimeException(e);
+      }
       sourceInfo = "string";
     }
 
@@ -261,17 +251,21 @@ public abstract class ContentStreamBase implements ContentStream {
     }
 
     @Override
+    // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+    // suppression when that PR merges
+    @SuppressWarnings("JdkObsolete")
     public InputStream getStream() throws IOException {
-      return new ByteArrayInputStream(str.getBytes(StandardCharsets.UTF_8));
+      return new ByteArrayInputStream(str.getBytes(DEFAULT_CHARSET));
     }
 
     /** If a charset is defined (by the contentType) use that, otherwise use a StringReader */
     @Override
+    // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+    // suppression when that PR merges
+    @SuppressWarnings("JdkObsolete")
     public Reader getReader() throws IOException {
       String charset = getCharsetFromContentType(contentType);
-      return charset == null
-          ? new StringReader(str)
-          : new InputStreamReader(getStream(), charsetForName(charset));
+      return charset == null ? new StringReader(str) : new InputStreamReader(getStream(), charset);
     }
   }
 
@@ -280,11 +274,14 @@ public abstract class ContentStreamBase implements ContentStream {
    * "utf-8".
    */
   @Override
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+  // suppression when that PR merges
+  @SuppressWarnings("JdkObsolete")
   public Reader getReader() throws IOException {
     String charset = getCharsetFromContentType(getContentType());
     return charset == null
-        ? new InputStreamReader(getStream(), StandardCharsets.UTF_8)
-        : new InputStreamReader(getStream(), charsetForName(charset));
+        ? new InputStreamReader(getStream(), DEFAULT_CHARSET)
+        : new InputStreamReader(getStream(), charset);
   }
 
   // ------------------------------------------------------------------

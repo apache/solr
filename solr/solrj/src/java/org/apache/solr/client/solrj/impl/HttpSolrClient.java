@@ -268,6 +268,9 @@ public abstract class HttpSolrClient extends SolrClient {
    * Validates that the content type in the response can be processed by the Response Parser. Throws
    * a {@code RemoteSolrException} if not.
    */
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+  // suppression when that PR merges
+  @SuppressWarnings("JdkObsolete")
   private void checkContentType(
       ResponseParser processor,
       InputStream is,
@@ -290,11 +293,9 @@ public abstract class HttpSolrClient extends SolrClient {
         try {
           ByteArrayOutputStream body = new ByteArrayOutputStream();
           is.transferTo(body);
-          Charset charset = encoding != null ? Charset.forName(encoding) : FALLBACK_CHARSET;
           throw new RemoteSolrException(
-              urlExceptionMessage, httpStatus, prefix + body.toString(charset), null);
-          // IllegalArgumentException covers an unsupported/invalid charset name from the response
-        } catch (IOException | IllegalArgumentException e) {
+              urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
+        } catch (IOException e) {
           throw new RemoteSolrException(
               urlExceptionMessage,
               httpStatus,

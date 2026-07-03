@@ -20,7 +20,6 @@ package org.apache.solr.rest.schema.analysis;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +58,9 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
   }
 
   @Test
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+  // suppression when that PR merges
+  @SuppressWarnings("JdkObsolete")
   public void testManagedSynonyms() throws Exception {
     // this endpoint depends on at least one field type containing the following
     // declaration in the schema-rest.xml:
@@ -151,10 +153,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/response/result[@name='response'][@numFound='1']",
         "/response/result[@name='response']/doc/str[@name='id'][.='5150']");
     assertQ(
-        "/select?q="
-            + newFieldName
-            + ":"
-            + URLEncoder.encode(multiTermOrigin, StandardCharsets.UTF_8),
+        "/select?q=" + newFieldName + ":" + URLEncoder.encode(multiTermOrigin, "UTF-8"),
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='1']",
         "/response/result[@name='response']/doc/str[@name='id'][.='040']");
@@ -172,7 +171,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     assertJPut(endpoint, toJSONString(syns), "/responseHeader/status==0");
 
     assertJQ(
-        endpoint + "/" + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8),
+        endpoint + "/" + URLEncoder.encode(multiTermSynonym, "UTF-8"),
         "/" + multiTermSynonym + "==['" + multiTermOrigin + "']");
 
     // should not match as the synonym mapping between mad and angry does not
@@ -188,7 +187,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/select?q="
             + newFieldName
             + ":("
-            + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8)
+            + URLEncoder.encode(multiTermSynonym, "UTF-8")
             + ")&sow=false",
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='0']");
@@ -207,7 +206,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/select?q="
             + newFieldName
             + ":("
-            + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8)
+            + URLEncoder.encode(multiTermSynonym, "UTF-8")
             + ")&sow=false",
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='1']",

@@ -23,7 +23,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -126,6 +125,9 @@ public class XMLLoader extends ContentStreamLoader {
     }
   }
 
+  // TODO: charset APIs modernized in https://github.com/apache/solr/pull/4606; remove this
+  // suppression when that PR merges
+  @SuppressWarnings("JdkObsolete")
   private InputStream getStream(ContentStream cs, String charset) throws IOException {
     if (log.isTraceEnabled()) {
       try (InputStream is = cs.getStream()) {
@@ -135,11 +137,7 @@ public class XMLLoader extends ContentStreamLoader {
         if (log.isTraceEnabled()) {
           log.trace(
               "body: {}",
-              new String(
-                  body,
-                  (charset == null)
-                      ? StandardCharsets.UTF_8
-                      : ContentStreamBase.charsetForName(charset)));
+              new String(body, (charset == null) ? ContentStreamBase.DEFAULT_CHARSET : charset));
         }
         return new ByteArrayInputStream(body);
       }
