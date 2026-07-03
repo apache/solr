@@ -85,6 +85,11 @@
       "groupName": "Telemetry (OpenTelemetry & Prometheus)"
     },
     {
+      "description": "Error Prone (error_prone_core + error_prone_annotations) is grouped on its own because compiler-check upgrades routinely surface new bug patterns that require source fixes, so they need dedicated review and follow-up separate from the catch-all bump PR.",
+      "matchPackagePrefixes": ["com.google.errorprone"],
+      "groupName": "Error Prone"
+    },
+    {
       "description": "Google Cloud client stack used by the GCS repository - cloud client, api and auth libraries plus the BOM. Kept separate from the gRPC transport it consumes and from general com.google.* utility libs (guava, gson, errorprone).",
       "matchPackagePrefixes": [
         "com.google.cloud",
@@ -192,7 +197,7 @@
       "groupName": "GitHub Actions"
     }
   ],
-  "schedule": ["* * * * *"],
+  "schedule": ["before 9am on the first day of the month"],
   "prConcurrentLimit": 300,
   "prHourlyLimit": 20,
   "minimumReleaseAge": "5 days"
