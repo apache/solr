@@ -25,6 +25,7 @@ import java.util.Set;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -65,7 +66,9 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
     if (encoding == null) {
       parsedVal = mapper.readValue(stream, typeParam);
     } else {
-      parsedVal = mapper.readValue(new InputStreamReader(stream, encoding), typeParam);
+      parsedVal =
+          mapper.readValue(
+              new InputStreamReader(stream, IOUtils.charsetForName(encoding)), typeParam);
     }
 
     final var result = new SimpleOrderedMap<Object>();
