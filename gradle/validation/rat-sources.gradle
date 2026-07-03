@@ -120,10 +120,12 @@ allprojects {
         // The following are excluded from the source release, thus no header needed
         exclude "dev-docs"
         exclude "**/AGENTS.md"
-        exclude "**/.*" // e.g. .gradle, .github, .junie, .gitignore, etc.
+        exclude "**/.*" // e.g. .gradle, .github, .gitignore, etc.
       } else {
         // Source release (no git): scan everything, exclude generated/ignored paths manually.
         include "**"
+
+        exclude ".gradle" // gradle will create this dir
       }
 
       exclude project.layout.buildDirectory.get().asFile.name
