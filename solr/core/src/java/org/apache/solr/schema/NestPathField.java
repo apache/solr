@@ -73,21 +73,13 @@ public class NestPathField extends SortableTextField {
     if (externalVal == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Field " + field.getName() + " cannot be queried with a null.");
+          "Field " + field.getName() + " missing value.  Forgot `v` local-param?");
     }
 
     if (externalVal.contains("\\")) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Field " + field.getName() + " query value contains backslashes ('\\'). ");
-    }
-
-    if (!externalVal.startsWith("/") && (externalVal.length() > 1 && externalVal.endsWith("/"))) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Field "
-              + field.getName()
-              + " query value must start with a forward slash ('/') and cannot contain a trailing slash.");
+          "Field " + field.getName() + " query value contains backslashes ('\\').");
     }
 
     if (externalVal.isEmpty() || "/".equals(externalVal)) {
@@ -95,6 +87,14 @@ public class NestPathField extends SortableTextField {
           .add(MatchAllDocsQuery.INSTANCE, BooleanClause.Occur.MUST)
           .add(field.getType().getExistenceQuery(parser, field), BooleanClause.Occur.MUST_NOT)
           .build();
+    }
+
+    if (!externalVal.startsWith("/") || externalVal.endsWith("/")) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Field "
+              + field.getName()
+              + " query value must start with a forward slash ('/') and cannot contain a trailing slash.");
     }
 
     return super.getFieldQuery(parser, field, externalVal);
