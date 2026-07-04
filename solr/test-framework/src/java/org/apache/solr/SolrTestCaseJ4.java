@@ -924,7 +924,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   public static String assertJJQ(String jsonBody, String... tests) throws Exception {
     SolrQueryRequestBase jreq = (SolrQueryRequestBase) req();
-    jreq.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(jsonBody)));
+    jreq.setContentStreams(List.of(new ContentStreamBase.StringStream(jsonBody)));
     return assertJQ(jreq, JSONTestUtil.DEFAULT_DELTA, tests);
   }
 
