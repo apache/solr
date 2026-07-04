@@ -88,13 +88,6 @@ ext {
   useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
 }
 
-afterEvaluate {
-  tasks.withType(Test).configureEach {
-    // Forces the property into the JVM arguments after the root build system sets it
-    systemProperties['tests.security.manager'] = 'false'
-  }
-}
-
 task run(type: JavaExec) {
   group = 'application'
   description = 'Run the main class with JavaExecTask'
