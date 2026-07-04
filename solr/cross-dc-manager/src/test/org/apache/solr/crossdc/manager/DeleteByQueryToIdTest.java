@@ -16,6 +16,8 @@
  */
 package org.apache.solr.crossdc.manager;
 
+import static org.apache.solr.crossdc.common.KafkaCrossDcConf.BOOTSTRAP_SERVERS;
+
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.ByteArrayOutputStream;
@@ -57,8 +59,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
-
-import static org.apache.solr.crossdc.common.KafkaCrossDcConf.BOOTSTRAP_SERVERS;
 
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -108,9 +108,7 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
     // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
     config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     try (AdminClient adminClient = AdminClient.create(config)) {
-      adminClient.createTopics(List.of(
-          new NewTopic(TOPIC, 3, (short) 1)
-      )).all().get();
+      adminClient.createTopics(List.of(new NewTopic(TOPIC, 3, (short) 1))).all().get();
     }
 
     Properties props = new Properties();

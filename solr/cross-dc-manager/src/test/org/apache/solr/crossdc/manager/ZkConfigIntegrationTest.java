@@ -97,10 +97,11 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
     Properties adminProps = new Properties();
     adminProps.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     try (AdminClient adminClient = AdminClient.create(adminProps)) {
-      adminClient.createTopics(List.of(
-          new NewTopic(TOPIC1, 1, (short) 1),
-          new NewTopic(TOPIC2, 1, (short) 1)
-      )).all().get();
+      adminClient
+          .createTopics(
+              List.of(new NewTopic(TOPIC1, 1, (short) 1), new NewTopic(TOPIC2, 1, (short) 1)))
+          .all()
+          .get();
     }
 
     Properties props = new Properties();

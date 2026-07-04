@@ -102,9 +102,7 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
     // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
     config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     try (AdminClient adminClient = AdminClient.create(config)) {
-      adminClient.createTopics(List.of(
-          new NewTopic(TOPIC, 3, (short) 1)
-      )).all().get();
+      adminClient.createTopics(List.of(new NewTopic(TOPIC, 3, (short) 1))).all().get();
     }
 
     System.setProperty("solr.crossdc.topicName", TOPIC);
