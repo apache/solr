@@ -78,11 +78,6 @@ dependencies {
       classifier = "test"
     }
   }
-  testRuntimeOnly(libs.apache.kafka.server.common) {
-    artifact {
-      classifier = "test"
-    }
-  }
 }
 
 ext {
