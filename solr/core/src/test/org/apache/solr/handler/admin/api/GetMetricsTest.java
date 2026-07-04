@@ -199,7 +199,8 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetMetricsCategoryParams() throws IOException {
-    String expected = """
+    String expected =
+        """
         category="QUERY"
         """;
 

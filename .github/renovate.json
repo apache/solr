@@ -28,45 +28,141 @@
       "versioning": "regex:^(?<major>\\d{1,4})\\.(?<minor>\\d+)(\\.(?<patch>\\d+))?$"
     },
     {
-      "description": "Group these calcite dependency upgrades together in same PR",
-      "matchPackagePrefixes": ["org.apache.calcite"],
-      "groupName": "org.apache.calcite"
+      "description": "Byte Buddy publishes a -jdk5 backport variant alongside each release (e.g. 1.18.10-jdk5). Ignore those so we track the mainline versions (e.g. 1.18.10).",
+      "matchPackagePrefixes": ["net.bytebuddy"],
+      "allowedVersions": "!/-jdk5$/"
     },
     {
-      "description": "Group these httpcomponents dependency upgrades together in same PR",
-      "matchPackagePrefixes": ["org.apache.httpcomponents"],
-      "groupName": "org.apache.httpcomponents"
+      "description": "CATCH-ALL: bundle all remaining minor/patch bumps of otherwise-ungrouped libraries into one PR to cut churn. Major bumps are intentionally NOT grouped here - they stay as individual PRs. The test bucket and the logical groups below override this for their packages.",
+      "matchManagers": ["gradle"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "all non-major dependencies"
     },
     {
-      "description": "Test-dependencies are checked less often than the shipped deps",
+      "description": "CATCH-ALL for test-only deps: bundle their minor/patch bumps separately from shipped deps. Major bumps stay individual.",
+      "matchManagers": ["gradle"],
       "matchDepTypes": ["test"],
-      "schedule": ["before 9am on the first day of the month"]
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "all non-major test dependencies"
     },
     {
-      "description": "AWS SDK packages checked less often",
+      "description": "Admin UI (Kotlin Multiplatform / Compose stack in solr/ui) - compose, androidx, kotlin(x), decompose/essenty/mvikotlin, ktor and kotlin-logging all move together. The Compose compiler plugin is version-locked to the Kotlin release.",
+      "matchPackagePrefixes": [
+        "org.jetbrains.kotlin",
+        "org.jetbrains.compose",
+        "org.jetbrains.androidx",
+        "com.arkivanov",
+        "io.ktor",
+        "io.github.oshai"
+      ],
+      "groupName": "Admin UI"
+    },
+    {
+      "description": "Web/server stack - Jetty servlet container, the Jakarta EE APIs, and the Jersey (JAX-RS) impl with its HK2 DI. solr/core wires jersey-container-jetty-http + jersey-inject-hk2 + jakarta APIs onto Jetty, so they must stay compatible.",
+      "matchPackagePrefixes": [
+        "org.eclipse.jetty",
+        "jakarta.",
+        "org.glassfish.jersey",
+        "org.glassfish.hk2"
+      ],
+      "groupName": "Web server stack"
+    },
+    {
+      "description": "gRPC / Netty / protobuf transport stack - grpc-netty uses Netty as its transport and grpc-protobuf uses protobuf. Shared by both the OpenTelemetry OTLP exporter and the GCS client, so it is its own group rather than owned by either.",
+      "matchPackagePrefixes": [
+        "io.grpc",
+        "io.netty",
+        "com.google.protobuf"
+      ],
+      "groupName": "gRPC and Netty"
+    },
+    {
+      "description": "Telemetry - OpenTelemetry API/SDK/exporters/instrumentation plus the Prometheus metrics libraries it exports to (solr/core uses otel-exporter-prometheus with prometheus-metrics-*).",
+      "matchPackagePrefixes": [
+        "io.opentelemetry",
+        "io.prometheus"
+      ],
+      "groupName": "Telemetry (OpenTelemetry & Prometheus)"
+    },
+    {
+      "description": "Error Prone (error_prone_core + error_prone_annotations) is grouped on its own because compiler-check upgrades routinely surface new bug patterns that require source fixes, so they need dedicated review and follow-up separate from the catch-all bump PR.",
+      "matchPackagePrefixes": ["com.google.errorprone"],
+      "groupName": "Error Prone"
+    },
+    {
+      "description": "Google Cloud client stack used by the GCS repository - cloud client, api and auth libraries plus the BOM. Kept separate from the gRPC transport it consumes and from general com.google.* utility libs (guava, gson, errorprone).",
+      "matchPackagePrefixes": [
+        "com.google.cloud",
+        "com.google.api",
+        "com.google.auth"
+      ],
+      "groupName": "Google Cloud"
+    },
+    {
+      "description": "FasterXML Jackson and the Woodstox XML stack - jackson-bom family, plus woodstox-core (com.fasterxml.woodstox) and its required stax2-api (org.codehaus.woodstox), which are used together in solr/core.",
+      "matchPackagePrefixes": [
+        "com.fasterxml.jackson",
+        "com.fasterxml.woodstox",
+        "org.codehaus.woodstox"
+      ],
+      "groupName": "Jackson & Woodstox"
+    },
+    {
+      "description": "Logging stack - Log4j, SLF4J (the log4j-slf4j2-impl bridge and jul/jcl bridges tie them together) and LMAX Disruptor, which is only present for Log4j2 async logging.",
+      "matchPackagePrefixes": [
+        "org.apache.logging.log4j",
+        "org.slf4j",
+        "com.lmax"
+      ],
+      "groupName": "Logging"
+    },
+    {
+      "description": "ZooKeeper and Curator - Curator is a ZooKeeper client library and must stay compatible with the ZooKeeper version.",
+      "matchPackagePrefixes": [
+        "org.apache.zookeeper",
+        "org.apache.curator"
+      ],
+      "groupName": "ZooKeeper & Curator"
+    },
+    {
+      "description": "Calcite (calcite-core/linq4j + avatica) must move together",
+      "matchPackagePrefixes": ["org.apache.calcite"],
+      "groupName": "Calcite"
+    },
+    {
+      "description": "Apache HttpComponents (httpclient/httpcore/httpmime) must move together",
+      "matchPackagePrefixes": ["org.apache.httpcomponents"],
+      "groupName": "Apache HttpComponents"
+    },
+    {
+      "description": "AWS SDK - single BOM-aligned version across ~11 artifacts",
       "matchPackagePrefixes": ["software.amazon.awssdk"],
-      "groupName": "AWS SDK",
-      "schedule": ["before 9am on the first day of the month"]
+      "groupName": "AWS SDK"
     },
     {
-      "description": "Google Cloud BOM checked less often to avoid spam",
-      "matchPackageNames": ["com.google.cloud:google-cloud-bom"],
-      "schedule": ["before 9am on the first day of the month"]
+      "description": "OkHttp and Okio - okhttp depends on a compatible okio",
+      "matchPackagePrefixes": ["com.squareup.okhttp3", "com.squareup.okio"],
+      "groupName": "OkHttp & Okio"
     },
     {
-      "description": "Workaround for https://github.com/renovatebot/renovate/issues/19226",
-      "matchPackageNames": ["solr:modules", "HH:mm"],
+      "description": "Skip major jetty upgrades - must be done manually (overrides the Web server stack group above for jetty majors only)",
+      "matchPackagePrefixes": ["org.eclipse.jetty"],
+      "matchUpdateTypes": ["major"],
       "enabled": false
     },
     {
-      "description": "Lucene dependencies should be skipped",
+      "description": "Lucene dependencies should be skipped (upgraded together with the Lucene release)",
       "matchPackagePrefixes": ["org.apache.lucene"],
       "enabled": false
     },
     {
-      "description": "Skip major jetty upgrades - must be done manually",
-      "matchPackagePrefixes": ["org.eclipse.jetty"],
-      "matchUpdateTypes": ["major"],
+      "description": "Lock cuvs-lucene below v26 - the 26.x line is compiled for JDK 22 (class file major version 66) but Solr targets JDK 21, so it fails to compile (see PR #4134). Revisit when Solr's minimum JDK is raised.",
+      "matchPackageNames": ["com.nvidia.cuvs.lucene:cuvs-lucene"],
+      "allowedVersions": "<26"
+    },
+    {
+      "description": "Workaround for https://github.com/renovatebot/renovate/issues/19226",
+      "matchPackageNames": ["solr:modules", "HH:mm"],
       "enabled": false
     },
     {
@@ -96,12 +192,12 @@
       "changelogUrl": "https://commons.apache.org/proper/commons-configuration/changes-report.html"
     },
     {
-      "description": "Group these UI dependency upgrades together in same PR",
-      "matchPackagePrefixes": ["com.arkivanov", "org.jetbrains.compose"],
-      "groupName": "Admin UI libraries"
+      "description": "Group all GitHub Actions upgrades together in same PR",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
     }
   ],
-  "schedule": ["* * * * 0"],
+  "schedule": ["before 9am on the first day of the month"],
   "prConcurrentLimit": 300,
   "prHourlyLimit": 20,
   "minimumReleaseAge": "5 days"
