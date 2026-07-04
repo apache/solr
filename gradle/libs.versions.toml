@@ -52,24 +52,26 @@ asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
 asciidoctor-tabs = "1.0.0-beta.6"
 azagniotov-langdetect = "12.5.2"
-# @keep bats-assert (node) version used in packaging
+# @keep bats-assert version used in packaging
 bats-assert = "2.0.0"
-# @keep bats-core (node) version used in packaging
+# @keep bats-core version used in packaging
 bats-core = "1.8.2"
-# @keep bats-file (node) version used in packaging
+# @keep bats-file version used in packaging
 bats-file = "0.3.0"
+# @keep bats-support version used in packaging
+bats-support = "0.2.0"
 bc-jose4j = "0.9.6"
-benmanes-caffeine = "3.2.3"
-benmanes-versions = "0.53.0"
+benmanes-caffeine = "3.2.4"
+benmanes-versions = "0.54.0"
 bouncycastle = "1.84"
 # @keep Browserify version used in ref-guide
 browserify = "17.0.0"
-bytebuddy = "1.18.8-jdk5"
-carrot2-core = "4.8.1"
+bytebuddy = "1.18.9"
+carrot2-core = "4.8.6"
 carrotsearch-hppc = "0.10.0"
-carrotsearch-randomizedtesting = "2.8.4"
+carrotsearch-randomizedtesting = "2.9.1"
 # @keep for version alignment
-checkerframework = "3.54.0"
+checkerframework = "4.2.0"
 codehaus-woodstox = "4.3.0"
 commons-cli = "1.11.0"
 commons-codec = "1.22.0"
@@ -78,12 +80,12 @@ compose = "1.11.1"
 cuvs-java = "26.06.0"
 cuvs-lucene = "25.12.0"
 decompose = "3.5.0"
-diffplug-spotless = "8.3.0"
+diffplug-spotless = "8.7.0"
 # @keep Use for dockerfile JRE version
 dockerfile-baseimage-java = "25"
 dropwizard-metrics = "4.2.39"
-eclipse-ecj = "3.39.0"
-eclipse-jetty = "12.0.34"
+eclipse-ecj = "3.46.0"
+eclipse-jetty = "12.1.10"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.7.0.202606012155-r"
 essenty = "2.5.0"
@@ -103,7 +105,7 @@ google-guava = "33.6.0-jre"
 # @keep for version alignment
 google-j2objc = "3.1"
 # @keep This is GJF version for spotless/ tidy.
-google-javaformat = "1.18.1"
+google-javaformat = "1.35.0"
 # @keep for version alignment
 google-protobuf = "4.35.1"
 # @keep Gradle version to run the build
@@ -133,7 +135,7 @@ jayway-jsonpath = "3.0.0"
 jctools = "4.0.6"
 jersey = "4.0.2"
 # @keep for version alignment
-jetbrains-annotations = "26.0.2"
+jetbrains-annotations = "26.1.0"
 # @keep for version alignment
 jna = "5.19.1"
 # @keep for version alignment
@@ -150,7 +152,7 @@ kotlinx-serialization = "1.11.0"
 # @keep used by spotless
 ktlint = "1.8.0"
 ktor = "3.5.0"
-langchain4j-bom = "1.16.3"
+langchain4j-bom = "1.17.0"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "1.1.0"
@@ -179,7 +181,7 @@ opentelemetry-runtime-telemetry = "2.22.0-alpha"
 oshai-logging = "8.0.4"
 # @keep for version alignment
 ow2-asm = "9.10.1"
-owasp-dependencycheck = "12.1.3"
+owasp-dependencycheck = "12.2.2"
 # @keep for version alignment
 perfmark = "0.27.0"
 prometheus-metrics = "1.1.0"
@@ -187,7 +189,7 @@ quicktheories = "0.26"
 semver4j = "6.0.0"
 slf4j = "2.0.17"
 spatial4j = "0.8"
-spotbugs = "4.9.8"
+spotbugs = "4.10.2"
 squareup-okhttp3-okhttp = "5.4.0"
 squareup-okio = "3.17.0"
 stephenc-jcip = "1.0-1"
@@ -196,7 +198,6 @@ tdunning-tdigest = "3.3"
 testcontainers = "2.0.5"
 thetaphi-forbiddenapis = "3.10"
 threeten-bp = "1.7.3"
-undercouch-download = "5.7.0"
 xerial-snappy = "1.1.10.8"
 
 [plugins]
@@ -215,7 +216,6 @@ openapi-generator = { id = "org.openapi.generator", version.ref = "openapi" }
 owasp-dependencycheck = { id = "org.owasp.dependencycheck", version.ref = "owasp-dependencycheck" }
 swagger3-core = { id = "io.swagger.core.v3.swagger-gradle-plugin", version.ref = "swagger3" }
 thetaphi-forbiddenapis = { id = "de.thetaphi.forbiddenapis", version.ref = "thetaphi-forbiddenapis" }
-undercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download" }
 
 [libraries]
 adobe-testing-s3mock-junit4 = { module = "com.adobe.testing:s3mock-junit4", version.ref = "adobe-testing-s3mock" }
