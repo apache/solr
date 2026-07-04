@@ -265,6 +265,11 @@ public class IntervalsQParserPlugin extends QParserPlugin {
           Map<String, Object> params, SchemaField defaultField) {
         Object termsObj = params.get("terms");
         Object intervalsObj = params.get("intervals");
+        if (termsObj != null && intervalsObj != null) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Rule 'phrase' cannot specify both 'terms' and 'intervals'");
+        }
         if (termsObj == null && intervalsObj == null) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,

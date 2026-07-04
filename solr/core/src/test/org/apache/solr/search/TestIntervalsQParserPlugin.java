@@ -211,6 +211,17 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
                 + "[{term:{value:phrB_quick}},{term:{value:phrB_brown}},{term:{value:phrB_fox}}]}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='52']");
+
+    assertQEx(
+        "phrase rule should reject specifying both 'terms' and 'intervals' with BAD_REQUEST",
+        "cannot specify both 'terms' and 'intervals'",
+        req(
+            "q",
+            "{!intervals df=v_ws}$q1",
+            "json",
+            "{json_queries:{q1:{phrase:{terms:[phrB_quick,phrB_brown],intervals:"
+                + "[{term:{value:phrB_quick}},{term:{value:phrB_brown}}]}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 
   @Test
