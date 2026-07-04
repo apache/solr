@@ -160,6 +160,12 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
         req("q", "{!intervals df=v_ws}$q1", "json", "{json_queries:{q1:{term:{value:trm_apple}}}}"),
         "//result[@numFound='1']",
         "//doc/str[@name='id'][.='40']");
+
+    assertJJQ(
+        "{ query:{intervals:{df:v_ws, query:$q1}},"
+            + "json_queries:{q1:{term:{value:trm_apple}}}"
+            + "fields:id}",
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'40'}]}");
   }
 
   @Test
