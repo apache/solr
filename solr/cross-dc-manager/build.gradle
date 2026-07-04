@@ -67,6 +67,8 @@ dependencies {
   testRuntimeOnly libs.bytebuddy
   testRuntimeOnly libs.bytebuddy.agent
 
+  testImplementation libs.testcontainers.kafka
+
   testImplementation(libs.apache.kafka.streams) {
     artifact {
       classifier = "test"
@@ -95,6 +97,13 @@ ext {
   // Use of the security manager is not supported on windows.
   // Mockito does not work with it enabled.
   useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
+}
+
+afterEvaluate {
+  tasks.withType(Test).configureEach {
+    // Forces the property into the JVM arguments after the root build system sets it
+    systemProperties['tests.security.manager'] = 'false'
+  }
 }
 
 task run(type: JavaExec) {

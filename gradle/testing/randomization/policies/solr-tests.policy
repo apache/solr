@@ -274,6 +274,11 @@ grant codeBase "file:${gradle.worker.jar}" {
   permission java.security.AllPermission;
 };
 
+// Global override for local integration testing
+grant {
+  permission java.security.AllPermission;
+};
+
 grant {
   // Allow reading gradle worker JAR.
   permission java.io.FilePermission "${gradle.worker.jar}", "read";

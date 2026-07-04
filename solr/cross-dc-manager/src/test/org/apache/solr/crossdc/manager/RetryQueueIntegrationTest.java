@@ -20,10 +20,13 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -46,6 +49,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -63,7 +68,7 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
   static final String VERSION_FIELD = "_version_";
 
   private static final int NUM_BROKERS = 1;
-  public static EmbeddedKafkaCluster kafkaCluster;
+  public static KafkaContainer kafkaContainer;
 
   protected static volatile MiniSolrCloudCluster solrCluster1;
   protected static volatile MiniSolrCloudCluster solrCluster2;
@@ -89,19 +94,21 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
     config.put("unclean.leader.election.enable", "true");
     config.put("enable.partition.eof", "false");
 
-    kafkaCluster =
-        new EmbeddedKafkaCluster(NUM_BROKERS, config) {
-          @Override
-          public String bootstrapServers() {
-            return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
-          }
-        };
-    kafkaCluster.start();
+    kafkaContainer = new KafkaContainer(DockerImageName.parse("apache/kafka:4.3.1"));
+    kafkaContainer.start();
 
-    kafkaCluster.createTopic(TOPIC, 1, 1);
+    String bootstrapServers = kafkaContainer.getBootstrapServers();
+
+    // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
+    config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+    try (AdminClient adminClient = AdminClient.create(config)) {
+      adminClient.createTopics(Collections.singletonList(
+          new NewTopic(TOPIC, 3, (short) 1)
+      )).all().get();
+    }
 
     System.setProperty("solr.crossdc.topicName", TOPIC);
-    System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
+    System.setProperty("solr.crossdc.bootstrapServers", kafkaContainer.getBootstrapServers());
 
     baseDir1 = createTempDir();
     Path zkDir1 = baseDir1.resolve("zookeeper/server1/data");
@@ -132,7 +139,6 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
 
     CloudSolrClient client = solrCluster1.getSolrClient(COLLECTION);
 
-    String bootstrapServers = kafkaCluster.bootstrapServers();
     log.info("bootstrapServers={}", bootstrapServers);
 
     Map<String, Object> properties = new HashMap<>();
@@ -174,12 +180,13 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
       consumer.shutdown();
     }
 
-    try {
-      if (kafkaCluster != null) {
-        kafkaCluster.stop();
+    if (kafkaContainer != null) {
+      try {
+        kafkaContainer.stop();
+        kafkaContainer = null;
+      } catch (Exception e) {
+        log.error("Exception stopping Kafka container", e);
       }
-    } catch (Exception e) {
-      log.error("Exception stopping Kafka cluster", e);
     }
 
     if (solrCluster1 != null) {
@@ -199,7 +206,7 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
     consumer = null;
     solrCluster1 = null;
     solrCluster2 = null;
-    kafkaCluster = null;
+    kafkaContainer = null;
     zkTestServer1 = null;
     zkTestServer2 = null;
   }
