@@ -352,7 +352,7 @@ public class SolrRequestParsers {
             currentStream = valueStream;
             break;
           }
-          // fall-through
+        // fall-through
         default:
           currentStream.write(b);
       }
