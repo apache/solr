@@ -93,6 +93,14 @@ It is intended as a temporary measure while you migrate the affected accounts to
 HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
 Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
 
+=== Embedded Jetty Configuration
+
+Solr 10.1 upgrades the embedded server to Eclipse Jetty 12.1, which removed Jetty's directory-scanning deployer (the `DeploymentManager` and `ContextProvider` classes).
+Because Solr serves a single, statically-known webapp, that webapp is now deployed directly in `server/etc/jetty.xml`, and the `server/contexts/solr-jetty-context.xml` file has been removed.
+
+Advanced users who relied on Jetty scanning the `server/contexts/` directory to auto-deploy additional context descriptors will find that this no longer happens.
+To deploy an extra context, or to customize how the Solr webapp itself is deployed, edit `server/etc/jetty.xml` directly and add the context there.
+
 == Solr 10.0
 
 === Solr Jetty parameters

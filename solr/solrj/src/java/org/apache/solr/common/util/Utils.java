@@ -905,6 +905,8 @@ public class Utils {
       Class<? extends Annotation> catchAllAnnotation,
       Function<Field, String> fieldNamer)
       throws IllegalAccessException {
+    // ClassLoader identity (not equals) determines whether it is safe to cache reflective metadata.
+    @SuppressWarnings("ReferenceEquality")
     boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
     // we should not cache the class references of objects loaded from packages because they will
     // not get garbage collected
