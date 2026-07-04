@@ -23,7 +23,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,7 +110,7 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
     // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
     config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     try (AdminClient adminClient = AdminClient.create(config)) {
-      adminClient.createTopics(Collections.singletonList(
+      adminClient.createTopics(List.of(
           new NewTopic(TOPIC, 3, (short) 1)
       )).all().get();
     }
@@ -120,7 +119,7 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
     System.setProperty("solr.crossdc.enabled", "false");
     // System.setProperty("solr.crossdc.topicName", TOPIC);
 
-    System.setProperty("solr.crossdc.bootstrapServers", kafkaContainer.getBootstrapServers());
+    System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, kafkaContainer.getBootstrapServers());
     System.setProperty(INDEX_UNMIRRORABLE_DOCS, "false");
 
     solrCluster1 =

@@ -20,8 +20,8 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -102,7 +102,7 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
     // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
     config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     try (AdminClient adminClient = AdminClient.create(config)) {
-      adminClient.createTopics(Collections.singletonList(
+      adminClient.createTopics(List.of(
           new NewTopic(TOPIC, 3, (short) 1)
       )).all().get();
     }

@@ -20,8 +20,8 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -52,9 +52,9 @@ import org.testcontainers.utility.DockerImageName;
 @ThreadLeakFilters(
     defaultFilters = true,
     filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class,
-        SolrKafkaTestsIgnoredThreadsFilter.class
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      SolrKafkaTestsIgnoredThreadsFilter.class
     })
 @ThreadLeakLingering(linger = 5000)
 @SuppressForbidden(reason = "test")
@@ -97,7 +97,7 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
     Properties adminProps = new Properties();
     adminProps.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     try (AdminClient adminClient = AdminClient.create(adminProps)) {
-      adminClient.createTopics(Arrays.asList(
+      adminClient.createTopics(List.of(
           new NewTopic(TOPIC1, 1, (short) 1),
           new NewTopic(TOPIC2, 1, (short) 1)
       )).all().get();
@@ -206,6 +206,7 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
     doc.addField("text", "some test");
 
     client.add(COLLECTION, doc);
+
     client.commit(COLLECTION);
 
     System.out.println("Sent producer record");
@@ -218,7 +219,6 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
       results = solrCluster2.getSolrClient().query(COLLECTION, new SolrQuery("*:*"));
       if (results.getResults().getNumFound() == 1) {
         foundUpdates = true;
-        break;
       } else {
         Thread.sleep(100);
       }
@@ -235,6 +235,7 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
     doc.addField("text", "some test2");
 
     client.add(COLLECTION, doc);
+
     client.commit(COLLECTION);
 
     System.out.println("Sent producer record");
@@ -247,7 +248,6 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
       results = solrCluster1.getSolrClient().query(COLLECTION, new SolrQuery("*:*"));
       if (results.getResults().getNumFound() == 1) {
         foundUpdates = true;
-        break;
       } else {
         Thread.sleep(100);
       }

@@ -21,7 +21,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,7 +108,7 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
     // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
     config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     try (AdminClient adminClient = AdminClient.create(config)) {
-      adminClient.createTopics(Collections.singletonList(
+      adminClient.createTopics(List.of(
           new NewTopic(TOPIC, 3, (short) 1)
       )).all().get();
     }

@@ -220,7 +220,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
     config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     try (AdminClient adminClient = AdminClient.create(config)) {
-      adminClient.createTopics(Collections.singletonList(
+      adminClient.createTopics(List.of(
           new NewTopic(TOPIC, 3, (short) 1)
       )).all().get();
     }
