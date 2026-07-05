@@ -25,9 +25,7 @@ dependencies {
   implementation platform(libs.langchain4j.bom)
   implementation project(':solr:core')
   implementation project(':solr:solrj')
-
   implementation libs.apache.lucene.core
-
   implementation libs.langchain4j.core
   runtimeOnly libs.langchain4j.cohere
   runtimeOnly libs.langchain4j.hugging.face

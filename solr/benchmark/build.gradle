@@ -56,4 +56,8 @@ dependencies {
   implementation libs.slf4j.api
   runtimeOnly libs.lmax.disruptor
   annotationProcessor libs.openjdk.jmh.generatorannprocess
+
+  testAnnotationProcessor libs.openjdk.jmh.generatorannprocess
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
 }

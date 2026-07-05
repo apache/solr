@@ -34,12 +34,10 @@ dependencies {
   api project(':solr:solrj-jetty')
   api project(':solr:api')
   implementation project(':solr:solrj-zookeeper')
-
   api libs.apache.lucene.testframework
   implementation libs.apache.lucene.core
   implementation libs.apache.lucene.queries
   implementation libs.apache.lucene.suggest
-
   var zkExcludes = {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   }
@@ -55,9 +53,9 @@ dependencies {
     exclude group: 'com.google.guava', module: 'guava'
   }
 
-  implementation(libs.apache.zookeeper.zookeeper, zkExcludes)
-  implementation(libs.apache.zookeeper.jute, zkExcludes)
-  implementation(variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}, zkExcludes)
+  api(libs.apache.zookeeper.zookeeper, zkExcludes)
+  api(libs.apache.zookeeper.jute, zkExcludes)
+  api(variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}, zkExcludes)
 
   implementation libs.commonsio.commonsio
   implementation libs.slf4j.api
@@ -65,12 +63,10 @@ dependencies {
   implementation libs.apache.log4j.core
   implementation libs.commonscli.commonscli
   implementation libs.opentelemetry.api
-  implementation(libs.opentelemetry.exporter.prometheus) {
+  api(libs.opentelemetry.exporter.prometheus) {
     transitive = false // most things don't want or already have
   }
-  implementation libs.opentelemetry.sdk.metrics // prometheus exporter needs
   implementation libs.prometheus.metrics.model
-
   implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server
   implementation libs.eclipse.jetty.client
@@ -89,7 +85,6 @@ dependencies {
   implementation libs.carrotsearch.randomizedtesting.runner
   implementation libs.junit.junit
   implementation libs.hamcrest.hamcrest
-
   implementation(libs.prometheus.metrics.expositionformats, {
     exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
     exclude group: "io.prometheus", module: "prometheus-metrics-config"
