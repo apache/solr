@@ -45,7 +45,7 @@ dependencies {
 
   api project(':solr:api')
   api project(':solr:solrj')
-  implementation project(':solr:solrj-jetty')
+  api project(':solr:solrj-jetty')
   api project(':solr:solrj-zookeeper')
   api project(':solr:solrj-streaming')
 

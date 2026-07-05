@@ -33,7 +33,7 @@ dependencies {
   api project(':solr:solrj')
   api project(':solr:solrj-jetty')
   api project(':solr:api')
-  implementation project(':solr:solrj-zookeeper')
+  api project(':solr:solrj-zookeeper')
   api libs.apache.lucene.testframework
   implementation libs.apache.lucene.core
   implementation libs.apache.lucene.queries

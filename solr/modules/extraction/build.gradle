@@ -27,8 +27,8 @@ ext {
 
 dependencies {
   implementation platform(project(':platform'))
-  implementation project(':solr:core')
-  implementation project(':solr:solrj')
+  api project(':solr:core')
+  api project(':solr:solrj')
   implementation libs.apache.lucene.core
   implementation libs.slf4j.api
 

@@ -24,10 +24,10 @@ description = 'Cross-DC Manager'
 
 dependencies {
   implementation platform(project(':platform'))
-  implementation project(':solr:core')
-  implementation project(':solr:solrj')
+  api project(':solr:core')
+  api project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')
-  implementation project(':solr:modules:cross-dc')
+  api project(':solr:modules:cross-dc')
   implementation project(':solr:modules:opentelemetry')
 
   implementation platform(libs.opentelemetry.bom)

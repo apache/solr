@@ -23,8 +23,8 @@ dependencies {
   compileOnly libs.stephenc.jcip.annotations
   implementation platform(project(':platform'))
   implementation platform(libs.langchain4j.bom)
-  implementation project(':solr:core')
-  implementation project(':solr:solrj')
+  api project(':solr:core')
+  api project(':solr:solrj')
   implementation libs.apache.lucene.core
   implementation libs.langchain4j.core
   runtimeOnly libs.langchain4j.cohere

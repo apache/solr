@@ -22,7 +22,7 @@ description = 'Additional analysis components'
 dependencies {
   api project(':solr:core')
 
-  implementation project(':solr:solrj')
+  api project(':solr:solrj')
   implementation libs.ibm.icu.icu4j
   implementation libs.apache.lucene.analysis.icu
   runtimeOnly libs.apache.lucene.analysis.morfologik

@@ -41,10 +41,10 @@ task echoCp {
 }
 
 dependencies {
-  implementation project(':solr:test-framework')
+  api project(':solr:test-framework')
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
-  implementation project(':solr:solrj-jetty')
+  api project(':solr:solrj')
+  api project(':solr:solrj-jetty')
   implementation project(':solr:solrj-streaming')
 
   implementation libs.apache.lucene.core

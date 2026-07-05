@@ -21,9 +21,9 @@ description = 'SQL Module'
 
 dependencies {
   implementation platform(project(':platform'))
-  implementation project(':solr:core')
+  api project(':solr:core')
   implementation project(':solr:solrj')
-  implementation project(':solr:solrj-streaming')
+  api project(':solr:solrj-streaming')
   implementation project(':solr:solrj-zookeeper')
 
   implementation libs.slf4j.api

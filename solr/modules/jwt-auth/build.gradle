@@ -23,8 +23,8 @@ dependencies {
   implementation platform(project(':platform'))
   implementation platform(libs.fasterxml.jackson.bom)
 
-  implementation project(':solr:core')
-  implementation project(':solr:solrj')
+  api project(':solr:core')
+  api project(':solr:solrj')
   implementation project(':solr:solrj-jetty')
 
   implementation libs.bc.jose4j
