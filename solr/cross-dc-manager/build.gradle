@@ -72,11 +72,6 @@ dependencies {
       classifier = "test"
     }
   }
-  testImplementation(libs.apache.kafka.clients) {
-    artifact {
-      classifier = "test"
-    }
-  }
   testRuntimeOnly(libs.apache.kafka.kafka213) {
     artifact {
       classifier = "test"

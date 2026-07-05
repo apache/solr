@@ -56,12 +56,6 @@ dependencies {
   })
   testRuntimeOnly libs.bytebuddy
   testRuntimeOnly libs.bytebuddy.agent
-
-  testImplementation(libs.apache.kafka.clients) {
-    artifact {
-      classifier = "test"
-    }
-  }
 }
 
 // Make sure that the cloud-minimal.zip artifact is up-to-date with cloud-minimal/conf

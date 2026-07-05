@@ -32,7 +32,6 @@ dependencies {
   }
 
   implementation libs.swagger3.annotations.jakarta
-
   // Export these dependencies so that they're imported transitively by
   // other modules.
 
@@ -62,12 +61,10 @@ dependencies {
   implementation libs.jersey.core.common
   implementation libs.jersey.core.server
   implementation libs.hk2.api
-
   implementation libs.jakarta.inject.api
   implementation libs.jakarta.ws.rsapi
   implementation libs.jakarta.annotation.api
   implementation libs.jakarta.servlet.api
-
   runtimeOnly libs.apache.lucene.analysis.kuromoji
   runtimeOnly libs.apache.lucene.analysis.nori
   runtimeOnly libs.apache.lucene.analysis.phonetic
@@ -83,31 +80,25 @@ dependencies {
   implementation libs.apache.lucene.sandbox
   implementation libs.apache.lucene.spatialextras
   implementation libs.apache.lucene.suggest
-
   // Collections & lang utilities
   implementation libs.google.guava
   implementation libs.apache.commons.lang3
   implementation libs.apache.commons.math3
   implementation libs.commonsio.commonsio
   implementation libs.carrotsearch.hppc
-
-  implementation(libs.benmanes.caffeine) {transitive = false}
+  api(libs.benmanes.caffeine) {transitive = false}
 
   implementation libs.commonscodec.commonscodec
 
   implementation libs.commonscli.commonscli
-
   implementation libs.locationtech.spatial4j
-
   implementation libs.fasterxml.jackson.core.annotations
   implementation libs.fasterxml.jackson.core.core
   implementation libs.fasterxml.jackson.core.databind
   implementation libs.fasterxml.jackson.dataformat.smile
   implementation libs.fasterxml.jackson.dataformat.cbor
-
   implementation libs.eclipse.jetty.client
   implementation libs.eclipse.jetty.http
-  implementation libs.eclipse.jetty.io
   implementation libs.eclipse.jetty.util
 
   // ZooKeeper
@@ -121,32 +112,30 @@ dependencies {
   testImplementation(libs.apache.curator.test, {
     exclude group: 'org.apache.zookeeper', module: 'zookeeper'
   })
-  implementation(libs.apache.zookeeper.zookeeper, {
+  api(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  implementation(libs.apache.zookeeper.jute) {
+  api(libs.apache.zookeeper.jute) {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
-  testImplementation variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}
 
   // required for instantiating a Zookeeper server (for embedding ZK)
   runtimeOnly libs.xerial.snappy.java
   runtimeOnly libs.dropwizard.metrics.core
 
-  implementation(libs.jayway.jsonpath, {
+  api(libs.jayway.jsonpath, {
     exclude group: "net.minidev", module: "json-smart"
   })
 
   // StatsComponents percentiles
   implementation libs.tdunning.tdigest
-
   // OpenTelemetry
   api libs.opentelemetry.api
   implementation libs.opentelemetry.context
-  implementation(libs.opentelemetry.exporter.prometheus) {
+  api(libs.opentelemetry.exporter.prometheus) {
     transitive = false
   }
-  implementation(libs.opentelemetry.sdk) {
+  api(libs.opentelemetry.sdk) {
     exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
   }
   implementation libs.opentelemetry.sdk.metrics
@@ -154,7 +143,6 @@ dependencies {
   implementation libs.opentelemetry.runtime.telemetry
 
   implementation libs.apache.commons.exec
-
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
   runtimeOnly libs.apache.log4j.slf4j2impl
@@ -173,7 +161,6 @@ dependencies {
   compileOnly libs.stephenc.jcip.annotations
 
   implementation libs.j256.simplemagic
-
   // -- Test Dependencies
 
   testRuntimeOnly libs.slf4j.jcloverslf4j
@@ -187,10 +174,9 @@ dependencies {
 
   testImplementation libs.apache.lucene.testframework
 
+  testImplementation libs.eclipse.jetty.io
   testImplementation libs.eclipse.jetty.server
   testImplementation libs.eclipse.jetty.ee10.servlet
-  testImplementation libs.eclipse.jetty.util
-  testImplementation libs.jakarta.servlet.api
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest

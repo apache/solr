@@ -490,6 +490,7 @@ opentelemetry-exporter-prometheus = { module = "io.opentelemetry:opentelemetry-e
 opentelemetry-runtime-telemetry = { module = "io.opentelemetry.instrumentation:opentelemetry-runtime-telemetry-java17", version.ref = "opentelemetry-runtime-telemetry" }
 opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
 opentelemetry-sdk-extension-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
+opentelemetry-sdk-extension-autoconfigure-spi = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi", version.ref = "opentelemetry" }
 opentelemetry-sdk-metrics = { module = "io.opentelemetry:opentelemetry-sdk-metrics", version.ref = "opentelemetry" }
 opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
 opentelemetry-sdk-trace = { module = "io.opentelemetry:opentelemetry-sdk-trace", version.ref = "opentelemetry" }

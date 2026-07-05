@@ -1,0 +1,73 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+configure(rootProject) {
+  dependencyAnalysis {
+    issues {
+      project(':solr:ui') {
+        onUnusedDependencies {
+          severity('ignore')
+        }
+        onUsedTransitiveDependencies {
+          severity('ignore')
+        }
+        onIncorrectConfiguration {
+          severity('ignore')
+        }
+      }
+
+      project(':solr:solrj-jetty') {
+        onUnusedDependencies {
+          exclude(':solr:solrj')
+        }
+      }
+
+      project(':solr:modules:jwt-auth') {
+        onDuplicateClassWarnings {
+          severity('ignore')
+        }
+        // NOTE: DAGP advises demoting jackson-databind here from testImplementation to
+        // testRuntimeOnly. We intentionally do NOT follow that advice: the tests compile against
+        // mock-oauth2-server, whose classes reference Jackson's @JsonDeserialize annotations, so
+        // databind is needed on the test *compile* classpath (demoting it breaks compilation under
+        // -Werror). Left as a warning rather than enforced, per the report-not-fail policy below.
+      }
+
+      all {
+        // Report advice, don't fail the build. DAGP's advice is guidance, not law: some of it
+        // (notably api-vs-implementation promotions and a few test-scope demotions) needs
+        // case-by-case human judgment rather than blanket enforcement — e.g. demoting a
+        // test-compile dependency to testRuntimeOnly can break compilation when the dep is only
+        // referenced via a third-party annotation. Run `gradlew buildHealth` to see current advice.
+        onAny {
+          severity('warn')
+        }
+        onUnusedDependencies {
+          exclude(
+              'org.jspecify:jspecify',
+              'com.google.code.findbugs:jsr305',
+              'com.google.errorprone:error_prone_annotations'
+          )
+        }
+      }
+    }
+  }
+
+  tasks.named('check').configure {
+    dependsOn(tasks.named('buildHealth'))
+  }
+}

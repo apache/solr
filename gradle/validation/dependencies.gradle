@@ -113,7 +113,8 @@ allprojects {
         // This may not be the case where this task is added as a dependency, like for "dependencies" task
         project.configurations.findAll {
           // Add any custom filtering on the configurations to be resolved
-          it.canBeResolved
+          it.canBeResolved &&
+              !it.attributes.keySet().any {attr -> attr.name.startsWith("dagp.")}
         }.each {it.resolve()}
       }
     }
