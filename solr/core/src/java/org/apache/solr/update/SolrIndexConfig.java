@@ -261,6 +261,10 @@ public class SolrIndexConfig implements MapWriter {
       iwc.setIndexSort(indexSort);
     }
 
+    if (iwc.getIndexSort() != null && schema.isUsableForChildDocs()) {
+      iwc.setParentField(IndexSchema.IS_ROOT_FIELD_NAME);
+    }
+
     iwc.setUseCompoundFile(useCompoundFile);
 
     if (mergedSegmentWarmerInfo != null) {
