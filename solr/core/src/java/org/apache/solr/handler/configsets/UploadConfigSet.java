@@ -22,15 +22,19 @@ import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 import org.apache.solr.client.api.endpoint.ConfigsetsApi;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
@@ -40,7 +44,13 @@ import org.apache.solr.util.FileTypeMagicUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Upload {
+/**
+ * V2 API implementation for uploading a configset as a zip file.
+ *
+ * <p>This API (GET /v2/configsets) is analogous to the v1 /admin/configs?action=UPLOAD command.
+ */
+public class UploadConfigSet extends ConfigSetAPIBase
+    implements ConfigsetsApi.Upload, ConfigsetsApi.PutFile {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -59,6 +69,7 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
       throws IOException {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureConfigSetUploadEnabled();
+    SolrIdentifierValidator.validateConfigSetName(configSetName);
 
     boolean overwritesExisting = configSetService.checkConfigExists(configSetName);
     // Get upload parameters
@@ -75,25 +86,44 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
     if (overwritesExisting && cleanup) {
       filesToDelete = configSetService.getAllConfigFiles(configSetName);
     } else {
-      filesToDelete = Collections.emptyList();
+      filesToDelete = new ArrayList<>();
     }
 
-    try (ZipInputStream zis = new ZipInputStream(requestBody, StandardCharsets.UTF_8)) {
-      boolean hasEntry = false;
-      ZipEntry zipEntry;
-      while ((zipEntry = zis.getNextEntry()) != null) {
-        hasEntry = true;
-        String filePath = zipEntry.getName();
-        filesToDelete.remove(filePath);
-        if (!zipEntry.isDirectory()) {
-          configSetService.uploadFileToConfig(configSetName, filePath, zis.readAllBytes(), true);
+    // Write the request body to a temp file so we can use ZipFile, which reads the central
+    // directory and correctly handles entries that use the STORED method with an EXT (data
+    // descriptor) flag — a combination that ZipInputStream cannot process.  This allows
+    // zero-byte files (e.g. created with `touch`) to be included in the uploaded configset.
+    final Path tempZip = Files.createTempFile("solr-configset-upload-", ".zip");
+    try {
+      Files.copy(requestBody, tempZip, StandardCopyOption.REPLACE_EXISTING);
+      try (ZipFile zipFile = new ZipFile(tempZip.toFile())) {
+        boolean hasEntry = false;
+        Enumeration<? extends ZipEntry> entries = zipFile.entries();
+        while (entries.hasMoreElements()) {
+          ZipEntry zipEntry = entries.nextElement();
+          hasEntry = true;
+          String filePath = zipEntry.getName();
+          filesToDelete.remove(filePath);
+          if (!zipEntry.isDirectory()) {
+            try (InputStream entryStream = zipFile.getInputStream(zipEntry)) {
+              configSetService.uploadFileToConfig(
+                  configSetName, filePath, entryStream.readAllBytes(), true);
+            }
+          }
         }
-      }
-      if (!hasEntry) {
+        if (!hasEntry) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Either empty zipped data, or non-zipped data was uploaded. In order to upload a configSet, you must zip a non-empty directory to upload.");
+        }
+      } catch (ZipException e) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "Either empty zipped data, or non-zipped data was uploaded. In order to upload a configSet, you must zip a non-empty directory to upload.");
+            "Failed to read the uploaded zip file: " + e.getMessage(),
+            e);
       }
+    } finally {
+      Files.deleteIfExists(tempZip);
     }
     deleteUnusedFiles(configSetService, configSetName, filesToDelete);
 
@@ -103,25 +133,19 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
   public SolrJerseyResponse uploadConfigSetFile(
-      String configSetName,
-      String filePath,
-      Boolean overwrite,
-      Boolean cleanup,
-      InputStream requestBody)
-      throws IOException {
+      String configSetName, String filePath, InputStream requestBody) throws IOException {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureConfigSetUploadEnabled();
+    SolrIdentifierValidator.validateConfigSetName(configSetName);
 
-    boolean overwritesExisting = configSetService.checkConfigExists(configSetName);
+    boolean overwrite = true;
 
     // Get upload parameters
 
     String singleFilePath = filePath != null ? filePath : "";
-    if (overwrite == null) overwrite = true;
-    if (cleanup == null) cleanup = false;
 
     String fixedSingleFilePath = singleFilePath;
-    if (fixedSingleFilePath.charAt(0) == '/') {
+    if (!fixedSingleFilePath.isEmpty() && fixedSingleFilePath.charAt(0) == '/') {
       fixedSingleFilePath = fixedSingleFilePath.substring(1);
     }
     byte[] data = requestBody.readAllBytes();
@@ -129,18 +153,13 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The file path provided for upload, '" + singleFilePath + "', is not valid.");
-    } else if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fixedSingleFilePath)
+    } else if (ConfigSetService.isFileForbiddenInConfigSets(fixedSingleFilePath)
         || FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The file type provided for upload, '"
               + singleFilePath
               + "', is forbidden for use in configSets.");
-    } else if (cleanup) {
-      // Cleanup is not allowed while using singleFilePath upload
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "ConfigSet uploads do not allow cleanup=true when file path is used.");
     } else {
       // Create a node for the configuration in config
       // For creating the baseNode, the cleanup parameter is only allowed to be true when

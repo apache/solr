@@ -349,7 +349,7 @@ public class SolrQueryResponse {
    *
    * @param name the name of the header
    * @param value the header value If it contains octet string, it should be encoded according to
-   *     RFC 2047 (http://www.ietf.org/rfc/rfc2047.txt)
+   *     RFC 2047 (<a href="http://www.ietf.org/rfc/rfc2047.txt">...</a>)
    * @see #addHttpHeader
    * @see HttpServletResponse#setHeader
    */
@@ -364,7 +364,7 @@ public class SolrQueryResponse {
    *
    * @param name the name of the header
    * @param value the additional header value If it contains octet string, it should be encoded
-   *     according to RFC 2047 (http://www.ietf.org/rfc/rfc2047.txt)
+   *     according to RFC 2047 (<a href="http://www.ietf.org/rfc/rfc2047.txt">...</a>)
    * @see #setHttpHeader
    * @see HttpServletResponse#addHeader
    */

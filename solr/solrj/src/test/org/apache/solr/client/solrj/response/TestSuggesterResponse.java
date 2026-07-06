@@ -16,17 +16,20 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -39,7 +42,10 @@ public class TestSuggesterResponse extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   static String field = "cat";
@@ -137,10 +143,6 @@ public class TestSuggesterResponse extends SolrTestCaseJ4 {
   private SolrClient createSuggestSolrClient() {
     final ResponseParser randomParser =
         random().nextBoolean() ? new JavaBinResponseParser() : new XMLResponseParser();
-    return new HttpSolrClient.Builder()
-        .withBaseSolrUrl(solrTestRule.getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_CORENAME)
-        .withResponseParser(randomParser)
-        .build();
+    return solrTestRule.newSolrClientBuilder().withResponseParser(randomParser).build();
   }
 }

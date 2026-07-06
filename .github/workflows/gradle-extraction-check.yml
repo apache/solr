@@ -8,6 +8,10 @@ on:
     paths:
       - 'solr/modules/extraction/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: extraction module tests with docker
@@ -15,12 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - uses: ./.github/actions/prepare-for-build
 

@@ -17,7 +17,6 @@
 package org.apache.solr.common.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
@@ -84,11 +83,8 @@ import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Utils {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final Random RANDOM;
 
@@ -179,7 +175,7 @@ public class Utils {
 
   private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable, boolean sorted) {
     if (v instanceof MapWriter && maxDepth > 1) {
-      v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+      v = convertToMap((MapWriter) v, new LinkedHashMap<>());
     } else if (v instanceof IteratorWriter && maxDepth > 1) {
       List<Object> l = ((IteratorWriter) v).toList(new ArrayList<>());
       if (sorted) {
@@ -284,7 +280,7 @@ public class Utils {
     // Need below check in both fromJSON methods since
     // utf8.length returns a NPE without this check.
     if (utf8 == null || utf8.length == 0) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     return fromJSON(utf8, 0, utf8.length);
   }
@@ -296,18 +292,12 @@ public class Utils {
   public static Object fromJSON(
       byte[] utf8, int offset, int length, Function<JSONParser, ObjectBuilder> fun) {
     if (utf8 == null || utf8.length == 0 || length == 0) {
-      return Collections.emptyMap();
+      return Map.of();
     }
-    // convert directly from bytes to chars
-    // and parse directly from that instead of going through
-    // intermediate strings or readers
-    CharArr chars = new CharArr();
-    ByteUtils.UTF8toUTF16(utf8, offset, length, chars);
-    JSONParser parser = new JSONParser(chars.getArray(), chars.getStart(), chars.length());
-    parser.setFlags(
-        parser.getFlags()
-            | JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT
-            | JSONParser.OPTIONAL_OUTER_BRACES);
+    // convert from bytes to chars on-the-fly and parse directly
+    // from that instead of going through intermediate buffers
+    Reader reader = new InputStreamReader(new ByteArrayInputStream(utf8, offset, length), UTF_8);
+    JSONParser parser = getJSONParser(reader);
     try {
       return fun.apply(parser).getValStrict();
     } catch (IOException e) {
@@ -441,8 +431,11 @@ public class Utils {
     }
   }
 
+  @SuppressForbidden(
+      reason = "singletonList(null) is intentional — null is a sentinel path element")
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, String hierarchy) {
-    if (hierarchy == null) return getObjectByPath(root, onlyPrimitive, singletonList(null));
+    if (hierarchy == null)
+      return getObjectByPath(root, onlyPrimitive, Collections.singletonList(null));
     List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return getObjectByPath(root, onlyPrimitive, parts);
   }
@@ -845,6 +838,12 @@ public class Utils {
    * @return a serializable version of the object
    */
   public static Object getReflectWriter(Object o) {
+    // Enums serialized as their declared name so that javabin/NamedList consumers
+    // (e.g. HealthCheckHandlerTest comparing against CommonParams.OK == "OK") see
+    // a plain string rather than "pkg.EnumClass:NAME".
+    if (o instanceof Enum<?> e) {
+      return e.name();
+    }
     List<FieldWriter> fieldWriters = null;
     try {
       fieldWriters =
@@ -906,6 +905,8 @@ public class Utils {
       Class<? extends Annotation> catchAllAnnotation,
       Function<Field, String> fieldNamer)
       throws IllegalAccessException {
+    // ClassLoader identity (not equals) determines whether it is safe to cache reflective metadata.
+    @SuppressWarnings("ReferenceEquality")
     boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
     // we should not cache the class references of objects loaded from packages because they will
     // not get garbage collected
@@ -1027,7 +1028,7 @@ public class Utils {
    * <p>The provided object is not required to be a {@link MapWriter}.
    */
   public static Map<String, Object> reflectToMap(Object toReflect) {
-    return ((Utils.DelegateReflectWriter) Utils.getReflectWriter(toReflect)).toMap(new HashMap<>());
+    return convertToMap((MapWriter) Utils.getReflectWriter(toReflect), new HashMap<>());
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -1041,12 +1042,13 @@ public class Utils {
             }
 
             private MapWriter.EntryWriter writeEntry(CharSequence k, Object v) {
-              if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+              if (v instanceof MapWriter) v = convertToMap((MapWriter) v, new LinkedHashMap<>());
               if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
               if (v instanceof Iterable) {
                 List lst = new ArrayList();
                 for (Object vv : (Iterable) v) {
-                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof MapWriter)
+                    vv = convertToMap((MapWriter) vv, new LinkedHashMap<>());
                   if (vv instanceof IteratorWriter)
                     vv = ((IteratorWriter) vv).toList(new ArrayList<>());
                   lst.add(vv);
@@ -1057,7 +1059,8 @@ public class Utils {
                 Map map = new LinkedHashMap();
                 for (Map.Entry<?, ?> entry : ((Map<?, ?>) v).entrySet()) {
                   Object vv = entry.getValue();
-                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof MapWriter)
+                    vv = convertToMap((MapWriter) vv, new LinkedHashMap<>());
                   if (vv instanceof IteratorWriter)
                     vv = ((IteratorWriter) vv).toList(new ArrayList<>());
                   map.put(entry.getKey(), vv);

@@ -5,6 +5,10 @@ on:
     branches:
       - '*'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-changelog:
     name: Check changelog entry
@@ -14,7 +18,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 0
 
@@ -93,7 +97,7 @@ jobs:
           echo "Validating: $file"
 
           # Validate using a Python script
-          python3 .github/scripts/validate-changelog-yaml.py "$file"
+          python3 dev-tools/scripts/validate-changelog-yaml.py "$file"
 
           if [ $? -ne 0 ]; then
             VALIDATION_FAILED=true

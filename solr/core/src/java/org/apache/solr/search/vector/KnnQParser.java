@@ -119,6 +119,14 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final String vectorField = getFieldName();
     final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
+
+    if (DenseVectorField.FLAT_ALGORITHM.equals(denseVectorType.getKnnAlgorithm())) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "The {!knn} query parser is not supported for fields using knnAlgorithm=\"flat\". "
+              + "Use vectorSimilarity() function queries instead.");
+    }
+
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
 
@@ -133,10 +141,11 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final Integer filteredSearchThreshold = localParams.getInt(FILTERED_SEARCH_THRESHOLD);
 
     // check for parent diversification logic...
-    final String parentsFilterQuery = localParams.get(PARENTS_PRE_FILTER);
+    final String[] parentsFilterQueries = localParams.getParams(PARENTS_PRE_FILTER);
     final String allParentsQuery = localParams.get(CHILDREN_OF);
 
-    boolean isDiversifyingChildrenKnnQuery = null != parentsFilterQuery || null != allParentsQuery;
+    boolean isDiversifyingChildrenKnnQuery =
+        null != parentsFilterQueries || null != allParentsQuery;
     if (isDiversifyingChildrenKnnQuery) {
       if (null == allParentsQuery) {
         throw new SolrException(
@@ -150,7 +159,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
       final BitSetProducer allParentsBitSet =
           BlockJoinParentQParser.getCachedBitSetProducer(
               req, subQuery(allParentsQuery, null).getQuery());
-      final BooleanQuery acceptedParents = getParentsFilter(parentsFilterQuery);
+      final BooleanQuery acceptedParents = getParentsFilter(parentsFilterQueries);
 
       Query acceptedChildren =
           getChildrenFilter(getFilterQuery(), acceptedParents, allParentsBitSet);
@@ -183,14 +192,19 @@ public class KnnQParser extends AbstractVectorQParserBase {
         filteredSearchThreshold);
   }
 
-  private BooleanQuery getParentsFilter(String parentsFilterQuery) throws SyntaxError {
+  private BooleanQuery getParentsFilter(String[] parentsFilterQueries) throws SyntaxError {
     BooleanQuery.Builder acceptedParentsBuilder = new BooleanQuery.Builder();
-    if (parentsFilterQuery != null) {
-      final Query parentsFilter = subQuery(parentsFilterQuery, null).getQuery();
-      acceptedParentsBuilder.add(parentsFilter, BooleanClause.Occur.FILTER);
+    if (parentsFilterQueries != null) {
+      for (String parentsFilterQuery : parentsFilterQueries) {
+        final QParser parser = subQuery(parentsFilterQuery, null);
+        parser.setIsFilter(true);
+        final Query parentsFilter = parser.getQuery();
+        if (parentsFilter != null) {
+          acceptedParentsBuilder.add(parentsFilter, BooleanClause.Occur.FILTER);
+        }
+      }
     }
-    BooleanQuery acceptedParents = acceptedParentsBuilder.build();
-    return acceptedParents;
+    return acceptedParentsBuilder.build();
   }
 
   private Query getChildrenFilter(

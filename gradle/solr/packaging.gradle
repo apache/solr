@@ -55,6 +55,11 @@ configure(allprojects
       packaging
     }
 
+    // Align packaging configurations with tested runtimeClasspath versions
+    // This ensures the distribution contains the same library versions that were tested
+    alignWithRuntimeClasspath(configurations.runtimeLibs)
+    alignWithRuntimeClasspath(configurations.solrPlatformLibs)
+
     dependencies {
       solrPlatformLibs project(":solr:core")
       solrPlatformLibs project(":solr:solrj")
@@ -81,7 +86,7 @@ configure(allprojects
       from({
         def externalLibs = configurations.runtimeLibs.copyRecursive {dep ->
           if (dep instanceof org.gradle.api.artifacts.ProjectDependency) {
-            return !dep.dependencyProject.path.startsWith(":solr")
+            return !dep.path.startsWith(":solr")
           } else {
             return true
           }

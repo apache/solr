@@ -40,6 +40,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.handler.admin.api.ModifyRuleBasedAuthConfigAPI;
 import org.slf4j.Logger;
@@ -358,6 +359,7 @@ public abstract class RuleBasedAuthorizationPluginBase
   }
 
   // this is to do optimized lookup of permissions for a given collection/path
+  @SuppressForbidden(reason = "singletonList(null) is intentional")
   private void add2Mapping(Permission permission) {
     for (String c : permission.collections) {
       WildCardSupportMap m = mapping.computeIfAbsent(c, k -> new WildCardSupportMap());

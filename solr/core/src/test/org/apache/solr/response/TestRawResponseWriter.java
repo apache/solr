@@ -56,7 +56,9 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     // we spin up.
     initCore("solrconfig.xml", "schema.xml");
 
-    writerNoBase = newRawResponseWriter(null); /* defaults to standard writer as base */
+    writerNoBase =
+        newRawResponseWriter(
+            null); /* null base uses core's default writer (XML for this core), or JSON if no core */
     writerXmlBase = newRawResponseWriter("xml");
     writerJsonBase = newRawResponseWriter("json");
     writerBinBase = newRawResponseWriter("javabin");
@@ -120,7 +122,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
       // we should have UTF-8 Bytes if we use an OutputStream
       ByteArrayOutputStream bout = new ByteArrayOutputStream();
       writer.write(bout, req(), rsp);
-      assertEquals(data, bout.toString(StandardCharsets.UTF_8.toString()));
+      assertEquals(data, bout.toString(StandardCharsets.UTF_8));
     }
   }
 
@@ -153,13 +155,12 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     assertEquals(xml, writerXmlBase.writeToString(req(), rsp));
     ByteArrayOutputStream xmlBout = new ByteArrayOutputStream();
     writerXmlBase.write(xmlBout, req(), rsp);
-    assertEquals(xml, xmlBout.toString(StandardCharsets.UTF_8.toString()));
+    assertEquals(xml, xmlBout.toString(StandardCharsets.UTF_8));
 
-    //
     assertEquals(xml, writerNoBase.writeToString(req(), rsp));
     ByteArrayOutputStream noneBout = new ByteArrayOutputStream();
     writerNoBase.write(noneBout, req(), rsp);
-    assertEquals(xml, noneBout.toString(StandardCharsets.UTF_8.toString()));
+    assertEquals(xml, noneBout.toString(StandardCharsets.UTF_8));
 
     // json
     String json = "{\n" + "  \"content\":\"test\",\n" + "  \"foo\":\"bar\"}\n";
@@ -206,7 +207,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
   }
 
   /**
-   * Generates a new {@link RawResponseWriter} wrapping the specified baseWriter name (which much
+   * Generates a new {@link RawResponseWriter} wrapping the specified baseWriter name (which must
    * either be an implicitly defined response writer, or one explicitly configured in
    * solrconfig.xml)
    *

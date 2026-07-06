@@ -16,18 +16,16 @@
  */
 package org.apache.solr.core;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
-import org.apache.solr.search.CacheConfig;
 import org.apache.solr.update.SolrIndexConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,7 +38,7 @@ public class TestConfig extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLib() throws IOException {
+  public void testLib() {
     SolrResourceLoader loader = h.getCore().getResourceLoader();
     InputStream data = null;
     String[] unexpectedFiles = new String[] {"empty-file-c2.txt", "empty-file-d2.txt"};
@@ -70,7 +68,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertNull(sc.documentCacheConfig);
     //
     assertNotNull(sc.userCacheConfigs);
-    assertEquals(Collections.<String, CacheConfig>emptyMap(), sc.userCacheConfigs);
+    assertEquals(Map.of(), sc.userCacheConfigs);
 
     // enable all the core caches (and one user cache) via system properties and verify
     System.setProperty("filterCache.enabled", "true");
@@ -162,10 +160,10 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     assertNull("non-null mergedSegmentWarmer", iwc.getMergedSegmentWarmer());
 
-    final int numDefaultsMapped = sic.toMap(new LinkedHashMap<>()).size();
+    final int numDefaultsMapped = new SimpleOrderedMap<>(sic).size();
     assertEquals(
         "numDefaultsTested vs. numDefaultsMapped+numNullDefaults ="
-            + sic.toMap(new LinkedHashMap<>()).keySet(),
+            + new SimpleOrderedMap<>(sic).keySet(),
         numDefaultsTested,
         numDefaultsMapped + numNullDefaults);
   }

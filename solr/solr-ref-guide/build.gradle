@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import groovy.json.JsonOutput
 import org.apache.tools.ant.util.TeeOutputStream
 
 apply plugin: 'java'
@@ -163,6 +164,10 @@ task buildLocalAntoraPlaybookYaml(type: Copy) {
       'source_branches': "HEAD",
       'start_path': project.rootDir.relativePath(file(project.ext.siteStagingDir)),
       'site_dir': "./" + file(project.ext.siteStagingDir).relativePath(file(project.ext.siteDir)),
+      // The Solr Operator is only aggregated into the official multi-version
+      // site. Local builds render just the ref guide; operator contributors
+      // preview their component from the apache/solr-operator repo (make docs).
+      'additional_sources': "",
   ]
 
   expand(escapeYamlSingleQuotesString(props))
@@ -181,11 +186,22 @@ task buildOfficialAntoraPlaybookYaml(type: Copy) {
   into project.ext.playbooksDir
 
   def branches = ["branch_*"]
+  def operatorBranches = ["release-*"]
   if (officialSiteIncludePrerelease) {
     branches.add("main")
+    operatorBranches.add("main")
   } else {
     branches.add("\"!branch_*x\"")
   }
+
+  // Aggregate the Solr Operator docs as an additional component, sourced from
+  // its release-* branches (apache/solr-operator). Each such branch carries its
+  // own docs/antora.yml (component 'operator'). edit_url is overridden per
+  // source so "Edit this page" points at the operator repo rather than apache/solr.
+  def operatorSources = """
+  - url: "https://github.com/apache/solr-operator.git"
+    branches: ${JsonOutput.toJson(operatorBranches)}
+    start_path: docs"""
 
   def props = [
       'site_url': "https://solr.apache.org/guide",
@@ -194,6 +210,7 @@ task buildOfficialAntoraPlaybookYaml(type: Copy) {
       'source_branches': branches,
       'start_path': 'solr/solr-ref-guide',
       'site_dir': "./" + file(project.ext.playbooksDir).relativePath(file(project.ext.siteDir)),
+      'additional_sources': operatorSources,
   ]
 
   expand(escapeYamlSingleQuotesString(props))

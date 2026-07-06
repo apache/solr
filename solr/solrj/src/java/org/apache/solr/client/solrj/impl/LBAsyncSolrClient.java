@@ -21,6 +21,8 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -35,7 +37,7 @@ import org.slf4j.MDC;
 public abstract class LBAsyncSolrClient extends LBSolrClient {
   // formerly known as LBHttp2SolrClient, using Http2SolrClient (jetty)
 
-  protected final HttpSolrClientBase solrClient;
+  protected final HttpSolrClient solrClient;
 
   protected LBAsyncSolrClient(Builder<?> builder) {
     super(builder);
@@ -43,7 +45,7 @@ public abstract class LBAsyncSolrClient extends LBSolrClient {
   }
 
   @Override
-  protected HttpSolrClientBase getClient(Endpoint endpoint) {
+  protected HttpSolrClient getClient(Endpoint endpoint) {
     return solrClient;
   }
 
@@ -179,6 +181,9 @@ public abstract class LBAsyncSolrClient extends LBSolrClient {
       boolean isNonRetryable,
       boolean isZombie,
       RetryListener listener) {
+    if (oe instanceof CompletionException) {
+      oe = oe.getCause();
+    }
     try {
       throw (Exception) oe;
     } catch (SolrException e) {
@@ -210,9 +215,16 @@ public abstract class LBAsyncSolrClient extends LBSolrClient {
       }
     } catch (SolrServerException e) {
       Throwable rootCause = e.getRootCause();
-      if (!isNonRetryable && rootCause instanceof IOException) {
+      if (!isNonRetryable
+          && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
         listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
-      } else if (isNonRetryable && rootCause instanceof ConnectException) {
+      } else if (isNonRetryable && isConnectException(rootCause)) {
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
+      } else {
+        listener.onFailure(e, false);
+      }
+    } catch (IOException e) {
+      if (!isNonRetryable || isConnectException(e)) {
         listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         listener.onFailure(e, false);

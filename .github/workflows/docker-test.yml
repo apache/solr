@@ -10,6 +10,10 @@ on:
       - 'solr/docker/**'
       - 'solr/packaging/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Build and test Docker image
@@ -20,11 +24,10 @@ jobs:
     env:
       SOLR_DOCKER_IMAGE_REPO: github-pr/solr
       SOLR_DOCKER_IMAGE_TAG: ${{github.event.number}}
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
     - uses: ./.github/actions/prepare-for-build
 

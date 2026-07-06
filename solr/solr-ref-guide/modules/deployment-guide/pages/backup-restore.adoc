@@ -21,7 +21,7 @@ If you are worried about data loss, and of course you _should_ be, you need a wa
 
 Solr provides two approaches to backing up and restoring Solr cores or collections, depending on how you are running Solr.
 If you run a SolrCloud cluster, you will use the Collections API.
-If you run a user-managed cluster or a single-node installation, you will use the replication handler.
+If you run a user-managed cluster or a standalone installation, you will use the replication handler.
 
 [NOTE]
 ====
@@ -49,7 +49,7 @@ More information is available in the section xref:collection-management.adoc#lis
 * `action=DELETEBACKUP`: This command allows deletion of backup files or whole backups.
 More information is available in the section xref:collection-management.adoc#deletebackup[Delete Backups].
 
-== User-Managed Clusters and Single-Node Installations
+== User-Managed Clusters and Standalone Installations
 
 Backups and restoration uses Solr's replication handler.
 Out of the box, Solr includes implicit support for replication so this API can be used.
@@ -395,6 +395,38 @@ They may also have a boolean `default` attribute, which may be `true` on at most
 Any children under the `<repository>` tag are passed as additional configuration to the repository, allowing repositories to read their own implementation-specific configuration.
 
 Information on each of the repository implementations provided with Solr is provided below.
+
+=== Parallel File Transfers
+
+Backup and restore operations can transfer multiple index files in parallel to improve throughput, especially when using cloud storage repositories like S3 or GCS where latency is higher.
+The parallelism is controlled via system properties or environment variables:
+
+`solr.backup.maxparalleluploads`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+Maximum number of index files to upload in parallel during backup operations.
+Can also be set via the `SOLR_BACKUP_MAXPARALLELUPLOADS` environment variable.
+
+`solr.backup.maxparalleldownloads`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+Maximum number of index files to download in parallel during restore operations.
+Can also be set via the `SOLR_BACKUP_MAXPARALLELDOWNLOADS` environment variable.
+
+TIP: These are two independent thread pools — one for backup uploads and one for restore downloads.
+Increasing either value can significantly improve throughput when using cloud storage (S3, GCS), but too high a value will increase IOPS and bandwidth pressure on your cluster.
+Start small and increase based on observed throughput and available resources.
+The configured limit applies across all concurrent backup or restore operations on the node.
+
+=== Checksum Verification
 
 By default, all the repository implementations verify the integrity of the index files before they are copied to the destination. However, it is possible to disable this integrity check by setting the optional configuration property `verifyChecksum`.
 

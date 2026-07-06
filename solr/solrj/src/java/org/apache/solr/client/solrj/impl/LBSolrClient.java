@@ -23,6 +23,7 @@ import java.lang.ref.WeakReference;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.http.HttpConnectTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -166,7 +168,7 @@ public abstract class LBSolrClient extends SolrClient {
     solrQuery.setDistrib(false);
   }
 
-  public static class Builder<C extends HttpSolrClientBase> {
+  public static class Builder<C extends HttpSolrClient> {
 
     private final C solrClient;
     private final Endpoint[] solrEndpoints;
@@ -381,6 +383,7 @@ public abstract class LBSolrClient extends SolrClient {
               skipped.add(wrapper.getEndpoint());
             }
           }
+          endpoint = null;
           continue;
         }
 
@@ -615,10 +618,10 @@ public abstract class LBSolrClient extends SolrClient {
   private NamedList<Object> doRequest(
       SolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
-    // Some implementations of LBSolrClient.getClient(...) return a HttpSolrClientBase that may not
+    // Some implementations of LBSolrClient.getClient(...) return a HttpSolrClient that may not
     // be pointed at the desired URL (or any URL for that matter).  We special-case that here to
     // ensure the appropriate URL is provided.
-    if (solrClient instanceof HttpSolrClientBase hasReqWithUrl) {
+    if (solrClient instanceof HttpSolrClient hasReqWithUrl) {
       return hasReqWithUrl.requestWithBaseUrl(baseUrl, solrRequest, collection);
     }
 
@@ -665,9 +668,10 @@ public abstract class LBSolrClient extends SolrClient {
       }
     } catch (SolrServerException e) {
       Throwable rootCause = e.getRootCause();
-      if (!isNonRetryable && rootCause instanceof IOException) {
+      if (!isNonRetryable
+          && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else if (isNonRetryable && rootCause instanceof ConnectException) {
+      } else if (isNonRetryable && isConnectException(rootCause)) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
       } else {
         throw e;
@@ -677,6 +681,15 @@ public abstract class LBSolrClient extends SolrClient {
     }
 
     return ex;
+  }
+
+  protected boolean isConnectException(Throwable t) {
+    if (t instanceof ConnectException || t instanceof HttpConnectTimeoutException) {
+      return true;
+    }
+    // Check for common connection timeout exceptions by name to avoid hard dependencies on
+    // specific HTTP client libraries (e.g., Jetty or Apache HttpClient).
+    return t != null && t.getClass().getName().endsWith("ConnectTimeoutException");
   }
 
   protected abstract SolrClient getClient(Endpoint endpoint);

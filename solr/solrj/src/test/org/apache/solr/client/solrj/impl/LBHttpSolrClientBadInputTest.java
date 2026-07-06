@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.LBHttpSolrClient;
+import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -44,18 +44,14 @@ public class LBHttpSolrClientBadInputTest extends SolrTestCaseJ4 {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP,
         ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
-    solrTestRule.startSolr(createTempDir());
-    solrTestRule
-        .newCollection("collection1")
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
     try (SolrClient client =
-        new LBHttpSolrClient.Builder()
-            .withBaseEndpoint(solrTestRule.getBaseUrl())
+        new LBJettySolrClient.Builder(solrTestRule.getJetty().getSolrClient())
             .withDefaultCollection(ANY_COLLECTION)
             .build()) {
       assertExceptionThrownWithMessageContaining(
@@ -85,7 +81,7 @@ public class LBHttpSolrClientBadInputTest extends SolrTestCaseJ4 {
     }
 
     try (SolrClient client =
-        new LBHttpSolrClient.Builder().withBaseEndpoint(solrTestRule.getBaseUrl()).build()) {
+        new LBJettySolrClient.Builder(solrTestRule.getJetty().getSolrClient()).build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),

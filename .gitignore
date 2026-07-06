@@ -39,6 +39,13 @@ gradle/wrapper/gradle-wrapper.jar
 # Kotlin
 .kotlin/
 
+# AI Coding Assistants, we only want AGENTS.md checked in
+CLAUDE.md
+.claude/
+.cursor/
+GEMINI.md
+.gemini/
+
 # WANT TO ADD MORE?  You can tell Git without adding to this file:
 # See https://git-scm.com/docs/gitignore
 # In particular, if you have tools you use, add to $GIT_DIR/info/exclude or use core.excludesFile

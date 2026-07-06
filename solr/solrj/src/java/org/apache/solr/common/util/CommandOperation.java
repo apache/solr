@@ -16,9 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.common.util.Utils.toJSON;
 
@@ -27,7 +24,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -78,7 +74,7 @@ public class CommandOperation {
         StrUtils.formatString(
             "The command ''{0}'' should have the values as a json object '{'key:val'}' format but is ''{1}''",
             name, commandData));
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   private Object getRootPrimitive() {
@@ -146,7 +142,7 @@ public class CommandOperation {
         if (l.isEmpty()) return def;
         return l;
       } else {
-        return singletonList(String.valueOf(v));
+        return List.of(String.valueOf(v));
       }
     }
   }
@@ -182,7 +178,7 @@ public class CommandOperation {
   /** Get all the values from the metadata for the command without the specified keys */
   public Map<String, Object> getValuesExcluding(String... keys) {
     getMapVal(null);
-    if (hasError()) return emptyMap(); // just to verify the type is Map
+    if (hasError()) return Map.of(); // just to verify the type is Map
     @SuppressWarnings("unchecked")
     LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String, Object>) commandData);
     if (keys == null) return cp;
@@ -210,7 +206,7 @@ public class CommandOperation {
   }
 
   public static List<CommandOperation> parse(Reader rdr) throws IOException {
-    return parse(rdr, Collections.emptySet());
+    return parse(rdr, Set.of());
   }
 
   /**
@@ -229,7 +225,7 @@ public class CommandOperation {
             if (value instanceof List && !singletonCommands.contains(key)) {
               vals = (List<?>) value;
             } else {
-              vals = Collections.singletonList(value);
+              vals = List.of(value);
             }
             for (Object val : vals) {
               operations.add(new CommandOperation(String.valueOf(key), val));
@@ -316,13 +312,13 @@ public class CommandOperation {
 
   @Override
   public String toString() {
-    return new String(toJSON(singletonMap(name, commandData)), StandardCharsets.UTF_8);
+    return new String(toJSON(Map.of(name, commandData)), StandardCharsets.UTF_8);
   }
 
   public static List<CommandOperation> readCommands(
       Iterable<ContentStream> streams, @SuppressWarnings({"rawtypes"}) NamedList resp)
       throws IOException {
-    return readCommands(streams, resp, Collections.emptySet());
+    return readCommands(streams, resp, Set.of());
   }
 
   /**

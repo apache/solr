@@ -22,7 +22,7 @@ import io.opentelemetry.api.metrics.LongCounter;
 public class AttributedLongCounter {
 
   private final LongCounter baseCounter;
-  private final io.opentelemetry.api.common.Attributes attributes;
+  private final Attributes attributes;
 
   public AttributedLongCounter(LongCounter baseCounter, Attributes attributes) {
     this.baseCounter = baseCounter;

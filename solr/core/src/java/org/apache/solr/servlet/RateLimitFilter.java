@@ -47,18 +47,7 @@ public class RateLimitFilter extends CoreContainerAwareHttpFilter {
             SolrException.ErrorCode.TOO_MANY_REQUESTS.code, RateLimitManager.ERROR_MESSAGE);
         return;
       }
-      // todo: this shouldn't be required, tracing and rate limiting should be independently
-      //  composable
-      ServletUtils.traceHttpRequestExecution2(
-          req,
-          res,
-          () -> {
-            try {
-              chain.doFilter(req, res);
-            } catch (Exception e) {
-              throw new ExceptionWhileTracing(e);
-            }
-          });
+      chain.doFilter(req, res);
     } catch (InterruptedException e1) {
       Thread.currentThread().interrupt();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e1.getMessage());

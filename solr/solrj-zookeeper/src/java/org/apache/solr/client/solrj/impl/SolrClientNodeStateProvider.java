@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
-import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.MapWriter;
@@ -54,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloudHttp2SolrClient solrClient;
+  private final CloudSolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<Replica>>>>
       nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
 
@@ -62,11 +61,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
   public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
-    if (!(solrClient instanceof CloudHttp2SolrClient)) {
-      throw new IllegalArgumentException(
-          "The passed-in CloudSolrClient must be a " + CloudHttp2SolrClient.class);
-    }
-    this.solrClient = (CloudHttp2SolrClient) solrClient;
+    this.solrClient = solrClient;
     try {
       readReplicaDetails();
     } catch (IOException e) {
@@ -214,7 +209,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     params.add("name", String.join(",", metricNames));
 
     var req = new MetricsRequest(params);
-    req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     String baseUrl =
         ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
@@ -244,7 +238,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   static class RemoteCallCtx {
 
     ZkClientClusterStateProvider zkClientClusterStateProvider;
-    CloudHttp2SolrClient cloudSolrClient;
+    CloudSolrClient cloudSolrClient;
     public final Map<String, Object> tags = new HashMap<>();
     private final String node;
     public Map<String, Object> session;
@@ -256,14 +250,14 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       return true;
     }
 
-    public RemoteCallCtx(String node, CloudHttp2SolrClient cloudSolrClient) {
+    public RemoteCallCtx(String node, CloudSolrClient cloudSolrClient) {
       this.node = node;
       this.cloudSolrClient = cloudSolrClient;
       this.zkClientClusterStateProvider =
           (ZkClientClusterStateProvider) cloudSolrClient.getClusterStateProvider();
     }
 
-    protected HttpSolrClientBase httpSolrClient() {
+    protected HttpSolrClient httpSolrClient() {
       return cloudSolrClient.getHttpClient();
     }
 

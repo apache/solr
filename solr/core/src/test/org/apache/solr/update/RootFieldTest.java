@@ -61,7 +61,11 @@ public class RootFieldTest extends SolrTestCase {
     String schema = useRootSchema ? "schema15.xml" : "schema-rest.xml";
     SolrTestCaseJ4.newRandomConfig();
 
-    solrTestRule.newCollection().withConfigSet("../collection1").withSchemaFile(schema).create();
+    solrTestRule
+        .newCollection()
+        .withConfigSet(SolrTestCaseJ4.TEST_COLL1_CONF())
+        .withSchemaFile(schema)
+        .create();
   }
 
   @Test

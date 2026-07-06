@@ -23,20 +23,20 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.ConfigNode;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.DOMConfigNode;
 import org.w3c.dom.Node;
 
 /** An Object which represents a Plugin of any type */
-public class PluginInfo implements MapSerializable {
+public class PluginInfo implements MapWriter {
   public final String name, className, type, pkgName;
   public final ClassName cName;
   public final NamedList<Object> initArgs;
@@ -59,7 +59,7 @@ public class PluginInfo implements MapSerializable {
       }
     }
     attributes = unmodifiableMap(attrs);
-    this.children = children == null ? Collections.emptyList() : unmodifiableList(children);
+    this.children = children == null ? List.of() : unmodifiableList(children);
     isFromSolrConfig = false;
   }
 
@@ -148,7 +148,7 @@ public class PluginInfo implements MapSerializable {
     // TODO This is not type-safe and needs to be fixed -
     // https://issues.apache.org/jira/browse/SOLR-14696
     attributes = unmodifiableMap(m);
-    this.children = Collections.emptyList();
+    this.children = List.of();
     isFromSolrConfig = true;
   }
 
@@ -162,7 +162,7 @@ public class PluginInfo implements MapSerializable {
           if (pluginInfo.isEnabled()) children.add(pluginInfo);
           return null;
         });
-    return children.isEmpty() ? Collections.emptyList() : unmodifiableList(children);
+    return children.isEmpty() ? List.of() : unmodifiableList(children);
   }
 
   @Override
@@ -194,26 +194,35 @@ public class PluginInfo implements MapSerializable {
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    map.putAll(attributes);
-    Map m = map;
-    if (initArgs != null) m.putAll(initArgs.asMap(3));
-    if (children != null) {
-      for (PluginInfo child : children) {
-        Object old = m.get(child.name);
-        if (old == null) {
-          m.put(child.name, child.toMap(new LinkedHashMap<>()));
-        } else if (old instanceof List list) {
-          list.add(child.toMap(new LinkedHashMap<>()));
-        } else {
-          ArrayList l = new ArrayList();
-          l.add(old);
-          l.add(child.toMap(new LinkedHashMap<>()));
-          m.put(child.name, l);
-        }
+  public void writeMap(EntryWriter ew) throws IOException {
+    // Direct forEach(ew::putNoEx) does not work: attributes is declared Map<String, String> but
+    // the PluginInfo(String, Map<String, Object>) constructor assigns it via raw types, so values
+    // may not be Strings. The bridge method generated for forEach would CCE on non-String values.
+    new NamedList<>(attributes).writeMap(ew);
+    if (initArgs != null) {
+      initArgs.asMap(3).forEach((k, v) -> ew.putNoEx((String) k, v));
+    }
+    if (children == null || children.isEmpty()) {
+      return;
+    }
+
+    Map<String, Object> childrenGrouped = new LinkedHashMap<>();
+    for (PluginInfo child : children) {
+      Object old = childrenGrouped.get(child.name);
+      if (old == null) {
+        childrenGrouped.put(child.name, child);
+      } else if (old instanceof List list) {
+        list.add(child);
+      } else {
+        List<Object> l = new ArrayList<>();
+        l.add(old);
+        l.add(child);
+        childrenGrouped.put(child.name, l);
       }
     }
-    return m;
+    for (Map.Entry<String, Object> entry : childrenGrouped.entrySet()) {
+      ew.put(entry.getKey(), entry.getValue());
+    }
   }
 
   /**
@@ -230,7 +239,7 @@ public class PluginInfo implements MapSerializable {
   }
 
   public static final PluginInfo EMPTY_INFO =
-      new PluginInfo("", Collections.emptyMap(), new NamedList<>(), Collections.emptyList());
+      new PluginInfo("", Map.of(), new NamedList<>(), List.of());
 
   private static final HashSet<String> NL_TAGS =
       new HashSet<>(asList("lst", "arr", "bool", "str", "int", "long", "float", "double"));

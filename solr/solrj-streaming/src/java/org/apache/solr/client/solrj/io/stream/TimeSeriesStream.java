@@ -22,11 +22,14 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -65,14 +68,14 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
   private Metric[] metrics;
   private List<Tuple> tuples = new ArrayList<>();
   private int index;
-  private String zkHost;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private SolrParams params;
   private String collection;
   private transient SolrClientCache clientCache;
   private transient boolean doCloseCache;
 
   public TimeSeriesStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       SolrParams params,
       Metric[] metrics,
@@ -82,7 +85,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
       String gap,
       String format)
       throws IOException {
-    init(collection, params, field, metrics, start, end, gap, format, null, null, zkHost);
+    init(solrConnection, collection, params, field, metrics, start, end, gap, format, null, null);
   }
 
   public TimeSeriesStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -102,7 +105,6 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     StreamExpressionNamedParameter splitExpression = factory.getNamedOperand(expression, "split");
     StreamExpressionNamedParameter limitExpression = factory.getNamedOperand(expression, "limit");
 
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
     List<StreamExpression> metricExpressions =
         factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
 
@@ -194,41 +196,27 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     }
 
     // pull out known named params
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost")
-          && !namedParam.getName().equals("start")
-          && !namedParam.getName().equals("end")
-          && !namedParam.getName().equals("gap")) {
-        params.add(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
-
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(
+            namedParams, Set.of("zkHost", "solrConnection", "start", "end", "gap"));
     if (params.get("q") == null) {
       params.set("q", "*:*");
     }
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    if (null == zkHost) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    // We've got all the required items
-    init(collectionName, params, field, metrics, start, end, gap, format, split, limit, zkHost);
+    init(
+        solrConnection,
+        collectionName,
+        params,
+        field,
+        metrics,
+        start,
+        end,
+        gap,
+        format,
+        split,
+        limit);
   }
 
   public String getCollection() {
@@ -236,6 +224,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
   }
 
   private void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       SolrParams params,
       String field,
@@ -245,10 +234,9 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
       String gap,
       String format,
       String split,
-      String limit,
-      String zkHost)
+      String limit)
       throws IOException {
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.start = start;
     this.gap = gap;
@@ -297,8 +285,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     expression.addParameter(new StreamExpressionNamedParameter("field", gap));
     expression.addParameter(new StreamExpressionNamedParameter("format", format));
 
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }
@@ -360,7 +348,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
-      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
       NamedList<?> response = cloudSolrClient.request(request, collection);
       getTuples(response, field, metrics);
     } catch (Exception e) {
@@ -528,7 +516,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
       if (formatter != null) {
         LocalDateTime localDateTime =
-            LocalDateTime.ofInstant(((java.util.Date) val).toInstant(), ZoneOffset.UTC);
+            LocalDateTime.ofInstant(((Date) val).toInstant(), ZoneOffset.UTC);
         val = localDateTime.format(formatter);
       }
 

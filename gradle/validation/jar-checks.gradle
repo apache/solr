@@ -91,6 +91,10 @@ subprojects {
         extendsFrom testCompileClasspath
       }
     }
+
+    // Align jarValidation with tested runtimeClasspath versions
+    // This ensures validation uses the same versions that were tested
+    alignWithRuntimeClasspath(configurations.jarValidation)
   }
 
   // Collects dependency JAR information for a project and saves it in
@@ -126,7 +130,6 @@ subprojects {
         if (excludeRules && excludeRules.size() > 0) {
           conf = conf.copyRecursive()
           conf.canBeResolved = true
-          conf.canBeConsumed = true
           excludeRuleMaps.forEach {conf.exclude(it)}
         }
         if (conf.canBeResolved) {

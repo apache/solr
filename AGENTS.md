@@ -1,0 +1,74 @@
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+# AGENTS.md for Apache Solr
+
+While README.md and CONTRIBUTING.md are mainly written for humans, this file is a condensed knowledge base for LLM coding agents on the Solr codebase. See https://agents.md for more info and how to make various coding assistants consume this file. Also see `dev-docs/how-to-contribute.adoc` for some guidelines when using genAI to contribute to Solr.
+
+## Licensing and Dependencies
+
+- Follow Apache Software Foundation licensing rules, avoid adding a dependency with a banned license
+- Always apply the Apache License to new source files
+- All versions must be delcared in `gradle/libs.versions.toml`, never build.gradle files
+- Try first declaring a dependency without a version (the version might already be in a BOM); and if fails to resolve _then_ specify a version
+- The build may complain with "Dependency analysis found issues.", a category like "usedUndeclaredArtifacts", and a dependency list.  Declare or undeclare these dependencies, as the category will imply.  The special 'permit*' configurations are a choice of last resort.
+- Always run `gradlew updateLicenses resolveAndLockAll collectJarInfos --write-locks` after adding or changing a dependency. See `dev-docs/gradle-help/dependencies.txt` for more info
+
+## Build and Development Workflow
+
+- When done or preparing to commit changes to java source files, be sure to run `gradlew tidy` to format the code.  Don't bother beforehand.
+- Always run `gradlew check -x test` before declaring a feature done
+
+## Code Quality and Best Practices
+
+- Use the project's custom `EnvUtils` to read system properties. It auto converts env.var SOLR_FOO_BAR to system property solr.foo.bar
+- Be careful to not add non-essential logging! If you add slf4j log calls, make sure to wrap debug/trace level calls in `logger.isXxxEnabled()` clause
+- Validate user input. For file paths, always call `myCoreContainer.assertPathAllowed(myPath)` before using
+
+## Running Tests
+
+- See `dev-docs/gradle-help/tests.txt` for hints on running tests
+- To run a specific test: `gradlew :solr:core:test --tests "org.apache.solr.search.TestCaffeineCache"`
+- To run a specific BATS test: `gradlew iTest --tests test_adminconsole_urls.bats`
+- The randomization seed is important.  To repeat a failing tests, pass the same seed given in the failure by adding to Gradle: `-Ptests.seed=HEXADECIMALHERE`.
+- Test output goes to `solr/<module>/build/test-results/test/outputs/OUTPUT-<fully.qualified.TestName>.txt` (stdout/stderr log) and `solr/<module>/build/test-results/test/TEST-<fully.qualified.TestName>.xml` (JUnit XML with pass/fail/error details)
+- To scan test output for a specific issue across already-run tests: `grep -rl "pattern" solr/*/build/test-results/test/outputs/`
+
+## Writing Tests
+
+- When adding a test to an existing suite/file, keep the same style / design choices
+- When adding a *new* Java test suite/file:
+    - Subclass SolrTestCase, or if SolrCloud is needed then SolrCloudTestCase
+    - If SolrTestCase and need to embed Solr, use either EmbeddedSolrServerTestRule (doesn't use HTTP) or SolrJettyTestRule if HTTP/Jetty is relevant to what is being tested.
+    - Avoid SolrTestCaseJ4 for new tests
+- For BATS shell integration tests in `solr/packaging/test/`:
+    - Always use `run <command>` followed by `assert_output --partial "..."` or `refute_output --partial "..."` instead of capturing output into local variables and using `[[ ]]` comparisons
+    - Avoid patterns like `local var=$(cmd | grep ...); [[ "$var" == *"..."* ]]` — use `run cmd` + `assert_output`/`refute_output` instead
+
+## Documentation
+
+- For major or breaking changes, add a prominent note in reference guide major-changes-in-solr-X.adoc
+- Always consider whether a reference-guide page needs updating due to the new/changed features. Target audience is end user
+- For changes to build system and other developer-focused changes, consider updating or adding docs in dev-docs/ folder
+- Keep all documentation including javadoc concise
+- New classes should have some javadocs
+- Changes should not have code comments communicating the change, which are instead great comments to leave for code review / commentary
+
+## Changelog
+
+- We use the "logchange" tooling to manage our changelog. See `dev-docs/changelog.adoc` for details and conventions
+- To scaffold a new changelog entry, run `gradlew writeChangelog` (JIRA) or `gradlew writeChangeLogPr` (no JIRA), and then edit the new file located in `changelog/unreleased/`.
+- Do not add a changelog entry before a JIRA issue or a Github PR is assigned, as one is required.

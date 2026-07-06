@@ -24,13 +24,10 @@ import static org.hamcrest.CoreMatchers.is;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -43,7 +40,6 @@ import org.apache.solr.client.solrj.response.schema.SchemaRepresentation;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -101,22 +97,15 @@ public class SchemaTest extends RestTestBase {
     Path tmpSolrHome = createTempDir();
     PathUtils.copyDirectory(getFile("solrj/solr/collection1").getParent(), tmpSolrHome);
 
-    final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
-
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("solr.index.updatelog.enabled", "false");
 
-    createJettyAndHarness(
-        tmpSolrHome, "solrconfig-managed-schema.xml", "schema.xml", "/solr", true, extraServlets);
+    createJettyAndHarness(tmpSolrHome, "solrconfig-managed-schema.xml", "schema.xml");
   }
 
   @After
   public void cleanup() throws Exception {
     solrTestRule.reset();
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
   @Test
@@ -530,14 +519,14 @@ public class SchemaTest extends RestTestBase {
     charFilterAttributes.put("class", "solr.PatternReplaceCharFilterFactory");
     charFilterAttributes.put("replacement", "$1$1");
     charFilterAttributes.put("pattern", "([a-zA-Z])\\\\1+");
-    analyzerDefinition.setCharFilters(Collections.singletonList(charFilterAttributes));
+    analyzerDefinition.setCharFilters(List.of(charFilterAttributes));
     Map<String, Object> tokenizerAttributes = new LinkedHashMap<>();
     tokenizerAttributes.put("class", "solr.WhitespaceTokenizerFactory");
     analyzerDefinition.setTokenizer(tokenizerAttributes);
     Map<String, Object> filterAttributes = new LinkedHashMap<>();
     filterAttributes.put("class", "solr.WordDelimiterGraphFilterFactory");
     filterAttributes.put("preserveOriginal", "0");
-    analyzerDefinition.setFilters(Collections.singletonList(filterAttributes));
+    analyzerDefinition.setFilters(List.of(filterAttributes));
     fieldTypeDefinition.setAnalyzer(analyzerDefinition);
 
     SchemaRequest.AddFieldType addFieldTypeRequest =
@@ -597,7 +586,7 @@ public class SchemaTest extends RestTestBase {
     charFilterAttributes.put("class", "solr.PatternReplaceCharFilterFactory");
     charFilterAttributes.put("replacement", "$1$1");
     charFilterAttributes.put("pattern", "([a-zA-Z])\\\\1+");
-    analyzerDefinition.setCharFilters(Collections.singletonList(charFilterAttributes));
+    analyzerDefinition.setCharFilters(List.of(charFilterAttributes));
     Map<String, Object> tokenizerAttributes = new LinkedHashMap<>();
     tokenizerAttributes.put("class", "solr.WhitespaceTokenizerFactory");
     analyzerDefinition.setTokenizer(tokenizerAttributes);
