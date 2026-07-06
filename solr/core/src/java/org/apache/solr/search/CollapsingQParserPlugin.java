@@ -168,8 +168,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         case "ignore" -> IGNORE;
         case "collapse" -> COLLAPSE;
         case "expand" -> EXPAND;
-        default -> throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Invalid nullPolicy: " + nullPolicy);
+        default ->
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "Invalid nullPolicy: " + nullPolicy);
       };
     }
 
@@ -1169,9 +1170,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           case INTEGER -> new OrdIntCollector(this);
           case FLOAT -> new OrdFloatCollector(this);
           case LONG -> new OrdLongCollector(this);
-          default -> throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "min/max must be either Int/Long/Float field types");
+          default ->
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "min/max must be either Int/Long/Float field types");
         };
       }
     }
@@ -1723,9 +1725,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         return switch (numType) {
           case INTEGER -> new IntIntCollector(this);
           case FLOAT -> new IntFloatCollector(this);
-          default -> throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "min/max must be Int or Float field types when collapsing on numeric fields");
+          default ->
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "min/max must be Int or Float field types when collapsing on numeric fields");
         };
       }
     }
