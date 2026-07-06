@@ -1010,6 +1010,9 @@ def parse_config():
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument('--tmp-dir', metavar='PATH',
                       help='Temporary directory to test inside, defaults to /tmp/smoke_solr_$version_$revision')
+  parser.add_argument('--reuse-tmp-dir', action='store_true', default=False,
+                      help='Allows --tmp-dir to already exist and reuses whatever it already downloaded, '
+                           'instead of re-downloading everything from scratch')
   parser.add_argument('--not-signed', dest='is_signed', action='store_false', default=True,
                       help='Indicates the release is not signed')
   parser.add_argument('--local-keys', metavar='PATH',
@@ -1072,13 +1075,32 @@ def main():
   if not c.version.startswith(scriptVersion + '.') and not c.dev_mode:
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
+  global FORCE_CLEAN
+  FORCE_CLEAN = not c.reuse_tmp_dir
+
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
   smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, c.local_keys, ' '.join(c.test_args),
             downloadOnly=c.download_only)
 
 
+def printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs):
+  cmd = ['./smokeTestRelease.py', '--tmp-dir', tmpDir, '--reuse-tmp-dir',
+         '--revision', gitRevision, '--version', version]
+  if not isSigned:
+    cmd.append('--not-signed')
+  if local_keys is not None:
+    cmd.extend(['--local-keys', local_keys])
+  cmd.append(baseURL)
+  if testArgs:
+    cmd.append(testArgs)
+  print()
+  print('NOTE: to re-run (e.g. with a different Java version) reusing what is already downloaded to %s:' % tmpDir)
+  print('  JAVA_HOME=/path/to/java %s' % ' '.join(cmd))
+
+
 def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs, downloadOnly=False):
   startTime = datetime.datetime.now()
+  origTestArgs = testArgs
 
   # Avoid @Nightly and @Badapple tests as they are slow and buggy
   # Instead verify that the recent Jenkins tests pass
@@ -1091,6 +1113,8 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
 
   if not os.path.exists(tmpDir):
     os.makedirs(tmpDir)
+
+  printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, origTestArgs)
 
   solrPath = None
   print()
@@ -1143,6 +1167,8 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)
   else:
     print("Solr test done (--download-only specified)")
+
+  printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, origTestArgs)
 
   print('\nSUCCESS! [%s]\n' % (datetime.datetime.now() - startTime))
 
