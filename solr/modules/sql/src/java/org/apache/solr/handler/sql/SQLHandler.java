@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -55,7 +56,23 @@ public class SQLHandler extends RequestHandlerBase
 
   static final String sqlNonCloudErrorMsg = "/sql handler only works in Solr Cloud mode";
 
-  static final Set<String> CONNECTION_PARAMS = Set.of("aggregationMode", "numWorkers");
+  /** System property to override the set of request parameters forwarded to Calcite. */
+  static final String ALLOWED_CONNECTION_PARAMS_PROP = "solr.sql.connection.params.allowed";
+
+  /** Calcite configuration parameters forwarded as connection properties. */
+  static final Set<String> DEFAULT_CONNECTION_PARAMS =
+      Set.of(
+          "caseSensitive",
+          "quoting",
+          "quotedCasing",
+          "unquotedCasing",
+          "conformance",
+          "fun",
+          "typeCoercion",
+          "lenientOperatorLookup",
+          "defaultNullCollation",
+          "timeZone",
+          "locale");
 
   private boolean isCloud = false;
 
@@ -101,13 +118,17 @@ public class SQLHandler extends RequestHandlerBase
       String url = CalciteSolrDriver.CONNECT_STRING_PREFIX;
 
       Properties properties = new Properties();
-      // Forward only the parameters the handler supports as connection configuration.
-      for (String param : CONNECTION_PARAMS) {
+      // Forward only the configured Calcite configuration parameters
+      for (String param : allowedConnectionParams()) {
         String value = params.get(param);
         if (value != null) {
           properties.setProperty(param, value);
         }
       }
+
+      // Solr-specific parameters
+      properties.setProperty("aggregationMode", params.get("aggregationMode"));
+      properties.setProperty("numWorkers", params.get("numWorkers"));
 
       // Set these last to ensure that they are set properly
       properties.setProperty("lex", Lex.MYSQL.toString());
@@ -200,6 +221,11 @@ public class SQLHandler extends RequestHandlerBase
       }
       return tuple;
     }
+  }
+
+  static Set<String> allowedConnectionParams() {
+    List<String> override = EnvUtils.getPropertyAsList(ALLOWED_CONNECTION_PARAMS_PROP);
+    return override != null ? Set.copyOf(override) : DEFAULT_CONNECTION_PARAMS;
   }
 
   private ModifiableSolrParams adjustParams(SolrParams params) {

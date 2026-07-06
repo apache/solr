@@ -1,4 +1,4 @@
-title: Avoid forwarding unrelated request parameters to Calcite from the /sql handler
+title: The /sql handler request params forwarded to Calcite is now configurable
 type: changed
 authors:
   - name: Jan Høydahl
