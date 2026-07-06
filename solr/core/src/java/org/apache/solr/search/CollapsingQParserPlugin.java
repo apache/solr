@@ -3570,6 +3570,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private Object[][] groupHeadValues; // growable
     private final Object[] nullGroupValues;
 
+    private final SortedDocValues[] stringSortDVs;
+    private final int[] stringMissingOrd;
+
     /**
      * Constructs an instance based on the (raw, un-rewritten) SortFields to be used, and an initial
      * number of expected groups (will grow as needed).
@@ -3581,6 +3584,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       fieldComparators = new FieldComparator[numClauses];
       leafFieldComparators = new LeafFieldComparator[numClauses];
       reverseMul = new int[numClauses];
+      stringMissingOrd = new int[numClauses];
       for (int clause = 0; clause < numClauses; clause++) {
         SortField sf = sorts[clause];
         // we only need one slot for every comparator
@@ -3592,14 +3596,28 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                     : Pruning.NONE);
 
         reverseMul[clause] = sf.getReverse() ? -1 : 1;
+        if (sf.getType() == SortField.Type.STRING) {
+          stringMissingOrd[clause] =
+              (sf.getMissingValue() == SortField.STRING_LAST) ? Integer.MAX_VALUE : -1;
+        }
       }
       groupHeadValues = new Object[initNumGroups][];
       nullGroupValues = new Object[numClauses];
+      stringSortDVs = new SortedDocValues[numClauses]; // populated in setNextReader
     }
 
     public void setNextReader(LeafReaderContext context) throws IOException {
       for (int clause = 0; clause < numClauses; clause++) {
         leafFieldComparators[clause] = fieldComparators[clause].getLeafComparator(context);
+        if (sorts[clause].getType() == SortField.Type.STRING) {
+          String field = sorts[clause].getField();
+          FieldInfo fi = context.reader().getFieldInfos().fieldInfo(field);
+          if (fi != null && fi.getDocValuesType() == DocValuesType.SORTED) {
+            stringSortDVs[clause] = DocValues.getSorted(context.reader(), field);
+          } else {
+            stringSortDVs[clause] = null;
+          }
+        }
       }
     }
 
@@ -3657,12 +3675,20 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     /**
      * Records the SortField values for the specified contextDoc into the values array provided by
-     * the caller.
+     * the caller. STRING clauses with SORTED DocValues are stored as {@link LazyStringValue} to
+     * defer {@code lookupOrd()} until a second document actually competes for the group.
      */
     private void setGroupValues(Object[] values, int contextDoc) throws IOException {
       for (int clause = 0; clause < numClauses; clause++) {
-        leafFieldComparators[clause].copy(0, contextDoc);
-        values[clause] = cloneIfBytesRef(fieldComparators[clause].value(0));
+        if (stringSortDVs[clause] != null) {
+          SortedDocValues dv = stringSortDVs[clause];
+          int missingOrd = stringMissingOrd[clause];
+          int ord = dv.advanceExact(contextDoc) ? dv.ordValue() : missingOrd;
+          values[clause] = new LazyStringValue(dv, ord, missingOrd);
+        } else {
+          leafFieldComparators[clause].copy(0, contextDoc);
+          values[clause] = cloneIfBytesRef(fieldComparators[clause].value(0));
+        }
       }
     }
 
@@ -3701,6 +3727,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int testClause = 0;
       for (
       /* testClause */ ; testClause < numClauses; testClause++) {
+        if (values[testClause] instanceof LazyStringValue) {
+          LazyStringValue headVal = (LazyStringValue) values[testClause];
+          SortedDocValues segDV = stringSortDVs[testClause];
+          if (segDV != null && segDV == headVal.dv) {
+            int missingOrd = headVal.missingOrd;
+            int candidateOrd = segDV.advanceExact(contextDoc) ? segDV.ordValue() : missingOrd;
+            lastCompare = reverseMul[testClause] * Integer.compare(candidateOrd, headVal.ord);
+            stash[testClause] = new LazyStringValue(segDV, candidateOrd, missingOrd);
+            if (0 != lastCompare) break;
+            continue;
+          }
+          values[testClause] = headVal.materialize();
+        }
         leafFieldComparators[testClause].copy(0, contextDoc);
         FieldComparator fcomp = fieldComparators[testClause];
         stash[testClause] = cloneIfBytesRef(fcomp.value(0));
@@ -3724,6 +3763,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       System.arraycopy(stash, 0, values, 0, testClause);
       // read the remaining values we didn't need to test
       for (int copyClause = testClause; copyClause < numClauses; copyClause++) {
+        SortedDocValues segDV = stringSortDVs[copyClause];
+        if (segDV != null) {
+          int missingOrd = stringMissingOrd[copyClause];
+          int candidateOrd = segDV.advanceExact(contextDoc) ? segDV.ordValue() : missingOrd;
+          values[copyClause] = new LazyStringValue(segDV, candidateOrd, missingOrd);
+          continue;
+        }
         leafFieldComparators[copyClause].copy(0, contextDoc);
         values[copyClause] = cloneIfBytesRef(fieldComparators[copyClause].value(0));
       }
