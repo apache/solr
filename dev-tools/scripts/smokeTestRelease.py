@@ -644,11 +644,11 @@ def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs):
   print('    run "%s"' % validateCmd)
   java.run_java(validateCmd, '%s/validate.log' % unpackPath)
 
-  print("    run tests w/ Java %s and testArgs='%s'..." % (BASE_JAVA_VERSION, testArgs))
+  print("    run tests w/ Java %s and testArgs='%s'..." % (java.version, testArgs))
   java.run_java('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
-  print("    run integration tests w/ Java %s" % BASE_JAVA_VERSION)
+  print("    run integration tests w/ Java %s" % java.version)
   java.run_java('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
-  print("    build binary release w/ Java %s" % BASE_JAVA_VERSION)
+  print("    build binary release w/ Java %s" % java.version)
   java.run_java('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble.log' % unpackPath)
   testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java_home, False)
 
@@ -681,7 +681,7 @@ def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
 
   checkAllJARs(os.getcwd(), gitRevision, version)
 
-  print('    test solr example w/ Java %s...' % BASE_JAVA_VERSION)
+  print('    test solr example w/ Java %s...' % java.version)
   testSolrExample(unpackPath, java.java_home, isSlim)
 
   testChangelogMd('.', version)
@@ -994,8 +994,8 @@ def make_java_config(parser):
   def run_java(cmd, logfile):
     run('%s; %s' % (cmd_prefix, cmd), logfile)
 
-  jc = namedtuple('JavaConfig', 'run_java java_home')
-  return jc(run_java, java_home)
+  jc = namedtuple('JavaConfig', 'run_java java_home version')
+  return jc(run_java, java_home, actual_version)
 
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
