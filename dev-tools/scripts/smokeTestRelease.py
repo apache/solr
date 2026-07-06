@@ -988,8 +988,8 @@ def make_java_config(parser):
   actual_version = re.search(r'version "([1-9][0-9]*)', s).group(1)
   print('Java %s JAVA_HOME=%s' % (actual_version, java_home))
 
-  if BASE_JAVA_VERSION != actual_version:
-    parser.error('got wrong base version for java %s:\n%s' % (BASE_JAVA_VERSION, s))
+  if int(actual_version) < int(BASE_JAVA_VERSION):
+    parser.error('got wrong version for java %s, must be at least base version %s:\n%s' % (actual_version, BASE_JAVA_VERSION, s))
 
   def run_java(cmd, logfile):
     run('%s; %s' % (cmd_prefix, cmd), logfile)
