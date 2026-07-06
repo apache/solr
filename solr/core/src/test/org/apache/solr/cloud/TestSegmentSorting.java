@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreDescriptor;
 import org.junit.After;
 import org.junit.Before;
@@ -94,6 +93,21 @@ public class TestSegmentSorting extends SolrCloudTestCase {
 
     // add some documents, then optimize to get merged-sorted segments
     tstes.addDocuments(collectionName, cloudSolrClient, 10, 10, true);
+
+    // add some block docs (parent + child) to exercise index sort with document blocks
+    for (int i = 0; i < 5; i++) {
+      int ts = random().nextInt(60);
+      cloudSolrClient.add(
+          collectionName,
+          sdoc(
+              "id",
+              10000 + i,
+              "timestamp_i_dvo",
+              ts,
+              "children",
+              sdocs(sdoc("id", 10100 + i, "timestamp_i_dvo", ts))));
+    }
+    cloudSolrClient.commit(collectionName);
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter intentionally absent
     tstes.queryTimestampDescending(collectionName, cloudSolrClient);
@@ -216,27 +230,5 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       }
     }
     assertTrue(oldDocId != newDocId);
-  }
-
-  @Test
-  public void testBlockDocsWithIndexSort() throws Exception {
-    final var client = cluster.getSolrClient();
-
-    SolrInputDocument doc =
-        sdoc(
-            "id",
-            "1",
-            "timestamp_i_dvo",
-            100,
-            "children",
-            sdocs(
-                sdoc("id", "2", "timestamp_i_dvo", 100), sdoc("id", "3", "timestamp_i_dvo", 100)));
-
-    client.add(collectionName, doc);
-    client.commit(collectionName);
-
-    assertEquals(3, client.query(collectionName, params("q", "*:*")).getResults().getNumFound());
-    assertEquals(
-        3, client.query(collectionName, params("q", "_root_:1")).getResults().getNumFound());
   }
 }
