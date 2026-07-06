@@ -52,7 +52,6 @@ public class SQLHandler extends RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static String defaultZkhost = null;
-  private static String defaultWorkerCollection = null;
 
   static final String sqlNonCloudErrorMsg = "/sql handler only works in Solr Cloud mode";
 
@@ -66,7 +65,6 @@ public class SQLHandler extends RequestHandlerBase
 
     if (coreContainer.isZooKeeperAware()) {
       defaultZkhost = coreContainer.getZkController().getZkServerAddress();
-      defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
       isCloud = true;
     }
 
@@ -87,8 +85,6 @@ public class SQLHandler extends RequestHandlerBase
     String sql = params.get("stmt");
     // Set defaults for parameters
     params.set("numWorkers", params.getInt("numWorkers", 1));
-    params.set("workerCollection", params.get("workerCollection", defaultWorkerCollection));
-    params.set("workerZkhost", params.get("workerZkhost", defaultZkhost));
     params.set("aggregationMode", params.get("aggregationMode", "facet"));
 
     TupleStream tupleStream = null;
