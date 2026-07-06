@@ -651,11 +651,11 @@ def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs):
   print('    run "%s"' % validateCmd)
   java.run_java(validateCmd, '%s/documentation.log' % logDir)
 
-  print("    run tests w/ Java %s and testArgs='%s'..." % (BASE_JAVA_VERSION, testArgs))
+  print("    run tests w/ Java %s and testArgs='%s'..." % (java.version, testArgs))
   java.run_java('./gradlew test %s' % testArgs, '%s/test.log' % logDir)
-  print("    run integration tests w/ Java %s" % BASE_JAVA_VERSION)
+  print("    run integration tests w/ Java %s" % java.version)
   java.run_java('./gradlew integrationTest -Dversion.release=%s' % version, '%s/itest.log' % logDir)
-  print("    build binary release w/ Java %s" % BASE_JAVA_VERSION)
+  print("    build binary release w/ Java %s" % java.version)
   java.run_java('./gradlew dev -Dversion.release=%s' % version, '%s/assemble.log' % logDir)
   testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java_home, False)
 
@@ -688,7 +688,7 @@ def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
 
   checkAllJARs(os.getcwd(), gitRevision, version)
 
-  print('    test solr example w/ Java %s...' % BASE_JAVA_VERSION)
+  print('    test solr example w/ Java %s...' % java.version)
   testSolrExample(unpackPath, java.java_home, isSlim)
 
   testChangelogMd('.', version)
@@ -995,14 +995,14 @@ def make_java_config(parser):
   actual_version = re.search(r'version "([1-9][0-9]*)', s).group(1)
   print('Java %s JAVA_HOME=%s' % (actual_version, java_home))
 
-  if BASE_JAVA_VERSION != actual_version:
-    parser.error('got wrong base version for java %s:\n%s' % (BASE_JAVA_VERSION, s))
+  if int(actual_version) < int(BASE_JAVA_VERSION):
+    parser.error('got wrong version for java %s, must be at least base version %s:\n%s' % (actual_version, BASE_JAVA_VERSION, s))
 
   def run_java(cmd, logfile):
     run('%s; %s' % (cmd_prefix, cmd), logfile)
 
-  jc = namedtuple('JavaConfig', 'run_java java_home')
-  return jc(run_java, java_home)
+  jc = namedtuple('JavaConfig', 'run_java java_home version')
+  return jc(run_java, java_home, actual_version)
 
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
@@ -1017,6 +1017,9 @@ def parse_config():
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument('--tmp-dir', metavar='PATH',
                       help='Temporary directory to test inside, defaults to /tmp/smoke_solr_$version_$revision')
+  parser.add_argument('--reuse-tmp-dir', action='store_true', default=False,
+                      help='Allows --tmp-dir to already exist and reuses whatever it already downloaded, '
+                           'instead of re-downloading everything from scratch')
   parser.add_argument('--not-signed', dest='is_signed', action='store_false', default=True,
                       help='Indicates the release is not signed')
   parser.add_argument('--local-keys', metavar='PATH',
@@ -1079,13 +1082,32 @@ def main():
   if not c.version.startswith(scriptVersion + '.') and not c.dev_mode:
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
+  global FORCE_CLEAN
+  FORCE_CLEAN = not c.reuse_tmp_dir
+
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
   smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, c.local_keys, ' '.join(c.test_args),
             downloadOnly=c.download_only)
 
 
+def printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs):
+  cmd = ['./smokeTestRelease.py', '--tmp-dir', tmpDir, '--reuse-tmp-dir',
+         '--revision', gitRevision, '--version', version]
+  if not isSigned:
+    cmd.append('--not-signed')
+  if local_keys is not None:
+    cmd.extend(['--local-keys', local_keys])
+  cmd.append(baseURL)
+  if testArgs:
+    cmd.append(testArgs)
+  print()
+  print('NOTE: to re-run (e.g. with a different Java version) reusing what is already downloaded to %s:' % tmpDir)
+  print('  JAVA_HOME=/path/to/java %s' % ' '.join(cmd))
+
+
 def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs, downloadOnly=False):
   startTime = datetime.datetime.now()
+  origTestArgs = testArgs
 
   # Avoid @Nightly and @Badapple tests as they are slow and buggy
   # Instead verify that the recent Jenkins tests pass
@@ -1098,6 +1120,8 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
 
   if not os.path.exists(tmpDir):
     os.makedirs(tmpDir)
+
+  printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, origTestArgs)
 
   solrPath = None
   print()
@@ -1150,6 +1174,8 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)
   else:
     print("Solr test done (--download-only specified)")
+
+  printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, origTestArgs)
 
   print('\nSUCCESS! [%s]\n' % (datetime.datetime.now() - startTime))
 
