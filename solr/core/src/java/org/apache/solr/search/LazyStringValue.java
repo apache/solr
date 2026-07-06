@@ -36,6 +36,6 @@ final class LazyStringValue {
     if (ord == missingOrd || ord < 0) {
       return null;
     }
-    return dv.lookupOrd(ord);
+    return BytesRef.deepCopyOf(dv.lookupOrd(ord));
   }
 }
