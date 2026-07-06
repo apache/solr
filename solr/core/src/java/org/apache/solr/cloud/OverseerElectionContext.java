@@ -61,11 +61,28 @@ final class OverseerElectionContext extends ElectionContext {
     final String id = leaderSeqPath.substring(leaderSeqPath.lastIndexOf('/') + 1);
     ZkNodeProps myProps = new ZkNodeProps(ID, id);
 
+    // NOTE: this create of the leader registration znode happens OUTSIDE the synchronized(this)
+    // guard below. isClosed is only checked at the top of this method and again before start();
+    // if another thread closes this context between here and the guard, we will have created the
+    // leader znode with no overseer running behind it (a "zombie leader") that cancelElection()
+    // does not clean up.
     zkClient.makePath(leaderPath, Utils.toJSON(myProps), CreateMode.EPHEMERAL);
+    log.info("Created overseer leader registration {} -> {}", leaderPath, id);
 
     synchronized (this) {
-      if (!this.isClosed && !overseer.getZkController().getCoreContainer().isShutDown()) {
+      boolean shutDown = overseer.getZkController().getCoreContainer().isShutDown();
+      if (!this.isClosed && !shutDown) {
         overseer.start(id);
+      } else {
+        log.warn(
+            "ZOMBIE LEADER: created leader registration {} -> {} but skipping overseer.start() "
+                + "because the election context was closed underneath us (isClosed={}, shutDown={}). "
+                + "The leader znode now points at an overseer that will never run and will not be "
+                + "removed by cancelElection(); subsequent elections will fail with NodeExists.",
+            leaderPath,
+            id,
+            this.isClosed,
+            shutDown);
       }
     }
   }

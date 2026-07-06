@@ -471,9 +471,18 @@ public class Overseer implements SolrCloseable {
         String id = (String) m.get(ID);
         if (overseerCollectionConfigSetProcessor.getId().equals(id)) {
           try {
+            // NOTE: stat.getVersion() is the znode dataVersion, bumped only by setData. The leader
+            // znode is created once (makePath) and never setData'd, so this is effectively always 0.
+            // The version guard below therefore cannot detect a concurrent takeover (a delete+recreate
+            // by another node also yields version 0), so the BadVersionException branch is effectively
+            // dead code and this delete can remove a *different* node's newer leader registration
             log.warn(
-                "I (id={}) am exiting, but I'm still the leader",
-                overseerCollectionConfigSetProcessor.getId());
+                "I (id={}) am exiting, but I'm still the leader; deleting leader node {} guarded by "
+                    + "dataVersion={} (leader znode is never setData'd, so this guard is a no-op and "
+                    + "cannot detect a concurrent takeover)",
+                overseerCollectionConfigSetProcessor.getId(),
+                path,
+                stat.getVersion());
             zkClient.delete(path, stat.getVersion());
           } catch (KeeperException.BadVersionException e) {
             // no problem ignore it some other Overseer has already taken over
