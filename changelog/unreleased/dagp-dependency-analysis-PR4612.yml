@@ -1,7 +1,0 @@
-title: Add dependency-analysis (build-health) reporting to the build, and apply its uncontroversial advice (unused-dependency removals and test-scope corrections)
-type: changed
-authors:
-  - name: Serhiy Bzhezytskyy
-links:
-- name: PR#4612
-  url: https://github.com/apache/solr/pull/4612

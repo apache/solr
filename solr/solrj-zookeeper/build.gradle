@@ -33,7 +33,7 @@ dependencies {
   implementation project(':solr:api')
   implementation libs.slf4j.api
 
-  api(libs.apache.curator.client, {
+  implementation(libs.apache.curator.client, {
     exclude group: 'org.apache.zookeeper', module: 'zookeeper'
   })
   api(libs.apache.curator.framework, {
@@ -42,7 +42,7 @@ dependencies {
   api(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  api(libs.apache.zookeeper.jute) {
+  implementation(libs.apache.zookeeper.jute) {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
 

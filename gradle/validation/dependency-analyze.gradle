@@ -40,19 +40,12 @@ configure(rootProject) {
         onDuplicateClassWarnings {
           severity('ignore')
         }
-        // NOTE: DAGP advises demoting jackson-databind here from testImplementation to
-        // testRuntimeOnly. We intentionally do NOT follow that advice: the tests compile against
-        // mock-oauth2-server, whose classes reference Jackson's @JsonDeserialize annotations, so
-        // databind is needed on the test *compile* classpath (demoting it breaks compilation under
-        // -Werror). Left as a warning rather than enforced, per the report-not-fail policy below.
       }
 
       all {
-        // Report advice, don't fail the build. DAGP's advice is guidance, not law: some of it
-        // (notably api-vs-implementation promotions and a few test-scope demotions) needs
-        // case-by-case human judgment rather than blanket enforcement — e.g. demoting a
-        // test-compile dependency to testRuntimeOnly can break compilation when the dep is only
-        // referenced via a third-party annotation. Run `gradlew buildHealth` to see current advice.
+        // Report advice as warnings rather than failing the build: several categories
+        // (api-vs-implementation promotions, some test-scope changes) need case-by-case
+        // human judgment. Run `gradlew buildHealth` to see the current advice.
         onAny {
           severity('warn')
         }
