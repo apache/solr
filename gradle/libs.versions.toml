@@ -38,7 +38,7 @@ apache-kafka = "3.9.2"
 apache-log4j = "2.26.0"
 apache-lucene = "10.4.0"
 apache-opennlp = "2.5.10"
-apache-rat = "0.15"
+apache-rat = "0.18"
 apache-tika = "3.3.1"
 apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.5"
@@ -492,6 +492,7 @@ semver4j-semver4j = { module = "org.semver4j:semver4j", version.ref = "semver4j"
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jcloverslf4j = { module = "org.slf4j:jcl-over-slf4j", version.ref = "slf4j" }
 slf4j-jultoslf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "spotbugs" }
 squareup-okhttp3-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver" }
 squareup-okhttp3-okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "squareup-okhttp3-okhttp" }
