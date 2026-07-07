@@ -175,6 +175,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       client.requestWithBaseUrl(intendedUrl, new QueryRequest(q, SolrRequest.METHOD.GET), null);
       assertEquals(
           client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
+      // verify whether the default request timeout is infinite.
+      assertEquals(0, client.requestTimeoutMillis);
     }
   }
 
@@ -211,7 +213,9 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpJdkSolrClient client =
         (HttpJdkSolrClient)
-            builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH, 500, 500).build()) {
+            builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH, 500, 500)
+                .withRequestTimeout(500, TimeUnit.MILLISECONDS)
+                .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
