@@ -53,9 +53,9 @@ dependencies {
     exclude group: 'com.google.guava', module: 'guava'
   }
 
-  api(libs.apache.zookeeper.zookeeper, zkExcludes)
-  api(libs.apache.zookeeper.jute, zkExcludes)
-  api(variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}, zkExcludes)
+  implementation(libs.apache.zookeeper.zookeeper, zkExcludes)
+  implementation(libs.apache.zookeeper.jute, zkExcludes)
+  implementation(variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}, zkExcludes)
 
   implementation libs.commonsio.commonsio
   implementation libs.slf4j.api
@@ -63,9 +63,10 @@ dependencies {
   implementation libs.apache.log4j.core
   implementation libs.commonscli.commonscli
   implementation libs.opentelemetry.api
-  api(libs.opentelemetry.exporter.prometheus) {
+  implementation(libs.opentelemetry.exporter.prometheus) {
     transitive = false // most things don't want or already have
   }
+  implementation libs.opentelemetry.sdk.metrics // JettySolrRunner uses MetricReader; exporter is transitive=false
   implementation libs.prometheus.metrics.model
   implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server

@@ -40,7 +40,7 @@ dependencies {
   implementation libs.google.auth.credentials
   implementation libs.google.cloud.core
   implementation libs.google.cloud.corehttp
-  api(libs.google.cloud.storage) {
+  implementation(libs.google.cloud.storage) {
     exclude group: 'io.grpc', module: 'grpc-opentelemetry'
     exclude group: 'com.google.cloud.opentelemetry', module: 'exporter-metrics'
     exclude group: 'com.google.cloud', module: 'google-cloud-monitoring'

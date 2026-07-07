@@ -86,7 +86,7 @@ dependencies {
   implementation libs.apache.commons.math3
   implementation libs.commonsio.commonsio
   implementation libs.carrotsearch.hppc
-  api(libs.benmanes.caffeine) {transitive = false}
+  implementation(libs.benmanes.caffeine) {transitive = false}
 
   implementation libs.commonscodec.commonscodec
 
@@ -112,10 +112,10 @@ dependencies {
   testImplementation(libs.apache.curator.test, {
     exclude group: 'org.apache.zookeeper', module: 'zookeeper'
   })
-  api(libs.apache.zookeeper.zookeeper, {
+  implementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  api(libs.apache.zookeeper.jute) {
+  implementation(libs.apache.zookeeper.jute) {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
 
@@ -123,7 +123,7 @@ dependencies {
   runtimeOnly libs.xerial.snappy.java
   runtimeOnly libs.dropwizard.metrics.core
 
-  api(libs.jayway.jsonpath, {
+  implementation(libs.jayway.jsonpath, {
     exclude group: "net.minidev", module: "json-smart"
   })
 
@@ -132,10 +132,10 @@ dependencies {
   // OpenTelemetry
   api libs.opentelemetry.api
   implementation libs.opentelemetry.context
-  api(libs.opentelemetry.exporter.prometheus) {
+  implementation(libs.opentelemetry.exporter.prometheus) {
     transitive = false
   }
-  api(libs.opentelemetry.sdk) {
+  implementation(libs.opentelemetry.sdk) {
     exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
   }
   implementation libs.opentelemetry.sdk.metrics
