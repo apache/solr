@@ -110,4 +110,20 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
           CloudSolrClient.CloudSolrClientConnection.parse(zkClient().getZkServerAddress()));
     }
   }
+
+  @Test
+  public void testStreamingClientsDefaultToNoPracticalTimeout() {
+    try (SolrClientCache cache = new SolrClientCache()) {
+      // Use the test helper so we can inspect configured values without reflection.
+      var builder = cache.newHttpSolrClientBuilderForTest("http://localhost:8983/solr");
+      Assert.assertEquals(
+          "request timeout for streaming cache clients should default to no practical limit",
+          SolrClientCache.NO_TIMEOUT,
+          builder.getRequestTimeoutMillis());
+      Assert.assertEquals(
+          "idle timeout for streaming cache clients should default to no practical limit",
+          SolrClientCache.NO_TIMEOUT,
+          builder.getIdleTimeoutMillis());
+    }
+  }
 }
