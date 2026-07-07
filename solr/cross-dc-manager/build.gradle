@@ -72,6 +72,16 @@ dependencies {
       classifier = "test"
     }
   }
+  // NOTE: DAGP reports the kafka-clients test-classifier jar as unused because no test *compiles*
+  // against it. It is nonetheless required at *runtime*: EmbeddedKafkaCluster (kafka-streams test
+  // jar) loads org.apache.kafka.test.TestCondition from it, so removing it throws
+  // ClassNotFoundException in the *IntegrationTest suites. Kept as testRuntimeOnly, not the
+  // testImplementation it was before, since nothing references it at compile time.
+  testRuntimeOnly(libs.apache.kafka.clients) {
+    artifact {
+      classifier = "test"
+    }
+  }
   testRuntimeOnly(libs.apache.kafka.kafka213) {
     artifact {
       classifier = "test"
