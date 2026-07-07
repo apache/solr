@@ -31,17 +31,17 @@ dependencies {
   implementation project(':solr:modules:opentelemetry')
 
   implementation platform(libs.opentelemetry.bom)
-  implementation libs.opentelemetry.api
+  api libs.opentelemetry.api
   implementation libs.opentelemetry.sdk.metrics
   implementation libs.eclipse.jetty.server
   implementation libs.eclipse.jetty.ee10.servlet
   implementation libs.google.guava
-  implementation libs.jakarta.servlet.api
+  api libs.jakarta.servlet.api
   implementation libs.slf4j.api
   runtimeOnly libs.google.protobuf.javautils
   runtimeOnly libs.commonscodec.commonscodec
 
-  implementation libs.apache.kafka.clients
+  api libs.apache.kafka.clients
   runtimeOnly libs.apache.kafka.kafka213
   runtimeOnly libs.apache.kafka.streams
 

@@ -28,9 +28,9 @@ dependencies {
 
   implementation libs.slf4j.api
 
-  implementation libs.opentelemetry.api
-  implementation libs.opentelemetry.sdk
-  implementation libs.opentelemetry.sdk.metrics
+  api libs.opentelemetry.api
+  api libs.opentelemetry.sdk
+  api libs.opentelemetry.sdk.metrics
   implementation libs.opentelemetry.sdk.extension.autoconfigure
   implementation libs.opentelemetry.exporter.otlp
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these

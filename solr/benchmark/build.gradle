@@ -49,10 +49,10 @@ dependencies {
 
   implementation libs.apache.lucene.core
   implementation libs.commonsio.commonsio
-  implementation libs.apache.commons.math3
+  api libs.apache.commons.math3
   implementation libs.jctools.core
-  implementation libs.quicktheories.quicktheories
-  implementation libs.openjdk.jmh.core
+  api libs.quicktheories.quicktheories
+  api libs.openjdk.jmh.core
   implementation libs.slf4j.api
   runtimeOnly libs.lmax.disruptor
   annotationProcessor libs.openjdk.jmh.generatorannprocess

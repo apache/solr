@@ -27,12 +27,12 @@ dependencies {
   api project(':solr:solrj')
   implementation project(':solr:solrj-jetty')
 
-  implementation libs.bc.jose4j
-  implementation libs.eclipse.jetty.client
+  api libs.bc.jose4j
+  api libs.eclipse.jetty.client
   implementation libs.eclipse.jetty.http
   implementation libs.google.guava
   implementation libs.slf4j.api
-  implementation libs.jakarta.servlet.api
+  api libs.jakarta.servlet.api
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit

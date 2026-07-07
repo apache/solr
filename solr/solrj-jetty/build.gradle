@@ -28,9 +28,9 @@ dependencies {
   // Jetty dependencies - moved from solr-solrj
   api libs.eclipse.jetty.http2.client
   implementation libs.eclipse.jetty.http2.httpclienttransport
-  implementation libs.eclipse.jetty.http
-  implementation libs.eclipse.jetty.client
-  implementation libs.eclipse.jetty.util
+  api libs.eclipse.jetty.http
+  api libs.eclipse.jetty.client
+  api libs.eclipse.jetty.util
   implementation libs.eclipse.jetty.io
   runtimeOnly libs.eclipse.jetty.alpnjavaclient
 

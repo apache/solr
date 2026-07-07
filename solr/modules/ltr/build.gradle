@@ -31,7 +31,7 @@ configurations {
 dependencies {
   api project(':solr:core')
   api project(':solr:solrj')
-  implementation libs.apache.lucene.core
+  api libs.apache.lucene.core
   implementation libs.slf4j.api
 
   // Used by example scripts

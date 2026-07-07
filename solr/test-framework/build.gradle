@@ -35,9 +35,9 @@ dependencies {
   api project(':solr:api')
   api project(':solr:solrj-zookeeper')
   api libs.apache.lucene.testframework
-  implementation libs.apache.lucene.core
-  implementation libs.apache.lucene.queries
-  implementation libs.apache.lucene.suggest
+  api libs.apache.lucene.core
+  api libs.apache.lucene.queries
+  api libs.apache.lucene.suggest
   var zkExcludes = {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   }
@@ -53,27 +53,27 @@ dependencies {
     exclude group: 'com.google.guava', module: 'guava'
   }
 
-  implementation(libs.apache.zookeeper.zookeeper, zkExcludes)
-  implementation(libs.apache.zookeeper.jute, zkExcludes)
+  api(libs.apache.zookeeper.zookeeper, zkExcludes)
+  api(libs.apache.zookeeper.jute, zkExcludes)
   implementation(variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}, zkExcludes)
 
   implementation libs.commonsio.commonsio
   implementation libs.slf4j.api
-  implementation libs.apache.log4j.api
-  implementation libs.apache.log4j.core
+  api libs.apache.log4j.api
+  api libs.apache.log4j.core
   implementation libs.commonscli.commonscli
-  implementation libs.opentelemetry.api
-  implementation(libs.opentelemetry.exporter.prometheus) {
+  api libs.opentelemetry.api
+  api(libs.opentelemetry.exporter.prometheus) {
     transitive = false // most things don't want or already have
   }
   implementation libs.opentelemetry.sdk.metrics // JettySolrRunner uses MetricReader; exporter is transitive=false
-  implementation libs.prometheus.metrics.model
-  implementation libs.jakarta.servlet.api
-  implementation libs.eclipse.jetty.server
-  implementation libs.eclipse.jetty.client
+  api libs.prometheus.metrics.model
+  api libs.jakarta.servlet.api
+  api libs.eclipse.jetty.server
+  api libs.eclipse.jetty.client
   implementation libs.eclipse.jetty.http
   implementation libs.eclipse.jetty.session
-  implementation libs.eclipse.jetty.ee10.servlet
+  api libs.eclipse.jetty.ee10.servlet
   implementation libs.eclipse.jetty.util
   implementation libs.eclipse.jetty.alpnserver
   runtimeOnly(libs.eclipse.jetty.alpnjavaserver, {
@@ -83,9 +83,9 @@ dependencies {
   implementation libs.eclipse.jetty.http2.server
   implementation libs.eclipse.jetty.http2.common
 
-  implementation libs.carrotsearch.randomizedtesting.runner
-  implementation libs.junit.junit
-  implementation libs.hamcrest.hamcrest
+  api libs.carrotsearch.randomizedtesting.runner
+  api libs.junit.junit
+  api libs.hamcrest.hamcrest
   implementation(libs.prometheus.metrics.expositionformats, {
     exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
     exclude group: "io.prometheus", module: "prometheus-metrics-config"
