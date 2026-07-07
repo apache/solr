@@ -39,7 +39,6 @@ dependencies {
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
-  testImplementation project(':solr:solrj')
   testImplementation project(':solr:solrj-jetty')
 
   // ideally ZK centric tests move to solrj-zookeeper but sometimes we depend on ZK here anyway

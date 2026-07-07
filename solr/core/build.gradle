@@ -169,7 +169,6 @@ dependencies {
 
   testRuntimeOnly project(':solr:modules:analysis-extras')
 
-  testImplementation project(':solr:core')
   testImplementation project(':solr:test-framework')
 
   testImplementation libs.apache.lucene.testframework
