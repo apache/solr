@@ -123,7 +123,7 @@ public interface JsonTextWriter extends TextWriter {
           case '\u2029':
             unicodeEscape(getWriter(), ch);
             break;
-            // case '/':
+          // case '/':
           default:
             {
               if (ch <= 0x1F) {

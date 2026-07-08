@@ -81,10 +81,25 @@ Solr 10.1 nodes only send and accept the `SolrAuthV2` (v2) header for inter-node
 Before performing a rolling upgrade to 10.1, ensure no node in the cluster has `solr.pki.sendVersion=v1` set, as those nodes would send the legacy `SolrAuth` header that 10.1 nodes will reject.
 The `solr.pki.sendVersion` and `solr.pki.acceptVersions` system properties are no longer recognized in 10.1 and can be removed from your configuration.
 
+The Basic Authentication password policy has been strengthened: a password may no longer be equal to its username.
+Login attempts where the password equals the username are now rejected, and creating or editing such a user (via the Admin UI, the Authentication API, or `bin/solr auth`) is no longer allowed.
+
+If you are upgrading and still have Basic Auth users whose password equals their username, you can temporarily re-enable the old behavior by setting the system property `-Dsolr.security.auth.basicauth.allowuseraspassword=true` (or the environment variable `SOLR_SECURITY_AUTH_BASICAUTH_ALLOWUSERASPASSWORD=true`).
+When enabled, this escape hatch relaxes both the login-time check and the user creation/editing check, so existing accounts keep working and can still be managed.
+It is intended as a temporary measure while you migrate the affected accounts to stronger passwords, and should be removed once that is done.
+
 === SolrJ
 
 HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
 Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
+
+=== Embedded Jetty Configuration
+
+Solr 10.1 upgrades the embedded server to Eclipse Jetty 12.1, which removed Jetty's directory-scanning deployer (the `DeploymentManager` and `ContextProvider` classes).
+Because Solr serves a single, statically-known webapp, that webapp is now deployed directly in `server/etc/jetty.xml`, and the `server/contexts/solr-jetty-context.xml` file has been removed.
+
+Advanced users who relied on Jetty scanning the `server/contexts/` directory to auto-deploy additional context descriptors will find that this no longer happens.
+To deploy an extra context, or to customize how the Solr webapp itself is deployed, edit `server/etc/jetty.xml` directly and add the context there.
 
 == Solr 10.0
 
