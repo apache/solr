@@ -74,6 +74,7 @@ final class OverseerElectionContext extends ElectionContext {
       if (!this.isClosed && !shutDown) {
         overseer.start(id);
       } else {
+        Thread.dumpStack();
         log.warn(
             "ZOMBIE LEADER: created leader registration {} -> {} but skipping overseer.start() "
                 + "because the election context was closed underneath us (isClosed={}, shutDown={}). "
@@ -95,6 +96,7 @@ final class OverseerElectionContext extends ElectionContext {
 
   @Override
   public synchronized void close() {
+    Thread.dumpStack();
     this.isClosed = true;
     overseer.close();
   }
