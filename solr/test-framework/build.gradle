@@ -34,10 +34,12 @@ dependencies {
   api project(':solr:solrj-jetty')
   api project(':solr:api')
   implementation project(':solr:solrj-zookeeper')
+
   api libs.apache.lucene.testframework
   implementation libs.apache.lucene.core
   implementation libs.apache.lucene.queries
   implementation libs.apache.lucene.suggest
+
   var zkExcludes = {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   }
@@ -68,6 +70,7 @@ dependencies {
   }
   implementation libs.opentelemetry.sdk.metrics // JettySolrRunner uses MetricReader; exporter is transitive=false
   implementation libs.prometheus.metrics.model
+
   implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server
   implementation libs.eclipse.jetty.client
@@ -86,6 +89,7 @@ dependencies {
   implementation libs.carrotsearch.randomizedtesting.runner
   implementation libs.junit.junit
   implementation libs.hamcrest.hamcrest
+
   implementation(libs.prometheus.metrics.expositionformats, {
     exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
     exclude group: "io.prometheus", module: "prometheus-metrics-config"
