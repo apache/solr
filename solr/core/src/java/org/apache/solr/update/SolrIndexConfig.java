@@ -31,6 +31,7 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.NamedList;
@@ -268,6 +269,15 @@ public class SolrIndexConfig implements MapSerializable {
     if (mergePolicy instanceof SortingMergePolicy) {
       Sort indexSort = ((SortingMergePolicy) mergePolicy).getSort();
       iwc.setIndexSort(indexSort);
+    }
+
+    if (iwc.getIndexSort() != null
+        && schema.isUsableForChildDocs()
+        && core.getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_9_12_3)) {
+      // Lucene 9.12.3 is when this branch gained parent-field support; earlier
+      // luceneMatchVersion settings didn't set it. This version check allows an upgrading
+      // user to continue to do index sorting.
+      iwc.setParentField(IndexSchema.IS_ROOT_FIELD_NAME);
     }
 
     iwc.setUseCompoundFile(useCompoundFile);
