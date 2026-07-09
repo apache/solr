@@ -15,7 +15,7 @@ Used to validate new release candidates (RC). The script downloads an RC from a 
 or local folder, then runs a number of sanity checks on the artifacts, and then runs
 the full tests.
 
-    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed] [--local-keys PATH] [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--test-alt-java TEST_ALT_JAVA] [--download-only] [--dev-mode] url ...
+    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed] [--local-keys PATH] [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--download-only] [--dev-mode] url ...
 
     Utility to test a release.
 
@@ -31,8 +31,6 @@ the full tests.
       --revision REVISION   GIT revision number that release was built with, defaults to that in URL
       --version X.Y.Z(-ALPHA|-BETA)?
                             Version of the release, defaults to that in URL
-      --test-alt-java TEST_ALT_JAVA
-                            Path to Java alternative home directory, to run tests with if specified
       --download-only       Only perform download and sha hash check steps
       --dev-mode            Enable dev mode, will not check branch compatibility
 

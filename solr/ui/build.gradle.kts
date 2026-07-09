@@ -98,7 +98,6 @@ kotlin {
             implementation(project.dependencies.platform(libs.ktor.bom))
             implementation(libs.ktor.client.auth)
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.cio)
             implementation(libs.ktor.client.contentNegotiation)
             implementation(libs.ktor.client.serialization.json)
             implementation(libs.squareup.okio)
@@ -114,8 +113,15 @@ kotlin {
             implementation(libs.ktor.client.mock)
         }
 
+        val wasmJsMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.js)
+            }
+        }
+
         val desktopMain by getting {
             dependencies {
+                implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.server.core)
                 implementation(libs.ktor.server.cio)
                 implementation(libs.ktor.server.htmlBuilder)
@@ -172,6 +178,14 @@ compose.desktop {
             }
         }
     }
+}
+
+// Compose resource accessor generation is not reliably wired to all Kotlin
+// compile tasks (notably wasmJs), causing intermittent "source file not found"
+// for generated accessors. Wire it explicitly.
+val resourceAccessorTasks = tasks.matching { it.name.startsWith("generateResourceAccessorsFor") }
+tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
+    dependsOn(resourceAccessorTasks)
 }
 
 tasks.matching { task ->
