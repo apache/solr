@@ -126,7 +126,7 @@ public class JSONUtil {
         out.write('\\');
         out.write('f');
         break;
-        // case '/':
+      // case '/':
       case '\u2028': // valid JSON, but not valid json script
       case '\u2029':
         unicodeEscape(ch, out);

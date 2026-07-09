@@ -76,9 +76,6 @@ import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -281,9 +278,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     newRandomConfig();
 
     sslConfig = buildSSLConfig();
-    // based on randomized SSL config, set SocketFactoryRegistryProvider appropriately
-    HttpClientUtil.setSocketFactoryRegistryProvider(
-        sslConfig.buildClientSocketFactoryRegistryProvider());
     HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if (isSSLMode()) {
       // SolrCloud tests should usually clear this
@@ -316,7 +310,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } finally {
       TestInjection.reset();
       initCoreDataDir = null;
-      HttpClientUtil.resetHttpClientBuilder();
       HttpJettySolrClient.resetSslContextFactory();
 
       clearNumericTypesProperties();
@@ -2474,55 +2467,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         rsp -> rsp.getRequestStatus().isFinal());
   }
 
-  /**
-   * A variant of {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will
-   * randomize some internal settings.
-   */
-  public static class RandomizingCloudHttp2SolrClientBuilder extends CloudSolrClient.Builder {
-
-    public RandomizingCloudHttp2SolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
-      super(zkHosts, zkChroot);
-      randomizeCloudSolrClient();
-    }
-
-    public RandomizingCloudHttp2SolrClientBuilder(ClusterStateProvider stateProvider) {
-      super(new ArrayList<>());
-      this.stateProvider = stateProvider;
-      randomizeCloudSolrClient();
-    }
-
-    public RandomizingCloudHttp2SolrClientBuilder(MiniSolrCloudCluster cluster) {
-      super(new ArrayList<>());
-      if (random().nextBoolean()) {
-        this.zkHosts.add(cluster.getZkServer().getZkAddress());
-      } else {
-        populateSolrUrls(cluster);
-      }
-
-      randomizeCloudSolrClient();
-    }
-
-    private void populateSolrUrls(MiniSolrCloudCluster cluster) {
-      if (random().nextBoolean()) {
-        final List<JettySolrRunner> solrNodes = cluster.getJettySolrRunners();
-        for (JettySolrRunner node : solrNodes) {
-          this.solrUrls.add(node.getBaseUrl().toString());
-        }
-      } else {
-        this.solrUrls.add(cluster.getRandomJetty(random()).getBaseUrl().toString());
-      }
-    }
-
-    private void randomizeCloudSolrClient() {
-      this.directUpdatesToLeadersOnly = random().nextBoolean();
-      this.shardLeadersOnly = random().nextBoolean();
-      this.parallelUpdates = random().nextBoolean();
-    }
-  }
-
-  /** A variant of {@code CloudSolrClient.Builder} that will randomize some internal settings. */
-  @Deprecated
-  public static class RandomizingCloudSolrClientBuilder extends CloudLegacySolrClient.Builder {
+  /** A builder that will randomize some internal settings. */
+  public static class RandomizingCloudSolrClientBuilder extends CloudSolrClient.Builder {
 
     public RandomizingCloudSolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);
@@ -2530,11 +2476,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     public RandomizingCloudSolrClientBuilder(ClusterStateProvider stateProvider) {
+      super(new ArrayList<>());
       this.stateProvider = stateProvider;
       randomizeCloudSolrClient();
     }
 
     public RandomizingCloudSolrClientBuilder(MiniSolrCloudCluster cluster) {
+      super(new ArrayList<>());
       if (random().nextBoolean()) {
         this.zkHosts.add(cluster.getZkServer().getZkAddress());
       } else {
@@ -2569,12 +2517,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @param url the base URL for a Solr node. Should not contain a core or collection name.
    */
-  public static HttpSolrClient getHttpSolrClient(String url) {
-    return new HttpSolrClient.Builder(url).build();
+  @Deprecated // probably use an existing client like on a testRule/jettyRunner
+  public static HttpJettySolrClient getHttpSolrClient(String url) {
+    return new HttpJettySolrClient.Builder(url).build();
   }
 
   /** Create a basic HttpSolrClient pointed at the specified replica */
-  public static HttpSolrClient getHttpSolrClient(Replica replica) {
+  @Deprecated // probably use an existing client like on a testRule/jettyRunner
+  public static HttpJettySolrClient getHttpSolrClient(Replica replica) {
     return getHttpSolrClient(replica.getBaseUrl(), replica.getCoreName());
   }
 
@@ -2587,8 +2537,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param defaultCoreName the name of a core that the created client should default to when making
    *     core-aware requests
    */
-  public static HttpSolrClient getHttpSolrClient(String url, String defaultCoreName) {
-    return new HttpSolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
+  @Deprecated // probably use an existing client like on a testRule/jettyRunner
+  public static HttpJettySolrClient getHttpSolrClient(String url, String defaultCoreName) {
+    return new HttpJettySolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
   }
 
   /**
@@ -2646,14 +2597,20 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   protected String getSaferTestName() {
-    // test names can hold additional info, like the test seed
-    // only take to first space
+    // test names can hold additional info, like the test seed:
+    //   "testFoo {seed=[...]}" (older runners) or "testFoo[seed=[...]]" (randomizedtesting 2.9+)
+    // keep only the method name, up to the first space or '['
     String testName = getTestName();
-    int index = testName.indexOf(' ');
-    if (index > 0) {
-      testName = testName.substring(0, index);
+    int index = testName.length();
+    int space = testName.indexOf(' ');
+    if (space > 0) {
+      index = space;
     }
-    return testName;
+    int bracket = testName.indexOf('[');
+    if (bracket > 0 && bracket < index) {
+      index = bracket;
+    }
+    return testName.substring(0, index);
   }
 
   @BeforeClass

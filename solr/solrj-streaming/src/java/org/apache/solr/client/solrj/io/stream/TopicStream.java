@@ -40,6 +40,7 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -80,25 +81,32 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   private transient boolean doCloseCache;
 
   public TopicStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String checkpointCollection,
       String collection,
       String id,
       long initialCheckpoint,
       long checkpointEvery,
       SolrParams params) {
-    init(zkHost, checkpointCollection, collection, id, initialCheckpoint, checkpointEvery, params);
+    init(
+        solrConnection,
+        checkpointCollection,
+        collection,
+        id,
+        initialCheckpoint,
+        checkpointEvery,
+        params);
   }
 
   private void init(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String checkpointCollection,
       String collection,
       String id,
       long initialCheckpoint,
       long checkpointEvery,
       SolrParams params) {
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     ModifiableSolrParams mParams = new ModifiableSolrParams(params);
 
     if (mParams.getParams("rows") == null) {
@@ -119,7 +127,6 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     String checkpointCollectionName = factory.getValueOperand(expression, 0);
     String collectionName = factory.getValueOperand(expression, 1);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
     StreamExpressionNamedParameter idParam = factory.getNamedOperand(expression, ID);
     if (null == idParam) {
@@ -178,37 +185,14 @@ public class TopicStream extends CloudSolrStream implements Expressible {
               expression));
     }
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost")
-          && !namedParam.getName().equals(ID)
-          && !namedParam.getName().equals("checkpointEvery")) {
-        params.set(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(
+            namedParams, Set.of("zkHost", "solrConnection", ID, "checkpointEvery"));
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    if (null == zkHost) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    // We've got all the required items
     init(
-        zkHost,
+        solrConnection,
         checkpointCollectionName,
         collectionName,
         ((StreamExpressionValue) idParam.getParameter()).getValue(),
@@ -238,8 +222,8 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), value));
     }
 
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
     expression.addParameter(new StreamExpressionNamedParameter(ID, id));
     if (initialCheckpoint > -1) {
       expression.addParameter(
@@ -407,7 +391,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void getCheckpoints() throws IOException {
-    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+    var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
     this.checkpoints = new HashMap<>();
     List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -469,7 +453,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       return;
     }
 
-    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+    var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
     UpdateRequest request = new UpdateRequest();
     request.setParam("collection", checkpointCollection);
     SolrInputDocument doc = new SolrInputDocument();
@@ -488,7 +472,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void getPersistedCheckpoints() throws IOException {
-    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+    var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
     List<Slice> slices = CloudSolrStream.getSlices(checkpointCollection, cloudSolrClient, false);
 
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -522,7 +506,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   @Override
   protected void constructStreams() throws IOException {
-    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+    var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
     List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
     ModifiableSolrParams mParams = new ModifiableSolrParams(params);

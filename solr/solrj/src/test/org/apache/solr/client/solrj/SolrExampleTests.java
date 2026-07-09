@@ -44,10 +44,10 @@ import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
@@ -722,7 +722,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     doc.addField("id", "DOCID2");
     doc.addField("name", "hello");
 
-    if (client instanceof HttpSolrClient) {
+    if (client instanceof HttpJettySolrClient) {
       ex = expectThrows(SolrException.class, () -> client.add(doc));
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().indexOf("contains multiple values for uniqueKey") > 0);
@@ -2386,7 +2386,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     doc.addField(field, oper);
     try {
       client.add(doc);
-      if (client instanceof HttpSolrClient) {
+      if (client instanceof HttpJettySolrClient) {
         // XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
       } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
@@ -2398,8 +2398,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             concurrentClient.lastError.getMessage().contains("version conflict"));
       } else if (client
           instanceof
-          SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient
-          concurrentClient) {
+          SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
         client.commit(); // just to be sure the client has sent the doc
         assertNotNull(
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);

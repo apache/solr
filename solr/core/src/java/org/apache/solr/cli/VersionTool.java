@@ -26,8 +26,9 @@ import org.apache.solr.client.solrj.response.SystemInfoResponse;
 /**
  * Supports version command in the bin/solr script.
  *
- * <p>Prints the client (CLI) version. When {@code --solr-url} is provided, also prints the version
- * of the remote Solr server.
+ * <p>Prints the client (CLI) version. When a connection target ({@code -s}/{@code
+ * --solr-connection}, {@code --solr-url}, or {@code --zk-host}) is provided, also prints the
+ * version of the remote Solr server.
  */
 public class VersionTool extends ToolBase {
 
@@ -43,16 +44,16 @@ public class VersionTool extends ToolBase {
   @Override
   public Options getOptions() {
     return super.getOptions()
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     echo("Client version: " + SolrVersion.LATEST);
 
-    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
-    if (solrUrl != null) {
+    if (CLIUtils.hasConnectionOption(cli)) {
+      String solrUrl = CLIUtils.normalizeSolrUrl(cli);
       String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
       try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
         SystemInfoResponse sysResponse = new SystemInfoRequest().process(solrClient);
