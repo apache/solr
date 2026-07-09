@@ -22,7 +22,6 @@ description = 'Open Telemetry (OTEL) tracer and OTLP exporter'
 dependencies {
   implementation platform(project(':platform'))
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
 
   implementation platform(libs.netty.bom)
   implementation platform(libs.opentelemetry.bom)
