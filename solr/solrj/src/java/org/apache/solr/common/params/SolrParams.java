@@ -508,8 +508,7 @@ public abstract class SolrParams
    */
   @Override
   public String toString() {
-    StringJoiner query = new StringJoiner("&", "", "");
-    query.setEmptyValue("");
+    StringJoiner query = new StringJoiner("&");
     for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
       final String name = it.next();
       for (String val : getParams(name)) {

@@ -166,7 +166,6 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
       MultivaluedMap<String, String> unfilteredParams) {
     final var paramNamesToLog = getParamNamesToLog(unfilteredParams);
     var output = new StringJoiner("&");
-    output.setEmptyValue("");
     unfilteredParams.entrySet().stream()
         .sorted(Map.Entry.comparingByKey())
         .forEachOrdered(
