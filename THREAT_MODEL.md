@@ -35,12 +35,12 @@
   *(inferred)* has a §14 open question.
 - **Draft confidence:** ~22 documented / 0 maintainer / 24 inferred.
 
-**What it is.** Solr is a standalone **search server** (HTTP/HTTP2 API) that
+**What it is.** Solr is a **search server** (HTTP/HTTP2 API) that
 indexes documents and serves queries, deployable as a single node or a
 **SolrCloud** cluster coordinated by ZooKeeper. It exposes query, update
 (indexing), and **admin/config** APIs; supports pluggable **authentication**
 and **authorization**; and can load custom code (the package manager, config
-API, contrib modules). The defining operational fact is Solr's long-standing
+API, modules). The defining operational fact is Solr's long-standing
 official stance: **Solr is meant to run inside a trusted environment with
 authentication enabled — an unauthenticated Solr must never be exposed to an
 untrusted network.**
