@@ -18,6 +18,7 @@
 package org.apache.solr.util.configuration.providers;
 
 import java.util.EnumMap;
+import org.apache.solr.common.util.EnvUtils;
 
 /** System property based SSL configuration provider */
 public class SysPropSSLCredentialProvider extends AbstractSSLCredentialProvider {
@@ -28,10 +29,7 @@ public class SysPropSSLCredentialProvider extends AbstractSSLCredentialProvider 
 
   @Override
   protected String getCredential(String syspropKey) {
-    if (System.getProperty(syspropKey) != null) {
-      return System.getProperty(syspropKey);
-    } else {
-      return null;
-    }
+    String value = EnvUtils.getProperty(syspropKey);
+    return (value != null) ? value : null;
   }
 }

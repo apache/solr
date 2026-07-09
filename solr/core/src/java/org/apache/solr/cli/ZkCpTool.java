@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Compressor;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.NodeConfig;
@@ -154,7 +155,7 @@ public class ZkCpTool extends ToolBase {
     if (dstIsZk) {
       String solrHome = cli.getOptionValue(SOLR_HOME_OPTION);
       if (StrUtils.isNullOrEmpty(solrHome)) {
-        solrHome = System.getProperty("solr.home");
+        solrHome = EnvUtils.getProperty("solr.home", EnvUtils.getProperty("solr.solr.home"));
       }
 
       if (solrHome != null) {
