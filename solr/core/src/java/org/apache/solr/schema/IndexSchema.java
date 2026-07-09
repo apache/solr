@@ -104,6 +104,7 @@ public class IndexSchema {
   public static final String NEST_PARENT_FIELD_NAME = "_nest_parent_";
   public static final String NEST_PATH_FIELD_NAME = "_nest_path_";
   public static final String NESTED_VECTORS_PSEUDO_FIELD_NAME = "_nested_vectors_";
+  public static final String IS_ROOT_FIELD_NAME = "_is_root_";
   public static final String REQUIRED = "required";
   public static final String SCHEMA = "schema";
   public static final String SIMILARITY = "similarity";

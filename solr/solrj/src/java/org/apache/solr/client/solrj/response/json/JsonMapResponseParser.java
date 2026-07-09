@@ -20,10 +20,12 @@ package org.apache.solr.client.solrj.response.json;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
@@ -43,7 +45,8 @@ public class JsonMapResponseParser extends ResponseParser {
     @SuppressWarnings({"rawtypes"})
     Map map = null;
     try (InputStreamReader reader =
-        new InputStreamReader(body, encoding == null ? "UTF-8" : encoding)) {
+        new InputStreamReader(
+            body, encoding == null ? StandardCharsets.UTF_8 : IOUtils.charsetForName(encoding))) {
       ObjectBuilder builder = new ObjectBuilder(new JSONParser(reader));
       map = (Map) builder.getObject();
     } catch (JSONParser.ParseException e) {

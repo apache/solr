@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+  Custom RAT license families supplementing the built-in defaults.
+-->
+<rat-config>
+  <families>
+    <family id="MIT"      name="The MIT License"/>
+    <family id="BSD4"     name="Original BSD License (with advertising clause)"/>
+    <family id="BSD-modi" name="Modified BSD License"/>
+    <family id="GEN"      name="Generated"/>
+  </families>
+
+  <licenses>
+    <!-- BSD 4-clause: presence of advertising clause is a policy violation -->
+    <license family="BSD4" id="BSD4" name="BSD 4-Clause (advertising clause)">
+      <text>All advertising materials</text>
+    </license>
+
+    <!-- Various BSD-like third-party libraries with non-standard copyright headers -->
+    <license family="BSD-modi" id="BSD-modi" name="Modified BSD License">
+      <any>
+        <text>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS</text> <!-- d3.js -->
+        <text>THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS</text>          <!-- highlight.js -->
+      </any>
+    </license>
+
+    <!-- Inline MIT comment used by ui-grid bundled assets -->
+    <license family="MIT" id="MIT-uigrid" name="MIT (ui-grid)">
+      <text> ; License: MIT</text>
+    </license>
+
+    <!-- Machine-generated source files that carry no license header -->
+    <license family="GEN" id="GEN" name="Generated">
+      <any>
+        <!-- none so far -->
+      </any>
+    </license>
+  </licenses>
+
+  <approved>
+    <family license_ref="BSD-modi"/>
+    <family license_ref="GEN"/>
+    <!-- MIT is already approved by the default config; MIT-uigrid inherits that. -->
+    <!-- BSD4 is intentionally absent: matching files are policy violations. -->
+  </approved>
+</rat-config>
