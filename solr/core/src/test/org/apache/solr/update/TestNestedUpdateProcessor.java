@@ -691,8 +691,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
               "child_q", "(+" + inner_child_query + " +_nest_path_:*)");
         } else {
           return params(
-              "q",
-              "{!parent which='(*:* -_nest_path_:*)'}(+" + inner_child_query + " +_nest_path_:*)");
+              "q", "{!parent which=_nest_path_:\\/}(+" + inner_child_query + " +_nest_path_:*)");
         }
       } // else...
 
@@ -787,7 +786,9 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
         } else {
           return params(
               "q",
-              "{!child of='(*:* -_nest_path_:*)'}(+" + inner_parent_query + " -_nest_path_:*)");
+              "{!child of='{!field f=_nest_path_ v=/}'}(+"
+                  + inner_parent_query
+                  + " -_nest_path_:*)");
         }
       } // else...
 

@@ -273,3 +273,18 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
             "_version_":1676585794196733952}]}]
   }}
 ----
+
+=== Root Document Query Shortcut
+
+When working with hierarchical nested documents, you may frequently need to isolate or filter your search results exclusively to top-level "root" documents (documents that do not belong to a parent path layout).
+
+Instead of using a verbose negative field existence filter (like `*:* -_nest_path_:*`), the `NestPathField` type supports an explicit root document query shortcut. Passing either a single forward slash (`/`) or an empty string (`''`) automatically constructs a query matching all documents while excluding any nested child paths:
+
+[source,text]
+----
+# Targets only top-level root documents via the slash shortcut
+fq={!field f=_nest_path_}/
+
+# Alternative equivalent syntax using an empty parameter string
+fq={!field f=_nest_path_ v=''}
+----
