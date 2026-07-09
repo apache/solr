@@ -114,8 +114,8 @@ public class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
       boolean typeOk =
           switch (valueSchema) {
             case JsonStringSchema ignored -> generatedFieldValue instanceof String;
-            case JsonIntegerSchema ignored -> generatedFieldValue instanceof Integer
-                || generatedFieldValue instanceof Long;
+            case JsonIntegerSchema ignored ->
+                generatedFieldValue instanceof Integer || generatedFieldValue instanceof Long;
             case JsonNumberSchema ignored -> generatedFieldValue instanceof Number;
             case JsonBooleanSchema ignored -> generatedFieldValue instanceof Boolean;
             case JsonArraySchema ignored -> generatedFieldValue instanceof List;

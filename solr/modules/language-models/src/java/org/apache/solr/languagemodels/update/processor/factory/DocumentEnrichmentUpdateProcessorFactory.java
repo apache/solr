@@ -263,12 +263,12 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
                 + fieldType.getClass().getSimpleName());
 
     return switch (fieldType) {
-        // first check unsupported types and throw SolrException
+      // first check unsupported types and throw SolrException
       case DenseVectorField f -> throw unsupportedFieldTypeException;
       case UUIDField f -> throw unsupportedFieldTypeException;
       case NestPathField f -> throw unsupportedFieldTypeException;
 
-        // build JsonSchemaElement for supported types
+      // build JsonSchemaElement for supported types
       case StrField f -> new JsonStringSchema();
       case TextField f -> new JsonStringSchema();
       case DatePointField f -> new JsonStringSchema();
@@ -281,7 +281,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
 
       case BoolField f -> new JsonBooleanSchema();
 
-        // fall-back to SolrException
+      // fall-back to SolrException
       default -> throw unsupportedFieldTypeException;
     };
   }

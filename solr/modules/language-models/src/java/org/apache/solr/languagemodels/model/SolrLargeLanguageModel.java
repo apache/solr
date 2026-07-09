@@ -85,20 +85,22 @@ public class SolrLargeLanguageModel extends SolrLanguageModel implements Account
            * support, some of them may require to be handled in here as separate switch cases
            */
           switch (paramName) {
-            case TIMEOUT_PARAM -> builder
-                .getClass()
-                .getMethod(paramName, Duration.class)
-                .invoke(builder, Duration.ofSeconds((Long) params.get(paramName)));
+            case TIMEOUT_PARAM ->
+                builder
+                    .getClass()
+                    .getMethod(paramName, Duration.class)
+                    .invoke(builder, Duration.ofSeconds((Long) params.get(paramName)));
 
-            case MAX_RETRIES_PARAM, THINKING_BUDGET_TOKENS, RANDOM_SEED -> builder
-                .getClass()
-                .getMethod(paramName, Integer.class)
-                .invoke(builder, ((Long) params.get(paramName)).intValue());
+            case MAX_RETRIES_PARAM, THINKING_BUDGET_TOKENS, RANDOM_SEED ->
+                builder
+                    .getClass()
+                    .getMethod(paramName, Integer.class)
+                    .invoke(builder, ((Long) params.get(paramName)).intValue());
 
-              /*
-               * For primitive params if there's only one setter available, we call it.
-               * If there's choice we default to the string one
-               */
+            /*
+             * For primitive params if there's only one setter available, we call it.
+             * If there's choice we default to the string one
+             */
             default -> {
               ArrayList<Method> paramNameMatches = new ArrayList<>();
               for (var method : builder.getClass().getMethods()) {
