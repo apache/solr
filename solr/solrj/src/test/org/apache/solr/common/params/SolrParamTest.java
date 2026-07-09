@@ -363,11 +363,10 @@ public class SolrParamTest extends SolrTestCase {
 
     MultiMapSolrParams out = SolrRequestParsers.parseQueryString(queryString.substring(1));
     assertEquals(in, out);
-
   }
 
   @Test
-  public void testIfToStringCanBeParsed()  {
+  public void testIfToStringCanBeParsed() {
 
     final ModifiableSolrParams in = getDummySolrParams();
     String queryString = in.toString();
