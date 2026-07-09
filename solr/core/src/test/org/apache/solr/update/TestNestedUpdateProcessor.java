@@ -690,10 +690,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
               "child_q", "(+" + inner_child_query + " +_nest_path_:*)");
         } else {
           return params(
-              "q",
-              "{!parent which='{!field f=_nest_path_ v=/}'}(+"
-                  + inner_child_query
-                  + " +_nest_path_:*)");
+              "q", "{!parent which=_nest_path_:\\/}(+" + inner_child_query + " +_nest_path_:*)");
         }
       } // else...
 
