@@ -32,6 +32,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -87,9 +88,21 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
 
     List<String> nodeList = roles.computeIfAbsent(roleName, k -> new ArrayList<>());
     if (ADDROLE == operation) {
+      DeprecationLog.log(
+          "CollectionAPI-" + operation.toLower(),
+          "The "
+              + operation
+              + " API is deprecated and will be removed in Solr 11. "
+              + "Please transition to using Node Roles (-Dsolr.node.roles) at startup instead.");
       log.info("Overseer role added to {}", node);
       if (!nodeList.contains(node)) nodeList.add(node);
     } else if (REMOVEROLE == operation) {
+      DeprecationLog.log(
+          "CollectionAPI-" + operation.toLower(),
+          "The "
+              + operation
+              + " API is deprecated and will be removed in Solr 11. "
+              + "Please transition to using Node Roles (-Dsolr.node.roles) at startup instead.");
       log.info("Overseer role removed from {}", node);
       nodeList.remove(node);
     }
