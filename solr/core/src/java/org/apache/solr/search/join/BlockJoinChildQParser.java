@@ -90,7 +90,7 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
     }
 
     // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
-    // For root: (*:* -_nest_path_:*)
+    // For root: {!field f=_nest_path_ v='/'}
     final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
 
     // constrain the parent query to only match docs at exactly parentPath
