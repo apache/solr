@@ -31,11 +31,15 @@ buildscript {
 // Configure rat dependencies for use in the custom task.
 configure(rootProject) {
   configurations {
-    ratDeps
+    ratDeps {
+      exclude group: 'commons-logging', module: 'commons-logging'
+      exclude group: 'commons-cli', module: 'commons-cli'
+    }
   }
 
   dependencies {
     ratDeps libs.apache.rat.rat
+    ratDeps libs.slf4j.simple
   }
 }
 
@@ -104,62 +108,75 @@ allprojects {
     description = 'Runs Apache Rat checks.'
 
     ratClasspath.from(rootProject.configurations.ratDeps)
+    ratConfig.set(rootProject.layout.projectDirectory.file("gradle/validation/rat-config.xml"))
 
     def defaultScanFileTree = project.fileTree(projectDir, {
-      // Only check files tracked by git — skip untracked/gitignored files
-      // (IDE artifacts, AI assistant configs, etc.)
       def trackedFiles = gitTrackedFiles(projectDir)
       if (trackedFiles != null) {
-        exclude { element ->
-          // Allow directories through (they are just containers), exclude untracked files
-          !element.isDirectory() && !trackedFiles.contains(element.relativePath.pathString)
-        }
+        // Git checkout: only scan files in the git index — naturally excludes build
+        // output, gitignored files, and untracked files without explicit patterns.
+        include { f -> f.isDirectory() || trackedFiles.contains(f.relativePath.pathString) }
+
+        // The following are excluded from the source release, thus no header needed
+        exclude "dev-docs"
+        exclude "**/AGENTS.md"
+        exclude "**/.*" // e.g. .gradle, .github, .gitignore, etc.
+      } else {
+        // Source release (no git): scan everything, exclude generated/ignored paths manually.
+        include "**"
+
+        exclude ".gradle" // gradle will create this dir
       }
 
-      // Exclude the build directory — even though it's not git-tracked, Gradle
-      // validates input/output overlaps at configuration time before the git
-      // filter closure runs, so this must be excluded explicitly.
       exclude project.layout.buildDirectory.get().asFile.name
-      // similarly, at least one subproject writes to .gradle/ for config/setup
-      exclude ".gradle/**"
 
       // Don't check any of the subprojects - they have their own rat tasks.
-      exclude subprojects.collect {it.projectDir.name}
+      exclude subprojects.collect {
+        projectDir.toPath().relativize(it.projectDir.toPath()).toString().replace('\\', '/')
+      }
 
-      // The git index filter above excludes untracked files. These include
-      // patterns select the file types that should carry license headers.
-      include "**/*.xml"
-      include "**/*.md"
-      include "**/*.py"
-      include "**/*.sh"
-      include "**/*.bat"
-      include "**/*.gradle"
+      // Binary and media types — no text-based headers possible.
+      exclude "**/*.png"
+      exclude "**/*.jpg"
+      exclude "**/*.gif"
+      exclude "**/*.svg"
+      exclude "**/*.ico"
+      exclude "**/*.bin"
+      exclude "**/*.pem"
+      exclude "**/*.pdf"
 
-      // Include selected patterns from any source folders. We could make this
-      // relative to source sets but it seems to be of little value - all our source sets
-      // live under 'src' anyway.
-      include "src/**"
-      exclude "src/**/*.png"
-      exclude "src/**/*.txt"
-      exclude "src/**/*.zip"
-      exclude "src/**/*.properties"
-      exclude "src/**/*.utf8"
-      exclude "src/**/*.svg"
-      exclude "src/**/*.csv"
-
-      // TODO: SOLR-15601: Some of these should carry the license, perhaps?
-      exclude "**/*.html"
+      // Structured-data and config files that intentionally carry no license.
       exclude "**/*.json"
+      exclude "**/*.jsonl"
+      exclude "**/*.csv"
 
-      // Conditionally apply module-specific patterns. We do it here instead
-      // of reconfiguring each project because the provider can be made lazy
-      // and it's easier to manage this way.
+      exclude "**/*gradle.lockfile"
+
+      // TODO: SOLR-15601 ?
+      exclude "**/*.properties"
+      exclude "**/*.txt"
+
+      // TODO: SOLR-15601: HTML should carry the license, perhaps?
+      exclude "**/*.html"
+
+      // Conditionally apply module-specific patterns.
       switch (project.path) {
         case ":":
-          include "gradlew"
-          include "gradlew.bat"
-          // Exclude github stuff (templates, workflows).
-          exclude ".github"
+          // Composite included builds: skip build artifacts, src is already covered by "**".
+          exclude "build-tools/*/build"
+          // Non-subproject build output.
+          exclude "buildSrc/build"
+          exclude "dev-tools/solr-missing-doclet/build"
+          // IDE project files.
+          exclude "gradle/ide/eclipse"
+          exclude "gradle/validation/ecj-lint/ecj.javadocs.prefs"
+          // Generated/vendored build-tool resources.
+          exclude "gradle/documentation"
+          exclude "gradle/wrapper"
+          // rat-config.xml contains license-text data in its body, which confuses RAT's own detection.
+          exclude "gradle/validation/rat-config.xml"
+          // Kotlin JS dependency store.
+          exclude "kotlin-js-store"
 
           exclude "dev-tools/scripts/cloud.sh"
           exclude "dev-tools/scripts/README.md"
@@ -167,20 +184,24 @@ allprojects {
 
           // Exclude new CHANGELOG and version-summary for each release
           exclude "CHANGELOG.md"
-          exclude "changelog/**/version-summary.md"
-          exclude "changelog/.templates/*.md"
-          exclude "changelog/archive.md"
+          exclude "changelog"
+          break
 
-          // The root project also includes patterns for the include composite
-          // projects. Include their sources in the scan.
-          include "build-tools/build-infra/src/**"
-          include "build-tools/missing-doclet/src/**"
+        case ":solr":
+          // solr/ui is a registered subproject with its own rat task, but it may be disabled
+          exclude "ui"
+
+          exclude "licenses"
+          break
+
+        case ":solr:benchmark":
+          // this was generated, not hand-authored
+          exclude "jfr-profile.jfc"
           break
 
         case ":solr:modules:clustering":
           exclude "src/test-files/META-INF/services/*"
           break
-
 
         case ":solr:modules:ltr":
           // TODO: SOLR-15601: Some of these should carry the license, perhaps?
@@ -214,6 +235,11 @@ allprojects {
           exclude "**/*.xml"
           exclude "**/*.sh"
           exclude "**/*.bat"
+          exclude "**/*.cmd"
+          exclude "**/*.js"
+          exclude "modules"
+          // zoo.cfg intentionally has no header and serves as the RAT detection canary.
+          ratCanaryPath.set("/solr/zoo.cfg")
           break
 
         case ":solr:webapp":
@@ -221,8 +247,6 @@ allprojects {
           break
 
         case ":solr:solr-ref-guide":
-          include "*.yml"
-          include "**/*.adoc"
           exclude "ui-src/**"
           break
 
@@ -232,6 +256,8 @@ allprojects {
 
         case ":solr:example":
           exclude "**/*.xml"
+          exclude "**/*.cfg"
+          exclude "**/*.js"
           exclude "films/README.md"
           break
 
@@ -260,102 +286,52 @@ class RatTask extends DefaultTask {
   @InputFiles
   final ConfigurableFileCollection ratClasspath = project.objects.fileCollection()
 
-  def generateReport(File reportFile) {
-    // Set up ant rat task.
+  @InputFile
+  final RegularFileProperty ratConfig = project.objects.fileProperty()
+
+  /** Path (as reported by RAT, with leading /) of a file with no header used to verify detection. */
+  @Input
+  @Optional
+  final Property<String> ratCanaryPath = project.objects.property(String)
+
+  @TaskAction
+  def execute() {
+    // RAT's Ant task has shared static state; synchronize to prevent parallel-execution interference.
+    synchronized (RatTask.class) { doRat() }
+  }
+
+  private void doRat() {
     ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', classpath: ratClasspath.asPath)
 
-    // Collect all output files for debugging.
-    String inputFileList = inputFileTrees.get().collectMany {fileTree ->
-      fileTree.asList()
-    }.sort().join("\n")
-    project.file(reportFile.path.replaceAll('.xml$', '-filelist.txt')).setText(inputFileList,
-        "UTF-8")
+    File reportFile = xmlReport.get().asFile
+    reportFile.parentFile.mkdirs()
 
-    // Run rat via ant.
-    ant.report(format: 'xml', reportFile: reportFile, addDefaultLicenseMatchers: true) {
+    ant.report(outputStyle: 'xml', outputFile: reportFile.absolutePath) {
       // Pass all gradle file trees to the ant task (Gradle's internal adapters are used).
       inputFileTrees.get().each {fileTree ->
         fileTree.addToAntBuilder(ant, 'resources', FileCollection.AntType.ResourceCollection)
       }
-
-      // BSD 4-clause stuff (is disallowed below)
-      substringMatcher(licenseFamilyCategory: "BSD4 ",
-          licenseFamilyName: "Original BSD License (with advertising clause)") {
-        pattern(substring: "All advertising materials")
+      config {
+        fileset(file: ratConfig.get().asFile.absolutePath)
       }
-
-      // BSD-like stuff
-      substringMatcher(licenseFamilyCategory: "BSD  ", licenseFamilyName: "Modified BSD License") {
-        // brics automaton
-        pattern(substring: "Copyright (c) 2001-2009 Anders Moeller")
-        // snowball
-        pattern(substring: "Copyright (c) 2001, Dr Martin Porter")
-        // UMASS kstem
-        pattern(substring: "THIS SOFTWARE IS PROVIDED BY UNIVERSITY OF MASSACHUSETTS AND OTHER CONTRIBUTORS")
-        // Egothor
-        pattern(substring: "Egothor Software License version 1.00")
-        // JaSpell
-        pattern(substring: "Copyright (c) 2005 Bruno Martins")
-        // d3.js
-        pattern(substring: "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS")
-        // highlight.js
-        pattern(substring: "THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS")
-      }
-
-      // MIT-like
-      substringMatcher(licenseFamilyCategory: "MIT  ", licenseFamilyName: "Modified BSD License") {
-        // ICU license
-        pattern(substring: "Permission is hereby granted, free of charge, to any person obtaining a copy")
-        // ui-grid
-        pattern(substring: " ; License: MIT")
-      }
-
-      // Apache
-      substringMatcher(licenseFamilyCategory: "AL   ", licenseFamilyName: "Apache") {
-        pattern(substring: "Licensed to the Apache Software Foundation (ASF) under")
-        // this is the old - school one under some files
-        pattern(substring: 'Licensed under the Apache License, Version 2.0 (the "License")')
-      }
-
-      substringMatcher(licenseFamilyCategory: "GEN  ", licenseFamilyName: "Generated") {
-        // svg files generated by gnuplot
-        pattern(substring: "Produced by GNUPLOT")
-        // snowball stemmers generated by snowball compiler
-        pattern(substring: "Generated by Snowball")
-        // parsers generated by antlr
-        pattern(substring: "ANTLR GENERATED CODE")
-      }
-
-      approvedLicense(familyName: "Apache")
-      approvedLicense(familyName: "The MIT License")
-      approvedLicense(familyName: "Modified BSD License")
-      approvedLicense(familyName: "Generated")
     }
-  }
 
-  def printUnknownFiles(File reportFile) {
     def ratXml = new XmlSlurper().parse(reportFile)
-    def errors = []
-    ratXml.resource.each {resource ->
-      if (resource.'license-approval'.@name.text() == "false") {
-        errors << "Unknown license: ${resource.@name.text()}"
+    def violations = ratXml.resource
+        .findAll { it.license.any { lic -> lic.@approval.text() == 'false' } }
+        .collect { resource ->
+          def licName = resource.license.find { lic -> lic.@approval.text() == 'false' }.@name.text()
+          "${resource.@name.text()}  ${licName}"
+        }
+    if (ratCanaryPath.present) {
+      def canary = ratCanaryPath.get()
+      def hit = violations.find { it.startsWith(canary) }
+      if (hit == null) {
+        throw new GradleException("RAT self-test failed: '${canary}' was not flagged — is license detection broken?")
       }
+      violations.remove(hit)
     }
-    def checkProp = "validation.rat.failOnError"
-    project.failOrWarn(checkProp, "Detected license header issues", errors)
-  }
-
-  @TaskAction
-  def execute() {
-    def origEncoding = System.getProperty("file.encoding")
-    try {
-      File reportFile = xmlReport.get().asFile
-      generateReport(reportFile)
-      printUnknownFiles(reportFile)
-    } finally {
-      if (System.getProperty("file.encoding") != origEncoding) {
-        throw new GradleException("Something is wrong: Apache RAT changed file.encoding to ${System.getProperty('file.encoding')}?")
-      }
-    }
+    violations.each { logger.error(it.toString()) }
+    project.failOrWarn("validation.rat.failOnError", "Detected license header issues", violations)
   }
 }

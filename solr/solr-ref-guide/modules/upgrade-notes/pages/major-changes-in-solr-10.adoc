@@ -36,9 +36,15 @@ Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
 == Solr 10.1
 
+=== Misc
+
 For SSL (https), it's no longer necessary to set the "urlScheme" cluster property since the `SOLR_SSL_ENABLED` env var (or `solr.ssl.enabled` sys-prop) suffices.
 These are now honored by CloudSolrClient, as well as scheme detection from the connection string / hosts.
 The "urlScheme" cluster property and httpShardHandlerFactory configuration is likely to be deprecated; feedback welcome.
+
+If you use xref:configuration-guide:index-segments-merging.adoc#customizing-merge-policies[`SortingMergePolicyFactory`] for index sorting and your schema declares `\_root_`, Solr configures a new mechanism in Lucene that affects the index to support nested/block documents with sorted indexes.
+This requires a fresh Solr 10.1 index.
+To retain compatibility with existing sorted indexes, deferring a reindex, keep `luceneMatchVersion` at 10.3.1 or earlier in solrconfig.xml.
 
 === Universal connection string support
 
