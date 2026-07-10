@@ -1,5 +1,5 @@
 title: Fix collapse on String performance regression due to Lucene upgrade
-type:
+type: changed
 authors:
   - name: Bartosz Fidrysiak
 links:
