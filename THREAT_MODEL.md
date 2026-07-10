@@ -47,15 +47,19 @@ untrusted network.**
 
 ## §2 Scope and intended use
 
-Solr is a **network service**, not a library. Roles:
+Solr is a **network service**, not a library. (Solr does ship a client
+library, **SolrJ** — a separate trust surface, out of scope for this model; a
+later pass can model it on its own.) Roles:
 
 - **Untrusted HTTP client** — only in scope *if Solr is intentionally exposed
   with authentication enabled*; an unauthenticated Solr is assumed network-
   isolated (§5a).
 - **Authenticated user** — holds credentials; trusted to authenticate, **not**
   to exceed their authorization (RuleBasedAuthorizationPlugin / permissions).
-- **Operator/admin** — trusted: configures auth/authz, locks down admin APIs,
-  controls ZooKeeper, network, and the JVM.
+- **Operator/admin** — trusted: owns **all configuration** (auth/authz plus any
+  config / configSet manipulation), locks down admin APIs, controls ZooKeeper,
+  network, and the JVM. There is deliberately no configuration role separate from
+  admin — configuration *is* an admin-level privilege.
 
 **Component families.**
 
@@ -78,7 +82,7 @@ Solr is a **network service**, not a library. Roles:
   operator who exposes an unauthenticated instance to the internet has violated
   the deployment contract. Findings whose precondition is "reach an
   unauthenticated admin/config endpoint over an untrusted network" are
-  `OUT-OF-MODEL: non-default-build` / operator misconfiguration (§5a/§9). *(documented
+  `OUT-OF-MODEL: non-default-config` / operator misconfiguration (§5a/§9). *(documented
   — the canonical Solr security guidance; Q-trustenv confirms.)*
 - **`solr-sandbox`** — experimental/incubating, not a supported release. Threat-
   model separately. *(inferred — Q-scope.)*
@@ -117,7 +121,7 @@ requires an unauthenticated, internet-exposed Solr is out of model (§5a).
 - **ZooKeeper** (SolrCloud) is a trusted config/state store. *(inferred — Q-zk.)*
 - Solr opens network listeners and (via packages/config) can load code by design.
 
-## §5a Build-time and configuration variants — **the central knobs**
+## §5a Configuration variants — **the central knobs**
 
 1. **Authentication + Authorization** — pluggable, **off by default**. Enabling
    them (BasicAuth/JWT/Kerberos + RuleBasedAuthorizationPlugin) is what makes the
@@ -131,8 +135,8 @@ requires an unauthenticated, internet-exposed Solr is out of model (§5a).
 
 **Wave-1 ruling needed (Q-trustenv/Q-features):** confirm that auth+authz-on (or
 network isolation) is the supported posture, so unauthenticated-exposure findings
-are `OUT-OF-MODEL: non-default-build`; and which risky toggles, if flipped on,
-move a finding to `OUT-OF-MODEL: non-default-build` vs remain `VALID`.
+are `OUT-OF-MODEL: non-default-config`; and which risky toggles, if flipped on,
+move a finding to `OUT-OF-MODEL: non-default-config` vs remain `VALID`.
 
 ## §6 Assumptions about inputs
 
@@ -222,15 +226,17 @@ move a finding to `OUT-OF-MODEL: non-default-build` vs remain `VALID`.
 - **"Admin/Config/Package API allows configuration change / code load"** reached
   by an authorized admin (or on an unauthenticated dev instance) — non-finding:
   it is the feature; `VALID` only across an authz boundary (§8/§9).
-  `OUT-OF-MODEL: non-default-build` when the precondition is unauthenticated
+  `OUT-OF-MODEL: non-default-config` when the precondition is unauthenticated
   exposure.
 - **SSRF via `shards`/streaming** without the operator's host restrictions —
   the network-control responsibility is the operator's (§9/§10).
 - **Velocity/scripting RCE** when the feature is enabled — `OUT-OF-MODEL:
-  non-default-build` (off by default, §5a).
+  non-default-config` (off by default, §5a).
 - **Findings in `solr-sandbox`** — `OUT-OF-MODEL: unsupported-component` (§3).
 - **ZooKeeper exposure** — operator-owned (§3/§10).
-- **Lucene-internal issues** — route to the Lucene project, not Solr.
+- **Third-party dependency issues (including Lucene)** — case-by-case: in model
+  only when there's a reasonable Solr-side mitigation; otherwise route to the
+  dependency's own project.
 
 ## §12 Conditions that would change this model
 
@@ -248,8 +254,8 @@ move a finding to `OUT-OF-MODEL: non-default-build` vs remain `VALID`.
 | `VALID-HARDENING` | No §8 break, but a §11 misuse is too easy. | §11 |
 | `OUT-OF-MODEL: trusted-input` | Requires control of operator config/authz rules. | §6/§10 |
 | `OUT-OF-MODEL: adversary-not-in-scope` | Needs ZK/host/JVM compromise. | §7 |
-| `OUT-OF-MODEL: non-default-build` | Unauthenticated exposure, or an opted-in risky feature. | §5a |
-| `OUT-OF-MODEL: unsupported-component` | `solr-sandbox` / test code / Lucene-internal. | §3 |
+| `OUT-OF-MODEL: non-default-config` | Unauthenticated exposure, or an opted-in risky feature. | §5a |
+| `OUT-OF-MODEL: unsupported-component` | `solr-sandbox` / test code. | §3 |
 | `BY-DESIGN: property-disclaimed` | Admin power, SSRF-needs-network-controls, exposure-without-auth. | §9 |
 | `KNOWN-NON-FINDING` | Matches §11a. | §11a |
 | `MODEL-GAP` | Unroutable. | triggers §12 |
@@ -260,11 +266,11 @@ move a finding to `OUT-OF-MODEL: non-default-build` vs remain `VALID`.
 
 - **Q-trustenv.** Confirm the deployment contract: Solr runs in a trusted
   environment with auth+authz enabled (or network-isolated), so
-  unauthenticated-exposure findings are `OUT-OF-MODEL: non-default-build`. Point
+  unauthenticated-exposure findings are `OUT-OF-MODEL: non-default-config`. Point
   at the canonical guidance you want cited when closing such reports. (§3/§5a/§9.)
 - **Q-features.** Which risky features are off by default, and for each: is "on"
   a supported posture (finding `VALID`) or operator-accepted-risk (finding
-  `OUT-OF-MODEL: non-default-build`)? (Velocity/scripting, remote streaming,
+  `OUT-OF-MODEL: non-default-config`)? (Velocity/scripting, remote streaming,
   package/code loading.) (§5a/§8.)
 - **Q-authz.** Is the §8 authorization claim made for RuleBasedAuthorizationPlugin
   specifically, and what is the default-permission posture? (§8.)
