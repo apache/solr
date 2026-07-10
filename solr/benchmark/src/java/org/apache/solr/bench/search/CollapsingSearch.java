@@ -146,7 +146,6 @@ public class CollapsingSearch {
       return docId % numGroups;
     }
 
-
     private void indexDocs(SolrBenchState state) throws Exception {
       int docsPerSegment = numDocs / numSegments;
       String[] groupIds = new String[numGroups];
