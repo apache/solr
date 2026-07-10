@@ -1,4 +1,4 @@
-title: Fix collapse on String performance regression due to Lucene upgrade
+title: Optimize collapse performance for String fields in Solr 9.x and later
 type: changed
 authors:
   - name: Bartosz Fidrysiak
