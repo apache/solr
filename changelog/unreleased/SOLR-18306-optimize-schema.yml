@@ -1,0 +1,8 @@
+title: Optimize IndexSchema.getDynamicFieldType() by checking cached fields before matching dynamic patterns.
+type: other
+authors:
+  - name: Pierre Salagnac
+links:
+  - name: SOLR-18306
+    url: https://issues.apache.org/jira/browse/SOLR-18306
+
