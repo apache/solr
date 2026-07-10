@@ -31,8 +31,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -123,16 +121,13 @@ public class CollapsingSearch {
       indexDocs(miniClusterState);
       miniClusterState.forceMerge(COLLECTION, numSegments);
 
-      int actualSegments = getActualSegmentCount(miniClusterState);
       BaseBenchState.log(
           "CollapsingSearch ready: numDocs="
               + numDocs
               + " numGroups="
               + numGroups
               + " numSegments(requested)="
-              + numSegments
-              + " numSegments(actual)="
-              + actualSegments);
+              + numSegments);
     }
 
     @Setup(Level.Iteration)
@@ -151,16 +146,6 @@ public class CollapsingSearch {
       return docId % numGroups;
     }
 
-    private int getActualSegmentCount(SolrBenchState state)
-        throws SolrServerException, IOException {
-      SolrQuery lukeQuery = new SolrQuery();
-      lukeQuery.set(CommonParams.QT, "/admin/luke");
-      lukeQuery.set("show", "index");
-      var resp = state.client.query(COLLECTION, lukeQuery);
-      NamedList<?> indexInfo = (NamedList<?>) resp.getResponse().get("index");
-      Object segCount = indexInfo != null ? indexInfo.get("segmentCount") : null;
-      return segCount instanceof Number ? ((Number) segCount).intValue() : -1;
-    }
 
     private void indexDocs(SolrBenchState state) throws Exception {
       int docsPerSegment = numDocs / numSegments;
