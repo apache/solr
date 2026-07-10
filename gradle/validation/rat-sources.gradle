@@ -152,12 +152,10 @@ allprojects {
 
       exclude "**/*gradle.lockfile"
 
-      // TODO: SOLR-15601 ?
-      exclude "**/*.properties"
       exclude "**/*.txt"
 
-      // TODO: SOLR-15601: HTML should carry the license, perhaps?
-      exclude "**/*.html"
+      // Solr core marker file; often empty
+      exclude "**/core.properties"
 
       // Conditionally apply module-specific patterns.
       switch (project.path) {
@@ -203,16 +201,6 @@ allprojects {
           exclude "src/test-files/META-INF/services/*"
           break
 
-        case ":solr:modules:ltr":
-          // TODO: SOLR-15601: Some of these should carry the license, perhaps?
-          exclude "**/*.py"
-          break
-
-        case ":solr:modules:scripting":
-          // TODO: SOLR-15601: Some of these should carry the license, perhaps?
-          exclude "**/*.js"
-          break
-
         case ":solr:modules:s3-repository":
           exclude "src/test-files/s3.conf" // empty file
           break
@@ -222,7 +210,6 @@ allprojects {
           break
 
         case ":solr:core":
-          exclude "src/resources/*.xml"
           exclude "src/test-files/**/*.aff"
           exclude "src/test-files/**/*.dic"
           exclude "src/test-files/**/*.conf"
@@ -232,18 +219,10 @@ allprojects {
           break
 
         case ":solr:server":
-          exclude "**/*.xml"
-          exclude "**/*.sh"
-          exclude "**/*.bat"
-          exclude "**/*.cmd"
-          exclude "**/*.js"
+          // Vendored (or adapted) from the Jetty distribution; not Solr's own IP.
+          exclude "etc/jetty*.xml"
+          exclude "etc/webdefault.xml"
           exclude "modules"
-          // zoo.cfg intentionally has no header and serves as the RAT detection canary.
-          ratCanaryPath.set("/solr/zoo.cfg")
-          break
-
-        case ":solr:webapp":
-          exclude "web/img/**"
           break
 
         case ":solr:solr-ref-guide":
@@ -251,18 +230,19 @@ allprojects {
           break
 
         case ":solr:docker":
-          exclude "tests/**/*.xml"
+          // Deliberately malformed XML used to test the docker image's handling of a broken log4j2 config.
+          exclude "tests/cases/test_log4j/bogus-log4j2.xml"
           break
 
         case ":solr:example":
-          exclude "**/*.xml"
-          exclude "**/*.cfg"
-          exclude "**/*.js"
-          exclude "films/README.md"
+          // films.xml is third-party (Freebase) data, like films/README.md.
+          exclude "films/films.xml"
+          // films/README.md documents third-party (Freebase) data and intentionally has no
+          // header, so it serves as the RAT detection canary.
+          ratCanaryPath.set("/films/README.md")
           break
 
         case ":solr:solrj":
-          exclude "src/test-files/**/*.cfg"
           exclude "src/test-files/**/*.xml"
           break
       }
