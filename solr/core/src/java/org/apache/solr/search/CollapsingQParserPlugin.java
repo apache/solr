@@ -3732,7 +3732,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             if (0 != lastCompare) break;
             continue;
           }
-          values[testClause] = headVal.materialize();
+          var materializedHeadVal = headVal.materialize();
+          values[testClause] =
+              materializedHeadVal != null ? BytesRef.deepCopyOf(materializedHeadVal) : null;
         }
         leafFieldComparators[testClause].copy(0, contextDoc);
         FieldComparator fcomp = fieldComparators[testClause];
