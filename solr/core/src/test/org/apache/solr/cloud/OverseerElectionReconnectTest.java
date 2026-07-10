@@ -48,17 +48,17 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
   private static final String SOLRXML = "<solr></solr>";
 
   /**
-   * Probabilistic reproduction of the single-node overseer livelock. Rapidly toggles connectivity to
-   * the ZK ensemble so that, on some cycle, {@code onReconnect} fires while the {@code
+   * Probabilistic reproduction of the single-node overseer livelock. Rapidly toggles connectivity
+   * to the ZK ensemble so that, on some cycle, {@code onReconnect} fires while the {@code
    * OverseerExitThread} spawned by {@code onDisconnect} is mid-{@code runLeaderProcess} — landing a
    * {@code close()} in the window between {@code makePath(leaderPath)} and the guarded {@code
    * overseer.start()}. When that happens the leader znode is created with no overseer behind it (a
-   * "zombie"), every later election fails with NodeExists, and the overseer never recovers even after
-   * connectivity is stable.
+   * "zombie"), every later election fails with NodeExists, and the overseer never recovers even
+   * after connectivity is stable.
    *
-   * <p>Health/wedge is decided precisely: a healthy overseer has a live updater thread whose id equals
-   * the id stored in {@code /overseer_elect/leader}. A zombie has a leader znode whose id matches no
-   * running updater.
+   * <p>Health/wedge is decided precisely: a healthy overseer has a live updater thread whose id
+   * equals the id stored in {@code /overseer_elect/leader}. A zombie has a leader znode whose id
+   * matches no running updater.
    */
   @Test
   public void testOverseerWedgesUnderRapidZkReconnects() throws Exception {
@@ -118,7 +118,8 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
             // eventually expiring the session, which would clear the zombie and mask the bug).
             recoveredThisCycle = waitForHealthyOverseer(zkController, probe, 6);
             if (!recoveredThisCycle) {
-              log.info("Overseer did not recover within 6s after cycle {} (outage {}ms)", i, outage);
+              log.info(
+                  "Overseer did not recover within 6s after cycle {} (outage {}ms)", i, outage);
             }
           }
 
@@ -153,20 +154,20 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
    * try to make the expiry coincide with the reconnect.
    *
    * <p>Mechanics of the surviving race: on a genuine expiry the departing lineage's {@code
-   * OverseerExitThread} (spawned from {@code ClusterStateUpdater.run()}'s {@code finally}) still runs
-   * {@code checkIfIamStillLeader} → {@code getData(/overseer_elect/leader)}. If that read lands
-   * <em>after</em> the new session's {@code onExpiredReconnection} lineage has already recreated the
-   * leader znode, the OET does not take the {@code NoNode} early-out — it falls into its {@code
-   * finally} and calls {@code rejoinOverseerElection} unconditionally. That second lineage races the
-   * first on the shared {@code overseerElector}/{@code Overseer}, reopening the D1 window where a
-   * {@code close()} lands between {@code makePath(leaderPath)} and the guarded {@code
-   * overseer.start()} → a zombie leader znode with no updater behind it.
+   * OverseerExitThread} (spawned from {@code ClusterStateUpdater.run()}'s {@code finally}) still
+   * runs {@code checkIfIamStillLeader} → {@code getData(/overseer_elect/leader)}. If that read
+   * lands <em>after</em> the new session's {@code onExpiredReconnection} lineage has already
+   * recreated the leader znode, the OET does not take the {@code NoNode} early-out — it falls into
+   * its {@code finally} and calls {@code rejoinOverseerElection} unconditionally. That second
+   * lineage races the first on the shared {@code overseerElector}/{@code Overseer}, reopening the
+   * D1 window where a {@code close()} lands between {@code makePath(leaderPath)} and the guarded
+   * {@code overseer.start()} → a zombie leader znode with no updater behind it.
    *
-   * <p>To hit it we need a short session timeout (so expiry is reachable in a test) and outages that
-   * <em>straddle</em> the session-timeout boundary so the client reconnects right as/after the server
-   * expires the session. ZooKeeper clamps the negotiated session timeout to [2*tickTime, 20*tickTime]
-   * and only detects expiry on tickTime-wide buckets, so tickTime must be lowered to make a ~1s
-   * session possible and to give fine timing granularity around the boundary.
+   * <p>To hit it we need a short session timeout (so expiry is reachable in a test) and outages
+   * that <em>straddle</em> the session-timeout boundary so the client reconnects right as/after the
+   * server expires the session. ZooKeeper clamps the negotiated session timeout to [2*tickTime,
+   * 20*tickTime] and only detects expiry on tickTime-wide buckets, so tickTime must be lowered to
+   * make a ~1s session possible and to give fine timing granularity around the boundary.
    */
   @Test
   public void testOverseerWedgesOnExpiryRacingReconnect() throws Exception {
@@ -227,12 +228,16 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
               negotiated <= 1500);
 
           // The exact outage that lands the reconnect inside the OET-vs-reconnect race window is
-          // hardware-sensitive (it depends on how fast re-election runs and when the departing OET's
+          // hardware-sensitive (it depends on how fast re-election runs and when the departing
+          // OET's
           // getData is scheduled), so we do not bet on a single value. Instead we sweep a fine 10ms
-          // comb across the band just past the ~1000ms expiry boundary (BAND_LO..BAND_HI) and repeat
-          // it many times: breadth covers wherever the window sits on this machine, depth gives each
+          // comb across the band just past the ~1000ms expiry boundary (BAND_LO..BAND_HI) and
+          // repeat
+          // it many times: breadth covers wherever the window sits on this machine, depth gives
+          // each
           // offset multiple independent shots at the inherently racy interleaving. Every outage is
-          // >= the session timeout, so the session expires each cycle. We stop on the first wedge, so
+          // >= the session timeout, so the session expires each cycle. We stop on the first wedge,
+          // so
           // the run is fast when it reproduces and only pays the full budget when it does not.
           final int BAND_LO = 1000;
           final int BAND_HI = 1250;
@@ -283,7 +288,8 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
                 updaterId(zkController));
             if (wedgeOutage != -1) {
               // Report the observed hitting point and how to narrow the sweep for faster repro on
-              // this same hardware. The window is HW-specific, so we can only suggest it after a hit.
+              // this same hardware. The window is HW-specific, so we can only suggest it after a
+              // hit.
               int tightLo = Math.max(BAND_LO, wedgeOutage - 20);
               int tightHi = Math.min(BAND_HI + 50, wedgeOutage + 20);
               log.error(

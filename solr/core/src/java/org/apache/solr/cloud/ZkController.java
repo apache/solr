@@ -407,7 +407,7 @@ public class ZkController implements Closeable {
 
   private void onSessionExpiration() {
     try {
-//      overseer.close();
+      //      overseer.close();
     } catch (Exception e) {
       log.error("Error trying to stop any Overseer threads", e);
     }

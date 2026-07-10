@@ -25,7 +25,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -66,7 +65,6 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,6 +180,9 @@ public class Overseer implements SolrCloseable {
     private final Compressor compressor;
 
     private boolean isClosed = false;
+    // Set when this overseer is told to step down via an explicit QUIT (roles handoff). Read in
+    // run()'s finally to decide whether to spawn the OverseerExitThread to rejoin the election.
+    private volatile boolean quitReceived = false;
 
     public ClusterStateUpdater(
         final ZkStateReader reader,
@@ -234,6 +235,7 @@ public class Overseer implements SolrCloseable {
       if (log.isInfoEnabled()) {
         log.info("Starting to work on the main queue : {}", LeaderElector.getNodeName(myId));
       }
+      boolean crashed = false;
       try {
         ZkStateWriter zkStateWriter = null;
         ClusterState clusterState = null;
@@ -391,14 +393,29 @@ public class Overseer implements SolrCloseable {
             refreshClusterState = true; // it might have been a bad version error
           }
         }
+      } catch (Throwable t) {
+        // The main loop terminated abnormally -- not a clean close, not a session-expiry return,
+        // not
+        // a QUIT. Rejoin below so we recover instead of leaving a dead overseer still holding the
+        // /overseer_elect/leader znode with nothing behind it.
+        crashed = true;
+        log.error("Overseer main loop terminated unexpectedly", t);
       } finally {
         if (log.isInfoEnabled()) {
           log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
         }
-        // do this in a separate thread because any wait is interrupted in this main thread
-        Thread checkLeaderThread = new Thread(this::checkIfIamStillLeader, "OverseerExitThread");
-        checkLeaderThread.setDaemon(true);
-        checkLeaderThread.start();
+        // Only spawn the exit thread to rejoin the election when nobody else will: an explicit QUIT
+        // (roles handoff) or an unexpected crash. On a clean close or a ZK session-expiry
+        // reconnect,
+        // the ZkController reconnect handler owns re-election, so spawning here would just race it
+        // and
+        // risk two competing overseer lineages.
+        if (quitReceived || crashed) {
+          // do this in a separate thread because any wait is interrupted in this main thread
+          Thread checkLeaderThread = new Thread(this::checkIfIamStillLeader, "OverseerExitThread");
+          checkLeaderThread.setDaemon(true);
+          checkLeaderThread.start();
+        }
       }
     }
 
@@ -455,53 +472,20 @@ public class Overseer implements SolrCloseable {
           && (zkController.getCoreContainer().isShutDown() || zkController.isClosed())) {
         return; // shutting down no need to go further
       }
-      Stat stat = new Stat();
-      final String path = OVERSEER_ELECT + "/leader";
-      byte[] data;
+      // We only reach here after a QUIT (roles handoff) or an unexpected crash (see run()'s
+      // finally),
+      // i.e. cases where no Zk reconnect handler will re-drive the election. Our own leader
+      // registration is removed, version-guarded, by OverseerElectionContext.cancelElection() as
+      // part
+      // of the rejoin below -- we no longer delete /overseer_elect/leader here (that used an
+      // always-0
+      // dataVersion guard that could ABA-delete a newer lineage's registration).
       try {
-        data = zkClient.getData(path, null, stat);
-      } catch (IllegalStateException | KeeperException.NoNodeException e) {
-        return;
+        if (zkController != null && !zkController.getCoreContainer().isShutDown()) {
+          zkController.rejoinOverseerElection(null, false);
+        }
       } catch (Exception e) {
-        log.warn("Error communicating with ZooKeeper", e);
-        return;
-      }
-      try {
-        Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(data);
-        String id = (String) m.get(ID);
-        if (overseerCollectionConfigSetProcessor.getId().equals(id)) {
-          try {
-            // NOTE: stat.getVersion() is the znode dataVersion, bumped only by setData. The leader
-            // znode is created once (makePath) and never setData'd, so this is effectively always 0.
-            // The version guard below therefore cannot detect a concurrent takeover (a delete+recreate
-            // by another node also yields version 0), so the BadVersionException branch is effectively
-            // dead code and this delete can remove a *different* node's newer leader registration
-            log.warn(
-                "I (id={}) am exiting, but I'm still the leader; deleting leader node {} guarded by "
-                    + "dataVersion={} (leader znode is never setData'd, so this guard is a no-op and "
-                    + "cannot detect a concurrent takeover)",
-                overseerCollectionConfigSetProcessor.getId(),
-                path,
-                stat.getVersion());
-            zkClient.delete(path, stat.getVersion());
-          } catch (KeeperException.BadVersionException e) {
-            // no problem ignore it some other Overseer has already taken over
-          } catch (Exception e) {
-            log.error("Could not delete my leader node {}", path, e);
-          }
-
-        } else {
-          log.info("somebody else (id={}) has already taken up the overseer position", id);
-        }
-      } finally {
-        // if I am not shutting down, Then I need to rejoin election
-        try {
-          if (zkController != null && !zkController.getCoreContainer().isShutDown()) {
-            zkController.rejoinOverseerElection(null, false);
-          }
-        } catch (Exception e) {
-          log.warn("Unable to rejoinElection ", e);
-        }
+        log.warn("Unable to rejoinElection ", e);
       }
     }
 
@@ -581,6 +565,7 @@ public class Overseer implements SolrCloseable {
               if (log.isInfoEnabled()) {
                 log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
               }
+              quitReceived = true;
               IOUtils.closeQuietly(overseerCollectionConfigSetProcessor);
               IOUtils.closeQuietly(this);
             } else {
