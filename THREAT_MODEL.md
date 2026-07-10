@@ -27,6 +27,15 @@
   rubric) at the Solr PMC's request (path 3).
 - **Status:** DRAFT — under maintainer review (2026-06-10). Not yet ratified.
 - **Version binding:** versioned with the project.
+- **Canonical role:** This document is the project's **canonical, scanner-facing
+  security model** — the authoritative basis for triage when an apparent
+  contradiction arises (confirmed by the Solr PMC, 2026-07). It is deliberately
+  *not* comprehensive of all security information; the operator-facing
+  **"Securing Solr"** reference guide and the published advisories remain the
+  human source of truth for deploying and hardening Solr. The two are
+  complementary — this model is "for scanners", Securing Solr is "for operators"
+  — and cross-reference each other (see §15). Where they appear to conflict, this
+  document governs for triage and the PMC addresses the contradiction.
 - **Reporting cross-reference:** §8-violating findings via the ASF security
   process ([`SECURITY.md`](SECURITY.md)) — reach the Solr PMC security group at
   security@solr.apache.org (see <https://solr.apache.org/security-reporting.html>);
@@ -286,16 +295,36 @@ move a finding to `OUT-OF-MODEL: non-default-config` vs remain `VALID`.
 
 - **Q-scope.** Are `solr-operator`, `solr-mcp`, and `solr-sandbox` in scope for
   this round; at what trust level? (`solr-sandbox` we placed out.) (§2/§3.)
-- **Q-doc.** This adds `THREAT_MODEL.md` + `SECURITY.md` and a `## Security`
-  section appended to your existing `AGENTS.md` (the rest of AGENTS.md is
-  preserved). Confirm the disclosure channel and whether the model should be
-  canonical. (§1/§15.)
+- **Q-doc.** *(Resolved — Solr PMC, 2026-07.)* Disclosure channel confirmed:
+  `security@solr.apache.org` (§1). The model is **canonical** and scanner-facing —
+  the authoritative basis for resolving apparent contradictions — and complementary
+  to the operator-facing "Securing Solr" docs; cross-links added (§1/§15). This PR
+  adds `THREAT_MODEL.md` + `SECURITY.md` and a `## Security` section appended to the
+  existing `AGENTS.md` (the rest preserved). *(maintainer)*
 
-## §15 Appendix — existing-policy back-map
+## §15 Appendix — document roles and existing-policy back-map
 
-There is no in-repo `SECURITY.md` today; this PR adds one (ASF security-process
-pointer) plus a `## Security` section in the existing `AGENTS.md` (which is a
-coding-agent knowledge base — preserved). Solr's published security guidance
-(the "securing Solr" docs + advisories) is the authoritative source for
-refining §8/§9/§11a in a later pass — each historical CVE maps to a §5a toggle
-or the trusted-environment contract.
+**Document roles (confirmed by the Solr PMC, 2026-07).** This `THREAT_MODEL.md`
+is the project's **canonical** security model for automated-scanner purposes —
+the authoritative basis when an apparent contradiction arises. It is intentionally
+scanner-facing (in/out-of-scope, the §8/§9/§11a property lists, §13 triage
+dispositions) rather than a comprehensive operator handbook. Solr's published,
+**operator-facing** guidance remains the human source of truth for deploying and
+hardening Solr, and the two cross-reference each other — this model is "for
+scanners", the guidance below is "for operators":
+
+- **"Securing Solr"** (Solr Reference Guide, deployment guide) —
+  <https://solr.apache.org/guide/solr/latest/deployment-guide/securing-solr.html>
+- **Security advisories + reporting** — <https://solr.apache.org/security.html>
+  and <https://solr.apache.org/security-reporting.html>
+
+Where the two appear to conflict, this document governs for triage purposes and
+the PMC addresses the contradiction. This is a role split, not a redundancy: the
+scanner model constrains what counts as an in-model finding; Securing Solr tells
+operators how to run Solr safely.
+
+This PR adds `SECURITY.md` (ASF security-process pointer + a link to this model)
+plus a `## Security` section in the existing `AGENTS.md` (a coding-agent knowledge
+base — preserved). Each historical CVE maps to a §5a toggle or the
+trusted-environment contract; §8/§9/§11a get refined against the Securing Solr
+docs + advisories in a later pass.
