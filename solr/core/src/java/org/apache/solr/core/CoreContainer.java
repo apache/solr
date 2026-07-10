@@ -71,7 +71,6 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
@@ -2462,10 +2461,10 @@ public class CoreContainer {
    *
    * <p>The caller does not need to close the client.
    *
-   * @return the existing {@link HttpJettySolrClient}
+   * @return the existing {@link HttpSolrClient}
    * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    */
-  public HttpJettySolrClient getDefaultHttpSolrClient() {
+  public HttpSolrClient getDefaultHttpSolrClient() {
     return solrClientProvider.getSolrClient();
   }
 
