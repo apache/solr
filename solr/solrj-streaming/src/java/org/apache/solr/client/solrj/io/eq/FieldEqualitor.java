@@ -75,8 +75,10 @@ public class FieldEqualitor implements StreamEqualitor {
         .withExpression(toExpression(factory).toString());
   }
 
+  // leftComp == rightComp treats both-null and same-instance as equal, so identity comparison
+  // is intentional
   @Override
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "ReferenceEquality"})
   public boolean test(Tuple leftTuple, Tuple rightTuple) {
 
     @SuppressWarnings({"rawtypes"})

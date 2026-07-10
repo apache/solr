@@ -55,6 +55,8 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     }
   }
 
+  // Comparing JettySolrRunner instances by identity is intentional: skip the exact same runner
+  @SuppressWarnings("ReferenceEquality")
   @Test
   public void testSimpleSliceLeaderElection() throws Exception {
     String collection = "collection1";

@@ -31,6 +31,8 @@ public class MemOutputStream extends FastOutputStream {
     super(null, tempBuffer, 0);
   }
 
+  // identity comparison checks whether arr is our own internal buffer, so we can steal it
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void flush(byte[] arr, int offset, int len) throws IOException {
     if (arr == buf && offset == 0 && len == buf.length) {

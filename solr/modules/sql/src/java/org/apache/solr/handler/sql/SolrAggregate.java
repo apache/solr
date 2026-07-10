@@ -55,6 +55,8 @@ class SolrAggregate extends Aggregate implements SolrRel {
     return String.format(Locale.ROOT, "%s(%s)", funcName, column);
   }
 
+  // Calcite convention: identity check against the CONVENTION singleton is intentional
+  @SuppressWarnings("ReferenceEquality")
   SolrAggregate(
       RelOptCluster cluster,
       RelTraitSet traitSet,

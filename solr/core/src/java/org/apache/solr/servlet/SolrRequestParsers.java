@@ -270,7 +270,9 @@ public class SolrRequestParsers {
    * @param charset to be used to decode resulting bytes after %-decoding
    * @param map place all parameters in this map
    */
-  @SuppressWarnings({"fallthrough", "resource"})
+  // checking which of the two stream references currentStream points at, so identity comparison
+  // is intentional
+  @SuppressWarnings({"fallthrough", "resource", "ReferenceEquality"})
   static long parseFormDataContent(
       final InputStream postContent,
       final long maxLen,

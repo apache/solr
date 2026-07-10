@@ -84,7 +84,7 @@ public class StatsField {
     distinctValues(true),
     countDistinct(false, distinctValues),
     percentiles(true) {
-      /** special for percentiles * */
+      // special for percentiles
       @Override
       boolean parseParams(StatsField sf) {
         String percentileParas = sf.localParams.get(this.name());
@@ -116,7 +116,7 @@ public class StatsField {
       }
     },
     cardinality(true) {
-      /** special for percentiles * */
+      // special for cardinality
       @Override
       boolean parseParams(StatsField sf) {
         try {

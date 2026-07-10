@@ -191,6 +191,8 @@ public class ResponseBuilder {
     return -1;
   }
 
+  // skips the component instance that created the request, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public void addRequest(SearchComponent me, ShardRequest sreq) {
     outgoing.add(sreq);
     if ((sreq.purpose & ShardRequest.PURPOSE_PRIVATE) == 0) {

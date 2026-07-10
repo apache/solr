@@ -396,6 +396,9 @@ public class TestJSONParser extends SolrTestCaseJ4 {
       };
 
   // match parser states with the expected states
+  // exp == got matches the unique event sentinel objects (a, A, m, M, N, e), so identity
+  // comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public static void parse(JSONParser p, String input, Object[] expected) throws IOException {
     for (int i = 0; i < expected.length; i++) {
       int ev = p.nextEvent();

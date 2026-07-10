@@ -137,6 +137,9 @@ public class RelatednessAgg extends AggValueSource {
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 
+  // the assert checks that `ctx` is the exact same FacetContext instance we started walking
+  // from, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
       throws IOException {

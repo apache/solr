@@ -286,6 +286,8 @@ public class SystemInfoProvider {
   }
 
   /** Get Security Info */
+  // CLUSTER_MEMBER_NODE is a unique sentinel principal, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public NodeSystemResponse.Security getSecurityInfo() {
     NodeSystemResponse.Security info = new NodeSystemResponse.Security();
 

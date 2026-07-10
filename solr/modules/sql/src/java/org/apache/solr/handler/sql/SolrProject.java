@@ -31,6 +31,8 @@ import org.apache.calcite.util.Pair;
 
 /** Implementation of {@link org.apache.calcite.rel.core.Project} relational expression in Solr. */
 class SolrProject extends Project implements SolrRel {
+  // Calcite convention: identity check against the CONVENTION singleton is intentional
+  @SuppressWarnings("ReferenceEquality")
   SolrProject(
       RelOptCluster cluster,
       RelTraitSet traitSet,

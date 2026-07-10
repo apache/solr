@@ -226,6 +226,8 @@ public abstract class SlotAcc implements Closeable {
       return values;
     }
 
+    // slots holding the shared defaultValue instance are identified by identity on purpose
+    @SuppressWarnings("ReferenceEquality")
     public <T> T[] resize(T[] old, T defaultValue) {
       @SuppressWarnings({"unchecked"})
       T[] values = (T[]) Array.newInstance(old.getClass().getComponentType(), getNewSize());
@@ -757,6 +759,8 @@ public abstract class SlotAcc implements Closeable {
      * @param toAcc - the replacement {@link SlotAcc}
      * @see SweepableSlotAcc#registerSweepingAccs(SweepingCountSlotAcc)
      */
+    // "same instance" check against sortAcc is intentional identity comparison
+    @SuppressWarnings("ReferenceEquality")
     public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
       assert fromAcc.key.equals(toAcc.key);
       output.add(toAcc);

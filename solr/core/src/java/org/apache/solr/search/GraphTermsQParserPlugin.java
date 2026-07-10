@@ -210,6 +210,9 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       return 31 * classHash() + id.hashCode();
     }
 
+    // `id` is a unique sentinel Object shared only between clones, so identity comparison is
+    // intentional
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean equals(Object other) {
       return sameClassAs(other) && id == ((GraphTermsQuery) other).id;
@@ -290,6 +293,8 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       };
     }
 
+    // TermsEnum.EMPTY is a singleton sentinel, so identity comparison against it is intentional
+    @SuppressWarnings("ReferenceEquality")
     private void collectTermStates(
         IndexReader reader,
         List<LeafReaderContext> leaves,

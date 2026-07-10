@@ -754,7 +754,9 @@ public class DistributedClusterStateUpdater {
         return isCollectionCreation;
       }
 
+      // ZkStateWriter.NO_OP is a unique sentinel, so identity comparison against it is intentional
       @Override
+      @SuppressWarnings("ReferenceEquality")
       public void computeUpdates(ClusterState clusterState, SolrZkClient client) {
         boolean hasJsonUpdates = false;
         List<PerReplicaStatesOps> perReplicaStateOps = new ArrayList<>();
@@ -911,7 +913,9 @@ public class DistributedClusterStateUpdater {
       return false;
     }
 
+    // ZkStateWriter.NO_OP is a unique sentinel, so identity comparison against it is intentional
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public void computeUpdates(ClusterState clusterState, SolrZkClient client) {
       final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
       Optional<ZkWriteCommand> result =

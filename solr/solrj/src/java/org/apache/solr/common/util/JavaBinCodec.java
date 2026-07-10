@@ -826,6 +826,8 @@ public class JavaBinCodec implements PushWriter {
     }
   }
 
+  // END_OBJ is a unique sentinel, so identity comparison against it is intentional
+  @SuppressWarnings("ReferenceEquality")
   public Map<Object, Object> readMapIter(DataInputInputStream dis) throws IOException {
     Map<Object, Object> m = newMap(-1);
     for (; ; ) {
@@ -931,6 +933,8 @@ public class JavaBinCodec implements PushWriter {
     writeTag(END);
   }
 
+  // END_OBJ is a unique sentinel, so identity comparison against it is intentional
+  @SuppressWarnings("ReferenceEquality")
   public List<Object> readIterator(DataInputInputStream fis) throws IOException {
     ArrayList<Object> l = new ArrayList<>();
     while (true) {
@@ -1237,6 +1241,8 @@ public class JavaBinCodec implements PushWriter {
     daos.writeFloat(val);
   }
 
+  // END_OBJ is a unique sentinel, so identity comparison against it is intentional
+  @SuppressWarnings("ReferenceEquality")
   public boolean writePrimitive(Object val) throws IOException {
     if (val == null) {
       daos.writeByte(NULL);

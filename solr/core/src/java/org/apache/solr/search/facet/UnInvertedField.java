@@ -633,6 +633,8 @@ public class UnInvertedField extends DocTermOrds {
   }
 
   // Returns null if not already populated
+  // uifPlaceholder is a unique sentinel, so identity comparison against it is intentional
+  @SuppressWarnings("ReferenceEquality")
   public static UnInvertedField checkUnInvertedField(String field, SolrIndexSearcher searcher)
       throws IOException {
     SolrCache<String, UnInvertedField> cache = searcher.getFieldValueCache();

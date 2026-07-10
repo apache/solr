@@ -74,6 +74,8 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     }
   }
 
+  // fields of this type share this exact FieldType instance, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public void inform(IndexSchema schema) {
     this.schema = schema;

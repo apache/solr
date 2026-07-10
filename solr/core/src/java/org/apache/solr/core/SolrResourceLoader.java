@@ -216,6 +216,8 @@ public class SolrResourceLoader
    *
    * @param urls the URLs of files to add
    */
+  // checking whether addURLsToClassLoader() returned the same instance is intentional
+  @SuppressWarnings("ReferenceEquality")
   synchronized void addToClassLoader(List<URL> urls) {
     URLClassLoader newLoader = addURLsToClassLoader(classLoader, urls);
     if (newLoader == classLoader) {
@@ -484,6 +486,9 @@ public class SolrResourceLoader
    * @param subpackages the packages to be tried if the cname starts with solr.
    * @return the loaded class. An exception is thrown if it fails
    */
+  // comparing against the default `packages` array and the webapp classloader by identity is
+  // intentional
+  @SuppressWarnings("ReferenceEquality")
   public <T> Class<? extends T> findClass(
       String cname, Class<T> expectedType, String... subpackages) {
     if (subpackages == null || subpackages.length == 0 || subpackages == packages) {
@@ -695,6 +700,8 @@ public class SolrResourceLoader
     }
   }
 
+  // enforcing that the loader stays bound to the same SolrConfig instance is intentional
+  @SuppressWarnings("ReferenceEquality")
   protected final void setSolrConfig(SolrConfig config) {
     if (this.config != null && this.config != config) {
       throw new IllegalStateException("SolrConfig instance is already associated with this loader");
@@ -702,6 +709,8 @@ public class SolrResourceLoader
     this.config = config;
   }
 
+  // enforcing that the loader stays bound to the same CoreContainer instance is intentional
+  @SuppressWarnings("ReferenceEquality")
   protected final void setCoreContainer(CoreContainer coreContainer) {
     if (this.coreContainer != null && this.coreContainer != coreContainer) {
       throw new IllegalStateException(

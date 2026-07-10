@@ -94,6 +94,8 @@ public class DocValuesIteratorCache {
     }
   }
 
+  // NONE is a unique sentinel, so identity comparison against it is intentional
+  @SuppressWarnings("ReferenceEquality")
   public FieldDocValuesSupplier getSupplier(String fieldName) {
     FieldDocValuesSupplier ret = getSupplier.apply(fieldName);
     return ret == NONE ? null : ret;

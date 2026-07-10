@@ -469,6 +469,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     randomizeNumericTypesProperties();
   }
 
+  // identity check detects self-referential cause chains, so reference comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public static Throwable getWrappedException(Throwable e) {
     while (e != null && e.getCause() != e && e.getCause() != null) {
       e = e.getCause();
@@ -2275,6 +2277,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
   }
 
+  // same-instance fast path, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public boolean compareSolrDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrDocument solrDocument1)
@@ -2325,6 +2329,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
+  // same-instance fast path, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public boolean compareSolrDocumentList(Object expected, Object actual) {
     if (!(expected instanceof SolrDocumentList list1)
         || !(actual instanceof SolrDocumentList list2)) {
@@ -2356,6 +2362,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return true;
   }
 
+  // same-instance fast path, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public boolean compareSolrInputDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrInputDocument sdoc1)
@@ -2430,6 +2438,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
+  // same-instance fast path, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public boolean assertSolrInputFieldEquals(Object expected, Object actual) {
     if (!(expected instanceof SolrInputField sif1) || !(actual instanceof SolrInputField sif2)) {
       return false;
@@ -2576,6 +2586,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return result;
   }
 
+  // waits until the registered searcher is the exact same instance as the newest searcher, so
+  // identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   protected static void waitForWarming(SolrCore core) throws InterruptedException {
     RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
     RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);

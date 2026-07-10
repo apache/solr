@@ -622,6 +622,8 @@ public class JSONParser {
     return BIGNUMBER;
   }
 
+  // arr != out is an intentional identity check: only copy when arr is not the shared out buffer
+  @SuppressWarnings("ReferenceEquality")
   private void continueNumber(CharArr arr) throws IOException {
     if (arr != out) arr.write(out);
 
@@ -760,6 +762,8 @@ public class JSONParser {
     }
   }
 
+  // arr != out is an intentional identity check: only copy when arr is not the shared out buffer
+  @SuppressWarnings("ReferenceEquality")
   private void readStringBare(CharArr arr) throws IOException {
     if (arr != out) {
       arr.append(out);

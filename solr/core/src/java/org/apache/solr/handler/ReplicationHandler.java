@@ -480,6 +480,9 @@ public class ReplicationHandler extends RequestHandlerBase
 
   private volatile IndexFetcher currentIndexFetcher;
 
+  // checks whether currentIndexFetcher is the pollingIndexFetcher instance, so identity
+  // comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public IndexFetchResult doFetch(SolrParams solrParams, boolean forceReplication) {
     String leaderUrl = solrParams.get(LEADER_URL, null);
     if (!indexFetchLock.tryLock()) return IndexFetchResult.LOCK_OBTAIN_FAILED;
@@ -1445,6 +1448,9 @@ public class ReplicationHandler extends RequestHandlerBase
           }
         }
 
+        // checks whether currentIndexFetcher is the pollingIndexFetcher instance, so identity
+        // comparison is intentional
+        @SuppressWarnings("ReferenceEquality")
         @Override
         public void postClose(SolrCore core) {
           if (pollingIndexFetcher != null) {
@@ -1493,10 +1499,8 @@ public class ReplicationHandler extends RequestHandlerBase
    */
   private SolrEventListener getEventListener(final boolean snapshoot, final boolean getCommit) {
     return new SolrEventListener() {
-      /**
-       * This refreshes the latest replicateable index commit and optionally can create Snapshots as
-       * well
-       */
+      // This refreshes the latest replicateable index commit and optionally can create Snapshots
+      // as well
       @Override
       public void postCommit() {
         IndexCommit currentCommitPoint = core.getDeletionPolicy().getLatestCommit();

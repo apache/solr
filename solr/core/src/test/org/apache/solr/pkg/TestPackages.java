@@ -740,6 +740,8 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
   @Test
+  // asserting that the core got a different schema instance after reload is intentional
+  @SuppressWarnings("ReferenceEquality")
   public void testSchemaPlugins() throws Exception {
     String COLLECTION_NAME = "testSchemaLoadingColl";
     System.setProperty("managed.schema.mutable", "true");

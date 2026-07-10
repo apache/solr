@@ -1432,6 +1432,8 @@ public class CoreContainer {
     return coreSorter;
   }
 
+  // checking whether putCore() returned the same core instance is intentional
+  @SuppressWarnings("ReferenceEquality")
   protected SolrCore registerCore(
       CoreDescriptor cd, SolrCore core, boolean registerInZk, boolean skipRecovery) {
     if (core == null) {

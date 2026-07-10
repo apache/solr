@@ -278,6 +278,9 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     return rsp;
   }
 
+  // checks whether the given reqHandlers is the container-level handler bag instance, so
+  // identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   private SolrQueryResponse invoke(
       PluginBag<SolrRequestHandler> reqHandlers,
       String path,

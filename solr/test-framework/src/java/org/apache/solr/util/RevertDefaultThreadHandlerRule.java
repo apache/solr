@@ -30,6 +30,9 @@ public final class RevertDefaultThreadHandlerRule implements TestRule {
   @Override
   public Statement apply(Statement s, Description d) {
     return new StatementAdapter(s) {
+      // detects whether ZK replaced the default handler instance, so identity comparison is
+      // intentional
+      @SuppressWarnings("ReferenceEquality")
       @Override
       protected void before() throws Throwable {
         if (!applied.getAndSet(true)) {

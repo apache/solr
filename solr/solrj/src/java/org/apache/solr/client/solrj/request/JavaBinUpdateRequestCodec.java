@@ -215,6 +215,8 @@ public class JavaBinUpdateRequestCodec {
       return List.of(); // bogus; already processed
     }
 
+    // END_OBJ is a unique sentinel, so identity comparison against it is intentional
+    @SuppressWarnings("ReferenceEquality")
     private void readDocs(DataInputInputStream fis) throws IOException {
       if (resultNamedList == null) resultNamedList = new NamedList<>();
 

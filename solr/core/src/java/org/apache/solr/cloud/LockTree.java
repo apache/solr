@@ -214,6 +214,8 @@ public class LockTree {
       return false;
     }
 
+    // checks that the exact lock instance held by this node is the one being released
+    @SuppressWarnings("ReferenceEquality")
     boolean unlock(LockImpl lockObject) {
       if (--refCount > 0) {
         return false;

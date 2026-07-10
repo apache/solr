@@ -270,6 +270,9 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     }
   }
 
+  // identity comparison against `old` is intentional: Caffeine skips the RemovalListener
+  // exactly when the replaced value is the same reference (see NOTE below)
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public V put(K key, V val) {
     inserts.increment();

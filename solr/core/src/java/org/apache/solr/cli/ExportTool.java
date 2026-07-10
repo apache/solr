@@ -594,6 +594,8 @@ public class ExportTool extends ToolBase {
       }
     }
 
+    // EOFDOC is a unique sentinel instance, so identity comparison against it is intentional
+    @SuppressWarnings("ReferenceEquality")
     private void addConsumer(CountDownLatch consumerlatch) {
       consumerThreadpool.execute(
           () -> {

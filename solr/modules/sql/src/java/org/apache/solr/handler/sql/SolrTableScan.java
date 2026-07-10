@@ -44,6 +44,8 @@ class SolrTableScan extends TableScan implements SolrRel {
    * @param solrTable Solr table
    * @param projectRowType Fields and types to project; null to project raw row
    */
+  // Calcite convention: identity check against the CONVENTION singleton is intentional
+  @SuppressWarnings("ReferenceEquality")
   SolrTableScan(
       RelOptCluster cluster,
       RelTraitSet traitSet,

@@ -61,6 +61,8 @@ public class RawValueTransformerFactory extends TransformerFactory
     return false;
   }
 
+  // response writers are cached singletons in the core, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public DocTransformer create(
       String display,

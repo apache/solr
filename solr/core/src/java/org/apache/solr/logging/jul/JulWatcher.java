@@ -83,6 +83,8 @@ public class JulWatcher extends LogWatcher<LogRecord> {
     }
   }
 
+  // JUL Logger instances are cached singletons per name; identity check for the root logger
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public Collection<LoggerInfo> getAllLoggers() {
     LogManager manager = LogManager.getLogManager();

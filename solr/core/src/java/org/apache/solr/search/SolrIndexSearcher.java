@@ -835,7 +835,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
-  /**
+  /*
    * Retrieve the {@link Document} instance corresponding to the document id.
    *
    * @see SolrDocumentFetcher
@@ -846,7 +846,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return doc(docId, (Set<String>) null);
   }*/
 
-  /**
+  /*
    * Visit a document's fields using a {@link StoredFieldVisitor}. This method does not currently
    * add to the Solr document cache.
    *
@@ -859,7 +859,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     getDocFetcher().doc(docId, visitor);
   }*/
 
-  /**
+  /*
    * Retrieve the {@link Document} instance corresponding to the document id.
    *
    * <p><b>NOTE</b>: the document will have all fields accessible, but if a field filter is
@@ -1011,6 +1011,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return new BitDocSet(bs, answer.size());
   }
 
+  // makeBitDocSet returns the same instance when already a BitDocSet; identity check is intentional
+  @SuppressWarnings("ReferenceEquality")
   public BitDocSet getDocSetBits(Query q) throws IOException {
     DocSet answer = getDocSet(q);
     BitDocSet answerBits = makeBitDocSet(answer);

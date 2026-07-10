@@ -3782,6 +3782,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
    * @param extraSubFacet if an extra sub facet should be included, this hits slightly diff code
    *     paths
    */
+  // "same instance" check of shard clients in the single node case is intentional
+  @SuppressWarnings("ReferenceEquality")
   public void doTestPrelimSorting(
       final Client client, final boolean extraAgg, final boolean extraSubFacet) throws Exception {
 

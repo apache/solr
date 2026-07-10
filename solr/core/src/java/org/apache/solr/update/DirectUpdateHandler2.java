@@ -176,6 +176,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
     }
   }
 
+  // identity comparison detects whether the previous handler's UpdateLog instance is being reused
+  @SuppressWarnings("ReferenceEquality")
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
     super(core, updateHandler.getUpdateLog(), false);
     solrCoreState = core.getSolrCoreState();

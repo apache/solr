@@ -48,7 +48,9 @@ public class ZkWriteCommand {
     this(name, collection, null, true);
   }
 
+  // NO_OP is a unique sentinel, so identity comparison against it is intentional
   @Override
+  @SuppressWarnings("ReferenceEquality")
   public String toString() {
     return getClass().getSimpleName() + ": " + (this == NO_OP ? "no-op" : name + "=" + collection);
   }

@@ -1267,6 +1267,9 @@ public class ZkStateReader implements SolrCloseable {
       collectionPath = DocCollection.getCollectionPath(coll);
     }
 
+    // associatedWatcher != this checks whether this watcher instance has been replaced, so
+    // identity comparison is intentional
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public void process(WatchedEvent event) {
       // session events are not change events, and do not remove the watcher
@@ -2014,6 +2017,9 @@ public class ZkStateReader implements SolrCloseable {
      * modifications, giving up after 30 seconds with a SolrException. The caller should understand
      * it's possible the aliases has further changed if it examines it.
      */
+    // op.apply returning the same Aliases instance signals no modification is needed, so
+    // identity comparison is intentional
+    @SuppressWarnings("ReferenceEquality")
     public void applyModificationAndExportToZk(UnaryOperator<Aliases> op) {
       // The current aliases hasn't been update()'ed yet -- which is impossible?  Any way just
       // update it first.

@@ -27,6 +27,8 @@ public class DualRegistryAttributedLongTimer extends AttributedLongTimer {
 
   private final AttributedLongTimer nodeTimer;
 
+  // asserting that core and node registries provide distinct instrument instances is intentional
+  @SuppressWarnings("ReferenceEquality")
   public DualRegistryAttributedLongTimer(
       LongHistogram coreHistogram,
       Attributes coreAttributes,

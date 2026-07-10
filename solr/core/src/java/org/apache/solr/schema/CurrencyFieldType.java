@@ -609,7 +609,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
           }
         }
 
-        /** throws a (Server Error) SolrException if the code is not valid */
+        // throws a (Server Error) SolrException if the code is not valid
         private Currency getDocCurrency(int doc, int currencyOrd) throws IOException {
           String code = getDocCurrencyCode(doc, currencyOrd);
           Currency c = getCurrency(code);

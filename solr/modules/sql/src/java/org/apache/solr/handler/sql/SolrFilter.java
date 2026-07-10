@@ -77,6 +77,8 @@ class SolrFilter extends Filter implements SolrRel {
 
   private final RexBuilder builder;
 
+  // Calcite convention: identity check against the CONVENTION singleton is intentional
+  @SuppressWarnings("ReferenceEquality")
   SolrFilter(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition) {
     super(cluster, traitSet, child, condition);
     assert getConvention() == SolrRel.CONVENTION;

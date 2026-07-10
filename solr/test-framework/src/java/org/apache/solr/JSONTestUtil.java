@@ -215,6 +215,8 @@ class CollectionTester {
     return match();
   }
 
+  // same-instance fast path (also covers both-null), so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   boolean match() {
     if (expected == val) {
       return true;

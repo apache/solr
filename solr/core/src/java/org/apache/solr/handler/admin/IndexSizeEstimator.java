@@ -585,6 +585,9 @@ public class IndexSizeEstimator {
     }
   }
 
+  // getMergeInstance() may return the same instance, which must not be closed, so identity
+  // comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   private void estimateStoredFields(Map<String, Object> result) throws IOException {
     log.info("- estimating stored fields...");
     Map<String, Map<String, Object>> stats = new HashMap<>();

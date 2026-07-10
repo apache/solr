@@ -127,7 +127,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         new BackupAPIImpl() {
           final BackupStatusChecker backupStatus = new BackupStatusChecker(coreClient);
 
-          /** no solrj API for ReplicationHandler */
+          // no solrj API for ReplicationHandler
           private SolrRequest<?> makeReplicationReq(SolrParams p) {
             return new GenericSolrRequest(
                     GenericSolrRequest.METHOD.POST,
@@ -137,10 +137,8 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
                 .setRequiresCollection(true);
           }
 
-          /**
-           * Override default backup impl to hit ReplicationHandler, and then poll that same handler
-           * until success
-           */
+          // Override default backup impl to hit ReplicationHandler, and then poll that same
+          // handler until success
           @Override
           public void makeBackup(final String backupName, final String snapName) throws Exception {
             final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);

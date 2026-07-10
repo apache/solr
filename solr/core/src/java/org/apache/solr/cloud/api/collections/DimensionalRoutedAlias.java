@@ -211,6 +211,8 @@ public class DimensionalRoutedAlias extends RoutedAlias {
    * @param targetCol the collection for which a document is destined.
    * @return A list of actions across the DRA.
    */
+  // sourceAlias is compared against the very dimension instance it came from; identity intended
+  @SuppressWarnings("ReferenceEquality")
   @Override
   protected List<Action> calculateActions(String targetCol) {
     String[] routeValues = SEP_MATCHER.split(targetCol);

@@ -513,6 +513,8 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   /** Distributed request processing (AKA coordinator). */
+  // ALL_SHARDS is a unique sentinel array, so identity comparison against it is intentional
+  @SuppressWarnings("ReferenceEquality")
   protected void processComponentsDistrib(
       SolrQueryRequest req,
       SolrQueryResponse rsp,

@@ -319,19 +319,19 @@ public class SSLTestConfig {
     /** SPI Used to init all instances */
     private static final SecureRandomSpi NOT_SECURE_SPI =
         new SecureRandomSpi() {
-          /** returns a new byte[] filled with static data */
+          // returns a new byte[] filled with static data
           @Override
           public byte[] engineGenerateSeed(int numBytes) {
             return fillData(new byte[numBytes]);
           }
 
-          /** fills the byte[] with static data */
+          // fills the byte[] with static data
           @Override
           public void engineNextBytes(byte[] bytes) {
             fillData(bytes);
           }
 
-          /** NOOP */
+          // NOOP
           @Override
           public void engineSetSeed(byte[] seed) {
             /* NOOP */

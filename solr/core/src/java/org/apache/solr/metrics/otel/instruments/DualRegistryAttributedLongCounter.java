@@ -27,6 +27,8 @@ public class DualRegistryAttributedLongCounter extends AttributedLongCounter {
 
   private final AttributedLongCounter nodeCounter;
 
+  // asserting that core and node registries provide distinct instrument instances is intentional
+  @SuppressWarnings("ReferenceEquality")
   public DualRegistryAttributedLongCounter(
       LongCounter coreCounter,
       Attributes coreAttributes,

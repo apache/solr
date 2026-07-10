@@ -185,7 +185,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
       final String name = config.getKey();
       final Logger logger = ctx.getLogger(name);
 
-      if (logger == root || root.equals(logger) || isRootLogger(name) || "".equals(name)) {
+      if (root.equals(logger) || isRootLogger(name) || "".equals(name)) {
         continue;
       }
 
@@ -204,7 +204,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     for (Logger logger : ctx.getLoggers()) {
       String name = logger.getName();
 
-      if (logger == root || root.equals(logger) || isRootLogger(name) || "".equals(name)) {
+      if (root.equals(logger) || isRootLogger(name) || "".equals(name)) {
         continue;
       }
 

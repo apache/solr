@@ -79,6 +79,8 @@ public class CategoryRoutedAlias extends RoutedAlias {
     this.mustMatch = mustMatch == null ? null : compileMustMatch(mustMatch);
   }
 
+  // Aliases is an immutable snapshot; identity comparison detects whether ZK handed us a new one
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean updateParsedCollectionAliases(ZkStateReader zkStateReader, boolean contextualize) {
     final Aliases aliases =

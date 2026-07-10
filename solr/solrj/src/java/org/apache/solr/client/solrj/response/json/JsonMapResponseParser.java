@@ -40,7 +40,7 @@ public class JsonMapResponseParser extends ResponseParser {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings("unchecked")
   public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
     @SuppressWarnings({"rawtypes"})
     Map map = null;

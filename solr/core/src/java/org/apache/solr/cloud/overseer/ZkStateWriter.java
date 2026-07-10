@@ -129,6 +129,8 @@ public class ZkStateWriter {
    *     a {@link org.apache.zookeeper.KeeperException.BadVersionException} this instance becomes
    *     unusable and must be discarded
    */
+  // NO_OP is a unique sentinel, so identity comparison against it is intentional
+  @SuppressWarnings("ReferenceEquality")
   public ClusterState enqueueUpdate(
       ClusterState prevState, List<ZkWriteCommand> cmds, ZkWriteCallback callback)
       throws IllegalStateException, Exception {
@@ -189,6 +191,8 @@ public class ZkStateWriter {
     return clusterState;
   }
 
+  // NO_OP is a unique sentinel, so identity comparison against it is intentional
+  @SuppressWarnings("ReferenceEquality")
   private boolean isNoOps(List<ZkWriteCommand> cmds) {
     for (ZkWriteCommand cmd : cmds) {
       if (cmd != NO_OP) return false;
@@ -229,6 +233,9 @@ public class ZkStateWriter {
    * @throws KeeperException if any ZooKeeper operation results in an error
    * @throws InterruptedException if the current thread is interrupted
    */
+  // Identity comparison of the updates map against this.updates is intentional: it detects
+  // whether the caller asked to flush all pending updates rather than a specific subset
+  @SuppressWarnings("ReferenceEquality")
   public ClusterState writePendingUpdates(
       Map<String, ZkWriteCommand> updates, boolean resetPendingUpdateCounters)
       throws IllegalStateException, KeeperException, InterruptedException {

@@ -64,6 +64,8 @@ public class ReplicateFromLeader {
    * @param switchTransactionLog if true, ReplicationHandler will rotate the transaction log once
    *     the replication is done
    */
+  // INDEX_FETCH_SUCCESS is a unique sentinel instance, so identity comparison is intentional
+  @SuppressWarnings("ReferenceEquality")
   public void startReplication(boolean switchTransactionLog) {
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
