@@ -624,7 +624,7 @@ public class Overseer implements SolrCloseable {
 
     @Override
     public void close() {
-      Thread.dumpStack();
+      //      Thread.dumpStack();
       this.isClosed = true;
       IOUtils.closeQuietly(clusterStateUpdaterMetricContext);
     }
@@ -659,7 +659,7 @@ public class Overseer implements SolrCloseable {
     @Override
     public void close() throws IOException {
       thread.close();
-      Thread.dumpStack();
+      //      Thread.dumpStack();
       this.isClosed = true;
     }
 
