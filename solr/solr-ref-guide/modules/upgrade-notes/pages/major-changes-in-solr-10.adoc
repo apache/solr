@@ -307,6 +307,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The deprecated `VMParamsAllAndReadonlyDigestZkACLProvider` class has been removed. Use a combination of `DigestZkACLProvider` and `VMParamsZkCredentialsInjector` instead. (SOLR-18122)
 
+* The legacy V1 `ADDROLE` and `REMOVEROLE` commands (and their SolrJ client and experimental V2 counterparts) are deprecated as of 10.1 and scheduled for removal in Solr 11. Users must switch to **"node roles" (system properties)** (e.g., `-Dsolr.node.roles=data:on,overseer:preferred`) at startup. The `roles` field in `CLUSTERSTATUS` is also deprecated.
+
 === Security
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
