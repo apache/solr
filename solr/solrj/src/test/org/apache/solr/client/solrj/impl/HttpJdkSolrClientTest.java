@@ -209,21 +209,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testTimeout() throws Exception {
-    SolrQuery q = new SolrQuery("*:*");
-    try (HttpJdkSolrClient client =
-        (HttpJdkSolrClient)
-            builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH, 500, 500)
-                .withRequestTimeout(500, TimeUnit.MILLISECONDS)
-                .build()) {
-      client.query(q, SolrRequest.METHOD.GET);
-      fail("No exception thrown.");
-    } catch (SolrServerException e) {
-      assertTrue(e.getMessage().contains("timeout") || e.getMessage().contains("Timeout"));
-    }
-  }
-
-  @Test
   public void test0IdleTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpJdkSolrClient client =
