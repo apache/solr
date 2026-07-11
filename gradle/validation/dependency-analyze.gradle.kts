@@ -21,52 +21,52 @@ import com.autonomousapps.DependencyAnalysisExtension
 
 // Opt-in only: not wired into "check", since the advice needs human judgment
 tasks.register("analyzeDependencies") {
-    group = "verification"
-    description =
-        "Reports dependency-analysis (DAGP) advice: unused/undeclared/misconfigured dependencies."
-    dependsOn(tasks.named("buildHealth")) // non-obvious name
+  group = "verification"
+  description =
+    "Reports dependency-analysis (DAGP) advice: unused/undeclared/misconfigured dependencies."
+  dependsOn(tasks.named("buildHealth")) // non-obvious name
 }
 
 configure<DependencyAnalysisExtension> {
-    issues {
-        project(":solr:ui") {
-            onUnusedDependencies {
-                severity("ignore")
-            }
-            onUsedTransitiveDependencies {
-                severity("ignore")
-            }
-            onIncorrectConfiguration {
-                severity("ignore")
-            }
-        }
-
-        project(":solr:solrj-jetty") {
-            onUnusedDependencies {
-                exclude(":solr:solrj")
-            }
-        }
-
-        project(":solr:modules:jwt-auth") {
-            onDuplicateClassWarnings {
-                severity("ignore")
-            }
-        }
-
-        all {
-            // Report advice as warnings rather than failing the build: several categories
-            // (api-vs-implementation promotions, some test-scope changes) need case-by-case
-            // human judgment.
-            onAny {
-                severity("warn")
-            }
-            onUnusedDependencies {
-                exclude(
-                    "org.jspecify:jspecify",
-                    "com.google.code.findbugs:jsr305",
-                    "com.google.errorprone:error_prone_annotations",
-                )
-            }
-        }
+  issues {
+    project(":solr:ui") {
+      onUnusedDependencies {
+        severity("ignore")
+      }
+      onUsedTransitiveDependencies {
+        severity("ignore")
+      }
+      onIncorrectConfiguration {
+        severity("ignore")
+      }
     }
+
+    project(":solr:solrj-jetty") {
+      onUnusedDependencies {
+        exclude(":solr:solrj")
+      }
+    }
+
+    project(":solr:modules:jwt-auth") {
+      onDuplicateClassWarnings {
+        severity("ignore")
+      }
+    }
+
+    all {
+      // Report advice as warnings rather than failing the build: several categories
+      // (api-vs-implementation promotions, some test-scope changes) need case-by-case
+      // human judgment.
+      onAny {
+        severity("warn")
+      }
+      onUnusedDependencies {
+        exclude(
+          "org.jspecify:jspecify",
+          "com.google.code.findbugs:jsr305",
+          "com.google.errorprone:error_prone_annotations",
+        )
+      }
+    }
+  }
 }
