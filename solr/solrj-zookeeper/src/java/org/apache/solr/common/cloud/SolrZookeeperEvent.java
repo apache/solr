@@ -21,7 +21,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 
-public enum SolrCuratorEvent {
+public enum SolrZookeeperEvent {
   // Only triggered after resume from expiration
   EXPIRED_RECONNECTION {
     @Override
@@ -35,7 +35,7 @@ public enum SolrCuratorEvent {
             isExpired.set(true);
           } else if (newState == ConnectionState.RECONNECTED) {
             if (isExpired.compareAndSet(true, false)) {
-              action.respond();
+              action.trigger();
             }
           }
         }
@@ -48,7 +48,7 @@ public enum SolrCuratorEvent {
     public ConnectionStateListener of(EventAction action) {
       return (client, newState) -> {
         if (newState == ConnectionState.LOST) {
-          action.respond();
+          action.trigger();
         }
       };
     }
@@ -57,6 +57,6 @@ public enum SolrCuratorEvent {
   public abstract ConnectionStateListener of(EventAction action);
 
   public interface EventAction {
-    void respond();
+    void trigger();
   }
 }

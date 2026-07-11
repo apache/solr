@@ -54,6 +54,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
@@ -771,7 +772,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testZkReconnectionEvents() throws Exception {
+  public void testZkExpiredReconnectionEvents() throws Exception {
     // Do not use MiniSolrCloudCluster
 
     // Create a zookeeper cluster with 3 nodes
@@ -789,26 +790,33 @@ public class ZkControllerTest extends SolrCloudTestCase {
           CuratorZookeeperClient zkClient =
               zkController.getZkClient().getCuratorFramework().getZookeeperClient();
           zkClient.getZooKeeper().getTestable().injectSessionExpiration();
-          // Wait 10 seconds to make sure Solr receives the ExpiredReconnection event and invokes
-          // listeners
-          Thread.sleep(10000);
-          assertTrue(
+          // make sure Solr receives the ExpiredReconnection event and invokes listeners
+          RetryUtil.retryUntil(
               "Reconnected to ZK cluster after session expiration should have triggered the invocation of method onExpiredReconnection",
-              invoked.get());
+              5,
+              2,
+              TimeUnit.SECONDS,
+              invoked::get);
           invoked.set(false);
 
           // Kill the connected server to force Solr to reconnected to another solr server
           InstanceSpec connectedIns = zkCluster.findConnectionInstance(zkClient.getZooKeeper());
           zkCluster.killServer(connectedIns);
-          // Wait 3 seconds to let solr connectes to another server.
-          Thread.sleep(3000);
-          InstanceSpec newConnectedIns = zkCluster.findConnectionInstance(zkClient.getZooKeeper());
-          assertNotEquals(connectedIns, newConnectedIns);
-          // Wait 10 seconds to make sure the event is received by zkController
-          Thread.sleep(10000);
-          assertFalse(
+          // Make sure solr connectes to another server.
+          RetryUtil.retryUntil(
+              "Solr does not connect to another ZooKeeper server",
+              3,
+              1,
+              TimeUnit.SECONDS,
+              () -> zkCluster.findConnectionInstance(zkClient.getZooKeeper()),
+              newIns -> newIns.equals(connectedIns));
+          // make sure the event is received by zkController
+          RetryUtil.retryUntil(
               "Reconnected to ZK cluster before session expiration should NOT trigger the invocation of method onExpiredReconnection",
-              invoked.get());
+              5,
+              2,
+              TimeUnit.SECONDS,
+              () -> !invoked.get());
         }
       } finally {
         cc.shutdown();
@@ -848,15 +856,21 @@ public class ZkControllerTest extends SolrCloudTestCase {
           // Kill the connected server to force Solr to reconnected to another solr server
           InstanceSpec connectedIns = zkCluster.findConnectionInstance(zkClient.getZooKeeper());
           zkCluster.killServer(connectedIns);
-          // Wait 3 seconds to let solr connectes to another server.
-          Thread.sleep(3000);
-          InstanceSpec newConnectedIns = zkCluster.findConnectionInstance(zkClient.getZooKeeper());
-          assertNotEquals(connectedIns, newConnectedIns);
-          // Wait 10 seconds to make sure the event is received by zkController
-          Thread.sleep(10000);
-          assertFalse(
+          // Make sure solr connectes to another server.
+          RetryUtil.retryUntil(
+              "Solr does not connect to another ZooKeeper server",
+              3,
+              1,
+              TimeUnit.SECONDS,
+              () -> zkCluster.findConnectionInstance(zkClient.getZooKeeper()),
+              newIns -> newIns.equals(connectedIns));
+          // make sure the event is received by zkController
+          RetryUtil.retryUntil(
               "Reconnected to ZK cluster before session expiration should NOT trigger the invocation of method onSessionExpiration",
-              mockClusterSingleton.isStopped());
+              5,
+              2,
+              TimeUnit.SECONDS,
+              () -> !mockClusterSingleton.isStopped());
 
           mockClusterSingleton.reset();
           assertFalse(mockClusterSingleton.isStopped());
@@ -868,13 +882,15 @@ public class ZkControllerTest extends SolrCloudTestCase {
           // Even if the cluster is stopped, the session won't be expired at once. We still need to
           // manually expire it.
           zkClient.getZooKeeper().getTestable().injectSessionExpiration();
-          // Wait 10 seconds to make sure Solr receives the ExpiredReconnection event and invokes
-          // listeners
+          RetryUtil.retryUntil(
+              "Session expiration should have triggered the invocation of method onSessionExpiration",
+              5,
+              2,
+              TimeUnit.SECONDS,
+              mockClusterSingleton::isStopped);
+          // make sure Solr does NOT receive the ExpiredReconnection event
           Thread.sleep(3000);
           assertFalse("ExpiredReconnection should not be triggered", invoked.get());
-          assertTrue(
-              "Session expiration should have triggered the invocation of method onSessionExpiration",
-              mockClusterSingleton.isStopped());
         }
       } finally {
         cc.shutdown();

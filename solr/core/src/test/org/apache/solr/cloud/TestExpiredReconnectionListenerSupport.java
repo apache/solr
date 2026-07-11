@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.SolrCuratorEvent;
+import org.apache.solr.common.cloud.SolrZookeeperEvent;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -81,11 +81,11 @@ public class TestExpiredReconnectionListenerSupport extends AbstractFullDistribZ
     }
 
     // verify the ZkIndexSchemaReader is a registered OnExpirationReconnection listener
-    Set<SolrCuratorEvent.EventAction> listeners =
+    Set<SolrZookeeperEvent.EventAction> listeners =
         zkController.getCurrentExpiredReconnectionListeners();
     assertNotNull("ZkController returned null OnExpirationReconnection listeners", listeners);
     ZkIndexSchemaReader expectedListener = null;
-    for (SolrCuratorEvent.EventAction listener : listeners) {
+    for (SolrZookeeperEvent.EventAction listener : listeners) {
       if (listener instanceof ZkIndexSchemaReader reader) {
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
           expectedListener = reader;
@@ -122,7 +122,7 @@ public class TestExpiredReconnectionListenerSupport extends AbstractFullDistribZ
     assertNotNull("ZkController returned null OnExpirationReconnection listeners", listeners);
 
     expectedListener = null; // reset
-    for (SolrCuratorEvent.EventAction listener : listeners) {
+    for (SolrZookeeperEvent.EventAction listener : listeners) {
       if (listener instanceof ZkIndexSchemaReader reader) {
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
           fail(
@@ -152,7 +152,7 @@ public class TestExpiredReconnectionListenerSupport extends AbstractFullDistribZ
     }
 
     listeners = zkController.getCurrentExpiredReconnectionListeners();
-    for (SolrCuratorEvent.EventAction listener : listeners) {
+    for (SolrZookeeperEvent.EventAction listener : listeners) {
       if (listener instanceof ZkIndexSchemaReader reader) {
         if (reloadedLeaderCoreId.equals(reader.getUniqueCoreId())) {
           fail(
