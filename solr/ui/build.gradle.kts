@@ -119,14 +119,14 @@ kotlin {
             }
         }
 
-        val desktopMain by getting {
+        named("desktopMain") {
             dependencies {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.server.core)
                 implementation(libs.ktor.server.cio)
                 implementation(libs.ktor.server.htmlBuilder)
                 implementation(compose.desktop.currentOs)
-                implementation(libs.kotlinx.coroutines.swing)
+                runtimeOnly(libs.kotlinx.coroutines.swing)
             }
         }
     }

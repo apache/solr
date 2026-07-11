@@ -52,7 +52,4 @@ dependencies {
 
   testImplementation libs.junit.junit
   testImplementation libs.commonsio.commonsio
-
-  // cutterslade requires we state the obvious
-  testImplementation project(':solr:solrj-zookeeper')
 }
