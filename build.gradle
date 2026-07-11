@@ -132,6 +132,7 @@ ext {
 
   // Use gradle flag in root project for further referencing
   withUiModule = gradle.ext.withUiModule
+  withJsClient = gradle.ext.withJsClient
 }
 
 // Include smaller chunks configuring dedicated build areas.
