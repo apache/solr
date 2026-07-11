@@ -89,5 +89,11 @@ if (gradle.ext.withUiModule) {
   include(":solr:ui")
 }
 
+def disableJsClientValue = providers.gradleProperty('disableJsClient').orNull
+gradle.ext.withJsClient = disableJsClientValue == null || disableJsClientValue != 'true'
+if (gradle.ext.withJsClient) {
+  include(":solr:webapp:js-client")
+}
+
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
