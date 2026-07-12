@@ -32,7 +32,6 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,11 +93,7 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
       nodeList.remove(node);
     }
 
-    if (nodeExists) {
-      zkClient.setData(ZkStateReader.ROLES, Utils.toJSON(roles));
-    } else {
-      zkClient.create(ZkStateReader.ROLES, Utils.toJSON(roles), CreateMode.PERSISTENT);
-    }
+    zkClient.makePath(ZkStateReader.ROLES, Utils.toJSON(roles), false);
     runPrioritizer();
   }
 
