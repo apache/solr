@@ -89,7 +89,7 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
     List<String> nodeList = roles.computeIfAbsent(roleName, k -> new ArrayList<>());
     if (ADDROLE == operation) {
       DeprecationLog.log(
-          "CollectionAPI-" + operation.toLower(),
+          "CollectionAPI-" + operation,
           "The "
               + operation
               + " API is deprecated and will be removed in Solr 11. "
@@ -98,7 +98,7 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
       if (!nodeList.contains(node)) nodeList.add(node);
     } else if (REMOVEROLE == operation) {
       DeprecationLog.log(
-          "CollectionAPI-" + operation.toLower(),
+          "CollectionAPI-" + operation,
           "The "
               + operation
               + " API is deprecated and will be removed in Solr 11. "
