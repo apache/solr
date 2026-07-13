@@ -155,7 +155,7 @@ public class ZkCpTool extends ToolBase {
     if (dstIsZk) {
       String solrHome = cli.getOptionValue(SOLR_HOME_OPTION);
       if (StrUtils.isNullOrEmpty(solrHome)) {
-        solrHome = EnvUtils.getProperty("solr.home", EnvUtils.getProperty("solr.solr.home"));
+        solrHome = EnvUtils.getProperty("solr.home");
       }
 
       if (solrHome != null) {

@@ -29,7 +29,6 @@ public class SysPropSSLCredentialProvider extends AbstractSSLCredentialProvider 
 
   @Override
   protected String getCredential(String syspropKey) {
-    String value = EnvUtils.getProperty(syspropKey);
-    return (value != null) ? value : null;
+    return EnvUtils.getProperty(syspropKey);
   }
 }
