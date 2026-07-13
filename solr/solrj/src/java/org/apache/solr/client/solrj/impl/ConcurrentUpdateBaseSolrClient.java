@@ -95,7 +95,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
 
     /**
      * Invoked for an error not tied to specific documents (e.g. a failure before any document was
-     * sent). Defaults to logging, so a registered handler never silently swallows such errors.
+     * sent). Defaults to logging.
      */
     default void onError(Throwable ex) {
       LoggerFactory.getLogger(UpdateErrorHandler.class).error("update error", ex);
