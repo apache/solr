@@ -1,5 +1,5 @@
 title: Optimize IndexSchema.getDynamicFieldType() by checking cached fields before matching dynamic patterns.
-type: other
+type: changed
 authors:
   - name: Pierre Salagnac
 links:
