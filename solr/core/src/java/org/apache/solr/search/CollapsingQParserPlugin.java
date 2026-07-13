@@ -3832,6 +3832,26 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
+  private static final class LazyStringValue {
+
+    final SortedDocValues dv;
+    final int ord;
+    final int missingOrd;
+
+    LazyStringValue(SortedDocValues dv, int ord, int missingOrd) {
+      this.dv = dv;
+      this.ord = ord;
+      this.missingOrd = missingOrd;
+    }
+
+    BytesRef materialize() throws IOException {
+      if (ord == missingOrd || ord < 0) {
+        return null;
+      }
+      return dv.lookupOrd(ord);
+    }
+  }
+
   /** returns the number of arguments that are non null */
   private static final int numNotNull(final Object... args) {
     int r = 0;
