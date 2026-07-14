@@ -22,7 +22,9 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -37,6 +39,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -70,6 +73,40 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
   private volatile CountDownLatch lock = null; // used to block everything
 
   protected StallDetection stallDetection;
+
+  private final UpdateErrorHandler errorHandler;
+
+  /**
+   * Callback invoked when a batch fails to reach the server. Register one via {@link
+   * Builder#withErrorHandler} to handle update errors comprehensively -- e.g. route the failed
+   * document ids to a retry queue or dead-letter topic. Implementations must be thread-safe; see
+   * {@link Builder#withErrorHandler} for the full threading contract.
+   */
+  @FunctionalInterface
+  public interface UpdateErrorHandler {
+    /**
+     * Invoked when specific documents failed to reach the server.
+     *
+     * @param ex the error that occurred
+     * @param failedIds the ids of the documents that did not reach the server
+     * @param collection the collection the batch targeted, or null
+     */
+    void onError(Throwable ex, List<String> failedIds, String collection);
+
+    /**
+     * Invoked for an error not tied to specific documents (e.g. a failure before any document was
+     * sent). Defaults to logging.
+     */
+    default void onError(Throwable ex) {
+      LoggerFactory.getLogger(UpdateErrorHandler.class).error("update error", ex);
+    }
+
+    /** The id used to report a failed document; defaults to its {@code id} field. */
+    default String idOf(SolrInputDocument doc) {
+      Object id = doc.getFieldValue("id");
+      return id == null ? null : id.toString();
+    }
+  }
 
   protected static class CustomBlockingQueue<E> implements Iterable<E> {
     private final BlockingQueue<E> queue;
@@ -158,6 +195,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     this.basePath = builder.baseSolrUrl;
     this.defaultCollection = builder.defaultCollection;
     this.pollQueueTimeMillis = builder.pollQueueTimeMillis;
+    this.errorHandler = builder.errorHandler;
 
     // Initialize stall detection
     long stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
@@ -186,6 +224,31 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
 
   /** Class representing an UpdateRequest and an optional collection. */
   protected record Update(UpdateRequest request, String collection) {}
+
+  /**
+   * The result of sending updates as a single stream: the response to await, plus the ids of the
+   * documents sent (for error reporting) and their collection.
+   */
+  public record SentStream(StreamingResponse response, List<String> docIds, String collection) {}
+
+  /**
+   * The ids of a request's documents for error reporting, via {@link UpdateErrorHandler#idOf}.
+   * Empty when no error handler is registered, so the documents are not read and no ids are
+   * retained.
+   */
+  protected List<String> idsForErrorReporting(UpdateRequest request) {
+    if (errorHandler == null || request.getDocuments() == null) {
+      return List.of();
+    }
+    List<String> ids = new ArrayList<>(request.getDocuments().size());
+    for (SolrInputDocument doc : request.getDocuments()) {
+      String id = errorHandler.idOf(doc);
+      if (id != null) {
+        ids.add(id);
+      }
+    }
+    return ids;
+  }
 
   /** Opens a connection and sends everything... */
   class Runner implements Runnable {
@@ -235,17 +298,20 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
       try {
         while (!queue.isEmpty()) {
           InputStream rspBody = null;
+          List<String> docIds = List.of();
+          String collection = null;
           try {
-            Update update;
             notifyQueueAndRunnersIfEmptyQueue();
-            update = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
+            Update update = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
 
             if (update == null) {
               break;
             }
 
-            StreamingResponse responseListener = null;
-            responseListener = doSendUpdateStream(update);
+            SentStream sent = doSendUpdateStream(update);
+            StreamingResponse responseListener = sent.response();
+            docIds = sent.docIds();
+            collection = sent.collection();
 
             // just wait for the headers, so the idle timeout is sensible
             int statusCode = responseListener.awaitResponse(idleTimeoutMillis);
@@ -266,12 +332,16 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
                 solrExc = new RemoteSolrException(basePath, statusCode, remoteError);
               }
 
-              handleError(solrExc);
+              handleError(solrExc, docIds, collection);
             } else {
               onSuccess(responseListener.getUnderlyingResponse(), rspBody);
             }
             stallDetection.incrementProcessedCount();
 
+          } catch (OutOfMemoryError | InterruptedException e) {
+            throw e;
+          } catch (Throwable e) {
+            handleError(e, docIds, collection);
           } finally {
             try {
               consumeFully(rspBody);
@@ -287,7 +357,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     }
   }
 
-  protected abstract StreamingResponse doSendUpdateStream(Update update)
+  protected abstract SentStream doSendUpdateStream(Update update)
       throws IOException, InterruptedException;
 
   private void consumeFully(InputStream is) {
@@ -544,6 +614,22 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     log.error("error", ex);
   }
 
+  private void handleError(Throwable ex, List<String> failedIds, String collection) {
+    if (errorHandler == null) {
+      handleError(ex);
+      return;
+    }
+    try {
+      if (failedIds.isEmpty()) {
+        errorHandler.onError(ex);
+      } else {
+        errorHandler.onError(ex, failedIds, collection);
+      }
+    } catch (Exception handlerEx) {
+      log.error("errorHandler threw while handling a failed update", handlerEx);
+    }
+  }
+
   /**
    * Intended to be used as an extension point for doing post-processing after a request completes.
    *
@@ -627,6 +713,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     protected boolean streamDeletes;
     protected boolean closeHttpClient;
     protected long pollQueueTimeMillis;
+    protected UpdateErrorHandler errorHandler;
 
     /**
      * Initialize a Builder object, based on the provided URL and client.
@@ -760,6 +847,26 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
      */
     public Builder setPollQueueTime(long pollQueueTime, TimeUnit unit) {
       this.pollQueueTimeMillis = TimeUnit.MILLISECONDS.convert(pollQueueTime, unit);
+      return this;
+    }
+
+    /**
+     * Registers a handler invoked when a batch fails to reach the server. It receives the ids of
+     * the failed documents (via {@link UpdateErrorHandler#idOf}, default the {@code id} field) and
+     * the target collection, so callers can recover them -- for example by routing the ids to a
+     * retry queue or dead-letter topic.
+     *
+     * <p>The handler is invoked on the client's internal runner threads and may be called
+     * concurrently when several batches fail at once, so implementations must be thread-safe. The
+     * call happens inline on a runner thread, so implementations should return quickly and not
+     * block, or they will slow update throughput. An exception thrown by the handler is logged and
+     * does not stop the client.
+     *
+     * <p>If no handler is registered the client falls back to its default behavior of logging the
+     * error, and document ids are not extracted.
+     */
+    public Builder withErrorHandler(UpdateErrorHandler errorHandler) {
+      this.errorHandler = errorHandler;
       return this;
     }
 
