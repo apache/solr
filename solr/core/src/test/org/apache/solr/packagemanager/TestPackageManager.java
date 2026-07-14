@@ -19,7 +19,7 @@ package org.apache.solr.packagemanager;
 import com.jayway.jsonpath.InvalidPathException;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.ToolRuntime;
@@ -64,13 +64,8 @@ public class TestPackageManager extends SolrCloudTestCase {
         plugin.verifyCommand.condition = "&[no_quotes_error_jpath]";
         manager.verify(
             new SolrPackageInstance(
-                "",
-                "",
-                "1.0",
-                new SolrPackage.Manifest(),
-                Collections.singletonList(plugin),
-                Map.of()),
-            Collections.singletonList(COLLECTION_NAME),
+                "", "", "1.0", new SolrPackage.Manifest(), List.of(plugin), Map.of()),
+            List.of(COLLECTION_NAME),
             plugin.type.equals("cluster"),
             new String[0]);
         fail();

@@ -276,7 +276,7 @@ public class Aliases {
     // Due to another level of indirection, this is more complicated...
     List<String> level1 = collectionAliasListMap.get(aliasName);
     if (level1 == null) {
-      return Collections.singletonList(aliasName); // is a collection
+      return List.of(aliasName); // is a collection
     }
     // avoid allocating objects if possible
     LinkedHashSet<String> uniqueResult = null;
@@ -410,7 +410,7 @@ public class Aliases {
       }
     }
     if (level1 == null) { // create an alias that points to the collection
-      newColAliases.put(after, Collections.singletonList(before));
+      newColAliases.put(after, List.of(before));
     }
     return new Aliases(newColAliases, newColProperties, zNodeVersion);
   }
@@ -430,8 +430,11 @@ public class Aliases {
    */
   public Aliases cloneWithCollectionAliasProperties(
       String alias, String propertiesKey, String propertiesValue) {
-    return cloneWithCollectionAliasProperties(
-        alias, Collections.singletonMap(propertiesKey, propertiesValue));
+    // Use a HashMap to allow null propertiesValue (null means remove the key in the map-based
+    // overload)
+    Map<String, String> props = new LinkedHashMap<>();
+    props.put(propertiesKey, propertiesValue);
+    return cloneWithCollectionAliasProperties(alias, props);
   }
 
   /**

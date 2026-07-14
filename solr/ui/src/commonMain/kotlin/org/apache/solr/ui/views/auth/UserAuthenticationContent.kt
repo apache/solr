@@ -27,8 +27,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +45,7 @@ import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.action_go_back
 import org.apache.solr.ui.generated.resources.cd_back_navigation
 import org.apache.solr.ui.generated.resources.cd_solr_logo
+import org.apache.solr.ui.generated.resources.chevron_left
 import org.apache.solr.ui.generated.resources.desc_solr_instance_with_auth
 import org.apache.solr.ui.generated.resources.seperator_or
 import org.apache.solr.ui.generated.resources.solr_sun
@@ -93,7 +92,7 @@ fun UserAuthenticationContent(
             contentPadding = ButtonDefaults.TextButtonWithIconContentPadding,
         ) {
             Icon(
-                imageVector = Icons.Filled.ChevronLeft,
+                painter = painterResource(Res.drawable.chevron_left),
                 contentDescription = stringResource(Res.string.cd_back_navigation),
             )
             Text(text = stringResource(Res.string.action_go_back))

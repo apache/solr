@@ -25,7 +25,7 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop --all >/dev/null 2>&1
+  SOLR_STOP_WAIT=30 solr stop --all >/dev/null 2>&1
 }
 
 @test "SOLR-11740 check 'solr stop' connection" {
@@ -80,12 +80,12 @@ teardown() {
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 
   run cat ${SOLR_LOGS_DIR}/solr-${SOLR_PORT}-console.log
-  refute_output --partial 'Exception'
+  refute_output --partial 'Exception in thread'
 }
 
 @test "deprecated system properties converted to modern properties" {
   solr start -Ddisable.config.edit=true
-  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'You are passing in deprecated system property disable.config.edit and should upgrade to using solr.api.config.edit.enabled instead.'
+  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Deprecated system property disable.config.edit has been replaced by solr.api.config.edit.enabled'
 }
 
 @test "start with custom jetty options" {
@@ -94,6 +94,28 @@ teardown() {
 
   solr start --jettyconfig "--module=server"
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+}
+
+@test "webapp is deployed at the /solr context" {
+  # Jetty 12.1 removed the directory-scanning deployer; the Solr webapp is now added
+  # directly to the context collection in server/etc/jetty.xml. Verify it deploys at
+  # /solr and that the context is bound to that path only (an unmapped path 404s).
+  solr start
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+
+  run curl -s -o /dev/null -w "%{http_code}" "http://localhost:${SOLR_PORT}/solr/admin/info/system"
+  assert_output "200"
+
+  run curl -s -o /dev/null -w "%{http_code}" "http://localhost:${SOLR_PORT}/not-solr/admin/info/system"
+  assert_output "404"
+}
+
+@test "-c flag prints no-op warning and still starts in cloud mode" {
+  run solr start -c
+  assert_output --partial 'WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default.'
+
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000
 }
 
 @test "bootstrapping a configset" {

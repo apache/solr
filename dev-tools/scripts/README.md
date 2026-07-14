@@ -15,7 +15,7 @@ Used to validate new release candidates (RC). The script downloads an RC from a 
 or local folder, then runs a number of sanity checks on the artifacts, and then runs
 the full tests.
 
-    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed] [--local-keys PATH] [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--test-alt-java TEST_ALT_JAVA] [--download-only] [--dev-mode] url ...
+    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed] [--local-keys PATH] [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--download-only] [--dev-mode] url ...
 
     Utility to test a release.
 
@@ -31,8 +31,6 @@ the full tests.
       --revision REVISION   GIT revision number that release was built with, defaults to that in URL
       --version X.Y.Z(-ALPHA|-BETA)?
                             Version of the release, defaults to that in URL
-      --test-alt-java TEST_ALT_JAVA
-                            Path to Java alternative home directory, to run tests with if specified
       --download-only       Only perform download and sha hash check steps
       --dev-mode            Enable dev mode, will not check branch compatibility
 
@@ -181,6 +179,27 @@ Each YAML file complies with the schema outlined in `dev-docs/changelog.adoc`.
 
     # Default behavior
     python3 dev-tools/scripts/changes2logchange.py solr/CHANGES.txt
+
+### validate-changelog-yaml.py
+
+Validates one or more changelog YAML files, or all YAML files in a folder.
+Used by the GitHub Actions workflow to validate entries on pull requests,
+and called automatically by `logchange.py prepare` as a pre-flight check.
+
+    python3 dev-tools/scripts/validate-changelog-yaml.py changelog/unreleased/my-fix.yml
+    python3 dev-tools/scripts/validate-changelog-yaml.py changelog/unreleased/
+
+### logchange.py
+
+Handles changelog git operations during a release. Normally invoked by the
+Release Wizard, but can also be run standalone.
+
+    usage: logchange.py prepare [-h] --version VERSION --release-branch RELEASE_BRANCH [--gradle-cmd GRADLE_CMD]
+                            [--git-remote GIT_REMOTE] [--dry-run] [--commit]
+
+    usage: logchange.py forward-port [-h] --version VERSION --release-branch RELEASE_BRANCH [--gradle-cmd GRADLE_CMD]
+                                 [--git-remote GIT_REMOTE] [--dry-run] --stable-branch STABLE_BRANCH
+                                 [--release-date RELEASE_DATE] [--push]
 
 ### validateChangelogs.py
 

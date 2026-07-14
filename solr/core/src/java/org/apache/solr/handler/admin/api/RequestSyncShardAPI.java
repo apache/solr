@@ -31,6 +31,7 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.RequestSyncShardPayload;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 /**
@@ -57,7 +58,7 @@ public class RequestSyncShardAPI {
   @Command(name = V2_REQUEST_SYNC_SHARD_CMD)
   public void requestSyncShard(PayloadObj<RequestSyncShardPayload> obj) throws Exception {
     final RequestSyncShardPayload v2Body = obj.get();
-    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    final Map<String, Object> v1Params = Utils.convertToMap(v2Body, new HashMap<>());
     v1Params.put(ACTION, REQUESTSYNCSHARD.name().toLowerCase(Locale.ROOT));
     v1Params.put(CORE, obj.getRequest().getPathTemplateValues().get("core"));
 

@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -43,6 +44,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -52,10 +54,14 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   public Path temporaryFolder;
 
-  @SuppressWarnings("removal")
   @ClassRule
+  @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
+      S3MockRule.builder()
+          .silent()
+          .withInitialBuckets(BUCKET_NAME)
+          .withSecureConnection(false)
+          .build();
 
   @Before
   @Override
@@ -343,7 +349,10 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   private Path pullObject(String path) throws IOException {
     try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
       Path file = Files.createTempFile(temporaryFolder, "junit", null);
-      InputStream input = s3.getObject(b -> b.bucket(BUCKET_NAME).key(path));
+      InputStream input =
+          s3.getObject(
+              b -> b.bucket(BUCKET_NAME).key(path),
+              ResponseTransformer.toInputStream(Duration.ZERO));
       Files.copy(input, file, StandardCopyOption.REPLACE_EXISTING);
       return file;
     }

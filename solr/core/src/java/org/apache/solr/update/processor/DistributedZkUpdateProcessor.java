@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -791,7 +790,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       } else {
         // I need to forward on to the leader...
         forwardToLeader = true;
-        return Collections.singletonList(
+        return List.of(
             new SolrCmdDistributor.ForwardNode(
                 new ZkCoreNodeProps(leaderReplica),
                 zkController.getZkStateReader(),

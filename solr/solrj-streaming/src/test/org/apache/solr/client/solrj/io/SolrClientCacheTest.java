@@ -17,13 +17,16 @@
 package org.apache.solr.client.solrj.io;
 
 import java.util.Map;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DigestZkACLProvider;
 import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,15 +35,19 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
   private static final Map<String, String> sysProps =
       Map.of(
           SolrZkClient.ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME,
-              VMParamsZkCredentialsInjector.class.getName(),
+          VMParamsZkCredentialsInjector.class.getName(),
           SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
-              DigestZkCredentialsProvider.class.getName(),
+          DigestZkCredentialsProvider.class.getName(),
           SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
-              DigestZkACLProvider.class.getName(),
-          VMParamsZkCredentialsInjector.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, "admin-user",
-          VMParamsZkCredentialsInjector.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME, "pass",
-          VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME, "read-user",
-          VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, "pass");
+          DigestZkACLProvider.class.getName(),
+          VMParamsZkCredentialsInjector.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
+          "admin-user",
+          VMParamsZkCredentialsInjector.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME,
+          "pass",
+          VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
+          "read-user",
+          VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
+          "pass");
 
   @BeforeClass
   public static void before() throws Exception {
@@ -62,7 +69,35 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
       // This ZK Host is fake, thus the ZK ACLs should not be used
       cache.setDefaultZKHost("test:2181");
       expectThrows(
-          SolrException.class, () -> cache.getCloudSolrClient(zkClient().getZkServerAddress()));
+          SolrException.class,
+          () ->
+              cache.getCloudSolrClient(
+                  CloudSolrClient.CloudSolrClientConnection.parse(
+                      zkClient().getZkServerAddress())));
+    }
+  }
+
+  @Test
+  public void testGetClientWithHttp() {
+    String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
+    try (SolrClientCache cache = new SolrClientCache()) {
+      CloudSolrClient cloudSolrClient =
+          cache.getCloudSolrClient(CloudSolrClient.CloudSolrClientConnection.parse(solrUrl));
+      ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
+      Assert.assertEquals(1, clusterState.getLiveNodes().size());
+    }
+  }
+
+  @Test
+  public void testGetClientWithZookeeper() {
+    String zkConnectionString = zkClient().getZkServerAddress();
+    try (SolrClientCache cache = new SolrClientCache()) {
+      cache.setDefaultZKHost(zkClient().getZkServerAddress());
+      CloudSolrClient cloudSolrClient =
+          cache.getCloudSolrClient(
+              CloudSolrClient.CloudSolrClientConnection.parse(zkConnectionString));
+      ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
+      Assert.assertEquals(1, clusterState.getLiveNodes().size());
     }
   }
 
@@ -71,7 +106,8 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
     try (SolrClientCache cache = new SolrClientCache()) {
       // The same ZK Host is used, so the ZK ACLs should still be applied
       cache.setDefaultZKHost(zkClient().getZkServerAddress() + "/random/chroot");
-      cache.getCloudSolrClient(zkClient().getZkServerAddress());
+      cache.getCloudSolrClient(
+          CloudSolrClient.CloudSolrClientConnection.parse(zkClient().getZkServerAddress()));
     }
   }
 }

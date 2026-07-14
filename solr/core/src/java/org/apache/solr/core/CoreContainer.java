@@ -69,9 +69,8 @@ import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
@@ -707,7 +706,7 @@ public class CoreContainer {
    *
    * @see #getDefaultHttpSolrClient()
    * @see ZkController#getSolrClient()
-   * @see HttpSolrClientBase#requestWithBaseUrl(String, SolrRequest, String)
+   * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    * @deprecated likely to simply be moved to the ObjectCache so as to not be used
    */
   @Deprecated
@@ -814,7 +813,7 @@ public class CoreContainer {
           caffeineCache.initializeMetrics(
               solrMetricsContext,
               Attributes.builder().put(NAME_ATTR, cacheName).build(),
-              "solr_node_cache");
+              "solr.node.cache");
         }
         m.put(cacheName, c);
       }
@@ -957,7 +956,7 @@ public class CoreContainer {
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
                 new SolrNamedThreadFactory("coreLoadExecutor")),
-            "solr_node_executor",
+            "solr.node.executor",
             "coreLoadExecutor",
             SolrInfoBean.Category.CONTAINER);
 
@@ -2462,10 +2461,10 @@ public class CoreContainer {
    *
    * <p>The caller does not need to close the client.
    *
-   * @return the existing {@link HttpJettySolrClient}
-   * @see HttpSolrClientBase#requestWithBaseUrl(String, SolrRequest, String)
+   * @return the existing {@link HttpSolrClient}
+   * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    */
-  public HttpJettySolrClient getDefaultHttpSolrClient() {
+  public HttpSolrClient getDefaultHttpSolrClient() {
     return solrClientProvider.getSolrClient();
   }
 

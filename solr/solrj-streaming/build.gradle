@@ -21,15 +21,16 @@ description = 'Solrj-Streaming - SolrJ requiring Streaming Expressions'
 
 dependencies {
   implementation project(':solr:solrj')
-  implementation project(':solr:solrj-jetty')
 
   // declare dependencies we use even though already declared by solrj-core
   implementation libs.slf4j.api
   implementation libs.apache.commons.math3
+  implementation libs.tdunning.tdigest
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj-zookeeper')
+  testImplementation project(':solr:solrj-jetty')
 
   testRuntimeOnly project(':solr:modules:sql')
   testRuntimeOnly libs.hsqldb.hsqldb // runtime because via JDBC reflection
@@ -38,7 +39,4 @@ dependencies {
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
-
-  // cutterslade requires we state the obvious
-  testImplementation project(':solr:solrj-streaming')
 }

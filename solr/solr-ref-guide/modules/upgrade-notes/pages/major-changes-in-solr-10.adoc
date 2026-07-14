@@ -36,12 +36,76 @@ Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
 == Solr 10.1
 
+=== Misc
+
+For SSL (https), it's no longer necessary to set the "urlScheme" cluster property since the `SOLR_SSL_ENABLED` env var (or `solr.ssl.enabled` sys-prop) suffices.
+These are now honored by CloudSolrClient, as well as scheme detection from the connection string / hosts.
+The "urlScheme" cluster property and httpShardHandlerFactory configuration is likely to be deprecated; feedback welcome.
+
+If you use xref:configuration-guide:index-segments-merging.adoc#customizing-merge-policies[`SortingMergePolicyFactory`] for index sorting and your schema declares `\_root_`, Solr configures a new mechanism in Lucene that affects the index to support nested/block documents with sorted indexes.
+This requires a fresh Solr 10.1 index.
+To retain compatibility with existing sorted indexes, deferring a reindex, keep `luceneMatchVersion` at 10.3.1 or earlier in solrconfig.xml.
+
+=== Universal connection string support
+
+Introduced a universal Solr connection string for SolrCloud connections.
+
+Connections can now be configured via HTTP(S) without exposing ZooKeeper details, while the legacy ZooKeeper-based connection method remains fully supported.
+
+Examples:
+`solrConnection=http://solr1:8983/solr,http://solr2:8983/solr`
+`solrConnection=zoo1:2181,zoo2:2181,zoo3:2181/solr`
+
+The universal connection string is now supported in the following components and entry points:
+
+* Added `CloudSolrClient.Builder(String)` constructor in SolrJ for configuring SolrCloud clients using either HTTP(S)-based or ZooKeeper-based connection strings.
+* Added `solrConnection` parameter to all streaming functions in the SolrJ Streaming module. The existing `zkHost` parameter remains supported.
+* Added `withDefaultSolrConnection` and `withCollectionSolrConnection` methods to `StreamFactory` in the SolrJ Streaming module.
+* Solr SQL JDBC driver now supports both HTTP-based (`jdbc:solr:http://solr1.example.com:8983/solr?collection=COLLECTION_NAME`) and ZooKeeper-based (`jdbc:solr://zoo.example.com:2181/solr?collection=COLLECTION_NAME`) JDBC URLs.
+* Added `--solr-connection` option to the CLI tools.
+* Updated Solr CLI `-s` short option to invoke `--solr-connection` instead of `--solr-url`, which is a backwards compatible change.
+* Added `solrConnection` parameter to the Join Query Parser.
+
 === v2 API
 Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
 
 Former users of `solr.api.v2.enabled` looking to upgrade to Solr 10.1 or newer should take care to review any custom `RuleBasedAuthorizationPlugin` permissions and ensure that v2 API paths are adequately secured.
 
 Users who deploy a proxy in front of Solr should also review this setup to ensure that it allows access to the v2 API root path, `/api`.
+
+=== JWT Authentication
+
+The `blockUnknown` setting in the JWT Authentication plugin now defaults to `true`, meaning requests without a valid JWT token are blocked by default.
+In Solr 10.0, the code default was `false` (pass-through), which contradicted the reference guide documentation that described `true` as the default.
+Users upgrading from 10.0 who relied on the pass-through behavior must explicitly set `"blockUnknown": false` in their `security.json`.
+
+=== Security
+
+PKI Authentication v1 support has been removed.
+Solr 10.1 nodes only send and accept the `SolrAuthV2` (v2) header for inter-node communication.
+
+Before performing a rolling upgrade to 10.1, ensure no node in the cluster has `solr.pki.sendVersion=v1` set, as those nodes would send the legacy `SolrAuth` header that 10.1 nodes will reject.
+The `solr.pki.sendVersion` and `solr.pki.acceptVersions` system properties are no longer recognized in 10.1 and can be removed from your configuration.
+
+The Basic Authentication password policy has been strengthened: a password may no longer be equal to its username.
+Login attempts where the password equals the username are now rejected, and creating or editing such a user (via the Admin UI, the Authentication API, or `bin/solr auth`) is no longer allowed.
+
+If you are upgrading and still have Basic Auth users whose password equals their username, you can temporarily re-enable the old behavior by setting the system property `-Dsolr.security.auth.basicauth.allowuseraspassword=true` (or the environment variable `SOLR_SECURITY_AUTH_BASICAUTH_ALLOWUSERASPASSWORD=true`).
+When enabled, this escape hatch relaxes both the login-time check and the user creation/editing check, so existing accounts keep working and can still be managed.
+It is intended as a temporary measure while you migrate the affected accounts to stronger passwords, and should be removed once that is done.
+
+=== SolrJ
+
+HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
+Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
+
+=== Embedded Jetty Configuration
+
+Solr 10.1 upgrades the embedded server to Eclipse Jetty 12.1, which removed Jetty's directory-scanning deployer (the `DeploymentManager` and `ContextProvider` classes).
+Because Solr serves a single, statically-known webapp, that webapp is now deployed directly in `server/etc/jetty.xml`, and the `server/contexts/solr-jetty-context.xml` file has been removed.
+
+Advanced users who relied on Jetty scanning the `server/contexts/` directory to auto-deploy additional context descriptors will find that this no longer happens.
+To deploy an extra context, or to customize how the Solr webapp itself is deployed, edit `server/etc/jetty.xml` directly and add the context there.
 
 == Solr 10.0
 
@@ -150,13 +214,29 @@ A new experimental Admin UI is available alongside the existing Admin UI (SOLR-1
 It can be accessed at the URL path `/solr/ui/`.
 This UI is still in active development and provided as a preview; the existing Admin UI remains the default.
 
-=== Vector Search Enhancements
+=== Vector Search
+
+==== Enhancements
 
 * The `efSearchScaleFactor` parameter is now available for the KNN query parser (SOLR-17928). This parameter controls how many candidate vectors are explored during HNSW graph traversal, allowing users to independently tune search accuracy versus the number of results returned. Previously, improving accuracy required increasing `topK` (which returns more results), but `efSearchScaleFactor` enables exploring more candidates while still receiving exactly `topK` results. The `efSearch` value is calculated internally as `efSearchScaleFactor * topK`. Default value is `1.0`, which means `efSearch` defaults to `topK`.
 
 * Scalar and binary quantized dense vectors are now supported for `DenseVectorField` (SOLR-17780, SOLR-17812). Quantization reduces memory consumption and can improve search performance at some cost to accuracy. See the reference guide for configuration details.
 
 * GPU-accelerated approximate nearest neighbor search is now available via the cuVS-Lucene pluggable codec (SOLR-17892). This allows NVIDIA GPU hardware to be used for vector search workloads.
+
+* Early termination strategy for KNN queries is now supported (SOLR-17814). `PatienceKnnVectorQuery` is a version of knn vector query that exits early the graph when HNSW queue saturates over a saturationThreshold for more than patience times.
+
+* Lexically accelerated vector search is now supported (SOLR-17813). `SeededKnnVectorQuery` is a version of knn vector query that introduces a “seed” query, allowing the search to start from a predefined subset of documents and guide the vector similarity computation.
+
+* The `filteredSearchThreshold` parameter is now available to regulate ACORN-based filtering in vector search (SOLR-17815). This approach addresses the performance limitations typically associated with pre-filtering and post-filtering strategies by modifying both the construction and search phases of the HNSW graph.
+
+* Fixed incorrect behavior of `TextToVectorUpdateProcessor` during partial updates (SOLR-17843).
+
+==== Renaming of HNSW Parameters
+Attention:
+
+* The `llm` module has been renamed to `language-models`.
+* The HNSW parameters `hnswMaxConnections` and `hnswBeamWidth` have been renamed to `hnswM` and `hnswEfConstruction`, respectively, so they must be updated accordingly in the schema.xml file.
 
 === Deprecation Code Removals
 
@@ -165,7 +245,7 @@ This UI is still in active development and provided as a preview; the existing A
 ** `analytics` has been removed
 ** `hadoop-auth` (including the `solr.KerberosPlugin` class) has been removed
 
-* `OpenTracing` libraries were removed and replaced with `OpenTelemetry` libraries. Any Java agents providing `OpenTracing` tracers will no longer work. Telemetry tags `http.status_code` and `http.method` have been deprecated, newer versions of the tags have been added to the span data: `http.response.status_code`, `http.request.method`.
+* `OpenTracing` libraries were removed and replaced with `OpenTelemetry` libraries. Any Java agents providing `OpenTracing` tracers will no longer work. Telemetry tags `http.status_code` and `http.method` have been removed from the span data; use `http.response.status_code` and `http.request.method` instead. (SOLR-18110)
 
 * The sysProp `-Dsolr.redaction.system.pattern`, which allows users to provide a pattern to match sysProps that should be redacted for sensitive information,
 has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` instead.
@@ -224,6 +304,10 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 * The deprecated `LowerCaseTokenizer` and `LowerCaseTokenizerFactory` have been removed. These classes were deprecated in Solr 8 and can be replaced by combining `LetterTokenizerFactory` with `LowerCaseFilterFactory`.
 
 * The deprecated `solrcore.properties` configuration method has been removed.  The ability to configure a core via a custom properties file using the `core.properties` "property" setting remains.
+
+* The deprecated `VMParamsAllAndReadonlyDigestZkACLProvider` class has been removed. Use a combination of `DigestZkACLProvider` and `VMParamsZkCredentialsInjector` instead. (SOLR-18122)
+
+* The legacy V1 `ADDROLE` and `REMOVEROLE` commands (and their SolrJ client and experimental V2 counterparts) are deprecated as of 10.1 and scheduled for removal in Solr 11. Users must switch to **"node roles" (system properties)** (e.g., `-Dsolr.node.roles=data:on,overseer:preferred`) at startup. The `roles` field in `CLUSTERSTATUS` is also deprecated.
 
 === Security
 
@@ -293,13 +377,44 @@ Due to Lucene 10 changes (https://github.com/apache/lucene/pull/12875), `PathHie
 </fieldType>
 ----
 
-=== Renaming in Vector Search
-Attention:
+=== Learning To Rank (LTR)
 
-* The `llm` module has been renamed to `language-models`.
-* The HNSW parameters `hnswMaxConnections` and `hnswBeamWidth` have been renamed to `hnswM` and `hnswEfConstruction`, respectively, so they must be updated accordingly in the schema.xml file.
+A new feature vector cache was added that is used not only for feature logging but also for the reranking phase (SOLR-16667).
 
 == Solr 10.1
+
+=== OpenTelemetry
+
+The new OTEL based metric system introduced in 10.0 is considered BETA, and some breaking changes are to be expected in this and coming minor releases.
+
+==== OTLP Metric Names Changed to Dot-Separated Format
+
+*Breaking change for OTLP consumers.*
+
+Solr's metric names exported via OTLP now follow the https://opentelemetry.io/docs/specs/semconv/general/naming/[OpenTelemetry semantic convention] of using dot-separated names instead of the underscore-separated names used in Solr 10.0.
+
+For example, `solr_core_requests` is now `solr.core.requests`, and `solr_node_executor` is now `solr.node.executor`.
+
+*Prometheus output is unaffected.* The OTel Prometheus exporter automatically converts dots to underscores, so the `/admin/metrics?wt=prometheus` endpoint continues to produce the same metric names as before (e.g., `solr_core_requests_total`).
+
+*Workaround for OTLP consumers depending on the old names:*
+Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format names can use metric renaming or transformation features in their OpenTelemetry Collector pipeline to convert the new dot-separated names back to the old format during the transition.
+
+==== Metric that are Removed or Changed
+
+* The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`
+* The metric `solr.zk.cumulative.children_fetched` has been removed
+* The metric `solr.zk.child.fetches` is now `solr.zk.get_children.ops`
+* All CrossDC consumer metrics have been renamed: `crossdc.consumer.*` → `solr.crossdc.consumer.*`
+  (e.g., `crossdc.consumer.output.total` → `solr.crossdc.consumer.output.total`)
+* All CrossDC producer metrics have been renamed: `solr.core.crossdc.producer.*` → `solr.crossdc.producer.*`
+  (e.g., `solr.core.crossdc.producer.submitted` → `solr.crossdc.producer.submitted`)
+
+Update your dashboards or other metrics consumers accordingly.
+
+==== Overseer Status Metrics Removed
+
+The `OVERSEERSTATUS` Collection API response no longer includes per-operation timing metrics but per-operation `requests` and `errors` counts still exist. Users needing per-operation latency can use distributed tracing as a substitute via OpenTelemetry.
 
 === Lucene Codec Change
 
@@ -309,3 +424,31 @@ Older segments will continue to be readable.
 
 WARNING: After upgrading to Solr 10.1, downgrading to an earlier Solr 10.0.x version may fail because the older version does not include the `Lucene104` codec needed to read the newly written segments.
 If you require the ability to roll back, back up your indexes before upgrading.
+
+=== API Changes
+
+Solr 10.1 changes the V1 API signature in the ConfigSets API for uploading a single file
+Previously the default for `over write` is false when using the v1 API, but true when using the v2 API.
+Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.
+However for a single file upload it has no bearing and only existed due to a bad V1 API design choice.
+
+=== Docker
+
+The `gosu` binary is no longer installed in the Solr Docker image. See https://github.com/tianon/gosu[gosu github page] for alternatives, such as `runuser`, `setpriv` or `chroot`.
+
+=== Max distributed requests now configurable
+
+The internal HTTP client used for distributed shard sub-requests previously had a hard-coded limit of 1000 concurrent async requests per node.
+In large clusters, a single query can fan out to hundreds of sub-requests, quickly exhausting this limit and causing requests to queue, potentially leading to stalls or timeouts.
+This limit is now configurable via the system property `solr.solrj.http.jetty.async_requests.max`.
+
+Current permit utilization can be monitored via the `solr_client_request_async_permits` metric (see xref:deployment-guide:metrics-reporting.adoc#http-client-registry[HTTP Client Registry]).
+
+=== Language Detection
+
+The `langid` module's `LangDetectLanguageIdentifierUpdateProcessor` now uses `io.github.azagniotov:language-detection` instead of the abandoned `com.cybozu.labs:langdetect` (last released in 2012).
+The new library supports a broader set of languages and uses a different statistical model, so detection results may differ from previous versions — particularly for short texts, texts that mix Latin characters with other scripts, or documents containing CJK characters alongside Latin-script content.
+
+=== Query Changes
+
+* Combined Query Feature is now available, enabling the execution of multiple queries of multiple kinds across multiple shards (SOLR-17319). Introduced `CombinedQuerySearchHandler` for hybrid search, using reciprocal rank fusion (RRF) by default and supporting custom ranking algorithms via plugins.

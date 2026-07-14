@@ -525,7 +525,7 @@ Boolean that indicates if Automatons should be compiled for each iteration of th
 
 === Graph Query Limitations
 
-The `graph` parser only works in single-node Solr installations, or with SolrCloud and user-managed clusters that use exactly 1 shard.
+The `graph` parser only works in standalone Solr installations, or with SolrCloud and user-managed clusters that use exactly 1 shard.
 
 === Graph Query Examples
 
@@ -1220,8 +1220,17 @@ Find all documents with the phrase "foo bar" where term "foo" has a payload grea
 `PrefixQParser` extends the `QParserPlugin` by creating a prefix query from the input value.
 Currently, no analysis or value transformation is done to create this prefix query.
 
-The parameter is `f`, the field.
-The string after the prefix declaration is treated as a wildcard query.
+*Parameters*
+
+`f`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+The field on which to run the prefix query.
+The value that follows the local params declaration is treated as the prefix.
 
 Example:
 
@@ -1438,7 +1447,17 @@ Using the example configuration below, clients can optionally specify the custom
 
 `TermQParser` extends the `QParserPlugin` by creating a single term query from the input value equivalent to `readableToIndexed()`.
 This is useful for generating filter queries from the external human-readable terms returned by the faceting or terms components.
-The only parameter is `f`, for the field.
+
+*Parameters*
+
+`f`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+The field on which to run the term query.
 
 Example:
 

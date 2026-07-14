@@ -24,7 +24,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -191,7 +191,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   public void testAsyncGet() throws Exception {
     String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     ResponseParser rp = new XMLResponseParser();
-    HttpSolrClientBuilderBase<?, ?> b =
+    HttpSolrClient.BuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     super.testQueryAsync(b);
   }
@@ -438,29 +438,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testProcessorMimeTypes() throws Exception {
-    ResponseParser rp = new XMLResponseParser();
-
-    try (HttpJdkSolrClient client =
-        builder(solrTestRule.getBaseUrl()).withResponseParser(rp).build()) {
-      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
-      assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/json"));
-      queryToHelpJdkReleaseThreads(client);
-    }
-
-    rp = new JavaBinResponseParser();
-    try (HttpJdkSolrClient client =
-        builder(solrTestRule.getBaseUrl()).withResponseParser(rp).build()) {
-      assertTrue(
-          client.processorAcceptsMimeType(
-              rp.getContentTypes(), "application/vnd.apache.solr.javabin"));
-      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/octet-stream"));
-      assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
-      queryToHelpJdkReleaseThreads(client);
-    }
-  }
-
-  @Test
   public void testContentTypeToEncoding() throws Exception {
     try (HttpJdkSolrClient client = builder(solrTestRule.getBaseUrl()).build()) {
       assertEquals("UTF-8", client.contentTypeToEncoding("application/xml; charset=UTF-8"));
@@ -533,7 +510,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
    * @param client the client
    */
   private void queryToHelpJdkReleaseThreads(HttpJdkSolrClient client) throws Exception {
-    client.query("collection1", new MapSolrParams(Collections.singletonMap("q", "*:*")));
+    client.query("collection1", new MapSolrParams(Map.of("q", "*:*")));
   }
 
   private void assertNoHeadRequestWithSsl(HttpJdkSolrClient client) {
@@ -559,7 +536,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Override
   @SuppressWarnings(value = "unchecked")
-  protected <B extends HttpSolrClientBuilderBase<?, ?>> B builder(
+  protected <B extends HttpSolrClient.BuilderBase<?, ?>> B builder(
       String url, int connectionTimeout, int socketTimeout) {
     HttpJdkSolrClient.Builder b =
         new HttpJdkSolrClient.Builder(url)

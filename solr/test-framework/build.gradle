@@ -30,10 +30,7 @@ dependencies {
   }
 
   api project(':solr:core')
-  api project(':solr:solrj')
   api project(':solr:solrj-jetty')
-  api project(':solr:api')
-  implementation project(':solr:solrj-zookeeper')
 
   api libs.apache.lucene.testframework
   implementation libs.apache.lucene.core
@@ -53,7 +50,6 @@ dependencies {
   implementation(libs.apache.curator.test) {
     exclude group: 'org.apache.zookeeper', module: 'zookeeper'
     exclude group: 'com.google.guava', module: 'guava'
-    exclude group: 'io.dropwizard.metrics', module: 'metrics-core'
   }
 
   implementation(libs.apache.zookeeper.zookeeper, zkExcludes)
@@ -64,23 +60,20 @@ dependencies {
   implementation libs.slf4j.api
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
-  implementation libs.dropwizard.metrics.core
-  implementation libs.dropwizard.metrics.jetty12.ee10
   implementation libs.commonscli.commonscli
-  implementation libs.apache.httpcomponents.httpclient
-  implementation libs.apache.httpcomponents.httpcore
   implementation libs.opentelemetry.api
   implementation(libs.opentelemetry.exporter.prometheus) {
     transitive = false // most things don't want or already have
   }
-  implementation libs.opentelemetry.sdk.metrics // prometheus exporter needs
-  permitUnusedDeclared libs.opentelemetry.sdk.metrics
+  implementation libs.opentelemetry.sdk.metrics // JettySolrRunner uses MetricReader; exporter is transitive=false
   implementation libs.prometheus.metrics.model
 
   implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server
+  implementation libs.eclipse.jetty.client
+  implementation libs.eclipse.jetty.http
   implementation libs.eclipse.jetty.session
-  api libs.eclipse.jetty.ee10.servlet
+  implementation libs.eclipse.jetty.ee10.servlet
   implementation libs.eclipse.jetty.util
   implementation libs.eclipse.jetty.alpnserver
   runtimeOnly(libs.eclipse.jetty.alpnjavaserver, {
@@ -98,11 +91,4 @@ dependencies {
     exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
     exclude group: "io.prometheus", module: "prometheus-metrics-config"
   })
-
-  implementation(libs.apache.httpcomponents.httpmime, {
-    exclude group: "commons-codec", module: "commons-codec"
-    exclude group: "commons-logging", module: "commons-logging"
-  })
-  implementation libs.apache.httpcomponents.httpclient
-  implementation libs.apache.httpcomponents.httpcore
 }

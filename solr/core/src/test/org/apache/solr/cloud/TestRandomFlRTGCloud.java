@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -38,8 +37,8 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -52,7 +51,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.response.transform.DocTransformer;
@@ -76,9 +74,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
-
-  /** We have a map of clients, keyed by base URL */
-  private static final Map<String, SolrClient> CLIENTS = new ConcurrentHashMap<>();
 
   /** Always included in fl, so we can check what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");
@@ -167,7 +162,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     configureCluster(numNodes).addConfig(configName, configDir).configure();
 
-    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME); // FYI is closed automatically
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .withProperty("config", "solrconfig-tlog.xml")
@@ -179,14 +174,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (null != COLLECTION_CLIENT) {
-      COLLECTION_CLIENT.close();
-      COLLECTION_CLIENT = null;
-    }
-    for (SolrClient client : CLIENTS.values()) {
-      IOUtils.closeQuietly(client);
-    }
-    CLIENTS.clear();
+    COLLECTION_CLIENT = null;
   }
 
   /**
@@ -420,10 +408,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
   }
 
-  private static SolrClient getSolrClient(final String jettyBaseUrl) {
-    return new HttpSolrClient.Builder(jettyBaseUrl).withDefaultCollection(COLLECTION_NAME).build();
-  }
-
   /**
    * Does one or more RTG request for the specified docIds with a randomized fl &amp; fq params,
    * asserting that the returned document (if any) makes sense given the expected SolrInputDocuments
@@ -617,9 +601,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       // Return the CloudSolrClient, it only uses javabin writerType.
       return COLLECTION_CLIENT;
     } else {
-      JettySolrRunner jetty = jettySolrRunners.get(idx);
-      String jettyBaseUrl = jetty.getBaseUrl().toString();
-      return CLIENTS.computeIfAbsent(jettyBaseUrl, TestRandomFlRTGCloud::getSolrClient);
+      var solrClient = jettySolrRunners.get(idx).getSolrClient();
+      return new CollectionScopedSolrClient(solrClient, COLLECTION_NAME);
     }
   }
 
@@ -739,7 +722,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           expectedFieldName + " vs " + actualFieldName,
           expected.getFieldValue(expectedFieldName),
           normalize(wt, actual.getFirstValue(actualFieldName)));
-      return Collections.<String>singleton(actualFieldName);
+      return Set.of(actualFieldName);
     }
   }
 
@@ -785,7 +768,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     @Override
     public Set<String> getSuppressedFields() {
-      return Collections.singleton(expectedFieldName);
+      return Set.of(expectedFieldName);
     }
   }
 
@@ -834,14 +817,14 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           // validates based on `actual.getFirstValue(...)`, it causes issues. Here we know that our
           // raw values are only on single-valued fields, so we wrap it to work around
           // `getFirstValue` in parent class. The same logic applies to `expected` (below)
-          actual.setField(actualFieldName, Collections.singleton(v));
+          actual.setField(actualFieldName, Set.of(v));
         }
         try {
           Object parsedExpected =
               ObjectBuilder.fromJSON((String) expected.getFieldValue(expectedFieldName));
           if (parsedExpected instanceof Collection) {
             // see note above
-            parsedExpected = Collections.singleton(parsedExpected);
+            parsedExpected = Set.of(parsedExpected);
           }
           expected = expected.deepCopy(); // need to copy before modifying expected!
           expected.setField(expectedFieldName, parsedExpected);
@@ -972,7 +955,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       }
       assertTrue(
           USAGE + " must be >= " + minValidDocId + ": " + value, minValidDocId <= (Integer) value);
-      return Collections.<String>singleton(resultKey);
+      return Set.of(resultKey);
     }
   }
 
@@ -1012,7 +995,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
       // trivial sanity check
       assertFalse(USAGE + " => blank string", value.toString().trim().isEmpty());
-      return Collections.<String>singleton(resultKey);
+      return Set.of(resultKey);
     }
   }
 
@@ -1052,7 +1035,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
       // trivial sanity check
       assertFalse(USAGE + " => blank string", value.toString().trim().isEmpty());
-      return Collections.singleton(resultKey);
+      return Set.of(resultKey);
     }
   }
 
@@ -1103,7 +1086,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       Object actualVal = normalize(wt, actual.getFirstValue(resultKey));
       assertNotNull(getFlParam() + " => no value in actual doc", actualVal);
       assertEquals(getFlParam(), expectedVal, actualVal);
-      return Collections.<String>singleton(resultKey);
+      return Set.of(resultKey);
     }
   }
 
@@ -1153,7 +1136,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           "this validator only works on numeric fields: " + origVal, origVal instanceof Number);
 
       assertEquals(fl, 1.3F, normalize(wt, actual.getFirstValue(resultKey)));
-      return Collections.<String>singleton(resultKey);
+      return Set.of(resultKey);
     }
   }
 
@@ -1218,7 +1201,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
             ((subDocIdVal < compVal) && ((compVal - 2) <= subDocIdVal)));
       }
 
-      return Collections.<String>singleton(SUBQ_KEY);
+      return Set.of(SUBQ_KEY);
     }
 
     @Override
@@ -1319,12 +1302,12 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       }
       assertEquals(fl, orig, actual.getFirstValue(resultKey));
-      return Collections.<String>singleton(resultKey);
+      return Set.of(resultKey);
     }
 
     @Override
     public Set<String> getSuppressedFields() {
-      return Collections.singleton(fieldName);
+      return Set.of(fieldName);
     }
   }
 

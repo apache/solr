@@ -1517,8 +1517,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
           perShardXpaths.addAll(expectedDep.perShardXpaths);
         }
       }
-      ALL.put(
-          stat, new ExpectedStat(stat, input, perShardXpaths, Collections.singletonList(xpath)));
+      ALL.put(stat, new ExpectedStat(stat, input, perShardXpaths, List.of(xpath)));
     }
 
     public static void create(
@@ -1608,10 +1607,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ExpectedStat.createSimple(Stat.stddev, "true", "double", String.valueOf(stddev));
     final String distinctValsXpath = "count(" + kpre + "arr[@name='distinctValues']/*)=10";
     ExpectedStat.create(
-        Stat.distinctValues,
-        "true",
-        Collections.singletonList(distinctValsXpath),
-        Collections.singletonList(distinctValsXpath));
+        Stat.distinctValues, "true", List.of(distinctValsXpath), List.of(distinctValsXpath));
     ExpectedStat.createSimple(Stat.countDistinct, "true", "long", "10");
     final String percentileShardXpath =
         kpre
@@ -1624,7 +1620,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ExpectedStat.create(
         Stat.percentiles,
         "'90, 99'",
-        Collections.singletonList(percentileShardXpath),
+        List.of(percentileShardXpath),
         Arrays.asList(
             "count(" + kpre + "lst[@name='percentiles']/*)=2",
             kpre + "lst[@name='percentiles']/double[@name='90.0'][.=" + p90 + "]",
@@ -1636,10 +1632,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             + "']";
     final String cardinalityXpath = kpre + "long[@name='cardinality'][.='10']";
     ExpectedStat.create(
-        Stat.cardinality,
-        "true",
-        Collections.singletonList(cardinalityShardXpath),
-        Collections.singletonList(cardinalityXpath));
+        Stat.cardinality, "true", List.of(cardinalityShardXpath), List.of(cardinalityXpath));
 
     // canary in the coal mine
     assertEquals(

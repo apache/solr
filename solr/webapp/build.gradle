@@ -26,14 +26,10 @@ configurations {
   war {}
   serverLib
   solrCore
-  generatedJSClient
   generatedJSClientBundle
-}
-
-ext {
-  jsClientWorkspace = layout.buildDirectory.dir("jsClientWorkspace").get()
-  jsClientBuildDir = layout.buildDirectory.dir("jsClientBuild").get()
-  jsClientBundleDir = layout.buildDirectory.dir("jsClientBundle").get()
+  // TODO: :solr:ui's dev/prod distributions are pulled in via raw cross-project task
+  // references (see generateUiDevFiles/generateUiProdFiles below) instead of a
+  // configuration like this one; consider exposing them as a real configuration too.
 }
 
 dependencies {
@@ -42,55 +38,9 @@ dependencies {
   solrCore project(":solr:core")
   implementation(configurations.solrCore - configurations.serverLib)
 
-  generatedJSClient project(path: ":solr:api", configuration: "jsClient")
-  generatedJSClientBundle files(jsClientBundleDir) {
-    builtBy "finalizeJsBundleDir"
+  if (gradle.ext.withJsClient) {
+    generatedJSClientBundle project(path: ":solr:webapp:js-client", configuration: "jsClientBundle")
   }
-}
-
-task syncJSClientSourceCode(type: Sync) {
-  group = 'Solr JS Client'
-  from configurations.generatedJSClient
-
-  into jsClientWorkspace
-
-  // Keep the node modules, so that they don't need to be re-downloaded
-  preserve {
-    include "node_modules/**"
-  }
-}
-
-task jsClientDownloadDeps(type: NpmTask) {
-  group = 'Solr JS Client'
-  dependsOn tasks.syncJSClientSourceCode
-
-  args = ["install"]
-  workingDir = file(jsClientWorkspace)
-
-  inputs.dir("${jsClientWorkspace}/src")
-  inputs.file("${jsClientWorkspace}/package.json")
-  outputs.dir("${jsClientWorkspace}/node_modules")
-}
-
-task jsClientBuild(type: NpmTask) {
-  group = 'Solr JS Client'
-  dependsOn tasks.jsClientDownloadDeps
-
-  args = ["run", "build"]
-  workingDir = file(jsClientWorkspace)
-
-  inputs.dir("${jsClientWorkspace}/src")
-  inputs.file("${jsClientWorkspace}/package.json")
-  inputs.dir("${jsClientWorkspace}/node_modules")
-  outputs.dir("${jsClientWorkspace}/dist")
-}
-
-task downloadBrowserify(type: NpmTask) {
-  group = 'Build Dependency Download'
-  args = ["install", "browserify@${libs.versions.browserify.get()}"]
-
-  inputs.property("browserify version", libs.versions.browserify.get())
-  outputs.dir("${nodeProjectDir}/node_modules/browserify")
 }
 
 if (gradle.ext.withUiModule) {
@@ -113,39 +63,10 @@ if (gradle.ext.withUiModule) {
   }
 }
 
-task generateJsClientBundle(type: NpxTask) {
-  group = 'Solr JS Client'
-  dependsOn tasks.downloadBrowserify
-  dependsOn tasks.jsClientBuild
-
-  command = 'browserify'
-  args = ['dist/index.js', '-s', 'solrApi', '-o', "${jsClientBuildDir}/index.js"]
-  workingDir = file(jsClientWorkspace)
-
-  inputs.dir(jsClientWorkspace)
-  inputs.property("browserify version", libs.versions.browserify.get())
-
-  outputs.file("${jsClientBuildDir}/index.js")
-}
-
-task finalizeJsBundleDir(type: Sync) {
-  group = 'Solr JS Client'
-
-  from configurations.generatedJSClient {
-    include "README.md"
-    include "docs/**"
-  }
-
-  from tasks.generateJsClientBundle {
-    include "index.js"
-  }
-
-  into jsClientBundleDir
-}
-
 war {
-  webAppDirName = "web"
+  from("web")
 
+  // note: nonetheless may be disabled, copying nothing
   from(configurations.generatedJSClientBundle, {
     into "libs/solr"
   })

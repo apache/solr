@@ -18,16 +18,14 @@
 package org.apache.solr.update;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -78,22 +76,21 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient())
             .isSuccess());
 
-    solrClient = cluster.newSolrClient(COLL);
+    solrClient = cluster.getSolrClient(COLL);
 
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     for (Replica replica : clusterState.getCollection(COLL).getReplicas()) {
       clients.add(
-          new HttpSolrClient.Builder(replica.getBaseUrl())
-              .withDefaultCollection(replica.getCoreName())
-              .build());
+          new CollectionScopedSolrClient(
+              cluster.getReplicaJetty(replica).getSolrClient(), replica.getCoreName()));
     }
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
-    IOUtils.close(clients);
+    // lifecycle internally managed; we simply GC here
     clients.clear();
-    IOUtils.close(solrClient);
+    solrClient = null;
 
     RVAL_PRE = null;
   }
@@ -304,9 +301,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
     final Map<String, List<String>> urlMap =
         docCol.getActiveSlices().stream()
             .collect(
-                Collectors.toMap(
-                    s -> s.getName(),
-                    s -> Collections.singletonList(fakeSolrUrlForShard(s.getName()))));
+                Collectors.toMap(s -> s.getName(), s -> List.of(fakeSolrUrlForShard(s.getName()))));
 
     // simplified rote info we'll build up with the shards for each delete (after sanity checking
     // they have routing info at all)...
