@@ -76,7 +76,6 @@ kotlin {
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.androidx.lifecycle.viewModelNav3)
             implementation(libs.androidx.navigation3.ui)
             implementation(libs.androidx.material3.adaptive.asProvider())
@@ -85,7 +84,6 @@ kotlin {
             implementation(libs.kotlinx.serialization.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.kotlinx.datetime)
 
             implementation(libs.decompose.decompose)
             implementation(libs.essenty.lifecycle)
@@ -93,18 +91,15 @@ kotlin {
             implementation(libs.mvikotlin.extensions.coroutines)
             implementation(libs.mvikotlin.mvikotlin)
             implementation(libs.mvikotlin.main)
-            implementation(libs.mvikotlin.logging)
 
             implementation(project.dependencies.platform(libs.ktor.bom))
             implementation(libs.ktor.client.auth)
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.cio)
             implementation(libs.ktor.client.contentNegotiation)
             implementation(libs.ktor.client.serialization.json)
             implementation(libs.squareup.okio)
 
             implementation(libs.oshai.logging)
-            implementation(libs.slf4j.api)
         }
 
         commonTest.dependencies {
@@ -114,13 +109,20 @@ kotlin {
             implementation(libs.ktor.client.mock)
         }
 
-        val desktopMain by getting {
+        val wasmJsMain by getting {
             dependencies {
+                implementation(libs.ktor.client.js)
+            }
+        }
+
+        named("desktopMain") {
+            dependencies {
+                implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.server.core)
                 implementation(libs.ktor.server.cio)
                 implementation(libs.ktor.server.htmlBuilder)
                 implementation(compose.desktop.currentOs)
-                implementation(libs.kotlinx.coroutines.swing)
+                runtimeOnly(libs.kotlinx.coroutines.swing)
             }
         }
     }
@@ -172,6 +174,14 @@ compose.desktop {
             }
         }
     }
+}
+
+// Compose resource accessor generation is not reliably wired to all Kotlin
+// compile tasks (notably wasmJs), causing intermittent "source file not found"
+// for generated accessors. Wire it explicitly.
+val resourceAccessorTasks = tasks.matching { it.name.startsWith("generateResourceAccessorsFor") }
+tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
+    dependsOn(resourceAccessorTasks)
 }
 
 tasks.matching { task ->

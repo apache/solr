@@ -18,6 +18,8 @@ package org.apache.solr.schema;
 
 import static java.util.Arrays.asList;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
@@ -65,7 +67,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.ConfigSetService;
@@ -76,7 +77,6 @@ import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.uninverting.UninvertingReader;
-import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -104,6 +104,7 @@ public class IndexSchema {
   public static final String NEST_PARENT_FIELD_NAME = "_nest_parent_";
   public static final String NEST_PATH_FIELD_NAME = "_nest_path_";
   public static final String NESTED_VECTORS_PSEUDO_FIELD_NAME = "_nested_vectors_";
+  public static final String IS_ROOT_FIELD_NAME = "_is_root_";
   public static final String REQUIRED = "required";
   public static final String SCHEMA = "schema";
   public static final String SIMILARITY = "similarity";
@@ -141,8 +142,8 @@ public class IndexSchema {
   private static final Set<String> FIELDTYPE_KEYS = Set.of("fieldtype", "fieldType");
   private static final Set<String> FIELD_KEYS = Set.of("dynamicField", "field");
 
-  protected Cache<String, SchemaField> dynamicFieldCache =
-      new ConcurrentLRUCache<>(10000, 8000, 9000, 100, false, false, null);
+  protected final Cache<String, SchemaField> dynamicFieldCache =
+      Caffeine.newBuilder().initialCapacity(100).maximumSize(10000).build();
 
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;
@@ -1367,6 +1368,12 @@ public class IndexSchema {
       return false;
     }
 
+    // If a field with same name exists in the cache, don't match
+    // all dynamic field patterns.
+    if (dynamicFieldCache.getIfPresent(fieldName) != null) {
+      return true;
+    }
+
     for (DynamicField df : dynamicFields) {
       if (df.matches(fieldName)) return true;
     }
@@ -1386,7 +1393,7 @@ public class IndexSchema {
   public SchemaField getFieldOrNull(String fieldName) {
     SchemaField f = fields.get(fieldName);
     if (f != null) return f;
-    f = dynamicFieldCache.get(fieldName);
+    f = dynamicFieldCache.getIfPresent(fieldName);
     if (f != null) return f;
 
     for (DynamicField df : dynamicFields) {
@@ -1476,13 +1483,24 @@ public class IndexSchema {
    * @see #getFieldTypeNoEx
    */
   public FieldType getDynamicFieldType(String fieldName) {
-    for (DynamicField df : dynamicFields) {
-      if (df.matches(fieldName)) return df.prototype.getType();
+    FieldType type = dynFieldType(fieldName);
+    if (type != null) {
+      return type;
     }
+
     throw new SolrException(ErrorCode.BAD_REQUEST, "undefined field " + fieldName);
   }
 
   private FieldType dynFieldType(String fieldName) {
+
+    // First, lookup for the field name in the dynamic field cache. In case it
+    // is available there, we save matching all the patterns by retrieving the
+    // type from it.
+    SchemaField field = dynamicFieldCache.getIfPresent(fieldName);
+    if (field != null) {
+      return field.getType();
+    }
+
     for (DynamicField df : dynamicFields) {
       if (df.matches(fieldName)) return df.prototype.getType();
     }

@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -37,7 +36,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -161,7 +159,6 @@ public class HttpJettySolrClient extends HttpSolrClient {
       this.listenerFactory = new ArrayList<>(0);
     }
 
-    updateDefaultMimeTypeForParser();
     this.idleTimeoutMillis = builder.getIdleTimeoutMillis();
 
     try {
@@ -223,7 +220,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
   private HttpClient createHttpClient(Builder builder) {
     executor = builder.getExecutor();
     if (executor == null) {
-      BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
+      BlockingArrayQueue<Runnable> queue = BlockingArrayQueue.newInstance(256, Integer.MAX_VALUE);
       this.executor =
           new ExecutorUtil.MDCAwareThreadPoolExecutor(
               32, 256, 60, TimeUnit.SECONDS, queue, new SolrNamedThreadFactory("h2sc"));
@@ -805,31 +802,6 @@ public class HttpJettySolrClient extends HttpSolrClient {
   @Override
   protected boolean isFollowRedirects() {
     return httpClient.isFollowRedirects();
-  }
-
-  @Override
-  protected boolean processorAcceptsMimeType(
-      Collection<String> processorSupportedContentTypes, String mimeType) {
-
-    return processorSupportedContentTypes.stream()
-        .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim())
-        .anyMatch(mimeType::equalsIgnoreCase);
-  }
-
-  @Override
-  protected void updateDefaultMimeTypeForParser() {
-    defaultParserMimeTypes =
-        parser.getContentTypes().stream()
-            .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
-            .collect(Collectors.toSet());
-  }
-
-  @Override
-  protected String allProcessorSupportedContentTypesCommaDelimited(
-      Collection<String> processorSupportedContentTypes) {
-    return processorSupportedContentTypes.stream()
-        .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
-        .collect(Collectors.joining(", "));
   }
 
   /**

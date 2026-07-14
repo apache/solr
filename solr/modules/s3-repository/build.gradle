@@ -19,10 +19,15 @@ apply plugin: 'java-library'
 
 description = 'S3 Repository'
 
+ext {
+  // S3Mock 4.x runs on embedded Tomcat, which is incompatible with the Java SecurityManager
+  // (Tomcat's PrivilegedSetAccessControlContext fails under an SM). Disable it for these tests.
+  useSecurityManager = false
+}
+
 dependencies {
   implementation platform(project(':platform'))
   api(project(':solr:core'))
-  implementation project(':solr:solrj')
 
   implementation libs.apache.lucene.core
 

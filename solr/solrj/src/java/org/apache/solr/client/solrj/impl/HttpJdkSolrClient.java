@@ -37,7 +37,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -46,7 +45,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -139,7 +137,6 @@ public class HttpJdkSolrClient extends HttpSolrClient {
           ProxySelector.of(new InetSocketAddress(builder.getProxyHost(), builder.getProxyPort())));
     }
     this.httpClient = b.build();
-    updateDefaultMimeTypeForParser();
 
     assert ObjectReleaseTracker.track(this);
   }
@@ -535,36 +532,6 @@ public class HttpJdkSolrClient extends HttpSolrClient {
   @Override
   protected boolean isFollowRedirects() {
     return httpClient.followRedirects() != HttpClient.Redirect.NEVER;
-  }
-
-  @Override
-  protected boolean processorAcceptsMimeType(
-      Collection<String> processorSupportedContentTypes, String mimeType) {
-    return processorSupportedContentTypes.stream()
-        .map(this::contentTypeToMimeType)
-        .filter(Objects::nonNull)
-        .map(String::trim)
-        .anyMatch(mimeType::equalsIgnoreCase);
-  }
-
-  @Override
-  protected void updateDefaultMimeTypeForParser() {
-    defaultParserMimeTypes =
-        parser.getContentTypes().stream()
-            .map(this::contentTypeToMimeType)
-            .filter(Objects::nonNull)
-            .map(s -> s.toLowerCase(Locale.ROOT).trim())
-            .collect(Collectors.toSet());
-  }
-
-  @Override
-  protected String allProcessorSupportedContentTypesCommaDelimited(
-      Collection<String> processorSupportedContentTypes) {
-    return processorSupportedContentTypes.stream()
-        .map(this::contentTypeToMimeType)
-        .filter(Objects::nonNull)
-        .map(s -> s.toLowerCase(Locale.ROOT).trim())
-        .collect(Collectors.joining(", "));
   }
 
   @Override

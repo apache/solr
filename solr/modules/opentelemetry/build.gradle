@@ -22,7 +22,6 @@ description = 'Open Telemetry (OTEL) tracer and OTLP exporter'
 dependencies {
   implementation platform(project(':platform'))
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
 
   implementation platform(libs.netty.bom)
   implementation platform(libs.opentelemetry.bom)
@@ -47,7 +46,10 @@ dependencies {
   compileOnly libs.apache.tomcat.annotationsapi
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj-jetty')
+  testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
   testImplementation libs.opentelemetry.sdk.trace
   testImplementation libs.opentelemetry.sdk.testing
+  testImplementation libs.opentelemetry.sdk.extension.autoconfigure.spi
 }
