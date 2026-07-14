@@ -1,20 +1,4 @@
 = Dependency upgrades
-// Licensed to the Apache Software Foundation (ASF) under one
-// or more contributor license agreements.  See the NOTICE file
-// distributed with this work for additional information
-// regarding copyright ownership.  The ASF licenses this file
-// to you under the Apache License, Version 2.0 (the
-// "License"); you may not use this file except in compliance
-// with the License.  You may obtain a copy of the License at
-//
-//   http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing,
-// software distributed under the License is distributed on an
-// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied.  See the License for the
-// specific language governing permissions and limitations
-// under the License.
 
 Solr has lots of 3rd party dependencies, defined in `gradle/libs.versions.toml`.
 Keeping them up-to-date is crucial for a number of reasons:
@@ -70,14 +54,25 @@ changes resulting from the gradle tasks `resolveAndLockAll` and `updateLicenses`
 Community members and committers can then review, and if manual changes are needed, help bring the PR to completion.
 For many dependencies, a changelog is included in the PR text, which may help guide the upgrade decision.
 
-The scans are run on a schedule. New PRs are filed every Sunday, and only dependency versions that are at least
-5 days old are suggested, to guard against bad apples. If a new *major* version of a dependency is available,
-that will get its own separate Pull Request, so you can choose.
+The scans are run on a schedule. New PRs are filed once a month (before 9am on the first day of the month), and only
+dependency versions that are at least 5 days old are suggested, to guard against bad apples. Since Solr only releases
+every couple of months, a monthly cadence keeps the number of open dependency PRs manageable. A Release Manager who
+wants to be on the very latest right before a release can temporarily switch to a more frequent schedule (e.g.
+`["* * * * 0"]` for weekly) by editing `renovate.json`.
+
+To further cut down on the number of tiny PRs, upgrades are *grouped*. There are a handful of logical groups for
+libraries that must stay version-compatible (e.g. Admin UI, Web server stack, Logging), and then two large
+catch-all groups - "all non-major dependencies" and "all non-major test dependencies" - that bundle the *minor and
+patch* bumps of everything else. *Major* bumps are never grouped; each gets its own PR for individual review. See
+`renovate.json` for the exact group definitions.
 
 If an upgrade is decided, simply merge (and backport) the PR. To skip an upgrade, close the PR. If a PR is left open,
 it will be re-used and auto updated whenever a newer patch- or minor version gets available. Thus, one can reduce
 churn from frequently-updated dependencies by delaying merge until a few weeks before a new release. One can also
 choose to change to a less frequent schedule or disable the bot, by editing `renovate.json`.
+
+The `branch_9x` branch has its own `renovate.json` that layers on top of (and inherits from) this one, overriding only
+the schedule and the lockfile/license commands. Grouping rules defined here therefore apply to `branch_9x` too.
 
 Please note that Solr version prior to 10.X use a versions resolution plugin that uses `versions.lock` instead of
 `libs.version.toml`. Therefore, changes cannot be backported via cherry-pick.

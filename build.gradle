@@ -27,7 +27,6 @@ plugins {
   alias(libs.plugins.kotlin.multiplatform) apply false
   alias(libs.plugins.littlerobots.versioncatalogupdate) apply false
   alias(libs.plugins.thetaphi.forbiddenapis) apply false
-  alias(libs.plugins.undercouch.download) apply false
   alias(libs.plugins.ltgt.errorprone) apply false
   alias(libs.plugins.diffplug.spotless) apply false
   alias(libs.plugins.nodegradle.node) apply false
@@ -133,6 +132,7 @@ ext {
 
   // Use gradle flag in root project for further referencing
   withUiModule = gradle.ext.withUiModule
+  withJsClient = gradle.ext.withJsClient
 }
 
 // Include smaller chunks configuring dedicated build areas.
@@ -172,6 +172,7 @@ apply from: file('gradle/validation/git-status.gradle')
 apply from: file('gradle/validation/validate-source-patterns.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
+apply from: file('gradle/validation/dependency-analyze.gradle.kts')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')

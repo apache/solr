@@ -349,7 +349,7 @@ public class ZkMaintenanceUtils {
               if (file.getFileName().toString().equals(ZKNODE_DATA_FILE)
                   && zkClient.exists(zkNode)) {
                 zkClient.setData(zkNode, file);
-              } else if (file == rootPath) {
+              } else if (file.equals(rootPath)) {
                 // We are only uploading a single file, preVisitDirectory was never called
                 zkClient.makePath(zkPath, Files.readAllBytes(file), false);
               } else {

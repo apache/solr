@@ -71,6 +71,21 @@ public class ConcurrentUpdateJdkSolrClientTest extends ConcurrentUpdateSolrClien
         .build();
   }
 
+  @Override
+  public ConcurrentUpdateBaseSolrClient errorHandlerConcurrentClient(
+      String serverUrl,
+      int queueSize,
+      int threadCount,
+      HttpSolrClient solrClient,
+      ConcurrentUpdateBaseSolrClient.UpdateErrorHandler errorHandler) {
+    return new ConcurrentUpdateJdkSolrClient.Builder(serverUrl, (HttpJdkSolrClient) solrClient)
+        .withQueueSize(queueSize)
+        .withThreadCount(threadCount)
+        .setPollQueueTime(0, TimeUnit.MILLISECONDS)
+        .withErrorHandler(errorHandler)
+        .build();
+  }
+
   public static class OutcomeCountingConcurrentUpdateSolrClient
       extends ConcurrentUpdateJdkSolrClient {
     private final AtomicInteger successCounter;

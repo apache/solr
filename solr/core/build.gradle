@@ -107,7 +107,6 @@ dependencies {
 
   implementation libs.eclipse.jetty.client
   implementation libs.eclipse.jetty.http
-  implementation libs.eclipse.jetty.io
   implementation libs.eclipse.jetty.util
 
   // ZooKeeper
@@ -127,7 +126,6 @@ dependencies {
   implementation(libs.apache.zookeeper.jute) {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
-  testImplementation variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}
 
   // required for instantiating a Zookeeper server (for embedding ZK)
   runtimeOnly libs.xerial.snappy.java
@@ -182,15 +180,13 @@ dependencies {
 
   testRuntimeOnly project(':solr:modules:analysis-extras')
 
-  testImplementation project(':solr:core')
   testImplementation project(':solr:test-framework')
 
   testImplementation libs.apache.lucene.testframework
 
+  testImplementation libs.eclipse.jetty.io
   testImplementation libs.eclipse.jetty.server
   testImplementation libs.eclipse.jetty.ee10.servlet
-  testImplementation libs.eclipse.jetty.util
-  testImplementation libs.jakarta.servlet.api
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest

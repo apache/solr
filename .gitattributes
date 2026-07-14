@@ -4,3 +4,8 @@ versions.lock text eol=lf
 
 # Gradle files are always in LF.
 *.gradle          text eol=lf
+
+# Exclude from source release tarball (git archive).  Avoids ASF license header requirements.
+/.*               export-ignore
+/dev-docs         export-ignore
+AGENTS.md         export-ignore
