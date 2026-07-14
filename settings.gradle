@@ -24,9 +24,24 @@ pluginManagement {
   includeBuild("build-tools/build-infra")
 }
 
+// The dependency-analysis plugin (build-health) bundles a kotlin-metadata-jvm that can't yet parse
+// Kotlin 2.4.0 metadata, so it fails ExplodeJarTask on the :solr:ui (Compose/KMP) module
+// ("Provided Metadata instance has version 2.4.0, while maximum supported version is 2.3.0").
+// Tracked upstream in autonomousapps/dependency-analysis-gradle-plugin#1661; until that ships,
+// force the metadata library to match Solr's Kotlin version so DAGP can analyze the UI module.
+buildscript {
+  configurations.classpath {
+    resolutionStrategy {
+      force "org.jetbrains.kotlin:kotlin-metadata-jvm:2.4.0"
+    }
+  }
+}
+
 plugins {
   id 'com.gradle.develocity' version '4.2.2'
   id 'com.gradle.common-custom-user-data-gradle-plugin' version '2.4.0'
+  id 'com.autonomousapps.build-health' version '3.16.0'
+  id 'org.jetbrains.kotlin.multiplatform' version '2.4.0' apply false
 }
 
 apply from: file('gradle/develocity.gradle')
@@ -72,6 +87,12 @@ def disableUiModuleValue = providers.gradleProperty('disableUiModule').orNull
 gradle.ext.withUiModule = disableUiModuleValue == null || disableUiModuleValue != 'true'
 if (gradle.ext.withUiModule) {
   include(":solr:ui")
+}
+
+def disableJsClientValue = providers.gradleProperty('disableJsClient').orNull
+gradle.ext.withJsClient = disableJsClientValue == null || disableJsClientValue != 'true'
+if (gradle.ext.withJsClient) {
+  include(":solr:webapp:js-client")
 }
 
 // Configures development for joint Lucene/ Solr composite build.

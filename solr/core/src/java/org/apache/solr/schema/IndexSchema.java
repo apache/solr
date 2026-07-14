@@ -1368,6 +1368,12 @@ public class IndexSchema {
       return false;
     }
 
+    // If a field with same name exists in the cache, don't match
+    // all dynamic field patterns.
+    if (dynamicFieldCache.getIfPresent(fieldName) != null) {
+      return true;
+    }
+
     for (DynamicField df : dynamicFields) {
       if (df.matches(fieldName)) return true;
     }
@@ -1477,13 +1483,24 @@ public class IndexSchema {
    * @see #getFieldTypeNoEx
    */
   public FieldType getDynamicFieldType(String fieldName) {
-    for (DynamicField df : dynamicFields) {
-      if (df.matches(fieldName)) return df.prototype.getType();
+    FieldType type = dynFieldType(fieldName);
+    if (type != null) {
+      return type;
     }
+
     throw new SolrException(ErrorCode.BAD_REQUEST, "undefined field " + fieldName);
   }
 
   private FieldType dynFieldType(String fieldName) {
+
+    // First, lookup for the field name in the dynamic field cache. In case it
+    // is available there, we save matching all the patterns by retrieving the
+    // type from it.
+    SchemaField field = dynamicFieldCache.getIfPresent(fieldName);
+    if (field != null) {
+      return field.getType();
+    }
+
     for (DynamicField df : dynamicFields) {
       if (df.matches(fieldName)) return df.prototype.getType();
     }
