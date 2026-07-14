@@ -1142,7 +1142,7 @@ public class SolrQuery extends ModifiableSolrParams {
    *
    * @param qt The Request Handler name corresponding to one in solrconfig.xml on the server.
    * @return this
-   * @deprecated QueryRequest#QueryRequest(String, SolrParams)
+   * @deprecated use QueryRequest#QueryRequest(String, SolrParams)
    * @see SolrRequest#setPath(String)
    */
   @Deprecated
