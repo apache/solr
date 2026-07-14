@@ -3727,7 +3727,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int testClause = 0;
       for (
       /* testClause */ ; testClause < numClauses; testClause++) {
-        if (values[testClause] instanceof LazyStringValue headVal) {
+        if (values[testClause] instanceof LazyStringValue) {
+          LazyStringValue headVal = (LazyStringValue) values[testClause];
           SortedDocValues segDV = stringSortDVs[testClause];
           if (segDV != null && segDV == headVal.dv) {
             int missingOrd = headVal.missingOrd;
