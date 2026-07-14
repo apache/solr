@@ -2861,7 +2861,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
   }
 
-  /** Returns a SolrRequest to add a role to a node */
+  /**
+   * Returns a SolrRequest to add a role to a node
+   *
+   * @deprecated Use Node Roles ({@code -Dsolr.node.roles}) at startup instead.
+   */
+  @Deprecated(since = "10.1")
   public static AddRole addRole(String node, String role) {
     return new AddRole(node, role);
   }
@@ -2873,7 +2878,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
   }
 
-  /** Returns a SolrRequest to remove a role from a node */
+  /**
+   * Returns a SolrRequest to remove a role from a node
+   *
+   * @deprecated Use Node Roles ({@code -Dsolr.node.roles}) at startup instead.
+   */
+  @Deprecated(since = "10.1")
   public static RemoveRole removeRole(String node, String role) {
     return new RemoveRole(node, role);
   }
