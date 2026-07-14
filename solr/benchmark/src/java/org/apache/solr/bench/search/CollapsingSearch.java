@@ -113,7 +113,8 @@ public class CollapsingSearch {
                 "cache", "false"));
 
     @Setup(Level.Trial)
-    public void setupTrial(MiniClusterState.MiniClusterBenchState miniClusterState) throws Exception {
+    public void setupTrial(MiniClusterState.MiniClusterBenchState miniClusterState)
+        throws Exception {
       System.setProperty("commitwithin.softcommit", "false");
       miniClusterState.startMiniCluster(1);
       miniClusterState.createCollection(COLLECTION, 1, 1);
@@ -122,17 +123,17 @@ public class CollapsingSearch {
       miniClusterState.forceMerge(COLLECTION, numSegments);
 
       BaseBenchState.log(
-              "CollapsingSearch ready: numDocs="
-                      + numDocs
-                      + " numGroups="
-                      + numGroups
-                      + " numSegments(requested)="
-                      + numSegments);
+          "CollapsingSearch ready: numDocs="
+              + numDocs
+              + " numGroups="
+              + numGroups
+              + " numSegments(requested)="
+              + numSegments);
     }
 
     @Setup(Level.Iteration)
     public void setupIteration(MiniClusterState.MiniClusterBenchState miniClusterState)
-            throws SolrServerException, IOException {
+        throws SolrServerException, IOException {
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
       miniClusterState.client.request(reload);
     }
@@ -178,37 +179,37 @@ public class CollapsingSearch {
 
   @Benchmark
   public Object simple(BenchState b, MiniClusterState.MiniClusterBenchState cluster)
-          throws SolrServerException, IOException {
+      throws SolrServerException, IOException {
     return cluster.client.request(b.qSimple, COLLECTION);
   }
 
   @Benchmark
   public Object collapseWithoutSort(BenchState b, MiniClusterState.MiniClusterBenchState cluster)
-          throws SolrServerException, IOException {
+      throws SolrServerException, IOException {
     return cluster.client.request(b.qCollapseWithoutSort, COLLECTION);
   }
 
   @Benchmark
   public Object collapseByStr(BenchState b, MiniClusterState.MiniClusterBenchState cluster)
-          throws SolrServerException, IOException {
+      throws SolrServerException, IOException {
     return cluster.client.request(b.qCollapseByStr, COLLECTION);
   }
 
   @Benchmark
   public Object collapseByDate(BenchState b, MiniClusterState.MiniClusterBenchState cluster)
-          throws SolrServerException, IOException {
+      throws SolrServerException, IOException {
     return cluster.client.request(b.qCollapseByDate, COLLECTION);
   }
 
   @Benchmark
   public Object collapseByLong(BenchState b, MiniClusterState.MiniClusterBenchState cluster)
-          throws SolrServerException, IOException {
+      throws SolrServerException, IOException {
     return cluster.client.request(b.qCollapseByLong, COLLECTION);
   }
 
   @Benchmark
   public Object collapseByDateAndStr(BenchState b, MiniClusterState.MiniClusterBenchState cluster)
-          throws SolrServerException, IOException {
+      throws SolrServerException, IOException {
     return cluster.client.request(b.qCollapseByDateAndStr, COLLECTION);
   }
 }
