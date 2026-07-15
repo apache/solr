@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Fixed a NullPointerException when a RemoteSolrException is created without a parseable remote
+  error body (for example a proxy error or an unparseable response), which could mask the actual
+  HTTP status returned by the server.
+type: fixed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-3284
+    url: https://issues.apache.org/jira/browse/SOLR-3284
