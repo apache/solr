@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -170,11 +170,9 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       Thread.sleep(1000); // let the writer fill the pipe and block in awaitSpace()
       server.resetAll(); // drop the connection under the in-flight write
 
-      try {
-        cf.get(30, TimeUnit.SECONDS);
-      } catch (ExecutionException expected) {
-        // the dropped connection is expected to fail the request
-      }
+      // The request settles (normally exceptionally, from the dropped connection); either way the
+      // point of the test is the thread check below, so just wait for it to complete.
+      cf.handle((r, t) -> null).get(30, TimeUnit.SECONDS);
 
       // The writer thread must not remain blocked in the pipe after the request has failed.
       assertTrue(
@@ -217,8 +215,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   private static class StallThenResetServer implements AutoCloseable {
     private final ServerSocket serverSocket;
     private final List<Socket> accepted = Collections.synchronizedList(new ArrayList<>());
-    private final java.util.concurrent.CountDownLatch connected =
-        new java.util.concurrent.CountDownLatch(1);
+    private final CountDownLatch connected = new CountDownLatch(1);
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     StallThenResetServer() throws IOException {
