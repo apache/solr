@@ -340,8 +340,14 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
 
           } catch (OutOfMemoryError | InterruptedException e) {
             throw e;
-          } catch (Throwable e) {
+          } catch (RemoteSolrException e) {
             handleError(e, docIds, collection);
+          } catch (Throwable e) {
+            handleError(
+                new SolrServerException(
+                    "Error from server at " + basePath + ": " + e.getMessage(), e),
+                docIds,
+                collection);
           } finally {
             try {
               consumeFully(rspBody);
