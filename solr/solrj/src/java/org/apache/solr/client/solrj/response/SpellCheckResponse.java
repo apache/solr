@@ -144,10 +144,10 @@ public class SpellCheckResponse {
       suggestion.forEach(
           (n, val) -> {
             switch (n) {
-              case "numFound" -> numFound = (Integer) val;
-              case "startOffset" -> startOffset = (Integer) val;
-              case "endOffset" -> endOffset = (Integer) val;
-              case "origFreq" -> originalFrequency = (Integer) val;
+              case "numFound" -> numFound = ((Number) val).intValue();
+              case "startOffset" -> startOffset = ((Number) val).intValue();
+              case "endOffset" -> endOffset = ((Number) val).intValue();
+              case "origFreq" -> originalFrequency = ((Number) val).intValue();
               case "suggestion" -> {
                 List<?> list = (List<?>) val;
                 if (!list.isEmpty() && list.get(0) instanceof NamedList) {
@@ -157,7 +157,7 @@ public class SpellCheckResponse {
                   alternativeFrequencies = new ArrayList<>();
                   for (NamedList<?> nl : extended) {
                     alternatives.add((String) nl.get("word"));
-                    alternativeFrequencies.add((Integer) nl.get("freq"));
+                    alternativeFrequencies.add(((Number) nl.get("freq")).intValue());
                   }
                 } else {
                   @SuppressWarnings("unchecked")

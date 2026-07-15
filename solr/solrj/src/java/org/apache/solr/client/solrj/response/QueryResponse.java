@@ -248,11 +248,11 @@ public class QueryResponse extends SolrResponseBase {
         }
 
         if (oGroups != null) {
-          Integer iMatches = (Integer) oMatches;
+          int iMatches = ((Number) oMatches).intValue();
           ArrayList<Object> groupsArr = (ArrayList<Object>) oGroups;
           GroupCommand groupedCommand;
           if (oNGroups != null) {
-            Integer iNGroups = (Integer) oNGroups;
+            int iNGroups = ((Number) oNGroups).intValue();
             groupedCommand = new GroupCommand(fieldName, iMatches, iNGroups);
           } else {
             groupedCommand = new GroupCommand(fieldName, iMatches);
@@ -269,10 +269,10 @@ public class QueryResponse extends SolrResponseBase {
 
           _groupResponse.add(groupedCommand);
         } else if (queryCommand != null) {
-          Integer iMatches = (Integer) oMatches;
+          int iMatches = ((Number) oMatches).intValue();
           GroupCommand groupCommand;
           if (oNGroups != null) {
-            Integer iNGroups = (Integer) oNGroups;
+            int iNGroups = ((Number) oNGroups).intValue();
             groupCommand = new GroupCommand(fieldName, iMatches, iNGroups);
           } else {
             groupCommand = new GroupCommand(fieldName, iMatches);
@@ -354,7 +354,9 @@ public class QueryResponse extends SolrResponseBase {
         List<IntervalFacet.Count> counts =
             new ArrayList<IntervalFacet.Count>(intervalField.getValue().size());
         for (Map.Entry<String, Object> interval : intervalField.getValue()) {
-          counts.add(new IntervalFacet.Count(interval.getKey(), (Integer) interval.getValue()));
+          counts.add(
+              new IntervalFacet.Count(
+                  interval.getKey(), ((Number) interval.getValue()).intValue()));
         }
         _intervalFacets.add(new IntervalFacet(field, counts));
       }
@@ -433,7 +435,7 @@ public class QueryResponse extends SolrResponseBase {
         switch (key) {
           case "field" -> field = (String) val;
           case "value" -> value = val;
-          case "count" -> count = ((Integer) val).intValue();
+          case "count" -> count = ((Number) val).intValue();
           case "pivot" -> {
             assert null != val : "Server sent back 'null' for sub pivots?";
             assert val instanceof List : "Server sent non-List for sub pivots?";
