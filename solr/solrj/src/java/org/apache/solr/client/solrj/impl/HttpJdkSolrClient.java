@@ -171,6 +171,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       PreparedRequest pReq = prepareRequest(solrRequest, collection, null);
       return httpClient
           .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
+          .whenComplete((httpResponse, throwable) -> releaseContentWriting(pReq))
           .thenApply(
               httpResponse -> {
                 try {
@@ -184,6 +185,21 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       CompletableFuture<NamedList<Object>> cf = new CompletableFuture<>();
       cf.completeExceptionally(e);
       return cf;
+    }
+  }
+
+  private void releaseContentWriting(PreparedRequest pReq) {
+    if (pReq.contentWritingFuture != null) {
+      pReq.contentWritingFuture.cancel(true);
+    }
+    // Closing the sink is what unblocks a writer already stuck in the pipe; cancel() alone does
+    // not.
+    if (pReq.contentWritingSink != null) {
+      try {
+        pReq.contentWritingSink.close();
+      } catch (IOException e) {
+        log.warn("Could not close content-writing pipe", e);
+      }
     }
   }
 
@@ -282,7 +298,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     reqb.GET();
     decorateRequest(reqb, solrRequest);
     reqb.uri(new URI(url + queryParams.toQueryString()));
-    return new PreparedRequest(reqb, null);
+    return new PreparedRequest(reqb, null, null);
   }
 
   private PreparedRequest preparePutOrPost(
@@ -314,6 +330,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
     HttpRequest.BodyPublisher bodyPublisher;
     Future<?> contentWritingFuture = null;
+    PipedInputStream contentWritingSink = null;
     if (contentWriter != null) {
       boolean success = maybeTryHeadRequest(url);
       if (!success) {
@@ -321,7 +338,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       }
 
       final PipedOutputStream source = new PipedOutputStream();
-      final PipedInputStream sink = new PipedInputStream(source);
+      contentWritingSink = new PipedInputStream(source);
+      final PipedInputStream sink = contentWritingSink;
       bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> sink);
 
       contentWritingFuture =
@@ -363,20 +381,25 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     URI uriWithQueryParams = new URI(url + queryParams.toQueryString());
     reqb.uri(uriWithQueryParams);
 
-    return new PreparedRequest(reqb, contentWritingFuture);
+    return new PreparedRequest(reqb, contentWritingFuture, contentWritingSink);
   }
 
   private static class PreparedRequest {
     Future<?> contentWritingFuture;
+    PipedInputStream contentWritingSink;
     HttpRequest.Builder reqb;
 
     ResponseParser parserToUse;
 
     String url;
 
-    PreparedRequest(HttpRequest.Builder reqb, Future<?> contentWritingFuture) {
+    PreparedRequest(
+        HttpRequest.Builder reqb,
+        Future<?> contentWritingFuture,
+        PipedInputStream contentWritingSink) {
       this.reqb = reqb;
       this.contentWritingFuture = contentWritingFuture;
+      this.contentWritingSink = contentWritingSink;
     }
   }
 
