@@ -72,6 +72,7 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    useFactory(null); // force an FS factory; replication reads real files from the index dir
     System.setProperty("solr.security.allow.urls.enabled", "false");
     initCore("solrconfig.xml", "schema.xml");
   }
@@ -79,6 +80,7 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() throws Exception {
     System.clearProperty("solr.security.allow.urls.enabled");
+    resetFactory();
   }
 
   // Tests for files that are exact multiples of PACKET_SZ
