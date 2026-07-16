@@ -38,8 +38,10 @@ public class CertAuthPlugin extends AuthenticationPlugin {
   private static final String PARAM_PRINCIPAL_RESOLVER = "principalResolver";
   private static final String PARAM_CLASS = "class";
   private static final String PARAM_PARAMS = "params";
-  private static final String JAVAX_REQUEST_ATTRIBUTE_NAME = "javax.servlet.request.X509Certificate";
-  private static final String JAKARTA_REQUEST_ATTRIBUTE_NAME = "jakarta.servlet.request.X509Certificate";
+  private static final String JAVAX_REQUEST_ATTRIBUTE_NAME =
+      "javax.servlet.request.X509Certificate";
+  private static final String JAKARTA_REQUEST_ATTRIBUTE_NAME =
+      "jakarta.servlet.request.X509Certificate";
 
   private static final CertPrincipalResolver DEFAULT_PRINCIPAL_RESOLVER =
       certificate -> certificate.getSubjectX500Principal();
