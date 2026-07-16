@@ -33,8 +33,10 @@ import java.net.SocketTimeoutException;
 import java.net.http.HttpConnectTimeoutException;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -81,6 +83,13 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
       AtomicInteger successCounter,
       AtomicInteger failureCounter,
       StringBuilder errors);
+
+  public abstract ConcurrentUpdateBaseSolrClient errorHandlerConcurrentClient(
+      String serverUrl,
+      int queueSize,
+      int threadCount,
+      HttpSolrClient solrClient,
+      ConcurrentUpdateBaseSolrClient.UpdateErrorHandler errorHandler);
 
   /** Mock endpoint where the CUSS being tested in this class sends requests. */
   public static class TestServlet extends HttpServlet
@@ -270,6 +279,184 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
           "Expected CUSS to send " + expectedDocs + " but got " + TestServlet.numDocsRcvd.get(),
           TestServlet.numDocsRcvd.get(),
           expectedDocs);
+    }
+  }
+
+  /**
+   * Against a real Solr: a valid document succeeds and is not reported, while documents the server
+   * rejects (a non-numeric value for the pint "popularity" field) are reported by id -- so only the
+   * failed ids reach the handler.
+   */
+  @Test
+  public void testFailedDocsAreRecoverableViaErrorHandler() throws Exception {
+    List<String> failedIds = new CopyOnWriteArrayList<>();
+
+    try (var httpClient = solrClient(null);
+        var concurrentClient =
+            errorHandlerConcurrentClient(
+                solrTestRule.getBaseUrl(),
+                10,
+                2,
+                httpClient,
+                (ex, ids, collection) -> failedIds.addAll(ids))) {
+
+      SolrInputDocument good = new SolrInputDocument();
+      good.addField("id", "good-1");
+      concurrentClient.add("collection1", good);
+      concurrentClient.blockUntilFinished();
+      assertTrue("a successful doc must not be reported: " + failedIds, failedIds.isEmpty());
+
+      for (int i = 1; i <= 5; i++) {
+        SolrInputDocument bad = new SolrInputDocument();
+        bad.addField("id", "bad-" + i);
+        bad.addField("popularity", "not-an-int"); // rejected: pint field
+        concurrentClient.add("collection1", bad);
+      }
+      concurrentClient.blockUntilFinished();
+    }
+
+    assertEquals("only the 5 rejected docs should be reported: " + failedIds, 5, failedIds.size());
+    for (int i = 1; i <= 5; i++) {
+      assertTrue("missing bad-" + i + " in " + failedIds, failedIds.contains("bad-" + i));
+    }
+    assertFalse("the successful doc must not be reported", failedIds.contains("good-1"));
+  }
+
+  /** Overriding idOf reports failures by a uniqueKey field other than "id". */
+  @Test
+  public void testErrorHandlerWithCustomIdField() throws Exception {
+    TestServlet.clear();
+    TestServlet.setErrorCode(500); // every request fails server-side
+
+    String serverUrl = solrTestRule.getBaseUrl() + "/cuss/foo";
+    List<String> failedIds = new CopyOnWriteArrayList<>();
+    ConcurrentUpdateBaseSolrClient.UpdateErrorHandler handler =
+        new ConcurrentUpdateBaseSolrClient.UpdateErrorHandler() {
+          @Override
+          public void onError(Throwable ex, List<String> ids, String collection) {
+            failedIds.addAll(ids);
+          }
+
+          @Override
+          public String idOf(SolrInputDocument doc) {
+            Object v = doc.getFieldValue("record_uuid");
+            return v == null ? null : v.toString();
+          }
+        };
+
+    try (var httpClient = solrClient(null);
+        var concurrentClient =
+            errorHandlerConcurrentClient(serverUrl, 10, 2, httpClient, handler)) {
+
+      for (int i = 1; i <= 5; i++) {
+        SolrInputDocument doc = new SolrInputDocument();
+        doc.addField("id", "ignored-" + i); // not the uniqueKey the handler reads
+        doc.addField("record_uuid", "uuid-" + i);
+        concurrentClient.add("collection1", doc);
+      }
+      concurrentClient.blockUntilFinished();
+    }
+
+    assertEquals("all 5 docs should be reported by record_uuid", 5, failedIds.size());
+    for (int i = 1; i <= 5; i++) {
+      assertTrue("missing uuid-" + i + " in " + failedIds, failedIds.contains("uuid-" + i));
+    }
+  }
+
+  /**
+   * An error not tied to identifiable documents (a send failure where the document has no
+   * resolvable id) reaches the general onError(Throwable) callback, not the per-id one.
+   */
+  @Test
+  public void testGeneralErrorCallbackForNonDocumentError() throws Exception {
+    String unreachable = "http://localhost:1/solr"; // nothing listening -> connect failure
+    AtomicInteger richCalls = new AtomicInteger();
+    AtomicInteger generalCalls = new AtomicInteger();
+    ConcurrentUpdateBaseSolrClient.UpdateErrorHandler handler =
+        new ConcurrentUpdateBaseSolrClient.UpdateErrorHandler() {
+          @Override
+          public void onError(Throwable ex, List<String> ids, String collection) {
+            richCalls.incrementAndGet();
+          }
+
+          @Override
+          public void onError(Throwable ex) {
+            generalCalls.incrementAndGet();
+          }
+        };
+
+    try (var httpClient = solrClient(null);
+        var concurrentClient =
+            errorHandlerConcurrentClient(unreachable, 10, 2, httpClient, handler)) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("name", "no id here"); // no id -> idOf returns null -> nothing to report per-id
+      concurrentClient.add("collection1", doc);
+      concurrentClient.blockUntilFinished();
+    }
+
+    assertTrue("general callback should fire for a non-document error", generalCalls.get() > 0);
+    assertEquals(
+        "the per-id callback should not fire for a non-document error", 0, richCalls.get());
+  }
+
+  /**
+   * A naive lambda handler only registers for per-id failures; an error not tied to identifiable
+   * documents is logged by the default general callback and does not stop the client.
+   */
+  @Test
+  public void testNaiveLambdaSurvivesNonDocumentError() throws Exception {
+    String unreachable = "http://localhost:1/solr";
+    List<String> failedIds = new CopyOnWriteArrayList<>();
+
+    try (var httpClient = solrClient(null);
+        var concurrentClient =
+            errorHandlerConcurrentClient(
+                unreachable, 10, 2, httpClient, (ex, ids, collection) -> failedIds.addAll(ids))) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("name", "no id here");
+      concurrentClient.add("collection1", doc);
+      concurrentClient.blockUntilFinished(); // returns normally; default callback logged the error
+    }
+
+    assertTrue(
+        "an error not tied to documents must not reach the per-id lambda: " + failedIds,
+        failedIds.isEmpty());
+  }
+
+  /**
+   * A handler that throws is contained and does not stop the client: every failed doc is still
+   * reported and blockUntilFinished() returns normally.
+   */
+  @Test
+  public void testThrowingErrorHandlerDoesNotStopClient() throws Exception {
+    TestServlet.clear();
+    TestServlet.setErrorCode(500); // every request fails server-side
+
+    String serverUrl = solrTestRule.getBaseUrl() + "/cuss/foo";
+    List<String> seenIds = new CopyOnWriteArrayList<>();
+
+    try (var httpClient = solrClient(null);
+        var concurrentClient =
+            errorHandlerConcurrentClient(
+                serverUrl,
+                10,
+                2,
+                httpClient,
+                (ex, ids, collection) -> {
+                  seenIds.addAll(ids);
+                  throw new RuntimeException("handler blew up");
+                })) {
+
+      for (int i = 1; i <= 5; i++) {
+        SolrInputDocument doc = new SolrInputDocument();
+        doc.addField("id", "doc-" + i);
+        concurrentClient.add("collection1", doc);
+      }
+      concurrentClient.blockUntilFinished();
+    }
+
+    for (int i = 1; i <= 5; i++) {
+      assertTrue("missing doc-" + i + " in " + seenIds, seenIds.contains("doc-" + i));
     }
   }
 

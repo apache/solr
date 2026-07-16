@@ -99,6 +99,9 @@ It is intended as a temporary measure while you migrate the affected accounts to
 HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
 Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
 
+CommonParams.QT has been un-deprecated.
+Nonetheless, if your code makes explicit reference to "qt" when constructing a standard request, there is usually a better way.
+
 === Embedded Jetty Configuration
 
 Solr 10.1 upgrades the embedded server to Eclipse Jetty 12.1, which removed Jetty's directory-scanning deployer (the `DeploymentManager` and `ContextProvider` classes).
