@@ -21,12 +21,15 @@ import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.Sort;
@@ -102,6 +105,9 @@ public class SolrIndexConfig implements MapWriter {
 
   public final PluginInfo mergedSegmentWarmerInfo;
 
+  /** Order in which segments (leaf readers) are visited at search time; never null. */
+  public final SegmentSort segmentSort;
+
   public InfoStream infoStream = InfoStream.NO_OUTPUT;
   private ConfigNode node;
 
@@ -115,6 +121,7 @@ public class SolrIndexConfig implements MapWriter {
     writeLockTimeout = -1;
     lockType = DirectoryFactory.LOCK_TYPE_NATIVE;
     indexSort = null;
+    segmentSort = SegmentSort.NONE;
     mergePolicyFactoryInfo = null;
     mergeSchedulerInfo = null;
     mergedSegmentWarmerInfo = null;
@@ -171,6 +178,7 @@ public class SolrIndexConfig implements MapWriter {
     writeLockTimeout = get("writeLockTimeout").intVal(def.writeLockTimeout);
     lockType = get("lockType").txt(def.lockType);
     indexSort = get("indexSort").txt(def.indexSort);
+    segmentSort = parseSegmentSort(get("segmentSort").txt(null), def.segmentSort);
 
     metricsInfo = getPluginInfo(get("metrics"), def.metricsInfo);
     mergeSchedulerInfo = getPluginInfo(get("mergeScheduler"), def.mergeSchedulerInfo);
@@ -217,6 +225,7 @@ public class SolrIndexConfig implements MapWriter {
         .put("lockType", lockType)
         .put("infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT)
         .putIfNotNull("indexSort", indexSort)
+        .put("segmentSort", segmentSort.name())
         .putIfNotNull("mergeScheduler", mergeSchedulerInfo)
         .putIfNotNull("metrics", metricsInfo)
         .putIfNotNull("mergePolicyFactory", mergePolicyFactoryInfo)
@@ -227,6 +236,21 @@ public class SolrIndexConfig implements MapWriter {
     return node != null && node.exists()
         ? new PluginInfo(node, "[solrconfig.xml] " + node.name(), false, false)
         : def;
+  }
+
+  private static SegmentSort parseSegmentSort(String value, SegmentSort def) {
+    if (value == null || value.isBlank()) {
+      return def;
+    }
+    try {
+      return SegmentSort.valueOf(value.trim());
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          "Invalid <segmentSort> value '"
+              + value
+              + "'; expected one of "
+              + Arrays.toString(SegmentSort.values()));
+    }
   }
 
   private static class DelayedSchemaAnalyzer extends DelegatingAnalyzerWrapper {
@@ -308,6 +332,11 @@ public class SolrIndexConfig implements MapWriter {
                   new Class<?>[] {InfoStream.class},
                   new Object[] {iwc.getInfoStream()});
       iwc.setMergedSegmentWarmer(warmer);
+    }
+
+    Comparator<LeafReader> leafSorter = SegmentTimeLeafSorter.forOrder(segmentSort);
+    if (leafSorter != null) {
+      iwc.setLeafSorter(leafSorter);
     }
 
     return iwc;

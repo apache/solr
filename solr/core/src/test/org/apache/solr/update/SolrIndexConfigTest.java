@@ -62,6 +62,9 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   private static final String solrConfigFileNameMergeOnFlushMergePolicyFactory =
       "solrconfig-mergeonflushmergepolicyfactory.xml";
   private static final String solrConfigFileNameIndexSort = "solrconfig-indexsort.xml";
+  private static final String solrConfigFileNameSegmentSort = "solrconfig-segmentsort.xml";
+  private static final String solrConfigFileNameSegmentSortInvalid =
+      "solrconfig-segmentsort-invalid.xml";
   private static final String schemaFileName = "schema.xml";
 
   private static boolean compoundMergePolicySort = false;
@@ -299,6 +302,9 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
 
     ++mSizeExpected;
+    assertEquals(SegmentSort.NONE.name(), m.get("segmentSort"));
+
+    ++mSizeExpected;
     assertTrue(m.get("mergeScheduler") instanceof MapWriter);
     ++mSizeExpected;
     assertTrue(m.get("mergePolicyFactory") instanceof MapWriter);
@@ -312,6 +318,36 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertNotNull(m.get("metrics"));
 
     assertEquals(mSizeExpected, m.size());
+  }
+
+  @Test
+  public void testSegmentSortDefaultsToNone() throws Exception {
+    SolrConfig solrConfig =
+        new SolrConfig(instanceDir, solrConfigFileNameSortingMergePolicyFactory);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
+    assertEquals(SegmentSort.NONE, solrIndexConfig.segmentSort);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
+    assertNull("no leaf sorter should be installed by default", iwc.getLeafSorter());
+  }
+
+  @Test
+  public void testSegmentSortConfigured() throws Exception {
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameSegmentSort);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
+    assertEquals(SegmentSort.TIME_DESC, solrIndexConfig.segmentSort);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
+    assertNotNull("configured segmentSort should install a leaf sorter", iwc.getLeafSorter());
+  }
+
+  @Test
+  public void testSegmentSortInvalidValueFailsFast() {
+    IllegalArgumentException e =
+        expectThrows(
+            IllegalArgumentException.class,
+            () ->
+                new SolrIndexConfig(
+                    new SolrConfig(instanceDir, solrConfigFileNameSegmentSortInvalid), null));
+    assertTrue(e.getMessage(), e.getMessage().contains("segmentSort"));
   }
 
   public void testMaxCommitMergeWaitTime() throws Exception {

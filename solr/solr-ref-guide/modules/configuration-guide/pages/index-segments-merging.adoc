@@ -268,6 +268,24 @@ This is the direct replacement for configuring the sort indirectly through a `So
 
 NOTE: Enabling index sorting on a collection that already has unsorted segments requires re-sorting those segments; see the `RESORTINDEX` core admin action. It is not applied to existing segments automatically on reload.
 
+=== segmentSort
+
+Controls the order in which a segment's documents are visited at search time, by sorting the leaf readers of a newly opened reader.
+This is _between-segment_ ordering; it is independent of index sorting (the _within-segment_ order of documents) and does not affect merging.
+
+The main use case is early termination: visiting the most promising segments first.
+For a time-based index, ordering by segment creation time so that the most recently created segments are searched first lets a query that only needs recent documents stop sooner.
+
+By default no ordering is imposed. The supported values are:
+
+* `TIME_ASC`: visit older segments (by creation time) first.
+* `TIME_DESC`: visit more recently created segments first.
+
+[source,xml]
+----
+<segmentSort>TIME_DESC</segmentSort>
+----
+
 == Compound File Segments
 
 Each Lucene segment is typically comprised of a dozen or so files.

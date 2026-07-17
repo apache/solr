@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Add a <segmentSort> index configuration option to order segments (leaf readers) by creation time
+  at search time, exposing Lucene's leaf sorter for early termination on time-based indexes
+type: added
+authors:
+  - name: Serhiy Bzhezytskyy
+  - name: Wei Wang
+links:
+  - name: SOLR-17310
+    url: https://issues.apache.org/jira/browse/SOLR-17310
