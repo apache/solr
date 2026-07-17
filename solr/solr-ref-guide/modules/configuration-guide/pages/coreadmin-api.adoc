@@ -916,7 +916,8 @@ Note:
 * Indexes containing child/nested documents are not supported (re-sorting would break the parent-child document blocks).
 * The fields used in the sort must have docValues enabled.
 
-A typical workflow is to run `RESORTINDEX` on the existing index, then configure the same sort in `solrconfig.xml` (via a xref:index-segments-merging.adoc#mergepolicyfactory[`SortingMergePolicyFactory`]) so that subsequently added documents keep the index sorted.
+A typical workflow is to configure the sort in `solrconfig.xml` with xref:index-segments-merging.adoc#indexsort[`<indexSort>`] (so subsequently added documents keep the index sorted), then run `RESORTINDEX` once to re-sort the pre-existing segments.
+When `<indexSort>` is configured, `RESORTINDEX` may be called without a `sort` parameter and will use the configured sort.
 
 It is recommended to have a backup before running on production data.
 
@@ -964,7 +965,7 @@ The name of the core whose index should be re-sorted.
 |===
 +
 The target index sort, in the usual Solr xref:query-guide:common-query-parameters.adoc#sort-parameter[sort syntax] (for example `timestamp desc`).
-If omitted, the sort configured for the core (via a `SortingMergePolicy`) is used; if the core has no configured sort, the request fails.
+If omitted, the sort configured for the core is used -- the xref:index-segments-merging.adoc#indexsort[`<indexSort>`] element if present, otherwise a (deprecated) `SortingMergePolicy` sort; if the core has no configured sort, the request fails.
 
 `async`::
 +

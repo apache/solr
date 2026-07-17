@@ -62,6 +62,10 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   private static final String solrConfigFileNameMergeOnFlushMergePolicyFactory =
       "solrconfig-mergeonflushmergepolicyfactory.xml";
   private static final String solrConfigFileNameIndexSort = "solrconfig-indexsort.xml";
+  private static final String solrConfigFileNameIndexSortInvalid =
+      "solrconfig-indexsort-invalid.xml";
+  private static final String solrConfigFileNameIndexSortAndMergePolicy =
+      "solrconfig-indexsort-and-mergepolicy.xml";
   private static final String solrConfigFileNameSegmentSort = "solrconfig-segmentsort.xml";
   private static final String solrConfigFileNameSegmentSortInvalid =
       "solrconfig-segmentsort-invalid.xml";
@@ -396,5 +400,35 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
     h.getCore().setLatestSchema(indexSchema);
     assertNull(solrIndexConfig.toIndexWriterConfig(h.getCore()).getIndexSort());
+  }
+
+  @Test
+  public void testInvalidIndexSortFailsWithClearError() throws Exception {
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameIndexSortInvalid);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+    h.getCore().setLatestSchema(indexSchema);
+    IllegalArgumentException e =
+        expectThrows(
+            IllegalArgumentException.class, () -> solrIndexConfig.toIndexWriterConfig(h.getCore()));
+    assertTrue(e.getMessage(), e.getMessage().contains("<indexSort>"));
+  }
+
+  @Test
+  @SuppressWarnings(
+      "deprecation") // configures a (deprecated) SortingMergePolicy alongside <indexSort>
+  public void testIndexSortWinsOverSortingMergePolicy() throws Exception {
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameIndexSortAndMergePolicy);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+    h.getCore().setLatestSchema(indexSchema);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
+
+    // <indexSort> is "desc" and the SortingMergePolicy sort is "asc"; <indexSort> must win.
+    final Sort expected = new Sort(new SortField("timestamp_i_dvo", SortField.Type.INT, true));
+    assertEquals(
+        "<indexSort> should win over the SortingMergePolicy sort", expected, iwc.getIndexSort());
+    // both were configured, so the merge policy is still a SortingMergePolicy
+    assertTrue(iwc.getMergePolicy() instanceof SortingMergePolicy);
   }
 }

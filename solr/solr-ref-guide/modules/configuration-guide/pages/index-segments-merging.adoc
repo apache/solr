@@ -266,7 +266,9 @@ This is the direct replacement for configuring the sort indirectly through a `So
 <indexSort>timestamp_dt desc</indexSort>
 ----
 
-NOTE: Enabling index sorting on a collection that already has unsorted segments requires re-sorting those segments; see the `RESORTINDEX` core admin action. It is not applied to existing segments automatically on reload.
+NOTE: Enabling index sorting on a collection that already has unsorted segments requires re-sorting those segments; see the xref:coreadmin-api.adoc#coreadmin-resortindex[`RESORTINDEX`] core admin action. It is not applied to existing segments automatically on reload.
+
+TIP: Do not confuse `<indexSort>` with the similarly named <<segmentSort>>. `<indexSort>` is _within-segment_ document order and takes a sort spec (e.g. `timestamp_dt desc`); `<segmentSort>` is _between-segment_ visitation order and takes an enum value.
 
 === segmentSort
 

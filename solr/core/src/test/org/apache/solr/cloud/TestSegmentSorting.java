@@ -70,10 +70,13 @@ public class TestSegmentSorting extends SolrCloudTestCase {
 
     // Exercise both ways of configuring the index sort: indirectly via a SortingMergePolicy, and
     // directly via the <indexSort> element (SOLR-13681). Both must produce the same behavior.
+    // testSegmentTerminateEarlyWithIndexSort pins the <indexSort> config deterministically.
     final String solrConfigFileName =
-        random().nextBoolean()
-            ? "solrconfig-sortingmergepolicyfactory.xml"
-            : "solrconfig-indexsort.xml";
+        testName.getMethodName().contains("WithIndexSort")
+            ? "solrconfig-indexsort.xml"
+            : (random().nextBoolean()
+                ? "solrconfig-sortingmergepolicyfactory.xml"
+                : "solrconfig-indexsort.xml");
 
     final Map<String, String> collectionProperties = new HashMap<>();
     collectionProperties.put(CoreDescriptor.CORE_CONFIG, solrConfigFileName);
@@ -92,7 +95,22 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collectionName, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
   }
 
+  /** Runs the full early-termination scenario against whichever index-sort config was chosen. */
   public void testSegmentTerminateEarly() throws Exception {
+    doTestSegmentTerminateEarly();
+  }
+
+  /**
+   * Same scenario, but deterministically against a directly configured {@code <indexSort>} (no
+   * SortingMergePolicy), so a regression in the {@code <indexSort>} branch of early-termination
+   * eligibility cannot pass CI on a coin flip (SOLR-13681 / SOLR-15390).
+   */
+  @Test
+  public void testSegmentTerminateEarlyWithIndexSort() throws Exception {
+    doTestSegmentTerminateEarly();
+  }
+
+  private void doTestSegmentTerminateEarly() throws Exception {
 
     final SegmentTerminateEarlyTestState tstes = new SegmentTerminateEarlyTestState(random());
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();

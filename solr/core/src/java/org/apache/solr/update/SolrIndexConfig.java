@@ -297,6 +297,10 @@ public class SolrIndexConfig implements MapWriter {
     Sort configuredIndexSort = null;
     if (indexSort != null) {
       configuredIndexSort = SortSpecParsing.parseSortSpec(indexSort, schema).getSort();
+      if (configuredIndexSort == null) {
+        throw new IllegalArgumentException(
+            "Could not parse a usable index sort from <indexSort>" + indexSort + "</indexSort>");
+      }
       iwc.setIndexSort(configuredIndexSort);
     }
 

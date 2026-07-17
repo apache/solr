@@ -365,8 +365,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private Sort configuredIndexSort() throws IOException {
     String indexSortSpec = core.getSolrConfig().indexConfig.indexSort;
     if (indexSortSpec != null) {
+      // Parsed per request, but only on the opt-in segmentTerminateEarly path, so the cost is
+      // negligible; parsing here also avoids caching a sort across schema reloads.
       return SortSpecParsing.parseSortSpec(indexSortSpec, core.getLatestSchema()).getSort();
     }
+    // TODO: the SortingMergePolicy fallback can be removed once SortingMergePolicy is (SOLR-12230).
     return core.getSolrCoreState().getMergePolicySort();
   }
 

@@ -123,14 +123,29 @@ public class ResortCoreIndex extends CoreAdminAPIBase implements ResortCoreIndex
       }
       return sort;
     }
-    final Sort configured = core.getSolrCoreState().getMergePolicySort();
-    if (configured == null) {
+    // Fall back to the sort configured for the core: the directly configured <indexSort>
+    // (preferred), or a SortingMergePolicy's sort (deprecated). This mirrors how the searcher
+    // resolves the index sort, so the migration workflow "set <indexSort>, then RESORTINDEX" works.
+    final String configuredSpec = core.getSolrConfig().indexConfig.indexSort;
+    if (configuredSpec != null && !configuredSpec.isBlank()) {
+      final Sort sort =
+          SortSpecParsing.parseSortSpec(configuredSpec, core.getLatestSchema()).getSort();
+      if (sort == null) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Could not parse a usable index sort from the configured <indexSort>="
+                + configuredSpec);
+      }
+      return sort;
+    }
+    final Sort mergePolicySort = core.getSolrCoreState().getMergePolicySort();
+    if (mergePolicySort == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "No 'sort' parameter given and the core has no configured index sort "
-              + "(SortingMergePolicy) to fall back to");
+              + "(via <indexSort> or a SortingMergePolicy) to fall back to");
     }
-    return configured;
+    return mergePolicySort;
   }
 
   private void assertNoChildDocs(SolrCore core) throws IOException {
@@ -175,6 +190,11 @@ public class ResortCoreIndex extends CoreAdminAPIBase implements ResortCoreIndex
       resortDir = df.get(resortIndexPath, DirectoryFactory.DirContext.DEFAULT, lockType);
 
       final IndexWriterConfig iwc = new IndexWriterConfig().setIndexSort(indexSort);
+      // addIndexes rewrites every segment through this writer, so it must use the core's codec and
+      // similarity; otherwise a per-field (e.g. SchemaCodecFactory) index would be silently
+      // rewritten with Lucene defaults.
+      iwc.setCodec(core.getCodec());
+      iwc.setSimilarity(core.getLatestSchema().getSimilarity());
       // Mirror SolrIndexConfig: a child-doc-capable schema records a parent field, which the source
       // segments carry, so the re-sort writer must declare the same parent field or addIndexes
       // fails.
@@ -207,15 +227,34 @@ public class ResortCoreIndex extends CoreAdminAPIBase implements ResortCoreIndex
     try {
       core.getUpdateHandler().newIndexWriter(false);
       openNewSearcher(core);
+      // The core now points at the re-sorted index; drop the previous (unsorted) index directory.
+      core.cleanupOldIndexDirectories(false);
     } catch (Exception e) {
       log.warn("Could not switch to re-sorted index for core {}; rolling back", core.getName(), e);
       rollbackIndexProps(core, df, lockType);
       core.getUpdateHandler().newIndexWriter(false);
       openNewSearcher(core);
+      // Discard the orphaned re-sort directory we just wrote but never swapped in.
+      removeDirectory(df, resortIndexPath, lockType);
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Failed to swap in the re-sorted index for core " + core.getName(),
           e);
+    }
+  }
+
+  private void removeDirectory(DirectoryFactory df, String path, String lockType) {
+    try {
+      if (df.exists(path)) {
+        Directory dir = df.get(path, DirectoryFactory.DirContext.DEFAULT, lockType);
+        try {
+          df.remove(dir, true);
+        } finally {
+          df.release(dir);
+        }
+      }
+    } catch (Exception cleanupError) {
+      log.warn("Could not remove re-sort directory {}", path, cleanupError);
     }
   }
 

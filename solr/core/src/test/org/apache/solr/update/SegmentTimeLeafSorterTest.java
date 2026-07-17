@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.ParallelLeafReader;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCase;
@@ -37,6 +38,39 @@ public class SegmentTimeLeafSorterTest extends SolrTestCase {
 
   public void testNoneReturnsNoSorter() {
     assertNull(SegmentTimeLeafSorter.forOrder(SegmentSort.NONE));
+  }
+
+  /**
+   * A leaf that does not resolve to a SegmentReader must be tolerated (ordered last), not crash the
+   * comparator. A {@link ParallelLeafReader} extends {@link LeafReader} directly (it is not a
+   * FilterLeafReader), so it does not unwrap to a SegmentReader and has no segment timestamp.
+   */
+  public void testNonSegmentReaderSortsLastWithoutFailing() throws Exception {
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig())) {
+        Document doc = new Document();
+        doc.add(new StringField("id", "0", Store.YES));
+        writer.addDocument(doc);
+        writer.commit();
+      }
+      try (DirectoryReader reader = DirectoryReader.open(dir)) {
+        LeafReader segmentLeaf = reader.leaves().get(0).reader();
+        try (LeafReader nonSegmentLeaf = new ParallelLeafReader(false, segmentLeaf)) {
+          for (SegmentSort order :
+              new SegmentSort[] {SegmentSort.TIME_ASC, SegmentSort.TIME_DESC}) {
+            Comparator<LeafReader> sorter = SegmentTimeLeafSorter.forOrder(order);
+            assertNotNull(sorter);
+            // Must not throw for either ordering, regardless of argument order.
+            sorter.compare(segmentLeaf, nonSegmentLeaf);
+            sorter.compare(nonSegmentLeaf, segmentLeaf);
+            // The known-timestamp segment sorts before the unknown one in both directions.
+            assertTrue(
+                "segment with a timestamp should sort before one without (" + order + ")",
+                sorter.compare(segmentLeaf, nonSegmentLeaf) < 0);
+          }
+        }
+      }
+    }
   }
 
   public void testTimeDescVisitsNewestSegmentsFirst() throws Exception {
