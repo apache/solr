@@ -28,7 +28,9 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 
 /**
@@ -38,11 +40,12 @@ import org.apache.solr.schema.SchemaField;
  *
  * <p>For a {@link SegmentSort.Kind#TIME} sort, the key is the segment creation time (from Lucene's
  * per-segment {@code timestamp} diagnostic). For a {@link SegmentSort.Kind#FIELD} sort, the key is
- * the per-segment minimum ({@code asc}) or maximum ({@code desc}) of a numeric docValues field;
- * Solr stores numeric docValues in sortable-bits form, so comparing the raw {@code long} preserves
- * true numeric order for all numeric types. A leaf whose key cannot be determined (e.g. a reader
- * that does not resolve to a {@link SegmentReader}, or a segment with no value for the field) sorts
- * last, so an unexpected reader shape degrades ordering rather than failing the search.
+ * the per-segment minimum ({@code asc}) or maximum ({@code desc}) of a numeric docValues field,
+ * with each value normalized to an order-preserving long (see {@code toSortableLong}) so the raw
+ * {@code long} comparison matches true numeric order for every numeric type. A leaf whose key
+ * cannot be determined (e.g. a reader that does not resolve to a {@link SegmentReader}, or a
+ * segment with no value for the field) sorts last, so an unexpected reader shape degrades ordering
+ * rather than failing the search. (A genuine I/O error while reading docValues still propagates.)
  */
 final class SegmentLeafSorter {
 
@@ -62,16 +65,18 @@ final class SegmentLeafSorter {
       case TIME:
         return build(segmentSort.descending(), SegmentLeafSorter::segmentTimestamp);
       case FIELD:
-        final String field = validateFieldForSort(segmentSort.field(), schema);
+        final SchemaField sf = validateFieldForSort(segmentSort.field(), schema);
+        final String field = sf.getName();
+        final NumberType numberType = sf.getType().getNumberType();
         final boolean descending = segmentSort.descending();
         // asc orders by each segment's min value; desc by its max value.
-        return build(descending, leaf -> segmentFieldExtremum(leaf, field, descending));
+        return build(descending, leaf -> segmentFieldExtremum(leaf, field, numberType, descending));
       default:
         return null;
     }
   }
 
-  private static String validateFieldForSort(String field, IndexSchema schema) {
+  private static SchemaField validateFieldForSort(String field, IndexSchema schema) {
     SchemaField sf = schema.getFieldOrNull(field);
     if (sf == null) {
       throw new IllegalArgumentException(
@@ -89,7 +94,7 @@ final class SegmentLeafSorter {
       throw new IllegalArgumentException(
           "<segmentSort> field '" + field + "' must be single-valued");
     }
-    return field;
+    return sf;
   }
 
   /**
@@ -145,19 +150,53 @@ final class SegmentLeafSorter {
   /**
    * Per-segment min (asc) or max (desc) of the field's numeric docValues, as sortable-bits long.
    */
-  private static Long segmentFieldExtremum(LeafReader leaf, String field, boolean max)
-      throws IOException {
-    // Solr writes single-valued numeric docValues; read either representation defensively.
+  private static Long segmentFieldExtremum(
+      LeafReader leaf, String field, NumberType numberType, boolean max) throws IOException {
+    // Solr writes single-valued numeric docValues as NumericDocValues (older indexes may use
+    // SortedNumericDocValues); read either. Values are normalized to an order-preserving
+    // ("sortable")
+    // long before comparison -- see toSortableLong.
     NumericDocValues numeric = leaf.getNumericDocValues(field);
     if (numeric != null) {
-      return scan(max, numeric::nextDoc, numeric::longValue);
+      return scan(max, numeric::nextDoc, () -> toSortableLong(numeric.longValue(), numberType));
     }
     SortedNumericDocValues sorted = leaf.getSortedNumericDocValues(field);
     if (sorted != null) {
-      // Single-valued, so exactly one value per doc via nextValue().
-      return scan(max, sorted::nextDoc, () -> sorted.nextValue());
+      // Normally single-valued (one value per doc). A legacy segment written while the field was
+      // multi-valued may have more; values come in ascending order, so take the first for a min
+      // scan (asc) and the last for a max scan (desc).
+      return scan(max, sorted::nextDoc, () -> toSortableLong(docValue(sorted, max), numberType));
     }
     return null;
+  }
+
+  private static long docValue(SortedNumericDocValues sorted, boolean max) throws IOException {
+    int count = sorted.docValueCount();
+    long value = sorted.nextValue();
+    if (max) {
+      for (int i = 1; i < count; i++) {
+        value = sorted.nextValue();
+      }
+    }
+    return value;
+  }
+
+  /**
+   * Normalizes a raw docValues long into an order-preserving long so a raw {@code long} min/max
+   * matches the field's numeric order. Single-valued FLOAT/DOUBLE docValues are stored by Solr as
+   * raw {@link Float#floatToIntBits}/{@link Double#doubleToLongBits} (not sortable bits), which do
+   * not order correctly for negative values, so they are decoded and re-encoded to sortable bits.
+   * INTEGER/LONG/DATE are already order-correct as signed longs.
+   */
+  private static long toSortableLong(long raw, NumberType numberType) {
+    switch (numberType) {
+      case FLOAT:
+        return NumericUtils.floatToSortableInt(Float.intBitsToFloat((int) raw));
+      case DOUBLE:
+        return NumericUtils.doubleToSortableLong(Double.longBitsToDouble(raw));
+      default: // INTEGER, LONG, DATE
+        return raw;
+    }
   }
 
   private static Long scan(boolean max, DocIterator advance, ValueSupplier value)
