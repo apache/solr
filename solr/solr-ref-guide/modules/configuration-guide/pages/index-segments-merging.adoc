@@ -253,6 +253,21 @@ This is not required for near real-time search, but will reduce search latency o
 <mergedSegmentWarmer class="org.apache.lucene.index.SimpleMergedSegmentWarmer"/>
 ----
 
+=== indexSort
+
+Sorts the documents within each segment by the given fields, at flush and merge time (Lucene index sorting).
+When a query's xref:query-guide:common-query-parameters.adoc#sort-parameter[sort] matches (or is a prefix of) this index sort, Solr can terminate collection on each segment early, which can speed up such queries.
+
+The value is a xref:query-guide:common-query-parameters.adoc#sort-parameter[sort spec] over docValues fields.
+This is the direct replacement for configuring the sort indirectly through a `SortingMergePolicyFactory`; if both are configured, `<indexSort>` takes precedence.
+
+[source,xml]
+----
+<indexSort>timestamp_dt desc</indexSort>
+----
+
+NOTE: Enabling index sorting on a collection that already has unsorted segments requires re-sorting those segments; see the `RESORTINDEX` core admin action. It is not applied to existing segments automatically on reload.
+
 == Compound File Segments
 
 Each Lucene segment is typically comprised of a dozen or so files.

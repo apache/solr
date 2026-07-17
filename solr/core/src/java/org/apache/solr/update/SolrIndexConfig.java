@@ -46,6 +46,7 @@ import org.apache.solr.index.MergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactoryArgs;
 import org.apache.solr.index.SortingMergePolicy;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,14 @@ public class SolrIndexConfig implements MapWriter {
 
   public final int writeLockTimeout;
   public final String lockType;
+
+  /**
+   * The index sort, as a sort spec string (e.g. {@code "timestamp desc"}), configured directly via
+   * {@code <indexSort>} rather than indirectly through a {@link SortingMergePolicy}. Null when not
+   * configured.
+   */
+  public final String indexSort;
+
   public final PluginInfo mergePolicyFactoryInfo;
   public final PluginInfo mergeSchedulerInfo;
   public final PluginInfo metricsInfo;
@@ -105,6 +114,7 @@ public class SolrIndexConfig implements MapWriter {
     maxCommitMergeWaitMillis = -1;
     writeLockTimeout = -1;
     lockType = DirectoryFactory.LOCK_TYPE_NATIVE;
+    indexSort = null;
     mergePolicyFactoryInfo = null;
     mergeSchedulerInfo = null;
     mergedSegmentWarmerInfo = null;
@@ -160,6 +170,7 @@ public class SolrIndexConfig implements MapWriter {
 
     writeLockTimeout = get("writeLockTimeout").intVal(def.writeLockTimeout);
     lockType = get("lockType").txt(def.lockType);
+    indexSort = get("indexSort").txt(def.indexSort);
 
     metricsInfo = getPluginInfo(get("metrics"), def.metricsInfo);
     mergeSchedulerInfo = getPluginInfo(get("mergeScheduler"), def.mergeSchedulerInfo);
@@ -205,6 +216,7 @@ public class SolrIndexConfig implements MapWriter {
         .put("writeLockTimeout", writeLockTimeout)
         .put("lockType", lockType)
         .put("infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT)
+        .putIfNotNull("indexSort", indexSort)
         .putIfNotNull("mergeScheduler", mergeSchedulerInfo)
         .putIfNotNull("metrics", metricsInfo)
         .putIfNotNull("mergePolicyFactory", mergePolicyFactoryInfo)
@@ -257,9 +269,22 @@ public class SolrIndexConfig implements MapWriter {
     iwc.setMergeScheduler(mergeScheduler);
     iwc.setInfoStream(infoStream);
 
+    Sort configuredIndexSort = null;
+    if (indexSort != null) {
+      configuredIndexSort = SortSpecParsing.parseSortSpec(indexSort, schema).getSort();
+      iwc.setIndexSort(configuredIndexSort);
+    }
+
     if (mergePolicy instanceof SortingMergePolicy) {
-      Sort indexSort = ((SortingMergePolicy) mergePolicy).getSort();
-      iwc.setIndexSort(indexSort);
+      Sort mergePolicySort = ((SortingMergePolicy) mergePolicy).getSort();
+      if (configuredIndexSort == null) {
+        iwc.setIndexSort(mergePolicySort);
+      } else if (!configuredIndexSort.equals(mergePolicySort)) {
+        log.warn(
+            "<indexSort> {} differs from the SortingMergePolicy sort {}; using <indexSort>",
+            configuredIndexSort,
+            mergePolicySort);
+      }
     }
 
     if (iwc.getIndexSort() != null

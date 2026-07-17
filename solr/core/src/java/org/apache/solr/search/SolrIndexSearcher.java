@@ -293,17 +293,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (cmd.getSegmentTerminateEarly()) {
       final Sort cmdSort = cmd.getSort();
       final int cmdLen = cmd.getLen();
-      final Sort mergeSort = core.getSolrCoreState().getMergePolicySort();
+      final Sort indexSort = configuredIndexSort();
 
       if (cmdSort == null
           || cmdLen <= 0
-          || mergeSort == null
-          || !canEarlyTerminate(cmdSort, mergeSort)) {
+          || indexSort == null
+          || !canEarlyTerminate(cmdSort, indexSort)) {
         log.warn(
-            "unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} mergeSort={}",
+            "unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} indexSort={}",
             cmdSort,
             cmdLen,
-            mergeSort);
+            indexSort);
       } else {
         segmentTerminatingCollector = firstTopFieldCollector(collector);
       }
@@ -355,6 +355,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     return collector;
+  }
+
+  /**
+   * The sort the segments are indexed by, for deciding whether {@code segmentTerminateEarly} is
+   * possible. Prefers the directly configured {@code <indexSort>}, falling back to a {@link
+   * org.apache.solr.index.SortingMergePolicy}'s sort. Returns null if neither is configured.
+   */
+  private Sort configuredIndexSort() throws IOException {
+    String indexSortSpec = core.getSolrConfig().indexConfig.indexSort;
+    if (indexSortSpec != null) {
+      return SortSpecParsing.parseSortSpec(indexSortSpec, core.getLatestSchema()).getSort();
+    }
+    return core.getSolrCoreState().getMergePolicySort();
   }
 
   /**

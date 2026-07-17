@@ -61,6 +61,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
       "solrconfig-bpreorderingmergepolicyfactory.xml";
   private static final String solrConfigFileNameMergeOnFlushMergePolicyFactory =
       "solrconfig-mergeonflushmergepolicyfactory.xml";
+  private static final String solrConfigFileNameIndexSort = "solrconfig-indexsort.xml";
   private static final String schemaFileName = "schema.xml";
 
   private static boolean compoundMergePolicySort = false;
@@ -324,5 +325,37 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals(10, sc.indexConfig.maxCommitMergeWaitMillis);
     assertEquals(
         10, sc.indexConfig.toIndexWriterConfig(h.getCore()).getMaxFullFlushMergeWaitMillis());
+  }
+
+  @Test
+  public void testDirectIndexSortConfig() throws Exception {
+    // The compound-sort randomization in @BeforeClass may add a secondary "id asc" sort field.
+    final SortField primary = new SortField("timestamp_i_dvo", SortField.Type.INT, true);
+    final SortField secondary = new SortField("id", SortField.Type.STRING, false);
+    secondary.setMissingValue(SortField.STRING_LAST);
+    final Sort expected =
+        compoundMergePolicySort ? new Sort(primary, secondary) : new Sort(primary);
+
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameIndexSort);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
+    assertNotNull("indexSort should be parsed from <indexSort>", solrIndexConfig.indexSort);
+
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+    h.getCore().setLatestSchema(indexSchema);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
+
+    assertEquals("index sort should come from <indexSort>", expected, iwc.getIndexSort());
+    // the index sort was configured directly, without a SortingMergePolicy
+    assertFalse(iwc.getMergePolicy() instanceof SortingMergePolicy);
+  }
+
+  @Test
+  public void testNoIndexSortByDefault() throws Exception {
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameTieredMergePolicyFactory);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
+    assertNull(solrIndexConfig.indexSort);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+    h.getCore().setLatestSchema(indexSchema);
+    assertNull(solrIndexConfig.toIndexWriterConfig(h.getCore()).getIndexSort());
   }
 }

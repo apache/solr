@@ -68,9 +68,15 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     collectionName = testName.getMethodName();
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
 
+    // Exercise both ways of configuring the index sort: indirectly via a SortingMergePolicy, and
+    // directly via the <indexSort> element (SOLR-13681). Both must produce the same behavior.
+    final String solrConfigFileName =
+        random().nextBoolean()
+            ? "solrconfig-sortingmergepolicyfactory.xml"
+            : "solrconfig-indexsort.xml";
+
     final Map<String, String> collectionProperties = new HashMap<>();
-    collectionProperties.put(
-        CoreDescriptor.CORE_CONFIG, "solrconfig-sortingmergepolicyfactory.xml");
+    collectionProperties.put(CoreDescriptor.CORE_CONFIG, solrConfigFileName);
 
     CollectionAdminRequest.Create cmd =
         CollectionAdminRequest.createCollection(
