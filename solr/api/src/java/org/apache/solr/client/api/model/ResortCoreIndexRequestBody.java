@@ -19,13 +19,14 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/** Request body for the {@code RESORTINDEX} core-admin action. */
 public class ResortCoreIndexRequestBody {
 
   @Schema(
       description =
           "The target index sort, in Solr sort syntax (e.g. 'timestamp desc'). If omitted, the "
-              + "sort configured for the core (via a SortingMergePolicy) is used. Fields must have "
-              + "docValues.")
+              + "sort configured for the core is used: the <indexSort> element if present, "
+              + "otherwise a (deprecated) SortingMergePolicy sort. Fields must have docValues.")
   @JsonProperty
   public String sort;
 

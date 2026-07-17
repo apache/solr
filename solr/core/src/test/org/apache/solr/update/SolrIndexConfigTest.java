@@ -415,6 +415,34 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testSegmentSortBadFieldFailsWhenBuildingWriterConfig() throws Exception {
+    // Syntax is valid so parse() succeeds, but the field does not exist; the field is validated
+    // when the IndexWriterConfig is built.
+    SolrConfig solrConfig = new SolrConfig(instanceDir, "solrconfig-segmentsort-badfield.xml");
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+    h.getCore().setLatestSchema(indexSchema);
+    IllegalArgumentException e =
+        expectThrows(
+            IllegalArgumentException.class, () -> solrIndexConfig.toIndexWriterConfig(h.getCore()));
+    assertTrue(e.getMessage(), e.getMessage().contains("does not exist"));
+  }
+
+  @Test
+  public void testIndexSortAndSegmentSortTogether() throws Exception {
+    SolrConfig solrConfig = new SolrConfig(instanceDir, "solrconfig-indexsort-and-segmentsort.xml");
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
+    assertNotNull("indexSort should be configured", solrIndexConfig.indexSort);
+    assertEquals("TIME_DESC", solrIndexConfig.segmentSort.toString());
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+    h.getCore().setLatestSchema(indexSchema);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
+    // Both knobs take effect independently: index sort (within-segment) and leaf sorter (between).
+    assertNotNull("index sort should be set", iwc.getIndexSort());
+    assertNotNull("leaf sorter should be set", iwc.getLeafSorter());
+  }
+
+  @Test
   @SuppressWarnings(
       "deprecation") // configures a (deprecated) SortingMergePolicy alongside <indexSort>
   public void testIndexSortWinsOverSortingMergePolicy() throws Exception {

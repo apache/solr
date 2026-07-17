@@ -369,7 +369,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // negligible; parsing here also avoids caching a sort across schema reloads.
       return SortSpecParsing.parseSortSpec(indexSortSpec, core.getLatestSchema()).getSort();
     }
-    // TODO: the SortingMergePolicy fallback can be removed once SortingMergePolicy is (SOLR-12230).
+    // TODO: the SortingMergePolicy fallback can be removed once SortingMergePolicy is (SOLR-12230)
+    // removed.
     return core.getSolrCoreState().getMergePolicySort();
   }
 

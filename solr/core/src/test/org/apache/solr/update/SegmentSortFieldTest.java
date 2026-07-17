@@ -42,14 +42,30 @@ public class SegmentSortFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFieldSortBuildsAComparator() {
-    // timestamp_i_dvo is a single-valued numeric docValues field.
-    Comparator<LeafReader> asc =
-        SegmentLeafSorter.forConfig(SegmentSort.parse("timestamp_i_dvo asc"), schema());
-    Comparator<LeafReader> desc =
-        SegmentLeafSorter.forConfig(SegmentSort.parse("timestamp_i_dvo desc"), schema());
-    assertNotNull(asc);
-    assertNotNull(desc);
+  public void testIntFieldOrdersBothDirections() throws Exception {
+    // Two segments: A holds 3, B holds 7 (single-valued int docValues).
+    assertU(adoc("id", "1", "timestamp_i_dvo", "3"));
+    assertU(commit()); // segment A
+    assertU(adoc("id", "2", "timestamp_i_dvo", "7"));
+    assertU(commit()); // segment B
+
+    RefCounted<SolrIndexSearcher> ref = h.getCore().getSearcher();
+    try {
+      List<LeafReaderContext> leaves = ref.get().getIndexReader().leaves();
+      assumeTrue("test needs two segments", leaves.size() == 2);
+      LeafReader a = leafContaining(leaves, "1"); // 3
+      LeafReader b = leafContaining(leaves, "2"); // 7
+
+      Comparator<LeafReader> asc =
+          SegmentLeafSorter.forConfig(SegmentSort.parse("timestamp_i_dvo asc"), schema());
+      Comparator<LeafReader> desc =
+          SegmentLeafSorter.forConfig(SegmentSort.parse("timestamp_i_dvo desc"), schema());
+      // asc: smaller (3) first -> A before B. desc: larger (7) first -> B before A.
+      assertTrue("asc: 3 before 7", asc.compare(a, b) < 0);
+      assertTrue("desc: 7 before 3", desc.compare(b, a) < 0);
+    } finally {
+      ref.decref();
+    }
   }
 
   @Test

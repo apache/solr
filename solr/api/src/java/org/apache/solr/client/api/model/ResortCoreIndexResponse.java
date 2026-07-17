@@ -19,6 +19,7 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/** Response for the {@code RESORTINDEX} core-admin action. */
 public class ResortCoreIndexResponse extends SolrJerseyResponse {
 
   @Schema(description = "The name of the core whose index was re-sorted.")
