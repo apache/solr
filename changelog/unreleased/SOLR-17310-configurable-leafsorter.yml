@@ -1,8 +1,9 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 
 title: >
-  Add a <segmentSort> index configuration option to order segments (leaf readers) by creation time
-  at search time, exposing Lucene's leaf sorter for early termination on time-based indexes
+  Add a <segmentSort> index configuration option that orders segments (leaf readers) at search
+  time -- by creation time (TIME_ASC/TIME_DESC) or by a numeric docValues field ("<field> asc|desc")
+  -- exposing Lucene's leaf sorter for early termination
 type: added
 authors:
   - name: Serhiy Bzhezytskyy

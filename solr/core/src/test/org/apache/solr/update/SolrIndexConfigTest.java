@@ -307,7 +307,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
 
     ++mSizeExpected;
-    assertEquals(SegmentSort.NONE.name(), m.get("segmentSort"));
+    assertEquals("NONE", m.get("segmentSort"));
 
     ++mSizeExpected;
     assertTrue(m.get("mergeScheduler") instanceof MapWriter);
@@ -330,7 +330,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     SolrConfig solrConfig =
         new SolrConfig(instanceDir, solrConfigFileNameSortingMergePolicyFactory);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
-    assertEquals(SegmentSort.NONE, solrIndexConfig.segmentSort);
+    assertEquals(SegmentSort.Kind.NONE, solrIndexConfig.segmentSort.kind());
     IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
     assertNull("no leaf sorter should be installed by default", iwc.getLeafSorter());
   }
@@ -339,7 +339,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   public void testSegmentSortConfigured() throws Exception {
     SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameSegmentSort);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
-    assertEquals(SegmentSort.TIME_DESC, solrIndexConfig.segmentSort);
+    assertEquals("TIME_DESC", solrIndexConfig.segmentSort.toString());
     IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
     assertNotNull("configured segmentSort should install a leaf sorter", iwc.getLeafSorter());
   }

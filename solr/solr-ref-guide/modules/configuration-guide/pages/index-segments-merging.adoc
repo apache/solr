@@ -268,24 +268,28 @@ This is the direct replacement for configuring the sort indirectly through a `So
 
 NOTE: Enabling index sorting on a collection that already has unsorted segments requires re-sorting those segments; see the xref:coreadmin-api.adoc#coreadmin-resortindex[`RESORTINDEX`] core admin action. It is not applied to existing segments automatically on reload.
 
-TIP: Do not confuse `<indexSort>` with the similarly named <<segmentSort>>. `<indexSort>` is _within-segment_ document order and takes a sort spec (e.g. `timestamp_dt desc`); `<segmentSort>` is _between-segment_ visitation order and takes an enum value.
+TIP: Do not confuse `<indexSort>` with the similarly named <<segmentSort>>. `<indexSort>` sets the _within-segment_ document order (it changes how documents are physically stored, at flush/merge); `<segmentSort>` only sets the _between-segment_ visitation order at search time and does not affect what is written.
 
 === segmentSort
 
 Controls the order in which a segment's documents are visited at search time, by sorting the leaf readers of a newly opened reader.
 This is _between-segment_ ordering; it is independent of index sorting (the _within-segment_ order of documents) and does not affect merging.
 
-The main use case is early termination: visiting the most promising segments first.
-For a time-based index, ordering by segment creation time so that the most recently created segments are searched first lets a query that only needs recent documents stop sooner.
+The main use case is early termination: visiting the most promising segments first, so a query that only needs the first page of results can stop sooner.
 
-By default no ordering is imposed. The supported values are:
+By default no ordering is imposed. Two forms are supported:
 
-* `TIME_ASC`: visit older segments (by creation time) first.
-* `TIME_DESC`: visit more recently created segments first.
+* A *time preset* -- `TIME_ASC` or `TIME_DESC` -- orders segments by their creation time (a segment property). `TIME_DESC` visits the most recently written segments first, which suits time-based / append-mostly indexes.
+* A *field spec* -- `<field> asc|desc` -- orders segments by the minimum (`asc`) or maximum (`desc`) value of a single-valued numeric docValues field. This is useful when the useful documents cluster by a field value rather than by write time.
 
 [source,xml]
 ----
 <segmentSort>TIME_DESC</segmentSort>
+----
+
+[source,xml]
+----
+<segmentSort>price_i desc</segmentSort>
 ----
 
 == Compound File Segments

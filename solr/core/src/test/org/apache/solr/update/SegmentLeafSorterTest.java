@@ -33,11 +33,20 @@ import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCase;
 
-/** Verifies the leaf (segment) ordering produced by {@link SegmentTimeLeafSorter}. */
-public class SegmentTimeLeafSorterTest extends SolrTestCase {
+/**
+ * Verifies the time-based leaf (segment) ordering produced by {@link SegmentLeafSorter}. The
+ * field-based ordering is exercised where a real schema/core is available (see {@code
+ * SegmentSortFieldTest}).
+ */
+public class SegmentLeafSorterTest extends SolrTestCase {
 
   public void testNoneReturnsNoSorter() {
-    assertNull(SegmentTimeLeafSorter.forOrder(SegmentSort.NONE));
+    assertNull(SegmentLeafSorter.forConfig(SegmentSort.NONE, null));
+  }
+
+  public void testParseRejectsGarbage() {
+    expectThrows(IllegalArgumentException.class, () -> SegmentSort.parse("nonsense value here"));
+    expectThrows(IllegalArgumentException.class, () -> SegmentSort.parse("field bogusorder"));
   }
 
   /**
@@ -46,26 +55,40 @@ public class SegmentTimeLeafSorterTest extends SolrTestCase {
    * FilterLeafReader), so it does not unwrap to a SegmentReader and has no segment timestamp.
    */
   public void testNonSegmentReaderSortsLastWithoutFailing() throws Exception {
-    try (Directory dir = newDirectory()) {
-      try (IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig())) {
+    try (Directory dirA = newDirectory();
+        Directory dirB = newDirectory()) {
+      try (IndexWriter writer = new IndexWriter(dirA, new IndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new StringField("id", "0", Store.YES));
         writer.addDocument(doc);
         writer.commit();
       }
-      try (DirectoryReader reader = DirectoryReader.open(dir)) {
-        LeafReader segmentLeaf = reader.leaves().get(0).reader();
-        try (LeafReader nonSegmentLeaf = new ParallelLeafReader(false, segmentLeaf)) {
-          for (SegmentSort order :
-              new SegmentSort[] {SegmentSort.TIME_ASC, SegmentSort.TIME_DESC}) {
-            Comparator<LeafReader> sorter = SegmentTimeLeafSorter.forOrder(order);
+      // A second index with a disjoint field, so the two leaves can be combined into a
+      // multi-reader ParallelLeafReader (which reports no core cache key).
+      try (IndexWriter writer = new IndexWriter(dirB, new IndexWriterConfig())) {
+        Document doc = new Document();
+        doc.add(new StringField("other", "0", Store.YES));
+        writer.addDocument(doc);
+        writer.commit();
+      }
+      try (DirectoryReader readerA = DirectoryReader.open(dirA);
+          DirectoryReader readerB = DirectoryReader.open(dirB)) {
+        LeafReader segmentLeaf = readerA.leaves().get(0).reader();
+        LeafReader otherSegmentLeaf = readerB.leaves().get(0).reader();
+        // A multi-reader ParallelLeafReader does not resolve to a single SegmentReader (and reports
+        // no core cache key), so it has no segment timestamp and must sort last.
+        try (LeafReader nonSegmentLeaf =
+            new ParallelLeafReader(false, segmentLeaf, otherSegmentLeaf)) {
+          for (String spec : new String[] {"TIME_ASC", "TIME_DESC"}) {
+            Comparator<LeafReader> sorter =
+                SegmentLeafSorter.forConfig(SegmentSort.parse(spec), null);
             assertNotNull(sorter);
             // Must not throw for either ordering, regardless of argument order.
             sorter.compare(segmentLeaf, nonSegmentLeaf);
             sorter.compare(nonSegmentLeaf, segmentLeaf);
             // The known-timestamp segment sorts before the unknown one in both directions.
             assertTrue(
-                "segment with a timestamp should sort before one without (" + order + ")",
+                "segment with a timestamp should sort before one without (" + spec + ")",
                 sorter.compare(segmentLeaf, nonSegmentLeaf) < 0);
           }
         }
@@ -74,21 +97,20 @@ public class SegmentTimeLeafSorterTest extends SolrTestCase {
   }
 
   public void testTimeDescVisitsNewestSegmentsFirst() throws Exception {
-    assertLeafOrder(SegmentSort.TIME_DESC, /* newestFirst= */ true);
+    assertLeafOrder("TIME_DESC", /* newestFirst= */ true);
   }
 
   public void testTimeAscVisitsOldestSegmentsFirst() throws Exception {
-    assertLeafOrder(SegmentSort.TIME_ASC, /* newestFirst= */ false);
+    assertLeafOrder("TIME_ASC", /* newestFirst= */ false);
   }
 
   /**
    * Writes three single-document segments (each commit creates its own segment), reopens the reader
    * with the leaf sorter for the given order, and asserts the segments are visited by creation time
-   * as expected. Segment creation time comes from Lucene's per-segment {@code timestamp}
-   * diagnostic.
+   * as expected.
    */
-  private void assertLeafOrder(SegmentSort order, boolean newestFirst) throws Exception {
-    Comparator<LeafReader> leafSorter = SegmentTimeLeafSorter.forOrder(order);
+  private void assertLeafOrder(String spec, boolean newestFirst) throws Exception {
+    Comparator<LeafReader> leafSorter = SegmentLeafSorter.forConfig(SegmentSort.parse(spec), null);
     assertNotNull(leafSorter);
 
     try (Directory dir = newDirectory()) {
