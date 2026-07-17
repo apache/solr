@@ -284,7 +284,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       DelegatingCollector postFilter)
       throws IOException {
 
-    EarlyTerminatingSortingCollector earlyTerminatingSortingCollector = null;
+    // When segmentTerminateEarly is requested, TopFieldCollector will natively stop collecting a
+    // segment once it has enough hits, provided the search sort is a prefix of the index sort. We
+    // report whether that happened by inspecting the collector after the search (see the finally
+    // block below). The eligibility check mirrors what TopFieldCollector does internally so we can
+    // warn on an unsupported combination rather than silently ignoring the flag.
+    TopFieldCollector segmentTerminatingCollector = null;
     if (cmd.getSegmentTerminateEarly()) {
       final Sort cmdSort = cmd.getSort();
       final int cmdLen = cmd.getLen();
@@ -293,16 +298,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (cmdSort == null
           || cmdLen <= 0
           || mergeSort == null
-          || !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, mergeSort)) {
+          || !canEarlyTerminate(cmdSort, mergeSort)) {
         log.warn(
             "unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} mergeSort={}",
             cmdSort,
             cmdLen,
             mergeSort);
       } else {
-        collector =
-            earlyTerminatingSortingCollector =
-                new EarlyTerminatingSortingCollector(collector, cmdSort, cmd.getLen());
+        segmentTerminatingCollector = firstTopFieldCollector(collector);
       }
     }
 
@@ -343,8 +346,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setPartialResultsDetails(etce.getMessage());
       qr.setApproximateTotalHits(etce.getApproximateTotalHits(reader.maxDoc()));
     } finally {
-      if (earlyTerminatingSortingCollector != null) {
-        qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
+      if (segmentTerminatingCollector != null) {
+        qr.setSegmentTerminatedEarly(segmentTerminatingCollector.isEarlyTerminated());
       }
       if (cmd.isQueryCancellable()) {
         core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
@@ -352,6 +355,44 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     return collector;
+  }
+
+  /**
+   * Whether a search sorted by {@code searchSort} can be early-terminated on segments sorted by
+   * {@code indexSort}, i.e. the search sort is a prefix of the index sort. Mirrors the (package
+   * private) logic in Lucene's {@link TopFieldCollector} so callers can decide up front whether the
+   * {@code segmentTerminateEarly} request is honorable.
+   */
+  private static boolean canEarlyTerminate(Sort searchSort, Sort indexSort) {
+    final SortField[] searchFields = searchSort.getSort();
+    final SortField[] indexFields = indexSort.getSort();
+    if (searchFields.length > indexFields.length) {
+      return false;
+    }
+    return Arrays.asList(searchFields)
+        .equals(Arrays.asList(indexFields).subList(0, searchFields.length));
+  }
+
+  /**
+   * Finds the {@link TopFieldCollector} reachable from the given collector, unwrapping any {@link
+   * MultiCollector} that a caller may have layered around it (e.g. to also collect max score or a
+   * {@link DocSet}). Returns null if none is present. This is called on the collector passed to
+   * {@link #buildAndRunCollectorChain} before the chain wraps it further, so only the caller-side
+   * wrapping needs to be considered.
+   */
+  private static TopFieldCollector firstTopFieldCollector(Collector collector) {
+    if (collector instanceof TopFieldCollector topFieldCollector) {
+      return topFieldCollector;
+    }
+    if (collector instanceof MultiCollector multiCollector) {
+      for (Collector child : multiCollector.getCollectors()) {
+        TopFieldCollector found = firstTopFieldCollector(child);
+        if (found != null) {
+          return found;
+        }
+      }
+    }
+    return null;
   }
 
   public SolrIndexSearcher(
@@ -1908,7 +1949,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final CursorMark cursor = cmd.getCursorMark();
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return new TopFieldCollectorManager(weightedSort, len, searchAfter, minNumFound)
+      // When segmentTerminateEarly is requested and the search sort is a prefix of the index sort,
+      // TopFieldCollector can stop collecting a segment once it has gathered `len` hits. That
+      // requires a total-hits threshold no larger than `len` (the default minExactCount is
+      // Integer.MAX_VALUE, which would count all hits and never terminate early). Take the smaller
+      // of the two so an explicit minExactCount still wins when it is lower.
+      final int totalHitsThreshold =
+          cmd.getSegmentTerminateEarly() ? Math.min(minNumFound, len) : minNumFound;
+      return new TopFieldCollectorManager(weightedSort, len, searchAfter, totalHitsThreshold)
           .newCollector();
     }
   }

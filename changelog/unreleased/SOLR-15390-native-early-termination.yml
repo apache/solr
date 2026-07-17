@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Use Lucene's native TopFieldCollector early termination for the segmentTerminateEarly query
+  parameter, replacing the deprecated EarlyTerminatingSortingCollector
+type: changed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-15390
+    url: https://issues.apache.org/jira/browse/SOLR-15390
