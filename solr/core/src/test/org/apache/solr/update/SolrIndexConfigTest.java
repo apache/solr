@@ -140,6 +140,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertTrue("ms.isAutoIOThrottle", ms.getAutoIOThrottle());
   }
 
+  @SuppressWarnings("deprecation") // exercises the deprecated SortingMergePolicy path
   public void testSortingMPSolrIndexConfigCreation() throws Exception {
     final SortField sortField1 = new SortField("timestamp_i_dvo", SortField.Type.INT, true);
     final SortField sortField2 = new SortField("id", SortField.Type.STRING, false);
@@ -364,6 +365,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings(
+      "deprecation") // asserts the merge policy is NOT a (deprecated) SortingMergePolicy
   public void testDirectIndexSortConfig() throws Exception {
     // The compound-sort randomization in @BeforeClass may add a secondary "id asc" sort field.
     final SortField primary = new SortField("timestamp_i_dvo", SortField.Type.INT, true);

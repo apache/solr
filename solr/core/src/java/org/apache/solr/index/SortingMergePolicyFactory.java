@@ -24,7 +24,13 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SortSpecParsing;
 
-/** A {@link MergePolicyFactory} for {@code SortingMergePolicy} objects. */
+/**
+ * A {@link MergePolicyFactory} for {@code SortingMergePolicy} objects.
+ *
+ * @deprecated Configure the index sort directly with {@code <indexSort>} in {@code <indexConfig>}
+ *     instead. This factory only carries a sort to the index writer and does no merging of its own.
+ */
+@Deprecated
 public class SortingMergePolicyFactory extends WrapperMergePolicyFactory {
 
   protected final Sort mergeSort;

@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCase;
@@ -59,7 +60,7 @@ public class SegmentTimeLeafSorterTest extends SolrTestCase {
     try (Directory dir = newDirectory()) {
       // Disable merging so each commit stays its own segment with a distinct timestamp.
       IndexWriterConfig iwc = new IndexWriterConfig().setLeafSorter(leafSorter);
-      iwc.setMergePolicy(org.apache.lucene.index.NoMergePolicy.INSTANCE);
+      iwc.setMergePolicy(NoMergePolicy.INSTANCE);
       try (IndexWriter writer = new IndexWriter(dir, iwc)) {
         for (int i = 0; i < 3; i++) {
           Document doc = new Document();

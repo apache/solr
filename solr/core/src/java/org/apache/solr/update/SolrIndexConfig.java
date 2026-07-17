@@ -267,6 +267,7 @@ public class SolrIndexConfig implements MapWriter {
     }
   }
 
+  @SuppressWarnings("deprecation") // reconciles with a (deprecated) SortingMergePolicy if present
   public IndexWriterConfig toIndexWriterConfig(SolrCore core) throws IOException {
     IndexSchema schema = core.getLatestSchema();
     IndexWriterConfig iwc = new IndexWriterConfig(new DelayedSchemaAnalyzer(core));
