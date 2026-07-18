@@ -1,0 +1,11 @@
+title: >
+  Switch the opentelemetry module from OkHttp to the JDK HTTP sender to reduce transitive dependencies.
+  The default OTLP export protocol changed from gRPC (port 4317) to HTTP/Protobuf (port 4318).
+  gRPC transport is no longer bundled; users who need it can add the required gRPC and OkHttp jars
+  to the opentelemetry module's lib directory.
+type: dependency_update
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18310
+    url: https://issues.apache.org/jira/browse/SOLR-18310
