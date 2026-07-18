@@ -127,14 +127,12 @@ public class SortableTextField extends TextField {
     return getIndexableFields(field, f, bytes);
   }
 
-  private static List<IndexableField> getIndexableFields(
+  private List<IndexableField> getIndexableFields(
       SchemaField field, IndexableField f, BytesRef bytes) {
     final IndexableField docval =
         field.multiValued()
-            ? DocValuesFieldUtil.createSortedSetDocValuesField(
-                field.getName(), bytes, field.hasDocValuesSkipList())
-            : DocValuesFieldUtil.createSortedDocValuesField(
-                field.getName(), bytes, field.hasDocValuesSkipList());
+            ? createSortedSetDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList())
+            : createSortedDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList());
 
     if (null == f) {
       return List.of(docval);
@@ -145,6 +143,12 @@ public class SortableTextField extends TextField {
   /** {@inheritDoc} this field type supports DocValues, this method is always a No-Op */
   @Override
   protected void checkSupportsDocValues() {
+    // No-Op
+  }
+
+  /** {@inheritDoc} this field type supports DocValues skip lists, this method is always a No-Op */
+  @Override
+  protected void checkSupportsDocValuesSkipList() {
     // No-Op
   }
 

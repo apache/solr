@@ -314,6 +314,10 @@ public class ICUCollationField extends FieldType {
   }
 
   @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
+  }
+
+  @Override
   protected boolean enableDocValuesByDefault() {
     return true;
   }
@@ -326,12 +330,10 @@ public class ICUCollationField extends FieldType {
       final BytesRef bytes = getCollationKey(field.getName(), value.toString());
       if (field.multiValued()) {
         fields.add(
-            DocValuesFieldUtil.createSortedSetDocValuesField(
-                field.getName(), bytes, field.hasDocValuesSkipList()));
+            createSortedSetDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList()));
       } else {
         fields.add(
-            DocValuesFieldUtil.createSortedDocValuesField(
-                field.getName(), bytes, field.hasDocValuesSkipList()));
+            createSortedDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList()));
       }
       return fields;
     } else {

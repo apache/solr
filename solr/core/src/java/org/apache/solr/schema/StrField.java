@@ -40,6 +40,10 @@ public class StrField extends PrimitiveFieldType {
   }
 
   @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
+  }
+
+  @Override
   public List<IndexableField> createFields(SchemaField field, Object value) {
     IndexableField fval = createField(field, value);
 
@@ -48,12 +52,9 @@ public class StrField extends PrimitiveFieldType {
       final BytesRef bytes = getBytesRef(value);
       if (field.multiValued()) {
         docval =
-            DocValuesFieldUtil.createSortedSetDocValuesField(
-                field.getName(), bytes, field.hasDocValuesSkipList());
+            createSortedSetDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList());
       } else {
-        docval =
-            DocValuesFieldUtil.createSortedDocValuesField(
-                field.getName(), bytes, field.hasDocValuesSkipList());
+        docval = createSortedDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList());
       }
 
       // Only create a list of we have 2 values...

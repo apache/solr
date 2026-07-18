@@ -45,6 +45,11 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /** */
 public class BoolField extends PrimitiveFieldType {
+
+  @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
+  }
+
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     field.checkSortability();
@@ -188,12 +193,9 @@ public class BoolField extends PrimitiveFieldType {
       final BytesRef bytes = new BytesRef(toInternal(value.toString()));
       if (field.multiValued()) {
         docval =
-            DocValuesFieldUtil.createSortedSetDocValuesField(
-                field.getName(), bytes, field.hasDocValuesSkipList());
+            createSortedSetDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList());
       } else {
-        docval =
-            DocValuesFieldUtil.createSortedDocValuesField(
-                field.getName(), bytes, field.hasDocValuesSkipList());
+        docval = createSortedDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList());
       }
 
       // Only create a list of we have 2 values...

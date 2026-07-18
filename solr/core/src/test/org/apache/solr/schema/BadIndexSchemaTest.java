@@ -180,4 +180,12 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
         "bad-schema-daterangefield-instance-options.xml",
         "daterange_field of type DateRangeField is incompatible with omitNorms=false");
   }
+
+  public void testDocValuesSkipListWithoutDocValues() throws Exception {
+    doTest("badschema-docValuesSkipList-no-docValues.xml", "conflicting 'true' field options for non-docValues field");
+  }
+
+  public void testDocValuesSkipListUnsupportedFieldType() throws Exception {
+    doTest("badschema-docValuesSkipList-unsupportedType.xml", "does not support doc values skip lists");
+  }
 }

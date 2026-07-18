@@ -80,6 +80,10 @@ public abstract class PointField extends NumericFieldType {
   }
 
   @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
+  }
+
+  @Override
   public boolean isPointField() {
     return true;
   }
@@ -290,9 +294,7 @@ public abstract class PointField extends NumericFieldType {
           assert numericValue instanceof Double;
           bits = Double.doubleToLongBits(numericValue.doubleValue());
         }
-        fields.add(
-            DocValuesFieldUtil.createNumericDocValuesField(
-                sf.getName(), bits, sf.hasDocValuesSkipList()));
+        fields.add(createNumericDocValuesField(sf.getName(), bits, sf.hasDocValuesSkipList()));
       } else {
         // MultiValued
         if (numericValue instanceof Integer || numericValue instanceof Long) {
@@ -304,8 +306,7 @@ public abstract class PointField extends NumericFieldType {
           bits = NumericUtils.doubleToSortableLong(numericValue.doubleValue());
         }
         fields.add(
-            DocValuesFieldUtil.createSortedNumericDocValuesField(
-                sf.getName(), bits, sf.hasDocValuesSkipList()));
+            createSortedNumericDocValuesField(sf.getName(), bits, sf.hasDocValuesSkipList()));
       }
     }
     if (sf.stored()) {

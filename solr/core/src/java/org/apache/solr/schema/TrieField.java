@@ -120,6 +120,10 @@ public class TrieField extends NumericFieldType {
   }
 
   @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
+  }
+
+  @Override
   public Object toObject(IndexableField f) {
     final Number val = f.numericValue();
     if (val != null) {
@@ -672,8 +676,7 @@ public class TrieField extends NumericFieldType {
         BytesRefBuilder bytes = new BytesRefBuilder();
         storedToIndexed(field, bytes);
         fields.add(
-            DocValuesFieldUtil.createSortedSetDocValuesField(
-                sf.getName(), bytes.get(), sf.hasDocValuesSkipList()));
+            createSortedSetDocValuesField(sf.getName(), bytes.get(), sf.hasDocValuesSkipList()));
       } else {
         final long bits;
         if (field.numericValue() instanceof Integer || field.numericValue() instanceof Long) {
@@ -684,9 +687,7 @@ public class TrieField extends NumericFieldType {
           assert field.numericValue() instanceof Double;
           bits = Double.doubleToLongBits(field.numericValue().doubleValue());
         }
-        fields.add(
-            DocValuesFieldUtil.createNumericDocValuesField(
-                sf.getName(), bits, sf.hasDocValuesSkipList()));
+        fields.add(createNumericDocValuesField(sf.getName(), bits, sf.hasDocValuesSkipList()));
       }
 
       return fields;

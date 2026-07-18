@@ -1,0 +1,85 @@
+<?xml version="1.0" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- The Solr schema file. This file should be named "schema.xml" and
+     should be located where the classloader for the Solr webapp can find it.
+
+     This schema is used for testing, and as such has everything and the
+     kitchen sink thrown in. See example/solr/conf/schema.xml for a
+     more concise example.
+
+  -->
+
+<schema name="badschema-docValuesSkipList" version="1.8">
+
+  <!-- ===== Field types that do NOT support docValues at all ===== -->
+
+  <!-- TextField: no docValues, no skip lists -->
+  <fieldType name="text" class="solr.TextField"/>
+
+  <!-- BinaryField: supports docValues but NOT skip lists -->
+  <fieldType name="binary" class="solr.BinaryField"/>
+
+  <!-- PointType (2D spatial): supports docValues but NOT skip lists -->
+  <fieldType name="point" class="solr.PointType" dimension="x" subFieldSuffix="_d"/>
+
+  <!-- LatLonPointSpatialField (lat/lon spatial): supports docValues but NOT skip lists -->
+  <fieldType name="location" class="solr.LatLonPointField"/>
+
+  <!-- CurrencyFieldType: no docValues -->
+  <fieldType name="currency" class="solr.CurrencyFieldType"/>
+
+  <!-- RandomSortField: no docValues -->
+  <fieldType name="random" class="solr.RandomSortField"/>
+
+  <!-- RankField: explicitly disables docValues -->
+  <fieldType name="rank" class="solr.RankField"/>
+
+  <!-- StrFloatLateInteractionVectorField: supports docValues but NOT skip lists -->
+  <fieldType name="lateInteraction" class="solr.StrFloatLateInteractionVectorField" vectorDimension="4"/>
+
+  <!-- ===== Broken combination 1: docValuesSkipList="true" without docValues="true" ===== -->
+  <!-- These should all fail with: "Field type X can't use doc values skip list without doc values" -->
+  <field name="noDvSkipList_str" type="string" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="test"/>
+  <field name="noDvSkipList_int" type="int" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="1"/>
+  <field name="noDvSkipList_long" type="long" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="2"/>
+  <field name="noDvSkipList_float" type="float" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="3.0"/>
+  <field name="noDvSkipList_double" type="double" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="4.0"/>
+  <field name="noDvSkipList_date" type="date" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="2000-01-01T00:00:00.000Z"/>
+  <field name="noDvSkipList_bool" type="boolean" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="true"/>
+  <field name="noDvSkipList_trieInt" type="trieInt" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="5"/>
+  <field name="noDvSkipList_trieLong" type="trieLong" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="6"/>
+  <field name="noDvSkipList_trieFloat" type="trieFloat" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="7.0"/>
+  <field name="noDvSkipList_trieDouble" type="trieDouble" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="8.0"/>
+  <field name="noDvSkipList_trieDate" type="trieDate" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="2000-01-01T00:00:00.000Z"/>
+  <field name="noDvSkipList_collated" type="collated" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="test"/>
+  <field name="noDvSkipList_sortableText" type="sortableText" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="test"/>
+  <field name="noDvSkipList_enum" type="enum" indexed="true" stored="true" docValues="false" docValuesSkipList="true" default="Critical"/>
+
+  <!-- ===== Broken combination 2: docValuesSkipList="true" on field types that don't support it ===== -->
+  <!-- These should all fail with: "Field type X does not support doc values skip lists" -->
+  <field name="badSkipList_text" type="text" indexed="true" stored="false" docValues="true" docValuesSkipList="true" multiValued="true" default="test"/>
+  <field name="badSkipList_binary" type="binary" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="dGVzdA=="/>
+  <field name="badSkipList_point" type="point" indexed="true" stored="false" docValues="true" docValuesSkipList="true" default="1.0"/>
+  <field name="badSkipList_location" type="location" indexed="true" stored="false" docValues="true" docValuesSkipList="true" default="1.0,1.0"/>
+  <field name="badSkipList_rank" type="rank" indexed="true" stored="false" docValues="true" docValuesSkipList="true" default="1.0"/>
+  <field name="badSkipList_lateInteraction" type="lateInteraction" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="[[1.0,2.0],[3.0,4.0]]"/>
+
+  <uniqueKey>id</uniqueKey>
+
+</schema>
