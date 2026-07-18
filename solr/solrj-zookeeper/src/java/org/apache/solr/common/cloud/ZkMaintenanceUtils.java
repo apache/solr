@@ -351,11 +351,7 @@ public class ZkMaintenanceUtils {
                 zkClient.setData(zkNode, file);
               } else if (file.equals(rootPath)) {
                 // We are only uploading a single file, preVisitDirectory was never called
-                if (zkClient.exists(zkPath)) {
-                  zkClient.setData(zkPath, file);
-                } else {
-                  zkClient.makePath(zkPath, Files.readAllBytes(file), false);
-                }
+                zkClient.makePath(zkPath, Files.readAllBytes(file), false);
               } else {
                 // Skip path parts here because they should have been created during
                 // preVisitDirectory
