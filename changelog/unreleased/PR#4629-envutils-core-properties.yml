@@ -1,5 +1,5 @@
-title: Core system properties can now be set via environment variables using EnvUtils
-type: feature
+title: Core system properties can now also be configured via environment variables
+type: changed
 authors:
   - name: Prithvi S
 links:
