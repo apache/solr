@@ -84,7 +84,8 @@ OTEL_PROPAGATORS=tracecontext,baggage
 ----
 
 NOTE: gRPC transport is not supported out of the box.
-To use gRPC, you must add the required gRPC, OkHttp, and Protobuf jars to the `opentelemetry` module's lib directory and set `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`.
+To use gRPC, add the required gRPC, OkHttp, and Protobuf JARs to the `opentelemetry` module's lib directory and set `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`.
+Look up the full list of runtime JARs needed at https://central.sonatype.com/artifact/io.opentelemetry/opentelemetry-exporter-sender-okhttp/1.56.0/dependencies[opentelemetry-exporter-sender-okhttp on Maven Central] (replace `1.56.0` with the OpenTelemetry version bundled in your Solr release).
 
 Say you want to send traces to a remote https://opentelemetry.io/docs/collector/[OTEL Collector], with 10% sampling. That could be done with this configuration:
 
