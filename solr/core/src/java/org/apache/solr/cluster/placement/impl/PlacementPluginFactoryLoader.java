@@ -29,6 +29,7 @@ import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +103,7 @@ public class PlacementPluginFactoryLoader {
   /** Returns the default {@link PlacementPluginFactory} */
   public static PlacementPluginFactory<?> getDefaultPlacementPluginFactory() {
     // Use the default provided by system properties.
-    String defaultPluginId = System.getProperty(PLACEMENTPLUGIN_DEFAULT_SYSPROP);
+    String defaultPluginId = EnvUtils.getProperty(PLACEMENTPLUGIN_DEFAULT_SYSPROP);
     if (defaultPluginId != null) {
       log.info(
           "Default replica placement plugin set in {} to {}",
