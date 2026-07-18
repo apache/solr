@@ -182,10 +182,10 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
   }
 
   public void testDocValuesSkipListWithoutDocValues() throws Exception {
-    doTest("badschema-docValuesSkipList-no-docValues.xml", "conflicting 'true' field options for non-docValues field");
+    doTest("bad-schema-docValuesSkipList-no-docValues.xml", "conflicting 'true' field options for non-docValues field");
   }
 
   public void testDocValuesSkipListUnsupportedFieldType() throws Exception {
-    doTest("badschema-docValuesSkipList-unsupportedType.xml", "does not support doc values skip lists");
+    doTest("bad-schema-docValuesSkipList-unsupportedType.xml", "does not support doc values skip lists");
   }
 }
