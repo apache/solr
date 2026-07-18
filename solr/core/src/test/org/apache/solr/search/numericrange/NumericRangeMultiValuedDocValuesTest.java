@@ -27,7 +27,7 @@ import org.junit.Test;
  *
  * <p>A document may hold several ranges. The docValues verifier ({@code
  * MultiBinaryRangeDocValuesQuery}) matches a document when <em>any</em> of its ranges satisfies the
- * relation -- the same "any value matches" semantics as multiValued Points (BKD). Each test indexes
+ * relation, the same "any value matches" semantics as multiValued Points (BKD). Each test indexes
  * the same ranges into a multiValued BKD-only field ({@code *_multi}) and a multiValued docValues
  * field ({@code *_mv_dv}) and asserts they return identical counts, so the docValues path is
  * checked against the trusted BKD path.
@@ -156,9 +156,8 @@ public class NumericRangeMultiValuedDocValuesTest extends SolrTestCaseJ4 {
     //   doc2 C: D1 [-10.0, 0.0]  D2 [2.5, 3.5]
 
     // CONTAINS: a doc range must wrap the query box in *both* dims. doc1's A wraps
-    // [2,4]x[-3.0,-1.15]
-    // (1<=2, 5>=4 and -3.1<=-3.0, -1.1>=-1.15); doc2's C does not (its D1 max 0 < 4). -> only doc
-    // 1.
+    // [2,4]x[-3.0,-1.15] (1<=2, 5>=4 and -3.1<=-3.0, -1.1>=-1.15).
+    // doc2's C does not (its D1 max 0 < 4). -> only doc 1.
     assertSameCount(
         "contains", "[2.0,-3.0 TO 4.0,-1.15]", "double_range_multi_2d", "double_range_mv_dv_2d", 1);
 
@@ -168,8 +167,7 @@ public class NumericRangeMultiValuedDocValuesTest extends SolrTestCaseJ4 {
         "within", "[0.0,-4.0 TO 6.0,-1.0]", "double_range_multi_2d", "double_range_mv_dv_2d", 1);
 
     // INTERSECTS: overlap in both dims is enough. The central box [-2,3]x[-2,3] overlaps doc1's A
-    // and
-    // doc2's C, so both match (any-range / any-doc "OR" semantics). -> 2 docs.
+    // and doc2's C, so both match (any-range / any-doc "OR" semantics). -> 2 docs.
     assertSameCount(
         "intersects",
         "[-2.0,-2.0 TO 3.0,3.0]",
@@ -178,9 +176,8 @@ public class NumericRangeMultiValuedDocValuesTest extends SolrTestCaseJ4 {
         2);
 
     // CROSSES = intersects AND NOT within. For [-1,6]x[-4,3], doc1's A is fully *within* it (so
-    // does
-    // not cross) and its B is disjoint -> doc 1 excluded; doc2's C overlaps but pokes out on D1
-    // (min -10) -> it crosses. -> only doc 2, which distinguishes crosses from within.
+    // does not cross) and its B is disjoint -> doc 1 excluded; doc2's C overlaps but pokes out on
+    // D1 (min -10) -> it crosses. -> only doc 2, which distinguishes crosses from within.
     assertSameCount(
         "crosses", "[-1.0,-4.0 TO 6.0,3.0]", "double_range_multi_2d", "double_range_mv_dv_2d", 1);
   }

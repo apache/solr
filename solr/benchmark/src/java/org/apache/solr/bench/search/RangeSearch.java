@@ -54,14 +54,14 @@ import org.openjdk.jmh.infra.Blackhole;
  * single-valued ({@code r_ir}/{@code r_ir_dv}) and multiValued ({@code r_mv_ir}/{@code
  * r_mv_ir_dv}). A central window matches ~half the docs, so the range clause is costly to
  * materialize but cheap to verify per-doc. It is AND-ed with a selective term filter whose
- * doc-frequency is controlled, so we know -- and the {@code [range-bench]} setup log confirms --
- * which {@link org.apache.lucene.search.IndexOrDocValuesQuery} branch runs.
+ * doc-frequency is controlled, so we know and the {@code [range-bench]} setup log confirms, which
+ * {@link org.apache.lucene.search.IndexOrDocValuesQuery} branch runs.
  *
  * <p>Params: {@code criteria} (the {@code {!numericRange criteria=...}} relation), {@code field}
- * (the DV / non-DV pairs), and {@code scenario} -- the lead's selectivity vs the {@code
- * rangeCost/8} cutover: {@code selective_dv} (~{@value #SELECTIVE_LEAD_DF} docs -&gt; docValues
- * branch), {@code broad_points} (~{@value #BROAD_LEAD_DF} docs -&gt; points branch), {@code
- * none_points} (standalone -&gt; points).
+ * (the DV / non-DV pairs), and {@code scenario} - the lead's selectivity vs the {@code rangeCost/8}
+ * cutover: {@code selective_dv} (~{@value #SELECTIVE_LEAD_DF} docs -&gt; docValues branch), {@code
+ * broad_points} (~{@value #BROAD_LEAD_DF} docs -&gt; points branch), {@code none_points}
+ * (standalone -&gt; points).
  */
 @Fork(value = 1)
 @Warmup(time = 5, iterations = 5)
@@ -241,9 +241,7 @@ public class RangeSearch {
   @Benchmark
   public void rangeQuery(Blackhole blackhole, BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
-    // Sink the result exactly once, via Blackhole (do NOT also return it): mixing a return-value
-    // sink and a Blackhole sink can resolve to different JMH blackhole modes, which makes the
-    // r_ir vs r_ir_dv comparison apples-to-oranges.
+    // Sink the result exactly once, via Blackhole
     blackhole.consume(benchState.query().process(solrBenchState.client, COLLECTION));
   }
 }

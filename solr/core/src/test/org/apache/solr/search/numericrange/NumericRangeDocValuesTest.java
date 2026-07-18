@@ -148,8 +148,7 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
   @Test
   public void testSelectiveConjunction() {
     // Exercises IndexOrDocValuesQuery inside a conjunction: the selective title clause leads and
-    // the
-    // docValues range clause verifies. Must match the equivalent non-docValues query exactly.
+    // the docValues range clause verifies. Must match the equivalent non-docValues query exactly.
     assertU(
         adoc(
             "id",
@@ -244,8 +243,7 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
     // Range fields don't implement sorting: there's no canonical key for ordering intervals (by
     // min? max? width? midpoint?), multi-dimensional ranges (bbox/cube/tesseract) have no sensible
     // order at all, and the packed BINARY docValues isn't a sortable scalar. Enabling docValues
-    // does
-    // not change that -- getSortField still throws.
+    // does not change that, getSortField still throws.
     assertQEx(
         "sorting on a range field must fail even with docValues",
         "Cannot sort on",
@@ -255,7 +253,7 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
 
   @Test
   public void testQueryFacetingWithDocValues() {
-    // Range fields support facet.query (count docs matching a range query) -- the realistic way to
+    // Range fields support facet.query (count docs matching a range query), the realistic way to
     // facet ranges in Solr. (facet.field / value faceting is NOT supported: range docValues are
     // BINARY, not the SortedSet docValues that term-faceting needs)
     addIntDoc("1", "[100 TO 200]");

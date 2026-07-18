@@ -141,7 +141,7 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
 
   @Override
   protected boolean enableDocValuesByDefault() {
-    // DocValues are supported for both single- and multiValued range fields, but are opt-in: they
+    // DocValues are supported for both single and multiValued range fields, but are opt-in: they
     // add an extra (binary) docValues field, and range docValues only help queries that combine
     // the range clause with a more selective clause, so we don't enable them by default.
     return false;
@@ -171,7 +171,7 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
 
   @Override
   protected void checkSupportsDocValues() {
-    // DocValues are supported for both single- and multiValued range fields (backed by binary
+    // DocValues are supported for both single and multiValued range fields (backed by binary
     // docValues).
   }
 
