@@ -28,6 +28,7 @@
                positionIncrementGap="0"/>
     <fieldType name="date" class="org.apache.solr.schema.DatePointField" docValues="false" omitNorms="true"
                positionIncrementGap="0"/>
+    <fieldType name="intrange" class="solr.IntRangeField" numDimensions="1"/>
     <fieldType name="text" class="solr.TextField">
         <analyzer>
             <tokenizer class="solr.StandardTokenizerFactory"/>
@@ -58,5 +59,11 @@
     <dynamicField name="*_dt_dv" type="date" indexed="true" docValues="true" stored="false"/>
     <dynamicField name="*_s_dv" type="string" indexed="true" docValues="true" stored="false"/>
 
-    <uniqueKey>id</uniqueKey>
+    <!-- Range fields: *_ir is indexed-only (BKD); *_ir_dv adds docValues (IndexOrDocValuesQuery). -->
+    <dynamicField name="*_ir" type="intrange" indexed="true" stored="false"/>
+    <dynamicField name="*_ir_dv" type="intrange" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_mv_ir" type="intrange" indexed="true" multiValued="true" stored="false"/>
+    <dynamicField name="*_mv_ir_dv" type="intrange" indexed="true" multiValued="true" docValues="true" stored="false"/>
+
+  <uniqueKey>id</uniqueKey>
 </schema>

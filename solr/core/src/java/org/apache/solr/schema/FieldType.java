@@ -352,6 +352,36 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
+   * Whether this type needs all values of a multiValued field together (rather than one value at a
+   * time) in order to build its indexable fields - for example to pack several ranges into a single
+   * {@code BinaryDocValues} blob. When {@code true}, {@link org.apache.solr.update.DocumentBuilder}
+   * calls {@link #createFieldsFromAllValues(SchemaField, Collection)} once per (multiValued) field
+   * instead of {@link #createFields(SchemaField, Object)} per value.
+   */
+  public boolean createsFieldsFromAllValues() {
+    return false;
+  }
+
+  /**
+   * Builds the indexable fields for <em>all</em> values of {@code field} in a single document at
+   * once. Only invoked when {@link #createsFieldsFromAllValues()} returns {@code true}; the default
+   * simply concatenates {@link #createFields(SchemaField, Object)} over each value, preserving
+   * per-value behavior.
+   *
+   * @param field the schema field
+   * @param values all (non-null) values for this field in the current document
+   * @return the indexable fields to add to the document
+   */
+  public List<IndexableField> createFieldsFromAllValues(
+      SchemaField field, Collection<Object> values) {
+    List<IndexableField> fields = new ArrayList<>();
+    for (Object value : values) {
+      fields.addAll(createFields(field, value));
+    }
+    return fields;
+  }
+
+  /**
    * Convert an external value (from XML update command or from query string) into the internal
    * format for both storing and indexing (which can be modified by any analyzers).
    *

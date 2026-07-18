@@ -105,6 +105,24 @@
   <!-- 4D DoubleRangeField (tesseract) -->
   <field name="double_range_4d" type="doublerange4d" indexed="true" stored="true"/>
 
+  <!-- docValues-enabled variants (single-valued) exercising the IndexOrDocValuesQuery optimization -->
+  <field name="price_range_dv" type="intrange" indexed="true" stored="true" docValues="true"/>
+  <field name="bbox_dv" type="intrange2d" indexed="true" stored="true" docValues="true"/>
+  <field name="long_range_dv" type="longrange" indexed="true" stored="true" docValues="true"/>
+  <field name="float_range_dv" type="floatrange" indexed="true" stored="true" docValues="true"/>
+  <field name="double_range_dv" type="doublerange" indexed="true" stored="true" docValues="true"/>
+
+  <!-- docValues-only (not indexed) intrange, exercising the DV-only query path -->
+  <field name="price_range_dvonly" type="intrange" indexed="false" stored="false" docValues="true"/>
+
+  <!-- multiValued docValues variants (SortedSet-backed): exercise multiple ranges per document -->
+  <field name="price_range_mv_dv" type="intrange" indexed="true" multiValued="true" docValues="true"/>
+  <field name="float_range_mv_dv" type="floatrange" indexed="true" multiValued="true" docValues="true"/>
+  <field name="long_range_mv_dv_2d" type="longrange2d" indexed="true" multiValued="true" docValues="true"/>
+  <field name="double_range_mv_dv_2d" type="doublerange2d" indexed="true" multiValued="true" docValues="true"/>
+  <field name="long_range_multi_2d" type="longrange2d" indexed="true" stored="true" multiValued="true" docValues="false"/>
+  <field name="double_range_multi_2d" type="doublerange2d" indexed="true" stored="true" multiValued="true" docValues="false"/>
+
   <!-- Required by Solr -->
   <uniqueKey>id</uniqueKey>
 </schema>

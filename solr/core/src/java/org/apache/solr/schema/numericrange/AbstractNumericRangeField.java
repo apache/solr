@@ -18,13 +18,20 @@ package org.apache.solr.schema.numericrange;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.RangeFieldQuery.QueryType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
@@ -134,12 +141,19 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
 
   @Override
   protected boolean enableDocValuesByDefault() {
-    return false; // Range fields do not support docValues
+    // DocValues are supported for both single- and multiValued range fields, but are opt-in: they
+    // add an extra (binary) docValues field, and range docValues only help queries that combine
+    // the range clause with a more selective clause, so we don't enable them by default.
+    return false;
   }
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
+
+    // Force useDocValuesAsStored off; it otherwise defaults on for schema, which
+    // would make fl=* responses fail on a docValues-enabled range field.
+    properties &= ~USE_DOCVALUES_AS_STORED;
 
     String numDimensionsStr = args.remove("numDimensions");
     if (numDimensionsStr != null) {
@@ -153,25 +167,31 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
                 + typeName);
       }
     }
+  }
 
-    // Range fields do not support docValues - validate this wasn't explicitly enabled
-    if (hasProperty(DOC_VALUES)) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR,
-          "docValues=true enabled but "
-              + getClass().getSimpleName()
-              + " does not support docValues for field type "
-              + typeName);
-    }
+  @Override
+  protected void checkSupportsDocValues() {
+    // DocValues are supported for both single- and multiValued range fields (backed by binary
+    // docValues).
   }
 
   @Override
   public List<IndexableField> createFields(SchemaField field, Object value) {
-    IndexableField indexedField = createField(field, value);
     List<IndexableField> fields = new ArrayList<>();
 
+    IndexableField indexedField = createField(field, value);
     if (indexedField != null) {
       fields.add(indexedField);
+    }
+
+    if (field.hasDocValues() && !field.multiValued()) {
+      // Single-valued: one flat BinaryDocValues blob (read directly, no dictionary). multiValued
+      // docValues are built from all values at once in createFieldsFromAllValues (one blob holding
+      // every range), since BinaryDocValues holds only one value per document.
+      NumericRangeValue rv = parseRangeValue(value.toString());
+      fields.add(
+          new BinaryDocValuesField(
+              field.getName(), BytesRef.deepCopyOf(encodePackedValue(field.getName(), rv))));
     }
 
     if (field.stored()) {
@@ -179,6 +199,86 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
     }
 
     return fields;
+  }
+
+  @Override
+  public boolean createsFieldsFromAllValues() {
+    // multiValued docValues range fields pack every range of a document into ONE BinaryDocValues
+    // blob (flat, no dictionary), so the type needs all values together to build it.
+    return true;
+  }
+
+  @Override
+  public List<IndexableField> createFieldsFromAllValues(
+      SchemaField field, Collection<Object> values) {
+    List<IndexableField> fields = new ArrayList<>();
+    // Indexed (BKD) and stored fields: one per value (same as the per-value path).
+    for (Object value : values) {
+      IndexableField indexedField = createField(field, value);
+      if (indexedField != null) {
+        fields.add(indexedField);
+      }
+      if (field.stored()) {
+        fields.add(getStoredField(field, value.toString()));
+      }
+    }
+    // docValues: a single BinaryDocValues value holding all of the document's ranges.
+    if (field.hasDocValues()) {
+      fields.add(
+          new BinaryDocValuesField(field.getName(), encodePackedValues(field.getName(), values)));
+    }
+    return fields;
+  }
+
+  /**
+   * Encodes several ranges into one {@code BinaryDocValues} blob: each range's fixed-width {@code
+   * [min... | max...]} bytes concatenated. All ranges of a field share the same width, so the query
+   * recovers the count as {@code blob.length / stride}.
+   */
+  protected BytesRef encodePackedValues(String field, Collection<Object> values) {
+    BytesRefBuilder builder = new BytesRefBuilder();
+    for (Object value : values) {
+      builder.append(encodePackedValue(field, parseRangeValue(value.toString())));
+    }
+    return builder.toBytesRef();
+  }
+
+  /**
+   * Encodes a range value into the packed {@code [min... | max...]} byte representation used by
+   * both the indexed docValues and the query. Reuses Lucene's own encoder (via the type-specific
+   * {@code *RangeDocValuesField}) so the docValues and BKD encodings stay identical.
+   */
+  protected abstract BytesRef encodePackedValue(String field, NumericRangeValue rangeValue);
+
+  /** Number of bytes per dimension value for this type (e.g. {@code Integer.BYTES}). */
+  protected abstract int bytesPerDimension();
+
+  /**
+   * If the field has docValues, wraps the BKD query in an {@link IndexOrDocValuesQuery} whose
+   * docValues clause ({@link MultiBinaryRangeDocValuesQuery}) can cheaply verify candidates when a
+   * more selective clause leads iteration; otherwise returns the BKD query unchanged. It reads a
+   * flat per-doc blob of one (single-valued) or several (multiValued) ranges, avoiding the
+   * dictionary/ordinal overhead of SortedSet docValues.
+   */
+  protected Query maybeWrapWithDocValues(
+      SchemaField field, QueryType type, NumericRangeValue rangeValue, Query bkdQuery) {
+    if (!field.hasDocValues()) {
+      return bkdQuery;
+    }
+    BytesRef packed = encodePackedValue(field.getName(), rangeValue);
+    byte[] queryPackedValue =
+        Arrays.copyOfRange(packed.bytes, packed.offset, packed.offset + packed.length);
+    Query dv =
+        new MultiBinaryRangeDocValuesQuery(
+            field.getName(),
+            queryPackedValue,
+            rangeValue.getDimensions(),
+            bytesPerDimension(),
+            type);
+    if (!field.indexed()) {
+      return dv;
+    }
+    return new IndexOrDocValuesQuery(bkdQuery, dv);
   }
 
   protected StoredField getStoredField(SchemaField sf, Object value) {
@@ -278,7 +378,7 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
    * @param rangeValue a pre-parsed range value produced by this field type
    * @return a contains query for the given field and range
    */
-  public abstract Query newContainsQuery(String field, NumericRangeValue rangeValue);
+  public abstract Query newContainsQuery(SchemaField field, NumericRangeValue rangeValue);
 
   /**
    * Creates a Lucene query that matches indexed documents whose stored range <em>intersects</em>
@@ -288,7 +388,7 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
    * @param rangeValue a pre-parsed range value produced by this field type
    * @return an intersects query for the given field and range
    */
-  public abstract Query newIntersectsQuery(String field, NumericRangeValue rangeValue);
+  public abstract Query newIntersectsQuery(SchemaField field, NumericRangeValue rangeValue);
 
   /**
    * Creates a Lucene query that matches indexed documents whose stored range is <em>within</em> the
@@ -298,7 +398,7 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
    * @param rangeValue a pre-parsed range value produced by this field type
    * @return a within query for the given field and range
    */
-  public abstract Query newWithinQuery(String field, NumericRangeValue rangeValue);
+  public abstract Query newWithinQuery(SchemaField field, NumericRangeValue rangeValue);
 
   /**
    * Creates a Lucene query that matches indexed documents whose stored range <em>crosses</em> the
@@ -308,7 +408,7 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
    * @param rangeValue a pre-parsed range value produced by this field type
    * @return a crosses query for the given field and range
    */
-  public abstract Query newCrossesQuery(String field, NumericRangeValue rangeValue);
+  public abstract Query newCrossesQuery(SchemaField field, NumericRangeValue rangeValue);
 
   /**
    * Creates a query for this field that matches docs where the query-range is fully contained by
@@ -336,7 +436,7 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
     // Check if it's the full range syntax: [min1,min2 TO max1,max2]
     if (getRangePattern().matcher(trimmed).matches()) {
       final var rangeValue = parseRangeValue(trimmed);
-      return newContainsQuery(field.getName(), rangeValue);
+      return newContainsQuery(field, rangeValue);
     }
 
     // Syntax sugar: also accept a single-bound (i.e pX,pY,pZ)
@@ -353,7 +453,10 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
                 + ")");
       }
 
-      return newContainsQuery(field.getName(), singleBoundRange);
+      // A single bound is the degenerate range [p,p]; "contains p" is equivalent to
+      // "intersects [p,p]", so route it through the intersects path to pick up the docValues
+      // optimization for point queries.
+      return newIntersectsQuery(field, singleBoundRange);
     }
 
     throw new SolrException(
