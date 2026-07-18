@@ -128,7 +128,7 @@ public class CircuitBreakerRegistry implements Closeable {
 
   private static String buildCircuitBreakerKey(String metricType, String thresholdProp) {
     final var warnOnly = EnvUtils.getProperty(thresholdProp + SYSPROP_WARN_ONLY_SUFFIX, "false");
-    return metricType + ":" + System.getProperty(thresholdProp) + ":" + warnOnly;
+    return metricType + ":" + EnvUtils.getProperty(thresholdProp) + ":" + warnOnly;
   }
 
   private static synchronized void initGlobal(CoreContainer coreContainer) {
