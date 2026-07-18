@@ -18,7 +18,7 @@
 
 Solr includes a general tracing framework based on OpenTracing that can be used to trace the lifecycle of a request for performance monitoring.
 
-Tracing data can be configured to send to various backends, either directly or via an agent. Solr can send traces directly in OTLP/gRPC format. You can support many other destinations and cloud providers by installing an agent on each node and sending traces to localhost.
+Tracing data can be configured to send to various backends, either directly or via an agent. Solr can send traces directly in OTLP/HTTP format. You can support many other destinations and cloud providers by installing an agent on each node and sending traces to localhost.
 
 A sampled distributed tracing query request displayed in Jaeger UI looks like this:
 
@@ -39,7 +39,7 @@ This plugin can be disabled by setting the `solr.tracing.always.on.enabled` syst
 The `TracerConfigurator` is a class used to provide an instance of `io.opentracing.Tracer` based on configuration in `solr.xml`.
 These are pluggable, and each plugin is shipped as a xref:configuration-guide:solr-modules.adoc[Solr Module]:
 
-**opentelemetry**: The `opentelemetry` module supports OTLP over gRPC or HTTP.
+**opentelemetry**: The `opentelemetry` module supports OTLP over HTTP.
 
 A setup of a `TracerConfigurator` in `solr.xml` looks like this:
 
@@ -70,24 +70,27 @@ Enable the module with either system property `-Dsolr.modules=opentelemetry` or 
 
 The tracer can be configured through environment variables or Java system properties, see https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/[OTEL SDK Environment Variables] and https://github.com/open-telemetry/opentelemetry-java/blob/v{dep-version-opentelemetry}/sdk-extensions/autoconfigure/README.md[Java SDK Autoconfigure].
 
-The default configuration will ship traces to a collector running on localhost, using https://opentelemetry.io/docs/reference/specification/protocol/[OTLP] over https://grpc.io[gRPC], and will propagate trace IDs using https://www.w3.org/TR/trace-context/[W3C TraceContext]. Here are the environment settings that are enabled by default:
+The default configuration will ship traces to a collector running on localhost, using https://opentelemetry.io/docs/reference/specification/protocol/[OTLP] over HTTP (Protobuf), and will propagate trace IDs using https://www.w3.org/TR/trace-context/[W3C TraceContext]. Here are the environment settings that are enabled by default:
 
 [source,bash]
 ----
 OTEL_SDK_DISABLED=false
 OTEL_SERVICE_NAME=solr
 OTEL_TRACES_EXPORTER=otlp
-OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 OTEL_TRACES_SAMPLER=parentbased_always_on
 OTEL_PROPAGATORS=tracecontext,baggage
 ----
+
+NOTE: gRPC transport is not supported out of the box.
+To use gRPC, you must add the required gRPC, OkHttp, and Protobuf jars to the `opentelemetry` module's lib directory and set `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`.
 
 Say you want to send traces to a remote https://opentelemetry.io/docs/collector/[OTEL Collector], with 10% sampling. That could be done with this configuration:
 
 [source,bash]
 ----
-OTEL_EXPORTER_OTLP_ENDPOINT=my-remote-collector:4317
+OTEL_EXPORTER_OTLP_ENDPOINT=http://my-remote-collector:4318
 OTEL_TRACES_SAMPLER=parentbased_traceidratio
 OTEL_TRACES_SAMPLER_ARG=0.1
 ----
@@ -96,7 +99,7 @@ An equivalent configuration using system properties would be:
 
 [source,bash]
 ----
-SOLR_OPTS=-Dotel.exporter.otlp.endpoint=my-remote-collector:4317 -Dotel.traces.sampler=parentbased_traceidratio -Dotel.traces.sampler.arg=0.1
+SOLR_OPTS=-Dotel.exporter.otlp.endpoint=http://my-remote-collector:4318 -Dotel.traces.sampler=parentbased_traceidratio -Dotel.traces.sampler.arg=0.1
 ----
 
 To add custom tags to the trace, use `OTEL_RESOURCE_ATTRIBUTES`:

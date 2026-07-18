@@ -390,6 +390,13 @@ A new feature vector cache was added that is used not only for feature logging b
 
 The new OTEL based metric system introduced in 10.0 is considered BETA, and some breaking changes are to be expected in this and coming minor releases.
 
+==== OpenTelemetry Tracing Transport Changed to HTTP
+
+The `opentelemetry` module now uses the JDK HTTP sender (`opentelemetry-exporter-sender-jdk`) instead of OkHttp (`opentelemetry-exporter-sender-okhttp`) to reduce transitive dependencies.
+As a result, gRPC transport is no longer supported out of the box, and the default export protocol has changed from `grpc` to `http/protobuf` (OTLP port `4318` instead of `4317`).
+
+Users who relied on gRPC transport can restore it by adding the required gRPC, OkHttp, and Protobuf jars to the `opentelemetry` module's lib directory and setting `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`.
+
 ==== OTLP Metric Names Changed to Dot-Separated Format
 
 *Breaking change for OTLP consumers.*
