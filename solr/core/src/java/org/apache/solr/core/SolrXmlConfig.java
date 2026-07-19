@@ -87,7 +87,7 @@ public class SolrXmlConfig {
     }
     // we always wrap if we might set a property -- never mutate the original props
     final Properties results = (null == props ? new Properties() : new Properties(props));
-    final String sysprop = System.getProperty(ZK_HOST);
+    final String sysprop = EnvUtils.getProperty(ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(sysprop)) {
       results.setProperty(ZK_HOST, sysprop);
     }
@@ -179,7 +179,7 @@ public class SolrXmlConfig {
             "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");
       }
       log.info("solr.xml not found in SOLR_HOME, using built-in default");
-      String solrInstallDir = System.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
+      String solrInstallDir = EnvUtils.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
       if (solrInstallDir == null) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

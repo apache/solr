@@ -30,10 +30,7 @@ dependencies {
   }
 
   api project(':solr:core')
-  api project(':solr:solrj')
   api project(':solr:solrj-jetty')
-  api project(':solr:api')
-  implementation project(':solr:solrj-zookeeper')
 
   api libs.apache.lucene.testframework
   implementation libs.apache.lucene.core
@@ -68,7 +65,7 @@ dependencies {
   implementation(libs.opentelemetry.exporter.prometheus) {
     transitive = false // most things don't want or already have
   }
-  implementation libs.opentelemetry.sdk.metrics // prometheus exporter needs
+  implementation libs.opentelemetry.sdk.metrics // JettySolrRunner uses MetricReader; exporter is transitive=false
   implementation libs.prometheus.metrics.model
 
   implementation libs.jakarta.servlet.api

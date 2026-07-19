@@ -43,9 +43,7 @@ task echoCp {
 dependencies {
   implementation project(':solr:test-framework')
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
   implementation project(':solr:solrj-jetty')
-  implementation project(':solr:solrj-streaming')
 
   implementation libs.apache.lucene.core
   implementation libs.commonsio.commonsio
@@ -56,4 +54,8 @@ dependencies {
   implementation libs.slf4j.api
   runtimeOnly libs.lmax.disruptor
   annotationProcessor libs.openjdk.jmh.generatorannprocess
+
+  testAnnotationProcessor libs.openjdk.jmh.generatorannprocess
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
 }
