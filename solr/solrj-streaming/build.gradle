@@ -39,7 +39,4 @@ dependencies {
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
-
-  // cutterslade requires we state the obvious
-  testImplementation project(':solr:solrj-streaming')
 }

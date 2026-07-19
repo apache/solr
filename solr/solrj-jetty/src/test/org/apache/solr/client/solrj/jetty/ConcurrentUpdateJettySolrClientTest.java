@@ -44,6 +44,21 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
   }
 
   @Override
+  public ConcurrentUpdateBaseSolrClient errorHandlerConcurrentClient(
+      String serverUrl,
+      int queueSize,
+      int threadCount,
+      HttpSolrClient solrClient,
+      ConcurrentUpdateBaseSolrClient.UpdateErrorHandler errorHandler) {
+    return new ConcurrentUpdateJettySolrClient.Builder(serverUrl, (HttpJettySolrClient) solrClient)
+        .withQueueSize(queueSize)
+        .withThreadCount(threadCount)
+        .setPollQueueTime(0, TimeUnit.MILLISECONDS)
+        .withErrorHandler(errorHandler)
+        .build();
+  }
+
+  @Override
   public HttpSolrClient solrClient(Integer overrideIdleTimeoutMs) {
     var builder = new HttpJettySolrClient.Builder();
     if (overrideIdleTimeoutMs != null) {

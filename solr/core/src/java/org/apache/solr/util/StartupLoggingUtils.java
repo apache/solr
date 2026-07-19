@@ -210,9 +210,11 @@ public final class StartupLoggingUtils {
    * "solr.logs.requestlog.enabled is set in solr/server/etc/jetty-requestlog.xml
    */
   public static void checkRequestLogging() {
-    // EnvUtils doesn't work here.
+    // Note: "solr.logs.requestlog.enabled" is deliberately excluded from EnvUtils
+    // env var mapping (see EnvToSyspropMappings.properties), so Boolean.getBoolean
+    // is the correct way to read it (it only looks at system properties).
     boolean requestLogEnabled = Boolean.getBoolean("solr.logs.requestlog.enabled");
-    String retainDays = System.getProperty("solr.logs.requestlog.retain.days");
+    String retainDays = EnvUtils.getProperty("solr.logs.requestlog.retain.days");
     if (requestLogEnabled) {
       if (retainDays == null) {
         log.warn(

@@ -30,7 +30,6 @@ configurations {
 
 dependencies {
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
 
   implementation libs.apache.lucene.core
 
