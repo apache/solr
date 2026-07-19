@@ -29,7 +29,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.json.JsonConsumerQParserPlugin;
 import org.apache.solr.request.json.RequestUtil;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -37,23 +39,16 @@ import org.apache.solr.schema.TextField;
 
 /**
  * A query parser that builds interval queries from a JSON DSL description. Invoked with the syntax
- * {@code {!intervals df=title}$foobar}.
- *
- * <p>The {@code $foobar} reference (the query string following the local params) names an entry in
- * the {@code json_queries} map (passed via the JSON DSL). The top-level key of the named query must
- * be a rule name (e.g., {@code match}, {@code all_of}). The target field is read from the {@code
- * df} local param, falling back to the {@code df} query param. Example: {@code {all_of: {...}}}
- * with {@code df=title}.
+ * {@code {!intervals }<JSON>}.
  */
-public class IntervalsQParserPlugin extends QParserPlugin {
+public class IntervalsQParserPlugin extends QParserPlugin implements JsonConsumerQParserPlugin {
   public static final String NAME = "intervals";
   private static final int DEFAULT_FUZZY_MAX_EXPANSIONS = Intervals.DEFAULT_MAX_EXPANSIONS;
 
   /** Syntax reminder included in exceptions thrown for malformed/missing input. */
   private static final String SYNTAX_HELP =
-      "Expected syntax '{!intervals df=<field>}$<name>', where <name> refers to an entry "
-          + "in the 'json_queries' map of the JSON request body, e.g. "
-          + "q={!intervals df=title}$myQuery with json={\"json_queries\":{\"myQuery\":{...}}}";
+      "Expected syntax '{!intervals}<JSON>'";
+  private static final String ERROR_MSG = "Specify an intervals field with 'use_field' string property or via local param or a query param";
 
   @Override
   public QParser createParser(
@@ -61,50 +56,25 @@ public class IntervalsQParserPlugin extends QParserPlugin {
     return new QParser(qstr, localParams, params, req) {
       @Override
       public Query parse() {
-        if (qstr == null || qstr.isEmpty() || qstr.charAt(0) != '$' || qstr.length() < 2) {
+        if (qstr == null || qstr.isEmpty() || qstr.charAt(0) != '{') {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SYNTAX_HELP);
         }
-        String jsonQueryName = qstr.substring(1);
-
-        Map<String, Object> json = req.getJSON();
-        if (json == null) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "No JSON request body found; " + SYNTAX_HELP);
+        Map<String, Object> queryDefMap = asStringObjectMap(Utils.fromJSONString(qstr), "intervals query");
+        Object fieldVal = queryDefMap.remove("use_field");
+        String field;
+        if (fieldVal != null) {
+          if (fieldVal instanceof String) {
+            field = (String) fieldVal;
+          } else {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ERROR_MSG);
+          }
+        } else {
+          field = getParam(CommonParams.DF);
         }
-
-        Object jsonQueriesObj = json.get(RequestUtil.JSON_QUERIES_KEY);
-        if (!(jsonQueriesObj instanceof Map)) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "No '"
-                  + RequestUtil.JSON_QUERIES_KEY
-                  + "' map found in JSON request body; "
-                  + SYNTAX_HELP);
-        }
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> jsonQueries = (Map<String, Object>) jsonQueriesObj;
-        Object queryDef = jsonQueries.get(jsonQueryName);
-
-        if (!(queryDef instanceof Map)) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Query '"
-                  + jsonQueryName
-                  + "' not found in '"
-                  + RequestUtil.JSON_QUERIES_KEY
-                  + "' or is not an object; "
-                  + SYNTAX_HELP);
-        }
-
-        Map<String, Object> queryDefMap = asStringObjectMap(queryDef, "json query definition");
-
-        String field = getParam(CommonParams.DF);
         if (field == null || field.isEmpty()) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Query '" + jsonQueryName + "' requires a 'df' parameter to specify the field");
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ERROR_MSG);
         }
+
         SchemaField defaultField = req.getSchema().getField(field);
 
         IntervalsSource source = parseRuleObject(queryDefMap, defaultField);
