@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -174,7 +173,6 @@ public class DistributedQParserTest extends SolrCloudTestCase {
     assertEquals(1, response.getResults().getNumFound());
   }
 
-
   @Test
   public void testIntervalsJsonQParser() throws Exception {
     // Pure-JSON style: the interval rule is embedded directly under 'intervals' rather than
@@ -182,51 +180,57 @@ public class DistributedQParserTest extends SolrCloudTestCase {
     // match rule: "quick" appears in docs 1 ("quick brown fox") and 3 ("quick red dog")
     QueryResponse response =
         new DirectJsonQueryRequest(
-            "{query:{intervals:{use_field:subject,match:{query:quick}}},fields:id}")
+                "{query:{intervals:{use_field:subject,match:{query:quick}}},fields:id}")
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(2, response.getResults().getNumFound());
 
     // all_of ordered: "quick" then "fox" — only doc 1 ("quick brown fox") matches
     response =
         new DirectJsonQueryRequest(
-            "{query:{intervals:{use_field:subject,all_of:{ordered:true,"
-                + "intervals:[{match:{query:quick}},{match:{query:fox}}]}}},fields:id}")
+                "{query:{intervals:{use_field:subject,all_of:{ordered:true,"
+                    + "intervals:[{match:{query:quick}},{match:{query:fox}}]}}},fields:id}")
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(1, response.getResults().getNumFound());
 
     // json.params
     response =
         new DirectJsonQueryRequest(
-            "{query:{intervals:{match:{query:quick}}},params:{df:subject},fields:id}")
+                "{query:{intervals:{match:{query:quick}}},params:{df:subject},fields:id}")
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(2, response.getResults().getNumFound());
     // classic df
     response =
         new DirectJsonQueryRequest(
-            "{query:{intervals:{match:{query:quick}}},fields:id}", new MapSolrParams(Map.of("df", "subject")))
+                "{query:{intervals:{match:{query:quick}}},fields:id}",
+                new MapSolrParams(Map.of("df", "subject")))
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(2, response.getResults().getNumFound());
     // precedence
     response =
         new DirectJsonQueryRequest(
-            "{query:{intervals:{match:{query:quick},use_field:subject}},fields:id}", new MapSolrParams(Map.of("df", "OBject")))
+                "{query:{intervals:{match:{query:quick},use_field:subject}},fields:id}",
+                new MapSolrParams(Map.of("df", "OBject")))
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(2, response.getResults().getNumFound());
     // sad, passing `null` causes fall back to df, cope with it
     response =
         new DirectJsonQueryRequest(
-            "{query:{intervals:{match:{query:quick},use_field:null}},fields:id}", new MapSolrParams(Map.of("df", "subject")))
+                "{query:{intervals:{match:{query:quick},use_field:null}},fields:id}",
+                new MapSolrParams(Map.of("df", "subject")))
             .process(cluster.getSolrClient(), COLLECTION);
     assertEquals(2, response.getResults().getNumFound());
   }
 
   public void testIntervalsJsonQParserException() throws Exception {
-    SolrException exception = expectThrows(
-        SolrException.class, () -> new DirectJsonQueryRequest(
-            String.format(
-                "{query:{intervals:{use_field:%s,match:{query:quick}}},fields:id}",
-                random().nextBoolean()?"{}" : "\"\""))
-            .process(cluster.getSolrClient(), COLLECTION));
+    SolrException exception =
+        expectThrows(
+            SolrException.class,
+            () ->
+                new DirectJsonQueryRequest(
+                        String.format(
+                            "{query:{intervals:{use_field:%s,match:{query:quick}}},fields:id}",
+                            random().nextBoolean() ? "{}" : "\"\""))
+                    .process(cluster.getSolrClient(), COLLECTION));
     System.out.println(exception);
   }
 }

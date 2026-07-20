@@ -32,7 +32,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.json.JsonConsumerQParserPlugin;
-import org.apache.solr.request.json.RequestUtil;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
@@ -46,9 +45,10 @@ public class IntervalsQParserPlugin extends QParserPlugin implements JsonConsume
   private static final int DEFAULT_FUZZY_MAX_EXPANSIONS = Intervals.DEFAULT_MAX_EXPANSIONS;
 
   /** Syntax reminder included in exceptions thrown for malformed/missing input. */
-  private static final String SYNTAX_HELP =
-      "Expected syntax '{!intervals}<JSON>'";
-  private static final String ERROR_MSG = "Specify an intervals field with 'use_field' string property or via local param or a query param";
+  private static final String SYNTAX_HELP = "Expected syntax '{!intervals}<JSON>'";
+
+  private static final String ERROR_MSG =
+      "Specify an intervals field with 'use_field' string property or via local param or a query param";
 
   @Override
   public QParser createParser(
@@ -59,7 +59,8 @@ public class IntervalsQParserPlugin extends QParserPlugin implements JsonConsume
         if (qstr == null || qstr.isEmpty() || qstr.charAt(0) != '{') {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SYNTAX_HELP);
         }
-        Map<String, Object> queryDefMap = asStringObjectMap(Utils.fromJSONString(qstr), "intervals query");
+        Map<String, Object> queryDefMap =
+            asStringObjectMap(Utils.fromJSONString(qstr), "intervals query");
         Object fieldVal = queryDefMap.remove("use_field");
         String field;
         if (fieldVal != null) {

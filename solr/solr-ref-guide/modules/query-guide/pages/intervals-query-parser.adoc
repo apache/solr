@@ -16,63 +16,51 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Intervals Query Parser (`IntervalsQParserPlugin`) builds Lucene interval queries from a xref:json-request-api.adoc[JSON DSL] description.
+The Intervals Query Parser builds Lucene interval queries from a xref:json-request-api.adoc[JSON DSL] description.
 Interval queries allow you to express positional constraints such as "these terms must appear within N positions of each other" or "this phrase must appear before that one".
 See the {lucene-javadocs}/queries/org/apache/lucene/queries/intervals/package-summary.html[Lucene Intervals package documentation] for a detailed description of the underlying interval machinery.
 
-Invoked with the syntax `{!intervals df=<field>}$<name>`.
-
 == Query Format
 
-Specify the target field using the `df` local param (or the `df` query param as a fallback).
-The query string following the local params, `$<name>`, is *required* and names an entry in the
-`json_queries` map of the JSON request body; that entry is then the rule object directly, with no
-field wrapper.
-If the `$<name>` reference is missing or malformed, or if `json_queries` (or the named entry
-within it) is absent from the JSON request body, the query parser throws a `BAD_REQUEST` error
-explaining the expected syntax.
+Intervals Query Parser may be invoked with the lagacy syntax
 
-[source,text]
-----
-q={!intervals df=title}$myQuery
-----
+```
+q={!intervals df=text_field}{"phrase":{"terms":["quick","brown","fox"]}}&...
+```
 
-[source,text]
+In the JSON Request API the interval rule may be embedded directly under an `intervals` key in JSON Query DSL.
+
+[source,json]
 ----
-json={
-  "json_queries": {
-    "myQuery": {
-      "match": { "query": "apache solr" }
+{
+  "query": {
+    "intervals": {
+      "use_field": "another_text_field",
+      "phrase": {
+        "terms": ["quick", "brown", "fox"]
+      }
     }
   }
 }
 ----
 
-== Parameters
+The target field is specified via a top-level `use_field` property or via the `df` local or query param as a fallback.
 
-`$<name>`::
-+
-[%autowidth,frame=none]
-|===
-|Required |Default: none
-|===
-+
-The query string following the local params (e.g., `$myQuery`).
-Names an entry in the `json_queries` map that defines the interval query to execute.
+== Parameters
 
 `df`::
 +
 [%autowidth,frame=none]
 |===
-|Required |Default: none
+|Optional |Default: none
 |===
 +
-The field to run the interval query against.
-Required; may be specified as a local param inside `{! }` or as a regular query param.
+A fallback for the field to run the intervals query against.
+May be specified as a local param inside `{! }` or as a regular query param.
 
 == Interval Rules
 
-Each rule object contains exactly one key that identifies the rule type, mapped to an object of rule parameters.
+Each rule object contains a key that identifies the rule type, mapped to an object of rule parameters. The root rule may also include a top-level `use_field` property as described above.
 
 === `match`
 
@@ -733,8 +721,9 @@ q={!intervals df=title}$titleQuery
 [source,text]
 ----
 json={
-  "json_queries": {
-    "titleQuery": {
+  "query": {
+    "intervals": {
+        "use_field":"title",
         "all_of": {
           "ordered": true,
           "max_gaps": 5,

@@ -245,8 +245,8 @@ public class RequestUtil {
               out = queryJsonProperty.getKey();
               arr = true;
               isQuery = true;
-              convertJsonPropertyToLocalParams(req,
-                  newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
+              convertJsonPropertyToLocalParams(
+                  req, newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
             }
             continue;
           } else {
@@ -272,7 +272,8 @@ public class RequestUtil {
   }
 
   private static void convertJsonPropertyToLocalParams(
-      SolrQueryRequest req, Map<String, String[]> outMap,
+      SolrQueryRequest req,
+      Map<String, String[]> outMap,
       JsonQueryConverter jsonQueryConverter,
       Map.Entry<String, Object> jsonProperty,
       String outKey,
@@ -303,7 +304,9 @@ public class RequestUtil {
     } else {
       outMap.put(
           outKey,
-          new String[] {isQuery ? jsonQueryConverter.toLocalParams(req, val, outMap) : val.toString()});
+          new String[] {
+            isQuery ? jsonQueryConverter.toLocalParams(req, val, outMap) : val.toString()
+          });
     }
   }
 

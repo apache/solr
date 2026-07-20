@@ -32,7 +32,8 @@ import org.apache.solr.search.QParserPlugin;
 class JsonQueryConverter {
   private int numParams = 0;
 
-  String toLocalParams(SolrQueryRequest req, Object jsonQueryObject, Map<String, String[]> additionalParams) {
+  String toLocalParams(
+      SolrQueryRequest req, Object jsonQueryObject, Map<String, String[]> additionalParams) {
     if (jsonQueryObject instanceof String) return jsonQueryObject.toString();
     StringBuilder builder = new StringBuilder();
     buildLocalParams(req, builder, jsonQueryObject, true, additionalParams);
@@ -51,7 +52,8 @@ class JsonQueryConverter {
   // parameter like 42, or a sub-query)
   @SuppressWarnings({"unchecked"})
   private void buildLocalParams(
-      SolrQueryRequest req, StringBuilder builder,
+      SolrQueryRequest req,
+      StringBuilder builder,
       Object val,
       boolean isQParser,
       Map<String, String[]> additionalParams) {
@@ -140,7 +142,9 @@ class JsonQueryConverter {
       if (plugin instanceof JsonConsumerQParserPlugin) {
         // hand the nested object to the parser as a JSON string via a dereferenced param
         // ordinary param, forwarded to shards, re-parsed there
-        subBuilder.append("}").append(/*putParam(*/Utils.toJSONString(subVal,-1)/*, additionalParams)*/);
+        subBuilder
+            .append("}")
+            .append(/*putParam(*/ Utils.toJSONString(subVal, -1) /*, additionalParams)*/);
       } else {
         buildLocalParams(req, subBuilder, subVal, false, additionalParams);
         subBuilder.append("}");
