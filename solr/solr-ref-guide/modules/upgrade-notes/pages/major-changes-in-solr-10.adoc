@@ -393,9 +393,10 @@ The new OTEL based metric system introduced in 10.0 is considered BETA, and some
 ==== OTLP protocols
 
 The `opentelemetry` module no longer includes some dependencies, dropping gRPC support out-of-the-box.
-The default export protocol has changed from `grpc` to `http/protobuf` (OTLP port `4318` instead of `4317`).
+The default export protocol for tracing has changed from `grpc` to `http/protobuf` (OTLP port `4318` instead of `4317`).
+The default for the separate OTLP metrics exporter's `solr.metrics.otlpExporterProtocol` has likewise changed from `grpc` to `http`.
 
-Use of gRPC can be restored by adding the required gRPC & Netty jars to the `opentelemetry` module's lib directory and setting `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`.
+Use of gRPC can be restored by adding the required gRPC & Netty jars to the `opentelemetry` module's lib directory, and setting `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` (tracing) and/or `solr.metrics.otlpExporterProtocol=grpc` (metrics) as needed.
 
 ==== OTLP Metric Names Changed to Dot-Separated Format
 
