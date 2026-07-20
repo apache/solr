@@ -18,7 +18,10 @@
 
 Solr includes a general tracing framework based on OpenTracing that can be used to trace the lifecycle of a request for performance monitoring.
 
-Tracing data can be configured to send to various backends, either directly or via an agent. Solr can send traces directly in OTLP/HTTP format. You can support many other destinations and cloud providers by installing an agent on each node and sending traces to localhost.
+Tracing data can be configured to send to various backends, either directly or via an agent.
+Solr can send traces directly in OTLP/HTTP format with the opentelemetry module, out-of-the-box.
+Other protocols, destinations and cloud providers may be supported.
+For example, gRPC can be supported by adding more JARs and tweaking configuration.
 
 A sampled distributed tracing query request displayed in Jaeger UI looks like this:
 
@@ -55,7 +58,8 @@ By doing this, some backends like DataDog are supported out of the box since htt
 
 == Open Telemetry Module
 
-This module brings support for the industry standard https://opentelemetry.io[OpenTelemetry] (or short "OTEL") tracing, and exposes a tracer configurator that can be enabled in the `<tracerConfig>` tag of `solr.xml` as follows:
+This module brings support for the industry standard https://opentelemetry.io[OpenTelemetry] ("OTEL").
+OTEL is broader than tracing, but nonetheless, Solr's focal configuration element for it in Solr is `<tracerConfig>` in `solr.xml` as follows:
 
 [source,xml]
 ----
@@ -84,8 +88,7 @@ OTEL_PROPAGATORS=tracecontext,baggage
 ----
 
 NOTE: gRPC transport is not supported out of the box.
-To use gRPC, add the required gRPC, OkHttp, and Protobuf JARs to the `opentelemetry` module's lib directory and set `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`.
-Look up the full list of runtime JARs needed at https://central.sonatype.com/artifact/io.opentelemetry/opentelemetry-exporter-sender-okhttp/1.56.0/dependencies[opentelemetry-exporter-sender-okhttp on Maven Central] (replace `1.56.0` with the OpenTelemetry version bundled in your Solr release).
+To use gRPC, add the required gRPC and Netty JARs to the `opentelemetry` module's lib directory and set `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`.
 
 Say you want to send traces to a remote https://opentelemetry.io/docs/collector/[OTEL Collector], with 10% sampling. That could be done with this configuration:
 

@@ -1,8 +1,6 @@
 title: >
-  Switch the opentelemetry module from OkHttp to the JDK HTTP sender to reduce transitive dependencies.
-  The default OTLP export protocol changed from gRPC (port 4317) to HTTP/Protobuf (port 4318).
-  gRPC transport is no longer bundled; users who need it can add the required gRPC and OkHttp jars
-  to the opentelemetry module's lib directory.
+  Removed OkHttp, gRPC, and Netty jars from the opentelemetry module.  The OTLP/http protocol still
+  works but no longer uses additional dependencies.
 type: dependency_update
 authors:
   - name: David Smiley
