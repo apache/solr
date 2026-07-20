@@ -176,12 +176,11 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
 
   public void testQueryIntervals() throws Exception {
     try (SolrQueryRequest req = req("myField", "foo_s")) {
-      req.setJSON(Map.of("json_queries", Map.of("q1", Map.of("term", Map.of("value", "asdf")))));
       assertQueryEquals(
           IntervalsQParserPlugin.NAME,
           req,
-          "{!intervals df=$myField}$q1",
-          "{!intervals df=foo_s}$q1");
+          "{!intervals df=$myField}{'term':{'value':'asdf'}}",
+          "{!intervals df=foo_s}{'term':{'value':'asdf'}}");
     }
   }
 

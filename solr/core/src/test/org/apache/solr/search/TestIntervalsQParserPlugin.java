@@ -50,7 +50,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
     // With a $name reference but no JSON request body at all
     assertQEx(
         "intervals qparser without a JSON body should throw BAD_REQUEST",
-        "No JSON request body found",
+        "Expected syntax '{!intervals}<JSON>'",
         req("q", "{!intervals df=v_t}"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
@@ -84,7 +84,14 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
             + "]}}"
             + "]}}},"
             + "fields:id}",
-        "/response=={'numFound':2,'start':0,'numFoundExact':true}");
+        "/response=={'numFound':2,'start':0,'numFoundExact':true, \"docs\":[\n"
+            + "      {\n"
+            + "        \"id\":\"30\"\n"
+            + "      },\n"
+            + "      {\n"
+            + "        \"id\":\"31\"\n"
+            + "      }\n"
+            + "    ]}");
   }
 
   @Test
@@ -95,7 +102,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
     // Match rule text not present in any document; field via use_field
     assertJJQ(
         "{ query:{intervals:{use_field:v_t, match:{query:zzznomatch}}}," + "fields:id}",
-        "/response=={'numFound':0,'start':0,'numFoundExact':true}");
+        "/response=={'numFound':0,'start':0,'numFoundExact':true, \"docs\":[ ]}");
   }
 
   @Test
@@ -156,7 +163,14 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
 
     assertJJQ(
         "{ query:{intervals:{use_field:v_ws, regexp:{pattern:'rx_ca.*'}}}," + "fields:id}",
-        "/response=={'numFound':2,'start':0,'numFoundExact':true}");
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,\"docs\":[\n"
+            + "      {\n"
+            + "        \"id\":\"60\"\n"
+            + "      },\n"
+            + "      {\n"
+            + "        \"id\":\"61\"\n"
+            + "      }\n"
+            + "    ]}");
 
     assertQEx(
         "regexp rule should reject a negative max_expansions with BAD_REQUEST",
@@ -257,7 +271,15 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
             + "unordered_no_overlaps:{intervals:"
             + "[{term:{value:uno_foo}},{term:{value:uno_bar}}]}}},"
             + "fields:id}",
-        "/response=={'numFound':2,'start':0,'numFoundExact':true}");
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,\n"
+            + "    \"docs\":[\n"
+            + "      {\n"
+            + "        \"id\":\"100\"\n"
+            + "      },\n"
+            + "      {\n"
+            + "        \"id\":\"101\"\n"
+            + "      }\n"
+            + "    ]}");
   }
 
   @Test
@@ -305,7 +327,15 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
             + "at_least:{min_should_match:2,intervals:"
             + "[{term:{value:atl_alpha}},{term:{value:atl_beta}},{term:{value:atl_gamma}}]}}},"
             + "fields:id}",
-        "/response=={'numFound':2,'start':0,'numFoundExact':true}");
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,\n"
+            + "    \"docs\":[\n"
+            + "      {\n"
+            + "        \"id\":\"130\"\n"
+            + "      },\n"
+            + "      {\n"
+            + "        \"id\":\"131\"\n"
+            + "      }\n"
+            + "    ]}");
   }
 
   @Test
@@ -315,7 +345,7 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
 
     assertJJQ(
         "{ query:{intervals:{use_field:v_ws, no_intervals:{reason:testing}}}," + "fields:id}",
-        "/response=={'numFound':0,'start':0,'numFoundExact':true}");
+        "/response=={'numFound':0,'start':0,'numFoundExact':true, \"docs\":[ ]}");
   }
 
   @Test

@@ -95,16 +95,10 @@ public class DistributedQParserTest extends SolrCloudTestCase {
   @Test
   public void testIntervalsQParser() throws Exception {
     // match rule: "quick" appears in docs 1 ("quick brown fox") and 3 ("quick red dog")
-    String jsonQueries =
-        "'q1': {'match': {'query': 'quick'}}"
-            + (random().nextBoolean() ? ", 'ignore': {'match': {'query': 'lazy'}}" : "");
     QueryResponse response =
         new DirectJsonQueryRequest(
                 "{"
-                    + "'query': {intervals: {df: subject, query: $q1}},"
-                    + "'json_queries': {"
-                    + jsonQueries
-                    + "},"
+                    + "'query': {intervals: {df: subject, query: {'match': {'query': 'quick'}}}},"
                     + "'fields': 'id'"
                     + "}")
             .process(cluster.getSolrClient(), COLLECTION);
@@ -112,16 +106,10 @@ public class DistributedQParserTest extends SolrCloudTestCase {
 
     // a distinct match rule: "lazy" appears only in doc 2 ("lazy brown dog") — confirm the
     // result differs from the "quick" query above
-    jsonQueries =
-        "'q1': {'match': {'query': 'lazy'}}"
-            + (random().nextBoolean() ? ", 'ignore': {'match': {'query': 'quick'}}" : "");
     QueryResponse lazyResponse =
         new DirectJsonQueryRequest(
                 "{"
-                    + "'query': {intervals: {df: subject, query: $q1}},"
-                    + "'json_queries': {"
-                    + jsonQueries
-                    + "},"
+                    + "'query': {intervals: {df: subject, query: {'match': {'query': 'lazy'}}}},"
                     + "'fields': 'id'"
                     + "}")
             .process(cluster.getSolrClient(), COLLECTION);
@@ -132,9 +120,9 @@ public class DistributedQParserTest extends SolrCloudTestCase {
     response =
         new DirectJsonQueryRequest(
                 "{"
-                    + "'query': {intervals: {df: subject, query: $q1}},"
-                    + "'json_queries': {'q1': {'all_of': {'ordered': true,"
-                    + "'intervals': [{'match': {'query': 'quick'}},{'match': {'query': 'fox'}}]}}},"
+                    + "'query': {intervals: {df: subject, query: "
+                    + "{'q1': {'all_of': {'ordered': true,"
+                    + "'intervals': [{'match': {'query': 'quick'}},{'match': {'query': 'fox'}}]}}}}},,"
                     + "'fields': 'id'"
                     + "}")
             .process(cluster.getSolrClient(), COLLECTION);
@@ -146,10 +134,8 @@ public class DistributedQParserTest extends SolrCloudTestCase {
         new DirectJsonQueryRequest(
                 "{"
                     + "'query': {'bool': {'should': ["
-                    + "{intervals: {df: subject, query: $q1}},"
-                    + "{intervals: {df: subject, query: $q2}}]}},"
-                    + "'json_queries': {'q1': {'match': {'query': 'quick'}},"
-                    + "'q2': {'match': {'query': 'lazy'}}},"
+                    + "{intervals: {df: subject, query: {'q1': {'match': {'query': 'quick'}}}},"
+                    + "{intervals: {df: subject, query: {'match': {'query': 'lazy'}}}}}]}},"
                     + "'fields': 'id'"
                     + "}")
             .process(cluster.getSolrClient(), COLLECTION);
@@ -161,11 +147,9 @@ public class DistributedQParserTest extends SolrCloudTestCase {
         new DirectJsonQueryRequest(
                 "{"
                     + "'query': {'bool': {'must': ["
-                    + "  {intervals: {df: subject, query: $q1}},"
-                    + "  {intervals: { query: $q2}}"
+                    + "  {intervals: {df: subject, query: {'match': {'query': 'quick'}}}},"
+                    + "  {intervals: { query: {'match': {'query': 'brown'}}}}}"
                     + "]}},"
-                    + "'json_queries': {'q1': {'match': {'query': 'quick'}},"
-                    + "'q2': {'match': {'query': 'brown'}}},"
                     + "'fields': 'id',"
                     + "params:{df: subject}"
                     + "}")
@@ -175,8 +159,7 @@ public class DistributedQParserTest extends SolrCloudTestCase {
 
   @Test
   public void testIntervalsJsonQParser() throws Exception {
-    // Pure-JSON style: the interval rule is embedded directly under 'intervals' rather than
-    // referenced via a '$name' pointer into 'json_queries'.
+    // Pure-JSON style: the interval rule is embedded directly under 'intervals'
     // match rule: "quick" appears in docs 1 ("quick brown fox") and 3 ("quick red dog")
     QueryResponse response =
         new DirectJsonQueryRequest(

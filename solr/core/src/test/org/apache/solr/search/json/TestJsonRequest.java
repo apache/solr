@@ -357,16 +357,6 @@ public class TestJsonRequest extends SolrTestCaseHS {
         params("json", "{query:'cat_s:A'}", "json.filter", "'where_s:NY'", "debug", "true"),
         "debug/json=={query:'cat_s:A', filter:'where_s:NY'}");
 
-    // test json_queries: accepted as a known key and preserved as a parsed object in req.getJSON()
-    client.testJQ(
-        params(
-            "json",
-            "{query:'cat_s:A', json_queries:{myQuery:{lucene:{query:'where_s:NY'}}}}",
-            "debug",
-            "true"),
-        "response/numFound==2",
-        "debug/json/json_queries=={myQuery:{lucene:{query:'where_s:NY'}}}");
-
     // test query dsl
     client.testJQ(params("json", "{'query':'{!lucene}id:1'}"), "response/numFound==1");
 
