@@ -1,6 +1,6 @@
 title: >
-  Removed OkHttp, gRPC, and Netty jars from the opentelemetry module.  The OTLP/http protocol still
-  works but no longer uses additional dependencies.
+  opentelemetry: the default OTLP sender is now http/protobuf port 4318 and with fewer/no JARs to do so.
+  JARs for others like gRPC have been removed but users can add as they need.
 type: dependency_update
 authors:
   - name: David Smiley
