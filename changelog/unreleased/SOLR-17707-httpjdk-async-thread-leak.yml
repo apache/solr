@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Fixed HttpJdkSolrClient leaking an executor thread when an async request's connection failed while
+  its body was still being written; enough such failures could exhaust the client's thread pool.
+type: fixed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-17707
+    url: https://issues.apache.org/jira/browse/SOLR-17707

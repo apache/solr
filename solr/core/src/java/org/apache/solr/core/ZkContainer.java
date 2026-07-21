@@ -134,7 +134,7 @@ public class ZkContainer {
             new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config);
 
         if (zkRun) {
-          if (StrUtils.isNotNullOrEmpty(System.getProperty(HTTPS_PORT_PROP))) {
+          if (StrUtils.isNotNullOrEmpty(EnvUtils.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient())
                 .setClusterProperty(ZkStateReader.URL_SCHEME, HTTPS);
