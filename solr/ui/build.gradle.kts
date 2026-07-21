@@ -47,10 +47,8 @@ kotlin {
             commonWebpackConfig {
                 outputFileName = "composeApp.js"
                 devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
-                    static = (static ?: mutableListOf()).apply {
-                        // Serve sources to debug inside browser
-                        add(project.projectDir.path)
-                    }
+                    // Serve sources to debug inside browser
+                    static(directory = project.projectDir.path)
                 }
                 // Note that webpack.config.d/ contains additional configuration
             }
@@ -63,7 +61,7 @@ kotlin {
         binaries.executable()
     }
 
-    jvm("desktop")
+    jvm()
 
     sourceSets {
         // Shared multiplatform dependencies
@@ -113,26 +111,18 @@ kotlin {
             implementation(libs.ktor.client.mock)
         }
 
-        val wasmJsMain by getting {
-            dependencies {
-                implementation(libs.ktor.client.js)
-            }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
         }
 
-        named("desktopMain") {
-            dependencies {
-                implementation(libs.ktor.client.cio)
-                implementation(libs.ktor.server.core)
-                implementation(libs.ktor.server.cio)
-                implementation(libs.ktor.server.htmlBuilder)
-                implementation(compose.desktop.currentOs)
-                runtimeOnly(libs.kotlinx.coroutines.swing)
-            }
+        jvmMain.dependencies {
+            implementation(libs.ktor.client.cio)
+            implementation(libs.ktor.server.core)
+            implementation(libs.ktor.server.cio)
+            implementation(libs.ktor.server.htmlBuilder)
+            implementation(compose.desktop.currentOs)
+            runtimeOnly(libs.kotlinx.coroutines.swing)
         }
-    }
-
-    compilerOptions {
-        freeCompilerArgs.add("-Xexplicit-backing-fields")
     }
 }
 
@@ -191,7 +181,7 @@ tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
 tasks.matching { task ->
     task.name in listOf(
         "allTests",
-        "desktopTest",
+        "jvmTest",
         "wasmJsTest",
         "wasmJsBrowserTest",
     )
@@ -221,4 +211,35 @@ tasks.matching {
     taskName.contains("wasmjs") && taskName.contains("production")
 }.configureEach {
     onlyIf { !(rootProject.ext["development"] as Boolean) }
+}
+
+val wasmJsUIBundleDir = layout.buildDirectory.dir(
+    if (rootProject.ext["development"] as Boolean) {
+        "dist/wasmJs/developmentExecutable"
+    } else {
+        "dist/wasmJs/productionExecutable"
+    },
+).get().asFile
+
+val wasmJsUIBundle = configurations.create("wasmJsUIBundle") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+}
+
+val finalizeWasmJsUIBundleDir = tasks.register<Sync>("finalizeWasmJsUIBundleDir") {
+    from(wasmJsUIBundleDir) {
+        include("**")
+    }
+}
+
+artifacts {
+    add("wasmJsUIBundle", wasmJsUIBundleDir) {
+        builtBy(
+            if (rootProject.ext["development"] as Boolean) {
+                ":solr:ui:wasmJsBrowserDevelopmentExecutableDistribution"
+            } else {
+                ":solr:ui:wasmJsBrowserDistribution"
+            },
+        )
+    }
 }
