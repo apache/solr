@@ -15,42 +15,31 @@
  * limitations under the License.
  */
 
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+
 plugins {
-  id 'java'
-  id 'war'
-}
-
-description = 'Solr webapp'
-
-configurations {
-  war {}
-  serverLib
-  solrCore
-  generatedJSClientBundle
-  generatedUIBundle
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.compose.compiler)
 }
 
 dependencies {
-  serverLib project(path: ":solr:server", configuration: "libExt")
-  serverLib project(path: ":solr:server", configuration: "serverLib")
-  solrCore project(":solr:core")
-  implementation(configurations.solrCore - configurations.serverLib)
+    implementation(projects.shared)
 
-  if (gradle.ext.withJsClient) {
-    generatedJSClientBundle project(path: ":solr:webapp:js-client", configuration: "jsClientBundle")
-  }
+    implementation(compose.desktop.currentOs)
+    implementation(libs.kotlinx.coroutines.swing)
+
+    implementation(libs.compose.uiToolingPreview)
 }
 
-war {
-  from("web")
+compose.desktop {
+    application {
+        mainClass = "org.apache.solr.ui.MainKt"
 
-  // note: nonetheless may be disabled, copying nothing
-  from(configurations.generatedJSClientBundle, {
-    into "libs/solr"
-  })
-}
-
-// Expose 'war' archive as an artifact so that it can be packaged in the distribution.
-artifacts {
-  war tasks.war
+        nativeDistributions {
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            packageName = "org.apache.solr.ui"
+            packageVersion = "0.1.0"
+        }
+    }
 }
