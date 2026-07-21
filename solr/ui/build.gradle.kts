@@ -120,10 +120,6 @@ kotlin {
             runtimeOnly(libs.kotlinx.coroutines.swing)
         }
     }
-
-    compilerOptions {
-        freeCompilerArgs.add("-Xexplicit-backing-fields")
-    }
 }
 
 configurations {
