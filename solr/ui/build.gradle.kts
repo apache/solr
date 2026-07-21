@@ -63,7 +63,7 @@ kotlin {
         binaries.executable()
     }
 
-    jvm("desktop")
+    jvm()
 
     sourceSets {
         // Shared multiplatform dependencies
@@ -109,21 +109,17 @@ kotlin {
             implementation(libs.ktor.client.mock)
         }
 
-        val wasmJsMain by getting {
-            dependencies {
-                implementation(libs.ktor.client.js)
-            }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
         }
 
-        named("desktopMain") {
-            dependencies {
-                implementation(libs.ktor.client.cio)
-                implementation(libs.ktor.server.core)
-                implementation(libs.ktor.server.cio)
-                implementation(libs.ktor.server.htmlBuilder)
-                implementation(compose.desktop.currentOs)
-                runtimeOnly(libs.kotlinx.coroutines.swing)
-            }
+        jvmMain.dependencies {
+            implementation(libs.ktor.client.cio)
+            implementation(libs.ktor.server.core)
+            implementation(libs.ktor.server.cio)
+            implementation(libs.ktor.server.htmlBuilder)
+            implementation(compose.desktop.currentOs)
+            runtimeOnly(libs.kotlinx.coroutines.swing)
         }
     }
 
@@ -187,7 +183,7 @@ tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
 tasks.matching { task ->
     task.name in listOf(
         "allTests",
-        "desktopTest",
+        "jvmTest",
         "wasmJsTest",
         "wasmJsBrowserTest",
     )
