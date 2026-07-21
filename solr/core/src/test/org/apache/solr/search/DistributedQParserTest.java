@@ -158,7 +158,7 @@ public class DistributedQParserTest extends SolrCloudTestCase {
                     + "params:{df: subject}"
                     + "}")
             .process(cluster.getSolrClient(), COLLECTION);
-    assertEquals(op == "must" ? 1 : 3, response.getResults().getNumFound());
+    assertEquals(op.equals("must") ? 1 : 3, response.getResults().getNumFound());
   }
 
   @Test
