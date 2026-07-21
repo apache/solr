@@ -212,3 +212,34 @@ tasks.matching {
 }.configureEach {
     onlyIf { !(rootProject.ext["development"] as Boolean) }
 }
+
+val wasmJsUIBundleDir = layout.buildDirectory.dir(
+    if (rootProject.ext["development"] as Boolean) {
+        "dist/wasmJs/developmentExecutable"
+    } else {
+        "dist/wasmJs/productionExecutable"
+    },
+).get().asFile
+
+val wasmJsUIBundle = configurations.create("wasmJsUIBundle") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+}
+
+val finalizeWasmJsUIBundleDir = tasks.register<Sync>("finalizeWasmJsUIBundleDir") {
+    from(wasmJsUIBundleDir) {
+        include("**")
+    }
+}
+
+artifacts {
+    add("wasmJsUIBundle", wasmJsUIBundleDir) {
+        builtBy(
+            if (rootProject.ext["development"] as Boolean) {
+                ":solr:ui:wasmJsBrowserDevelopmentExecutableDistribution"
+            } else {
+                ":solr:ui:wasmJsBrowserDistribution"
+            },
+        )
+    }
+}
