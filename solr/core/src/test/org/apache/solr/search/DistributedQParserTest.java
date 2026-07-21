@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -98,7 +99,7 @@ public class DistributedQParserTest extends SolrCloudTestCase {
     QueryResponse response =
         new DirectJsonQueryRequest(
                 "{"
-                    + "'query': {intervals: {df: subject, query: {'match': {'query': 'quick'}}}},"
+                    + "'query': {intervals: {use_field: subject, 'match': {'query': 'quick'}}},"
                     + "'fields': 'id'"
                     + "}")
             .process(cluster.getSolrClient(), COLLECTION);
@@ -109,7 +110,7 @@ public class DistributedQParserTest extends SolrCloudTestCase {
     QueryResponse lazyResponse =
         new DirectJsonQueryRequest(
                 "{"
-                    + "'query': {intervals: {df: subject, query: {'match': {'query': 'lazy'}}}},"
+                    + "'query': {intervals: {use_field: subject, 'match': {'query': 'lazy'}}},"
                     + "'fields': 'id'"
                     + "}")
             .process(cluster.getSolrClient(), COLLECTION);
@@ -120,9 +121,9 @@ public class DistributedQParserTest extends SolrCloudTestCase {
     response =
         new DirectJsonQueryRequest(
                 "{"
-                    + "'query': {intervals: {df: subject, query: "
-                    + "{'q1': {'all_of': {'ordered': true,"
-                    + "'intervals': [{'match': {'query': 'quick'}},{'match': {'query': 'fox'}}]}}}}},,"
+                    + "'query': {intervals: {use_field: subject,  "
+                    + "'all_of': {'ordered': true,"
+                    + "'intervals': [{'match': {'query': 'quick'}},{'match': {'query': 'fox'}}]}}},,"
                     + "'fields': 'id'"
                     + "}")
             .process(cluster.getSolrClient(), COLLECTION);
@@ -134,8 +135,8 @@ public class DistributedQParserTest extends SolrCloudTestCase {
         new DirectJsonQueryRequest(
                 "{"
                     + "'query': {'bool': {'should': ["
-                    + "{intervals: {df: subject, query: {'q1': {'match': {'query': 'quick'}}}},"
-                    + "{intervals: {df: subject, query: {'match': {'query': 'lazy'}}}}}]}},"
+                    + "{intervals: {use_field: subject, 'match': {'query': 'quick'}}},"
+                    + "{intervals: {use_field: subject, 'match': {'query': 'lazy'}}}]}},"
                     + "'fields': 'id'"
                     + "}")
             .process(cluster.getSolrClient(), COLLECTION);
@@ -143,18 +144,21 @@ public class DistributedQParserTest extends SolrCloudTestCase {
 
     // intersection of two top-level interval queries: "quick" (docs 1, 3) and "brown"
     // (docs 1, 2) — only doc 1 has both terms
+    String op = random().nextBoolean() ? "must" : "should";
     response =
         new DirectJsonQueryRequest(
                 "{"
-                    + "'query': {'bool': {'must': ["
-                    + "  {intervals: {df: subject, query: {'match': {'query': 'quick'}}}},"
-                    + "  {intervals: { query: {'match': {'query': 'brown'}}}}}"
+                    + "'query': {'bool': {'"
+                    + op
+                    + "': ["
+                    + "  {intervals: {use_field: subject, 'match': {'query': 'quick'}}},"
+                    + "  {intervals: { 'match': {'query': 'brown'}}}"
                     + "]}},"
                     + "'fields': 'id',"
                     + "params:{df: subject}"
                     + "}")
             .process(cluster.getSolrClient(), COLLECTION);
-    assertEquals(1, response.getResults().getNumFound());
+    assertEquals(op == "must" ? 1 : 3, response.getResults().getNumFound());
   }
 
   @Test
@@ -211,6 +215,7 @@ public class DistributedQParserTest extends SolrCloudTestCase {
             () ->
                 new DirectJsonQueryRequest(
                         String.format(
+                            Locale.ROOT,
                             "{query:{intervals:{use_field:%s,match:{query:quick}}},fields:id}",
                             random().nextBoolean() ? "{}" : "\"\""))
                     .process(cluster.getSolrClient(), COLLECTION));
