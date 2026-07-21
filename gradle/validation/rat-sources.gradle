@@ -184,9 +184,6 @@ allprojects {
           break
 
         case ":solr":
-          // solr/ui is a registered subproject with its own rat task, but it may be disabled
-          exclude "ui"
-
           exclude "licenses"
           break
 
