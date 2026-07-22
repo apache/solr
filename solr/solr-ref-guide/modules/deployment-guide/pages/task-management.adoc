@@ -57,13 +57,20 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/list"
+curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks"
 ----
 ====
 ======
 
 === Sample Response
 
+The V1 and V2 APIs currently return `taskList` in different shapes.
+
+[tabs#listalltasks-response]
+======
+V1 API::
++
+====
 ----
 {
   "responseHeader":{
@@ -74,6 +81,30 @@ curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/list"
     "5","q=weight_i:[0+TO+200]&canCancel=true&queryUUID=5",
     "4bcd27bb-0792-4512-a699-532fa7878bd3","q=weight_i:[0+TO+200]&canCancel=true"]}
 ----
+====
+
+V2 API::
++
+====
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":16},
+  "taskList":[
+    {
+      "taskID":"0",
+      "taskQuery":"q=weight_i:[0+TO+200]&canCancel=true&queryUUID=0"},
+    {
+      "taskID":"5",
+      "taskQuery":"q=weight_i:[0+TO+200]&canCancel=true&queryUUID=5"},
+    {
+      "taskID":"4bcd27bb-0792-4512-a699-532fa7878bd3",
+      "taskQuery":"q=weight_i:[0+TO+200]&canCancel=true"}]}
+----
+====
+======
 
 == Cancelling An Active Cancellable Task
 To cancel an active task, please use the following syntax:
@@ -140,20 +171,43 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/list?taskUUID=5"
+curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/5"
 ----
 ====
 ======
 
 === taskUUID Parameter
-`taskUUID` parameter can be used to specify a task UUID whose status can be checked.
+With the V1 API, the `taskUUID` request parameter is used to specify a task UUID whose status can be checked.
+With the V2 API, the task ID is instead supplied as part of the path, e.g. `/v2/collections/collectionName/tasks/{taskID}`.
 
 === Sample Response
 
+The V1 and V2 APIs currently return `taskStatus` in different shapes.
+
+[tabs#checksingletask-response]
+======
+V1 API::
++
+====
 ----
 {
   "responseHeader":{
     "status":0,
     "QTime":16},
-  "taskStatus":"id:5, status: active"}
+  "taskStatus":"id: 5, status: active"}
 ----
+====
+
+V2 API::
++
+====
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":16},
+  "taskStatus":"ACTIVE"}
+----
+====
+======
