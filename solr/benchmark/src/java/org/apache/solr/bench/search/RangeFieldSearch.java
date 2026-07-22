@@ -67,7 +67,7 @@ import org.openjdk.jmh.infra.Blackhole;
 @Warmup(time = 5, iterations = 5)
 @Measurement(time = 5, iterations = 5)
 @Threads(value = 1)
-public class RangeSearch {
+public class RangeFieldSearch {
 
   static final String COLLECTION = "c1";
 

@@ -141,7 +141,14 @@ final class MultiBinaryRangeDocValuesQuery extends Query {
 
   @Override
   public String toString(String f) {
-    return getClass().getSimpleName() + "(field=" + field + ", type=" + queryType + ")";
+    return getClass().getSimpleName()
+        + "(field="
+        + field
+        + ", type="
+        + queryType
+        + ", value="
+        + Arrays.toString(queryPackedValue)
+        + ")";
   }
 
   @Override

@@ -141,19 +141,24 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
 
   @Override
   protected boolean enableDocValuesByDefault() {
-    // DocValues are supported for both single and multiValued range fields, but are opt-in: they
-    // add an extra (binary) docValues field, and range docValues only help queries that combine
-    // the range clause with a more selective clause, so we don't enable them by default.
-    return false;
+    // DocValues are supported for both single and multiValued range fields, enabled by default.
+    return true;
+  }
+
+  @Override
+  protected void setArgs(IndexSchema schema, Map<String, String> args) {
+    // A range field's docValues are an opaque packed BINARY blob not the external "[min TO max]" form, so
+    // they can't stand in for the stored value: useDocValuesAsStored would make fl=* return that
+    // raw blob. It otherwise defaults to off here and reject an explicit
+    // useDocValuesAsStored="true" rather than silently ignoring what was requested.
+    args.putIfAbsent("useDocValuesAsStored", "false");
+    super.setArgs(schema, args);
+    restrictProps(USE_DOCVALUES_AS_STORED);
   }
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
-
-    // Force useDocValuesAsStored off; it otherwise defaults on for schema, which
-    // would make fl=* responses fail on a docValues-enabled range field.
-    properties &= ~USE_DOCVALUES_AS_STORED;
 
     String numDimensionsStr = args.remove("numDimensions");
     if (numDimensionsStr != null) {
@@ -202,7 +207,7 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
   }
 
   @Override
-  public boolean createsFieldsFromAllValues() {
+  public boolean shouldCreateFieldsFromAllValues() {
     // multiValued docValues range fields pack every range of a document into ONE BinaryDocValues
     // blob (flat, no dictionary), so the type needs all values together to build it.
     return true;
@@ -453,10 +458,8 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
                 + ")");
       }
 
-      // A single bound is the degenerate range [p,p]; "contains p" is equivalent to
-      // "intersects [p,p]", so route it through the intersects path to pick up the docValues
-      // optimization for point queries.
-      return newIntersectsQuery(field, singleBoundRange);
+      // A single bound is the degenerate range [p,p].
+      return newContainsQuery(field, singleBoundRange);
     }
 
     throw new SolrException(

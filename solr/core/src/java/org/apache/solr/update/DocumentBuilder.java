@@ -210,7 +210,7 @@ public class DocumentBuilder {
         } else if (sfield != null
             && sfield.multiValued()
             && !forInPlaceUpdate
-            && sfield.getType().createsFieldsFromAllValues()) {
+            && sfield.getType().shouldCreateFieldsFromAllValues()) {
           // Types that must combine a field's values into a single indexable field (e.g. all of a
           // doc's ranges into one BinaryDocValues blob) receive them together. copyFields stay
           // per-value.

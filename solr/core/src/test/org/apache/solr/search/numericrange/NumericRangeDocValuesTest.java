@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.numericrange;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -23,13 +24,19 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Integration tests over the {@code schema-numericrange.xml} verifying that the docValues-enabled
- * range fields return exactly the same results as their indexed-only counterparts.
+ * Tests for docValues-specific behaviors (specially multiValued) of the range field types.
  *
- * <p>The docValues-enabled fields wrap their BKD query in a Lucene {@link
- * org.apache.lucene.search.IndexOrDocValuesQuery}. These tests assert that this produces identical
- * matches to the direct BKD query across intersects / contains / single-bound / multi-dimensional
- * queries, inside a selective conjunction, and for the docValues-only (non-indexed) field.
+ * <p>Plain query parity between the docValues and non-docValues fields (intersects / contains /
+ * within / crosses / single-bound, across int/long/float/double and the docValues-only field) is
+ * covered there instead: each of those tests randomizes its field over the indexed-only,
+ * indexed+docValues, and (for int) docValues-only variants, so choosing the non-indexed
+ * docValues-only field also exercises the pure {@code MultiBinaryRangeDocValuesQuery} path.
+ *
+ * <p>This also adds multiValued parity (several ranges packed into one docValues blob),
+ * the {@link org.apache.lucene.search.IndexOrDocValuesQuery} clause
+ * inside a selective conjunction (where the docValues clause leads iteration), and the fact that
+ * enabling docValues does <em>not</em> enable sorting or value ({@code facet.field}) faceting even
+ * though {@code facet.query} still works.
  */
 public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
 
@@ -45,9 +52,7 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  /**
-   * Index the same int range into the indexed-only, indexed+docValues, and docValues-only fields.
-   */
+  /** Index the same int range into the indexed-only, indexed+docValues, and docValues-only fields. */
   private void addIntDoc(String id, String range) {
     assertU(
         adoc(
@@ -55,94 +60,6 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
             "price_range", range,
             "price_range_dv", range,
             "price_range_dvonly", range));
-  }
-
-  private List<String> get1dIntRangeFieldNames() {
-    return List.of("price_range", "price_range_dv", "price_range_dvonly");
-  }
-
-  @Test
-  public void testIntersectsParity() {
-    addIntDoc("1", "[100 TO 200]");
-    addIntDoc("2", "[150 TO 250]");
-    addIntDoc("3", "[50 TO 80]");
-    assertU(commit());
-
-    // intersects [120 TO 180] -> docs 1 and 2, for every field variant
-    for (String field : get1dIntRangeFieldNames()) {
-      assertQ(
-          "intersects on " + field,
-          req("q", "{!numericRange criteria=intersects field=" + field + "}[120 TO 180]"),
-          "//result[@numFound='2']",
-          "//result/doc/str[@name='id'][.='1']",
-          "//result/doc/str[@name='id'][.='2']");
-    }
-  }
-
-  @Test
-  public void testContainsParity() {
-    addIntDoc("1", "[100 TO 200]"); // fully contains [120 TO 180]
-    addIntDoc("2", "[130 TO 160]"); // within, does NOT contain
-    addIntDoc("3", "[150 TO 250]"); // partial overlap, does NOT contain
-    assertU(commit());
-
-    for (String field : get1dIntRangeFieldNames()) {
-      assertQ(
-          "contains on " + field,
-          req("q", "{!numericRange criteria=contains field=" + field + "}[120 TO 180]"),
-          "//result[@numFound='1']",
-          "//result/doc/str[@name='id'][.='1']");
-    }
-  }
-
-  @Test
-  public void testStandardSyntaxContainsParity() {
-    addIntDoc("1", "[100 TO 200]"); // contains [120 TO 180]
-    addIntDoc("2", "[130 TO 160]"); // no
-    assertU(commit());
-
-    for (String field : get1dIntRangeFieldNames()) {
-      assertQ(
-          "standard-syntax contains on " + field,
-          req("q", field + ":[120 TO 180]"),
-          "//result[@numFound='1']",
-          "//result/doc/str[@name='id'][.='1']");
-    }
-  }
-
-  @Test
-  public void testSingleBoundParity() {
-    // A single bound (field:150) is a degenerate range [150,150]; contains == intersects for a
-    // point.
-    addIntDoc("1", "[100 TO 200]"); // contains 150
-    addIntDoc("2", "[150 TO 150]"); // contains 150
-    addIntDoc("3", "[100 TO 149]"); // no (max below 150)
-    addIntDoc("4", "[151 TO 300]"); // no (min above 150)
-    assertU(commit());
-
-    for (String f : get1dIntRangeFieldNames()) {
-      assertQ(
-          "single-bound on " + f,
-          req("q", f + ":150"),
-          "//result[@numFound='2']",
-          "//result/doc/str[@name='id'][.='1']",
-          "//result/doc/str[@name='id'][.='2']");
-    }
-  }
-
-  @Test
-  public void test2DContainsParity() {
-    assertU(adoc("id", "1", "bbox", "[0,0 TO 10,10]", "bbox_dv", "[0,0 TO 10,10]")); // contains
-    assertU(adoc("id", "2", "bbox", "[4,4 TO 6,6]", "bbox_dv", "[4,4 TO 6,6]")); // does not contain
-    assertU(commit());
-
-    for (String f : new String[] {"bbox", "bbox_dv"}) {
-      assertQ(
-          "2D contains on " + f,
-          req("q", "{!numericRange criteria=contains field=" + f + "}[3,3 TO 7,7]"),
-          "//result[@numFound='1']",
-          "//result/doc/str[@name='id'][.='1']");
-    }
   }
 
   @Test
@@ -190,50 +107,164 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Test
-  public void testLongParity() {
-    assertU(adoc("id", "1", "long_range", "[100 TO 200]", "long_range_dv", "[100 TO 200]"));
-    assertU(adoc("id", "2", "long_range", "[150 TO 250]", "long_range_dv", "[150 TO 250]"));
-    assertU(adoc("id", "3", "long_range", "[50 TO 80]", "long_range_dv", "[50 TO 80]"));
-    assertU(commit());
+  /** Indexes the given ranges into both a BKD-only and a docValues multiValued field. */
+  private void addMvDoc(String id, String bkdField, String dvField, String... ranges) {
+    List<String> fieldsAndValues = new ArrayList<>();
+    fieldsAndValues.add("id");
+    fieldsAndValues.add(id);
+    for (String r : ranges) {
+      fieldsAndValues.add(bkdField);
+      fieldsAndValues.add(r);
+      fieldsAndValues.add(dvField);
+      fieldsAndValues.add(r);
+    }
+    assertU(adoc(fieldsAndValues.toArray(new String[0])));
+  }
 
-    for (String f : new String[] {"long_range", "long_range_dv"}) {
+  /**
+   * Asserts the BKD field and its docValues sibling both match exactly {@code expectedIds} (and only
+   * those) for the query. Checks the matched ids, not just the count.
+   */
+  private void assertSameMatches(
+      String criteria, String range, String bkdField, String dvField, String... expectedIds) {
+    for (String f : new String[] {bkdField, dvField}) {
+      List<String> tests = new ArrayList<>();
+      // numFound + presence of each (unique) id together pin the exact match set.
+      tests.add("//result[@numFound='" + expectedIds.length + "']");
+      for (String id : expectedIds) {
+        tests.add("//result/doc/str[@name='id'][.='" + id + "']");
+      }
       assertQ(
-          "long intersects on " + f,
-          req("q", "{!numericRange criteria=intersects field=" + f + "}[120 TO 180]"),
-          "//result[@numFound='2']");
+          "criteria=" + criteria + " field=" + f + " " + range,
+          req("q", "{!numericRange criteria=" + criteria + " field=" + f + "}" + range),
+          tests.toArray(new String[0]));
     }
   }
 
   @Test
-  public void testFloatIntersectsParity() {
-    assertU(adoc("id", "1", "float_range", "[1.0 TO 2.0]", "float_range_dv", "[1.0 TO 2.0]"));
-    assertU(adoc("id", "2", "float_range", "[1.5 TO 3.0]", "float_range_dv", "[1.5 TO 3.0]"));
-    assertU(adoc("id", "3", "float_range", "[5.0 TO 6.0]", "float_range_dv", "[5.0 TO 6.0]"));
+  public void testContainsPerRangeNotUnion() {
+    // doc 1: two overlapping ranges whose *union* is [1,20]
+    addMvDoc("1", "price_range_multi", "price_range_mv_dv", "[1 TO 10]", "[5 TO 20]");
+    // doc 2: two disjoint ranges
+    addMvDoc("2", "price_range_multi", "price_range_mv_dv", "[0 TO 5]", "[100 TO 200]");
     assertU(commit());
 
-    for (String f : new String[] {"float_range", "float_range_dv"}) {
-      assertQ(
-          "float intersects on " + f,
-          req("q", "{!numericRange criteria=intersects field=" + f + "}[1.2 TO 1.8]"),
-          "//result[@numFound='2']");
-    }
+    // Neither individual range of doc 1 contains [1,15]
+    assertSameMatches("contains", "[1 TO 15]", "price_range_multi", "price_range_mv_dv");
+
+    // doc 2's [0,5] and [100,200] each satisfy one half-open bound of a CONTAINS([3,150]) split, so
+    // a decomposition would falsely match -- native per-range matching must not.
+    assertSameMatches("contains", "[3 TO 150]", "price_range_multi", "price_range_mv_dv");
+
+    // doc 1's [1,10] actually contains [1,10] (any range suffices).
+    assertSameMatches("contains", "[1 TO 10]", "price_range_multi", "price_range_mv_dv", "1");
   }
 
   @Test
-  public void testDoubleContainsParity() {
-    // doc 1 fully contains [2.0 TO 4.0]; doc 2 is within it (does not contain)
-    assertU(adoc("id", "1", "double_range", "[1.0 TO 5.0]", "double_range_dv", "[1.0 TO 5.0]"));
-    assertU(adoc("id", "2", "double_range", "[2.5 TO 3.5]", "double_range_dv", "[2.5 TO 3.5]"));
+  public void testAllRelationsMultiValued() {
+    addMvDoc("1", "price_range_multi", "price_range_mv_dv", "[1 TO 10]", "[5 TO 20]");
+    addMvDoc("2", "price_range_multi", "price_range_mv_dv", "[0 TO 5]", "[100 TO 200]");
+    addMvDoc("3", "price_range_multi", "price_range_mv_dv", "[130 TO 160]");
     assertU(commit());
 
-    for (String f : new String[] {"double_range", "double_range_dv"}) {
-      assertQ(
-          "double contains on " + f,
-          req("q", "{!numericRange criteria=contains field=" + f + "}[2.0 TO 4.0]"),
-          "//result[@numFound='1']",
-          "//result/doc/str[@name='id'][.='1']");
-    }
+    // INTERSECTS [12,14]: only doc 1 (via its [5,20] range).
+    assertSameMatches("intersects", "[12 TO 14]", "price_range_multi", "price_range_mv_dv", "1");
+    // WITHIN [0,25]: doc 1 ([1,10]) and doc 2 ([0,5]) each have a range within it.
+    assertSameMatches("within", "[0 TO 25]", "price_range_multi", "price_range_mv_dv", "1", "2");
+    // CROSSES [8,50]: doc 1 crosses (its ranges overlap but aren't within); docs 2,3 are disjoint.
+    assertSameMatches("crosses", "[8 TO 50]", "price_range_multi", "price_range_mv_dv", "1");
+  }
+
+  @Test
+  public void test2dLongMultiValued() {
+    addMvDoc(
+        "1",
+        "long_range_multi_2d",
+        "long_range_mv_dv_2d",
+        "[100,100 TO 200,200]",
+        "[500,500 TO 600,600]");
+    addMvDoc("2", "long_range_multi_2d", "long_range_mv_dv_2d", "[1,3000000000 TO 5,4000000000]");
+    assertU(commit());
+
+    // Overlaps doc 1's [100,100 TO 200,200] box in both dims.
+    assertSameMatches(
+        "intersects", "[150,100 TO 550,150]", "long_range_multi_2d", "long_range_mv_dv_2d", "1");
+    // Overlaps doc 2's box (whose D2 spans 3e9..4e9).
+    assertSameMatches(
+        "intersects",
+        "[2,3500000000 TO 5,3600000000]",
+        "long_range_multi_2d",
+        "long_range_mv_dv_2d",
+        "2");
+  }
+
+  @Test
+  public void testFloatMultiValued() {
+    addMvDoc("1", "float_range_multi", "float_range_mv_dv", "[1.0 TO 2.0]", "[5.0 TO 6.0]");
+    addMvDoc("2", "float_range_multi", "float_range_mv_dv", "[10.0 TO 20.0]");
+    assertU(commit());
+
+    // INTERSECTS [1.5,1.8]: only doc 1 (via its [1.0,2.0] range).
+    assertSameMatches("intersects", "[1.5 TO 1.8]", "float_range_multi", "float_range_mv_dv", "1");
+    // WITHIN [0.0,100.0]: both docs' ranges fit inside.
+    assertSameMatches(
+        "within", "[0.0 TO 100.0]", "float_range_multi", "float_range_mv_dv", "1", "2");
+  }
+
+  @Test
+  public void test2dDoubleMultiValued() {
+    addMvDoc(
+        "1",
+        "double_range_multi_2d",
+        "double_range_mv_dv_2d",
+        "[1.0,-3.1 TO 5.0,-1.1]",
+        "[-5.5,10.0 TO 1.5,15.0]");
+    addMvDoc("2", "double_range_multi_2d", "double_range_mv_dv_2d", "[-10,2.5 TO 0,3.5]");
+    assertU(commit());
+
+    // Ranges per doc (each a 2D bounding box):
+    //   doc1 A: D1 [1.0, 5.0]    D2 [-3.1, -1.1]
+    //   doc1 B: D1 [-5.5, 1.5]   D2 [10.0, 15.0]
+    //   doc2 C: D1 [-10.0, 0.0]  D2 [2.5, 3.5]
+
+    // CONTAINS: a doc range must wrap the query box in *both* dims. doc1's A wraps
+    // [2,4]x[-3.0,-1.15] (1<=2, 5>=4 and -3.1<=-3.0, -1.1>=-1.15).
+    // doc2's C does not (its D1 max 0 < 4). -> only doc 1.
+    assertSameMatches(
+        "contains",
+        "[2.0,-3.0 TO 4.0,-1.15]",
+        "double_range_multi_2d",
+        "double_range_mv_dv_2d",
+        "1");
+
+    // WITHIN: a doc range must fit *inside* the query box in both dims. doc1's A fits inside
+    // [0,6]x[-4,-1]; doc2's C sticks out on D1 (min -10 < 0). -> only doc 1.
+    assertSameMatches(
+        "within",
+        "[0.0,-4.0 TO 6.0,-1.0]",
+        "double_range_multi_2d",
+        "double_range_mv_dv_2d",
+        "1");
+
+    // INTERSECTS: overlap in both dims is enough. The central box [-2,3]x[-2,3] overlaps doc1's A
+    // and doc2's C, so both match (any-range / any-doc "OR" semantics). -> 2 docs.
+    assertSameMatches(
+        "intersects",
+        "[-2.0,-2.0 TO 3.0,3.0]",
+        "double_range_multi_2d",
+        "double_range_mv_dv_2d",
+        "1",
+        "2");
+
+    // CROSSES = intersects AND NOT within. For [-1,6]x[-4,3], doc1's A is fully *within* it (so
+    // does not cross) and its B is disjoint -> doc 1 excluded; doc2's C overlaps but pokes out on
+    // D1 (min -10) -> it crosses. -> only doc 2, which distinguishes crosses from within.
+    assertSameMatches(
+        "crosses",
+        "[-1.0,-4.0 TO 6.0,3.0]",
+        "double_range_multi_2d",
+        "double_range_mv_dv_2d",
+        "2");
   }
 
   @Test
@@ -249,6 +280,20 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
         "Cannot sort on",
         req("q", "*:*", "sort", "price_range_dv asc"),
         SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void testFieldFacetingUnsupportedEvenWithDocValues() {
+    addIntDoc("1", "[100 TO 200]");
+    addIntDoc("2", "[150 TO 250]");
+    assertU(commit());
+    // Value faceting (facet.field) isn't supported on range fields: Use facet.query
+    // for ranges instead (see testQueryFacetingWithDocValues).
+    assertQ(
+        "value faceting on a range field yields no buckets even with docValues",
+        req("q", "*:*", "rows", "0", "facet", "true", "facet.field", "price_range_dv"),
+        "//lst[@name='facet_fields']/lst[@name='price_range_dv']",
+        "count(//lst[@name='facet_fields']/lst[@name='price_range_dv']/int)=0");
   }
 
   @Test

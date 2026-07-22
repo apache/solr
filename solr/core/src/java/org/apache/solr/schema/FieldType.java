@@ -358,15 +358,15 @@ public abstract class FieldType extends FieldProperties {
    * calls {@link #createFieldsFromAllValues(SchemaField, Collection)} once per (multiValued) field
    * instead of {@link #createFields(SchemaField, Object)} per value.
    */
-  public boolean createsFieldsFromAllValues() {
+  public boolean shouldCreateFieldsFromAllValues() {
     return false;
   }
 
   /**
    * Builds the indexable fields for <em>all</em> values of {@code field} in a single document at
-   * once. Only invoked when {@link #createsFieldsFromAllValues()} returns {@code true}; the default
-   * simply concatenates {@link #createFields(SchemaField, Object)} over each value, preserving
-   * per-value behavior.
+   * once. Only invoked when {@link #shouldCreateFieldsFromAllValues()} returns {@code true}; the
+   * default simply concatenates {@link #createFields(SchemaField, Object)} over each value,
+   * preserving per-value behavior.
    *
    * @param field the schema field
    * @param values all (non-null) values for this field in the current document
