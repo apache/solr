@@ -1,4 +1,6 @@
-title: Changed default http request timeout to infinite
+title: >
+  SolrClients no longer have a default request timeout.  It was problematic with streaming expressions.
+  The idle timeout remains, albeit the JDK HttpClient doesn't support that (has none).
 type: changed
 authors:
   - name: Vishnu Priya Chandra Sekar
