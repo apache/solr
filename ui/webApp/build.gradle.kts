@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import org.gradle.api.tasks.bundling.Zip
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
@@ -57,6 +58,24 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
 
             implementation(libs.compose.ui)
+
+            implementation(project.dependencies.platform(libs.ktor.bom))
+            implementation(libs.ktor.client.core)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.decompose.decompose)
+            implementation(libs.mvikotlin.main)
+            implementation(libs.mvikotlin.mvikotlin)
         }
     }
+}
+
+// package as a plain zip and upload to nightlies by CI
+val wasmJsBrowserDistribution = tasks.named("wasmJsBrowserDistribution")
+
+tasks.register<Zip>("zipWasmDist") {
+  dependsOn(wasmJsBrowserDistribution)
+  from(wasmJsBrowserDistribution.map { it.outputs.files.singleFile })
+  archiveFileName.set("solr-ui-wasm.zip")
+  destinationDirectory.set(layout.buildDirectory.dir("dist"))
 }

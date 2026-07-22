@@ -22,8 +22,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.start.StartComponent
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.error_invalid_url
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.error_invalid_url
 import org.apache.solr.ui.preview.PreviewContainer
 import org.apache.solr.ui.views.start.StartContent
 

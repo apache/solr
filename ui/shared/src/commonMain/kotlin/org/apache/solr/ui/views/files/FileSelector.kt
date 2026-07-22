@@ -28,10 +28,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.domain.PickedFile
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.cd_clear_field
-import org.apache.solr.ui.generated.resources.close
-import org.apache.solr.ui.generated.resources.upload
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.cd_clear_field
+import org.apache.solr.ui.shared.generated.resources.close
+import org.apache.solr.ui.shared.generated.resources.upload
 import org.apache.solr.ui.views.components.SolrTextButton
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource

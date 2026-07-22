@@ -1,0 +1,173 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+buildscript {
+  repositories {
+    mavenCentral()
+    maven { url 'https://repo.gradle.org/gradle/libs-releases' }
+  }
+
+  dependencies {
+    classpath libs.undercouch.download.task
+    classpath 'org.gradle:gradle-tooling-api:9.6.0'
+  }
+}
+
+// Downloads a pinned, checksum-verified Admin UI wasmJs artifact from nightlies.apache.org,
+// or builds it from source (solr.ui.buildFromSource=true), and wires the result into the
+// consuming project's resources.
+
+import de.undercouch.gradle.tasks.download.Download
+import java.security.MessageDigest
+import org.gradle.tooling.GradleConnector
+
+def uiProps = new Properties()
+file("$rootDir/gradle/solr-ui.properties").withInputStream { uiProps.load(it) }
+
+def buildFromSource = project.hasProperty('solr.ui.buildFromSource') &&
+    project.property('solr.ui.buildFromSource') == 'true'
+
+def uiCommit = uiProps.getProperty('solr.ui.commit')
+// TODO Do not fail if building from source
+if (!uiCommit && !buildFromSource) {
+  throw new GradleException("gradle/solr-ui.properties is missing solr.ui.commit")
+}
+
+def uiSha256 = uiProps.getProperty('solr.ui.wasmSha256')?.trim()
+if (uiSha256 == '') {
+  uiSha256 = null
+}
+
+def uiWasmZip = layout.buildDirectory.file("ui-download/solr-ui-wasm-${uiCommit}.zip")
+
+def sha256Of = { File f ->
+  MessageDigest.getInstance("SHA-256").digest(f.bytes)
+      .collect { String.format("%02x", it) }.join()
+}
+
+// Skip re-download if a local copy already exists and (when configured) matches the
+// expected checksum. The zip filename is keyed on the pinned commit, so bumping the
+// commit in solr-ui.properties naturally invalidates any stale local copy even when
+// no checksum is configured.
+def localCopyIsValid = {
+  File f = uiWasmZip.get().asFile
+  if (!f.exists()) {
+    return false
+  }
+  if (uiSha256 == null) {
+    return true
+  }
+  return sha256Of(f).equalsIgnoreCase(uiSha256)
+}
+
+tasks.register('downloadUiWasm', Download) {
+  onlyIf { !localCopyIsValid() }
+  src "https://nightlies.apache.org/solr/ui/wasm/${uiCommit}/solr-ui-wasm.zip"
+  dest uiWasmZip
+  overwrite true
+}
+
+tasks.register('verifyUiWasm') {
+  dependsOn tasks.named('downloadUiWasm')
+  doLast {
+    File file = uiWasmZip.get().asFile
+    if (uiSha256 == null) {
+      logger.warn(
+          "WARNING: no checksum configured for solr-ui-wasm.zip (commit ${uiCommit}); " +
+              "skipping integrity verification. Set solr.ui.wasmSha256 in " +
+              "gradle/solr-ui.properties to enable it."
+      )
+      return
+    }
+    def actual = sha256Of(file)
+    if (!actual.equalsIgnoreCase(uiSha256)) {
+      throw new GradleException(
+          "Checksum mismatch for solr-ui-wasm.zip: expected ${uiSha256} but got ${actual}. " +
+              "The downloaded artifact does not match gradle/solr-ui.properties and will not be used."
+      )
+    }
+  }
+}
+
+def uiFromSourceOutputDir = file("$rootDir/ui/webApp/build/dist/wasmJs/productionExecutable")
+def uiWebResourcesDir = layout.buildDirectory.dir('generated/ui-resources')
+
+// UI module lives at solr/ui — a sibling of webapp under the same root build.
+tasks.register('buildUiFromSource') {
+  inputs.dir(file("$rootDir/ui/shared/src"))
+  inputs.dir(file("$rootDir/ui/webApp/src"))
+  outputs.dir(uiFromSourceOutputDir)
+  doLast {
+    def connector = GradleConnector.newConnector()
+        .forProjectDirectory(file("$rootDir/ui"))
+        .useGradleVersion(gradle.gradleVersion)
+
+    def connection = connector.connect()
+    try {
+      connection.newBuild()
+          .forTasks(':webApp:wasmJsBrowserDistribution')
+          .setStandardOutput(System.out)
+          .setStandardError(System.err)
+          .run()
+    } finally {
+      connection.close()
+    }
+  }
+}
+
+tasks.register('prepareUiResources', Sync) {
+  into uiWebResourcesDir
+
+  if (buildFromSource) {
+    dependsOn tasks.named('buildUiFromSource')
+    from uiFromSourceOutputDir
+    doFirst { logger.lifecycle("Solr Admin UI: building from source (solr.ui.buildFromSource=true)") }
+  } else {
+    dependsOn tasks.named('verifyUiWasm')
+    from zipTree(uiWasmZip)
+    doFirst { logger.lifecycle("Solr Admin UI: using downloaded artifact for commit ${uiCommit}") }
+  }
+}
+
+tasks.named('processResources') {
+  dependsOn tasks.named('prepareUiResources')
+}
+
+sourceSets.main.resources.srcDir(uiWebResourcesDir)
+
+// Exposed so other scripts (e.g. the RM guard in the root build) can check what
+// mode this project resolved to, without re-parsing the property themselves.
+ext.solrUiBuildFromSource = buildFromSource
+
+def wasmJsUIBundleDir = layout.buildDirectory.dir("generated/ui-resources").get().asFile
+
+configurations.create("wasmJsUIBundle") {
+  canBeConsumed = true
+  canBeResolved = false
+}
+
+tasks.register("finalizeWasmJsUIBundleDir", Sync) {
+  from(wasmJsUIBundleDir) {
+    include("**")
+  }
+}
+
+artifacts {
+  add("wasmJsUIBundle", wasmJsUIBundleDir) {
+    builtBy("prepareUiResources")
+  }
+}

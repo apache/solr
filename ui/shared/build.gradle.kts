@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 repositories {
     google {
@@ -29,6 +27,8 @@ repositories {
     }
     mavenCentral()
 }
+
+group = "org.apache.solr.ui"
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -98,123 +98,5 @@ kotlin {
             implementation(libs.ktor.server.core)
             implementation(libs.ktor.server.htmlBuilder)
         }
-    }
-}
-
-configurations {
-    all {
-        // Exclude old material dependencies
-        exclude(group = "org.jetbrains.compose.material", module = "material")
-    }
-}
-
-compose.desktop {
-    application {
-        mainClass = "org.apache.solr.ui.MainKt"
-
-        buildTypes.release.proguard {
-            version.set("7.6.0")
-            configurationFiles.from("proguard.pro")
-        }
-
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-
-            packageVersion = "1.0.0"
-
-            windows {
-                packageName = "Apache Solr Desktop"
-                // App icon (needs to be .ico)
-                iconFile.set(project.file("assets/logo.ico"))
-                // Directory name (if not per user "C:\Program Files\[installationPath]")
-                installationPath = "Apache Solr Desktop"
-                // Create desktop shortcut
-                shortcut = true
-            }
-
-            linux {
-                packageName = "solr-desktop"
-                iconFile.set(project.file("assets/logo.png"))
-            }
-
-            macOS {
-                packageName = "ApacheSolrDesktop"
-                iconFile.set(project.file("assets/logo.png"))
-            }
-        }
-    }
-}
-
-// Compose resource accessor generation is not reliably wired to all Kotlin
-// compile tasks (notably wasmJs), causing intermittent "source file not found"
-// for generated accessors. Wire it explicitly.
-val resourceAccessorTasks = tasks.matching { it.name.startsWith("generateResourceAccessorsFor") }
-tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
-    dependsOn(resourceAccessorTasks)
-}
-
-tasks.matching { task ->
-    task.name in listOf(
-        "allTests",
-        "jvmTest",
-        "wasmJsTest",
-        "wasmJsBrowserTest",
-    )
-}.configureEach {
-    // These kotlin multiplatform test tasks are not excluded on "gradlew ... -x test",
-    // so we disable them explicitly
-    onlyIf { !gradle.startParameter.excludedTaskNames.contains("test") }
-
-    // Note that "gradlew check -x test --dry-run" does not correctly resolve this exclusion rule,
-    // and you will see the test tasks being listed there as well, but they will be skipped as
-    // expected
-}
-
-// Explicitly enable or disable development tasks based on the build variant
-// This prevents any invalid task dependencies on assemble task execution
-tasks.matching {
-    val taskName = it.name.lowercase()
-    taskName.contains("wasmjs") && taskName.contains("development")
-}.configureEach {
-    onlyIf { rootProject.ext["development"] as Boolean }
-}
-
-// Explicitly enable or disable production tasks based on the build variant
-// This prevents any invalid task dependencies on assemble task execution
-tasks.matching {
-    val taskName = it.name.lowercase()
-    taskName.contains("wasmjs") && taskName.contains("production")
-}.configureEach {
-    onlyIf { !(rootProject.ext["development"] as Boolean) }
-}
-
-val wasmJsUIBundleDir = layout.buildDirectory.dir(
-    if (rootProject.ext["development"] as Boolean) {
-        "dist/wasmJs/developmentExecutable"
-    } else {
-        "dist/wasmJs/productionExecutable"
-    },
-).get().asFile
-
-val wasmJsUIBundle = configurations.create("wasmJsUIBundle") {
-    isCanBeConsumed = true
-    isCanBeResolved = false
-}
-
-val finalizeWasmJsUIBundleDir = tasks.register<Sync>("finalizeWasmJsUIBundleDir") {
-    from(wasmJsUIBundleDir) {
-        include("**")
-    }
-}
-
-artifacts {
-    add("wasmJsUIBundle", wasmJsUIBundleDir) {
-        builtBy(
-            if (rootProject.ext["development"] as Boolean) {
-                ":solr:ui:wasmJsBrowserDevelopmentExecutableDistribution"
-            } else {
-                ":solr:ui:wasmJsBrowserDistribution"
-            },
-        )
     }
 }

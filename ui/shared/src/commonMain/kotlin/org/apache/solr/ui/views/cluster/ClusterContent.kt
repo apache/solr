@@ -24,10 +24,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.cluster.ClusterComponent
 import org.apache.solr.ui.components.cluster.ClusterComponent.ClusterTab
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.cores
-import org.apache.solr.ui.generated.resources.nodes
-import org.apache.solr.ui.generated.resources.zookeeper
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.cores
+import org.apache.solr.ui.shared.generated.resources.nodes
+import org.apache.solr.ui.shared.generated.resources.zookeeper
 import org.apache.solr.ui.views.navigation.NavigationTabs
 import org.jetbrains.compose.resources.StringResource
 

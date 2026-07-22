@@ -26,10 +26,10 @@ import org.apache.solr.ui.data.SolrAuthData
 import org.apache.solr.ui.domain.AuthorizationFlow
 import org.apache.solr.ui.domain.OAuthData
 import org.apache.solr.ui.errors.HostNotFoundException
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.error_invalid_url
-import org.apache.solr.ui.generated.resources.error_solr_host_not_found
-import org.apache.solr.ui.generated.resources.error_unknown
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.error_invalid_url
+import org.apache.solr.ui.shared.generated.resources.error_solr_host_not_found
+import org.apache.solr.ui.shared.generated.resources.error_unknown
 
 internal val startStateToModel: (StartStore.State) -> StartComponent.Model = {
     StartComponent.Model(

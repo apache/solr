@@ -34,14 +34,14 @@ import androidx.navigation3.ui.NavDisplay
 import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsScene
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsTab
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.configsets_index_query
-import org.apache.solr.ui.generated.resources.configsets_request_handlers
-import org.apache.solr.ui.generated.resources.configsets_search_components
-import org.apache.solr.ui.generated.resources.configsets_update_configuration
-import org.apache.solr.ui.generated.resources.files
-import org.apache.solr.ui.generated.resources.overview
-import org.apache.solr.ui.generated.resources.schema
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.configsets_index_query
+import org.apache.solr.ui.shared.generated.resources.configsets_request_handlers
+import org.apache.solr.ui.shared.generated.resources.configsets_search_components
+import org.apache.solr.ui.shared.generated.resources.configsets_update_configuration
+import org.apache.solr.ui.shared.generated.resources.files
+import org.apache.solr.ui.shared.generated.resources.overview
+import org.apache.solr.ui.shared.generated.resources.schema
 import org.apache.solr.ui.views.navigation.NavigationTabs
 
 @OptIn(ExperimentalLayoutApi::class)

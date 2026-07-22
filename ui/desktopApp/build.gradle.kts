@@ -32,14 +32,40 @@ dependencies {
     implementation(libs.compose.uiToolingPreview)
 }
 
-compose.desktop {
-    application {
-        mainClass = "org.apache.solr.ui.MainKt"
 
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.apache.solr.ui"
-            packageVersion = "0.1.0"
-        }
+compose.desktop {
+  application {
+    mainClass = "org.apache.solr.ui.MainKt"
+
+    buildTypes.release.proguard {
+      version.set("7.6.0")
+      configurationFiles.from("proguard.pro")
     }
+
+    nativeDistributions {
+      targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+
+      packageVersion = "1.0.0"
+
+      windows {
+        packageName = "Apache Solr Desktop"
+        // App icon (needs to be .ico)
+        iconFile.set(project.file("assets/logo.ico"))
+        // Directory name (if not per user "C:\Program Files\[installationPath]")
+        installationPath = "Apache Solr Desktop"
+        // Create desktop shortcut
+        shortcut = true
+      }
+
+      linux {
+        packageName = "solr-desktop"
+        iconFile.set(project.file("assets/logo.png"))
+      }
+
+      macOS {
+        packageName = "ApacheSolrDesktop"
+        iconFile.set(project.file("assets/logo.png"))
+      }
+    }
+  }
 }

@@ -20,9 +20,9 @@ package org.apache.solr.ui.views.files
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.draft
-import org.apache.solr.ui.generated.resources.folder_zip
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.draft
+import org.apache.solr.ui.shared.generated.resources.folder_zip
 import org.jetbrains.compose.resources.painterResource
 
 @Composable

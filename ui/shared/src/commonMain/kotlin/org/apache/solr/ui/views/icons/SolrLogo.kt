@@ -21,10 +21,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.cd_solr_logo
-import org.apache.solr.ui.generated.resources.solr_logo_dark
-import org.apache.solr.ui.generated.resources.solr_logo_light
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.cd_solr_logo
+import org.apache.solr.ui.shared.generated.resources.solr_logo_dark
+import org.apache.solr.ui.shared.generated.resources.solr_logo_light
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
