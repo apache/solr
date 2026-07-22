@@ -21,9 +21,12 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -43,6 +46,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -59,8 +64,8 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
 
   static final String VERSION_FIELD = "_version_";
 
-  private static final int NUM_BROKERS = 1;
-  public static EmbeddedKafkaCluster kafkaCluster;
+  // Replaced legacy EmbeddedKafkaCluster wrapper with native Testcontainers orchestration
+  public static KafkaContainer kafkaContainer;
 
   protected static volatile MiniSolrCloudCluster solrCluster1;
   protected static volatile MiniSolrCloudCluster solrCluster2;
@@ -80,24 +85,24 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
     System.setProperty(KafkaCrossDcConf.PORT, "-1");
     consumer1 = new Consumer();
     consumer2 = new Consumer();
-    Properties config = new Properties();
-    config.put("unclean.leader.election.enable", "true");
-    config.put("enable.partition.eof", "false");
 
-    kafkaCluster =
-        new EmbeddedKafkaCluster(NUM_BROKERS, config) {
-          @Override
-          public String bootstrapServers() {
-            return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
-          }
-        };
-    kafkaCluster.start();
+    // Spin up an isolated Kafka 4.3.1 broker running purely in KRaft mode
+    kafkaContainer = new KafkaContainer(DockerImageName.parse("apache/kafka:4.3.1"));
+    kafkaContainer.start();
 
-    kafkaCluster.createTopic(TOPIC1, 1, 1);
-    kafkaCluster.createTopic(TOPIC2, 1, 1);
+    String bootstrapServers = kafkaContainer.getBootstrapServers();
+    log.info("Kafka Testcontainer started. bootstrapServers={}", bootstrapServers);
 
-    // System.setProperty("solr.crossdc.topicName", null);
-    // System.setProperty("solr.crossdc.bootstrapServers", null);
+    // Create required execution topics using standard Kafka AdminClient mechanics
+    Properties adminProps = new Properties();
+    adminProps.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+    try (AdminClient adminClient = AdminClient.create(adminProps)) {
+      adminClient
+          .createTopics(
+              List.of(new NewTopic(TOPIC1, 1, (short) 1), new NewTopic(TOPIC2, 1, (short) 1)))
+          .all()
+          .get();
+    }
 
     Properties props = new Properties();
 
@@ -105,10 +110,10 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
         configureCluster(1).addConfig("conf", getFile("configs/cloud-minimal/conf")).configure();
 
     props.setProperty(KafkaCrossDcConf.TOPIC_NAME, TOPIC2);
-    props.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, kafkaCluster.bootstrapServers());
+    props.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, bootstrapServers);
 
     System.setProperty(KafkaCrossDcConf.TOPIC_NAME, TOPIC2);
-    System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, kafkaCluster.bootstrapServers());
+    System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, bootstrapServers);
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     props.store(baos, "");
@@ -129,22 +134,17 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
     solrCluster2.waitForActiveCollection(COLLECTION, 1, 1);
 
     props = new Properties();
-    props.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, kafkaCluster.bootstrapServers());
+    props.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, bootstrapServers);
 
     baos = new ByteArrayOutputStream();
     props.store(baos, "");
     data = baos.toByteArray();
     solrCluster2.getZkClient().makePath("/crossdc.properties", data, true);
 
-    String bootstrapServers = kafkaCluster.bootstrapServers();
-    log.info("bootstrapServers={}", bootstrapServers);
-
     Map<String, Object> properties = new HashMap<>();
-    Object put =
-        properties.put(
-            KafkaCrossDcConf.ZK_CONNECT_STRING, solrCluster2.getZkServer().getZkAddress());
+    properties.put(KafkaCrossDcConf.ZK_CONNECT_STRING, solrCluster2.getZkServer().getZkAddress());
 
-    System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, kafkaCluster.bootstrapServers());
+    System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, bootstrapServers);
 
     consumer1.start(properties);
 
@@ -175,17 +175,17 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
       consumer2.shutdown();
     }
 
-    if (kafkaCluster != null) {
+    if (kafkaContainer != null) {
       try {
-        kafkaCluster.stop();
+        kafkaContainer.stop();
       } catch (Exception e) {
-        log.error("Exception stopping Kafka cluster", e);
+        log.error("Exception stopping Kafka container", e);
       }
     }
 
     solrCluster1 = null;
     solrCluster2 = null;
-    kafkaCluster = null;
+    kafkaContainer = null;
     consumer1 = null;
     consumer2 = null;
   }

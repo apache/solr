@@ -16,6 +16,8 @@
  */
 package org.apache.solr.crossdc.manager;
 
+import static org.apache.solr.crossdc.common.KafkaCrossDcConf.BOOTSTRAP_SERVERS;
+
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.ByteArrayOutputStream;
@@ -26,7 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
-import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -53,6 +57,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -70,7 +76,7 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
   static final String VERSION_FIELD = "_version_";
 
   private static final int NUM_BROKERS = 1;
-  public static EmbeddedKafkaCluster kafkaCluster;
+  public static KafkaContainer kafkaContainer;
 
   protected static volatile MiniSolrCloudCluster solrCluster1;
   protected static volatile MiniSolrCloudCluster solrCluster2;
@@ -94,16 +100,16 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
 
     Properties config = new Properties();
 
-    kafkaCluster =
-        new EmbeddedKafkaCluster(NUM_BROKERS, config) {
-          @Override
-          public String bootstrapServers() {
-            return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
-          }
-        };
-    kafkaCluster.start();
+    kafkaContainer = new KafkaContainer(DockerImageName.parse("apache/kafka:4.3.1"));
+    kafkaContainer.start();
 
-    kafkaCluster.createTopic(TOPIC, 1, 1);
+    String bootstrapServers = kafkaContainer.getBootstrapServers();
+
+    // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
+    config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+    try (AdminClient adminClient = AdminClient.create(config)) {
+      adminClient.createTopics(List.of(new NewTopic(TOPIC, 3, (short) 1))).all().get();
+    }
 
     Properties props = new Properties();
 
@@ -114,7 +120,7 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
             .configure();
 
     props.setProperty("solr.crossdc.topicName", TOPIC);
-    props.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
+    System.setProperty(BOOTSTRAP_SERVERS, bootstrapServers);
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     props.store(baos, "");
@@ -148,7 +154,6 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
     solrCluster2.getSolrClient().request(createTarget2);
     solrCluster2.waitForActiveCollection(COLLECTION2, 1, 1);
 
-    String bootstrapServers = kafkaCluster.bootstrapServers();
     log.info("bootstrapServers={}", bootstrapServers);
 
     Map<String, Object> properties = new HashMap<>();
@@ -189,12 +194,13 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
       consumer.shutdown();
     }
 
-    try {
-      if (kafkaCluster != null) {
-        kafkaCluster.stop();
+    if (kafkaContainer != null) {
+      try {
+        kafkaContainer.stop();
+        kafkaContainer = null;
+      } catch (Exception e) {
+        log.error("Exception stopping Kafka container", e);
       }
-    } catch (Exception e) {
-      log.error("Exception stopping Kafka cluster", e);
     }
 
     if (solrCluster1 != null) {
@@ -208,7 +214,7 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
 
     solrCluster1 = null;
     solrCluster2 = null;
-    kafkaCluster = null;
+    kafkaContainer = null;
     consumer = null;
   }
 

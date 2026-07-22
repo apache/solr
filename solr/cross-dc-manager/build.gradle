@@ -40,7 +40,6 @@ dependencies {
   runtimeOnly libs.commonscodec.commonscodec
 
   implementation libs.apache.kafka.clients
-  runtimeOnly libs.apache.kafka.kafka213
   runtimeOnly libs.apache.kafka.streams
 
   runtimeOnly libs.apache.log4j.api
@@ -65,6 +64,8 @@ dependencies {
   testRuntimeOnly libs.bytebuddy
   testRuntimeOnly libs.bytebuddy.agent
 
+  testImplementation libs.testcontainers.kafka
+
   testImplementation(libs.apache.kafka.streams) {
     artifact {
       classifier = "test"
@@ -72,16 +73,6 @@ dependencies {
   }
   // EmbeddedKafkaCluster loads org.apache.kafka.test.TestCondition from this at runtime
   testRuntimeOnly(libs.apache.kafka.clients) {
-    artifact {
-      classifier = "test"
-    }
-  }
-  testRuntimeOnly(libs.apache.kafka.kafka213) {
-    artifact {
-      classifier = "test"
-    }
-  }
-  testRuntimeOnly(libs.apache.kafka.server.common) {
     artifact {
       classifier = "test"
     }

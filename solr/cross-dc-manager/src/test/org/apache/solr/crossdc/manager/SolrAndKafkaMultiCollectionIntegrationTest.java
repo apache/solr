@@ -30,7 +30,9 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
@@ -56,6 +58,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -75,7 +79,7 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
   static final String VERSION_FIELD = "_version_";
 
   private static final int NUM_BROKERS = 1;
-  public EmbeddedKafkaCluster kafkaCluster;
+  public KafkaContainer kafkaContainer;
 
   protected volatile MiniSolrCloudCluster solrCluster1;
   protected volatile MiniSolrCloudCluster solrCluster2;
@@ -98,22 +102,22 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
     consumer = new Consumer();
     Properties config = new Properties();
 
-    kafkaCluster =
-        new EmbeddedKafkaCluster(NUM_BROKERS, config) {
-          @Override
-          public String bootstrapServers() {
-            return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
-          }
-        };
-    kafkaCluster.start();
+    kafkaContainer = new KafkaContainer(DockerImageName.parse("apache/kafka:4.3.1"));
+    kafkaContainer.start();
 
-    kafkaCluster.createTopic(TOPIC, 1, 1);
+    String bootstrapServers = kafkaContainer.getBootstrapServers();
+
+    // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
+    config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+    try (AdminClient adminClient = AdminClient.create(config)) {
+      adminClient.createTopics(List.of(new NewTopic(TOPIC, 3, (short) 1))).all().get();
+    }
 
     // in this test we will count on collection properties for topicName and enabled=true
     System.setProperty("solr.crossdc.enabled", "false");
     // System.setProperty("solr.crossdc.topicName", TOPIC);
 
-    System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
+    System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, kafkaContainer.getBootstrapServers());
     System.setProperty(INDEX_UNMIRRORABLE_DOCS, "false");
 
     solrCluster1 =
@@ -141,7 +145,6 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
         CollectionAdminRequest.reloadCollection(COLLECTION);
     reloadRequest.process(solrCluster1.getSolrClient());
 
-    String bootstrapServers = kafkaCluster.bootstrapServers();
     log.info("bootstrapServers={}", bootstrapServers);
 
     Map<String, Object> properties = new HashMap<>();
@@ -157,7 +160,7 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
   public void afterSolrAndKafkaIntegrationTest() throws Exception {
     ObjectReleaseTracker.clear();
 
-    Util.printKafkaInfo(kafkaCluster.bootstrapServers(), "SolrCrossDCConsumer");
+    Util.printKafkaInfo(kafkaContainer.getBootstrapServers(), "SolrCrossDCConsumer");
 
     if (solrCluster1 != null) {
       solrCluster1.getZkServer().getZkClient().printLayoutToStream(System.out);
@@ -171,12 +174,13 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
     consumer.shutdown();
     consumer = null;
 
-    try {
-      // kafkaCluster.deleteAllTopicsAndWait(10000);
-      kafkaCluster.stop();
-      kafkaCluster = null;
-    } catch (Exception e) {
-      log.error("Exception stopping Kafka cluster", e);
+    if (kafkaContainer != null) {
+      try {
+        kafkaContainer.stop();
+        kafkaContainer = null;
+      } catch (Exception e) {
+        log.error("Exception stopping Kafka container", e);
+      }
     }
   }
 

@@ -46,12 +46,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.apache.commons.io.IOUtils;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
@@ -92,6 +94,8 @@ import org.junit.Test;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @ThreadLeakFilters(
     filters = {
@@ -107,7 +111,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
   private static final int MAX_DOC_SIZE_BYTES = Integer.parseInt(DEFAULT_MAX_REQUEST_SIZE);
 
   private static final int NUM_BROKERS = 1;
-  public EmbeddedKafkaCluster kafkaCluster;
+  public KafkaContainer kafkaContainer;
 
   private static class ConsumerBatch {
     final String kafkaTopic;
@@ -208,22 +212,21 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
         };
     Properties config = new Properties();
 
-    kafkaCluster =
-        new EmbeddedKafkaCluster(NUM_BROKERS, config) {
-          @Override
-          public String bootstrapServers() {
-            return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
-          }
-        };
-    kafkaCluster.start();
+    kafkaContainer = new KafkaContainer(DockerImageName.parse("apache/kafka:4.3.1"));
+    kafkaContainer.start();
 
-    // create many partitions to test for re-ordered reads
-    kafkaCluster.createTopic(TOPIC, 3, 1);
+    String bootstrapServers = kafkaContainer.getBootstrapServers();
 
-    // ensure small batches to test multi-partition ordering
+    // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
+    config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+    try (AdminClient adminClient = AdminClient.create(config)) {
+      adminClient.createTopics(List.of(new NewTopic(TOPIC, 3, (short) 1))).all().get();
+    }
+
+    // Ensure small batches to test multi-partition ordering
     System.setProperty(BATCH_SIZE_BYTES, "100");
     System.setProperty(TOPIC_NAME, TOPIC);
-    System.setProperty(BOOTSTRAP_SERVERS, kafkaCluster.bootstrapServers());
+    System.setProperty(BOOTSTRAP_SERVERS, bootstrapServers);
     System.setProperty(INDEX_UNMIRRORABLE_DOCS, "false");
     System.setProperty(COLLAPSE_UPDATES, "none");
 
@@ -243,7 +246,6 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     solrCluster2.getSolrClient().request(create2);
     solrCluster2.waitForActiveCollection(COLLECTION, 1, 1);
 
-    String bootstrapServers = kafkaCluster.bootstrapServers();
     log.info("bootstrapServers={}", bootstrapServers);
 
     Map<String, Object> properties = new HashMap<>();
@@ -268,15 +270,18 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
       solrCluster2.shutdown();
     }
 
-    consumer.shutdown();
-    consumer = null;
+    if (consumer != null) {
+      consumer.shutdown();
+      consumer = null;
+    }
 
-    try {
-      // kafkaCluster.deleteAllTopicsAndWait(5000);
-      kafkaCluster.stop();
-      kafkaCluster = null;
-    } catch (Exception e) {
-      log.error("Exception stopping Kafka cluster", e);
+    if (kafkaContainer != null) {
+      try {
+        kafkaContainer.stop();
+        kafkaContainer = null;
+      } catch (Exception e) {
+        log.error("Exception stopping Kafka container", e);
+      }
     }
 
     Thread.setDefaultUncaughtExceptionHandler(uceh);
@@ -301,7 +306,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testProducerToCloud() throws Exception {
     Properties properties = new Properties();
-    properties.put("bootstrap.servers", kafkaCluster.bootstrapServers());
+    properties.put("bootstrap.servers", kafkaContainer.getBootstrapServers());
     properties.put("acks", "all");
     properties.put("retries", 1);
     properties.put("batch.size", 1);

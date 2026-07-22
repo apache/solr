@@ -25,7 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -45,6 +47,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -61,7 +65,7 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
   static final String VERSION_FIELD = "_version_";
 
   private static final int NUM_BROKERS = 1;
-  public static EmbeddedKafkaCluster kafkaCluster;
+  public static KafkaContainer kafkaContainer;
 
   protected static volatile MiniSolrCloudCluster solrCluster1;
   protected static volatile MiniSolrCloudCluster solrCluster2;
@@ -83,19 +87,19 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
     config.put("unclean.leader.election.enable", "true");
     config.put("enable.partition.eof", "false");
 
-    kafkaCluster =
-        new EmbeddedKafkaCluster(NUM_BROKERS, config) {
-          @Override
-          public String bootstrapServers() {
-            return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
-          }
-        };
-    kafkaCluster.start();
+    kafkaContainer = new KafkaContainer(DockerImageName.parse("apache/kafka:4.3.1"));
+    kafkaContainer.start();
 
-    kafkaCluster.createTopic(TOPIC, 1, 1);
+    String bootstrapServers = kafkaContainer.getBootstrapServers();
+
+    // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
+    config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+    try (AdminClient adminClient = AdminClient.create(config)) {
+      adminClient.createTopics(List.of(new NewTopic(TOPIC, 3, (short) 1))).all().get();
+    }
 
     System.setProperty("solr.crossdc.topicName", TOPIC);
-    System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
+    System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, kafkaContainer.getBootstrapServers());
 
     solrCluster1 =
         configureCluster(3).addConfig("conf", getFile("configs/cloud-minimal/conf")).configure();
@@ -113,7 +117,6 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
     solrCluster2.getSolrClient().request(create2);
     solrCluster2.waitForActiveCollection(COLLECTION, 2, 6);
 
-    String bootstrapServers = kafkaCluster.bootstrapServers();
     log.info("bootstrapServers={}", bootstrapServers);
 
     Map<String, Object> properties = new HashMap<>();
@@ -148,17 +151,17 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
       consumer.shutdown();
     }
 
-    try {
-      if (kafkaCluster != null) {
-        kafkaCluster.stop();
+    if (kafkaContainer != null) {
+      try {
+        kafkaContainer.stop();
+      } catch (Exception e) {
+        log.error("Exception stopping Kafka container", e);
       }
-    } catch (Exception e) {
-      log.error("Exception stopping Kafka cluster, ignoring", e);
     }
 
     solrCluster1 = null;
     solrCluster2 = null;
-    kafkaCluster = null;
+    kafkaContainer = null;
     consumer = null;
   }
 
