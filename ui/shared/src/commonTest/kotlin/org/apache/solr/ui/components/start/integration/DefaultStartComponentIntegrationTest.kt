@@ -48,8 +48,8 @@ import kotlinx.coroutines.test.runTest
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.components.start.StartComponent.Output
 import org.apache.solr.ui.createMockEngine
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.error_invalid_url
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.error_invalid_url
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.DEFAULT_SOLR_URL
 import org.apache.solr.ui.utils.DefaultAppComponentContext

@@ -24,9 +24,9 @@ import org.apache.solr.ui.components.auth.store.AuthenticationStore
 import org.apache.solr.ui.components.auth.store.BasicAuthStore
 import org.apache.solr.ui.components.auth.store.OAuthStore
 import org.apache.solr.ui.errors.InvalidCredentialsException
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.error_invalid_credentials
-import org.apache.solr.ui.generated.resources.error_unknown
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.error_invalid_credentials
+import org.apache.solr.ui.shared.generated.resources.error_unknown
 
 internal val authStateToModel: (AuthenticationStore.State) -> AuthenticationComponent.Model = {
     AuthenticationComponent.Model(

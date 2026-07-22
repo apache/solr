@@ -375,3 +375,16 @@ abstract class BatsTask extends Exec {
     super.exec()
   }
 }
+
+tasks.matching { it.name in ['assembleDist', 'releaseArtifacts', 'rat'] }.configureEach {
+  doFirst {
+    def flagIsTrue = project.hasProperty('solr.ui.buildFromSource') &&
+        project.property('solr.ui.buildFromSource') == 'true'
+    if (!flagIsTrue) {
+      throw new GradleException(
+          "Release builds must set -Psolr.ui.buildFromSource=true so the Admin UI is " +
+              "built from the voted source tree, not pulled from nightlies.apache.org."
+      )
+    }
+  }
+}

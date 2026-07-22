@@ -48,11 +48,11 @@ import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsOverviewEntr
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsOverviewEntry.ConfigsetsOverviewDialog.ImportConfigsetDialog
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
 import org.apache.solr.ui.domain.Configset
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.action_create_configset
-import org.apache.solr.ui.generated.resources.action_edit_solrconfig
-import org.apache.solr.ui.generated.resources.add
-import org.apache.solr.ui.generated.resources.edit
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.action_create_configset
+import org.apache.solr.ui.shared.generated.resources.action_edit_solrconfig
+import org.apache.solr.ui.shared.generated.resources.add
+import org.apache.solr.ui.shared.generated.resources.edit
 import org.apache.solr.ui.views.components.SolrTextButton
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
