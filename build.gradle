@@ -31,16 +31,13 @@ plugins {
   alias(libs.plugins.diffplug.spotless) apply false
   alias(libs.plugins.nodegradle.node) apply false
   alias(libs.plugins.openapi.generator) apply false
+  alias(libs.plugins.undercouch.download) apply false
   alias(libs.plugins.logchange)
 }
 
 // Declare default Java versions for the entire project and for SolrJ separately
 rootProject.ext.minJavaVersionDefault = JavaVersion.toVersion(libs.versions.java.min.get())
 rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(libs.versions.java.solrj.get())
-
-// Check development mode for entire project (defaults to true if 'production' not provided and set to true)
-rootProject.ext.development =
-    !project.hasProperty('production') || project.findProperty('production') != 'true'
 
 apply from: file('gradle/globals.gradle')
 

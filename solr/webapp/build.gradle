@@ -18,7 +18,10 @@
 plugins {
   id 'java'
   id 'war'
+  alias(libs.plugins.undercouch.download)
 }
+
+apply from: "$rootDir/gradle/solr/solr-ui.gradle"
 
 description = 'Solr webapp'
 
@@ -38,7 +41,7 @@ configurations {
   serverLib
   solrCore
   generatedJSClientBundle
-  generatedUIBundle
+  uiBundle
 }
 
 dependencies {
@@ -50,6 +53,7 @@ dependencies {
   if (gradle.ext.withJsClient) {
     generatedJSClientBundle project(path: ":solr:webapp:js-client", configuration: "jsClientBundle")
   }
+  uiBundle project(path: ":solr:webapp", configuration: "wasmJsUIBundle")
 
   // Browser-based tests of the AngularJS Admin UI (see src/test)
   testImplementation project(':solr:core')
@@ -113,6 +117,10 @@ war {
   // note: nonetheless may be disabled, copying nothing
   from(configurations.generatedJSClientBundle, {
     into "libs/solr"
+  })
+
+  from(configurations.uiBundle, {
+    into "ui"
   })
 }
 

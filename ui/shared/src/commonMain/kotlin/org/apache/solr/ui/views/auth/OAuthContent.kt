@@ -33,12 +33,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.auth.OAuthComponent
 import org.apache.solr.ui.components.auth.store.OAuthStore
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.action_sign_in_with_identity_provider
-import org.apache.solr.ui.generated.resources.action_sign_in_with_realm
-import org.apache.solr.ui.generated.resources.authenticating
-import org.apache.solr.ui.generated.resources.desc_sign_in_with_oauth
-import org.apache.solr.ui.generated.resources.desc_sign_in_with_oauth_to_realm
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.action_sign_in_with_identity_provider
+import org.apache.solr.ui.shared.generated.resources.action_sign_in_with_realm
+import org.apache.solr.ui.shared.generated.resources.authenticating
+import org.apache.solr.ui.shared.generated.resources.desc_sign_in_with_oauth
+import org.apache.solr.ui.shared.generated.resources.desc_sign_in_with_oauth_to_realm
 import org.apache.solr.ui.views.components.SolrButton
 import org.jetbrains.compose.resources.stringResource
 

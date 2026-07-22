@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import org.gradle.api.tasks.bundling.Zip
+import java.security.MessageDigest
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
@@ -57,6 +59,43 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
 
             implementation(libs.compose.ui)
+
+            implementation(project.dependencies.platform(libs.ktor.bom))
+            implementation(libs.ktor.client.core)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.decompose.decompose)
+            implementation(libs.mvikotlin.main)
+            implementation(libs.mvikotlin.mvikotlin)
         }
     }
+}
+
+// package as a plain zip and upload to nightlies by CI
+val wasmJsBrowserDistribution = tasks.named("wasmJsBrowserDistribution")
+
+val zipWasmDist = tasks.register<Zip>("zipWasmDist") {
+  dependsOn(wasmJsBrowserDistribution)
+  from(wasmJsBrowserDistribution.map { it.outputs.files.singleFile })
+  archiveFileName.set("solr-ui-wasm.zip")
+  destinationDirectory.set(layout.buildDirectory.dir("dist"))
+  finalizedBy("checksumWasmDist")
+}
+
+tasks.register("checksumWasmDist") {
+  dependsOn(zipWasmDist)
+
+  val archiveFile = zipWasmDist.flatMap { it.archiveFile }
+  val checksumFile = archiveFile.map { it.asFile.parentFile.resolve("${it.asFile.name}.sha256") }
+
+  inputs.file(archiveFile)
+  outputs.file(checksumFile)
+
+  doLast {
+    val file = archiveFile.get().asFile
+    val checksum = MessageDigest.getInstance("SHA-256")
+      .digest(file.readBytes())
+      .joinToString("") { b -> "%02x".format(b) }
+    checksumFile.get().writeText(checksum)
+  }
 }

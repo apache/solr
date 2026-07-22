@@ -31,7 +31,7 @@ The module is available for desktop / JVM targets and web (WebAssembly).
 ## Build and Run
 
 > **IMPORTANT**
-> 
+>
 > Before you try to build your project, make sure you update your `gradle.properties` files to
 > reflect the module's configuration requirements. Review the differences between your file and
 > `gradle/template.gradle.properties` and update accordingly.
@@ -41,8 +41,10 @@ To build and run the desktop client simply run `./gradlew :solr:ui:run`.
 Make sure that you have a Solr development instance running on `localhost:8983`, as the current
 implementation uses hardcoded values.
 
-The WebAssembly app is built and deployed together with the current webapp. To run and access it,
-you can build the project as usual (see [Quickstart](../../README.md#quickstart)) and then access
+The WebAssembly app is built and published at [Apache nightlies](https://nightlies.apache.org/solr/ui/wasm/)
+and bundled during the Solr build (see [README.md](../README.md)) into the current webapp.
+You can choose the built to include by setting `solr.ui.commit` in the `gradle.properties`,
+or build from source by setting `solr.ui.buildFromSource=true`. Once the Solr project then access
 [`http://localhost:8983/solr/compose`](http://localhost:8983/solr/compose).
 
 Various references are included in the webapp for already migrated pages.

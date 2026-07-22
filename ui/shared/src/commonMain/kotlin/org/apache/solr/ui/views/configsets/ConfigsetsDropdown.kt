@@ -35,11 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
 import org.apache.solr.ui.domain.Configset
-import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.cd_clear_field
-import org.apache.solr.ui.generated.resources.close
-import org.apache.solr.ui.generated.resources.nav_configsets
-import org.apache.solr.ui.generated.resources.no_configsets
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.cd_clear_field
+import org.apache.solr.ui.shared.generated.resources.close
+import org.apache.solr.ui.shared.generated.resources.nav_configsets
+import org.apache.solr.ui.shared.generated.resources.no_configsets
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
