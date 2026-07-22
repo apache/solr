@@ -1,0 +1,8 @@
+title: Add a SemVer field type to easily sort and compute range queries for multi-part versions
+type: added
+authors:
+  - name: Houston Putman
+    nick: HoustonPutman
+links:
+  - name: SOLR-18217
+    url: https://issues.apache.org/jira/browse/SOLR-18217
