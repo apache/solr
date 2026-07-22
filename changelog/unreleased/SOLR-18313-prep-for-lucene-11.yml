@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: >
+  Prep for Lucene 11: switch two internal call sites (sort missing-value handling and automaton
+  concatenation) to the newer Lucene API forms that already exist in Lucene 10.4. No behavior change.
+type: changed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18313
+    url: https://issues.apache.org/jira/browse/SOLR-18313
