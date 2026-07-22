@@ -26,15 +26,13 @@ import org.junit.Test;
  * org.apache.solr.schema.numericrange.IntRangeField} fields.
  *
  * <p>Each scenario picks its field at random (via {@link #randomField}) from the equivalent field
- * variants for 1D: indexed-only, indexed+docValues, and the (non-indexed) docValues-only field
- * so all of those code paths, including the pure docValues query, get incidental coverage across
- * seeds while the assertions stay identical.
+ * variants for 1D: indexed-only, indexed+docValues, and the (non-indexed) docValues-only field so
+ * all of those code paths, including the pure docValues query, get incidental coverage across seeds
+ * while the assertions stay identical.
  */
 public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
-  /**
-   * 1D int range variants: indexed-only, indexed+docValues, and (non-indexed) docValues-only.
-   */
+  /** 1D int range variants: indexed-only, indexed+docValues, and (non-indexed) docValues-only. */
   private static final String[] ONE_D = {"price_range", "price_range_dv", "price_range_dvonly"};
 
   /** 2D int range (bounding box): indexed-only field and its indexed+docValues sibling. */

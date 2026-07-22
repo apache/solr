@@ -147,9 +147,9 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
 
   @Override
   protected void setArgs(IndexSchema schema, Map<String, String> args) {
-    // A range field's docValues are an opaque packed BINARY blob not the external "[min TO max]" form, so
-    // they can't stand in for the stored value: useDocValuesAsStored would make fl=* return that
-    // raw blob. It otherwise defaults to off here and reject an explicit
+    // A range field's docValues are an opaque packed BINARY blob not the external "[min TO max]"
+    // form, so they can't stand in for the stored value: useDocValuesAsStored would make fl=*
+    // return that raw blob. It otherwise defaults to off here and reject an explicit
     // useDocValuesAsStored="true" rather than silently ignoring what was requested.
     args.putIfAbsent("useDocValuesAsStored", "false");
     super.setArgs(schema, args);

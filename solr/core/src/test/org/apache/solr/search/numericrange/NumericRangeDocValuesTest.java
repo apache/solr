@@ -32,11 +32,10 @@ import org.junit.Test;
  * indexed+docValues, and (for int) docValues-only variants, so choosing the non-indexed
  * docValues-only field also exercises the pure {@code MultiBinaryRangeDocValuesQuery} path.
  *
- * <p>This also adds multiValued parity (several ranges packed into one docValues blob),
- * the {@link org.apache.lucene.search.IndexOrDocValuesQuery} clause
- * inside a selective conjunction (where the docValues clause leads iteration), and the fact that
- * enabling docValues does <em>not</em> enable sorting or value ({@code facet.field}) faceting even
- * though {@code facet.query} still works.
+ * <p>This also adds multiValued parity (several ranges packed into one docValues blob), the {@link
+ * org.apache.lucene.search.IndexOrDocValuesQuery} clause inside a selective conjunction (where the
+ * docValues clause leads iteration), and the fact that enabling docValues does <em>not</em> enable
+ * sorting or value ({@code facet.field}) faceting even though {@code facet.query} still works.
  */
 public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
 
@@ -52,7 +51,9 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  /** Index the same int range into the indexed-only, indexed+docValues, and docValues-only fields. */
+  /**
+   * Index the same int range into the indexed-only, indexed+docValues, and docValues-only fields.
+   */
   private void addIntDoc(String id, String range) {
     assertU(
         adoc(
@@ -122,8 +123,8 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Asserts the BKD field and its docValues sibling both match exactly {@code expectedIds} (and only
-   * those) for the query. Checks the matched ids, not just the count.
+   * Asserts the BKD field and its docValues sibling both match exactly {@code expectedIds} (and
+   * only those) for the query. Checks the matched ids, not just the count.
    */
   private void assertSameMatches(
       String criteria, String range, String bkdField, String dvField, String... expectedIds) {
@@ -240,11 +241,7 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
     // WITHIN: a doc range must fit *inside* the query box in both dims. doc1's A fits inside
     // [0,6]x[-4,-1]; doc2's C sticks out on D1 (min -10 < 0). -> only doc 1.
     assertSameMatches(
-        "within",
-        "[0.0,-4.0 TO 6.0,-1.0]",
-        "double_range_multi_2d",
-        "double_range_mv_dv_2d",
-        "1");
+        "within", "[0.0,-4.0 TO 6.0,-1.0]", "double_range_multi_2d", "double_range_mv_dv_2d", "1");
 
     // INTERSECTS: overlap in both dims is enough. The central box [-2,3]x[-2,3] overlaps doc1's A
     // and doc2's C, so both match (any-range / any-doc "OR" semantics). -> 2 docs.
@@ -260,11 +257,7 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
     // does not cross) and its B is disjoint -> doc 1 excluded; doc2's C overlaps but pokes out on
     // D1 (min -10) -> it crosses. -> only doc 2, which distinguishes crosses from within.
     assertSameMatches(
-        "crosses",
-        "[-1.0,-4.0 TO 6.0,3.0]",
-        "double_range_multi_2d",
-        "double_range_mv_dv_2d",
-        "2");
+        "crosses", "[-1.0,-4.0 TO 6.0,3.0]", "double_range_multi_2d", "double_range_mv_dv_2d", "2");
   }
 
   @Test
