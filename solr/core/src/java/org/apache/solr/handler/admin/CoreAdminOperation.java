@@ -33,6 +33,7 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQU
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTRECOVERY;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTSTATUS;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTSYNCSHARD;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.RESORTINDEX;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.RESTORECORE;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SPLIT;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
@@ -258,7 +259,8 @@ public enum CoreAdminOperation implements CoreAdminOp {
 
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
-  UPGRADEINDEX_OP(UPGRADEINDEX, new UpgradeCoreIndexOp());
+  UPGRADEINDEX_OP(UPGRADEINDEX, new UpgradeCoreIndexOp()),
+  RESORTINDEX_OP(RESORTINDEX, new ResortIndexOp());
 
   final CoreAdminParams.CoreAdminAction action;
   final CoreAdminOp fun;
