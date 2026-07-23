@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-solrAdminApp.controller('IndexController', function($scope, System, Cores, Constants) {
+solrAdminApp.controller('IndexController', function($scope, System, Constants) {
   $scope.resetMenu("index", Constants.IS_ROOT_PAGE);
   $scope.reload = function() {
     System.get(function(data) {

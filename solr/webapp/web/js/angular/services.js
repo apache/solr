@@ -79,19 +79,6 @@ solrAdminServices.factory('System',
     return $resource('admin/configs', {'wt': 'json', '_': Date.now()}, {"configs": {params: {action: "LIST"}}
     });
  }])
-.factory('Cores',
-  ['$resource', function($resource) {
-    return $resource('admin/cores',
-    {'wt':'json', '_':Date.now()}, {
-    "query": {},
-    "list": {params:{indexInfo: false}},
-    "add": {params:{action: "CREATE"}},
-    "unload": {params:{action: "UNLOAD", core: "@core"}},
-    "rename": {params:{action: "RENAME"}},
-    "swap": {params:{action: "SWAP"}},
-    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}, headers:{doNotIntercept: "true"}}
-    });
-  }])
 .factory('Logging',
   ['$resource', function($resource) {
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {

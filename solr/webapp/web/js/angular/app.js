@@ -495,7 +495,7 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, Collections, System, Ping, Constants, SchemaDesigner) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, Collections, System, Ping, Constants, SchemaDesigner) {
 
   $rootScope.exceptions={};
 
@@ -516,22 +516,25 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
   $scope.refresh();
   $scope.resetMenu = function(page, pageType) {
-    Cores.list(function(data) {
-      $scope.cores = [];
-      var currentCoreName = $route.current.params.core;
-      delete $scope.currentCore;
-      for (key in data.status) {
-        var core = data.status[key];
-        if (core.name.startsWith("._designer_")) {
-          continue;
+    CoresV2.getAllCoreStatus({indexInfo: false}, function(error, data, response) {
+      $timeout(function() {
+        if (error) return;
+        $scope.cores = [];
+        var currentCoreName = $route.current.params.core;
+        delete $scope.currentCore;
+        for (key in data.status) {
+          var core = data.status[key];
+          if (core.name.startsWith("._designer_")) {
+            continue;
+          }
+          $scope.cores.push(core);
+          if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
+              $scope.currentCore = core;
+          }
         }
-        $scope.cores.push(core);
-        if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
-            $scope.currentCore = core;
-        }
-      }
-      $scope.showInitFailures = Object.keys(data.initFailures).length>0;
-      $scope.initFailures = data.initFailures;
+        $scope.showInitFailures = Object.keys(data.initFailures).length>0;
+        $scope.initFailures = data.initFailures;
+      });
     });
 
     System.get(function(data) {
