@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
@@ -635,6 +636,51 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         assertTrue(DebugServlet.headers.containsKey("content-type"));
       }
     }
+  }
+
+  @Test(timeout = 30000)
+  public void testConcurrentStreamedBodiesDoNotDeadlockWithHttp1() throws Exception {
+    DebugServlet.clear();
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+
+    int concurrency = 8;
+    ExecutorService callers =
+        ExecutorUtil.newMDCAwareFixedThreadPool(concurrency, new NamedThreadFactory("test-caller"));
+
+    try (HttpJdkSolrClient client = builder(url).useHttp1_1(true).build()) {
+      List<CompletableFuture<Void>> futures = new ArrayList<>(concurrency);
+      for (int i = 0; i < concurrency; i++) {
+        futures.add(
+            CompletableFuture.runAsync(
+                () -> {
+                  JsonQueryRequest q = buildLargeBodyQuery();
+                  try {
+                    q.process(client);
+                  } catch (Exception ignored) {
+                  }
+                },
+                callers));
+      }
+      CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]))
+          .get(45, TimeUnit.SECONDS);
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(callers);
+    }
+  }
+
+  private static JsonQueryRequest buildLargeBodyQuery() {
+    StringBuilder filter = new StringBuilder("id:(");
+    for (int i = 0; i < 400; i++) {
+      if (i > 0) {
+        filter.append(" OR ");
+      }
+      filter.append("value_").append(i);
+    }
+    filter.append(')');
+    JsonQueryRequest q = new JsonQueryRequest();
+    q.setQuery("*:*");
+    q.withFilter(filter.toString());
+    return q;
   }
 
   /**
