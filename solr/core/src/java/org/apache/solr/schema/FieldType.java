@@ -778,10 +778,8 @@ public abstract class FieldType extends FieldProperties {
       Object missingHigh) {
     field.checkSortability();
 
-    SortField sf = new SortField(field.getName(), sortType, reverse);
-    applySetMissingValue(field, sf, missingLow, missingHigh);
-
-    return sf;
+    return new SortField(
+        field.getName(), sortType, reverse, missingValue(field, reverse, missingLow, missingHigh));
   }
 
   /** Same as {@link #getSortField} but using {@link SortedSetSortField} */
@@ -793,10 +791,8 @@ public abstract class FieldType extends FieldProperties {
       Object missingHigh) {
 
     field.checkSortability();
-    SortField sf = new SortedSetSortField(field.getName(), reverse, selector);
-    applySetMissingValue(field, sf, missingLow, missingHigh);
-
-    return sf;
+    return new SortedSetSortField(
+        field.getName(), reverse, selector, missingValue(field, reverse, missingLow, missingHigh));
   }
 
   /** Same as {@link #getSortField} but using {@link SortedNumericSortField}. */
@@ -809,25 +805,30 @@ public abstract class FieldType extends FieldProperties {
       Object missingHigh) {
 
     field.checkSortability();
-    SortField sf = new SortedNumericSortField(field.getName(), sortType, reverse, selector);
-    applySetMissingValue(field, sf, missingLow, missingHigh);
-
-    return sf;
+    return new SortedNumericSortField(
+        field.getName(),
+        sortType,
+        reverse,
+        selector,
+        missingValue(field, reverse, missingLow, missingHigh));
   }
 
   /**
+   * Computes the sort {@code missingValue} to pass to a {@link SortField} constructor based on the
+   * field's {@code sortMissingFirst}/{@code sortMissingLast} properties and the sort direction.
+   * Returns {@code null} when neither property is set.
+   *
    * @see #getSortField
    * @see #getSortedSetSortField
    */
-  private static void applySetMissingValue(
-      SchemaField field, SortField sortField, Object missingLow, Object missingHigh) {
-    final boolean reverse = sortField.getReverse();
-
+  private static Object missingValue(
+      SchemaField field, boolean reverse, Object missingLow, Object missingHigh) {
     if (field.sortMissingLast()) {
-      sortField.setMissingValue(reverse ? missingLow : missingHigh);
+      return reverse ? missingLow : missingHigh;
     } else if (field.sortMissingFirst()) {
-      sortField.setMissingValue(reverse ? missingHigh : missingLow);
+      return reverse ? missingHigh : missingLow;
     }
+    return null;
   }
 
   /**
