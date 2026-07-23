@@ -405,6 +405,9 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
           new HttpJettySolrClient.Builder()
               .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
               .withIdleTimeout(1, TimeUnit.MILLISECONDS)
+              // override the infinite request timeout with idle timeout to ensure idle requests
+              // times out.
+              .withRequestTimeout(1, TimeUnit.MILLISECONDS)
               .build();
 
       lbClient = new LBJettySolrClient.Builder(delegateClient, nonRoutableEndpoint).build();
