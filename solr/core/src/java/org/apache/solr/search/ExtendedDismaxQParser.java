@@ -630,6 +630,8 @@ public class ExtendedDismaxQParser extends QParser {
 
     if (0 == shingleSize) shingleSize = clauses.size();
 
+    if (shingleSize < 2) return;
+
     final int lastClauseIndex = shingleSize - 1;
 
     StringBuilder userPhraseQuery = new StringBuilder();
