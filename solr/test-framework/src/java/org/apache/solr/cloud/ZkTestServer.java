@@ -606,6 +606,19 @@ public class ZkTestServer {
     this.theTickTime = theTickTime;
   }
 
+  /**
+   * Lower bound (ms) the server will negotiate for client session timeouts. Defaults to 3000; lower
+   * it to allow tests that need fast session expiry. Must be set before {@link #run()}.
+   */
+  public void setMinSessionTimeout(int minSessionTimeout) {
+    this.minSessionTimeout = minSessionTimeout;
+  }
+
+  /** Upper bound (ms) the server will negotiate for client session timeouts. Defaults to 90000. */
+  public void setMaxSessionTimeout(int maxSessionTimeout) {
+    this.maxSessionTimeout = maxSessionTimeout;
+  }
+
   public Path getZkDir() {
     return zkDir;
   }
