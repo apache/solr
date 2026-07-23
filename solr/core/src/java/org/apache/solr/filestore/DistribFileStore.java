@@ -39,7 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -71,7 +70,6 @@ public class DistribFileStore implements FileStore {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
-  private Map<String, FileInfo> tmpFiles = new ConcurrentHashMap<>();
 
   private final Path solrHome;
 
@@ -110,13 +108,6 @@ public class DistribFileStore implements FileStore {
 
     FileInfo(String path) {
       this.path = path;
-    }
-
-    ByteBuffer getFileData(boolean validate) throws IOException {
-      if (fileData == null) {
-        fileData = ByteBuffer.wrap(Files.readAllBytes(getRealPath(path)));
-      }
-      return fileData;
     }
 
     public String getMetaPath() {
@@ -184,7 +175,6 @@ public class DistribFileStore implements FileStore {
       ByteBuffer metadata;
       Map<?, ?> m;
 
-      InputStream is = null;
       var solrClient = coreContainer.getDefaultHttpSolrClient();
 
       try {
@@ -198,11 +188,9 @@ public class DistribFileStore implements FileStore {
         }
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
-      } finally {
-        org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
 
-      ByteBuffer filedata = null;
+      ByteBuffer filedata;
       try {
         final var fileRequest = new FileStoreApi.GetFile(path);
         final var fileResponse = fileRequest.processWithBaseUrl(solrClient, baseUrl, null);
@@ -226,8 +214,6 @@ public class DistribFileStore implements FileStore {
         return true;
       } catch (IOException ioe) {
         throw new SolrException(SERVER_ERROR, "Error persisting file", ioe);
-      } finally {
-        org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
     }
 
@@ -350,7 +336,6 @@ public class DistribFileStore implements FileStore {
 
   private void distribute(FileInfo info) {
     try {
-      String dirName = info.path.substring(0, info.path.lastIndexOf('/'));
 
       coreContainer
           .getZkController()
@@ -366,13 +351,11 @@ public class DistribFileStore implements FileStore {
     } catch (Exception e) {
       throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);
     }
-    tmpFiles.put(info.path, info);
 
     List<String> nodes = FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
     int i = 0;
     int FETCHFROM_SRC = 50;
     String myNodeName = coreContainer.getZkController().getNodeName();
-    String getFrom = "";
     try {
       for (String node : nodes) {
         String baseUrl =
@@ -387,7 +370,7 @@ public class DistribFileStore implements FileStore {
         } else {
           if (i == FETCHFROM_SRC) {
             // This is just an optimization
-            // at this point a bunch of nodes are already downloading from me
+            // at this point a bunch of nodes are already downloading from me.
             // I'll wait for them to finish before asking other nodes to download from each other
             try {
               Thread.sleep(2 * 1000);
@@ -418,11 +401,7 @@ public class DistribFileStore implements FileStore {
           .getUpdateExecutor()
           .submit(
               () -> {
-                try {
-                  Thread.sleep(10 * 1000);
-                } finally {
-                  tmpFiles.remove(info.path);
-                }
+                Thread.sleep(10 * 1000);
                 return null;
               });
     }
@@ -486,7 +465,6 @@ public class DistribFileStore implements FileStore {
     if (!fi.exists(true, false)) {
       throw new SolrException(BAD_REQUEST, "No such file : " + path);
     }
-    fi.getFileData(true);
     distribute(fi);
   }
 
