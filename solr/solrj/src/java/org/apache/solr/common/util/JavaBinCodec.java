@@ -23,6 +23,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,7 +43,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAccumulator;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.solr.client.api.util.ReflectWritable;
 import org.apache.solr.common.ConditionalKeyMapWriter;
@@ -54,7 +56,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
-import org.noggit.CharArr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,6 +115,9 @@ public class JavaBinCodec implements PushWriter {
 
   private static final int MIN_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY = 512;
   private static final int MAX_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY = 65536;
+
+  /** Maximum number of UTF8 bytes per UTF16 character. */
+  private static final int MAX_UTF8_BYTES_PER_CHAR = 3;
 
   private static final byte VERSION = 2;
   private final ObjectResolver resolver;
@@ -1064,28 +1068,56 @@ public class JavaBinCodec implements PushWriter {
       return;
     }
     int end = s.length();
-    int maxSize = end * ByteUtils.MAX_UTF8_BYTES_PER_CHAR;
+    int maxSize = end * MAX_UTF8_BYTES_PER_CHAR;
 
     if (maxSize <= MAX_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY) {
-      if (bytes == null || bytes.length < maxSize) {
-        int bufferSize = getBufferSize(maxSize);
-        bytes = new byte[bufferSize];
-      }
-
-      int sz = ByteUtils.UTF16toUTF8(s, 0, end, bytes, 0);
-      writeTag(STR, sz);
-      daos.write(bytes, 0, sz);
+      byte[] utf8 = s.toString().getBytes(StandardCharsets.UTF_8);
+      writeTag(STR, utf8.length);
+      daos.write(utf8);
     } else {
       // double pass logic for large strings, see SOLR-7971
-      int sz = ByteUtils.calcUTF16toUTF8Length(s, 0, end);
-      writeTag(STR, sz);
+      CharBuffer cb = CharBuffer.wrap(s);
+      CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
       if (bytes == null || bytes.length < 8192) bytes = new byte[8192];
-      ByteUtils.writeUTF16toUTF8(s, 0, end, daos, bytes);
+      ByteBuffer scratch = ByteBuffer.wrap(bytes);
+
+      // first pass: count UTF-8 bytes without retaining output
+      int sz = 0;
+      cb.rewind();
+      encoder.reset();
+      boolean endOfInput = false;
+      while (!endOfInput) {
+        endOfInput = !cb.hasRemaining();
+        scratch.clear();
+        encoder.encode(cb, scratch, endOfInput);
+        sz += scratch.position();
+      }
+      scratch.clear();
+      encoder.flush(scratch);
+      sz += scratch.position();
+
+      // second pass: stream-encode into daos
+      writeTag(STR, sz);
+      cb.rewind();
+      encoder.reset();
+      endOfInput = false;
+      while (!endOfInput) {
+        endOfInput = !cb.hasRemaining();
+        scratch.clear();
+        encoder.encode(cb, scratch, endOfInput);
+        if (scratch.position() > 0) {
+          daos.write(bytes, 0, scratch.position());
+        }
+      }
+      scratch.clear();
+      encoder.flush(scratch);
+      if (scratch.position() > 0) {
+        daos.write(bytes, 0, scratch.position());
+      }
     }
   }
 
   byte[] bytes;
-  CharArr arr = new CharArr();
   private StringBytes bytesRef = new StringBytes(bytes, 0, 0);
 
   public CharSequence readStr(DataInputInputStream dis) throws IOException {
@@ -1112,9 +1144,7 @@ public class JavaBinCodec implements PushWriter {
     if (stringCache != null) {
       return stringCache.get(bytesRef.reset(bytes, 0, sz));
     } else {
-      arr.reset();
-      ByteUtils.UTF8toUTF16(bytes, 0, sz, arr);
-      return arr.toString();
+      return new String(bytes, 0, sz, StandardCharsets.UTF_8);
     }
   }
 
@@ -1142,7 +1172,6 @@ public class JavaBinCodec implements PushWriter {
 
   /////////// code to optimize reading UTF8
   static final int MAX_UTF8_SZ = 1024 * 64; // too big strings can cause too much memory allocation
-  private Function<ByteArrayUtf8CharSequence, String> stringProvider;
   private BytesBlock bytesBlock;
 
   protected CharSequence readUtf8(DataInputInputStream dis) throws IOException {
@@ -1153,7 +1182,6 @@ public class JavaBinCodec implements PushWriter {
   protected CharSequence readUtf8(DataInputInputStream dis, int sz) throws IOException {
     ByteArrayUtf8CharSequence result = new ByteArrayUtf8CharSequence(null, 0, 0);
     if (dis.readDirectUtf8(result, sz)) {
-      result.stringProvider = getStringProvider();
       return result;
     }
 
@@ -1163,27 +1191,7 @@ public class JavaBinCodec implements PushWriter {
     dis.readFully(block.getBuf(), block.getStartPos(), sz);
 
     result.reset(block.getBuf(), block.getStartPos(), sz, null);
-    result.stringProvider = getStringProvider();
     return result;
-  }
-
-  private Function<ByteArrayUtf8CharSequence, String> getStringProvider() {
-    if (stringProvider == null) {
-      stringProvider =
-          new Function<>() {
-            final CharArr charArr = new CharArr(8);
-
-            @Override
-            public String apply(ByteArrayUtf8CharSequence butf8cs) {
-              synchronized (charArr) {
-                charArr.reset();
-                ByteUtils.UTF8toUTF16(butf8cs.buf, butf8cs.offset(), butf8cs.size(), charArr);
-                return charArr.toString();
-              }
-            }
-          };
-    }
-    return this.stringProvider;
   }
 
   public void writeInt(int val) throws IOException {
@@ -1461,9 +1469,7 @@ public class JavaBinCodec implements PushWriter {
         StringBytes copy =
             new StringBytes(
                 Arrays.copyOfRange(b.bytes, b.offset, b.offset + b.length), 0, b.length);
-        CharArr arr = new CharArr();
-        ByteUtils.UTF8toUTF16(b.bytes, b.offset, b.length, arr);
-        result = arr.toString();
+        result = new String(b.bytes, b.offset, b.length, StandardCharsets.UTF_8);
         putIntoCache(copy, result);
       }
       return result;
