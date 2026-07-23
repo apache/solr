@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response.transform;
 
+import jakarta.inject.Named;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -28,6 +29,7 @@ import org.apache.solr.search.DocIterationInfo;
  *
  * @since solr 4.0
  */
+@Named("docid")
 public class DocIdAugmenterFactory extends TransformerFactory {
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
