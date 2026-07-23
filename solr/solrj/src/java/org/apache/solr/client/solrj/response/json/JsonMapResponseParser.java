@@ -63,4 +63,9 @@ public class JsonMapResponseParser extends ResponseParser {
   public Set<String> getContentTypes() {
     return CONTENT_TYPES;
   }
+
+  @Override
+  public boolean producesCanonicalForm() {
+    return false;
+  }
 }
