@@ -452,6 +452,61 @@ public class TestSQLHandler extends SolrCloudTestCase {
     tuples = getTuples(sParams, baseUrl);
 
     assertEquals(0, tuples.size());
+
+    // Verify that unrelated request parameters are ignored
+    sParams =
+        params(
+            CommonParams.QT,
+            "/sql",
+            "someOtherParam",
+            "someValue",
+            "stmt",
+            "select id, field_i, str_s from collection1 where text_t='XXXX' order by field_i desc limit 1");
+
+    tuples = getTuples(sParams, baseUrl);
+
+    assertEquals(1, tuples.size());
+    tuple = tuples.get(0);
+    assertEquals(8, tuple.getLong("id").longValue());
+    assertEquals(60, tuple.getLong("field_i").longValue());
+    assertEquals("c", tuple.get("str_s"));
+  }
+
+  @Test
+  public void testConnectionParamsAllowlistOverride() throws Exception {
+
+    new UpdateRequest()
+        .add("id", "1", "text_t", "XXXX XXXX", "str_s", "a", "field_i", "7")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String baseUrl =
+        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+
+    SolrParams sParams =
+        params(
+            CommonParams.QT,
+            "/sql",
+            "caseSensitive",
+            "true",
+            "stmt",
+            "select id, FIELD_I from collection1 limit 1");
+
+    // caseSensitive is forwarded to Calcite by default, making column names case-sensitive,
+    // unlike the default MySQL dialect behavior
+    SolrStream solrStream = new SolrStream(baseUrl, sParams);
+    Tuple tuple = getTuple(new ExceptionStream(solrStream));
+    assertTrue(tuple.EOF);
+    assertTrue(tuple.EXCEPTION);
+    assertTrue(tuple.getException().contains("Column 'FIELD_I' not found"));
+
+    // Restrict the allowlist so that caseSensitive is no longer forwarded and the same query
+    // succeeds with case-insensitive column resolution
+    System.setProperty(SQLHandler.ALLOWED_CONNECTION_PARAMS_PROP, "");
+    try {
+      assertEquals(1, getTuples(sParams, baseUrl).size());
+    } finally {
+      System.clearProperty(SQLHandler.ALLOWED_CONNECTION_PARAMS_PROP);
+    }
   }
 
   @Test

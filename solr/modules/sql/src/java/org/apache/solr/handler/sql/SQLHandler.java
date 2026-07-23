@@ -22,10 +22,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import org.apache.calcite.config.Lex;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -52,9 +53,26 @@ public class SQLHandler extends RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static String defaultZkhost = null;
-  private static String defaultWorkerCollection = null;
 
   static final String sqlNonCloudErrorMsg = "/sql handler only works in Solr Cloud mode";
+
+  /** System property to override the set of request parameters forwarded to Calcite. */
+  static final String ALLOWED_CONNECTION_PARAMS_PROP = "solr.sql.connection.params.allowed";
+
+  /** Calcite configuration parameters forwarded as connection properties. */
+  static final Set<String> DEFAULT_CONNECTION_PARAMS =
+      Set.of(
+          "caseSensitive",
+          "quoting",
+          "quotedCasing",
+          "unquotedCasing",
+          "conformance",
+          "fun",
+          "typeCoercion",
+          "lenientOperatorLookup",
+          "defaultNullCollation",
+          "timeZone",
+          "locale");
 
   private boolean isCloud = false;
 
@@ -64,7 +82,6 @@ public class SQLHandler extends RequestHandlerBase
 
     if (coreContainer.isZooKeeperAware()) {
       defaultZkhost = coreContainer.getZkController().getZkServerAddress();
-      defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
       isCloud = true;
     }
 
@@ -85,8 +102,6 @@ public class SQLHandler extends RequestHandlerBase
     String sql = params.get("stmt");
     // Set defaults for parameters
     params.set("numWorkers", params.getInt("numWorkers", 1));
-    params.set("workerCollection", params.get("workerCollection", defaultWorkerCollection));
-    params.set("workerZkhost", params.get("workerZkhost", defaultZkhost));
     params.set("aggregationMode", params.get("aggregationMode", "facet"));
 
     TupleStream tupleStream = null;
@@ -103,12 +118,17 @@ public class SQLHandler extends RequestHandlerBase
       String url = CalciteSolrDriver.CONNECT_STRING_PREFIX;
 
       Properties properties = new Properties();
-      // Add all query parameters
-      Iterator<String> parameterNamesIterator = params.getParameterNamesIterator();
-      while (parameterNamesIterator.hasNext()) {
-        String param = parameterNamesIterator.next();
-        properties.setProperty(param, params.get(param));
+      // Forward only the configured Calcite configuration parameters
+      for (String param : allowedConnectionParams()) {
+        String value = params.get(param);
+        if (value != null) {
+          properties.setProperty(param, value);
+        }
       }
+
+      // Solr-specific parameters
+      properties.setProperty("aggregationMode", params.get("aggregationMode"));
+      properties.setProperty("numWorkers", params.get("numWorkers"));
 
       // Set these last to ensure that they are set properly
       properties.setProperty("lex", Lex.MYSQL.toString());
@@ -201,6 +221,11 @@ public class SQLHandler extends RequestHandlerBase
       }
       return tuple;
     }
+  }
+
+  static Set<String> allowedConnectionParams() {
+    List<String> override = EnvUtils.getPropertyAsList(ALLOWED_CONNECTION_PARAMS_PROP);
+    return override != null ? Set.copyOf(override) : DEFAULT_CONNECTION_PARAMS;
   }
 
   private ModifiableSolrParams adjustParams(SolrParams params) {
