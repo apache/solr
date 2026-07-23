@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -208,7 +209,9 @@ public abstract class CloudSolrClient extends SolrClient {
 
   /** Is this a communication error? We will retry if so. */
   protected boolean wasCommError(Throwable t) {
-    return t instanceof SocketException || t instanceof UnknownHostException;
+    return t instanceof SocketException
+        || t instanceof UnknownHostException
+        || t instanceof ClosedChannelException;
   }
 
   @Override
