@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -119,6 +117,10 @@ public class TrieField extends NumericFieldType {
             e);
       }
     }
+  }
+
+  @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
   }
 
   @Override
@@ -673,7 +675,8 @@ public class TrieField extends NumericFieldType {
       if (sf.multiValued()) {
         BytesRefBuilder bytes = new BytesRefBuilder();
         storedToIndexed(field, bytes);
-        fields.add(new SortedSetDocValuesField(sf.getName(), bytes.get()));
+        fields.add(
+            createSortedSetDocValuesField(sf.getName(), bytes.get(), sf.hasDocValuesSkipList()));
       } else {
         final long bits;
         if (field.numericValue() instanceof Integer || field.numericValue() instanceof Long) {
@@ -684,7 +687,7 @@ public class TrieField extends NumericFieldType {
           assert field.numericValue() instanceof Double;
           bits = Double.doubleToLongBits(field.numericValue().doubleValue());
         }
-        fields.add(new NumericDocValuesField(sf.getName(), bits));
+        fields.add(createNumericDocValuesField(sf.getName(), bits, sf.hasDocValuesSkipList()));
       }
 
       return fields;

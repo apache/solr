@@ -41,6 +41,9 @@ import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
@@ -327,6 +330,66 @@ public abstract class FieldType extends FieldProperties {
    */
   protected IndexableField createField(String name, String val, IndexableFieldType type) {
     return new Field(name, val, type);
+  }
+
+  /**
+   * Creates a sorted DocValues field for a single-value (non-multi-valued) string/bytes field.
+   *
+   * @param fieldName the field name
+   * @param value the bytes value
+   * @param hasDocValuesSkipList whether to include a range skip index
+   * @return the created IndexableField
+   */
+  protected IndexableField createSortedDocValuesField(
+      String fieldName, BytesRef value, boolean hasDocValuesSkipList) {
+    return hasDocValuesSkipList
+        ? SortedDocValuesField.indexedField(fieldName, value)
+        : new SortedDocValuesField(fieldName, value);
+  }
+
+  /**
+   * Creates a sorted set DocValues field for a multi-valued string/bytes field.
+   *
+   * @param fieldName the field name
+   * @param value the bytes value
+   * @param hasDocValuesSkipList whether to include a range skip index
+   * @return the created IndexableField
+   */
+  protected IndexableField createSortedSetDocValuesField(
+      String fieldName, BytesRef value, boolean hasDocValuesSkipList) {
+    return hasDocValuesSkipList
+        ? SortedSetDocValuesField.indexedField(fieldName, value)
+        : new SortedSetDocValuesField(fieldName, value);
+  }
+
+  /**
+   * Creates a numeric DocValues field for a single-value numeric field.
+   *
+   * @param fieldName the field name
+   * @param value the long value
+   * @param hasDocValuesSkipList whether to include a range skip index
+   * @return the created IndexableField
+   */
+  protected IndexableField createNumericDocValuesField(
+      String fieldName, long value, boolean hasDocValuesSkipList) {
+    return hasDocValuesSkipList
+        ? NumericDocValuesField.indexedField(fieldName, value)
+        : new NumericDocValuesField(fieldName, value);
+  }
+
+  /**
+   * Creates a sorted numeric DocValues field for a multi-valued numeric field.
+   *
+   * @param fieldName the field name
+   * @param value the long value
+   * @param hasDocValuesSkipList whether to include a range skip index
+   * @return the created IndexableField
+   */
+  protected IndexableField createSortedNumericDocValuesField(
+      String fieldName, long value, boolean hasDocValuesSkipList) {
+    return hasDocValuesSkipList
+        ? SortedNumericDocValuesField.indexedField(fieldName, value)
+        : new SortedNumericDocValuesField(fieldName, value);
   }
 
   /**
@@ -1148,6 +1211,14 @@ public abstract class FieldType extends FieldProperties {
     if (field.hasDocValues()) {
       checkSupportsDocValues();
     }
+    if (field.hasDocValuesSkipList()) {
+      if (!field.hasDocValues()) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Field type " + this + " can't use doc values skip list without doc values");
+      }
+      checkSupportsDocValuesSkipList();
+    }
     if (field.isLarge() && field.multiValued()) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Field type " + this + " is 'large'; can't support multiValued");
@@ -1165,6 +1236,16 @@ public abstract class FieldType extends FieldProperties {
   protected void checkSupportsDocValues() {
     throw new SolrException(
         ErrorCode.SERVER_ERROR, "Field type " + this + " does not support doc values");
+  }
+
+  /**
+   * Called by {@link #checkSchemaField(SchemaField)} if the field has docValues skip lists. By
+   * default no field types support skip lists. Subclasses that support skip lists should override
+   * this method as a no-op.
+   */
+  protected void checkSupportsDocValuesSkipList() {
+    throw new SolrException(
+        ErrorCode.SERVER_ERROR, "Field type " + this + " does not support doc values skip lists");
   }
 
   /**
