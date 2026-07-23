@@ -96,7 +96,7 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
           log.debug("--- started delegate {}", delegate);
         }
       } catch (Exception e) {
-        log.warn("Unable to start the new delegate {}: {}", delegate.getClass().getName(), e);
+        log.warn("Unable to start the new delegate {}", delegate.getClass().getName(), e);
       }
     } else {
       if (log.isDebugEnabled()) {

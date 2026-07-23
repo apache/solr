@@ -9,7 +9,7 @@ independently and in combination.
 
 In the local environment, you can use the
 https://plugins.jetbrains.com/plugin/16541-compose-multiplatform-ide-support[Compose Multiplatform plugin]
-for IntelliJ to render previews in the IDE. These previews are stored in `desktopMain` and
+for IntelliJ to render previews in the IDE. These previews are stored in `jvmMain` and
 are simple composables marked with `@Preview`.
 
 Note that UI component previews come with many limitations. They work only with static data,
