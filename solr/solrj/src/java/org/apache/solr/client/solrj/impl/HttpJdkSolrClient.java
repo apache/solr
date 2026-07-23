@@ -42,6 +42,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -78,7 +79,14 @@ public class HttpJdkSolrClient extends HttpSolrClient {
 
   protected HttpClient httpClient;
 
+  /**
+   * Executor used to stream (produce) request bodies into the pipe consumed by the JDK HttpClient.
+   * This is the "producer" side and may be supplied by the caller.
+   */
   protected ExecutorService executor;
+
+  /** Dedicated executor handed to the JDK HttpClient */
+  protected ExecutorService httpClientExecutor;
 
   private boolean forceHttp11;
 
@@ -86,20 +94,21 @@ public class HttpJdkSolrClient extends HttpSolrClient {
 
   protected HttpJdkSolrClient(String serverBaseUrl, HttpJdkSolrClient.Builder builder) {
     super(serverBaseUrl, builder);
-    HttpClient.Builder b = HttpClient.newBuilder();
+    HttpClient.Builder httpClientBuilder = HttpClient.newBuilder();
 
     HttpClient.Redirect followRedirects =
         Boolean.TRUE.equals(builder.getFollowRedirects())
             ? HttpClient.Redirect.NORMAL
             : HttpClient.Redirect.NEVER;
-    b.followRedirects(followRedirects);
+    httpClientBuilder.followRedirects(followRedirects);
 
-    b.connectTimeout(Duration.of(builder.getConnectionTimeoutMillis(), ChronoUnit.MILLIS));
+    httpClientBuilder.connectTimeout(
+        Duration.of(builder.getConnectionTimeoutMillis(), ChronoUnit.MILLIS));
     // note: idle timeout isn't used for the JDK client
     // note: request timeout is set per request
 
     if (builder.sslContext != null) {
-      b.sslContext(builder.sslContext);
+      httpClientBuilder.sslContext(builder.sslContext);
     }
 
     if (builder.getExecutor() != null) {
@@ -117,15 +126,23 @@ public class HttpJdkSolrClient extends HttpSolrClient {
               new SolrNamedThreadFactory(this.getClass().getSimpleName()));
       this.shutdownExecutor = true;
     }
-    b.executor(this.executor);
+    this.httpClientExecutor =
+        new ExecutorUtil.MDCAwareThreadPoolExecutor(
+            0,
+            Integer.MAX_VALUE,
+            60,
+            TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            new SolrNamedThreadFactory(this.getClass().getSimpleName() + "-http"));
+    httpClientBuilder.executor(this.httpClientExecutor);
 
     if (builder.shouldUseHttp1_1()) {
       this.forceHttp11 = true;
-      b.version(HttpClient.Version.HTTP_1_1);
+      httpClientBuilder.version(HttpClient.Version.HTTP_1_1);
     }
 
     if (builder.cookieHandler != null) {
-      b.cookieHandler(builder.cookieHandler);
+      httpClientBuilder.cookieHandler(builder.cookieHandler);
     }
 
     if (builder.getProxyHost() != null) {
@@ -133,10 +150,10 @@ public class HttpJdkSolrClient extends HttpSolrClient {
         log.warn(
             "Socks4 is likely not supported by this client.  See https://bugs.openjdk.org/browse/JDK-8214516");
       }
-      b.proxy(
+      httpClientBuilder.proxy(
           ProxySelector.of(new InetSocketAddress(builder.getProxyHost(), builder.getProxyPort())));
     }
-    this.httpClient = b.build();
+    this.httpClient = httpClientBuilder.build();
 
     assert ObjectReleaseTracker.track(this);
   }
@@ -544,6 +561,12 @@ public class HttpJdkSolrClient extends HttpSolrClient {
       ExecutorUtil.shutdownAndAwaitTermination(executor);
     }
     executor = null;
+
+    // The http client executor is always created and owned by this instance.
+    if (httpClientExecutor != null) {
+      ExecutorUtil.shutdownAndAwaitTermination(httpClientExecutor);
+      httpClientExecutor = null;
+    }
 
     assert ObjectReleaseTracker.release(this);
   }
