@@ -175,6 +175,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryIntervals() throws Exception {
+    try (SolrQueryRequest req = req("myField", "foo_s")) {
+      assertQueryEquals(
+          IntervalsQParserPlugin.NAME,
+          req,
+          "{!intervals df=$myField}{'term':{'value':'asdf'}}",
+          "{!intervals df=foo_s}{'term':{'value':'asdf'}}");
+    }
+  }
+
   public void testQueryBoost() throws Exception {
     SolrQueryRequest req = req("df", "foo_s", "myBoost", "sum(3,foo_i)");
     try {
