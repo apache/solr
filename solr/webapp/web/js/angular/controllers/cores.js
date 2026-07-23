@@ -16,35 +16,38 @@
 */
 
 solrAdminApp.controller('CoreAdminController',
-    function($scope, $routeParams, $location, $timeout, $route, Cores, Update, Constants){
+    function($scope, $routeParams, $location, $timeout, $route, CoresV2, Update, Constants){
       $scope.resetMenu("cores", Constants.IS_ROOT_PAGE);
       $scope.selectedCore = $routeParams.corename; // use 'corename' not 'core' to distinguish from /solr/:core/
       $scope.refresh = function() {
-        Cores.get(function(data) {
-          var coreCount = 0;
-          var cores = data.status;
-          for (_obj in cores) coreCount++;
-          $scope.hasCores = coreCount >0;
-          if (!$scope.selectedCore && coreCount==0) {
-            $scope.showAddCore();
-            return;
-          } else if (!$scope.selectedCore) {
-            for (firstCore in cores) break;
-            $scope.selectedCore = firstCore;
-            $location.path("/~cores/" + $scope.selectedCore).replace();
-          }
-          $scope.core = cores[$scope.selectedCore];
-          $scope.corelist = [];
-          $scope.swapCorelist = [];
-          for (var core in cores) {
-             $scope.corelist.push(cores[core]);
-            if (cores[core] != $scope.core) {
-              $scope.swapCorelist.push(cores[core]);
+        CoresV2.getAllCoreStatus({}, function(error, data, response) {
+          $timeout(function() {
+            if (error) return;
+            var coreCount = 0;
+            var cores = data.status;
+            for (_obj in cores) coreCount++;
+            $scope.hasCores = coreCount >0;
+            if (!$scope.selectedCore && coreCount==0) {
+              $scope.showAddCore();
+              return;
+            } else if (!$scope.selectedCore) {
+              for (firstCore in cores) break;
+              $scope.selectedCore = firstCore;
+              $location.path("/~cores/" + $scope.selectedCore).replace();
             }
-          }
-          if ($scope.swapCorelist.length>0) {
-            $scope.swapOther = $scope.swapCorelist[0].name;
-          }
+            $scope.core = cores[$scope.selectedCore];
+            $scope.corelist = [];
+            $scope.swapCorelist = [];
+            for (var core in cores) {
+               $scope.corelist.push(cores[core]);
+              if (cores[core] != $scope.core) {
+                $scope.swapCorelist.push(cores[core]);
+              }
+            }
+            if ($scope.swapCorelist.length>0) {
+              $scope.swapOther = $scope.swapCorelist[0].name;
+            }
+          });
         });
       };
       $scope.showAddCore = function() {
@@ -67,7 +70,7 @@ solrAdminApp.controller('CoreAdminController',
         } else if (false) { //@todo detect whether core exists
           $scope.AddMessage = "A core with that name already exists";
         } else {
-          var params = {
+          var createCoreParams = {
             name: $scope.newCore.name,
             instanceDir: $scope.newCore.instanceDir,
             config: $scope.newCore.config,
@@ -75,12 +78,18 @@ solrAdminApp.controller('CoreAdminController',
             dataDir: $scope.newCore.dataDir
           };
           if ($scope.isCloud) {
-            params.collection = $scope.newCore.collection;
-            params.shard = $scope.newCore.shard;
+            createCoreParams.collection = $scope.newCore.collection;
+            createCoreParams.shard = $scope.newCore.shard;
           }
-          Cores.add(params, function(data) {
-            $location.path("/~cores/" + $scope.newCore.name);
-            $scope.cancelAddCore();
+          CoresV2.createCore({createCoreParams: createCoreParams}, function(error, data, response) {
+            $timeout(function() {
+              if (error) {
+                $scope.addMessage = "Error creating core: " + error;
+                return;
+              }
+              $location.path("/~cores/" + $scope.newCore.name);
+              $scope.cancelAddCore();
+            });
           });
         }
       };
@@ -93,8 +102,11 @@ solrAdminApp.controller('CoreAdminController',
       $scope.unloadCore = function() {
         var answer = confirm( 'Do you really want to unload Core "' + $scope.selectedCore + '"?' );
         if( !answer ) return;
-        Cores.unload({core: $scope.selectedCore}, function(data) {
-          $location.path("/~cores");
+        CoresV2.unloadCore($scope.selectedCore, {}, function(error, data, response) {
+          $timeout(function() {
+            if (error) return;
+            $location.path("/~cores");
+          });
         });
       };
 
@@ -109,9 +121,15 @@ solrAdminApp.controller('CoreAdminController',
         } else if ($scope.other == $scope.selectedCore) {
           $scope.renameMessage = "New name must be different from the current one";
         } else {
-          Cores.rename({core:$scope.selectedCore, other: $scope.other}, function(data) {
-            $location.path("/~cores/" + $scope.other);
-            $scope.cancelRename();
+          CoresV2.renameCore($scope.selectedCore, {renameCoreRequestBody: {to: $scope.other}}, function(error, data, response) {
+            $timeout(function() {
+              if (error) {
+                $scope.renameMessage = "Error renaming core: " + error;
+                return;
+              }
+              $location.path("/~cores/" + $scope.other);
+              $scope.cancelRenameCore();
+            });
           });
         }
       };
@@ -133,10 +151,16 @@ solrAdminApp.controller('CoreAdminController',
         } else if ($scope.swapOther == $scope.selectedCore) {
           $scope.swapMessage = "Cannot swap with the same core";
         } else {
-          Cores.swap({core: $scope.selectedCore, other: $scope.swapOther}, function(data) {
-            $location.path("/~cores/" + $scope.swapOther);
-            delete $scope.swapOther;
-            $scope.cancelSwapCores();
+          CoresV2.swapCores($scope.selectedCore, {swapCoresRequestBody: {with: $scope.swapOther}}, function(error, data, response) {
+            $timeout(function() {
+              if (error) {
+                $scope.swapMessage = "Error swapping cores: " + error;
+                return;
+              }
+              $location.path("/~cores/" + $scope.swapOther);
+              delete $scope.swapOther;
+              $scope.cancelSwapCores();
+            });
           });
         }
       };
@@ -151,9 +175,9 @@ solrAdminApp.controller('CoreAdminController',
           delete $scope.initFailures[$scope.selectedCore];
           $scope.showInitFailures = Object.keys(data.initFailures).length>0;
         }
-        Cores.reload({core: $scope.selectedCore},
-          function(data) {
-            if (data.error) {
+        CoresV2.reloadCore($scope.selectedCore,
+          function(error, data, response) {
+            if (error) {
               $scope.reloadFailure = true;
               $timeout(function() {
                 $scope.reloadFailure = false;

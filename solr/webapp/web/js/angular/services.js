@@ -50,6 +50,12 @@ solrAdminServices.factory('System',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.CollectionsApi();
     })
+.factory('CoresV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.CoresApi();
+    })
 .factory('Collections',
   ['$resource', function($resource) {
     return $resource('admin/collections',
@@ -251,7 +257,7 @@ solrAdminServices.factory('System',
 }])
 .factory('Segments',
    ['$resource', function($resource) {
-       return $resource(':core/admin/segments', {'wt':'json', core: '@core', _:Date.now()}, {
+       return $resource('/api/cores/:core/segments', {'wt':'json', core: '@core', _:Date.now()}, {
            get: {}
        });
 }])
