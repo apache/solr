@@ -20,17 +20,22 @@ package org.apache.solr.handler.export;
 import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.search.DocValuesIteratorCache;
 
 class FloatFieldWriter extends FieldWriter {
   private final String field;
   private final DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache;
+  private final boolean sortableInt;
 
   public FloatFieldWriter(
-      String field, DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache) {
+      String field,
+      DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache,
+      boolean sortableInt) {
     this.field = field;
     this.docValuesCache = docValuesCache;
+    this.sortableInt = sortableInt;
   }
 
   @Override
@@ -50,7 +55,11 @@ class FloatFieldWriter extends FieldWriter {
           docValuesCache.getNumericDocValues(
               sortDoc.docId, readerContext.reader(), readerContext.ord);
       if (vals != null) {
-        val = Float.intBitsToFloat((int) vals.longValue());
+        if (sortableInt) {
+          val = NumericUtils.sortableIntToFloat((int) vals.longValue());
+        } else {
+          val = Float.intBitsToFloat((int) vals.longValue());
+        }
       } else {
         return;
       }

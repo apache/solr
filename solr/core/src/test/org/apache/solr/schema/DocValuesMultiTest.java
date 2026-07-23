@@ -57,7 +57,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
   public void testDocValues() throws IOException {
 
     final DocValuesType expectedNumericDvType =
-        Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
+        Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) || Boolean.getBoolean(NUMERIC_FULL_SYSPROP)
             ? DocValuesType.SORTED_NUMERIC
             : DocValuesType.SORTED_SET;
 

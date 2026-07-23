@@ -81,6 +81,7 @@ import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.uninverting.UninvertingReader;
+import org.apache.solr.util.DocValuesUtil;
 import org.apache.solr.util.IntFloatDynamicMap;
 import org.apache.solr.util.IntIntDynamicMap;
 import org.apache.solr.util.IntLongDynamicMap;
@@ -863,7 +864,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       this.contexts[context.ord] = context;
       this.docBase = context.docBase;
-      this.collapseValues = DocValues.getNumeric(context.reader(), this.field);
+      this.collapseValues = DocValuesUtil.getNumeric(context.reader(), this.field);
     }
 
     @Override
@@ -945,7 +946,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int currentContext = 0;
       int currentDocBase = 0;
 
-      collapseValues = DocValues.getNumeric(contexts[currentContext].reader(), this.field);
+      collapseValues = DocValuesUtil.getNumeric(contexts[currentContext].reader(), this.field);
       int nextDocBase =
           currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
@@ -964,7 +965,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
           leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
           leafDelegate.setScorer(dummy);
-          collapseValues = DocValues.getNumeric(contexts[currentContext].reader(), this.field);
+          collapseValues = DocValuesUtil.getNumeric(contexts[currentContext].reader(), this.field);
         }
 
         final int contextDoc = globalDoc - currentDocBase;
@@ -1413,7 +1414,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.contexts[context.ord] = context;
       this.docBase = context.docBase;
       this.collapseStrategy.setNextReader(context);
-      this.collapseValues = DocValues.getNumeric(context.reader(), this.collapseField);
+      this.collapseValues = DocValuesUtil.getNumeric(context.reader(), this.collapseField);
     }
 
     @Override
@@ -1448,7 +1449,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int currentContext = 0;
       int currentDocBase = 0;
       this.collapseValues =
-          DocValues.getNumeric(contexts[currentContext].reader(), this.collapseField);
+          DocValuesUtil.getNumeric(contexts[currentContext].reader(), this.collapseField);
       int nextDocBase =
           currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
@@ -1474,7 +1475,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
           leafDelegate.setScorer(dummy);
           this.collapseValues =
-              DocValues.getNumeric(contexts[currentContext].reader(), this.collapseField);
+              DocValuesUtil.getNumeric(contexts[currentContext].reader(), this.collapseField);
         }
 
         final int contextDoc = globalDoc - currentDocBase;
@@ -1790,7 +1791,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
-      this.segmentValues = DocValues.getNumeric(context.reader(), collapseField);
+      this.segmentValues = DocValuesUtil.getNumeric(context.reader(), collapseField);
     }
 
     @Override
@@ -2024,7 +2025,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
-      this.segmentValues = DocValues.getNumeric(context.reader(), collapseField);
+      this.segmentValues = DocValuesUtil.getNumeric(context.reader(), collapseField);
     }
 
     @Override
@@ -2400,7 +2401,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
+      this.minMaxValues = DocValuesUtil.getNumeric(context.reader(), this.field);
     }
 
     @Override
@@ -2477,7 +2478,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
+      this.minMaxValues =
+          DocValuesUtil.getNumeric(context.reader(), this.field, SortField.Type.FLOAT);
     }
 
     @Override
@@ -2556,7 +2558,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
+      this.minMaxVals = DocValuesUtil.getNumeric(context.reader(), this.field);
     }
 
     @Override
@@ -2945,7 +2947,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
+      this.minMaxVals = DocValuesUtil.getNumeric(context.reader(), this.field);
     }
 
     private int advanceAndGetCurrentVal(int contextDoc) throws IOException {
@@ -3039,7 +3041,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
+      this.minMaxVals =
+          DocValuesUtil.getNumeric(context.reader(), this.field, SortField.Type.FLOAT);
     }
 
     private float advanceAndGetCurrentVal(int contextDoc) throws IOException {

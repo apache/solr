@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Locale;
-import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -79,8 +79,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     long prevVersion = (Long) ((List) partialUpdate).get(3);
     long prevPointer = (Long) ((List) partialUpdate).get(2);
 
-    assertEquals(
-        3L, ((NumericDocValuesField) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
+    assertEquals(3L, ((Field) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
     assertFalse(partialDoc.containsKey("title_s"));
 
     long returnVal =
@@ -88,8 +87,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
 
     assertEquals(0, returnVal);
     assertEquals(1000, Integer.parseInt(partialDoc.getFieldValue("price").toString()));
-    assertEquals(
-        3L, ((NumericDocValuesField) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
+    assertEquals(3L, ((Field) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
     assertEquals("title1", partialDoc.getFieldValue("title_s"));
 
     // Add a full update, commit, then two in-place updates, and verify that applying partial
@@ -108,8 +106,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     prevVersion = (Long) ((List) partialUpdate).get(3);
     prevPointer = (Long) ((List) partialUpdate).get(2);
 
-    assertEquals(
-        5L, ((NumericDocValuesField) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
+    assertEquals(5L, ((Field) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
     assertFalse(partialDoc.containsKey("title_s"));
 
     returnVal =
@@ -117,8 +114,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
 
     assertEquals(0, returnVal);
     assertEquals(2000, Integer.parseInt(partialDoc.getFieldValue("price").toString()));
-    assertEquals(
-        5L, ((NumericDocValuesField) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
+    assertEquals(5L, ((Field) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
     assertEquals("title1", partialDoc.getFieldValue("title_s"));
   }
 
@@ -141,8 +137,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     long prevVersion = (Long) ((List) partialUpdate).get(3);
     long prevPointer = (Long) ((List) partialUpdate).get(2);
 
-    assertEquals(
-        6L, ((NumericDocValuesField) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
+    assertEquals(6L, ((Field) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
     assertFalse(partialDoc.containsKey("title_s"));
 
     long returnVal =
@@ -166,10 +161,8 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     long prevVersion = (Long) ((List) partialUpdate).get(3);
     long prevPointer = (Long) ((List) partialUpdate).get(2);
 
-    assertEquals(
-        3L, ((NumericDocValuesField) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
-    assertEquals(
-        502L, ((NumericDocValuesField) partialDoc.getFieldValue("_version_")).numericValue());
+    assertEquals(3L, ((Field) partialDoc.getFieldValue("val1_i_dvo")).numericValue());
+    assertEquals(502L, ((Field) partialDoc.getFieldValue("_version_")).numericValue());
     assertFalse(partialDoc.containsKey("title_s"));
 
     // If an in-place update depends on a non-add (i.e. DBI), assert that an exception is thrown.

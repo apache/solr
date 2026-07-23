@@ -18,9 +18,9 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.solr.util.DocValuesUtil;
 
 public class IntValue implements SortValue {
 
@@ -56,7 +56,7 @@ public class IntValue implements SortValue {
 
   @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
-    this.vals = DocValues.getNumeric(context.reader(), field);
+    this.vals = DocValuesUtil.getNumeric(context.reader(), field);
     lastDocID = 0;
   }
 

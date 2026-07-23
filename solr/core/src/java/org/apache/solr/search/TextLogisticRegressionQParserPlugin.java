@@ -39,6 +39,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.DocValuesUtil;
 
 /**
  * Returns an AnalyticsQuery implementation that performs one Gradient Descent iteration of a result
@@ -147,7 +148,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     public void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       leafReader = context.reader();
-      leafOutcomeValue = leafReader.getNumericDocValues(trainingParams.outcome);
+      leafOutcomeValue = DocValuesUtil.getNumeric(leafReader, trainingParams.outcome);
     }
 
     @Override
