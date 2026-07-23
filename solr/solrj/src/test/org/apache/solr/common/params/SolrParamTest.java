@@ -376,6 +376,7 @@ public class SolrParamTest extends SolrTestCase {
     assertEquals(in, out);
   }
 
+@Test
   public void testToStringWithEmptySolrParams() {
 
     ModifiableSolrParams in = new ModifiableSolrParams();
