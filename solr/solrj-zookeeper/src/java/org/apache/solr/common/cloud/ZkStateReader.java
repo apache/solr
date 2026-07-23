@@ -428,7 +428,7 @@ public class ZkStateReader implements SolrCloseable {
         .getCuratorFramework()
         .getConnectionStateListenable()
         .addListener(
-            (OnReconnect)
+            SolrZookeeperEvent.EXPIRED_RECONNECTION.of(
                 () -> {
                   // on reconnect, reload cloud info
                   try {
@@ -440,7 +440,7 @@ public class ZkStateReader implements SolrCloseable {
                   } catch (Throwable e) {
                     log.error("An error has occurred while updating the cluster state", e);
                   }
-                });
+                }));
     this.closeClient = true;
     this.securityNodeWatcher = null;
     collectionPropertiesZkStateReader = new CollectionPropertiesZkStateReader(this);
