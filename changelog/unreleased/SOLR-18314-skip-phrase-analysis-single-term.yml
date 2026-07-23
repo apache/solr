@@ -1,0 +1,8 @@
+title: Skip phrase field (pf) boost analysis for single-term queries in DisMax and eDisMax parsers
+type: changed
+authors:
+  - name: Ian Springer
+    nick: ianspringer
+links:
+  - name: SOLR-18314
+    url: https://issues.apache.org/jira/browse/SOLR-18314
