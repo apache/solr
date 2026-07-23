@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.StringJoiner;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -459,19 +460,17 @@ public abstract class SolrParams
    */
   public String toQueryString() {
     final Charset charset = StandardCharsets.UTF_8;
-    final StringBuilder sb = new StringBuilder(128);
-    boolean first = true;
+
+    var output = new StringJoiner("&", "?", "");
+    output.setEmptyValue("");
     for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
-      final String name = it.next(), nameEnc = URLEncoder.encode(name, charset);
+      final String name = it.next();
+      final String nameEnc = URLEncoder.encode(name, charset);
       for (String val : getParams(name)) {
-        sb.append(first ? '?' : '&')
-            .append(nameEnc)
-            .append('=')
-            .append(URLEncoder.encode(val, charset));
-        first = false;
+        output.add(nameEnc + "=" + URLEncoder.encode(val, charset));
       }
     }
-    return sb.toString();
+    return output.toString();
   }
 
   /**
@@ -510,19 +509,14 @@ public abstract class SolrParams
    */
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder(128);
-    boolean first = true;
+    StringJoiner query = new StringJoiner("&");
     for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
       final String name = it.next();
       for (String val : getParams(name)) {
-        if (!first) sb.append('&');
-        first = false;
-        StrUtils.partialURLEncodeVal(sb, name);
-        sb.append('=');
-        StrUtils.partialURLEncodeVal(sb, val);
+        query.add(StrUtils.partialURLEncodeVal(name) + "=" + StrUtils.partialURLEncodeVal(val));
       }
     }
-    return sb.toString();
+    return query.toString();
   }
 
   /**
