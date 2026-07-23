@@ -465,8 +465,9 @@ public abstract class SolrParams
     output.setEmptyValue("");
     for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
       final String name = it.next();
+      final String nameEnc = URLEncoder.encode(name, charset);
       for (String val : getParams(name)) {
-        output.add(URLEncoder.encode(name, charset) + "=" + URLEncoder.encode(val, charset));
+        output.add(nameEnc + "=" + URLEncoder.encode(val, charset));
       }
     }
     return output.toString();
