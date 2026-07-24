@@ -170,8 +170,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
       throw new IllegalStateException("FieldType '" + fieldTypeName + "' not found in the schema!");
     }
 
-    Map<String, String> fieldProps =
-        guessFieldProps(fieldName, fieldType, sampleValues, isMV, schema);
+    Map<String, String> fieldProps = guessFieldProps(fieldName, fieldType, isMV, schema);
     SchemaField schemaField = schema.newField(fieldName, fieldTypeName, fieldProps);
     return Optional.of(schemaField);
   }
@@ -179,9 +178,9 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
   @Override
   public ManagedIndexSchema adaptExistingFieldToData(
       SchemaField schemaField, List<Object> sampleValues, ManagedIndexSchema schema) {
-    // Promote a single-valued to multi-valued if needed
+    // Promote a single-valued to multivalued if needed
     if (!schemaField.multiValued() && isMultiValued(sampleValues)) {
-      // this existing field needs to be promoted to multi-valued
+      // this existing field needs to be promoted to multivalued
       SimpleOrderedMap<Object> fieldProps = schemaField.getNamedPropertyValues(false);
       fieldProps.add("multiValued", true);
       fieldProps.remove("name");
@@ -210,7 +209,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
                         Collection<Object> fieldValues = doc.getFieldValues(f);
                         if (fieldValues != null && !fieldValues.isEmpty()) {
                           if (fieldValues.size() == 1) {
-                            // flatten so every field doesn't end up multi-valued
+                            // flatten so every field doesn't end up multivalued
                             values.add(fieldValues.iterator().next());
                           } else {
                             // truly multi-valued
@@ -395,11 +394,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
   }
 
   protected Map<String, String> guessFieldProps(
-      String fieldName,
-      FieldType fieldType,
-      List<Object> sampleValues,
-      boolean isMV,
-      IndexSchema schema) {
+      String fieldName, FieldType fieldType, boolean isMV, IndexSchema schema) {
     Map<String, String> props = new HashMap<>();
     props.put("indexed", "true");
 
