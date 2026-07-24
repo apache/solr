@@ -68,29 +68,50 @@ solrAdminServices.factory('System',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.SystemApi();
     })
+.factory('AliasesV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.AliasesApi();
+    })
+.factory('ShardsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ShardsApi();
+    })
+.factory('ReplicasV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ReplicasApi();
+    })
+.factory('ConfigSetsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ConfigsetsApi();
+    })
+.factory('ClusterV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ClusterApi();
+    })
 .factory('Collections',
   ['$resource', function($resource) {
+    // "add", "delete", "createAlias", "deleteAlias", "deleteReplica", "addReplica", "deleteShard"
+    // were migrated to CollectionsV2/AliasesV2/ShardsV2/ReplicasV2 (see collections.js). This v1
+    // factory is kept for "list"/"listaliases" (still used by app.js's nav-list population) and
+    // "status"/CLUSTERSTATUS (used by collections.js, cloud.js, collection-overview.js -- no
+    // single-request v2 equivalent exists yet; see the collections.js migration discussion).
     return $resource('admin/collections',
     {'wt':'json', '_':Date.now()}, {
     "list": {params:{action: "LIST"}},
     "listaliases": {params:{action: "LISTALIASES"}},
-    "status": {params:{action: "CLUSTERSTATUS"}},
-    "add": {params:{action: "CREATE"}},
-    "delete": {params:{action: "DELETE"}},
-    "rename": {params:{action: "RENAME"}},
-    "createAlias": {params:{action: "CREATEALIAS"}},
-    "deleteAlias": {params:{action: "DELETEALIAS"}},
-    "deleteReplica": {params:{action: "DELETEREPLICA"}},
-    "addReplica": {params:{action: "ADDREPLICA"}},
-    "deleteShard": {params:{action: "DELETESHARD"}},
-    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}}
+    "status": {params:{action: "CLUSTERSTATUS"}}
     });
   }])
-.factory('ConfigSets',
- ['$resource', function ($resource) {
-    return $resource('admin/configs', {'wt': 'json', '_': Date.now()}, {"configs": {params: {action: "LIST"}}
-    });
- }])
 .factory('Logging',
   ['$resource', function($resource) {
     // "events" and "levels" were migrated to LoggingV2 (see logging.js). This v1 factory is kept
