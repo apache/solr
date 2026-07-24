@@ -352,6 +352,12 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
     /*
      Fetch system info for all selected nodes
      Pick the data we want to display and add it to the node-centric data structure
+
+     Intentionally still v1 (System, not SystemV2): the v2 NodeSystemInfoApi's "nodes"
+     multi-node proxying (GetNodeSystemInfo.proxyToNodes, via V2SolrRequestBasedProxy) currently
+     throws a server-side NullPointerException (GetNodeSystemInfo.java, processTypedProxiedResponse)
+     instead of returning aggregated per-node data. Move this to SystemV2.getNodeSystemInfo once
+     that's fixed upstream.
       */
     System.get({"nodes": liveNodesToShow.join(',')}, function (systemResponse) {
       for (var node in systemResponse) {

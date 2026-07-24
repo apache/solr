@@ -15,111 +15,114 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-solrAdminApp.controller('IndexController', function($scope, System, Constants) {
+solrAdminApp.controller('IndexController', function($scope, $timeout, SystemV2, Constants) {
   $scope.resetMenu("index", Constants.IS_ROOT_PAGE);
   $scope.reload = function() {
-    System.get(function(data) {
-      $scope.system = data;
-      const releaseDate = parse_release_date($scope.system.lucene['solr-impl-version'])
-      $scope.releaseDaysOld = (new Date() - releaseDate)/1000/60/60/24;
+    SystemV2.getNodeSystemInfo({}, function(error, data, response) {
+      $timeout(function() {
+        if (error) return;
+        $scope.system = data;
+        const releaseDate = parse_release_date($scope.system.lucene['solr-impl-version'])
+        $scope.releaseDaysOld = (new Date() - releaseDate)/1000/60/60/24;
 
-      if (data.security.authenticationPlugin) {
-        $scope.isSecurityEnabled = true
-      }
+        if (data.security.authenticationPlugin) {
+          $scope.isSecurityEnabled = true
+        }
 
-      // load average, unless its negative (means n/a on windows, etc)
-      if (data.system.systemLoadAverage >= 0) {
-        $scope.load_average = data.system.systemLoadAverage.toFixed(2);
-      }
+        // load average, unless its negative (means n/a on windows, etc)
+        if (data.system.systemLoadAverage >= 0) {
+          $scope.load_average = data.system.systemLoadAverage.toFixed(2);
+        }
 
-      // physical memory
-      var memoryMax = parse_memory_value(data.system.totalPhysicalMemorySize);
-      $scope.memoryTotal = parse_memory_value(data.system.totalPhysicalMemorySize - data.system.freePhysicalMemorySize);
-      $scope.memoryPercentage = ($scope.memoryTotal / memoryMax * 100).toFixed(1)+ "%";
-      $scope.memoryMax = pretty_print_bytes(memoryMax);
-      $scope.memoryTotalDisplay = pretty_print_bytes($scope.memoryTotal);
+        // physical memory
+        var memoryMax = parse_memory_value(data.system.totalPhysicalMemorySize);
+        $scope.memoryTotal = parse_memory_value(data.system.totalPhysicalMemorySize - data.system.freePhysicalMemorySize);
+        $scope.memoryPercentage = ($scope.memoryTotal / memoryMax * 100).toFixed(1)+ "%";
+        $scope.memoryMax = pretty_print_bytes(memoryMax);
+        $scope.memoryTotalDisplay = pretty_print_bytes($scope.memoryTotal);
 
-      // swap space
-      var swapMax = parse_memory_value(data.system.totalSwapSpaceSize);
-      $scope.swapTotal = parse_memory_value(data.system.totalSwapSpaceSize - data.system.freeSwapSpaceSize);
-      $scope.swapPercentage = ($scope.swapTotal / swapMax * 100).toFixed(1)+ "%";
-      $scope.swapMax = pretty_print_bytes(swapMax);
-      $scope.swapTotalDisplay = pretty_print_bytes($scope.swapTotal);
+        // swap space
+        var swapMax = parse_memory_value(data.system.totalSwapSpaceSize);
+        $scope.swapTotal = parse_memory_value(data.system.totalSwapSpaceSize - data.system.freeSwapSpaceSize);
+        $scope.swapPercentage = ($scope.swapTotal / swapMax * 100).toFixed(1)+ "%";
+        $scope.swapMax = pretty_print_bytes(swapMax);
+        $scope.swapTotalDisplay = pretty_print_bytes($scope.swapTotal);
 
-      // file handles
-      $scope.fileDescriptorPercentage = (data.system.openFileDescriptorCount / data.system.maxFileDescriptorCount *100).toFixed(1) + "%";
+        // file handles
+        $scope.fileDescriptorPercentage = (data.system.openFileDescriptorCount / data.system.maxFileDescriptorCount *100).toFixed(1) + "%";
 
-      // java memory
-      var javaMemoryMax = parse_memory_value(data.jvm.memory.raw.max || data.jvm.memory.max);
-      $scope.javaMemoryTotal = parse_memory_value(data.jvm.memory.raw.total || data.jvm.memory.total);
-      $scope.javaMemoryUsed = parse_memory_value(data.jvm.memory.raw.used || data.jvm.memory.used);
-      $scope.javaMemoryTotalPercentage = ($scope.javaMemoryTotal / javaMemoryMax *100).toFixed(1) + "%";
-      $scope.javaMemoryUsedPercentage = ($scope.javaMemoryUsed / $scope.javaMemoryTotal *100).toFixed(1) + "%";
-      $scope.javaMemoryPercentage = ($scope.javaMemoryUsed / javaMemoryMax * 100).toFixed(1) + "%";
-      $scope.javaMemoryTotalDisplay = pretty_print_bytes($scope.javaMemoryTotal);
-      $scope.javaMemoryUsedDisplay = pretty_print_bytes($scope.javaMemoryUsed);  // @todo These should really be an AngularJS Filter: {{ javaMemoryUsed | bytes }}
-      $scope.javaMemoryMax = pretty_print_bytes(javaMemoryMax);
+        // java memory
+        var javaMemoryMax = parse_memory_value(data.jvm.memory.raw.max || data.jvm.memory.max);
+        $scope.javaMemoryTotal = parse_memory_value(data.jvm.memory.raw.total || data.jvm.memory.total);
+        $scope.javaMemoryUsed = parse_memory_value(data.jvm.memory.raw.used || data.jvm.memory.used);
+        $scope.javaMemoryTotalPercentage = ($scope.javaMemoryTotal / javaMemoryMax *100).toFixed(1) + "%";
+        $scope.javaMemoryUsedPercentage = ($scope.javaMemoryUsed / $scope.javaMemoryTotal *100).toFixed(1) + "%";
+        $scope.javaMemoryPercentage = ($scope.javaMemoryUsed / javaMemoryMax * 100).toFixed(1) + "%";
+        $scope.javaMemoryTotalDisplay = pretty_print_bytes($scope.javaMemoryTotal);
+        $scope.javaMemoryUsedDisplay = pretty_print_bytes($scope.javaMemoryUsed);  // @todo These should really be an AngularJS Filter: {{ javaMemoryUsed | bytes }}
+        $scope.javaMemoryMax = pretty_print_bytes(javaMemoryMax);
 
-      // GPU
-      $scope.gpuAvailable = data.gpu && data.gpu.available;
-      if ($scope.gpuAvailable) {
-        $scope.gpuCount = data.gpu.count;
+        // GPU
+        $scope.gpuAvailable = data.gpu && data.gpu.available;
+        if ($scope.gpuAvailable) {
+          $scope.gpuCount = data.gpu.count;
 
-        var devices = data.gpu.devices;
-        $scope.gpuDevices = [];
-        if (devices && Object.keys(devices).length > 0) {
-          var deviceKeys = Object.keys(devices);
-          var firstDevice = devices[deviceKeys[0]];
-          $scope.gpuName = firstDevice.name;
-          $scope.gpuId = firstDevice.id;
-          $scope.gpuCompute = firstDevice.computeCapability;
+          var devices = data.gpu.devices;
+          $scope.gpuDevices = [];
+          if (devices && Object.keys(devices).length > 0) {
+            var deviceKeys = Object.keys(devices);
+            var firstDevice = devices[deviceKeys[0]];
+            $scope.gpuName = firstDevice.name;
+            $scope.gpuId = firstDevice.id;
+            $scope.gpuCompute = firstDevice.computeCapability;
 
-          if (deviceKeys.length > 1) {
-            $scope.gpuName += " (+" + (deviceKeys.length - 1) + " more)";
-          }
-
-          for (var i = 0; i < deviceKeys.length; i++) {
-            var device = devices[deviceKeys[i]];
-            var gpuData = {
-              id: device.id,
-              name: device.name,
-              computeCapability: device.computeCapability,
-              totalMemory: device.totalMemory,
-              usedMemory: device.usedMemory,
-              freeMemory: device.freeMemory,
-              active: device.active
-            };
-
-            // Add "(active)" indicator to the name for active GPUs
-            if (gpuData.active) {
-              gpuData.name += " (active)";
+            if (deviceKeys.length > 1) {
+              $scope.gpuName += " (+" + (deviceKeys.length - 1) + " more)";
             }
 
-            // Only calculate memory display for active GPUs
-            if (gpuData.active && gpuData.totalMemory && gpuData.usedMemory) {
-              var total = parse_memory_value(gpuData.totalMemory);
-              var used = parse_memory_value(gpuData.usedMemory);
-              gpuData.memoryPercentage = (used / total * 100).toFixed(1) + "%";
-              gpuData.totalMemoryDisplay = pretty_print_bytes(total);
-              gpuData.usedMemoryDisplay = pretty_print_bytes(used);
+            for (var i = 0; i < deviceKeys.length; i++) {
+              var device = devices[deviceKeys[i]];
+              var gpuData = {
+                id: device.id,
+                name: device.name,
+                computeCapability: device.computeCapability,
+                totalMemory: device.totalMemory,
+                usedMemory: device.usedMemory,
+                freeMemory: device.freeMemory,
+                active: device.active
+              };
+
+              // Add "(active)" indicator to the name for active GPUs
+              if (gpuData.active) {
+                gpuData.name += " (active)";
+              }
+
+              // Only calculate memory display for active GPUs
+              if (gpuData.active && gpuData.totalMemory && gpuData.usedMemory) {
+                var total = parse_memory_value(gpuData.totalMemory);
+                var used = parse_memory_value(gpuData.usedMemory);
+                gpuData.memoryPercentage = (used / total * 100).toFixed(1) + "%";
+                gpuData.totalMemoryDisplay = pretty_print_bytes(total);
+                gpuData.usedMemoryDisplay = pretty_print_bytes(used);
+              }
+              $scope.gpuDevices.push(gpuData);
             }
-            $scope.gpuDevices.push(gpuData);
           }
         }
-      }
 
-      // no info bar:
-      $scope.noInfo = !(
-        data.system.totalPhysicalMemorySize && data.system.freePhysicalMemorySize &&
-        data.system.totalSwapSpaceSize && data.system.freeSwapSpaceSize &&
-        data.system.openFileDescriptorCount && data.system.maxFileDescriptorCount);
+        // no info bar:
+        $scope.noInfo = !(
+          data.system.totalPhysicalMemorySize && data.system.freePhysicalMemorySize &&
+          data.system.totalSwapSpaceSize && data.system.freeSwapSpaceSize &&
+          data.system.openFileDescriptorCount && data.system.maxFileDescriptorCount);
 
-      // save a copy of the original commandline args
-      $scope.commandLineArgsUnsorted = [...data.jvm.jmx.commandLineArgs];
-      // get commandline args latest orderby or defaults to "Unsorted"
-      $scope.commandLineOrderBy = sessionStorage.getItem("commandline.orderby") || "Unsorted";
-      $scope.showCommandLineArgs();
+        // save a copy of the original commandline args
+        $scope.commandLineArgsUnsorted = [...data.jvm.jmx.commandLineArgs];
+        // get commandline args latest orderby or defaults to "Unsorted"
+        $scope.commandLineOrderBy = sessionStorage.getItem("commandline.orderby") || "Unsorted";
+        $scope.showCommandLineArgs();
       });
+    });
   };
   $scope.toggleCommandLineOrder = function() {
     $scope.commandLineOrderBy = ($scope.commandLineOrderBy=="Sorted") ? "Unsorted":"Sorted";

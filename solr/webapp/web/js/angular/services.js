@@ -23,6 +23,8 @@ solrAdminServices.factory('System',
   }])
 .factory('Metrics',
   ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
+    // "raw" was migrated to MetricsV2 (see plugins.js). This v1 factory is kept only for "get",
+    // still used by cloud.js's per-node metrics fetch.
     return $resource('admin/metrics', {"wt":"prometheus", "node": "@node", "_":Date.now()}, {
       get: {
         method: 'GET',
@@ -33,13 +35,6 @@ solrAdminServices.factory('System',
           } catch (e) {
             return {metrics: {}, error: e.message};
           }
-        }
-      },
-      "raw": {
-        method: 'GET',
-        params: {wt: 'prometheus', core: '@core'},
-        transformResponse: function(data) {
-          return {data: data};
         }
       }
     });
@@ -61,6 +56,18 @@ solrAdminServices.factory('System',
       solrApi.ApiClient.instance.basePath = '/api';
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.LoggingApi();
+    })
+.factory('SystemV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SystemApi();
+    })
+.factory('MetricsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.MetricsApi();
     })
 .factory('Collections',
   ['$resource', function($resource) {
@@ -116,7 +123,11 @@ solrAdminServices.factory('System',
   }])
 .factory('Threads',
   ['$resource', function($resource) {
-    return $resource('admin/info/threads', {'wt':'json', '_':Date.now()});
+    // v2 NodeThreadsAPI (/api/node/threads) still just delegates straight through to the same v1
+    // ThreadDumpHandler, so the response shape is byte-identical -- no generated solrApi client
+    // class exists for it (it predates the OpenAPI-based v2 API framework), so this stays a plain
+    // $resource, like SchemaDesigner/Security/Segments.
+    return $resource('/api/node/threads', {'wt':'json', '_':Date.now()});
   }])
 .factory('Properties',
   ['$resource', function($resource) {
