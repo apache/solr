@@ -1,0 +1,258 @@
+<?xml version="1.0" ?>
+<!-- Licensed to the Apache Software Foundation (ASF) under one or more contributor
+ license agreements. See the NOTICE file distributed with this work for additional
+ information regarding copyright ownership. The ASF licenses this file to
+ You under the Apache License, Version 2.0 (the "License"); you may not use
+ this file except in compliance with the License. You may obtain a copy of
+ the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required
+ by applicable law or agreed to in writing, software distributed under the
+ License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
+ OF ANY KIND, either express or implied. See the License for the specific
+ language governing permissions and limitations under the License. -->
+
+<config>
+    <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+ <dataDir>${solr.data.dir:}</dataDir>
+ <directoryFactory name="DirectoryFactory"
+                   class="${solr.directoryFactory:solr.MockDirectoryFactory}" />
+ <schemaFactory class="ClassicIndexSchemaFactory" />
+
+ <requestDispatcher>
+   <requestParsers />
+ </requestDispatcher>
+
+ <query>
+  <filterCache class="solr.CaffeineCache" size="4096"
+   initialSize="2048" autowarmCount="0" />
+ </query>
+ <requestHandler name="/select" class="solr.SearchHandler" />
+
+ <updateHandler class="solr.DirectUpdateHandler2">
+  <autoCommit>
+   <maxTime>15000</maxTime>
+   <openSearcher>false</openSearcher>
+  </autoCommit>
+  <autoSoftCommit>
+   <maxTime>1000</maxTime>
+  </autoSoftCommit>
+  <updateLog>
+   <str name="dir">${solr.data.dir:}</str>
+  </updateLog>
+ </updateHandler>
+
+ <requestHandler name="/query" class="solr.SearchHandler">
+  <lst name="defaults">
+   <str name="echoParams">explicit</str>
+   <str name="wt">json</str>
+   <str name="indent">true</str>
+   <str name="df">id</str>
+  </lst>
+ </requestHandler>
+
+ <updateRequestProcessorChain name="documentEnrichment">
+  <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">enriched_field</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
+   <str name="model">dummy-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="documentEnrichmentArrInputField">
+    <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+      <arr name="inputField">
+        <str>string_field</str>
+        <str>body_field</str>
+      </arr>
+      <str name="outputField">enriched_field</str>
+      <str name="prompt">Title: {string_field}. Body: {body_field}.</str>
+      <str name="model">dummy-1</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory"/>
+  </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="failingDocumentEnrichment">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">enriched_field</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
+   <str name="model">exception-throwing-model</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentForPartialUpdates">
+  <processor class="solr.DistributedUpdateProcessorFactory"/>
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">enriched_field</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
+   <str name="model">dummy-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentMultiField">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="inputField">body_field</str>
+   <str name="outputField">enriched_field</str>
+   <str name="prompt">Title: {string_field}. Body: {body_field}.</str>
+   <str name="model">dummy-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentMultivaluedString">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">enriched_field_multi</str>
+   <str name="prompt">Extract tags from: {string_field}</str>
+   <str name="model">dummy-multivalued-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="failingDocumentEnrichmentMultiField">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="inputField">body_field</str>
+   <str name="outputField">enriched_field</str>
+   <str name="prompt">Title: {string_field}. Body: {body_field}.</str>
+   <str name="model">exception-throwing-model</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentSingleLong">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_long</str>
+   <str name="prompt">Extract a number from: {string_field}</str>
+   <str name="model">dummy-long</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentSingleInt">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_int</str>
+   <str name="prompt">Extract a number from: {string_field}</str>
+   <str name="model">dummy-int</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentSingleFloat">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_float</str>
+   <str name="prompt">Extract a number from: {string_field}</str>
+   <str name="model">dummy-float</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentSingleDouble">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_double</str>
+   <str name="prompt">Extract a number from: {string_field}</str>
+   <str name="model">dummy-double</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentSingleBoolean">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_boolean</str>
+   <str name="prompt">Is this true or false: {string_field}</str>
+   <str name="model">dummy-boolean</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentSingleDate">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_date</str>
+   <str name="prompt">Extract a date from: {string_field}</str>
+   <str name="model">dummy-date</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentMultivaluedLong">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_long_multi</str>
+   <str name="prompt">Extract numbers from: {string_field}</str>
+   <str name="model">dummy-long-multi</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentMultivaluedInt">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_int_multi</str>
+   <str name="prompt">Extract numbers from: {string_field}</str>
+   <str name="model">dummy-int-multi</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentMultivaluedFloat">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_float_multi</str>
+   <str name="prompt">Extract numbers from: {string_field}</str>
+   <str name="model">dummy-float-multi</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentMultivaluedDouble">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_double_multi</str>
+   <str name="prompt">Extract numbers from: {string_field}</str>
+   <str name="model">dummy-double-multi</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentMultivaluedBoolean">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_boolean_multi</str>
+   <str name="prompt">Extract boolean values from: {string_field}</str>
+   <str name="model">dummy-boolean-multi</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentMultivaluedDate">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">output_date_multi</str>
+   <str name="prompt">Extract dates from: {string_field}</str>
+   <str name="model">dummy-date-multi</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="documentEnrichmentMultivaluedInput">
+    <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
+      <str name="inputField">tags_field</str>
+      <str name="outputField">enriched_field</str>
+      <str name="prompt">Classify these tags: {tags_field}</str>
+      <str name="model">dummy-1</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory"/>
+  </updateRequestProcessorChain>
+
+</config>
