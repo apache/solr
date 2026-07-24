@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('PluginsController',
-    function($scope, $rootScope, $routeParams, $location, $timeout, MetricsV2, Constants) {
+    function($scope, $rootScope, $routeParams, $location, Metrics, Constants) {
         $scope.resetMenu("plugins", Constants.IS_CORE_PAGE);
 
         if ($routeParams.legacytype) {
@@ -34,21 +34,16 @@ solrAdminApp.controller('PluginsController',
 
             var type = $location.search().type;
 
-            // getMetrics always returns null for "data" (its returnType is null in the generated
-            // client); the raw Prometheus-format text response body lives on "response.text".
-            MetricsV2.getMetrics(params, function (error, data, response) {
-                $timeout(function() {
-                    if (error) return;
-                    $scope.types = getPluginTypesFromMetrics(response.text, type);
-                    $scope.type = getSelectedType($scope.types, type);
+            Metrics.raw(params, function (response) {
+                $scope.types = getPluginTypesFromMetrics(response.data, type);
+                $scope.type = getSelectedType($scope.types, type);
 
-                    if ($scope.type && $routeParams.entry) {
-                        $scope.plugins = $routeParams.entry.split(",");
-                        openPlugins($scope.type, $scope.plugins);
-                    } else {
-                        $scope.plugins = [];
-                    }
-                });
+                if ($scope.type && $routeParams.entry) {
+                    $scope.plugins = $routeParams.entry.split(",");
+                    openPlugins($scope.type, $scope.plugins);
+                } else {
+                    $scope.plugins = [];
+                }
             });
         };
 

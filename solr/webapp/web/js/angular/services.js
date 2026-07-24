@@ -23,8 +23,6 @@ solrAdminServices.factory('System',
   }])
 .factory('Metrics',
   ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
-    // "raw" was migrated to MetricsV2 (see plugins.js). This v1 factory is kept only for "get",
-    // still used by cloud.js's per-node metrics fetch.
     return $resource('admin/metrics', {"wt":"prometheus", "node": "@node", "_":Date.now()}, {
       get: {
         method: 'GET',
@@ -35,6 +33,13 @@ solrAdminServices.factory('System',
           } catch (e) {
             return {metrics: {}, error: e.message};
           }
+        }
+      },
+      "raw": {
+        method: 'GET',
+        params: {wt: 'prometheus', core: '@core'},
+        transformResponse: function(data) {
+          return {data: data};
         }
       }
     });
@@ -62,12 +67,6 @@ solrAdminServices.factory('System',
       solrApi.ApiClient.instance.basePath = '/api';
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.SystemApi();
-    })
-.factory('MetricsV2',
-    function() {
-      solrApi.ApiClient.instance.basePath = '/api';
-      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
-      return new solrApi.MetricsApi();
     })
 .factory('Collections',
   ['$resource', function($resource) {
