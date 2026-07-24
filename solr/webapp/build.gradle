@@ -27,9 +27,7 @@ configurations {
   serverLib
   solrCore
   generatedJSClientBundle
-  // TODO: :solr:ui's dev/prod distributions are pulled in via raw cross-project task
-  // references (see generateUiDevFiles/generateUiProdFiles below) instead of a
-  // configuration like this one; consider exposing them as a real configuration too.
+  generatedUIBundle
 }
 
 dependencies {
@@ -41,25 +39,9 @@ dependencies {
   if (gradle.ext.withJsClient) {
     generatedJSClientBundle project(path: ":solr:webapp:js-client", configuration: "jsClientBundle")
   }
-}
 
-if (gradle.ext.withUiModule) {
-  tasks.register("generateUiDevFiles") {
-    description = "Generate new UI for development and add files to outputs for later referencing."
-    group = "build"
-    dependsOn project(":solr:ui").tasks.wasmJsBrowserDevelopmentExecutableDistribution
-    outputs.dir(project(":solr:ui").file("build/dist/wasmJs/developmentExecutable/"))
-  }
-}
-
-if (gradle.ext.withUiModule) {
-  tasks.register("generateUiProdFiles") {
-    description = "Generate new UI for production and add files to outputs for later referencing"
-    group = "build"
-
-    // Production files are smaller in size but have longer compile times.
-    dependsOn project(":solr:ui").tasks.wasmJsBrowserDistribution
-    outputs.dir(project(":solr:ui").file("build/dist/wasmJs/productionExecutable/"))
+  if (gradle.ext.withUiModule) {
+    generatedUIBundle project(path: ":solr:ui", configuration: "wasmJsUIBundle")
   }
 }
 
@@ -71,19 +53,10 @@ war {
     into "libs/solr"
   })
 
-  // Include new Admin UI files in webapp
-  // By default, we always build dev that does not optimize generated files for release to reduce build times.
-  if (gradle.ext.withUiModule) {
-    if (rootProject.ext.development) {
-      from(tasks.generateUiDevFiles) {
-        into "ui"
-      }
-    } else {
-      from(tasks.generateUiProdFiles) {
-        into "ui"
-      }
-    }
-  }
+  // note: nonetheless may be disabled, copying nothing
+  from(configurations.generatedUIBundle, {
+    into "ui"
+  })
 }
 
 // Expose 'war' archive as an artifact so that it can be packaged in the distribution.
