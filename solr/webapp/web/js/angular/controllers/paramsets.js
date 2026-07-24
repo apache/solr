@@ -33,6 +33,13 @@ solrAdminApp.controller('ParamSetsController',
       }
     }
 
+    // The v2 config/params API needs to know up front whether ":core" is a collection name
+    // (SolrCloud) or an actual core name (standalone/user-managed) -- there's no equivalent of
+    // v1's flexible core-or-collection routing.
+    $scope.paramSetIndexType = function() {
+      return $scope.isCloudEnabled ? "collections" : "cores";
+    }
+
     $scope.selectParamset = function() {
       $location.search("paramset", $scope.name);
       $scope.getParamset($scope.name);
@@ -43,6 +50,7 @@ solrAdminApp.controller('ParamSetsController',
 
       var params = {};
       params.core = $routeParams.core;
+      params.indexType = $scope.paramSetIndexType();
       params.wt = "json";
       params.name = paramset;
 
@@ -76,6 +84,7 @@ solrAdminApp.controller('ParamSetsController',
 
       var params = {};
       params.core = $routeParams.core;
+      params.indexType = $scope.paramSetIndexType();
       params.wt = "json";
 
       ParamSet.get(params, callback, failure);
@@ -108,9 +117,17 @@ solrAdminApp.controller('ParamSetsController',
     $scope.refresh();
 
     $scope.submit = function () {
+      if (!$scope.paramsetContent || !$scope.paramsetContent.trim()) {
+        $scope.responseStatus = "error";
+        $scope.response = "Please enter a Paramset(s) JSON payload before submitting. " +
+          "(Checking \"Sample Paramset\" only shows an example -- copy it into the text area to use it.)";
+        return;
+      }
+
       var params = {};
 
       params.core = $routeParams.core;
+      params.indexType = $scope.paramSetIndexType();
       params.wt = "json";
 
       ParamSet.submit(params, $scope.paramsetContent, callback, failure);
@@ -133,8 +150,8 @@ solrAdminApp.controller('ParamSetsController',
       var params = {};
 
       params.core = $routeParams.core;
+      params.indexType = $scope.paramSetIndexType();
       params.wt = "json";
-      params.name = $scope.name;
 
       var apiPayload = {
         "delete": [$scope.name]

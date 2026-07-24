@@ -50,47 +50,73 @@ solrAdminServices.factory('System',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.CollectionsApi();
     })
+.factory('CoresV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.CoresApi();
+    })
+.factory('LoggingV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.LoggingApi();
+    })
+.factory('SystemV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SystemApi();
+    })
+.factory('AliasesV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.AliasesApi();
+    })
+.factory('ShardsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ShardsApi();
+    })
+.factory('ReplicasV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ReplicasApi();
+    })
+.factory('ConfigSetsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ConfigsetsApi();
+    })
+.factory('ClusterV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ClusterApi();
+    })
 .factory('Collections',
   ['$resource', function($resource) {
+    // This v1 factory only covers "list"/"listaliases" (used by app.js's nav-list population) and
+    // "status"/CLUSTERSTATUS (used by collections.js, cloud.js, collection-overview.js) -- no
+    // single-request v2 equivalent for CLUSTERSTATUS exists yet, and no other actions here have
+    // any remaining callers.
     return $resource('admin/collections',
     {'wt':'json', '_':Date.now()}, {
     "list": {params:{action: "LIST"}},
     "listaliases": {params:{action: "LISTALIASES"}},
-    "status": {params:{action: "CLUSTERSTATUS"}},
-    "add": {params:{action: "CREATE"}},
-    "delete": {params:{action: "DELETE"}},
-    "rename": {params:{action: "RENAME"}},
-    "createAlias": {params:{action: "CREATEALIAS"}},
-    "deleteAlias": {params:{action: "DELETEALIAS"}},
-    "deleteReplica": {params:{action: "DELETEREPLICA"}},
-    "addReplica": {params:{action: "ADDREPLICA"}},
-    "deleteShard": {params:{action: "DELETESHARD"}},
-    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}}
-    });
-  }])
-.factory('ConfigSets',
- ['$resource', function ($resource) {
-    return $resource('admin/configs', {'wt': 'json', '_': Date.now()}, {"configs": {params: {action: "LIST"}}
-    });
- }])
-.factory('Cores',
-  ['$resource', function($resource) {
-    return $resource('admin/cores',
-    {'wt':'json', '_':Date.now()}, {
-    "query": {},
-    "list": {params:{indexInfo: false}},
-    "add": {params:{action: "CREATE"}},
-    "unload": {params:{action: "UNLOAD", core: "@core"}},
-    "rename": {params:{action: "RENAME"}},
-    "swap": {params:{action: "SWAP"}},
-    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}, headers:{doNotIntercept: "true"}}
+    "status": {params:{action: "CLUSTERSTATUS"}}
     });
   }])
 .factory('Logging',
   ['$resource', function($resource) {
+    // This v1 factory only covers "setLevel", which needs the "nodes=all" broadcast-to-every-node
+    // behavior that the v2 NodeLoggingApis endpoint doesn't support yet (see SOLR-16738). Retire
+    // this factory once setLevel moves to LoggingV2.
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
-      "events": {params: {since:'0'}},
-      "levels": {},
       "setLevel": {params: {nodes:'all'}}
       });
   }])
@@ -115,7 +141,11 @@ solrAdminServices.factory('System',
   }])
 .factory('Threads',
   ['$resource', function($resource) {
-    return $resource('admin/info/threads', {'wt':'json', '_':Date.now()});
+    // v2 NodeThreadsAPI (/api/node/threads) still just delegates straight through to the same v1
+    // ThreadDumpHandler, so the response shape is byte-identical -- no generated solrApi client
+    // class exists for it (it predates the OpenAPI-based v2 API framework), so this stays a plain
+    // $resource, like SchemaDesigner/Security/Segments.
+    return $resource('/api/node/threads', {'wt':'json', '_':Date.now()});
   }])
 .factory('Properties',
   ['$resource', function($resource) {
@@ -144,7 +174,17 @@ solrAdminServices.factory('System',
   }])
 .factory('ParamSet',
   ['$resource', function($resource) {
-    return $resource(':core/config/params/:name', {core: '@core', wt:'json', _:Date.now()}, {
+    // v2 GetConfigAPI/ModifyParamSetAPI (/api/(cores|collections)/:core/config/params) still
+    // delegate straight through to the same v1 SolrConfigHandler, so the response shape is
+    // byte-identical -- no generated solrApi client class exists for it (old-style @EndPoint API,
+    // predates the OpenAPI-based v2 framework), so this stays a plain $resource, like
+    // Segments/Threads.
+    // NB: unlike v1's flexible routing, the v2 API requires knowing up front whether ":core" is a
+    // collection name (SolrCloud) or an actual core name (standalone/user-managed) --
+    // /api/collections/... 500s in standalone mode (it tries to resolve aliases, which needs ZK),
+    // and there's no such thing as a "collection" there anyway. Callers must pass "indexType" as
+    // "collections" or "cores" (see paramsets.js, driven by $scope.isCloudEnabled).
+    return $resource('/api/:indexType/:core/config/params/:name', {core: '@core', indexType: '@indexType', wt:'json', _:Date.now()}, {
       "submit": {headers: {'Content-type': 'application/json'}, method: "POST"},
       "get": {headers: {'Content-type': 'application/json'}, method: "GET"}
     });
@@ -251,7 +291,7 @@ solrAdminServices.factory('System',
 }])
 .factory('Segments',
    ['$resource', function($resource) {
-       return $resource(':core/admin/segments', {'wt':'json', core: '@core', _:Date.now()}, {
+       return $resource('/api/cores/:core/segments', {'wt':'json', core: '@core', _:Date.now()}, {
            get: {}
        });
 }])

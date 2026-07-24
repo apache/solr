@@ -24,52 +24,55 @@ var format_time_content = function( time, timeZone ) {
 }
 
 solrAdminApp.controller('LoggingController',
-  function($scope, $timeout, $cookies, Logging, Constants){
+  function($scope, $timeout, $cookies, LoggingV2, Constants){
     $scope.resetMenu("logging", Constants.IS_ROOT_PAGE);
     $scope.timezone = $cookies.logging_timezone || "Local";
     $scope.refresh = function() {
-      Logging.events(function(data) {
-        $scope.since = new Date();
-        $scope.sinceDisplay = format_time_content($scope.since, "Local");
-        var events = data.history.docs;
-        for (var i=0; i<events.length; i++) {
-          var event = events[i];
-          var time = new Date(event.time);
-          event.local_time = format_time_content(time, "Local");
-          event.utc_time = format_time_content(time, "UTC");
-          event.loggerBase = event.logger.split( '.' ).pop();
+      LoggingV2.fetchLocalLogMessages({since: 0}, function(error, data, response) {
+        $timeout(function() {
+          if (error) return;
+          $scope.since = new Date();
+          $scope.sinceDisplay = format_time_content($scope.since, "Local");
+          var events = data.history;
+          for (var i=0; i<events.length; i++) {
+            var event = events[i];
+            var time = new Date(event.time);
+            event.local_time = format_time_content(time, "Local");
+            event.utc_time = format_time_content(time, "UTC");
+            event.loggerBase = event.logger.split( '.' ).pop();
 
-          if( !event.trace ) {
-            var lines = event.message.split( "\n" );
-            if( lines.length > 1) {
-              event.trace = event.message;
-              event.message = lines[0];
+            if( !event.trace ) {
+              var lines = event.message.split( "\n" );
+              if( lines.length > 1) {
+                event.trace = event.message;
+                event.message = lines[0];
+              }
             }
+            event.message = event.message.replace(/,/g, ',&#8203;');
+            event.showTrace = false;
           }
-          event.message = event.message.replace(/,/g, ',&#8203;');
-          event.showTrace = false;
-        }
-        $scope.events = events;
-        $scope.watcher = data.watcher;
-        /* @todo sticky_mode
-        // state element is in viewport
-        sticky_mode = ( state.position().top <= $( window ).scrollTop() + $( window ).height() - ( $( 'body' ).height() - state.position().top ) );
-        // initial request
-        if( 0 === since ) {
-          sticky_mode = true;
-        }
-        $scope.loggingEvents = events;
+          $scope.events = events;
+          $scope.watcher = data.watcher;
+          /* @todo sticky_mode
+          // state element is in viewport
+          sticky_mode = ( state.position().top <= $( window ).scrollTop() + $( window ).height() - ( $( 'body' ).height() - state.position().top ) );
+          // initial request
+          if( 0 === since ) {
+            sticky_mode = true;
+          }
+          $scope.loggingEvents = events;
 
-        if( sticky_mode )
-        {
-          $( 'body' )
-            .animate
-            (
-                { scrollTop: state.position().top },
-                1000
-            );
-        }
-      */
+          if( sticky_mode )
+          {
+            $( 'body' )
+              .animate
+              (
+                  { scrollTop: state.position().top },
+                  1000
+              );
+          }
+        */
+        });
       });
       $scope.timeout = $timeout($scope.refresh, 10000);
       var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
@@ -98,7 +101,7 @@ solrAdminApp.controller('LoggingController',
 )
 
 .controller('LoggingLevelController',
-  function($scope, Logging) {
+  function($scope, $timeout, Logging, LoggingV2) {
     $scope.resetMenu("logging-levels");
 
     var packageOf = function(logger) {
@@ -123,13 +126,16 @@ solrAdminApp.controller('LoggingController',
     };
 
     $scope.refresh = function() {
-      Logging.levels(function(data) {
-        $scope.logging = makeTree(data.loggers, "");
-        $scope.watcher = data.watcher;
-        $scope.levels = [];
-        for (level in data.levels) {
-          $scope.levels.push({name:data.levels[level], pos:level});
-        }
+      LoggingV2.listAllLoggersAndLevels(function(error, data, response) {
+        $timeout(function() {
+          if (error) return;
+          $scope.logging = makeTree(data.loggers, "");
+          $scope.watcher = data.watcher;
+          $scope.levels = [];
+          for (level in data.levels) {
+            $scope.levels.push({name:data.levels[level], pos:level});
+          }
+        });
       });
     };
 
@@ -155,6 +161,10 @@ solrAdminApp.controller('LoggingController',
       }
       var setString = logger.name + ":" + newLevel;
       logger.showOptions = false;
+      // Intentionally still v1 (Logging, not LoggingV2): this relies on the "nodes=all" param to
+      // broadcast the level change to every live node. The v2 NodeLoggingApis endpoint is
+      // single-node only until SOLR-16738 wires it up to the new V2SolrRequestBasedProxy (see the
+      // TODO in NodeLogging.java). Move this to LoggingV2.modifyLocalLogLevel once that lands.
       Logging.setLevel({set: setString}, function(data) {
         $scope.refresh();
       });

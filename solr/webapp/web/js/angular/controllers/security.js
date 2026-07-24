@@ -15,7 +15,7 @@
  limitations under the License.
 */
 
-solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cookies, $window, Constants, System, Security) {
+solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cookies, $window, Constants, SystemV2, Security) {
   $scope.resetMenu("security", Constants.IS_ROOT_PAGE);
 
   $scope.params = [];
@@ -276,21 +276,25 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     $scope.permFilterOptions = [];
     $scope.permFilterTypes = ["", "name", "role", "path", "collection"];
 
-    System.get(function(data) {
-      $scope.tls = data.security ? data.security["tls"] : false;
-      $scope.authenticationPlugin = data.security ? data.security["authenticationPlugin"] : null;
-      $scope.authorizationPlugin = data.security ? data.security["authorizationPlugin"] : null;
-      $scope.isSecurityAdminEnabled = $scope.authenticationPlugin != null;
-      $scope.isCloudMode = data.mode.match( /solrcloud/i ) != null;
-      $scope.zkHost = $scope.isCloudMode ? data["zkHost"] : "";
-      $scope.solrHome = data["solr_home"];
-      $scope.refreshSecurityPanel();
-    }, function(e) {
-      if (e.status === 401 || e.status === 403) {
-        $scope.isSecurityAdminEnabled = true;
-        $scope.hasSecurityEditPerm = false;
-        $scope.hideAll();
-      }
+    SystemV2.getNodeSystemInfo({}, function(error, data, response) {
+      $timeout(function() {
+        if (error) {
+          if (response && (response.status === 401 || response.status === 403)) {
+            $scope.isSecurityAdminEnabled = true;
+            $scope.hasSecurityEditPerm = false;
+            $scope.hideAll();
+          }
+          return;
+        }
+        $scope.tls = data.security ? data.security["tls"] : false;
+        $scope.authenticationPlugin = data.security ? data.security["authenticationPlugin"] : null;
+        $scope.authorizationPlugin = data.security ? data.security["authorizationPlugin"] : null;
+        $scope.isSecurityAdminEnabled = $scope.authenticationPlugin != null;
+        $scope.isCloudMode = data.mode.match( /solrcloud/i ) != null;
+        $scope.zkHost = $scope.isCloudMode ? data["zkHost"] : "";
+        $scope.solrHome = data["solr_home"];
+        $scope.refreshSecurityPanel();
+      });
     });
   };
 
@@ -355,7 +359,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       // check for issues with perm config
       $scope.validatePermConfig();
 
-      // use the current user's roles (obtained from System.get) to check if they have the security permissions
+      // use the current user's roles (obtained from SystemV2.getNodeSystemInfo) to check if they have the security permissions
       // Note: the backend will check too so this is only for display purposes
       $scope.hasSecurityEditPerm = $scope.isPermitted(permissions.SECURITY_EDIT_PERM);
       $scope.hasSecurityReadPerm = $scope.hasSecurityEditPerm || $scope.isPermitted(permissions.SECURITY_READ_PERM);

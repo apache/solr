@@ -495,7 +495,7 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, Collections, System, Ping, Constants, SchemaDesigner) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, Collections, SystemV2, Ping, Constants, SchemaDesigner) {
 
   $rootScope.exceptions={};
 
@@ -516,86 +516,92 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
   $scope.refresh();
   $scope.resetMenu = function(page, pageType) {
-    Cores.list(function(data) {
-      $scope.cores = [];
-      var currentCoreName = $route.current.params.core;
-      delete $scope.currentCore;
-      for (key in data.status) {
-        var core = data.status[key];
-        if (core.name.startsWith("._designer_")) {
-          continue;
+    CoresV2.getAllCoreStatus({indexInfo: false}, function(error, data, response) {
+      $timeout(function() {
+        if (error) return;
+        $scope.cores = [];
+        var currentCoreName = $route.current.params.core;
+        delete $scope.currentCore;
+        for (key in data.status) {
+          var core = data.status[key];
+          if (core.name.startsWith("._designer_")) {
+            continue;
+          }
+          $scope.cores.push(core);
+          if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
+              $scope.currentCore = core;
+          }
         }
-        $scope.cores.push(core);
-        if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
-            $scope.currentCore = core;
-        }
-      }
-      $scope.showInitFailures = Object.keys(data.initFailures).length>0;
-      $scope.initFailures = data.initFailures;
+        $scope.showInitFailures = Object.keys(data.initFailures).length>0;
+        $scope.initFailures = data.initFailures;
+      });
     });
 
-    System.get(function(data) {
-      $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
-      $scope.usersPermissions = data.security.permissions;
-      $scope.isSecurityEnabled = $scope.authenticationPlugin != null;
+    SystemV2.getNodeSystemInfo({}, function(error, data, response) {
+      $timeout(function() {
+        if (error) return;
+        $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
+        $scope.usersPermissions = data.security.permissions;
+        $scope.isSecurityEnabled = $scope.authenticationPlugin != null;
 
-      $scope.isSchemaDesignerEnabled = $scope.isPermitted([
-        permissions.CONFIG_EDIT_PERM,
-        permissions.SCHEMA_EDIT_PERM,
-        permissions.READ_PERM,
-        permissions.UPDATE_PERM
-      ]);
+        $scope.isSchemaDesignerEnabled = $scope.isPermitted([
+          permissions.CONFIG_EDIT_PERM,
+          permissions.SCHEMA_EDIT_PERM,
+          permissions.READ_PERM,
+          permissions.UPDATE_PERM
+        ]);
 
-      var currentCollectionName = $route.current.params.core;
-      delete $scope.currentCollection;
-      if ($scope.isCloudEnabled) {
-        Collections.list(function (cdata) {
-          Collections.listaliases(function (adata) {
-            $scope.aliases = [];
-            for (var key in adata.aliases) {
-              props = {};
-              if (key in adata.properties) {
-                props = adata.properties[key];
+        var currentCollectionName = $route.current.params.core;
+        delete $scope.currentCollection;
+        if ($scope.isCloudEnabled) {
+          Collections.list(function (cdata) {
+            Collections.listaliases(function (adata) {
+              $scope.aliases = [];
+              for (var key in adata.aliases) {
+                props = {};
+                if (key in adata.properties) {
+                  props = adata.properties[key];
+                }
+                var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
+                $scope.aliases.push(alias);
+                if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
+                  $scope.currentCollection = alias;
+                }
               }
-              var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
-              $scope.aliases.push(alias);
-              if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
-                $scope.currentCollection = alias;
+              $scope.collections = [];
+              for (key in cdata.collections) {
+                if (cdata.collections[key].startsWith("._designer_")) {
+                  continue; // ignore temp designer collections
+                }
+                var collection = {name: cdata.collections[key], type: 'collection'};
+                $scope.collections.push(collection);
+                if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
+                  $scope.currentCollection = collection;
+                }
               }
-            }
-            $scope.collections = [];
-            for (key in cdata.collections) {
-              if (cdata.collections[key].startsWith("._designer_")) {
-                continue; // ignore temp designer collections
-              }
-              var collection = {name: cdata.collections[key], type: 'collection'};
-              $scope.collections.push(collection);
-              if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
-                $scope.currentCollection = collection;
-              }
-            }
 
-            $scope.aliases_and_collections = $scope.aliases;
-            if ($scope.aliases.length > 0) {
-              $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
-            }
-            $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+              $scope.aliases_and_collections = $scope.aliases;
+              if ($scope.aliases.length > 0) {
+                $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
+              }
+              $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+            });
           });
-        });
-      }
+        }
 
-      $scope.showEnvironment = data.environment !== undefined;
-      if (data.environment) {
-        $scope.environment = data.environment;
-        var env_labels = {'prod': 'Production', 'stage': 'Staging', 'test': 'Test', 'dev': 'Development'};
-        $scope.environment_label = env_labels[data.environment];
-        if (data.environment_label) {
-          $scope.environment_label = data.environment_label;
+        $scope.showEnvironment = data.environment !== undefined;
+        if (data.environment) {
+          $scope.environment = data.environment;
+          var env_labels = {'prod': 'Production', 'stage': 'Staging', 'test': 'Test', 'dev': 'Development'};
+          $scope.environment_label = env_labels[data.environment];
+          if (data.environment_label) {
+            $scope.environment_label = data.environment_label;
+          }
+          if (data.environment_color) {
+            $scope.environment_color = data.environment_color;
+          }
         }
-        if (data.environment_color) {
-          $scope.environment_color = data.environment_color;
-        }
-      }
+      });
     });
 
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;

@@ -16,19 +16,18 @@
 */
 
 solrAdminApp.controller('CollectionsController',
-    function($scope, $routeParams, $location, $timeout, Collections, CollectionsV2, Zookeeper, Constants, ConfigSets){
+    function($scope, $routeParams, $location, $timeout, Collections, CollectionsV2, AliasesV2, ShardsV2, ReplicasV2, ConfigSetsV2, ClusterV2, Constants){
       $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
 
       $scope.refresh = function() {
 
           $scope.rootUrl = Constants.ROOT_URL + "#/~collections/" + $routeParams.collection;
 
-          Zookeeper.liveNodes({}, function(data) {
-            $scope.availableNodeSet = [];
-            var children = data.tree[0].children;
-            for (var child in children) {
-              $scope.availableNodeSet.push(children[child].text);
-            }
+          ClusterV2.listClusterNodes(function(error, data, response) {
+            $timeout(function() {
+              if (error) return;
+              $scope.availableNodeSet = data.nodes;
+            });
           });
 
           Collections.status(function (data) {
@@ -62,36 +61,42 @@ solrAdminApp.controller('CollectionsController',
                       $scope.collection = collection;
                   }
               }
-              // Fetch aliases using LISTALIASES to get properties
-              Collections.listaliases(function (adata) {
-                  // TODO: Population of aliases array duplicated in app.js
-                  $scope.aliases = [];
-                  for (var key in adata.aliases) {
-                      props = {};
-                      if (key in adata.properties) {
-                          props = adata.properties[key];
+              // Fetch aliases using getAliases to get properties
+              AliasesV2.getAliases(function (error, adata, response) {
+                  $timeout(function() {
+                      if (error) return;
+                      // TODO: Population of aliases array duplicated in app.js
+                      $scope.aliases = [];
+                      for (var key in adata.aliases) {
+                          props = {};
+                          if (key in adata.properties) {
+                              props = adata.properties[key];
+                          }
+                          var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
+                          $scope.aliases.push(alias);
+                          if ($routeParams.collection == 'alias_' + key) {
+                              $scope.collection = alias;
+                          }
                       }
-                      var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
-                      $scope.aliases.push(alias);
-                      if ($routeParams.collection == 'alias_' + key) {
-                          $scope.collection = alias;
+                      // Decide what is selected in list
+                      if ($routeParams.collection && !$scope.collection) {
+                          alert("No collection or alias called " + $routeParams.collection);
+                          $location.path("/~collections");
                       }
-                  }
-                  // Decide what is selected in list
-                  if ($routeParams.collection && !$scope.collection) {
-                      alert("No collection or alias called " + $routeParams.collection);
-                      $location.path("/~collections");
-                  }
+                  });
               });
 
               $scope.liveNodes = data.cluster.liveNodes;
           });
-          ConfigSets.configs(function(data) {
-              $scope.configs = [];
-              var items = data.configSets;
-              for (var i in items) {
-                  $scope.configs.push({name: items[i]});
-              }
+          ConfigSetsV2.listConfigSet(function(error, data, response) {
+              $timeout(function() {
+                  if (error) return;
+                  $scope.configs = [];
+                  var items = data.configSets;
+                  for (var i in items) {
+                      $scope.configs.push({name: items[i]});
+                  }
+              });
           });
       };
 
@@ -138,17 +143,23 @@ solrAdminApp.controller('CollectionsController',
         for (var i in $scope.aliasCollections) {
           collections.push($scope.aliasCollections[i].name);
         }
-        Collections.createAlias({name: $scope.aliasToCreate, collections: collections.join(",")}, function(data) {
-          $scope.cancelCreateAlias();
-          $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
-          $location.path("/~collections/alias_" + $scope.aliasToCreate);
+        AliasesV2.createAlias({createAliasRequestBody: {name: $scope.aliasToCreate, collections: collections}}, function(error, data, response) {
+          $timeout(function() {
+            if (error) return;
+            $scope.cancelCreateAlias();
+            $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
+            $location.path("/~collections/alias_" + $scope.aliasToCreate);
+          });
         });
       }
       $scope.deleteAlias = function() {
-        Collections.deleteAlias({name: $scope.collection.name}, function(data) {
-          $scope.hideAll();
-          $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
-          $location.path("/~collections/");
+        AliasesV2.deleteAlias($scope.collection.name, {}, function(error, data, response) {
+          $timeout(function() {
+            if (error) return;
+            $scope.hideAll();
+            $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
+            $location.path("/~collections/");
+          });
         });
 
       };
@@ -162,26 +173,29 @@ solrAdminApp.controller('CollectionsController',
           $scope.addMessage = "A collection can't be made up of just PULL replicas";
         } else {
             var coll = $scope.newCollection;
-            var params = {
+            var createCollectionParams = {
               name: coll.name,
-              "router.name": coll.routerName,
+              router: {name: coll.routerName},
               numShards: coll.numShards,
-              "collection.configName": coll.configName
+              config: coll.configName
             };
-            if (coll.shards) params.shards = coll.shards;
-            if (coll.routerField) params["router.field"] = coll.routerField;
-            if (coll.createNodeSet) params.createNodeSet = coll.createNodeSet.join(",");
+            if (coll.shards) createCollectionParams.shardNames = coll.shards.split(",").map(function(s) { return s.trim(); });
+            if (coll.routerField) createCollectionParams.router.field = coll.routerField;
+            if (coll.createNodeSet) createCollectionParams.nodeSet = coll.createNodeSet;
             if ($scope.replicaTypesChosen()) {
-              params["nrtReplicas"] = coll.nrtReplicas;
-              params["tlogReplicas"] = coll.tlogReplicas;
-              params["pullReplicas"] = coll.pullReplicas;
+              createCollectionParams.nrtReplicas = coll.nrtReplicas;
+              createCollectionParams.tlogReplicas = coll.tlogReplicas;
+              createCollectionParams.pullReplicas = coll.pullReplicas;
             } else {
-              params["replicationFactor"] = coll.replicationFactor;
+              createCollectionParams.replicationFactor = coll.replicationFactor;
             }
-            Collections.add(params, function(data) {
-              $scope.cancelAddCollection();
-              $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
-              $location.path("/~collections/" + $scope.newCollection.name);
+            CollectionsV2.createCollection({createCollectionRequestBody: createCollectionParams}, function(error, data, response) {
+              $timeout(function() {
+                if (error) return;
+                $scope.cancelAddCollection();
+                $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
+                $location.path("/~collections/" + $scope.newCollection.name);
+              });
             });
         }
       };
@@ -202,8 +216,11 @@ solrAdminApp.controller('CollectionsController',
 
       $scope.deleteCollection = function() {
         if ($scope.collection.name == $scope.collectionDeleteConfirm) {
-            Collections.delete({name: $scope.collection.name}, function (data) {
-                $location.path("/~collections");
+            CollectionsV2.deleteCollection($scope.collection.name, {}, function (error, data, response) {
+                $timeout(function() {
+                    if (error) return;
+                    $location.path("/~collections");
+                });
             });
         } else {
             $scope.deleteMessage = "Collection names do not match.";
@@ -232,12 +249,11 @@ solrAdminApp.controller('CollectionsController',
           shard.showAdd = !shard.showAdd;
           delete $scope.addReplicaMessage;
 
-          Zookeeper.liveNodes({}, function(data) {
-            $scope.nodes = [];
-            var children = data.tree[0].children;
-            for (var child in children) {
-              $scope.nodes.push(children[child].text);
-            }
+          ClusterV2.listClusterNodes(function(error, data, response) {
+            $timeout(function() {
+              if (error) return;
+              $scope.nodes = data.nodes;
+            });
           });
       };
 
@@ -252,7 +268,8 @@ solrAdminApp.controller('CollectionsController',
       };
 
       $scope.deleteShard = function(shard) {
-          Collections.deleteShard({collection: shard.collection, shard:shard.name}, function(data) {
+          ShardsV2.deleteShard(shard.collection, shard.name, {}, function(error, data, response) {
+            if (error) return;
             shard.deleted = true;
             $timeout(function() {
               $scope.refresh();
@@ -261,7 +278,8 @@ solrAdminApp.controller('CollectionsController',
         }
 
       $scope.deleteReplica = function(replica) {
-        Collections.deleteReplica({collection: replica.collection, shard:replica.shard, replica:replica.name}, function(data) {
+        ReplicasV2.deleteReplicaByName(replica.collection, replica.shard, replica.name, {}, function(error, data, response) {
+          if (error) return;
           replica.deleted = true;
           $timeout(function() {
             $scope.refresh();
@@ -269,15 +287,14 @@ solrAdminApp.controller('CollectionsController',
         });
       }
       $scope.addReplica = function(shard) {
-        var params = {
-          collection: shard.collection,
-          shard: shard.name,
+        var createReplicaParams = {
           type: shard.replicaType
         }
         if (shard.replicaNodeName && shard.replicaNodeName != "") {
-          params.node = shard.replicaNodeName;
+          createReplicaParams.node = shard.replicaNodeName;
         }
-        Collections.addReplica(params, function(data) {
+        ReplicasV2.createReplica(shard.collection, shard.name, {createReplicaRequestBody: createReplicaParams}, function(error, data, response) {
+          if (error) return;
           shard.replicaAdded = true;
           $timeout(function () {
             shard.replicaAdded = false;
