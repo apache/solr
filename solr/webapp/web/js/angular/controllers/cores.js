@@ -173,7 +173,7 @@ solrAdminApp.controller('CoreAdminController',
       $scope.reloadCore = function() {
         if ($scope.initFailures[$scope.selectedCore]) {
           delete $scope.initFailures[$scope.selectedCore];
-          $scope.showInitFailures = Object.keys(data.initFailures).length>0;
+          $scope.showInitFailures = Object.keys($scope.initFailures).length>0;
         }
         CoresV2.reloadCore($scope.selectedCore,
           function(error, data, response) {

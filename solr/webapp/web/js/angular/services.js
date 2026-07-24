@@ -147,10 +147,6 @@ solrAdminServices.factory('System',
     // $resource, like SchemaDesigner/Security/Segments.
     return $resource('/api/node/threads', {'wt':'json', '_':Date.now()});
   }])
-.factory('Properties',
-  ['$resource', function($resource) {
-    return $resource('admin/info/properties', {'wt':'json', '_':Date.now()});
-  }])
 .factory('Replication',
   ['$resource', function($resource) {
     return $resource(':core/replication', {'wt':'json', core: "@core", '_':Date.now()}, {
