@@ -36,6 +36,9 @@ solrAdminApp.controller('QueryController',
 
       var params = {};
       params.core = $routeParams.core;
+      // The v2 config/params API needs to know up front whether ":core" is a collection name
+      // (SolrCloud) or an actual core name (standalone/user-managed); see paramsets.js for details.
+      params.indexType = $scope.isCloudEnabled ? "collections" : "cores";
       params.wt = "json";
 
       ParamSet.get(params, callback, failure);
