@@ -91,9 +91,6 @@ public interface CommonParams {
 
   // SOLR-4228 end
 
-  /** stylesheet to apply to XML results */
-  String XSL = "xsl";
-
   /** query and init param for field list */
   String FL = "fl";
 
@@ -162,7 +159,7 @@ public interface CommonParams {
   String CPU_ALLOWED = "cpuAllowed";
 
   /**
-   * Max query memory allocation value in mebibytes (float). If not set, or the value is &lt;= 0.0,
+   * Max query memory allocation value in megabytes (float). If not set, or the value is &lt;= 0.0,
    * there is no limit.
    */
   String MEM_ALLOWED = "memAllowed";
@@ -312,7 +309,6 @@ public interface CommonParams {
   String JAVABIN_MIME = "application/javabin";
 
   String FILE = "file";
-  String FILES = "files";
 
   String CHILDDOC = "_childDocuments_";
 }
