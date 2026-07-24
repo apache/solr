@@ -58,7 +58,7 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
       List<ActiveTaskDetails> taskList = ActiveTaskQuerySupport.listActiveTasks(req);
       if (taskList != null) {
         for (ActiveTaskDetails task : taskList) {
-          tasks.add(task.taskID, task.taskQuery);
+          tasks.add(task.id, task.query);
         }
       }
       rsp.add("taskList", tasks);

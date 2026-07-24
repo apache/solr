@@ -71,12 +71,12 @@ public class ActiveTaskTest extends SolrTestCaseJ4 {
     when(cancellableQueryTracker.getActiveQueriesGenerated()).thenReturn(mockIterator);
 
     ListActiveTaskResponse response = activeTask.listAllActiveTasks();
-    assertNotNull(response.taskList);
+    assertNotNull(response.tasks);
 
-    assertEquals(2, response.taskList.size());
+    assertEquals(2, response.tasks.size());
 
-    assertEquals("taskID1", response.taskList.get(0).taskID);
-    assertEquals("/search?q=h&gf=text-1", response.taskList.get(0).taskQuery);
+    assertEquals("taskID1", response.tasks.get(0).id);
+    assertEquals("/search?q=h&gf=text-1", response.tasks.get(0).query);
 
     assertNull(response.error);
   }
@@ -90,11 +90,11 @@ public class ActiveTaskTest extends SolrTestCaseJ4 {
     when(cancellableQueryTracker.isQueryIdActive("taskID_stopped")).thenReturn(false);
 
     TaskStatusResponse responseRunningTask = activeTask.getTaskStatus("taskID_running");
-    assertEquals(TaskStatusResponse.TaskStatus.ACTIVE, responseRunningTask.taskStatus);
+    assertEquals(TaskStatusResponse.TaskStatus.ACTIVE, responseRunningTask.status);
     assertNull(responseRunningTask.error);
 
     TaskStatusResponse responseStoppedTask = activeTask.getTaskStatus("taskID_stopped");
-    assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, responseStoppedTask.taskStatus);
+    assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, responseStoppedTask.status);
     assertNull(responseStoppedTask.error);
   }
 }

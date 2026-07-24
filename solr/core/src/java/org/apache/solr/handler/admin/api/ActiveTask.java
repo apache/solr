@@ -46,7 +46,7 @@ public class ActiveTask extends JerseyResource implements TasksApi {
   @PermissionName(READ_PERM)
   public ListActiveTaskResponse listAllActiveTasks() throws Exception {
     final ListActiveTaskResponse response = instantiateJerseyResponse(ListActiveTaskResponse.class);
-    response.taskList = ActiveTaskQuerySupport.listActiveTasks(solrQueryRequest);
+    response.tasks = ActiveTaskQuerySupport.listActiveTasks(solrQueryRequest);
     return response;
   }
 
@@ -57,7 +57,7 @@ public class ActiveTask extends JerseyResource implements TasksApi {
 
     boolean isTaskActive = ActiveTaskQuerySupport.isTaskActive(solrQueryRequest, taskID);
 
-    response.taskStatus =
+    response.status =
         (isTaskActive)
             ? TaskStatusResponse.TaskStatus.ACTIVE
             : TaskStatusResponse.TaskStatus.INACTIVE;
