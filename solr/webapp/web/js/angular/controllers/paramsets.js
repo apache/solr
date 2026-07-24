@@ -108,6 +108,13 @@ solrAdminApp.controller('ParamSetsController',
     $scope.refresh();
 
     $scope.submit = function () {
+      if (!$scope.paramsetContent || !$scope.paramsetContent.trim()) {
+        $scope.responseStatus = "error";
+        $scope.response = "Please enter a Paramset(s) JSON payload before submitting. " +
+          "(Checking \"Sample Paramset\" only shows an example -- copy it into the text area to use it.)";
+        return;
+      }
+
       var params = {};
 
       params.core = $routeParams.core;
@@ -134,7 +141,6 @@ solrAdminApp.controller('ParamSetsController',
 
       params.core = $routeParams.core;
       params.wt = "json";
-      params.name = $scope.name;
 
       var apiPayload = {
         "delete": [$scope.name]

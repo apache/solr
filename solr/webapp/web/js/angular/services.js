@@ -176,7 +176,15 @@ solrAdminServices.factory('System',
   }])
 .factory('ParamSet',
   ['$resource', function($resource) {
-    return $resource(':core/config/params/:name', {core: '@core', wt:'json', _:Date.now()}, {
+    // v2 GetConfigAPI/ModifyParamSetAPI (/api/collections/:core/config/params) still delegate
+    // straight through to the same v1 SolrConfigHandler, so the response shape is byte-identical
+    // -- no generated solrApi client class exists for it (old-style @EndPoint API, predates the
+    // OpenAPI-based v2 framework), so this stays a plain $resource, like Segments/Threads.
+    // NB: despite the "core" param name (kept for template/route compatibility), this must be a
+    // *collection* name -- the paramsets nav link is built from currentCollection.name (see
+    // index.html), since standalone mode no longer exists and cloud mode's v2 API distinguishes
+    // /cores/{coreName}/... from /collections/{collectionName}/... unlike v1's flexible routing.
+    return $resource('/api/collections/:core/config/params/:name', {core: '@core', wt:'json', _:Date.now()}, {
       "submit": {headers: {'Content-type': 'application/json'}, method: "POST"},
       "get": {headers: {'Content-type': 'application/json'}, method: "GET"}
     });
