@@ -99,16 +99,14 @@ solrAdminServices.factory('System',
       return new solrApi.ClusterApi();
     })
 .factory('Collections',
-  ['$resource', function($resource) {
-    // This v1 factory only covers "list"/"listaliases" (used by app.js's nav-list population) and
-    // "status"/CLUSTERSTATUS (used by collections.js, cloud.js, collection-overview.js) -- no
-    // single-request v2 equivalent for CLUSTERSTATUS exists yet, and no other actions here have
-    // any remaining callers.
-    return $resource('admin/collections',
-    {'wt':'json', '_':Date.now()}, {
-    "list": {params:{action: "LIST"}},
-    "listaliases": {params:{action: "LISTALIASES"}},
-    "status": {params:{action: "CLUSTERSTATUS"}}
+  ['$resource', function ($resource) {
+    // ERIC: NOT SURE ABOUT THIS CHUNK...
+    // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
+    // that v1's CLUSTERSTATUS action used, so the response shape is byte-identical -- no
+    // generated solrApi client class exists for it (old-style @EndPoint API, predates the
+    // OpenAPI-based v2 framework), so this stays a plain $resource, like Segments/Threads/ParamSet.
+    return $resource('/api/cluster', {'wt':'json', '_':Date.now()}, {
+      "status": {}
     });
   }])
 .factory('Logging',

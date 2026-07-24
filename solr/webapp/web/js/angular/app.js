@@ -495,7 +495,7 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, Collections, SystemV2, Ping, Constants, SchemaDesigner) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, CollectionsV2, AliasesV2, SystemV2, Ping, Constants, SchemaDesigner) {
 
   $rootScope.exceptions={};
 
@@ -554,37 +554,43 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         var currentCollectionName = $route.current.params.core;
         delete $scope.currentCollection;
         if ($scope.isCloudEnabled) {
-          Collections.list(function (cdata) {
-            Collections.listaliases(function (adata) {
-              $scope.aliases = [];
-              for (var key in adata.aliases) {
-                props = {};
-                if (key in adata.properties) {
-                  props = adata.properties[key];
-                }
-                var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
-                $scope.aliases.push(alias);
-                if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
-                  $scope.currentCollection = alias;
-                }
-              }
-              $scope.collections = [];
-              for (key in cdata.collections) {
-                if (cdata.collections[key].startsWith("._designer_")) {
-                  continue; // ignore temp designer collections
-                }
-                var collection = {name: cdata.collections[key], type: 'collection'};
-                $scope.collections.push(collection);
-                if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
-                  $scope.currentCollection = collection;
-                }
-              }
+          CollectionsV2.listCollections(function (error, cdata, response) {
+            $timeout(function() {
+              if (error) return;
+              AliasesV2.getAliases(function (error, adata, response) {
+                $timeout(function() {
+                  if (error) return;
+                  $scope.aliases = [];
+                  for (var key in adata.aliases) {
+                    props = {};
+                    if (key in adata.properties) {
+                      props = adata.properties[key];
+                    }
+                    var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
+                    $scope.aliases.push(alias);
+                    if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
+                      $scope.currentCollection = alias;
+                    }
+                  }
+                  $scope.collections = [];
+                  for (key in cdata.collections) {
+                    if (cdata.collections[key].startsWith("._designer_")) {
+                      continue; // ignore temp designer collections
+                    }
+                    var collection = {name: cdata.collections[key], type: 'collection'};
+                    $scope.collections.push(collection);
+                    if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
+                      $scope.currentCollection = collection;
+                    }
+                  }
 
-              $scope.aliases_and_collections = $scope.aliases;
-              if ($scope.aliases.length > 0) {
-                $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
-              }
-              $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+                  $scope.aliases_and_collections = $scope.aliases;
+                  if ($scope.aliases.length > 0) {
+                    $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
+                  }
+                  $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+                });
+              });
             });
           });
         }
