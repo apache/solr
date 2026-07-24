@@ -56,6 +56,12 @@ solrAdminServices.factory('System',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.CoresApi();
     })
+.factory('LoggingV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.LoggingApi();
+    })
 .factory('Collections',
   ['$resource', function($resource) {
     return $resource('admin/collections',
@@ -81,9 +87,11 @@ solrAdminServices.factory('System',
  }])
 .factory('Logging',
   ['$resource', function($resource) {
+    // "events" and "levels" were migrated to LoggingV2 (see logging.js). This v1 factory is kept
+    // only for "setLevel", which needs the "nodes=all" broadcast-to-every-node behavior that the
+    // v2 NodeLoggingApis endpoint doesn't support yet (see SOLR-16738). Retire this factory once
+    // setLevel moves to LoggingV2 too.
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
-      "events": {params: {since:'0'}},
-      "levels": {},
       "setLevel": {params: {nodes:'all'}}
       });
   }])
