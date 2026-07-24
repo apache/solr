@@ -92,16 +92,16 @@ V2 API::
   "responseHeader":{
     "status":0,
     "QTime":16},
-  "taskList":[
+  "tasks":[
     {
-      "taskID":"0",
-      "taskQuery":"q=weight_i:[0+TO+200]&canCancel=true&queryUUID=0"},
+      "id":"0",
+      "query":"q=weight_i:[0+TO+200]&canCancel=true&queryUUID=0"},
     {
-      "taskID":"5",
-      "taskQuery":"q=weight_i:[0+TO+200]&canCancel=true&queryUUID=5"},
+      "id":"5",
+      "query":"q=weight_i:[0+TO+200]&canCancel=true&queryUUID=5"},
     {
-      "taskID":"4bcd27bb-0792-4512-a699-532fa7878bd3",
-      "taskQuery":"q=weight_i:[0+TO+200]&canCancel=true"}]}
+      "id":"4bcd27bb-0792-4512-a699-532fa7878bd3",
+      "query":"q=weight_i:[0+TO+200]&canCancel=true"}]}
 ----
 ====
 ======
@@ -207,7 +207,7 @@ V2 API::
   "responseHeader":{
     "status":0,
     "QTime":16},
-  "taskStatus":"ACTIVE"}
+  "status":"ACTIVE"}
 ----
 ====
 ======
