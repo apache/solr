@@ -34,6 +34,7 @@
 ** xref:spatial-search.adoc[]
 ** xref:dense-vector-search.adoc[]
 ** xref:other-parsers.adoc[]
+*** xref:intervals-query-parser.adoc[]
 ** xref:sql-query.adoc[]
 *** xref:jdbc-dbvisualizer.adoc[]
 *** xref:jdbc-squirrel.adoc[]
