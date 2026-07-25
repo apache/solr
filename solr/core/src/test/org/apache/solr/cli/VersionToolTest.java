@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.solr.cli.tools.VersionTool;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;

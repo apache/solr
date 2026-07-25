@@ -17,6 +17,7 @@
 
 package org.apache.solr.cli;
 
+import org.apache.solr.cli.tools.CreateTool;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;

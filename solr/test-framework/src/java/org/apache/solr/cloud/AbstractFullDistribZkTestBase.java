@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.cli.ConfigSetUploadTool;
+import org.apache.solr.cli.tools.configset.ConfigSetUploadTool;
 import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.ToolRuntime;

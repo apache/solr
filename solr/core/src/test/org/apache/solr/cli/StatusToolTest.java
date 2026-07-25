@@ -17,6 +17,7 @@
 package org.apache.solr.cli;
 
 import java.util.Map;
+import org.apache.solr.cli.tools.StatusTool;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;

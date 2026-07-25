@@ -17,6 +17,7 @@
 
 package org.apache.solr.cli;
 
+import org.apache.solr.cli.tools.DeleteTool;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
