@@ -93,16 +93,13 @@ public class OtelRuntimeJvmMetrics {
                 if (free >= 0) measurement.record(free, Attributes.of(STATE_KEY_ATTR, "free"));
               },
               OtelUnit.BYTES);
-      log.info("Physical memory metrics enabled");
+      log.debug("Physical memory metrics enabled");
     } else {
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Physical memory metrics unavailable:"
-                + " com.sun.management.OperatingSystemMXBean not present on this JVM");
-      }
+      log.info(
+          "Physical memory metrics unavailable:"
+              + " com.sun.management.OperatingSystemMXBean not present on this JVM");
     }
     isInitialized = true;
-    log.info("JVM metrics collection successfully initialized");
     return this;
   }
 
