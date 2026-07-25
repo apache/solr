@@ -14,39 +14,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools;
 
-import java.util.Map;
-import org.apache.solr.cli.tools.StatusTool;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class StatusToolTest extends SolrCloudTestCase {
+public class VersionToolTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).configure();
+    configureCluster(1).configure();
   }
 
-  /** Check the tool returns expected details by specifying Solr URL on the command line. */
   @Test
-  public void testSolrUrlStatus() throws Exception {
+  public void testClientVersionOnly() throws Exception {
+    String[] toolArgs = new String[] {"version"};
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
+    VersionTool tool = new VersionTool(runtime);
+    tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
 
+    String output = runtime.getOutput();
+    assertTrue("Output should contain 'Client version:'", output.contains("Client version:"));
+    assertFalse("Output should not contain 'Server version:'", output.contains("Server version:"));
+  }
+
+  @Test
+  public void testClientAndServerVersion() throws Exception {
     JettySolrRunner randomJetty = cluster.getRandomJetty(random());
     String baseUrl = randomJetty.getBaseUrl().toString();
 
-    String[] toolArgs = new String[] {"status", "--solr-url", baseUrl};
+    String[] toolArgs = new String[] {"version", "--solr-url", baseUrl};
     CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
-    StatusTool tool = new StatusTool(runtime);
+    VersionTool tool = new VersionTool(runtime);
     tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
 
-    Map<?, ?> obj = (Map<?, ?>) Utils.fromJSON(runtime.getReader());
-    assertTrue(obj.containsKey("version"));
-    assertTrue(obj.containsKey("startTime"));
-    assertTrue(obj.containsKey("uptime"));
-    assertTrue(obj.containsKey("memory"));
+    String output = runtime.getOutput();
+    assertTrue("Output should contain 'Client version:'", output.contains("Client version:"));
+    assertTrue("Output should contain 'Server version:'", output.contains("Server version:"));
   }
 }

@@ -23,8 +23,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.cli.*;
 import org.apache.solr.cli.tools.UpdateACLTool;
-import org.apache.solr.cli.tools.configset.ConfigSetDownloadTool;
-import org.apache.solr.cli.tools.configset.ConfigSetUploadTool;
 
 /** Supports zk help information in the bin/solr script. */
 public class ZkToolHelp extends ToolBase {

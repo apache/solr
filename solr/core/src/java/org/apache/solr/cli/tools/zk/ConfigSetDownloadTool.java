@@ -14,9 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli.tools.configset;
+package org.apache.solr.cli.tools.zk;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -26,15 +27,11 @@ import org.apache.solr.cli.CommonCLIOptions;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
-import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.core.ConfigSetService;
-import org.apache.solr.util.FileTypeMagicUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Supports zk upconfig command in the bin/solr script. */
-public class ConfigSetUploadTool extends ToolBase {
+/** Supports zk downconfig command in the bin/solr script. */
+public class ConfigSetDownloadTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Option CONF_NAME_OPTION =
@@ -55,7 +52,7 @@ public class ConfigSetUploadTool extends ToolBase {
           .desc("Local directory with configs.")
           .get();
 
-  public ConfigSetUploadTool(ToolRuntime runtime) {
+  public ConfigSetDownloadTool(ToolRuntime runtime) {
     super(runtime);
   }
 
@@ -70,45 +67,41 @@ public class ConfigSetUploadTool extends ToolBase {
 
   @Override
   public String getName() {
-    return "upconfig";
+    return "downconfig";
   }
 
   @Override
   public String getUsage() {
-    return "bin/solr zk upconfig [-d <DIR>] [-n <NAME>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
+    return "bin/solr zk downconfig [-d <DIR>] [-n <NAME>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String zkHost = CLIUtils.getZkHost(cli);
 
-    final String solrInstallDir = EnvUtils.getProperty("solr.install.dir");
-    Path solrInstallDirPath = Path.of(solrInstallDir);
-
     String confName = cli.getOptionValue(CONF_NAME_OPTION);
     String confDir = cli.getOptionValue(CONF_DIR_OPTION);
 
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-      final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
-      Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
-
+      Path configSetPath = Path.of(confDir);
+      // we try to be nice about having the "conf" in the directory, and we create it if it's not
+      // there.
+      if (!configSetPath.endsWith("/conf")) {
+        configSetPath = configSetPath.resolve("conf");
+      }
+      Files.createDirectories(configSetPath);
       echo(
-          "Uploading "
-              + confPath.toAbsolutePath()
-              + " for config "
+          "Downloading configset "
               + confName
-              + " to ZooKeeper at "
-              + zkHost);
-      FileTypeMagicUtil.assertConfigSetFolderLegal(confPath);
-      ZkMaintenanceUtils.uploadToZK(
-          zkClient,
-          confPath,
-          ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
-          ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
+              + " from ZooKeeper at "
+              + zkHost
+              + " to directory "
+              + configSetPath.toAbsolutePath());
 
+      zkClient.downConfig(confName, configSetPath);
     } catch (Exception e) {
-      log.error("Could not complete upconfig operation for reason: ", e);
+      log.error("Could not complete downconfig operation for reason: ", e);
       throw (e);
     }
   }

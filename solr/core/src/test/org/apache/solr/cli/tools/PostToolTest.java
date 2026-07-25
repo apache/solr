@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -34,7 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cli.tools.PostTool;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;

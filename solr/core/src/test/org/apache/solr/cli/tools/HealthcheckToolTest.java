@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools;
 
 import java.util.Set;
-import org.apache.solr.cli.tools.HealthcheckTool;
+
+import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;

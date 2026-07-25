@@ -59,8 +59,8 @@ import org.apache.solr.cli.tools.StatusTool;
 import org.apache.solr.cli.tools.StreamTool;
 import org.apache.solr.cli.tools.UpdateACLTool;
 import org.apache.solr.cli.tools.VersionTool;
-import org.apache.solr.cli.tools.configset.ConfigSetDownloadTool;
-import org.apache.solr.cli.tools.configset.ConfigSetUploadTool;
+import org.apache.solr.cli.tools.zk.ConfigSetDownloadTool;
+import org.apache.solr.cli.tools.zk.ConfigSetUploadTool;
 import org.apache.solr.cli.tools.snapshot.SnapshotCreateTool;
 import org.apache.solr.cli.tools.snapshot.SnapshotDeleteTool;
 import org.apache.solr.cli.tools.snapshot.SnapshotDescribeTool;
@@ -248,23 +248,6 @@ public class SolrCLI implements CLIO {
     }
 
     throw new IllegalArgumentException(toolType + " is not a valid command!");
-  }
-
-  /**
-   * Returns the value of the option with the given name, or the value of the deprecated option. If
-   * both values are null, then it returns the default value.
-   *
-   * <p>If this method is marked as unused by your IDE, it means we have no deprecated CLI options
-   * currently, congratulations! This method is preserved for the next time we need to deprecate a
-   * CLI option.
-   */
-  public static String getOptionWithDeprecatedAndDefault(
-      CommandLine cli, Option opt, Option deprecated, String def) {
-    String val = cli.getOptionValue(opt);
-    if (val == null) {
-      val = cli.getOptionValue(deprecated);
-    }
-    return val == null ? def : val;
   }
 
   // TODO: SOLR-17429 - remove the custom logic when Commons CLI is upgraded and

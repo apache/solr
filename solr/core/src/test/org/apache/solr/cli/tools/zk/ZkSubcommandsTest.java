@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools.zk;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -27,13 +27,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.tools.ClusterTool;
 import org.apache.solr.cli.tools.UpdateACLTool;
-import org.apache.solr.cli.tools.configset.ConfigSetDownloadTool;
-import org.apache.solr.cli.tools.configset.ConfigSetUploadTool;
-import org.apache.solr.cli.tools.zk.ZkCpTool;
-import org.apache.solr.cli.tools.zk.ZkLsTool;
-import org.apache.solr.cli.tools.zk.ZkRmTool;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;

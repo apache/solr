@@ -14,14 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Locale;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.cli.tools.ApiTool;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;

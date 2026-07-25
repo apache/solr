@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
-import org.apache.solr.cli.tools.AssertTool;
+
+import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkStateReader;

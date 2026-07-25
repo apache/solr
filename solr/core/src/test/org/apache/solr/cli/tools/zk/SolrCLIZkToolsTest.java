@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools.zk;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -27,12 +27,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.cli.tools.configset.ConfigSetDownloadTool;
-import org.apache.solr.cli.tools.configset.ConfigSetUploadTool;
-import org.apache.solr.cli.tools.zk.ZkCpTool;
-import org.apache.solr.cli.tools.zk.ZkLsTool;
-import org.apache.solr.cli.tools.zk.ZkMvTool;
-import org.apache.solr.cli.tools.zk.ZkRmTool;
+
+import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.SolrZkClient;
