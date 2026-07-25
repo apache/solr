@@ -15,4 +15,5 @@
  * limitations under the License.
  */
 
+/** Utilities for discovering and managing Solr OS processes. */
 package org.apache.solr.cli.process;

@@ -15,4 +15,5 @@
  * limitations under the License.
  */
 
+/** CLI tools for ZooKeeper and config set operations. */
 package org.apache.solr.cli.tools.zk;

@@ -15,4 +15,5 @@
  * limitations under the License.
  */
 
+/** CLI tools for cluster status, health, and properties. */
 package org.apache.solr.cli.tools.cluster;

@@ -15,4 +15,5 @@
  * limitations under the License.
  */
 
+/** CLI tools for managing Solr collection snapshots. */
 package org.apache.solr.cli.tools.snapshot;

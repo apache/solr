@@ -17,7 +17,6 @@
 package org.apache.solr.cli.tools.cluster;
 
 import java.util.Map;
-
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cloud.SolrCloudTestCase;

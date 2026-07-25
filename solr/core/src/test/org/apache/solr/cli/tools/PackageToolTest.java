@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.ToolRuntime;

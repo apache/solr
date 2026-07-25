@@ -15,4 +15,5 @@
  * limitations under the License.
  */
 
+/** General-purpose Solr CLI tool implementations. */
 package org.apache.solr.cli.tools;
