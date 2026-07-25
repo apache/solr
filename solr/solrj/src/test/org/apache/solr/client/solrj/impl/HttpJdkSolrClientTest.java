@@ -641,6 +641,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   @Test(timeout = 30000)
   public void testConcurrentStreamedBodiesDoNotDeadlockWithHttp1() throws Exception {
     DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
+    DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
     String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
 
     int concurrency = 8;
@@ -656,13 +658,14 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
                   JsonQueryRequest q = buildLargeBodyQuery();
                   try {
                     q.process(client);
-                  } catch (Exception ignored) {
+                  } catch (SolrServerException | IOException e) {
+                    throw new RuntimeException(e);
                   }
                 },
                 callers));
       }
       CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]))
-          .get(45, TimeUnit.SECONDS);
+          .get(30, TimeUnit.SECONDS);
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(callers);
     }
