@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import org.apache.tools.ant.filters.ReplaceTokens
 import org.apache.tools.ant.util.TeeOutputStream
 
 // This project puts together a "distribution", assembling dependencies from
@@ -33,6 +34,9 @@ ext {
   devDir = file("$buildDir/dev")
   slimDevDir = file("$buildDir/dev-slim")
   batsLibsDir = file("$buildDir/bats-libs")
+  onlineDocUnavailable = "Not available for custom/SNAPSHOT builds -- run './gradlew documentation' from the source distribution to build docs locally."
+  onlineDocUrl = (project.solrDocUrl ? "${project.solrDocUrl}/" : onlineDocUnavailable).toString()
+  onlineChangesUrl = (project.solrDocUrl ? "${project.solrDocUrl}/changes/Changes.html" : onlineDocUnavailable).toString()
 }
 
 configurations {
@@ -40,7 +44,6 @@ configurations {
   example
   crossDcManager
   server
-  docs
   docker
   solrFullTgz
   solrSlimTgz
@@ -57,9 +60,6 @@ dependencies {
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
-
-  // Copy files from documentation output
-  docs project(path: ':solr:documentation', configuration: 'minimalSite')
 
   docker project(path: ':solr:docker', configuration: 'packaging')
 
@@ -92,6 +92,10 @@ distributions {
 
       from(projectDir, {
         include "README.txt"
+        filter(ReplaceTokens, tokens: [
+            SOLR_DOC_URL: onlineDocUrl,
+            SOLR_CHANGES_URL: onlineChangesUrl,
+        ])
       })
 
       from('static/lib', {
@@ -104,10 +108,6 @@ distributions {
 
       from(configurations.server, {
         into "server"
-      })
-
-      from(configurations.docs, {
-        into "docs"
       })
 
       from(configurations.docker, {
