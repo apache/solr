@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cli.tools;
+package org.apache.solr.cli.tools.cluster;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -30,7 +30,8 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.cli.*;
-import org.apache.solr.cli.tools.SolrProcessManager.SolrProcess;
+import org.apache.solr.cli.process.SolrProcessManager;
+import org.apache.solr.cli.process.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ClusterApi;
 import org.apache.solr.client.solrj.request.CollectionsApi;

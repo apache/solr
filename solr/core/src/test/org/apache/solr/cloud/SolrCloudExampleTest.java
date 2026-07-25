@@ -27,7 +27,7 @@ import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.tools.CreateTool;
 import org.apache.solr.cli.tools.DeleteTool;
-import org.apache.solr.cli.tools.HealthcheckTool;
+import org.apache.solr.cli.tools.cluster.HealthcheckTool;
 import org.apache.solr.cli.tools.PostTool;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.ToolRuntime;

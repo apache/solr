@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli.tools;
+package org.apache.solr.cli.process;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.BufferedReader;
@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Pair;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.cli.tools.SolrProcessManager.SolrProcess;
+import org.apache.solr.cli.process.SolrProcessManager.SolrProcess;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -97,7 +97,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
             "-DmockSolr=true",
             "-cp",
             classPath,
-            "org.apache.solr.cli.tools.SolrProcessManagerTest$MockSolrProcess",
+            "org.apache.solr.cli.process.SolrProcessManagerTest$MockSolrProcess",
             https ? "--module=https" : "--module=http");
 
     // Start the process and read first line of output

@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cli.tools;
+package org.apache.solr.cli.tools.cluster;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.CommonCLIOptions;
@@ -26,40 +28,57 @@ import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 
 /**
- * Supports updating ACL for a path in ZK
+ * Supports cluster command in the bin/solr script.
  *
- * <p>Set ACL properties by directly manipulating ZooKeeper.
+ * <p>Set cluster properties by directly manipulating ZooKeeper.
  */
-public class UpdateACLTool extends ToolBase {
+public class ClusterTool extends ToolBase {
   // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 
-  public UpdateACLTool(ToolRuntime runtime) {
+  private static final Option PROPERTY_OPTION =
+      Option.builder()
+          .longOpt("property")
+          .hasArg()
+          .argName("PROPERTY")
+          .required()
+          .desc("Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
+          .get();
+
+  private static final Option VALUE_OPTION =
+      Option.builder()
+          .longOpt("value")
+          .hasArg()
+          .argName("VALUE")
+          .desc("Set the property to this value.")
+          .get();
+
+  public ClusterTool(ToolRuntime runtime) {
     super(runtime);
   }
 
   @Override
   public String getName() {
-    return "updateacls";
-  }
-
-  @Override
-  public String getUsage() {
-    return "bin/solr zk updateacls [-z <HOST>";
+    return "cluster";
   }
 
   @Override
   public Options getOptions() {
-    return super.getOptions().addOption(CommonCLIOptions.ZK_HOST_OPTION);
+    return super.getOptions()
+        .addOption(PROPERTY_OPTION)
+        .addOption(VALUE_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
 
+    String propertyName = cli.getOptionValue(PROPERTY_OPTION);
+    String propertyValue = cli.getOptionValue(VALUE_OPTION);
     String zkHost = CLIUtils.getZkHost(cli);
-    String path = cli.getArgs()[0];
 
     if (!ZkController.checkChrootPath(zkHost, true)) {
       throw new IllegalStateException(
@@ -72,7 +91,14 @@ public class UpdateACLTool extends ToolBase {
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
 
-      zkClient.updateACLs(path);
+      ClusterProperties props = new ClusterProperties(zkClient);
+      try {
+        props.setClusterProperty(propertyName, propertyValue);
+      } catch (IOException ex) {
+        throw new Exception(
+            "Unable to set the cluster property due to following error : "
+                + ex.getLocalizedMessage());
+      }
     }
   }
 }

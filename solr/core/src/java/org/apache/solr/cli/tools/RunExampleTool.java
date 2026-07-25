@@ -46,6 +46,7 @@ import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cli.*;
+import org.apache.solr.cli.tools.cluster.StatusTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrException;
