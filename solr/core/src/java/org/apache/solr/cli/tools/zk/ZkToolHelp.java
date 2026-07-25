@@ -21,7 +21,8 @@ import static org.apache.solr.cli.SolrCLI.print;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.solr.cli.*;
+import org.apache.solr.cli.ToolBase;
+import org.apache.solr.cli.ToolRuntime;
 
 /** Supports zk help information in the bin/solr script. */
 public class ZkToolHelp extends ToolBase {
