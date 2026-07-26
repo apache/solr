@@ -23,12 +23,12 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.slf4j.Logger;
 import org.slf4j.MDC;
 
 /** */
 public class SolrException extends RuntimeException {
 
+  // Can I be removed???  TODO
   private final Map<String, String> mdcContext;
 
   /**
@@ -52,7 +52,7 @@ public class SolrException extends RuntimeException {
     UNKNOWN(0);
     public final int code;
 
-    private ErrorCode(int c) {
+    ErrorCode(int c) {
       code = c;
     }
 
@@ -62,7 +62,7 @@ public class SolrException extends RuntimeException {
       }
       return UNKNOWN;
     }
-  };
+  }
 
   public SolrException(ErrorCode code, String msg) {
     super(msg);
@@ -179,35 +179,5 @@ public class SolrException extends RuntimeException {
     }
 
     return new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
-  }
-
-  public void logInfoWithMdc(Logger logger, String msg) {
-    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
-    MDC.setContextMap(mdcContext);
-    try {
-      logger.info(msg);
-    } finally {
-      MDC.setContextMap(previousMdcContext);
-    }
-  }
-
-  public void logDebugWithMdc(Logger logger, String msg) {
-    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
-    MDC.setContextMap(mdcContext);
-    try {
-      logger.debug(msg);
-    } finally {
-      MDC.setContextMap(previousMdcContext);
-    }
-  }
-
-  public void logWarnWithMdc(Logger logger, String msg) {
-    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
-    MDC.setContextMap(mdcContext);
-    try {
-      logger.warn(msg);
-    } finally {
-      MDC.setContextMap(previousMdcContext);
-    }
   }
 }

@@ -308,10 +308,6 @@ public abstract class ContentStreamBase implements ContentStream {
     return sourceInfo;
   }
 
-  public void setSourceInfo(String sourceInfo) {
-    this.sourceInfo = sourceInfo;
-  }
-
   public static ContentStream create(
       RequestWriter requestWriter, @SuppressWarnings({"rawtypes"}) SolrRequest req)
       throws IOException {
