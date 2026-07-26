@@ -18,6 +18,8 @@
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import org.apache.commons.codec.digest.DigestUtils
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
 
 description = 'Solr Docker image'
 
@@ -149,10 +151,16 @@ def checksum = {file ->
   return new DigestUtils(DigestUtils.sha512Digest).digestAsHex(file).trim()
 }
 
+interface ExecOperationsHolder {
+  @Inject
+  ExecOperations getExecOperations()
+}
+def execOps = project.objects.newInstance(ExecOperationsHolder).execOperations
+
 // Helper method to get Docker Buildx builder info, throws exception if not available
 def getBuildxBuilderInfo = {
   def builderCheckOutput = new ByteArrayOutputStream()
-  def builderCheckResult = exec {
+  def builderCheckResult = execOps.exec {
     ignoreExitValue = true
     standardOutput = builderCheckOutput
     errorOutput = new ByteArrayOutputStream()
@@ -201,7 +209,7 @@ task dockerBuild() {
   dependsOn(solrTgzConfiguration)
 
   doLast {
-    exec {
+    execOps.exec {
       standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
       commandLine "docker", "build",
           "-f", "solr-${-> project.version}${dockerImageDistSuffix}/docker/Dockerfile",
@@ -238,7 +246,7 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
   doLast {
     def dockerImageId = dockerImageIdFile.text
 
-    exec {
+    execOps.exec {
       commandLine "docker", "tag", dockerImageId, inputs.properties.dockerImageName
     }
 
@@ -312,7 +320,7 @@ task dockerPush(dependsOn: tasks.dockerTag) {
       }
 
       def solrTgzConfiguration = getSolrTgzConfiguration()
-      exec {
+      execOps.exec {
         standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
         commandLine "docker", "buildx", "build",
             "-f", "solr-${-> project.version}${dockerImageDistSuffix}/docker/Dockerfile",
@@ -326,7 +334,7 @@ task dockerPush(dependsOn: tasks.dockerTag) {
       project.logger.lifecycle("\tPlatforms: \t$platformValue")
     } else {
       // Standard push (works for both standard builds and single-platform buildx builds)
-      exec {
+      execOps.exec {
         commandLine "docker", "push", dockerImageName
       }
       project.logger.lifecycle("Solr Docker Image Pushed: \t$dockerImageName")
@@ -534,7 +542,7 @@ if (''.equals(releaseGpgFingerprint)) {
       try {
         // run an httpd server to host our artifacts
         logger.lifecycle('Running mock HTTPD server our testing...');
-        exec {
+        execOps.exec {
           commandLine 'docker', 'run',
               '--cidfile', mockServerIdFile,
               '--rm',
@@ -547,7 +555,7 @@ if (''.equals(releaseGpgFingerprint)) {
         try {
           def mockServerId = mockServerIdFile.text
           def mockServerIpStdOut = new ByteArrayOutputStream()
-          exec {
+          execOps.exec {
             commandLine 'docker',
                 'inspect',
                 "--format={{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
@@ -564,7 +572,7 @@ if (''.equals(releaseGpgFingerprint)) {
           if (!project(":solr:distribution").ext.withSignedArtifacts) {
             downloadHost = "mock-downloads.test.org"
           }
-          exec {
+          execOps.exec {
             standardInput =
                 file("${dockerfilesDirPath}/Dockerfile.official-${lowerVariant}")
                     .newDataInputStream()
@@ -588,7 +596,7 @@ if (''.equals(releaseGpgFingerprint)) {
           if (mockServerIdFile.exists()) {
             def mockServerId = mockServerIdFile.text
             try {
-              exec {commandLine 'docker', 'stop', mockServerId}
+              execOps.exec {commandLine 'docker', 'stop', mockServerId}
             } catch (Exception e) {
               logger.error("Unable to stop docker container ${mockServerId}", e)
               if (null != mainException) {

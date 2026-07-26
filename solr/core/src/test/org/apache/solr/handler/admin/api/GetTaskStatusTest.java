@@ -65,11 +65,11 @@ public class GetTaskStatusTest extends SolrTestCaseJ4 {
     TaskStatusResponse taskStatusResponse;
 
     taskStatusResponse = getTaskStatus.getTaskStatus("taskID_running");
-    assertEquals(TaskStatusResponse.TaskStatus.ACTIVE, taskStatusResponse.taskStatus);
+    assertEquals(TaskStatusResponse.TaskStatus.ACTIVE, taskStatusResponse.status);
     assertNull(taskStatusResponse.error);
 
     taskStatusResponse = getTaskStatus.getTaskStatus("taskID_stopped");
-    assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, taskStatusResponse.taskStatus);
+    assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, taskStatusResponse.status);
     assertNull(taskStatusResponse.error);
   }
 }

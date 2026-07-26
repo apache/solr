@@ -122,6 +122,12 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
     }
 
     super.init(schema, args);
+
+    if (FLAT_ALGORITHM.equals(getKnnAlgorithm())) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "knnAlgorithm 'flat' is not supported for ScalarQuantizedDenseVectorField");
+    }
   }
 
   @Override

@@ -99,7 +99,10 @@ like when using it with "classpath [dependency]" or for version alignment.
 
 The next you want to update the lockfiles file using the following command:
 
-gradlew resolveAndLockAll --write-locks
+gradlew resolveAndLockAll collectJarInfos --write-locks
+
+The collectJarInfos task is included because it also resolves the dynamic
+"...Copy" configurations used by jar validation.
 
 Starting in Solr 10, we also have to update a kotlin-js-store lockfile
 that is used by the new Admin UI WebAssembly target. This can be done by
@@ -256,27 +259,32 @@ in Maven Central, or in the artifact downloaded by maven when the library
 is added as a dependency (in IntelliJ IDEA the libraries can be found
 in the project view under External Libraries at the bottom).
 
-Gradle analyzeDependencies and analyzeTestDependencies
------------------------------------------
+Analyzing dependencies (dependency-analysis / build-health)
+-------------------------------------------------------------
 
-We use the "cutterslade.analyze" build plugin to help maintain good dependency hygiene.
-It tries to identify when a dependency is needlessly declared, and then fail the build to complain.
-Unfortunately, it also requires us to add declarations that Gradle would otherwise deem unnecessary,
- since the plugin isn't aware of the semantics of "api" scope.
+We use the "com.autonomousapps.dependency-analysis" build plugin (aka "DAGP" or
+"build-health") to help maintain good dependency hygiene. It identifies things like
+unused dependency declarations, transitive dependencies that are used directly and
+should be declared, and dependencies declared in the wrong configuration (e.g.
+"implementation" instead of "api").
 
-Since the plugin is imperfect, there are rare scenarios where we need to use one of its many special
- gradle configurations, such as permitUnusedDeclared and permitTestUnusedDeclared.
-Please avoid them by finding alternatives (if possible) -- get peer review.
+Run it explicitly with:
+
+    gradlew analyzeDependencies
+
+This prints a per-project report of current advice; nothing fails.
+
+Since the plugin is imperfect, some projects/issue-types are suppressed.  Matters of "api" versus
+"implementation" are subjective. Please avoid adding new suppressions where possible -- get peer review first.
 
 For example, did you declare something as implementation (or testImplementation) but it's not needed at compile time?
 Remove it.
 If it's needed at runtime, then add as runtimeOnly (or testRuntimeOnly), *if* it otherwise
 doesn't come transitively as such.
-Let passing tests be your guide.
-Try to be minimalist, omitting dependency declarations unless a failing build requires that you add them.
 
-At each iteration of experimentation doing any dependency change in a build, write the gradle dependency locks.
+If you are iterating / experimentation on dependency changes, regenerate the gradle lockfiles
+after each change to avoid errors.
 *Then* run checks or otherwise evaluate the results.
 A failure due to dependency locks is generally a failure to remember to write locks; it usually doesn't mean your build edits are flawed.
 
-For more info: https://github.com/gradle-dependency-analyze/gradle-dependency-analyze
+For more info: https://github.com/autonomousapps/dependency-analysis-gradle-plugin

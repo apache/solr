@@ -1,0 +1,7 @@
+title: Update com.ibm.icu:icu4j to v78
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3836
+  url: https://github.com/apache/solr/pull/3836

@@ -914,6 +914,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
+   * Validates a JSON DSL request matches the given JSON test expressions
+   *
+   * @param jsonBody The JSON DSL request body to send to Solr
+   * @param tests JSON path expression + '==' + expected value
+   * @see JSONTestUtil#DEFAULT_DELTA
+   * @see #assertJQ(SolrQueryRequest,double,String...)
+   * @return The request response as a JSON String if all test patterns pass
+   */
+  public static String assertJJQ(String jsonBody, String... tests) throws Exception {
+    SolrQueryRequestBase jreq = (SolrQueryRequestBase) req();
+    jreq.setContentStreams(List.of(new ContentStreamBase.StringStream(jsonBody)));
+    return assertJQ(jreq, JSONTestUtil.DEFAULT_DELTA, tests);
+  }
+
+  /**
    * Validates a query matches some JSON test expressions using the default double delta tolerance.
    *
    * @see JSONTestUtil#DEFAULT_DELTA
@@ -2597,14 +2612,20 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   protected String getSaferTestName() {
-    // test names can hold additional info, like the test seed
-    // only take to first space
+    // test names can hold additional info, like the test seed:
+    //   "testFoo {seed=[...]}" (older runners) or "testFoo[seed=[...]]" (randomizedtesting 2.9+)
+    // keep only the method name, up to the first space or '['
     String testName = getTestName();
-    int index = testName.indexOf(' ');
-    if (index > 0) {
-      testName = testName.substring(0, index);
+    int index = testName.length();
+    int space = testName.indexOf(' ');
+    if (space > 0) {
+      index = space;
     }
-    return testName;
+    int bracket = testName.indexOf('[');
+    if (bracket > 0 && bracket < index) {
+      index = bracket;
+    }
+    return testName.substring(0, index);
   }
 
   @BeforeClass

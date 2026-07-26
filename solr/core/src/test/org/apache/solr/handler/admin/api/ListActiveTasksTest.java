@@ -70,15 +70,15 @@ public class ListActiveTasksTest extends SolrTestCaseJ4 {
     when(cancellableQueryTracker.getActiveQueriesGenerated()).thenReturn(mockIterator);
 
     ListActiveTaskResponse response = listActiveTasks.listAllActiveTasks();
-    assertNotNull(response.taskList);
+    assertNotNull(response.tasks);
 
-    assertEquals(2, response.taskList.size());
+    assertEquals(2, response.tasks.size());
 
-    assertEquals("taskID1", response.taskList.get(0).taskID);
-    assertEquals("/search?q=h&gf=text-1", response.taskList.get(0).taskQuery);
+    assertEquals("taskID1", response.tasks.get(0).id);
+    assertEquals("/search?q=h&gf=text-1", response.tasks.get(0).query);
 
-    assertEquals("taskID2", response.taskList.get(1).taskID);
-    assertEquals("/search?q=h&gf=text-2", response.taskList.get(1).taskQuery);
+    assertEquals("taskID2", response.tasks.get(1).id);
+    assertEquals("/search?q=h&gf=text-2", response.tasks.get(1).query);
 
     assertNull(response.error);
   }

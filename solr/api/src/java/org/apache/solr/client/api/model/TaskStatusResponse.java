@@ -36,5 +36,5 @@ public class TaskStatusResponse extends SolrJerseyResponse {
     }
   }
 
-  @JsonProperty public TaskStatus taskStatus;
+  @JsonProperty public TaskStatus status;
 }

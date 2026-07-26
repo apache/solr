@@ -44,7 +44,7 @@ public class GetTaskStatus extends JerseyResource implements TasksApi.Status {
     boolean isTaskActive =
         solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskID);
 
-    response.taskStatus = (isTaskActive) ? TaskStatus.ACTIVE : TaskStatus.INACTIVE;
+    response.status = (isTaskActive) ? TaskStatus.ACTIVE : TaskStatus.INACTIVE;
 
     return response;
   }

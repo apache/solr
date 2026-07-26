@@ -45,6 +45,7 @@ import org.apache.commons.cli.help.TextHelpAppendable;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
@@ -143,7 +144,7 @@ public class SolrCLI implements CLIO {
     argList.addAll(dashDList);
 
     // for SSL support, try to accommodate relative paths set for SSL store props
-    String solrInstallDir = System.getProperty("solr.install.dir");
+    String solrInstallDir = EnvUtils.getProperty("solr.install.dir");
     if (solrInstallDir != null) {
       checkSslStoreSysProp(solrInstallDir, "keyStore");
       checkSslStoreSysProp(solrInstallDir, "trustStore");
@@ -154,7 +155,7 @@ public class SolrCLI implements CLIO {
 
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
     String sysProp = "javax.net.ssl." + key;
-    String keyStore = System.getProperty(sysProp);
+    String keyStore = EnvUtils.getProperty(sysProp);
     if (keyStore == null) return;
 
     Path keyStoreFile = Path.of(keyStore);

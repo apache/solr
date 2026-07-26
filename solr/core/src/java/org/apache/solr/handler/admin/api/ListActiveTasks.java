@@ -44,7 +44,7 @@ public class ListActiveTasks extends JerseyResource implements TasksApi.List {
   @PermissionName(READ_PERM)
   public ListActiveTaskResponse listAllActiveTasks() throws Exception {
     final ListActiveTaskResponse response = instantiateJerseyResponse(ListActiveTaskResponse.class);
-    response.taskList = extractActiveTaskLists();
+    response.tasks = extractActiveTaskLists();
     return response;
   }
 
