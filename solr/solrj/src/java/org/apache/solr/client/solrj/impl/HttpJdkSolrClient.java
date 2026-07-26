@@ -37,13 +37,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
@@ -115,24 +111,13 @@ public class HttpJdkSolrClient extends HttpSolrClient {
       this.executor = builder.getExecutor();
       this.shutdownExecutor = false;
     } else {
-      BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(1024);
       this.executor =
-          new ExecutorUtil.MDCAwareThreadPoolExecutor(
-              4,
-              256,
-              60,
-              TimeUnit.SECONDS,
-              queue,
-              new SolrNamedThreadFactory(this.getClass().getSimpleName()));
+          ExecutorUtil.newMDCAwareCachedThreadPool(
+              new SolrNamedThreadFactory(this.getClass().getSimpleName() + "-reqBody"));
       this.shutdownExecutor = true;
     }
     this.httpClientExecutor =
-        new ExecutorUtil.MDCAwareThreadPoolExecutor(
-            0,
-            Integer.MAX_VALUE,
-            60,
-            TimeUnit.SECONDS,
-            new SynchronousQueue<>(),
+        ExecutorUtil.newMDCAwareCachedThreadPool(
             new SolrNamedThreadFactory(this.getClass().getSimpleName() + "-http"));
     httpClientBuilder.executor(this.httpClientExecutor);
 
