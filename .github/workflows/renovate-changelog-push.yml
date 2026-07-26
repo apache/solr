@@ -3,6 +3,10 @@ name: Generate Renovate Changelog (Stage 2 - Push)
 # Stage 2: runs after Stage 1 completes, in the base-repo context with access to
 # SOLRBOT_GITHUB_TOKEN. Downloads the pre-generated artifact (no fork code executed here),
 # validates metadata, and pushes the changelog file to the fork branch.
+#
+# If Stage 1 flagged SKIP=true in the artifact metadata (PR has the
+# 'no-changelog' label, or a user manually edited changelog/unreleased/),
+# this workflow leaves the changelog untouched.
 on:
   workflow_run:
     workflows:
@@ -53,6 +57,7 @@ jobs:
           PR_NUMBER=$(grep '^PR_NUMBER=' "$META_FILE" | cut -d= -f2- || true)
           HEAD_REF=$(grep  '^HEAD_REF='  "$META_FILE" | cut -d= -f2- || true)
           HEAD_REPO=$(grep '^HEAD_REPO=' "$META_FILE" | cut -d= -f2- || true)
+          SKIP=$(grep      '^SKIP='      "$META_FILE" | cut -d= -f2- || true)
 
           if [ -z "$PR_NUMBER" ] || [ -z "$HEAD_REF" ] || [ -z "$HEAD_REPO" ]; then
             echo "::error::Missing required metadata fields (PR_NUMBER, HEAD_REF, or HEAD_REPO)"; exit 1
@@ -75,12 +80,21 @@ jobs:
             echo "::error::HEAD_REF is not a valid Git branch name: '$HEAD_REF'"; exit 1
           fi
 
+          # SKIP is optional (absent in artifacts from older Stage 1 runs); default to false
+          if [ "$SKIP" = "true" ]; then
+            echo "::notice::Stage 1 flagged skip for PR#${PR_NUMBER} — leaving changelog untouched"
+          else
+            SKIP=false
+          fi
+
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
           echo "head_ref=$HEAD_REF"   >> "$GITHUB_OUTPUT"
           echo "head_repo=$HEAD_REPO" >> "$GITHUB_OUTPUT"
-          echo "Validated: PR#${PR_NUMBER} on ${HEAD_REPO}@${HEAD_REF}"
+          echo "skip=$SKIP"           >> "$GITHUB_OUTPUT"
+          echo "Validated: PR#${PR_NUMBER} on ${HEAD_REPO}@${HEAD_REF} (skip=${SKIP})"
 
       - name: Clone fork branch
+        if: steps.meta.outputs.skip != 'true'
         env:
           SOLRBOT_TOKEN: ${{ secrets.SOLRBOT_GITHUB_TOKEN }}
           HEAD_REPO: ${{ steps.meta.outputs.head_repo }}
@@ -97,6 +111,7 @@ jobs:
             fork-checkout
 
       - name: Apply changelog to fork checkout
+        if: steps.meta.outputs.skip != 'true'
         id: apply
         env:
           PR_NUMBER: ${{ steps.meta.outputs.pr_number }}

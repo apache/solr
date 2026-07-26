@@ -267,7 +267,8 @@ public class AuthTool extends ToolBase {
           if (!updateIncludeFileOnly) {
             echoIfVerbose("Uploading following security.json: " + securityJson);
             try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-              zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8));
+              zkClient.makePath(
+                  "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), false);
             }
           }
 
@@ -368,7 +369,7 @@ public class AuthTool extends ToolBase {
       echoIfVerbose("Uploading following security.json: {}");
 
       try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-        zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8));
+        zkClient.makePath("/security.json", "{}".getBytes(StandardCharsets.UTF_8), false);
       }
     }
   }

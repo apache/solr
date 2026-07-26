@@ -290,9 +290,11 @@ public abstract class HttpSolrClient extends SolrClient {
         try {
           ByteArrayOutputStream body = new ByteArrayOutputStream();
           is.transferTo(body);
+          Charset charset = encoding != null ? Charset.forName(encoding) : FALLBACK_CHARSET;
           throw new RemoteSolrException(
-              urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
-        } catch (IOException e) {
+              urlExceptionMessage, httpStatus, prefix + body.toString(charset), null);
+          // IllegalArgumentException covers an unsupported/invalid charset name from the response
+        } catch (IOException | IllegalArgumentException e) {
           throw new RemoteSolrException(
               urlExceptionMessage,
               httpStatus,
