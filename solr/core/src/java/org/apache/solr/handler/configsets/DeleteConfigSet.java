@@ -21,10 +21,13 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_P
 
 import jakarta.inject.Inject;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.solr.client.api.endpoint.ConfigsetsApi;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.DeleteConfigSetResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
@@ -49,17 +52,36 @@ public class DeleteConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.D
 
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  public SolrJerseyResponse deleteConfigSet(String configSetName) throws Exception {
-    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+  public DeleteConfigSetResponse deleteConfigSet(String configSetName, Boolean ifUnused)
+      throws Exception {
+    final var response = instantiateJerseyResponse(DeleteConfigSetResponse.class);
     if (StrUtils.isNullOrEmpty(configSetName) || StrUtils.isBlank(configSetName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "No configset name provided to delete");
     }
+
+    if (Boolean.TRUE.equals(ifUnused) && coreContainer.isZooKeeperAware()) {
+      List<String> collectionsUsingConfigSet =
+          coreContainer
+              .getZkController()
+              .getClusterState()
+              .collectionStream()
+              .filter(collection -> configSetName.equals(collection.getConfigName()))
+              .map(DocCollection::getName)
+              .collect(Collectors.toList());
+      if (!collectionsUsingConfigSet.isEmpty()) {
+        response.deleted = false;
+        response.collectionsUsingConfigSet = collectionsUsingConfigSet;
+        return response;
+      }
+    }
+
     final Map<String, Object> configsetCommandMsg = new HashMap<>();
     configsetCommandMsg.put(NAME, configSetName);
 
     runConfigSetCommand(
         solrQueryResponse, ConfigSetParams.ConfigSetAction.DELETE, configsetCommandMsg);
+    response.deleted = true;
     return response;
   }
 }
