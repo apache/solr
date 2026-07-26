@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import org.apache.tools.ant.filters.ReplaceTokens
 import org.apache.tools.ant.util.TeeOutputStream
 
 // This project puts together a "distribution", assembling dependencies from
@@ -32,6 +33,10 @@ ext {
   slimDistDir = file("$buildDir/solr-${version}-slim")
   devDir = file("$buildDir/dev")
   slimDevDir = file("$buildDir/dev-slim")
+  batsLibsDir = file("$buildDir/bats-libs")
+  onlineDocUnavailable = "Not available for custom/SNAPSHOT builds -- run './gradlew documentation' from the source distribution to build docs locally."
+  onlineDocUrl = (project.solrDocUrl ? "${project.solrDocUrl}/" : onlineDocUnavailable).toString()
+  onlineChangesUrl = (project.solrDocUrl ? "${project.solrDocUrl}/changes/Changes.html" : onlineDocUnavailable).toString()
 }
 
 configurations {
@@ -39,7 +44,6 @@ configurations {
   example
   crossDcManager
   server
-  docs
   docker
   solrFullTgz
   solrSlimTgz
@@ -56,9 +60,6 @@ dependencies {
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
-
-  // Copy files from documentation output
-  docs project(path: ':solr:documentation', configuration: 'minimalSite')
 
   docker project(path: ':solr:docker', configuration: 'packaging')
 
@@ -91,6 +92,10 @@ distributions {
 
       from(projectDir, {
         include "README.txt"
+        filter(ReplaceTokens, tokens: [
+            SOLR_DOC_URL: onlineDocUrl,
+            SOLR_CHANGES_URL: onlineChangesUrl,
+        ])
       })
 
       from('static/lib', {
@@ -103,10 +108,6 @@ distributions {
 
       from(configurations.server, {
         into "server"
-      })
-
-      from(configurations.docs, {
-        into "docs"
       })
 
       from(configurations.docker, {
@@ -249,18 +250,39 @@ tasks.register('runDev', JavaExec) {
   args((project.findProperty('args') ?: '--module=http').split())
 }
 
-task downloadBats(type: NpmTask) {
+tasks.register('downloadBats') {
   group = 'Build Dependency Download'
-  args = ["install", "https://github.com/bats-core/bats-core#v${libs.versions.bats.core.get()}",
-      "https://github.com/bats-core/bats-assert#v${libs.versions.bats.assert.get()}",
-      "https://github.com/bats-core/bats-file#v${libs.versions.bats.file.get()}",
-  ]
+  description =
+      'Downloads BATS and its helper libraries (bats-support, bats-assert, bats-file) used by integrationTests'
 
-  inputs.files("${project.ext.nodeProjectDir}/package.json")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-support")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-assert")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-file")
+  def batsLibs = [
+      [org: 'bats-core', repo: 'bats-core', version: libs.versions.bats.core.get()],
+      [org: 'ztombol', repo: 'bats-support', version: libs.versions.bats.support.get()],
+      [org: 'bats-core', repo: 'bats-assert', version: libs.versions.bats.assert.get()],
+      [org: 'bats-core', repo: 'bats-file', version: libs.versions.bats.file.get()],
+  ]
+  def downloadDir = file("$buildDir/bats-downloads")
+
+  inputs.property('batsLibs', batsLibs)
+  outputs.dir(batsLibsDir)
+
+  doLast {
+    delete batsLibsDir
+    mkdir downloadDir
+    batsLibs.each {lib ->
+      def archiveUrl = "https://github.com/${lib.org}/${lib.repo}/archive/refs/tags/v${lib.version}.tar.gz"
+      def archiveFile = new File(downloadDir, "${lib.repo}-${lib.version}.tar.gz")
+      ant.get(src: archiveUrl, dest: archiveFile, skipexisting: true)
+      copy {
+        from(tarTree(resources.gzip(archiveFile))) {
+          // Strip the leading "<repo>-<version>/" directory that GitHub's archive adds.
+          eachFile {details -> details.path = details.path.substring(details.path.indexOf('/') + 1)}
+          includeEmptyDirs = false
+        }
+        into "$batsLibsDir/${lib.repo}"
+      }
+    }
+  }
 }
 
 task integrationTests(type: BatsTask) {
@@ -312,7 +334,7 @@ task integrationTests(type: BatsTask) {
   environment SOLR_LOGS_DIR: "$solrHome/logs"
   environment TEST_OUTPUT_DIR: integrationTestOutput
   environment TEST_FAILURE_DIR: solrTestFailuresDir
-  environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
+  environment BATS_LIB_PREFIX: batsLibsDir
 }
 
 abstract class BatsTask extends Exec {
@@ -337,7 +359,7 @@ abstract class BatsTask extends Exec {
   @Override
   @TaskAction
   protected void exec() {
-    executable "$project.ext.nodeProjectDir/node_modules/bats/bin/bats"
+    executable "$project.ext.batsLibsDir/bats-core/bin/bats"
 
     def batsArgs = []
     if (logger.isInfoEnabled()) {

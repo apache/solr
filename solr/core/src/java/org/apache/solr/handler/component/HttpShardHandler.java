@@ -496,7 +496,7 @@ public class HttpShardHandler extends ShardHandler {
 
     ReplicaSource replicaSource;
     if (zkController != null) {
-      boolean onlyNrt = Boolean.TRUE == req.getContext().get(ONLY_NRT_REPLICAS);
+      boolean onlyNrt = Boolean.TRUE.equals(req.getContext().get(ONLY_NRT_REPLICAS));
 
       replicaSource =
           new CloudReplicaSource.Builder()

@@ -58,8 +58,9 @@ public class JettyBridgeResponseWriter implements ContainerResponseWriter {
     final StatusType statusInfo = context.getStatusInfo();
     httpServletResponse.setStatus(statusInfo.getStatusCode());
 
-    if (contentLength != -1 && contentLength < Integer.MAX_VALUE) {
-      httpServletResponse.setContentLength((int) contentLength);
+    // Note: don't propagate if 0 length: V2HttpCall does an empty first pass
+    if (contentLength > 0) {
+      httpServletResponse.setContentLengthLong(contentLength);
     }
     for (final Map.Entry<String, List<String>> e : context.getStringHeaders().entrySet()) {
       for (final String value : e.getValue()) {
