@@ -17,14 +17,13 @@
 
 package org.apache.solr.cli;
 
+import java.util.Arrays;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class CreateToolTest extends SolrCloudTestCase {
-
-  private static final String collectionName = "testCreateCollectionWithBasicAuth";
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
@@ -34,10 +33,26 @@ public class CreateToolTest extends SolrCloudTestCase {
         .configure();
   }
 
-  @Test
-  public void testCreateCollectionWithBasicAuth() throws Exception {
+  /** Runs the tool via the commons-cli invocation path (see {@link CLITestHelper#runTool}). */
+  private int runCommonsCli(String[] args) throws Exception {
+    return CLITestHelper.runTool(args, CreateTool.class);
+  }
 
-    String[] args = {
+  /**
+   * Runs the tool via the picocli invocation path (see {@link ZkSubcommandsPicocliTest} for the
+   * same pattern used elsewhere).
+   */
+  private int runPicocli(String[] args) throws Exception {
+    // args[0] is the tool/subcommand name used by commons-cli dispatch; strip it for picocli.
+    String[] toolArgs = Arrays.copyOfRange(args, 1, args.length);
+    ToolBase tool = CreateTool.class.getDeclaredConstructor().newInstance();
+    return new picocli.CommandLine(tool)
+        .setDefaultValueProvider(new CliDefaultValueProvider())
+        .execute(toolArgs);
+  }
+
+  private String[] createCollectionWithBasicAuthArgs(String collectionName) {
+    return new String[] {
       "create",
       "-c",
       collectionName,
@@ -49,7 +64,47 @@ public class CreateToolTest extends SolrCloudTestCase {
       SecurityJson.USER_PASS,
       "--verbose"
     };
+  }
 
-    assertEquals(0, CLITestHelper.runTool(args, CreateTool.class));
+  @Test
+  public void testCreateCollectionWithBasicAuth() throws Exception {
+    assertEquals(
+        0,
+        runCommonsCli(
+            createCollectionWithBasicAuthArgs("testCreateCollectionWithBasicAuth-commonsCli")));
+    assertEquals(
+        0,
+        runPicocli(createCollectionWithBasicAuthArgs("testCreateCollectionWithBasicAuth-picocli")));
+  }
+
+  private String[] createCollectionUploadsNewConfigSetArgs(String collectionName) {
+    return new String[] {
+      "create",
+      "-c",
+      collectionName,
+      "-d",
+      configset("cloud-minimal").toString(),
+      "-n",
+      "cloud-minimal-uploaded",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+  }
+
+  @Test
+  public void testCreateCollectionUploadsNewConfigSet() throws Exception {
+    assertEquals(
+        0,
+        runCommonsCli(
+            createCollectionUploadsNewConfigSetArgs(
+                "testCreateCollectionUploadsNewConfigSet-commonsCli")));
+    assertEquals(
+        0,
+        runPicocli(
+            createCollectionUploadsNewConfigSetArgs(
+                "testCreateCollectionUploadsNewConfigSet-picocli")));
   }
 }

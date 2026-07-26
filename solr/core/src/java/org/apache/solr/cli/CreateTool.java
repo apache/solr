@@ -16,28 +16,35 @@
  */
 package org.apache.solr.cli;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cli.CommonCLIOptions.DefaultValues;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionsApi;
+import org.apache.solr.client.solrj.request.ConfigsetsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
-import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.ConfigSetService;
@@ -211,7 +218,7 @@ public class CreateTool extends ToolBase {
               cli.getParsedOptionValue(SHARDS_OPTION, 1),
               cli.getParsedOptionValue(REPLICATION_FACTOR_OPTION, 1));
       if (CLIUtils.isCloudMode(solrClient)) {
-        createCollection(CLIUtils.getZkHost(cli), params);
+        createCollection(params, solrClient);
       } else {
         createCore(params, solrClient);
       }
@@ -271,60 +278,57 @@ public class CreateTool extends ToolBase {
     }
   }
 
-  private void createCollection(String zkHost, CreateParams params) throws Exception {
+  /**
+   * Resolves the base URL of a live Solr node from a ZooKeeper connection string, for the case
+   * where the caller only knows the ZK ensemble and not a specific Solr node to talk to.
+   */
+  private String resolveSolrUrlFromZkHost(String zkHost, String credentials) {
     var builder =
         new HttpJettySolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
-            .withOptionalBasicAuthCredentials(params.credentials);
+            .withOptionalBasicAuthCredentials(credentials);
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
     try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost, builder)) {
-      createCollection(cloudSolrClient, params);
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
+      if (liveNodes.isEmpty()) {
+        throw new IllegalStateException(
+            "No live nodes found! Cannot create a collection until "
+                + "there is at least 1 live node in the cluster.");
+      }
+      String firstLiveNode = liveNodes.iterator().next();
+      return ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
     }
   }
 
-  private void createCollection(CloudSolrClient cloudSolrClient, CreateParams params)
-      throws Exception {
+  private void createCollection(CreateParams params, SolrClient solrClient) throws Exception {
 
     Path solrInstallDirPath = Path.of(System.getProperty("solr.install.dir"));
     Path confDirPath = Path.of(params.confDir);
     ensureConfDirExists(solrInstallDirPath, confDirPath);
     printDefaultConfigsetWarning(params);
 
-    Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-    if (liveNodes.isEmpty())
-      throw new IllegalStateException(
-          "No live nodes found! Cannot create a collection until "
-              + "there is at least 1 live node in the cluster.");
-
     String solrUrl = params.solrUrl;
-    if (solrUrl == null) {
-      String firstLiveNode = liveNodes.iterator().next();
-      solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
-    }
 
     // build a URL to create the collection
     int numShards = params.shards;
     int replicationFactor = params.replicationFactor;
     String confName = params.confName;
 
-    boolean configExistsInZk =
+    boolean configExists =
         confName != null
             && !confName.trim().isEmpty()
-            && ZkStateReader.from(cloudSolrClient).getZkClient().exists("/configs/" + confName);
+            && new ConfigsetsApi.ListConfigSet().process(solrClient).configSets.contains(confName);
 
-    if (configExistsInZk) {
+    if (configExists) {
       echo("Re-using existing configuration directory " + confName);
     } else { // if (confdir != null && !confdir.trim().isEmpty()) {
       if (confName == null || confName.trim().isEmpty()) {
         confName = params.name;
       }
 
-      // TODO: This should be done using the configSet API
       final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
-      ConfigSetService configSetService =
-          new ZkConfigSetService(ZkStateReader.from(cloudSolrClient).getZkClient());
       Path confPath =
           ConfigSetService.getConfigsetPath(params.confDir, configsetsDirPath.toString());
 
@@ -333,10 +337,21 @@ public class CreateTool extends ToolBase {
               + confPath.toAbsolutePath()
               + " for config "
               + confName
-              + " to ZooKeeper at "
-              + cloudSolrClient.getClusterStateProvider().getQuorumHosts());
-      // We will trust the config since we have the Zookeeper Address
-      configSetService.uploadConfig(confName, confPath);
+              + " using the Configsets V2 API");
+      // ConfigsetsApi.UploadConfigSet (generated from the OAS spec) can't carry a raw request
+      // body, so a plain GenericSolrRequest is used to PUT the zipped configset instead.
+      GenericSolrRequest uploadReq =
+          new GenericSolrRequest(
+              SolrRequest.METHOD.PUT,
+              "/configsets/" + confName,
+              SolrRequest.SolrRequestType.ADMIN) {
+            @Override
+            public ApiVersion getApiVersion() {
+              return ApiVersion.V2;
+            }
+          };
+      uploadReq.withContent(zipConfigSet(confPath), "application/octet-stream");
+      uploadReq.process(solrClient);
     }
 
     // since creating a collection is a heavy-weight operation, check for existence first
@@ -356,7 +371,7 @@ public class CreateTool extends ToolBase {
       req.setConfig(confName);
       req.setNumShards(numShards);
       req.setReplicationFactor(replicationFactor);
-      var response = req.process(cloudSolrClient);
+      var response = req.process(solrClient);
       echoIfVerbose(response);
     } catch (SolrServerException sse) {
       throw new Exception(
@@ -375,6 +390,26 @@ public class CreateTool extends ToolBase {
     }
 
     echo(endMessage);
+  }
+
+  /** Zips the contents of a configset directory for upload via the Configsets V2 API. */
+  private static byte[] zipConfigSet(Path confPath) throws IOException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ZipOutputStream zipOut = new ZipOutputStream(baos)) {
+      Files.walkFileTree(
+          confPath,
+          new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                throws IOException {
+              zipOut.putNextEntry(new ZipEntry(confPath.relativize(file).toString()));
+              Files.copy(file, zipOut);
+              zipOut.closeEntry();
+              return FileVisitResult.CONTINUE;
+            }
+          });
+    }
+    return baos.toByteArray();
   }
 
   private Path getFullConfDir(Path solrInstallDir, Path confDirName) {
@@ -435,16 +470,20 @@ public class CreateTool extends ToolBase {
     String solrUrlArg = (connectionOptions != null) ? connectionOptions.solrUrl : null;
 
     if (zkHostArg != null) {
+      String resolvedSolrUrl = resolveSolrUrlFromZkHost(zkHostArg, credentialsOptions.credentials);
       CreateParams params =
           new CreateParams(
               name,
               confDir,
               confName,
-              null,
+              resolvedSolrUrl,
               credentialsOptions.credentials,
               shards,
               replicationFactor);
-      createCollection(zkHostArg, params);
+      try (var solrClient =
+          CLIUtils.getSolrClient(resolvedSolrUrl, credentialsOptions.credentials)) {
+        createCollection(params, solrClient);
+      }
     } else {
       String resolvedSolrUrl;
       if (solrUrlArg != null) {
@@ -467,15 +506,8 @@ public class CreateTool extends ToolBase {
               replicationFactor);
       try (var solrClient =
           CLIUtils.getSolrClient(resolvedSolrUrl, credentialsOptions.credentials)) {
-        Map<String, Object> status = StatusTool.reportStatus(solrClient);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
-        if (cloud != null) {
-          String zookeeper = (String) cloud.get("ZooKeeper");
-          if (zookeeper != null && zookeeper.endsWith("(embedded)")) {
-            zookeeper = zookeeper.substring(0, zookeeper.length() - "(embedded)".length());
-          }
-          createCollection(zookeeper, params);
+        if (CLIUtils.isCloudMode(solrClient)) {
+          createCollection(params, solrClient);
         } else {
           createCore(params, solrClient);
         }
