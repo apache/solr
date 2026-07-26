@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -33,12 +34,10 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cli.CommonCLIOptions.DefaultValues;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.ConfigsetsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.common.util.EnvUtils;
@@ -309,19 +308,9 @@ public class CreateTool extends ToolBase {
               + " for config "
               + confName
               + " using the Configsets V2 API");
-      // ConfigsetsApi.UploadConfigSet (generated from the OAS spec) can't carry a raw request
-      // body, so a plain GenericSolrRequest is used to PUT the zipped configset instead.
-      GenericSolrRequest uploadReq =
-          new GenericSolrRequest(
-              SolrRequest.METHOD.PUT,
-              "/configsets/" + confName,
-              SolrRequest.SolrRequestType.ADMIN) {
-            @Override
-            public ApiVersion getApiVersion() {
-              return ApiVersion.V2;
-            }
-          };
-      uploadReq.withContent(zipConfigSet(confPath), "application/octet-stream");
+      var uploadReq =
+          new ConfigsetsApi.UploadConfigSet(
+              confName, new ByteArrayInputStream(zipConfigSet(confPath)));
       uploadReq.process(solrClient);
     }
 

@@ -16,7 +16,11 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
+
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -84,7 +88,15 @@ public interface ConfigsetsApi {
         @PathParam("configSetName") String configSetName,
         @QueryParam("overwrite") Boolean overwrite,
         @QueryParam("cleanup") Boolean cleanup,
-        @RequestBody(required = true) InputStream requestBody)
+        @RequestBody(
+                required = true,
+                extensions = {
+                  @Extension(
+                      properties = {
+                        @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                      })
+                })
+            InputStream requestBody)
         throws IOException;
 
     @PUT
@@ -95,7 +107,15 @@ public interface ConfigsetsApi {
         @PathParam("filePath") String filePath,
         @QueryParam("overwrite") Boolean overwrite,
         @QueryParam("cleanup") Boolean cleanup,
-        @RequestBody(required = true) InputStream requestBody)
+        @RequestBody(
+                required = true,
+                extensions = {
+                  @Extension(
+                      properties = {
+                        @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                      })
+                })
+            InputStream requestBody)
         throws IOException;
   }
 }
