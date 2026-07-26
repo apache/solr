@@ -25,8 +25,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Locale;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.cli.CommandLine;
@@ -37,15 +35,12 @@ import org.apache.solr.cli.CommonCLIOptions.DefaultValues;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.ConfigsetsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.ConfigSetService;
 
@@ -278,30 +273,6 @@ public class CreateTool extends ToolBase {
     }
   }
 
-  /**
-   * Resolves the base URL of a live Solr node from a ZooKeeper connection string, for the case
-   * where the caller only knows the ZK ensemble and not a specific Solr node to talk to.
-   */
-  private String resolveSolrUrlFromZkHost(String zkHost, String credentials) {
-    var builder =
-        new HttpJettySolrClient.Builder()
-            .withIdleTimeout(30, TimeUnit.SECONDS)
-            .withConnectionTimeout(15, TimeUnit.SECONDS)
-            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
-            .withOptionalBasicAuthCredentials(credentials);
-    echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost, builder)) {
-      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-      if (liveNodes.isEmpty()) {
-        throw new IllegalStateException(
-            "No live nodes found! Cannot create a collection until "
-                + "there is at least 1 live node in the cluster.");
-      }
-      String firstLiveNode = liveNodes.iterator().next();
-      return ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
-    }
-  }
-
   private void createCollection(CreateParams params, SolrClient solrClient) throws Exception {
 
     Path solrInstallDirPath = Path.of(System.getProperty("solr.install.dir"));
@@ -470,7 +441,7 @@ public class CreateTool extends ToolBase {
     String solrUrlArg = (connectionOptions != null) ? connectionOptions.solrUrl : null;
 
     if (zkHostArg != null) {
-      String resolvedSolrUrl = resolveSolrUrlFromZkHost(zkHostArg, credentialsOptions.credentials);
+      String resolvedSolrUrl = CLIUtils.resolveSolrUrlFromZkHost(zkHostArg);
       CreateParams params =
           new CreateParams(
               name,

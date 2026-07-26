@@ -196,20 +196,28 @@ public final class CLIUtils {
                 + solrUrl
                 + ".");
       } else {
-        try (CloudSolrClient cloudSolrClient = getCloudSolrClient(zkHost)) {
-          Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-          if (liveNodes.isEmpty())
-            throw new IllegalStateException(
-                "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
-
-          String firstLiveNode = liveNodes.iterator().next();
-          solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
-          solrUrl = normalizeSolrUrl(solrUrl, false);
-        }
+        solrUrl = resolveSolrUrlFromZkHost(zkHost);
       }
     }
     solrUrl = normalizeSolrUrl(solrUrl);
     return solrUrl;
+  }
+
+  /**
+   * Resolves the base URL of a live Solr node from a ZooKeeper connection string, for callers that
+   * only know the ZK ensemble and not a specific Solr node to talk to.
+   */
+  public static String resolveSolrUrlFromZkHost(String zkHost) {
+    try (CloudSolrClient cloudSolrClient = getCloudSolrClient(zkHost)) {
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
+      if (liveNodes.isEmpty())
+        throw new IllegalStateException(
+            "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
+
+      String firstLiveNode = liveNodes.iterator().next();
+      String solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+      return normalizeSolrUrl(solrUrl, false);
+    }
   }
 
   /**
