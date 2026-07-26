@@ -632,11 +632,11 @@ class SolrFilter extends Filter implements SolrRel {
           return new Pair<>(name, rightLiteral);
         case CAST:
           return translateBinary2(((RexCall) left).getOperands().get(0), right);
-          //        case OTHER_FUNCTION:
-          //          String itemName = SolrRules.isItem((RexCall) left);
-          //          if (itemName != null) {
-          //            return translateOp2(op, itemName, rightLiteral);
-          //          }
+        //        case OTHER_FUNCTION:
+        //          String itemName = SolrRules.isItem((RexCall) left);
+        //          if (itemName != null) {
+        //            return translateOp2(op, itemName, rightLiteral);
+        //          }
         default:
           return null;
       }

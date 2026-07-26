@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
@@ -170,7 +171,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -523,7 +523,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       return withSearcher(
           solrIndexSearcher -> solrIndexSearcher.getRawReader().getIndexCommit().getSegmentCount());
     } catch (IOException e) {
-      throw new RuntimeIOException(e);
+      throw new UncheckedIOException(e);
     }
   }
 

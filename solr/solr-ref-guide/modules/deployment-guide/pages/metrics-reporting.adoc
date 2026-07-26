@@ -312,7 +312,7 @@ http://localhost:8983/api/metrics?name=solr_core_index_size_bytes&collection=foo
 
 == OTLP
 
-For users who do not use or support pulling metrics in Prometheus format with the `/metrics` API, Solr also supports pushing metrics natively with https://opentelemetry.io/docs/specs/otlp/[OTLP], which is a vendor-agnostic protocol for pushing metrics via gRPC or HTTP.
+For users who do not use or support pulling metrics in Prometheus format with the `/metrics` API, Solr also supports pushing metrics natively with https://opentelemetry.io/docs/specs/otlp/[OTLP], which is a vendor-agnostic protocol for pushing metrics.
 
 OTLP is widely supported by many tools, vendors, and pipelines. See the OpenTelemetry https://opentelemetry.io/ecosystem/vendors/[vendors list] for more details on available and compatible options.
 
@@ -341,10 +341,12 @@ Boolean value to enable or disable the OTLP metrics exporter.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: grpc
+|Optional |Default: http
 |===
 +
 OTLP protocol to use for pushing metrics. Available options are `grpc`, `http`, or `none` (disabled).
+
+NOTE: gRPC is not supported out of the box. To use it, add the required gRPC and Netty JARs to the `opentelemetry` module's lib directory.
 
 `solr.metrics.otlpExporterInterval`::
 +

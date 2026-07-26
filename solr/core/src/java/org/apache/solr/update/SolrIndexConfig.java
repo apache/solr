@@ -31,6 +31,7 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
@@ -259,6 +260,14 @@ public class SolrIndexConfig implements MapWriter {
     if (mergePolicy instanceof SortingMergePolicy) {
       Sort indexSort = ((SortingMergePolicy) mergePolicy).getSort();
       iwc.setIndexSort(indexSort);
+    }
+
+    if (iwc.getIndexSort() != null
+        && schema.isUsableForChildDocs()
+        && core.getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_10_4_0)) {
+      // Solr 10 shipped with Lucene 10.3.x, and Solr <=10 didn't set the parent field.
+      // This version check allows an upgrading user to continue to do index sorting.
+      iwc.setParentField(IndexSchema.IS_ROOT_FIELD_NAME);
     }
 
     iwc.setUseCompoundFile(useCompoundFile);
