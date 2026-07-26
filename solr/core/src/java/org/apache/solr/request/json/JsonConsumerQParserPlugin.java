@@ -15,20 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.configuration.providers;
+package org.apache.solr.request.json;
 
-import java.util.EnumMap;
-import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.search.QParserPlugin;
 
-/** System property based SSL configuration provider */
-public class SysPropSSLCredentialProvider extends AbstractSSLCredentialProvider {
-  @Override
-  protected EnumMap<CredentialType, String> getCredentialKeyMap() {
-    return DEFAULT_CREDENTIAL_KEY_MAP;
-  }
-
-  @Override
-  protected String getCredential(String syspropKey) {
-    return EnvUtils.getProperty(syspropKey);
-  }
-}
+/**
+ * Marker interface for {@link QParserPlugin}s that consume raw JSON query values directly, rather
+ * than a stringified local params representation.
+ */
+public interface JsonConsumerQParserPlugin {}

@@ -56,15 +56,6 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
     super(key, key, null, null, converter);
   }
 
-  public NodeMetricImpl(
-      String name,
-      String internalName,
-      String labelKey,
-      String labelValue,
-      Function<Object, T> converter) {
-    super(name, internalName, labelKey, labelValue, converter);
-  }
-
   public NodeMetricImpl(String key) {
     super(key, key);
   }

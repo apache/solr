@@ -918,6 +918,8 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       for (String path : langFilesToRestore) {
         String copyToPath = path.replace(origPathDir, replacePathDir);
         try {
+          // Only restore files that are missing -- do not overwrite an existing file with the
+          // copyFrom version.
           if (!zkClient.exists(copyToPath)) {
             zkClient.makePath(copyToPath, false);
             zkClient.setData(copyToPath, zkClient.getData(path, null, null));
