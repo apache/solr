@@ -1,0 +1,7 @@
+title: Fixed a race condition where V2 (JAX-RS) API requests that fail before a SolrQueryRequest is attached to the request context could throw a NullPointerException while building the error response, which could cascade into an internal request-metrics-timer assertion failure under Solr's security manager / assertions-enabled test builds.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18322
+    url: https://issues.apache.org/jira/browse/SOLR-18322
