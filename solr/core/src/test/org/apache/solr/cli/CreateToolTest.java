@@ -52,4 +52,24 @@ public class CreateToolTest extends SolrCloudTestCase {
 
     assertEquals(0, CLITestHelper.runTool(args, CreateTool.class));
   }
+
+  @Test
+  public void testCreateCollectionUploadsNewConfigSet() throws Exception {
+    String[] args = {
+      "create",
+      "-c",
+      "testCreateCollectionUploadsNewConfigSet",
+      "-d",
+      configset("cloud-minimal").toString(),
+      "-n",
+      "cloud-minimal-uploaded",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+
+    assertEquals(0, CLITestHelper.runTool(args, CreateTool.class));
+  }
 }
