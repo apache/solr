@@ -390,6 +390,14 @@ A new feature vector cache was added that is used not only for feature logging b
 
 The new OTEL based metric system introduced in 10.0 is considered BETA, and some breaking changes are to be expected in this and coming minor releases.
 
+==== OTLP protocols
+
+The `opentelemetry` module no longer includes some dependencies, dropping gRPC support out-of-the-box.
+The default export protocol for tracing has changed from `grpc` to `http/protobuf` (OTLP port `4318` instead of `4317`).
+The default for the separate OTLP metrics exporter's `solr.metrics.otlpExporterProtocol` has likewise changed from `grpc` to `http`.
+
+Use of gRPC can be restored by adding the required gRPC & Netty jars to the `opentelemetry` module's lib directory, and setting `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` (tracing) and/or `solr.metrics.otlpExporterProtocol=grpc` (metrics) as needed.
+
 ==== OTLP Metric Names Changed to Dot-Separated Format
 
 *Breaking change for OTLP consumers.*
