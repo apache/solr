@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.util.CollectionUtil;
@@ -164,7 +165,7 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
   public static String filterAndStringifyQueryParameters(
       MultivaluedMap<String, String> unfilteredParams) {
     final var paramNamesToLog = getParamNamesToLog(unfilteredParams);
-    final StringBuilder sb = new StringBuilder(128);
+    var output = new StringJoiner("&");
     unfilteredParams.entrySet().stream()
         .sorted(Map.Entry.comparingByKey())
         .forEachOrdered(
@@ -173,13 +174,11 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
               if (!paramNamesToLog.contains(name)) return;
 
               for (String val : entry.getValue()) {
-                if (sb.length() != 0) sb.append('&');
-                StrUtils.partialURLEncodeVal(sb, name);
-                sb.append('=');
-                StrUtils.partialURLEncodeVal(sb, val);
+                output.add(
+                    StrUtils.partialURLEncodeVal(name) + "=" + StrUtils.partialURLEncodeVal(val));
               }
             });
-    return sb.toString();
+    return output.toString();
   }
 
   private static Set<String> getParamNamesToLog(MultivaluedMap<String, String> queryParameters) {
