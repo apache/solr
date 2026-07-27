@@ -37,12 +37,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
@@ -60,7 +57,6 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,15 +102,8 @@ public class HttpJdkSolrClient extends HttpSolrClient {
       this.executor = builder.getExecutor();
       this.shutdownExecutor = false;
     } else {
-      BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(1024);
-      this.executor =
-          new ExecutorUtil.MDCAwareThreadPoolExecutor(
-              4,
-              256,
-              60,
-              TimeUnit.SECONDS,
-              queue,
-              new SolrNamedThreadFactory(this.getClass().getSimpleName()));
+      // nocommit new PR
+      this.executor = ExecutorUtil.newMDCAwareCachedThreadPool(this.getClass().getSimpleName());
       this.shutdownExecutor = true;
     }
     b.executor(this.executor);

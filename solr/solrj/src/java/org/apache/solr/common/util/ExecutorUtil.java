@@ -35,11 +35,17 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+/**
+ * Factories for {@link ExecutorService}s that propagate the SLF4J {@link MDC} to their tasks, plus
+ * helpers to shut them down.
+ *
+ * <p>To configure a pool that no factory here covers, see {@link MDCAwareThreadPoolExecutor} for
+ * how {@code corePoolSize}, {@code maximumPoolSize} and the queue interact.
+ */
 public class ExecutorUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -210,7 +216,15 @@ public class ExecutorUtil {
     }
   }
 
-  /** See {@link java.util.concurrent.Executors#newFixedThreadPool(int, ThreadFactory)} */
+  /**
+   * See {@link java.util.concurrent.Executors#newFixedThreadPool(int, ThreadFactory)}. The queue is
+   * unbounded, so work beyond {@code nThreads} is never rejected; it accumulates in memory instead.
+   * Use {@link #newMDCAwareFixedThreadPool(int, int, String)} to bound it &mdash; note that
+   * overload also reclaims idle threads, whereas these live as long as the pool.
+   *
+   * <p>This is good for fixed-size workloads, like for heavy/intensive work.
+   */
+  @Deprecated(since = "10.1") // prefer the overloaded one, thus explicit about queue capacity
   public static ExecutorService newMDCAwareFixedThreadPool(
       int nThreads, ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
@@ -245,6 +259,10 @@ public class ExecutorUtil {
    * Create a new pool of threads, with no limit for the number of threads. The pool has no task
    * queue. Each submitted task is executed immediately, either by reusing an existing thread if one
    * is available, or by starting a new thread. Unused threads will be closed after 60 seconds.
+   *
+   * <p>Thread count tracks how many tasks run concurrently, but nothing bounds it: a burst of
+   * simultaneous tasks starts a thread apiece. Only use this where something upstream already
+   * limits how many tasks can be in flight.
    */
   public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
@@ -252,29 +270,93 @@ public class ExecutorUtil {
   }
 
   /**
-   * Create a new pool of threads. Threads are created for new work if there is room to do so up to
-   * {@code maxThreads}. Beyond that, the queue is used up to {@code queueCapacity}. Beyond that,
-   * work is rejected with an exception. Unused threads will be closed after 60 seconds.
+   * Create a new pool of at most {@code nThreads} threads. Each submitted task starts a thread
+   * until {@code nThreads} exist &mdash; even when an idle thread could have taken it &mdash; so a
+   * pool that sees many tasks reaches {@code nThreads} regardless of how many run at once. Beyond
+   * that, the queue is used up to {@code queueCapacity}. Beyond that, work is rejected with an
+   * exception. Unused threads will be closed after 60 seconds.
+   *
+   * <p>This is good for limiting heavy/intensive workloads, and that which need to reject tasks
+   * when the queue is full.
    */
-  public static ExecutorService newMDCAwareCachedThreadPool(
-      int maxThreads, int queueCapacity, ThreadFactory threadFactory) {
-    // Create an executor with same value of core size and max total size. With an unbounded queue,
-    // the ThreadPoolExecutor ignores the configured max value and only considers core pool size.
-    // Since we allow core threads to die when idle for too long, this ends in having a pool with
-    // lazily-initialized and cached threads.
+  public static ExecutorService newMDCAwareFixedThreadPool(
+      int nThreads, int queueCapacity, String poolName) {
+    if (nThreads > 1024) { // likely wrong choice
+      assert false : "Creating a thread pool " + poolName + " with " + nThreads + " threads";
+      log.warn("Creating a thread pool {} with {} threads", poolName, nThreads);
+    }
+    // Core and max must be equal: any queue with spare capacity is filled before threads are added
+    // beyond the core size, which would cap the pool below maxThreads. Core threads are then
+    // allowed to die so that an idle pool still releases its threads.
     MDCAwareThreadPoolExecutor executor =
         new MDCAwareThreadPoolExecutor(
-            maxThreads,
-            maxThreads,
+            nThreads,
+            nThreads,
             60L,
             TimeUnit.SECONDS,
             new LinkedBlockingQueue<>(queueCapacity),
-            threadFactory);
+            new SolrNamedThreadFactory(poolName));
     // Allow core threads to die
     executor.allowCoreThreadTimeOut(true);
     return executor;
   }
 
+  @Deprecated(since = "10.1")
+  public static ExecutorService newMDCAwareCachedThreadPool(
+      int maxThreads, int queueCapacity, ThreadFactory threadFactory) {
+    return newMDCAwareFixedThreadPool(
+        maxThreads, queueCapacity, ((SolrNamedThreadFactory) threadFactory).getPoolName());
+  }
+
+  /**
+   * A {@link ThreadPoolExecutor} that propagates the SLF4J {@link MDC} to its tasks. Prefer a
+   * factory in {@link ExecutorUtil} where one fits; construct this directly only to configure a
+   * pool they don't cover.
+   *
+   * <h2>Choosing a pool shape</h2>
+   *
+   * {@link ThreadPoolExecutor} grows by two rules that are easy to get wrong:
+   *
+   * <ol>
+   *   <li>Below {@code corePoolSize}, every submitted task starts a new thread, <em>even if other
+   *       threads are idle</em>. So the pool grows to {@code corePoolSize} in proportion to tasks
+   *       submitted, not to how many run at once.
+   *   <li>At or above {@code corePoolSize}, a thread is created only once the queue is
+   *       <em>full</em>. A queue with spare capacity therefore caps the pool at {@code
+   *       corePoolSize} and makes {@code maximumPoolSize} unreachable; this class rejects that
+   *       combination outright.
+   * </ol>
+   *
+   * Which leaves three shapes, chosen by what should happen when every thread is busy:
+   *
+   * <table>
+   *   <caption>Pool shapes</caption>
+   *   <tr><th>When all threads are busy</th><th>Configuration</th></tr>
+   *   <tr>
+   *     <td>Start another thread, without limit</td>
+   *     <td>{@code core=0}, {@code max=MAX_VALUE}, {@link SynchronousQueue} &mdash; see {@link
+   *         ExecutorUtil#newMDCAwareCachedThreadPool(ThreadFactory)}</td>
+   *   </tr>
+   *   <tr>
+   *     <td>Start another thread up to N, then reject</td>
+   *     <td>{@code core=0}, {@code max=N}, {@link SynchronousQueue}</td>
+   *   </tr>
+   *   <tr>
+   *     <td>Queue the task; concurrency stays at N</td>
+   *     <td>{@code core=max=N} plus a queue &mdash; see {@link
+   *         ExecutorUtil#newMDCAwareFixedThreadPool(int, int, String)}</td>
+   *   </tr>
+   * </table>
+   *
+   * A {@link SynchronousQueue} holds nothing, so it hands a task to an idle thread when there is
+   * one and otherwise forces a new thread; that is what makes the first two shapes track actual
+   * concurrency. Set {@code corePoolSize} above 0 in those shapes only to keep that many threads
+   * warm for the life of the pool.
+   *
+   * <p>Threads beyond {@code corePoolSize} are reclaimed after {@code keepAliveTime} idle. Core
+   * threads live as long as the pool unless {@link #allowCoreThreadTimeOut(boolean)} is set, which
+   * subjects them to the same timeout.
+   */
   @SuppressForbidden(reason = "class customizes ThreadPoolExecutor so it can be used instead")
   public static class MDCAwareThreadPoolExecutor extends ThreadPoolExecutor {
 
@@ -291,6 +373,7 @@ public class ExecutorUtil {
         ThreadFactory threadFactory,
         RejectedExecutionHandler handler) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
+      checkPoolConfig(corePoolSize, maximumPoolSize, workQueue);
       this.enableSubmitterStackTrace = true;
     }
 
@@ -301,6 +384,7 @@ public class ExecutorUtil {
         TimeUnit unit,
         BlockingQueue<Runnable> workQueue) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
+      checkPoolConfig(corePoolSize, maximumPoolSize, workQueue);
       this.enableSubmitterStackTrace = true;
     }
 
@@ -323,6 +407,7 @@ public class ExecutorUtil {
         ThreadFactory threadFactory,
         boolean enableSubmitterStackTrace) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory);
+      checkPoolConfig(corePoolSize, maximumPoolSize, workQueue);
       this.enableSubmitterStackTrace = enableSubmitterStackTrace;
     }
 
@@ -334,7 +419,39 @@ public class ExecutorUtil {
         BlockingQueue<Runnable> workQueue,
         RejectedExecutionHandler handler) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
+      checkPoolConfig(corePoolSize, maximumPoolSize, workQueue);
       this.enableSubmitterStackTrace = true;
+    }
+
+    /**
+     * Rejects a pool that can never reach {@code maximumPoolSize}. {@link ThreadPoolExecutor} only
+     * creates threads beyond {@code corePoolSize} once the queue is full, so a queue with spare
+     * capacity silently caps the pool at {@code corePoolSize} (or at one thread, which is always
+     * created to rescue a queued task when {@code corePoolSize} is 0).
+     */
+    private static void checkPoolConfig(
+        int corePoolSize, int maximumPoolSize, BlockingQueue<Runnable> workQueue) {
+      int queueCapacity = workQueue.remainingCapacity(); // exact; the queue is empty
+      int effectiveMaximum = Math.max(corePoolSize, 1);
+      if (effectiveMaximum < maximumPoolSize && queueCapacity > 0) {
+        throw new IllegalArgumentException(
+            "maximumPoolSize "
+                + maximumPoolSize
+                + " is unreachable: a queue of capacity "
+                + queueCapacity
+                + " is filled before threads are created beyond corePoolSize "
+                + corePoolSize
+                + ", capping the pool at "
+                + effectiveMaximum
+                + ". Use corePoolSize == maximumPoolSize (with allowCoreThreadTimeOut(true) to"
+                + " reclaim idle threads), or a SynchronousQueue.");
+      }
+      if (maximumPoolSize == Integer.MAX_VALUE
+          && !(workQueue instanceof SynchronousQueue<Runnable>)) {
+        // harmless to allow, but it's illogical; maybe the caller is confused
+        throw new IllegalArgumentException(
+            "maximumPoolSize is Integer.MAX_VALUE but the workQueue is not a SynchronousQueue.");
+      }
     }
 
     /** When the thread factory is a {@link SolrNamedThreadFactory}, prefixes the pool name. */
@@ -473,8 +590,7 @@ public class ExecutorUtil {
 
     // Could alternatively use service.invokeAll, but this way we can start looping over futures
     // before all are done
-    List<Future<T>> futures =
-        tasks.stream().map(service::submit).collect(Collectors.toUnmodifiableList());
+    List<Future<T>> futures = tasks.stream().map(service::submit).toList();
     for (Future<T> f : futures) {
       try {
         results.add(f.get());
