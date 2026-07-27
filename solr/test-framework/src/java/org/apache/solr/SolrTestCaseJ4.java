@@ -914,6 +914,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
+   * Validates a JSON DSL request matches the given JSON test expressions
+   *
+   * @param jsonBody The JSON DSL request body to send to Solr
+   * @param tests JSON path expression + '==' + expected value
+   * @see JSONTestUtil#DEFAULT_DELTA
+   * @see #assertJQ(SolrQueryRequest,double,String...)
+   * @return The request response as a JSON String if all test patterns pass
+   */
+  public static String assertJJQ(String jsonBody, String... tests) throws Exception {
+    SolrQueryRequestBase jreq = (SolrQueryRequestBase) req();
+    jreq.setContentStreams(List.of(new ContentStreamBase.StringStream(jsonBody)));
+    return assertJQ(jreq, JSONTestUtil.DEFAULT_DELTA, tests);
+  }
+
+  /**
    * Validates a query matches some JSON test expressions using the default double delta tolerance.
    *
    * @see JSONTestUtil#DEFAULT_DELTA
