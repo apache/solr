@@ -211,7 +211,6 @@ public class JsonRecordReader {
     private void build(
         List<String> paths, // a List of segments from the split paths
         String fieldName, // the fieldName assoc with this path
-        // flag if this fieldName is multiValued or not
         boolean record, // is this path a record or a field
         String path) {
       // recursively walk the paths Lists adding new Nodes as required

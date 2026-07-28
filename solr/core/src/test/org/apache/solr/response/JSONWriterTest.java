@@ -187,7 +187,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   @Test
   public void testArrntvWriterOverridesAllWrites() {
     // List rather than Set because two not-overridden methods could share name but not signature
-    final List<String> methodsExpectedNotOverridden = new ArrayList<>(13);
+    final List<String> methodsExpectedNotOverridden = new ArrayList<>();
     methodsExpectedNotOverridden.add("writeResponse");
     methodsExpectedNotOverridden.add("writeKey");
     methodsExpectedNotOverridden.add("writeNamedListAsMapWithDups");
