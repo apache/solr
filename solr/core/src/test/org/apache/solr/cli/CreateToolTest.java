@@ -17,6 +17,14 @@
 
 package org.apache.solr.cli;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
@@ -71,5 +79,42 @@ public class CreateToolTest extends SolrCloudTestCase {
     };
 
     assertEquals(0, CLITestHelper.runTool(args, CreateTool.class));
+    assertTrue(cluster.getZkClient().exists("/configs/cloud-minimal-uploaded"));
+  }
+
+  @Test
+  public void testZipConfigSetSkipsHiddenFilesAndIncludesDirectoryEntries() throws Exception {
+    Path confDir = createTempDir("zipConfigSetTest");
+    Files.writeString(confDir.resolve("solrconfig.xml"), "<config/>");
+    Files.writeString(confDir.resolve(".hidden-file"), "should not be zipped");
+    Path langDir = Files.createDirectory(confDir.resolve("lang"));
+    Files.writeString(langDir.resolve("stopwords.txt"), "the\na\n");
+    Path hiddenDir = Files.createDirectory(confDir.resolve(".hiddenDir"));
+    Files.writeString(hiddenDir.resolve("nope.txt"), "should not be zipped either");
+
+    byte[] zipBytes = CreateTool.zipConfigSet(confDir);
+
+    Set<String> entryNames = new HashSet<>();
+    try (ZipInputStream zipIn = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+      ZipEntry entry;
+      while ((entry = zipIn.getNextEntry()) != null) {
+        entryNames.add(entry.getName());
+      }
+    }
+
+    assertTrue(entryNames.contains("solrconfig.xml"));
+    assertTrue(entryNames.contains("lang/"));
+    assertTrue(entryNames.contains("lang/stopwords.txt"));
+    assertFalse(entryNames.contains(".hidden-file"));
+    assertTrue(entryNames.stream().noneMatch(name -> name.startsWith(".hiddenDir")));
+  }
+
+  @Test
+  public void testZipConfigSetRejectsForbiddenFileType() throws Exception {
+    Path confDir = createTempDir("zipConfigSetForbiddenTest");
+    Files.writeString(confDir.resolve("evil.jar"), "not really a jar");
+
+    IOException thrown = expectThrows(IOException.class, () -> CreateTool.zipConfigSet(confDir));
+    assertTrue(thrown.getMessage().contains("forbidden"));
   }
 }
