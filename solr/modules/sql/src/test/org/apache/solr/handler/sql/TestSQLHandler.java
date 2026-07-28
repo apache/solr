@@ -453,12 +453,13 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     assertEquals(0, tuples.size());
 
-    // Verify that unrelated request parameters are ignored
+    // Verify that request parameters not on the allowlist are not forwarded to Calcite.
+    // 'schemaType' is a real Calcite connection property which would crash the request
     sParams =
         params(
             CommonParams.QT,
             "/sql",
-            "someOtherParam",
+            "schemaType",
             "someValue",
             "stmt",
             "select id, field_i, str_s from collection1 where text_t='XXXX' order by field_i desc limit 1");
@@ -470,6 +471,17 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals(8, tuple.getLong("id").longValue());
     assertEquals(60, tuple.getLong("field_i").longValue());
     assertEquals("c", tuple.get("str_s"));
+
+    // Sanity check: with 'schemaType' added to the allowlist it IS forwarded, and the same
+    // request now fails on the invalid value, proving the allowlist controls forwarding
+    System.setProperty(SQLHandler.ALLOWED_CONNECTION_PARAMS_PROP, "schemaType");
+    try {
+      final SolrParams forwardedParams = sParams;
+      IOException e = expectThrows(IOException.class, () -> getTuples(forwardedParams, baseUrl));
+      assertTrue(e.getMessage().contains("not valid"));
+    } finally {
+      System.clearProperty(SQLHandler.ALLOWED_CONNECTION_PARAMS_PROP);
+    }
   }
 
   @Test
