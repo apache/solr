@@ -29,9 +29,8 @@ public class ConcurrentUpdateJdkSolrClientTest extends ConcurrentUpdateSolrClien
         new HttpJdkSolrClient.Builder().withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
     if (overrideIdleTimeoutMs != null) {
       builder
-          .withIdleTimeout(overrideIdleTimeoutMs, TimeUnit.MILLISECONDS)
-          // override the infinite request timeout with idle timeout to ensure idle requests times
-          // out.
+          // JDK builders does not support overriding idle timeout. Hence, overriding the default request timeout to
+          // prevent long hanging requests.
           .withRequestTimeout(overrideIdleTimeoutMs, TimeUnit.MILLISECONDS);
     }
     return builder.build();
