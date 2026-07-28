@@ -17,17 +17,11 @@
 package org.apache.solr.cli;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Locale;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -281,54 +275,12 @@ public class CreateTool extends ToolBase {
   /**
    * Zips the contents of a configset directory for upload.
    *
-   * <p>Mirrors the hidden-file skipping, directory-entry, and forbidden-file-type logic in {@link
-   * org.apache.solr.handler.configsets.DownloadConfigSet#zipConfigSet}.
+   * <p>Delegates to {@link ConfigSetService#zipDirectory}, which is shared with {@link
+   * org.apache.solr.handler.configsets.DownloadConfigSet#zipConfigSet} and {@link
+   * org.apache.solr.handler.designer.SchemaDesignerConfigSetHelper#downloadAndZipConfigSet}.
    */
   static byte[] zipConfigSet(Path confPath) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    try (ZipOutputStream zipOut = new ZipOutputStream(baos)) {
-      Files.walkFileTree(
-          confPath,
-          new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                throws IOException {
-              if (Files.isHidden(dir)) {
-                return FileVisitResult.SKIP_SUBTREE;
-              }
-              String dirName = confPath.relativize(dir).toString().replace('\\', '/');
-              if (!dirName.isEmpty()) {
-                if (!dirName.endsWith("/")) {
-                  dirName += "/";
-                }
-                zipOut.putNextEntry(new ZipEntry(dirName));
-                zipOut.closeEntry();
-              }
-              return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                throws IOException {
-              if (Files.isHidden(file)) {
-                return FileVisitResult.CONTINUE;
-              }
-              String filename = file.getFileName().toString();
-              if (ConfigSetService.isFileForbiddenInConfigSets(filename)) {
-                throw new IOException(
-                    "The file type provided for upload, '"
-                        + filename
-                        + "', is forbidden for use in uploading configsets.");
-              }
-              String entryName = confPath.relativize(file).toString().replace('\\', '/');
-              zipOut.putNextEntry(new ZipEntry(entryName));
-              Files.copy(file, zipOut);
-              zipOut.closeEntry();
-              return FileVisitResult.CONTINUE;
-            }
-          });
-    }
-    return baos.toByteArray();
+    return ConfigSetService.zipDirectory(confPath, true);
   }
 
   private Path getFullConfDir(Path solrInstallDir, Path confDirName) {

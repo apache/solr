@@ -26,18 +26,14 @@ import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
 
-import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,8 +48,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.util.IOSupplier;
@@ -81,6 +75,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -1100,49 +1095,14 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   byte[] downloadAndZipConfigSet(String configId) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
     Path tmpDirectory =
         Files.createTempDirectory("schema-designer-" + FilenameUtils.getName(configId));
     try {
       cc.getConfigSetService().downloadConfig(configId, tmpDirectory);
-      try (ZipOutputStream zipOut = new ZipOutputStream(baos)) {
-        Files.walkFileTree(
-            tmpDirectory,
-            new SimpleFileVisitor<>() {
-              @Override
-              public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                  throws IOException {
-                if (Files.isHidden(dir)) {
-                  return FileVisitResult.SKIP_SUBTREE;
-                }
-
-                String dirName = tmpDirectory.relativize(dir).toString();
-                if (!dirName.endsWith("/")) {
-                  dirName += "/";
-                }
-                zipOut.putNextEntry(new ZipEntry(dirName));
-                zipOut.closeEntry();
-                return FileVisitResult.CONTINUE;
-              }
-
-              @Override
-              public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                  throws IOException {
-                if (!Files.isHidden(file)) {
-                  try (InputStream fis = Files.newInputStream(file)) {
-                    ZipEntry zipEntry = new ZipEntry(tmpDirectory.relativize(file).toString());
-                    zipOut.putNextEntry(zipEntry);
-                    fis.transferTo(zipOut);
-                  }
-                }
-                return FileVisitResult.CONTINUE;
-              }
-            });
-      }
+      return ConfigSetService.zipDirectory(tmpDirectory, false);
     } finally {
       PathUtils.deleteDirectory(tmpDirectory);
     }
-    return baos.toByteArray();
   }
 
   protected ZkSolrResourceLoader zkLoaderForConfigSet(final String configSet) {

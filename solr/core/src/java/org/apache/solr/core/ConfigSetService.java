@@ -18,16 +18,22 @@ package org.apache.solr.core;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.ConfigNode;
@@ -73,6 +79,65 @@ public abstract class ConfigSetService {
   public static boolean isFileForbiddenInConfigSets(String filePath) {
     int lastDot = filePath.lastIndexOf('.');
     return lastDot >= 0 && USE_FORBIDDEN_FILE_TYPES.contains(filePath.substring(lastDot + 1));
+  }
+
+  /**
+   * Zips the contents of {@code rootPath} into an in-memory archive. Hidden files and directories
+   * (as determined by {@link Files#isHidden}) are skipped, directory entries are written for
+   * non-empty subdirectories, and zip entry names are normalized to use {@code /} separators
+   * regardless of platform.
+   *
+   * @param rootPath the directory to zip
+   * @param validateFileTypes if true, a file with a forbidden extension (see {@link
+   *     #isFileForbiddenInConfigSets}) causes an {@link IOException} instead of being silently
+   *     included
+   * @return the zipped bytes
+   */
+  public static byte[] zipDirectory(Path rootPath, boolean validateFileTypes) throws IOException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ZipOutputStream zipOut = new ZipOutputStream(baos)) {
+      Files.walkFileTree(
+          rootPath,
+          new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                throws IOException {
+              if (Files.isHidden(dir)) {
+                return FileVisitResult.SKIP_SUBTREE;
+              }
+              String dirName = rootPath.relativize(dir).toString().replace('\\', '/');
+              if (!dirName.isEmpty()) {
+                if (!dirName.endsWith("/")) {
+                  dirName += "/";
+                }
+                zipOut.putNextEntry(new ZipEntry(dirName));
+                zipOut.closeEntry();
+              }
+              return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                throws IOException {
+              if (Files.isHidden(file)) {
+                return FileVisitResult.CONTINUE;
+              }
+              String filename = file.getFileName().toString();
+              if (validateFileTypes && isFileForbiddenInConfigSets(filename)) {
+                throw new IOException(
+                    "The file type provided for upload, '"
+                        + filename
+                        + "', is forbidden for use in uploading configsets.");
+              }
+              String entryName = rootPath.relativize(file).toString().replace('\\', '/');
+              zipOut.putNextEntry(new ZipEntry(entryName));
+              Files.copy(file, zipOut);
+              zipOut.closeEntry();
+              return FileVisitResult.CONTINUE;
+            }
+          });
+    }
+    return baos.toByteArray();
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
