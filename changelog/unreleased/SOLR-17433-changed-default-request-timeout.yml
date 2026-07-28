@@ -1,6 +1,7 @@
 title: >
   SolrClients no longer have a default request timeout.  It was problematic with streaming expressions.
   The idle timeout remains, albeit the JDK HttpClient doesn't support that (has none).
+  Changed the Jetty's default idle timeout to 10 mins as infinite timeout causes tests to hang infinitely.
 type: changed
 authors:
   - name: Vishnu Priya Chandra Sekar

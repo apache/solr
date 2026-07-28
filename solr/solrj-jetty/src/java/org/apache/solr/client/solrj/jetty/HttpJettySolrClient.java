@@ -301,7 +301,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
     httpClient.setConnectTimeout(builder.getConnectionTimeoutMillis());
-    httpClient.setIdleTimeout(-1); // don't enforce an idle timeout at this level
+    httpClient.setIdleTimeout(SolrHttpConstants.DEFAULT_SO_TIMEOUT);
     // note: idle & request timeouts are set per request
 
     var cookieStore = builder.getCookieStore();

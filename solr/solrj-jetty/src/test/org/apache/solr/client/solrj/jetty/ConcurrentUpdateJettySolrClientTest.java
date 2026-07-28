@@ -62,8 +62,7 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
   public HttpSolrClient solrClient(Integer overrideIdleTimeoutMs) {
     var builder = new HttpJettySolrClient.Builder();
     if (overrideIdleTimeoutMs != null) {
-      builder
-          .withIdleTimeout(overrideIdleTimeoutMs, TimeUnit.MILLISECONDS);
+      builder.withIdleTimeout(overrideIdleTimeoutMs, TimeUnit.MILLISECONDS);
     }
     return builder.build();
   }
