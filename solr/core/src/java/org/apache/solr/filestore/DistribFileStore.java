@@ -365,7 +365,7 @@ public class DistribFileStore implements FileStore {
       if (i < FETCHFROM_SRC) {
         // this is to protect very large clusters from overwhelming a single node
         // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
-        // it's there in  the memory now. So , it must be served fast
+        // it's there in the memory now. So, it must be served fast
         nodeToFetchFrom = myNodeName;
       } else {
         if (i == FETCHFROM_SRC) {
