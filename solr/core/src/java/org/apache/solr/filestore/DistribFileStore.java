@@ -357,54 +357,43 @@ public class DistribFileStore implements FileStore {
     int i = 0;
     int FETCHFROM_SRC = 50;
     String myNodeName = coreContainer.getZkController().getNodeName();
-    try {
-      for (String node : nodes) {
-        String baseUrl =
-            coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
+    for (String node : nodes) {
+      String baseUrl =
+          coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
 
-        String nodeToFetchFrom;
-        if (i < FETCHFROM_SRC) {
-          // this is to protect very large clusters from overwhelming a single node
-          // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
-          // it's there in  the memory now. So , it must be served fast
-          nodeToFetchFrom = myNodeName;
-        } else {
-          if (i == FETCHFROM_SRC) {
-            // This is just an optimization
-            // at this point a bunch of nodes are already downloading from me.
-            // I'll wait for them to finish before asking other nodes to download from each other
-            try {
-              Thread.sleep(2 * 1000);
-            } catch (Exception e) {
-            }
+      String nodeToFetchFrom;
+      if (i < FETCHFROM_SRC) {
+        // this is to protect very large clusters from overwhelming a single node
+        // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
+        // it's there in  the memory now. So , it must be served fast
+        nodeToFetchFrom = myNodeName;
+      } else {
+        if (i == FETCHFROM_SRC) {
+          // This is just an optimization
+          // at this point a bunch of nodes are already downloading from me.
+          // I'll wait for them to finish before asking other nodes to download from each other
+          try {
+            Thread.sleep(2 * 1000);
+          } catch (Exception e) {
           }
-          // trying to avoid the thundering herd problem when there are a very large number of
-          // nodes others should try to fetch it from any node where it is available. By now,
-          // almost FETCHFROM_SRC other nodes may have it
-          nodeToFetchFrom = "*";
         }
-        try {
-          final var pullFileRequest = new FileStoreApi.FetchFile(info.path);
-          pullFileRequest.setGetFrom(nodeToFetchFrom);
-          final var client = coreContainer.getDefaultHttpSolrClient();
-          // fire and forget
-          pullFileRequest.processWithBaseUrl(client, baseUrl, null);
-        } catch (Exception e) {
-          log.info("Node: {} failed to respond for file fetch notification", node, e);
-          // ignore the exception
-          // some nodes may be down or not responding
-        }
-        i++;
+        // trying to avoid the thundering herd problem when there are a very large number of
+        // nodes others should try to fetch it from any node where it is available. By now,
+        // almost FETCHFROM_SRC other nodes may have it
+        nodeToFetchFrom = "*";
       }
-    } finally {
-      coreContainer
-          .getUpdateShardHandler()
-          .getUpdateExecutor()
-          .submit(
-              () -> {
-                Thread.sleep(10 * 1000);
-                return null;
-              });
+      try {
+        final var pullFileRequest = new FileStoreApi.FetchFile(info.path);
+        pullFileRequest.setGetFrom(nodeToFetchFrom);
+        final var client = coreContainer.getDefaultHttpSolrClient();
+        // fire and forget
+        pullFileRequest.processWithBaseUrl(client, baseUrl, null);
+      } catch (Exception e) {
+        log.info("Node: {} failed to respond for file fetch notification", node, e);
+        // ignore the exception
+        // some nodes may be down or not responding
+      }
+      i++;
     }
   }
 
