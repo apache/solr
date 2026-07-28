@@ -278,7 +278,7 @@ public class CreateTool extends ToolBase {
     echo(endMessage);
   }
 
-  /** Zips the contents of a configset directory for upload via the Configsets V2 API. */
+  /** Zips the contents of a configset directory for upload. */
   private static byte[] zipConfigSet(Path confPath) throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (ZipOutputStream zipOut = new ZipOutputStream(baos)) {
