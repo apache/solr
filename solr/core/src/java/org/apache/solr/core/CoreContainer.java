@@ -289,7 +289,7 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
-  public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
+  public final NodeRoles nodeRoles = new NodeRoles(EnvUtils.getProperty(NodeRoles.NODE_ROLES_PROP));
 
   private final ExecutorService indexSearcherExecutor;
 
@@ -555,14 +555,17 @@ public class CoreContainer {
 
     if (pluginClassName != null) {
       log.debug("Authentication plugin class obtained from security.json: {}", pluginClassName);
-    } else if (System.getProperty(AUTHENTICATION_PLUGIN_PROP) != null) {
-      pluginClassName = System.getProperty(AUTHENTICATION_PLUGIN_PROP);
-      log.debug(
-          "Authentication plugin class obtained from system property '{}': {}",
-          AUTHENTICATION_PLUGIN_PROP,
-          pluginClassName);
     } else {
-      log.debug("No authentication plugin used.");
+      String authPluginProp = EnvUtils.getProperty(AUTHENTICATION_PLUGIN_PROP);
+      if (authPluginProp != null) {
+        pluginClassName = authPluginProp;
+        log.debug(
+            "Authentication plugin class obtained from system property '{}': {}",
+            AUTHENTICATION_PLUGIN_PROP,
+            pluginClassName);
+      } else {
+        log.debug("No authentication plugin used.");
+      }
     }
     SecurityPluginHolder<AuthenticationPlugin> old = authenticationPlugin;
     SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin = null;
@@ -1140,7 +1143,7 @@ public class CoreContainer {
     }
 
     if (authenticationPlugin != null
-        && StrUtils.isNullOrEmpty(System.getProperty("solr.jetty.https.port"))) {
+        && StrUtils.isNullOrEmpty(EnvUtils.getProperty("solr.jetty.https.port"))) {
       log.warn(
           "Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and data with encryption.");
     }
@@ -1767,7 +1770,7 @@ public class CoreContainer {
 
     CoreInitFailedAction action =
         CoreInitFailedAction.valueOf(
-            System.getProperty(CoreInitFailedAction.class.getSimpleName(), "none"));
+            EnvUtils.getProperty(CoreInitFailedAction.class.getSimpleName(), "none"));
     log.debug("CorruptIndexException while creating core, will attempt to repair via {}", action);
 
     switch (action) {
@@ -2499,7 +2502,7 @@ public class CoreContainer {
   }
 
   public static void setWeakStringInterner() {
-    boolean enable = "true".equals(System.getProperty("solr.use.str.intern", "true"));
+    boolean enable = "true".equals(EnvUtils.getProperty("solr.use.str.intern", "true"));
     if (!enable) return;
     Interner<String> interner = Interner.newWeakInterner();
     ClusterState.setStrInternerParser(

@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -75,10 +77,10 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
   }
 
   @Override
-  protected StreamingResponse doSendUpdateStream(ConcurrentUpdateBaseSolrClient.Update update)
+  protected SentStream doSendUpdateStream(ConcurrentUpdateBaseSolrClient.Update update)
       throws IOException, InterruptedException {
-    InputStreamResponseListener jettyListener;
-    try (OutStream out = initOutStream(basePath, update.request(), update.collection())) {
+    OutStream out = initOutStream(basePath, update.request(), update.collection());
+    try (out) {
       ConcurrentUpdateBaseSolrClient.Update upd = update;
       while (upd != null) {
         UpdateRequest req = upd.request();
@@ -87,15 +89,17 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
           queue.add(upd);
           break;
         }
-        send(out, upd.request(), upd.collection());
+        send(out, upd);
         out.flush();
 
         notifyQueueAndRunnersIfEmptyQueue();
         upd = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
       }
-      jettyListener = out.getResponseListener();
     }
-    return new JettyStreamingResponse(jettyListener);
+    return new SentStream(
+        new JettyStreamingResponse(out.getResponseListener()),
+        out.getDocIds(),
+        update.collection());
   }
 
   private static class OutStream implements Closeable {
@@ -104,6 +108,7 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
     private final OutputStreamRequestContent content;
     private final InputStreamResponseListener responseListener;
     private final boolean isXml;
+    private final List<String> docIds = new ArrayList<>();
 
     public OutStream(
         String origCollection,
@@ -121,6 +126,10 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
     boolean belongToThisStream(SolrRequest<?> solrRequest, String collection) {
       return origParams.equals(solrRequest.getParams())
           && Objects.equals(origCollection, collection);
+    }
+
+    List<String> getDocIds() {
+      return docIds;
     }
 
     public void write(byte[] b) throws IOException {
@@ -210,8 +219,11 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
     return outStream;
   }
 
-  private void send(OutStream outStream, SolrRequest<?> req, String collection) throws IOException {
-    assert outStream.belongToThisStream(req, collection);
+  private void send(OutStream outStream, ConcurrentUpdateBaseSolrClient.Update update)
+      throws IOException {
+    UpdateRequest req = update.request();
+    assert outStream.belongToThisStream(req, update.collection());
+    outStream.docIds.addAll(idsForErrorReporting(req));
     client.getRequestWriter().write(req, outStream.content.getOutputStream());
     if (outStream.isXml) {
       // check for commit or optimize
