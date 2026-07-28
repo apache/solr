@@ -38,6 +38,7 @@ solr/
 == 3. The YAML format
 
 Below is an example of a changelog yaml fragment. The full yaml format is https://logchange.dev/tools/logchange/reference/#yaml-entry-format[documented here], but we normally only need `title`, `type`, `authors` and `links`. For a change without a JIRA, you can add the PR number in `issues`:
+For the author section, the `name` key is the only one required. You may optionally want to link to either your github user (`nick`) or e.g. your ASF user (`url`) as shown below.
 
 [source, yaml]
 ----
