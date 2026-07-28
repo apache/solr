@@ -23,13 +23,9 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.slf4j.MDC;
 
 /** */
 public class SolrException extends RuntimeException {
-
-  // Can I be removed???  TODO
-  private final Map<String, String> mdcContext;
 
   /**
    * This list of valid HTTP Status error codes that Solr may return when there is a "Server Side"
@@ -67,19 +63,16 @@ public class SolrException extends RuntimeException {
   public SolrException(ErrorCode code, String msg) {
     super(msg);
     this.code = code.code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
   public SolrException(ErrorCode code, String msg, Throwable th) {
     super(msg, th);
     this.code = code.code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
   public SolrException(ErrorCode code, Throwable th) {
     super(th);
     this.code = code.code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
   /**
@@ -90,10 +83,9 @@ public class SolrException extends RuntimeException {
   protected SolrException(int code, String msg, Throwable th) {
     super(msg, th);
     this.code = code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
-  int code = 0;
+  int code;
   protected NamedList<String> metadata;
   protected List<Map<String, Object>> details;
 
