@@ -52,7 +52,10 @@ public class OtelRuntimeJvmMetrics {
               + " gauges; guarded by instanceof check so gracefully absent on non-HotSpot JVMs")
   public OtelRuntimeJvmMetrics initialize(
       SolrMetricManager solrMetricManager, String registryName) {
-    if (!isJvmMetricsEnabled()) return this;
+    if (!isJvmMetricsEnabled()) {
+      log.info("JVM metrics are disabled"); // log because this isn't a default
+      return this;
+    }
 
     // a dummy instance; we only care to provide the MeterProvider
     var otel =
