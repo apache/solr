@@ -18,15 +18,10 @@
 package org.apache.solr.metrics;
 
 import io.opentelemetry.api.metrics.BatchCallback;
-import io.opentelemetry.api.metrics.DoubleCounter;
-import io.opentelemetry.api.metrics.DoubleGauge;
-import io.opentelemetry.api.metrics.DoubleHistogram;
-import io.opentelemetry.api.metrics.DoubleUpDownCounter;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
-import io.opentelemetry.api.metrics.ObservableDoubleCounter;
 import io.opentelemetry.api.metrics.ObservableDoubleGauge;
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongCounter;
@@ -109,31 +104,6 @@ public class SolrMetricsContext implements AutoCloseable {
     return metricManager.longUpDownCounter(registryName, metricName, description, unit);
   }
 
-  public DoubleCounter doubleCounter(String metricName, String description) {
-    return doubleCounter(metricName, description, null);
-  }
-
-  public DoubleCounter doubleCounter(String metricName, String description, OtelUnit unit) {
-    return metricManager.doubleCounter(registryName, metricName, description, unit);
-  }
-
-  public DoubleUpDownCounter doubleUpDownCounter(String metricName, String description) {
-    return doubleUpDownCounter(metricName, description, null);
-  }
-
-  public DoubleUpDownCounter doubleUpDownCounter(
-      String metricName, String description, OtelUnit unit) {
-    return metricManager.doubleUpDownCounter(registryName, metricName, description, unit);
-  }
-
-  public DoubleHistogram doubleHistogram(String metricName, String description) {
-    return metricManager.doubleHistogram(registryName, metricName, description, null);
-  }
-
-  public DoubleHistogram doubleHistogram(String metricName, String description, OtelUnit unit) {
-    return metricManager.doubleHistogram(registryName, metricName, description, unit);
-  }
-
   public LongHistogram longHistogram(String metricName, String description) {
     return metricManager.longHistogram(registryName, metricName, description, null);
   }
@@ -144,18 +114,6 @@ public class SolrMetricsContext implements AutoCloseable {
 
   public LongGauge longGauge(String metricName, String description) {
     return metricManager.longGauge(registryName, metricName, description, null);
-  }
-
-  public LongGauge longGauge(String metricName, String description, OtelUnit unit) {
-    return metricManager.longGauge(registryName, metricName, description, unit);
-  }
-
-  public DoubleGauge doubleGauge(String metricName, String description) {
-    return metricManager.doubleGauge(registryName, metricName, description, null);
-  }
-
-  public DoubleGauge doubleGauge(String metricName, String description, OtelUnit unit) {
-    return metricManager.doubleGauge(registryName, metricName, description, unit);
   }
 
   public ObservableLongGauge observableLongGauge(
@@ -171,13 +129,6 @@ public class SolrMetricsContext implements AutoCloseable {
       Consumer<ObservableLongMeasurement> callback,
       OtelUnit unit) {
     return metricManager.observableLongGauge(registryName, metricName, description, callback, unit);
-  }
-
-  public ObservableDoubleGauge observableDoubleGauge(
-      String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
-    var observableDoubleGauge = observableDoubleGauge(metricName, description, callback, null);
-    closeables.add(observableDoubleGauge);
-    return observableDoubleGauge;
   }
 
   public ObservableDoubleGauge observableDoubleGauge(
@@ -202,22 +153,6 @@ public class SolrMetricsContext implements AutoCloseable {
       Consumer<ObservableLongMeasurement> callback,
       OtelUnit unit) {
     return metricManager.observableLongCounter(
-        registryName, metricName, description, callback, unit);
-  }
-
-  public ObservableDoubleCounter observableDoubleCounter(
-      String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
-    var observableDoubleCounter = observableDoubleCounter(metricName, description, callback, null);
-    closeables.add(observableDoubleCounter);
-    return observableDoubleCounter;
-  }
-
-  public ObservableDoubleCounter observableDoubleCounter(
-      String metricName,
-      String description,
-      Consumer<ObservableDoubleMeasurement> callback,
-      OtelUnit unit) {
-    return metricManager.observableDoubleCounter(
         registryName, metricName, description, callback, unit);
   }
 
@@ -246,16 +181,6 @@ public class SolrMetricsContext implements AutoCloseable {
   public ObservableLongMeasurement longCounterMeasurement(
       String metricName, String description, OtelUnit unit) {
     return metricManager.longCounterMeasurement(registryName, metricName, description, unit);
-  }
-
-  public ObservableDoubleMeasurement doubleCounterMeasurement(
-      String metricName, String description) {
-    return doubleCounterMeasurement(metricName, description, null);
-  }
-
-  public ObservableDoubleMeasurement doubleCounterMeasurement(
-      String metricName, String description, OtelUnit unit) {
-    return metricManager.doubleCounterMeasurement(registryName, metricName, description, unit);
   }
 
   public BatchCallback batchCallback(
