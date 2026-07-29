@@ -2,16 +2,29 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 # To regenerate this file, run: ./gradlew :dependencies --write-locks
-commons-cli:commons-cli:1.5.0=ratDeps
-commons-io:commons-io:2.11.0=ratDeps
+com.github.albfernandez:juniversalchardet:2.5.0=ratDeps
+com.github.cliftonlabs:json-simple:3.0.2=ratDeps
+commons-beanutils:commons-beanutils:1.9.4=ratDeps
+commons-codec:commons-codec:1.19.0=ratDeps
+commons-collections:commons-collections:3.2.2=ratDeps
+commons-io:commons-io:2.21.0=ratDeps
 junit:junit:3.8.1=javacc
 net.java.dev.javacc:javacc:7.0.13=javacc
-org.apache.commons:commons-collections4:4.4=ratDeps
-org.apache.commons:commons-compress:1.21=ratDeps
-org.apache.commons:commons-lang3:3.12.0=ratDeps
-org.apache.rat:apache-rat-api:0.15=ratDeps
-org.apache.rat:apache-rat-core:0.15=ratDeps
-org.apache.rat:apache-rat-tasks:0.15=ratDeps
-org.apache.rat:apache-rat:0.15=ratDeps
+org.apache.commons:commons-collections4:4.5.0=ratDeps
+org.apache.commons:commons-compress:1.28.0=ratDeps
+org.apache.commons:commons-csv:1.14.1=ratDeps
+org.apache.commons:commons-digester3:3.2=ratDeps
+org.apache.commons:commons-lang3:3.20.0=ratDeps
+org.apache.commons:commons-text:1.15.0=ratDeps
+org.apache.rat:apache-rat-core:0.18=ratDeps
+org.apache.rat:apache-rat-tasks:0.18=ratDeps
+org.apache.rat:apache-rat-tools:0.18=ratDeps
+org.apache.rat:apache-rat:0.18=ratDeps
+org.apache.tika:tika-core:3.2.3=ratDeps
+org.apache.tika:tika-parser-text-module:3.2.3=ratDeps
+org.apache.velocity.tools:velocity-tools-generic:3.1=ratDeps
+org.apache.velocity:velocity-engine-core:2.4.1=ratDeps
 org.eclipse.jdt:ecj:3.46.0=ecjDeps
+org.slf4j:slf4j-api:2.0.17=ratDeps
+org.slf4j:slf4j-simple:2.0.17=ratDeps
 empty=

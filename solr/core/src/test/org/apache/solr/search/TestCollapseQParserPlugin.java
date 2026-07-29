@@ -1578,4 +1578,150 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       }
     }
   }
+
+  @Test
+  public void testCollapseStringSortLazyLoadingTieDoesNotEvictGroupHead() {
+    // Group A: id=1 and id=2 both have term_s_dv=AAA → tie on the sort field.
+    // Group B: id=3 (BBB) and id=4 (CCC) → no tie, id=3 is the winner on asc.
+    assertU(adoc("id", "1", "group_s_dv", "A", "term_s_dv", "AAA"));
+    assertU(adoc("id", "2", "group_s_dv", "A", "term_s_dv", "AAA"));
+    assertU(adoc("id", "3", "group_s_dv", "B", "term_s_dv", "BBB"));
+    assertU(adoc("id", "4", "group_s_dv", "B", "term_s_dv", "CCC"));
+    assertU(commit());
+
+    // Single segment: ordinal fast path, tie → first doc (id=1) stays as group head.
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv asc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='3']");
+
+    // Multi-segment: slow path, same tie expectation.
+    assertU(adoc("id", "5", "group_s_dv", "A", "term_s_dv", "AAA"));
+    assertU(commit());
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv asc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='3']");
+  }
+
+  @Test
+  public void testCollapseStringSortOrdinalFastPathMultiClauseTieBreaking() {
+    // Group A: id=1 (AAA, ZZZ) vs id=2 (AAA, MMM) → clause-1 ties (both AAA),
+    //          clause-2 decides: MMM < ZZZ → id=2 wins on 'term_s_dv asc, term2_s_dv asc'.
+    // Group B: id=3 (BBB, X) vs id=4 (CCC, X) → clause-1 decides, no tie.
+    assertU(adoc("id", "1", "group_s_dv", "A", "term_s_dv", "AAA", "term2_s_dv", "ZZZ"));
+    assertU(adoc("id", "2", "group_s_dv", "A", "term_s_dv", "AAA", "term2_s_dv", "MMM"));
+    assertU(adoc("id", "3", "group_s_dv", "B", "term_s_dv", "BBB", "term2_s_dv", "X"));
+    assertU(adoc("id", "4", "group_s_dv", "B", "term_s_dv", "CCC", "term2_s_dv", "X"));
+    assertU(commit());
+
+    // Single segment: ordinal fast path on clause-1 (tie), then clause-2 decides.
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv asc,term2_s_dv asc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='3']");
+
+    // Add a cross-segment competitor for group A to exercise the slow path too.
+    assertU(adoc("id", "5", "group_s_dv", "A", "term_s_dv", "AAA", "term2_s_dv", "AAA"));
+    assertU(commit());
+
+    // id=5 (AAA, AAA) beats id=2 (AAA, MMM) because AAA < MMM on clause-2.
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv asc,term2_s_dv asc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[2]/str[@name='id'][.='5']");
+  }
+
+  @Test
+  public void testCollapseStringSortWithoutDocValuesSkipsLazyLoadingAndOrdinalFastPath() {
+    // term_s is a *_s field: indexed but no docValues → stringSortDVs[0] will be null.
+    // Group A: id=1 (ZZZ) vs id=2 (AAA) → id=2 wins on asc.
+    // Group B: id=3 (MMM) vs id=4 (BBB) → id=4 wins on asc.
+    assertU(adoc("id", "1", "group_s_dv", "A", "term_s", "ZZZ"));
+    assertU(adoc("id", "2", "group_s_dv", "A", "term_s", "AAA"));
+    assertU(adoc("id", "3", "group_s_dv", "B", "term_s", "MMM"));
+    assertU(adoc("id", "4", "group_s_dv", "B", "term_s", "BBB"));
+    assertU(commit());
+    assertU(adoc("id", "5", "group_s_dv", "A", "term_s", "BBB"));
+    assertU(commit());
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s asc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='4']");
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s desc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='3']");
+  }
+
+  @Test
+  public void testCollapseStringSortOrdinalFastPathDescendingWithMissingValues() {
+    // Group A: id=1 (ZZZ), id=2 (AAA), id=3 (no term_s_dv → missing, sorts last).
+    // On 'term_s_dv desc': ZZZ > AAA > missing → winner is id=1.
+    // Group B: id=4 (MMM), id=5 (no term_s_dv → missing).
+    // On 'term_s_dv desc': MMM > missing → winner is id=4.
+    assertU(adoc("id", "1", "group_s_dv", "A", "term_s_dv", "ZZZ"));
+    assertU(adoc("id", "4", "group_s_dv", "B", "term_s_dv", "MMM"));
+    assertU(commit());
+    assertU(adoc("id", "2", "group_s_dv", "A", "term_s_dv", "AAA"));
+    assertU(adoc("id", "5", "group_s_dv", "B"));
+    assertU(commit());
+    assertU(adoc("id", "3", "group_s_dv", "A"));
+    assertU(commit());
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv desc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='4']");
+
+    assertU(optimize("maxSegments", "1"));
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv desc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='4']");
+  }
 }

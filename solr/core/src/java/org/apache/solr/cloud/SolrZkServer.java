@@ -104,7 +104,7 @@ public class SolrZkServer {
     var zooCfgPath = Path.of(confHome).resolve("zoo.cfg");
     if (!Files.exists(zooCfgPath)) {
       log.info("Zookeeper configuration not found in {}, using built-in default", confHome);
-      String solrInstallDir = System.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
+      String solrInstallDir = EnvUtils.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
       if (solrInstallDir == null) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -142,7 +142,7 @@ public class SolrZkServer {
     }
 
     ensureZkMaxCnxnsConfigured();
-    if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
+    if (EnvUtils.getProperty(ZK_WHITELIST_PROPERTY) == null) {
       System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
     }
     AtomicReference<Exception> zkException = new AtomicReference<>();

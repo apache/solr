@@ -640,16 +640,23 @@ def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs):
       print('      %s' % line.strip())
     raise RuntimeError('source release has WARs...')
 
-  validateCmd = './gradlew --no-daemon check -p solr/documentation'
+  logDir = '%s/build' % unpackPath
+  os.makedirs(logDir, exist_ok=True)
+
+  validateCmd = './gradlew rat'
   print('    run "%s"' % validateCmd)
-  java.run_java(validateCmd, '%s/validate.log' % unpackPath)
+  java.run_java(validateCmd, '%s/rat.log' % logDir)
+
+  validateCmd = './gradlew :solr:documentation:check'
+  print('    run "%s"' % validateCmd)
+  java.run_java(validateCmd, '%s/documentation.log' % logDir)
 
   print("    run tests w/ Java %s and testArgs='%s'..." % (java.version, testArgs))
-  java.run_java('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
+  java.run_java('./gradlew test %s' % testArgs, '%s/test.log' % logDir)
   print("    run integration tests w/ Java %s" % java.version)
-  java.run_java('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
+  java.run_java('./gradlew integrationTest -Dversion.release=%s' % version, '%s/itest.log' % logDir)
   print("    build binary release w/ Java %s" % java.version)
-  java.run_java('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble.log' % unpackPath)
+  java.run_java('./gradlew dev -Dversion.release=%s' % version, '%s/assemble.log' % logDir)
   testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java_home, False)
 
   testChangelogMd('.', version)
@@ -672,9 +679,9 @@ def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
   is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGELOG.md'])
 
   if isSlim:
-    is_in_list(in_root_folder, ['bin', 'docker', 'docs', 'example', 'licenses', 'server', 'lib'])
+    is_in_list(in_root_folder, ['bin', 'docker', 'example', 'licenses', 'server', 'lib'])
   else:
-    is_in_list(in_root_folder, ['bin', 'modules', 'cross-dc-manager', 'docker', 'docs', 'example', 'licenses', 'server', 'lib'])
+    is_in_list(in_root_folder, ['bin', 'modules', 'cross-dc-manager', 'docker', 'example', 'licenses', 'server', 'lib'])
 
   if len(in_root_folder) > 0:
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
@@ -981,7 +988,7 @@ def make_java_config(parser):
     parser.error('JAVA_HOME must be set')
   if cygwin:
     java_home = subprocess.check_output('cygpath -u "%s"' % java_home, shell=True).decode('utf-8').strip()
-  cmd_prefix = 'export JAVA_HOME="%s" PATH="%s/bin:$PATH" JAVACMD="%s/bin/java"' % \
+  cmd_prefix = 'export JAVA_HOME="%s" PATH="%s/bin:$PATH" JAVACMD="%s/bin/java" GRADLE_OPTS="-Dorg.gradle.daemon=false"' % \
                (java_home, java_home, java_home)
   s = subprocess.check_output('%s; java -version' % cmd_prefix,
                               shell=True, stderr=subprocess.STDOUT).decode('utf-8')
