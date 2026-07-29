@@ -177,19 +177,21 @@ solrAdminApp.controller('CoreAdminController',
         }
         CoresV2.reloadCore($scope.selectedCore,
           function(error, data, response) {
-            if (error) {
-              $scope.reloadFailure = true;
-              $timeout(function() {
-                $scope.reloadFailure = false;
-                $route.reload();
-              }, 1000);
-            } else {
-              $scope.reloadSuccess = true;
-              $timeout(function () {
-                $scope.reloadSuccess = false;
-                $route.reload();
-              }, 1000);
-            }
+            $timeout(function() {
+              if (error) {
+                $scope.reloadFailure = true;
+                $timeout(function() {
+                  $scope.reloadFailure = false;
+                  $route.reload();
+                }, 1000);
+              } else {
+                $scope.reloadSuccess = true;
+                $timeout(function () {
+                  $scope.reloadSuccess = false;
+                  $route.reload();
+                }, 1000);
+              }
+            });
           });
       };
 
