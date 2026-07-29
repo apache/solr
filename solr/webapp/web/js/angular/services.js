@@ -94,13 +94,19 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.ClusterApi();
     })
+.factory('SegmentsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SegmentsApi();
+    })
 .factory('Collections',
   ['$resource', function ($resource) {
     // ERIC: NOT SURE ABOUT THIS CHUNK...
     // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
     // that v1's CLUSTERSTATUS action used, so the response shape is byte-identical -- no
     // generated solrApi client class exists for it (old-style @EndPoint API, predates the
-    // OpenAPI-based v2 framework), so this stays a plain $resource, like Segments/Threads/ParamSet.
+    // OpenAPI-based v2 framework), so this stays a plain $resource, like Threads/ParamSet.
     return $resource('/api/cluster', {'wt':'json', '_':Date.now()}, {
       "status": {}
     });
@@ -138,7 +144,7 @@ solrAdminServices.factory('Metrics',
     // v2 NodeThreadsAPI (/api/node/threads) still just delegates straight through to the same v1
     // ThreadDumpHandler, so the response shape is byte-identical -- no generated solrApi client
     // class exists for it (it predates the OpenAPI-based v2 API framework), so this stays a plain
-    // $resource, like SchemaDesigner/Security/Segments.
+    // $resource, like SchemaDesigner/Security.
     return $resource('/api/node/threads', {'wt':'json', '_':Date.now()});
   }])
 .factory('Replication',
@@ -167,8 +173,7 @@ solrAdminServices.factory('Metrics',
     // v2 GetConfigAPI/ModifyParamSetAPI (/api/(cores|collections)/:core/config/params) still
     // delegate straight through to the same v1 SolrConfigHandler, so the response shape is
     // byte-identical -- no generated solrApi client class exists for it (old-style @EndPoint API,
-    // predates the OpenAPI-based v2 framework), so this stays a plain $resource, like
-    // Segments/Threads.
+    // predates the OpenAPI-based v2 framework), so this stays a plain $resource, like Threads.
     // NB: unlike v1's flexible routing, the v2 API requires knowing up front whether ":core" is a
     // collection name (SolrCloud) or an actual core name (standalone/user-managed) --
     // /api/collections/... 500s in standalone mode (it tries to resolve aliases, which needs ZK),
@@ -278,12 +283,6 @@ solrAdminServices.factory('Metrics',
            return "" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
        }
        return resource;
-}])
-.factory('Segments',
-   ['$resource', function($resource) {
-       return $resource('/api/cores/:core/segments', {'wt':'json', core: '@core', _:Date.now()}, {
-           get: {}
-       });
 }])
 .factory('Schema',
    ['$resource', function($resource) {
