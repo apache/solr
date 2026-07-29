@@ -16,19 +16,26 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -72,7 +79,6 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-
     for (int i = 0; i < solr.length; i++) {
       solr[i] = new SolrInstance("solr/collection1" + i, createTempDir("instance-" + i), 0);
       solr[i].setUp();
@@ -392,6 +398,8 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
     final LBSolrClient.Endpoint nonRoutableEndpoint;
     final HttpJettySolrClient delegateClient;
     final LBAsyncSolrClient lbClient;
+    final Thread serverThread;
+    final Queue<Socket> sockets;
 
     TimeoutZombieTestContext() throws Exception {
       // create a socket that allows a client to connect but causes them to hang until idleTimeout
@@ -405,18 +413,51 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
           new HttpJettySolrClient.Builder()
               .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
               .withIdleTimeout(1, TimeUnit.MILLISECONDS)
-              // override the infinite request timeout with idle timeout to ensure idle requests
-              // times out.
-              .withRequestTimeout(1, TimeUnit.MILLISECONDS)
               .build();
-
+      sockets = new ConcurrentLinkedQueue<>();
       lbClient = new LBJettySolrClient.Builder(delegateClient, nonRoutableEndpoint).build();
+      serverThread = new Thread(this::process);
+      serverThread.setDaemon(true);
+      serverThread.start();
+    }
+
+    private void process() {
+      while (!Thread.currentThread().isInterrupted() && !blackhole.isClosed()) {
+        try (Socket clientSocket = blackhole.accept()) {
+          sockets.add(clientSocket);
+          processRequest(clientSocket.getInputStream());
+          // Send HTTP headers only: Jetty's request-level idle timeout takes effect only after response headers are
+          // parsed by the client.
+          sendHeaderResponse(clientSocket.getOutputStream());
+        } catch (IOException ignored) {
+
+        }
+      }
+    }
+
+    private void processRequest(final InputStream in) throws IOException {
+      final BufferedReader reader =
+          new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+      String line;
+      while ((line = reader.readLine()) != null && !line.isEmpty()) {
+        // Drain HTTP request headers
+      }
+    }
+
+    private void sendHeaderResponse(final OutputStream out) throws IOException {
+      final String HTTP_HEADERS =
+          "HTTP/1.1 200 OK\r\n"
+              + "Server: Custom Java ServerSocket\r\n"
+              + "Content-Type: text/plain\r\n"
+              + "Transfer-Encoding: chunked\r\n"
+              + "\r\n";
+      out.write(HTTP_HEADERS.getBytes(StandardCharsets.UTF_8));
+      out.flush();
     }
 
     LBSolrClient.Req createQueryRequest() {
       SolrQuery solrQuery = new SolrQuery("*:*");
       QueryRequest queryRequest = new QueryRequest(solrQuery);
-
       List<LBSolrClient.Endpoint> endpoints =
           List.of(
               new LBSolrClient.Endpoint(
@@ -433,11 +474,20 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
 
     @Override
     public void close() {
-      lbClient.close();
-      delegateClient.close();
       try {
+        if (!serverThread.isInterrupted()) {
+          serverThread.interrupt();
+        }
+        // close the socket
+        for (Socket s : sockets) {
+          if(!s.isClosed()) {
+            s.close();
+            }
+        }
         blackhole.close();
-      } catch (IOException ioe) {
+        lbClient.close();
+        delegateClient.close();
+      } catch (IOException ignored) {
 
       }
     }
