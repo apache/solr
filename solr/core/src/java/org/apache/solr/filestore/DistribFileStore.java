@@ -47,6 +47,7 @@ import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -527,7 +528,7 @@ public class DistribFileStore implements FileStore {
       String baseUrl =
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
       try {
-        var solrClient = coreContainer.getDefaultHttpSolrClient();
+        var solrClient = (HttpJettySolrClient) coreContainer.getDefaultHttpSolrClient();
         // invoke delete command on all nodes asynchronously
         solrClient.requestWithBaseUrl(baseUrl, client -> client.requestAsync(solrRequest));
       } catch (SolrServerException | IOException e) {

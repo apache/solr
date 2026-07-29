@@ -56,6 +56,7 @@
     <dynamicField name="*_d_dv" type="double" indexed="true" docValues="true" stored="false"/>
     <dynamicField name="*_dt" type="date" indexed="true" stored="false"/>
     <dynamicField name="*_dt_dv" type="date" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_s_dv" type="string" indexed="true" docValues="true" stored="false"/>
 
     <uniqueKey>id</uniqueKey>
 </schema>

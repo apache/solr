@@ -130,9 +130,9 @@ public class TestPullReplica extends SolrCloudTestCase {
     try {
       switch (random().nextInt(3)) {
         case 0 ->
-        // Sometimes use SolrJ
-        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
-            .process(cluster.getSolrClient());
+            // Sometimes use SolrJ
+            CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
+                .process(cluster.getSolrClient());
         case 1 -> {
           // Sometimes use v1 API
           var jetty = cluster.getRandomJetty(random());

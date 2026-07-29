@@ -25,7 +25,7 @@ public interface MetricExporterFactory {
       Boolean.parseBoolean(EnvUtils.getProperty("solr.metrics.otlpExporterEnabled", "false"));
 
   public static final String OTLP_EXPORTER_PROTOCOL =
-      EnvUtils.getProperty("solr.metrics.otlpExporterProtocol", "grpc");
+      EnvUtils.getProperty("solr.metrics.otlpExporterProtocol", "http");
 
   public static final int OTLP_EXPORTER_INTERVAL =
       Integer.parseInt(EnvUtils.getProperty("solr.metrics.otlpExporterInterval", "60000"));
