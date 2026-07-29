@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics, MetricsExtractor, ZookeeperStatus) {
+    function($scope, $location, $timeout, Zookeeper, Constants, Collections, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus) {
 
         $scope.showDebug = false;
 
@@ -37,7 +37,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, Zookeeper, false);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, Collections, System, Metrics, MetricsExtractor);
+            nodesSubController($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor);
         } else if (view === "zkstatus") {
             $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
             zkStatusSubController($scope, ZookeeperStatus, false);
@@ -107,7 +107,7 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-var nodesSubController = function($scope, Collections, System, Metrics, MetricsExtractor) {
+var nodesSubController = function($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -352,50 +352,51 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
     /*
      Fetch system info for all selected nodes
      Pick the data we want to display and add it to the node-centric data structure
-
-     Intentionally still v1 (System, not SystemV2): the v2 NodeSystemInfoApi's "nodes"
-     multi-node proxying (GetNodeSystemInfo.proxyToNodes, via V2SolrRequestBasedProxy) currently
-     throws a server-side NullPointerException (GetNodeSystemInfo.java, processTypedProxiedResponse)
-     instead of returning aggregated per-node data. Move this to SystemV2.getNodeSystemInfo once
-     that's fixed upstream.
       */
-    System.get({"nodes": liveNodesToShow.join(',')}, function (systemResponse) {
-      for (var node in systemResponse) {
-        if (node in nodes) {
-          var s = systemResponse[node];
-          nodes[node]['system'] = s;
-          var memTotal = s.system.totalPhysicalMemorySize;
-          var memFree = s.system.freePhysicalMemorySize;
-          var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
-          nodes[node]['memUsedPct'] = memPercentage;
-          nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
-          nodes[node]['memTotal'] = bytesToSize(memTotal);
-          nodes[node]['memFree'] = bytesToSize(memFree);
-          nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
-
-          var heapMax = s.jvm.memory.raw.max;
-          var heapTotal = s.jvm.memory.raw.total;
-          var heapFree = s.jvm.memory.raw.free;
-          var heapPercentage = Math.floor((heapTotal - heapFree) / heapMax * 100);
-          nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
-          nodes[node]['heapUsedPct'] = heapPercentage;
-          nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
-          nodes[node]['heapMax'] = bytesToSize(heapMax);
-          nodes[node]['heapTotal'] = bytesToSize(heapTotal);
-          nodes[node]['heapFree'] = bytesToSize(heapFree);
-
-          var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
-          nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
-          nodes[node]['jvmUptimeSec'] = jvmUptime;
-
-          nodes[node]['uptime'] = (s.system.uptime || "unknown").replace(/.*up (.*?,.*?),.*/, "$1");
-          nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
-          nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad * 100);
-          nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
-          nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
-          nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
-        }
+    SystemV2.getNodeSystemInfo({"nodes": liveNodesToShow.join(',')}, function (error, data, response) {
+      if (error) {
+        console.error('Failed to fetch node system info:', error);
+        return;
       }
+      $timeout(function() {
+        var systemResponse = response.body;
+        for (var node in systemResponse) {
+          if (node in nodes) {
+            var s = systemResponse[node];
+            nodes[node]['system'] = s;
+            var memTotal = s.system.totalPhysicalMemorySize;
+            var memFree = s.system.freePhysicalMemorySize;
+            var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
+            nodes[node]['memUsedPct'] = memPercentage;
+            nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
+            nodes[node]['memTotal'] = bytesToSize(memTotal);
+            nodes[node]['memFree'] = bytesToSize(memFree);
+            nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
+
+            var heapMax = s.jvm.memory.raw.max;
+            var heapTotal = s.jvm.memory.raw.total;
+            var heapFree = s.jvm.memory.raw.free;
+            var heapPercentage = Math.floor((heapTotal - heapFree) / heapMax * 100);
+            nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
+            nodes[node]['heapUsedPct'] = heapPercentage;
+            nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
+            nodes[node]['heapMax'] = bytesToSize(heapMax);
+            nodes[node]['heapTotal'] = bytesToSize(heapTotal);
+            nodes[node]['heapFree'] = bytesToSize(heapFree);
+
+            var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
+            nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
+            nodes[node]['jvmUptimeSec'] = jvmUptime;
+
+            nodes[node]['uptime'] = (s.system.uptime || "unknown").replace(/.*up (.*?,.*?),.*/, "$1");
+            nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
+            nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad * 100);
+            nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
+            nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
+            nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
+          }
+        }
+      });
     });
 
     /*
@@ -798,7 +799,7 @@ var graphSubController = function ($scope, Zookeeper) {
                 params.filter = filter;
             }
 
-          Zookeeper.clusterState(params, function (data) { 
+          Zookeeper.clusterState(params, function (data) {
                     var state = data.znode.data;
                     var leaf_count = 0;
                     var graph_data = {

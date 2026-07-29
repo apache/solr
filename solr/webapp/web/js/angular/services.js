@@ -17,11 +17,7 @@
 
 var solrAdminServices = angular.module('solrAdminServices', ['ngResource']);
 
-solrAdminServices.factory('System',
-  ['$resource', function($resource) {
-    return $resource('admin/info/system', {"wt":"json", "nodes": "@nodes", "_":Date.now()});
-  }])
-.factory('Metrics',
+solrAdminServices.factory('Metrics',
   ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
     return $resource('admin/metrics', {"wt":"prometheus", "node": "@node", "_":Date.now()}, {
       get: {
