@@ -210,6 +210,31 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testOrdAndRordOverNumericField() {
+    assumeTrue(
+        "Skipping test when not using NumericField", Boolean.getBoolean(NUMERIC_FULL_SYSPROP));
+    clearIndex();
+
+    String field = "a_" + new String[] {"i", "l", "d", "f"}[random().nextInt(4)];
+    assertU(adoc("id", "1", field, "1"));
+    assertU(commit());
+
+    Exception e =
+        expectThrows(
+            SolrException.class,
+            () -> h.query(req("q", "{!func}ord(" + field + ")", "fq", "id:1")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException) e).code());
+    assertTrue(e.getMessage().contains("ord() is not supported over Points based field " + field));
+
+    e =
+        expectThrows(
+            SolrException.class,
+            () -> h.query(req("q", "{!func}rord(" + field + ")", "fq", "id:1")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException) e).code());
+    assertTrue(e.getMessage().contains("rord() is not supported over Points based field " + field));
+  }
+
+  @Test
   public void testGeneral() {
     clearIndex();
 

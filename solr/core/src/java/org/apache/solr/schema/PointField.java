@@ -87,6 +87,11 @@ public abstract class PointField extends NumericFieldType {
   }
 
   @Override
+  protected boolean hasTermIndex(SchemaField field) {
+    return false;
+  }
+
+  @Override
   public final ValueSource getSingleValueSource(
       MultiValueSelector choice, SchemaField field, QParser parser) {
     // trivial base case
@@ -157,15 +162,13 @@ public abstract class PointField extends NumericFieldType {
       // currently implemented as singleton range
       return getRangeQuery(parser, field, externalVal, externalVal, true, true);
     } else if (field.indexed() && field.hasDocValues()) {
-      Query pointsQuery = getExactQuery(field, externalVal);
+      Query indexQuery = getPointRangeQuery(parser, field, externalVal, externalVal, true, true);
       Query dvQuery = getDocValuesRangeQuery(parser, field, externalVal, externalVal, true, true);
-      return new IndexOrDocValuesQuery(pointsQuery, dvQuery);
+      return new IndexOrDocValuesQuery(indexQuery, dvQuery);
     } else {
-      return getExactQuery(field, externalVal);
+      return getPointRangeQuery(parser, field, externalVal, externalVal, true, true);
     }
   }
-
-  protected abstract Query getExactQuery(SchemaField field, String externalVal);
 
   @Override
   protected Query getSpecializedRangeQuery(

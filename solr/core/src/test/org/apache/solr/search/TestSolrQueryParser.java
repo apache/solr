@@ -57,6 +57,7 @@ import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.NumberType;
+import org.apache.solr.schema.NumericField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.AfterClass;
@@ -248,15 +249,17 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       SchemaField foo_dt = h.getCore().getLatestSchema().getField("foo_dt");
       String expected = "foo_dt:2013-09-11T00:00:00Z";
       if (foo_dt.getType().isPointField()) {
-        expected = "foo_dt:[1378857600000 TO 1378857600000]";
+        if (!(foo_dt.getType() instanceof NumericField && foo_dt.indexed())) {
+          expected = "foo_dt:[1378857600000 TO 1378857600000]";
+        } else if (foo_dt.hasDocValues()) {
+          expected = "foo_dt:[80 0 1 41 a 51 44 0]";
+        }
         if (foo_dt.hasDocValues() && foo_dt.indexed()) {
           expected =
               "IndexOrDocValuesQuery(IndexOrDocValuesQuery(indexQuery="
                   + expected
-                  + ", dvQuery="
-                  + expected
-                  + "))";
-        } else {
+                  + ", dvQuery=foo_dt:[1378857600000 TO 1378857600000]))";
+        } else if (!(foo_dt.getType() instanceof NumericField && foo_dt.indexed())) {
           expected = "(" + expected + ")";
         }
       }
@@ -402,6 +405,15 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
               ((PointInSetQuery) q).getPackedPoints().size());
         }
       } else {
+        if (Boolean.getBoolean(NUMERIC_FULL_SYSPROP)
+            && Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
+          assertTrue(req.getCore().getLatestSchema().getField("foo_ti").hasDocValues());
+          assertEquals(
+              "Expecting IndexOrDocValuesQuery when type is IntField AND docValues are enabled",
+              IndexOrDocValuesQuery.class,
+              q.getClass());
+          q = ((IndexOrDocValuesQuery) q).getIndexQuery();
+        }
         assertEquals(20, ((TermInSetQuery) q).getTermsCount());
       }
 

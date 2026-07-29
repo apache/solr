@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.DocValuesUtil;
 
 /** syntax fq={!hash workers=11 worker=4 keys=field1,field2} */
 public class HashQParserPlugin extends QParserPlugin {
@@ -95,14 +96,19 @@ public class HashQParserPlugin extends QParserPlugin {
       final LongValues[] resultValues = new LongValues[fields.length];
       for (int i = 0; i < fields.length; i++) {
         final String field = fields[i];
-        final NumericDocValues numericDocValues = ctx.reader().getNumericDocValues(field);
+        NumericDocValues numericDocValues = null;
+        try {
+          numericDocValues = DocValuesUtil.getNumeric(ctx.reader(), field);
+        } catch (IllegalStateException ignored) {
+        }
         if (numericDocValues != null) {
+          final NumericDocValues finalNumericDocValues = numericDocValues;
           // Numeric
           resultValues[i] =
               new LongValues() {
                 // Even if not a Long field; could be int, double, float and this still works
                 // because DocValues numerics are based on a Long.
-                final NumericDocValues values = numericDocValues;
+                final NumericDocValues values = finalNumericDocValues;
                 boolean atDoc = false;
 
                 @Override

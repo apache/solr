@@ -506,7 +506,9 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
       // multisets, so cardinality depends on the value source
       final int expectedCardinality =
           (isStoredField(field)
-                  || (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) && !field.startsWith("test_s"))
+                  || ((Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
+                          || Boolean.getBoolean(NUMERIC_FULL_SYSPROP))
+                      && !field.startsWith("test_s"))
                   || field.startsWith("enums"))
               ? value.length
               : valueSet.size();

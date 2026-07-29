@@ -34,13 +34,10 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** */
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class TestFaceting extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
     initCore("solrconfig.xml", "schema11.xml");
   }
 
@@ -306,6 +303,9 @@ public class TestFaceting extends SolrTestCaseJ4 {
     assumeFalse(
         "Test is only relevant when randomizing Trie fields",
         Boolean.getBoolean(NUMERIC_POINTS_SYSPROP));
+    assumeFalse(
+        "Test is only relevant when randomizing Trie fields",
+        Boolean.getBoolean(NUMERIC_FULL_SYSPROP));
 
     // make sure that terms are correctly filtered even for trie fields that index several
     // terms for a single value

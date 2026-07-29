@@ -54,6 +54,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 
 /** Tests of deep paging using {@link CursorMark} and {@link CursorMarkParams#CURSOR_MARK_PARAM}. */
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** solrconfig.xml file name, shared with other cursor related tests */
@@ -68,9 +69,6 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
     System.setProperty(
         "solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(TEST_SOLRCONFIG_NAME, TEST_SCHEMAXML_NAME);

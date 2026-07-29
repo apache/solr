@@ -43,7 +43,7 @@ class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
 
   @Override
   public void resetIterators() throws IOException {
-    topLevel = FieldUtil.getSortedSetDocValues(fcontext.qcontext, field, null);
+    topLevel = FieldUtil.getSortedSetDocValues(fcontext.qcontext, field);
     nTerms = (int) topLevel.getValueCount();
     if (topLevel instanceof MultiDocValues.MultiSortedSetDocValues) {
       ordMap = ((MultiDocValues.MultiSortedSetDocValues) topLevel).mapping;

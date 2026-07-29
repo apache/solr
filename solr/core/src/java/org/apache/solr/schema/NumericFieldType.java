@@ -56,7 +56,7 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
       String max,
       boolean minInclusive,
       boolean maxInclusive) {
-    assert field.hasDocValues() && (field.getType().isPointField() || !field.multiValued());
+    assert field.hasDocValues();
 
     switch (getNumberType()) {
       case INTEGER:

@@ -35,25 +35,35 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |CurrencyFieldType |Supports currencies and exchange rates. See the section xref:currencies-exchange-rates.adoc[] for more information.
 
+|DateField |Date field. Represents a point in time with millisecond precision. This field type indexes both terms and Point values, providing efficient performance for both exact value queries and range queries. See the section xref:date-formatting-math.adoc[] for more details on the supported syntax. For single valued fields, `docValues="true"` must be used to enable sorting.
+
+|DatePointField |Date field. Represents a point in time with millisecond precision, encoded using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. See the section xref:date-formatting-math.adoc[] for more details on the supported syntax. For single valued fields, `docValues="true"` must be used to enable sorting.
+
 |DateRangeField |Supports indexing date ranges, to include point in time date instances as well (single-millisecond durations). See the section xref:date-formatting-math.adoc[] for more detail on using this field type. Consider using this field type even if it's just for date instances, particularly when the queries typically fall on UTC year/month/day/hour, etc., boundaries.
 
 |DenseVectorField |Supports indexing dense vectors of float values. See the section xref:query-guide:dense-vector-search.adoc[] for more information.
 
-|DatePointField |Date field. Represents a point in time with millisecond precision, encoded using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. See the section xref:date-formatting-math.adoc[] for more details on the supported syntax. For single valued fields, `docValues="true"` must be used to enable sorting.
+|DoubleField |Double field (64-bit IEEE floating point). This field type indexes both terms and Point values, providing efficient performance for both exact value queries and range queries. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |DoublePointField |Double field (64-bit IEEE floating point). This class encodes double values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |EnumFieldType |Allows defining an enumerated set of values which may not be easily sorted by either alphabetic or numeric order (such as a list of severities, for example). This field type takes a configuration file, which lists the proper order of the field values. See the section xref:enum-fields.adoc[] for more information.
 
+|FloatField |Floating point field (32-bit IEEE floating point). This field type indexes both terms and Point values, providing efficient performance for both exact value queries and range queries. For single valued fields, `docValues="true"` must be used to enable sorting.
+
 |FloatPointField |Floating point field (32-bit IEEE floating point). This class encodes float values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |ICUCollationField |Supports Unicode collation for sorting and range queries. See the section xref:language-analysis.adoc#unicode-collation[Unicode Collation] for more information.
+
+|IntField |Integer field (32-bit signed integer). This field type indexes both terms and Point values, providing efficient performance for both exact value queries and range queries. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |IntPointField |Integer field (32-bit signed integer). This class encodes int values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |IntRangeField |Stores single or multi-dimensional ranges, using syntax like `[1 TO 4]` or `[1,2 TO 3,4]`.  Up to 4 dimensions are supported.  Dimensionality is specified on new field-types using a `numDimensions` property, and all values for a particular field must have exactly this number of dimensions. Field type does not support docValues. Typically queried using the xref:query-guide:other-parsers.adoc#numeric-range-query-parser[Numeric Range Query Parser], though the Lucene and other query parsers also support this field by assuming "contains" semantics for searches.
 
 |LatLonPointSpatialField |A latitude/longitude coordinate pair; possibly multi-valued for multiple points. Usually it's specified as "lat,lon" order with a comma. See the section xref:query-guide:spatial-search.adoc[] for more information.
+
+|LongField |Long field (64-bit signed integer). This field type indexes both terms and Point values, providing efficient performance for both exact value queries and range queries. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |LongPointField |Long field (64-bit signed integer). This class encodes foo values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
@@ -103,16 +113,16 @@ This shortcoming may be addressed in a future release.
 
 |EnumField |Use EnumFieldType instead.
 
-|TrieDateField |Use DatePointField instead.
+|TrieDateField |Use DateField instead.
 
-|TrieDoubleField |Use DoublePointField instead.
+|TrieDoubleField |Use DoubleField instead.
 
-|TrieFloatField |Use FloatPointField instead.
+|TrieFloatField |Use FloatField instead.
 
-|TrieIntField |Use IntPointField instead.
+|TrieIntField |Use IntField instead.
 
-|TrieLongField |Use LongPointField instead.
+|TrieLongField |Use LongField instead.
 
-|TrieField |This field takes a `type` parameter to define the specific class of Trie* field to use; Use an appropriate Point Field type instead.
+|TrieField |This field takes a `type` parameter to define the specific class of Trie* field to use; Use an appropriate numeric field type instead (IntField, LongField, FloatField, DoubleField, or DateField).
 
 |===

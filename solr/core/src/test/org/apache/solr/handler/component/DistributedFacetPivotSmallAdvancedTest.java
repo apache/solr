@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -34,13 +35,8 @@ import org.junit.Test;
  * overrequesting, all the data is local -- so comparisons with it wouldn't be valid in some cases
  * we are testing here)
  */
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearchTestCase {
-
-  public DistributedFacetPivotSmallAdvancedTest() {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
-  }
 
   @Test
   @ShardsFixed(num = 2)

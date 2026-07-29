@@ -69,7 +69,7 @@ import org.locationtech.spatial4j.shape.Shape;
  * #makeOverlapRatioValueSource(org.locationtech.spatial4j.shape.Rectangle, double)} works by
  * calculating the query bbox overlap percentage against the indexed shape overlap percentage. The
  * indexed shape's coordinates are retrieved from {@link
- * org.apache.lucene.index.LeafReader#getNumericDocValues}.
+ * org.apache.lucene.index.DocValues#getNumeric}.
  *
  * @lucene.experimental
  */

@@ -33,6 +33,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.CurrencyValue;
+import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.DatePointField;
 import org.apache.solr.schema.DateRangeField;
 import org.apache.solr.schema.ExchangeRateProvider;
@@ -769,7 +770,8 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
       this.now = now;
       if (!(field.getType() instanceof TrieDateField)
           && !(field.getType() instanceof DateRangeField)
-          && !(field.getType() instanceof DatePointField)) {
+          && !(field.getType() instanceof DatePointField)
+          && !(field.getType() instanceof DateField)) {
         throw new IllegalArgumentException(TYPE_ERR_MSG);
       }
     }

@@ -965,7 +965,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     String minFunc = "field(" + f + ",min)";
     String maxFunc = "field(" + f + ",max)";
 
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) || Boolean.getBoolean(NUMERIC_FULL_SYSPROP)) {
       // we don't need to mess with this hack at all if we're using all point numerics
       trieFieldHack = false;
     }

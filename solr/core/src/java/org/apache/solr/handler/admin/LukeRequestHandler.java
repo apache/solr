@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.TokenFilterFactory;
@@ -96,6 +97,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.NumericField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AuthorizationContext;
@@ -1159,6 +1161,17 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     if (terms == null) { // field does not exist
       return;
     }
+
+    Function<BytesRef, String> termConverter;
+    if (req.getSearcher().getSchema().getField(field).getType() instanceof NumericField) {
+      termConverter = BytesRef::toString;
+    } else {
+      termConverter =
+          bytesRef -> {
+            spare.copyUTF8Bytes(bytesRef);
+            return spare.toString();
+          };
+    }
     TermsEnum termsEnum = terms.iterator();
     BytesRef text;
     int[] buckets = new int[HIST_ARRAY_SIZE];
@@ -1169,8 +1182,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       int slot = 32 - Integer.numberOfLeadingZeros(Math.max(0, freq - 1));
       buckets[slot] = buckets[slot] + 1;
       if (numTerms > 0 && freq > tiq.minFreq) {
-        spare.copyUTF8Bytes(text);
-        String t = spare.toString();
+        String t = termConverter.apply(text);
 
         tiq.add(new TopTermQueue.TermInfo(new Term(field, t), termsEnum.docFreq()));
         if (tiq.size() > numTerms) { // if tiq full

@@ -74,9 +74,7 @@ public class DocumentBuilder {
         // once SOLR-9809 is resolved, we should be able to replace this conditional with...
         //    assert f instanceof NumericDocValuesField
         if (forInPlaceUpdate) {
-          if (f instanceof NumericDocValuesField) {
-            doc.add(f);
-          }
+          doc.add(f);
         } else {
           doc.add(f);
         }

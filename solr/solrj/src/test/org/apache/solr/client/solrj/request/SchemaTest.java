@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.response.schema.FieldTypeRepresentation;
 import org.apache.solr.client.solrj.response.schema.SchemaRepresentation;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.schema.NumericField;
 import org.apache.solr.util.RestTestBase;
 import org.junit.After;
 import org.junit.Before;
@@ -766,7 +767,11 @@ public class SchemaTest extends RestTestBase {
     assertThat(
         RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class),
         is(equalTo(replacedFieldTypeAttributes.get("class"))));
-    assertThat(false, is(equalTo(replacedFieldTypeAttributes.get("omitNorms"))));
+    if (NumericField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS) {
+      assertThat(true, is(equalTo(replacedFieldTypeAttributes.get("omitNorms"))));
+    } else {
+      assertThat(false, is(equalTo(replacedFieldTypeAttributes.get("omitNorms"))));
+    }
     assertThat("42", is(equalTo(replacedFieldTypeAttributes.get("positionIncrementGap"))));
     // should be unchanged...
     assertThat(useDv, is(equalTo(replacedFieldTypeAttributes.get("docValues"))));

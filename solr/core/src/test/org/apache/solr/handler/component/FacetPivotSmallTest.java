@@ -24,13 +24,11 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 
 /** Single node testing of pivot facets */
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class FacetPivotSmallTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
     initCore("solrconfig.xml", "schema11.xml");
   }
 

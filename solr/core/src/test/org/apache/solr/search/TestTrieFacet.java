@@ -24,6 +24,7 @@ import org.apache.solr.schema.TrieIntField;
 import org.junit.BeforeClass;
 
 @Deprecated
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class TestTrieFacet extends SolrTestCaseJ4 {
 
   static final int MIN_VALUE = 20;
@@ -52,10 +53,6 @@ public class TestTrieFacet extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
-
     initCore("solrconfig-tlog.xml", "schema.xml");
 
     // don't break the test
@@ -73,7 +70,7 @@ public class TestTrieFacet extends SolrTestCaseJ4 {
       assertFalse("who changed the schema? test isn't valid: " + f, sf.multiValued());
     }
 
-    if (!Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+    if (!(Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) || Boolean.getBoolean(NUMERIC_FULL_SYSPROP))) {
       for (String f : P0) {
         SchemaField sf = h.getCore().getLatestSchema().getField(f);
         assertEquals(

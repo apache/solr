@@ -67,7 +67,7 @@ For example, the following definition of a date field type defines two propertie
 
 [source,xml]
 ----
-<fieldType name="date" class="solr.DatePointField"
+<fieldType name="date" class="solr.DateField"
            sortMissingLast="true" omitNorms="true"/>
 ----
 
@@ -215,9 +215,9 @@ The table below includes the default value for most `FieldType` implementations 
 
 == Choosing Appropriate Numeric Types
 
-For general numeric needs, consider using one of the `IntPointField`, `LongPointField`, `FloatPointField`, or `DoublePointField` classes, depending on the specific values you expect.
-These "Dimensional Point" based numeric classes use specially encoded data structures to support efficient range queries regardless of the size of the ranges used.
-Enable xref:docvalues.adoc[] on these fields as needed for sorting and/or faceting.
+For general numeric needs, always use one of the `IntField`, `LongField`, `FloatField`, `DoubleField`, or `DateField` classes, depending on the specific values you expect.
+These numeric classes index both terms and Point values, providing efficient performance for both exact value queries and range queries.
+xref:docvalues.adoc[] on these fields are enabled by default, and are needed for sorting and/or faceting, it is not recommended to disable DocValues on numeric fields.
 
 Some Solr features may not yet work with "Dimensional Points", in which case you may want to consider the equivalent `TrieIntField`, `TrieLongField`, `TrieFloatField`, and `TrieDoubleField` classes.
 These field types are deprecated and are likely to be removed in a future major Solr release, but they can still be used if necessary.

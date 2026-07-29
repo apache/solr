@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -43,15 +44,12 @@ import org.junit.Test;
  * </code> is "simpler" then the refinement logic used by <code>facet.pivot</code> so the assertions
  * in this test vary from that test.
  */
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTestCase {
 
   private String STAT_FIELD = null; // will be randomized single value vs multivalued
 
   public DistributedFacetPivotLongTailTest() {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
-
     STAT_FIELD = random().nextBoolean() ? "stat_i1" : "stat_i";
   }
 

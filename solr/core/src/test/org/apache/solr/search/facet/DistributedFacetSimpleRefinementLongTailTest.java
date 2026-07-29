@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -37,6 +38,7 @@ import org.junit.Test;
  * <code>refine:simple</code> is "simpler" then the refinement logic used by <code>facet.pivot
  * </code> so the assertions in this test vary from that test.
  */
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistributedSearchTestCase {
 
   // Percentile calculations use the t-digest approximation algorithm with compression=100.
@@ -64,10 +66,6 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
   private String ALL_STATS_JSON = "";
 
   public DistributedFacetSimpleRefinementLongTailTest() {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
-
     STAT_FIELD = random().nextBoolean() ? "stat_is" : "stat_i";
 
     for (String stat : ALL_STATS) {

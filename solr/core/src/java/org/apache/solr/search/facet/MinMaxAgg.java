@@ -425,7 +425,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     @Override
     public void resetIterators() throws IOException {
       super.resetIterators();
-      topLevel = FieldUtil.getSortedDocValues(fcontext.qcontext, field, null);
+      topLevel = FieldUtil.getSortedDocValues(fcontext.qcontext, field);
       if (topLevel instanceof MultiDocValues.MultiSortedDocValues) {
         ordMap = ((MultiDocValues.MultiSortedDocValues) topLevel).mapping;
         subDvs = ((MultiDocValues.MultiSortedDocValues) topLevel).values;
@@ -485,7 +485,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     @Override
     public void resetIterators() throws IOException {
       super.resetIterators();
-      topLevel = FieldUtil.getSortedSetDocValues(fcontext.qcontext, sf, null);
+      topLevel = FieldUtil.getSortedSetDocValues(fcontext.qcontext, sf);
       if (topLevel instanceof MultiDocValues.MultiSortedSetDocValues) {
         ordMap = ((MultiDocValues.MultiSortedSetDocValues) topLevel).mapping;
         subDvs = ((MultiDocValues.MultiSortedSetDocValues) topLevel).values;

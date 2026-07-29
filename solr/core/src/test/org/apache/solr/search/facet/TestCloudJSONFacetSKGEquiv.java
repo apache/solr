@@ -34,6 +34,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -71,6 +72,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see TestCloudJSONFacetSKG
  */
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -114,10 +116,6 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             && (MULTI_INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM)
             && (SOLO_STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM)
             && (SOLO_INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM));
-
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
 
     // multi replicas should not matter...
     final int repFactor = usually() ? 1 : 2;

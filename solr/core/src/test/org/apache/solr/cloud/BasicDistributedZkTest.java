@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.JSONTestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -92,6 +93,7 @@ import org.slf4j.LoggerFactory;
  * expected.
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -144,10 +146,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       };
 
   public BasicDistributedZkTest() {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
-
     sliceCount = 2;
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();

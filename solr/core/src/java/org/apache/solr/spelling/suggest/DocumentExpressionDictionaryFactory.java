@@ -26,8 +26,10 @@ import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.suggest.DocumentValueSourceDictionary;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -95,19 +97,25 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
   }
 
   private DoubleValuesSource fromSortField(SortField field) {
-    switch (field.getType()) {
-      case INT:
-        return DoubleValuesSource.fromIntField(field.getField());
-      case LONG:
-        return DoubleValuesSource.fromLongField(field.getField());
-      case FLOAT:
-        return DoubleValuesSource.fromFloatField(field.getField());
-      case DOUBLE:
-        return DoubleValuesSource.fromDoubleField(field.getField());
-      case SCORE:
-        return DoubleValuesSource.SCORES;
-      default:
-        throw new UnsupportedOperationException();
+    if (field instanceof SortedNumericSortField sortedNumericSortField) {
+      return switch (sortedNumericSortField.getNumericType()) {
+        case INT -> DoubleValuesSource.fromIntField(field.getField());
+        case LONG -> DoubleValuesSource.fromLongField(field.getField());
+        case FLOAT -> DoubleValuesSource.fromField(
+            field.getField(), lv -> NumericUtils.sortableIntToFloat((int) lv));
+        case DOUBLE -> DoubleValuesSource.fromField(
+            field.getField(), NumericUtils::sortableLongToDouble);
+        default -> throw new UnsupportedOperationException();
+      };
+    } else {
+      return switch (field.getType()) {
+        case INT -> DoubleValuesSource.fromIntField(field.getField());
+        case LONG -> DoubleValuesSource.fromLongField(field.getField());
+        case FLOAT -> DoubleValuesSource.fromFloatField(field.getField());
+        case DOUBLE -> DoubleValuesSource.fromDoubleField(field.getField());
+        case SCORE -> DoubleValuesSource.SCORES;
+        default -> throw new UnsupportedOperationException();
+      };
     }
   }
 

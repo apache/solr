@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
 // @LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class TestDistributedStatsComponentCardinality extends BaseDistributedSearchTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -59,10 +61,6 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
   final long MIN_LONG;
 
   public TestDistributedStatsComponentCardinality() {
-    // we need DVs on point fields to compute stats
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
-
     // we want some randomness in the shard number, but we don't want multiple iterations
     fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(3) + 1);
 

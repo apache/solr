@@ -36,7 +36,12 @@ public class DateFieldTest extends SolrTestCaseJ4 {
         new SolrConfig(testInstanceDir, testConfHome.resolve("solrconfig.xml").toString());
     IndexSchema schema =
         IndexSchemaFactory.buildIndexSchema(testConfHome.resolve("schema.xml").toString(), config);
-    f = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) ? new DatePointField() : new TrieDateField();
+    f =
+        Boolean.getBoolean(NUMERIC_FULL_SYSPROP)
+            ? new DateField()
+            : Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
+                ? new DatePointField()
+                : new TrieDateField();
     f.init(schema, new HashMap<String, String>());
   }
 

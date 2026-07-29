@@ -70,6 +70,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.3
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9061")
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -102,12 +103,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("distribUpdateSoTimeout", "5000");
-  }
-
-  public TestDistributedSearch() {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
   }
 
   @Test

@@ -30,6 +30,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.DocValuesUtil;
 
 public class UniqueAgg extends StrAggValueSource {
   public static final String UNIQUE = "unique";
@@ -219,7 +220,7 @@ public class UniqueAgg extends StrAggValueSource {
 
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      values = DocValues.getNumeric(readerContext.reader(), sf.getName());
+      values = DocValuesUtil.getNumeric(readerContext.reader(), sf.getName());
     }
 
     @Override

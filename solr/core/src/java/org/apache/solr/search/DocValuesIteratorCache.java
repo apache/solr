@@ -23,6 +23,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.function.Function;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
@@ -32,6 +33,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.DocValuesUtil;
 
 /**
  * A helper class for random-order value access over docValues (such as in the case of
@@ -45,19 +47,19 @@ public class DocValuesIteratorCache {
       funcMap = new EnumMap<>(DocValuesType.class);
 
   static {
-    funcMap.put(DocValuesType.NUMERIC, LeafReader::getNumericDocValues);
-    funcMap.put(DocValuesType.BINARY, LeafReader::getBinaryDocValues);
+    funcMap.put(DocValuesType.NUMERIC, DocValuesUtil::getNumeric);
+    funcMap.put(DocValuesType.BINARY, DocValues::getBinary);
     funcMap.put(
         DocValuesType.SORTED,
         (r, f) -> {
-          SortedDocValues dvs = r.getSortedDocValues(f);
+          SortedDocValues dvs = DocValues.getSorted(r, f);
           return dvs == null || dvs.getValueCount() < 1 ? null : dvs;
         });
-    funcMap.put(DocValuesType.SORTED_NUMERIC, LeafReader::getSortedNumericDocValues);
+    funcMap.put(DocValuesType.SORTED_NUMERIC, DocValues::getSortedNumeric);
     funcMap.put(
         DocValuesType.SORTED_SET,
         (r, f) -> {
-          SortedSetDocValues dvs = r.getSortedSetDocValues(f);
+          SortedSetDocValues dvs = DocValues.getSortedSet(r, f);
           return dvs == null || dvs.getValueCount() < 1 ? null : dvs;
         });
   }
@@ -168,7 +170,7 @@ public class DocValuesIteratorCache {
       if (min == -1) {
         // we are not yet initialized for this field/leaf.
         dv = dvFunction.apply(leafReader, schemaField.getName());
-        if (dv == null) {
+        if (dv == null || dv.cost() == 0) {
           minLocalIds[leafOrd] = DocIdSetIterator.NO_MORE_DOCS; // cache absence of this field
           return null;
         }
