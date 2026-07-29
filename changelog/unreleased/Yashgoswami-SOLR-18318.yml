@@ -2,7 +2,7 @@
 
 title: >
   Fix NullPointerException in GetNodeSystemInfo when the nodes parameter is provided in SolrCloud mode
-type: bug
+type: fixed
 authors:
   - name: Yash Goswami
 links:
