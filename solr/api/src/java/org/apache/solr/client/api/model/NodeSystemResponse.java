@@ -28,9 +28,8 @@ import java.util.LinkedHashMap;
 /** Response from /node/system */
 public class NodeSystemResponse extends SolrJerseyResponse {
 
-  // TODO The typing here is kindof wonky - can I tighten 'Object' here to be NodeSystemResponse or
-  // will Jackson choke on that?
-  public Map<String, Object> remoteNodeData= new LinkedHashMap<>();
+  // Object, not NodeSystemResponse, since @JsonAnySetter below also feeds this map raw values.
+  public Map<String, Object> remoteNodeData = new LinkedHashMap<>();
 
   @JsonAnyGetter
   public Map<String, Object> remoteNodeData() {
