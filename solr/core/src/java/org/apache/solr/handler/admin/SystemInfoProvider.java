@@ -113,38 +113,41 @@ public class SystemInfoProvider {
 
   /** Fill-out the provided response with all system info. */
   public NodeSystemResponse getNodeSystemInfo(NodeSystemResponse response) {
+    NodeSystemResponse.NodeSystemInfo nodeInfo = new NodeSystemResponse.NodeSystemInfo();
+
     if (cc != null) {
-      response.solrHome = cc.getSolrHome().toString();
-      response.coreRoot = cc.getCoreRootDirectory().toString();
+      nodeInfo.solrHome = cc.getSolrHome().toString();
+      nodeInfo.coreRoot = cc.getCoreRootDirectory().toString();
     }
 
     boolean solrCloudMode = cc != null && cc.isZooKeeperAware();
-    response.mode = solrCloudMode ? "solrcloud" : "std";
+    nodeInfo.mode = solrCloudMode ? "solrcloud" : "std";
     if (solrCloudMode) {
-      response.zkHost = cc.getZkController().getZkServerAddress();
-      response.node = cc.getZkController().getNodeName();
+      nodeInfo.zkHost = cc.getZkController().getZkServerAddress();
+      nodeInfo.node = cc.getZkController().getNodeName();
     }
 
-    response.lucene = getLuceneInfo();
+    nodeInfo.lucene = getLuceneInfo();
 
-    response.jvm = getJvmInfo();
+    nodeInfo.jvm = getJvmInfo();
 
-    response.security = getSecurityInfo();
-    response.system = getSystemInfo();
-    response.gpu = getGpuInfo();
+    nodeInfo.security = getSecurityInfo();
+    nodeInfo.system = getSystemInfo();
+    nodeInfo.gpu = getGpuInfo();
 
     SolrEnvironment env =
         SolrEnvironment.getFromSyspropOrClusterprop(
             solrCloudMode ? cc.getZkController().zkStateReader : null);
     if (env.isDefined()) {
-      response.environment = env.getCode();
+      nodeInfo.environment = env.getCode();
       if (env.getLabel() != null) {
-        response.environmentLabel = env.getLabel();
+        nodeInfo.environmentLabel = env.getLabel();
       }
       if (env.getColor() != null) {
-        response.environmentColor = env.getColor();
+        nodeInfo.environmentColor = env.getColor();
       }
     }
+    response.nodeInfo = nodeInfo;
     return response;
   }
 

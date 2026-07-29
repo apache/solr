@@ -19,7 +19,9 @@ package org.apache.solr.client.api.endpoint;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+import org.apache.solr.client.api.model.NodeSystemInfoType;
 import org.apache.solr.client.api.model.NodeSystemResponse;
 
 /** V2 API definitions to fetch node system info, analogous to the v1 /admin/info/system. */
@@ -31,4 +33,13 @@ public interface NodeSystemInfoApi {
       summary = "Retrieve all node system info.",
       tags = {"system"})
   NodeSystemResponse getNodeSystemInfo(@QueryParam(value = "nodes") String nodes);
+
+  @GET
+  @Operation(
+      summary = "Retrieve specific node system info.",
+      tags = {"system"})
+  @Path("/{requestedInfo}")
+  NodeSystemResponse getSpecificNodeSystemInfo(
+      @PathParam(value = "requestedInfo") NodeSystemInfoType requestedInfo,
+      @QueryParam(value = "nodes") String nodes);
 }

@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Added new `/api/node/system` sub APIs to fetch specific subsets of the normal `/api/node/system` response. e.g. `/api/node/system/jvm`
+type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Isabelle Giguère
+links:
+  - name: SOLR-18161
+    url: https://issues.apache.org/jira/browse/SOLR-18161

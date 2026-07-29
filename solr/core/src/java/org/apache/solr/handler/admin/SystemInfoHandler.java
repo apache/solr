@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.solr.api.JerseyResource;
@@ -29,15 +28,12 @@ import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This handler returns node/container level info. See {@link
  * org.apache.solr.handler.admin.CoreInfoHandler}
  */
 public class SystemInfoHandler extends RequestHandlerBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private CoreContainer cc;
 
@@ -57,7 +53,9 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     SystemInfoProvider provider = new SystemInfoProvider(req);
     NodeSystemResponse response = provider.getNodeSystemInfo(new NodeSystemResponse());
-    V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+
+    // V1 does not wrap the system info into "nodeInfo" field
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response.nodeInfo);
   }
 
   private CoreContainer getCoreContainer(SolrQueryRequest req) {
@@ -80,11 +78,6 @@ public class SystemInfoHandler extends RequestHandlerBase {
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return Set.of(GetNodeSystemInfo.class);
-  }
-
-  @Override
-  public Boolean registerV2() {
-    return Boolean.TRUE;
   }
 
   @Override
