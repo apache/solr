@@ -374,7 +374,8 @@ public class DistribFileStore implements FileStore {
           // I'll wait for them to finish before asking other nodes to download from each other
           try {
             Thread.sleep(2 * 1000);
-          } catch (Exception e) {
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
           }
         }
         // trying to avoid the thundering herd problem when there are a very large number of
