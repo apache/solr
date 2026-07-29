@@ -232,15 +232,17 @@ solrAdminApp.controller('CollectionsController',
             alert("No collection selected.");
             return;
         }
-        CollectionsV2.reloadCollection($scope.collection.name, function(error, data,response) {
-           if (error) {
-               $scope.reloadFailure = true;
-               $timeout(function() {$scope.reloadFailure=false}, 1000);
-               $location.path("/~collections");
-           } else {
-               $scope.reloadSuccess = true;
-               $timeout(function() {$scope.reloadSuccess=false}, 1000);
-           }
+        CollectionsV2.reloadCollection($scope.collection.name, {}, function(error, data,response) {
+           $timeout(function() {
+             if (error) {
+                 $scope.reloadFailure = true;
+                 $timeout(function() {$scope.reloadFailure=false}, 1000);
+                 $location.path("/~collections");
+             } else {
+                 $scope.reloadSuccess = true;
+                 $timeout(function() {$scope.reloadSuccess=false}, 1000);
+             }
+           });
         });
       };
 
@@ -269,21 +271,25 @@ solrAdminApp.controller('CollectionsController',
 
       $scope.deleteShard = function(shard) {
           ShardsV2.deleteShard(shard.collection, shard.name, {}, function(error, data, response) {
-            if (error) return;
-            shard.deleted = true;
             $timeout(function() {
-              $scope.refresh();
-            }, 2000);
+              if (error) return;
+              shard.deleted = true;
+              $timeout(function() {
+                $scope.refresh();
+              }, 2000);
+            });
           });
         }
 
       $scope.deleteReplica = function(replica) {
         ReplicasV2.deleteReplicaByName(replica.collection, replica.shard, replica.name, {}, function(error, data, response) {
-          if (error) return;
-          replica.deleted = true;
           $timeout(function() {
-            $scope.refresh();
-          }, 2000);
+            if (error) return;
+            replica.deleted = true;
+            $timeout(function() {
+              $scope.refresh();
+            }, 2000);
+          });
         });
       }
       $scope.addReplica = function(shard) {
@@ -294,13 +300,15 @@ solrAdminApp.controller('CollectionsController',
           createReplicaParams.node = shard.replicaNodeName;
         }
         ReplicasV2.createReplica(shard.collection, shard.name, {createReplicaRequestBody: createReplicaParams}, function(error, data, response) {
-          if (error) return;
-          shard.replicaAdded = true;
-          $timeout(function () {
-            shard.replicaAdded = false;
-            shard.showAdd = false;
-            $scope.refresh();
-          }, 2000);
+          $timeout(function() {
+            if (error) return;
+            shard.replicaAdded = true;
+            $timeout(function () {
+              shard.replicaAdded = false;
+              shard.showAdd = false;
+              $scope.refresh();
+            }, 2000);
+          });
         });
       };
 
