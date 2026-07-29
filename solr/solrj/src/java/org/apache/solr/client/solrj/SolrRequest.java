@@ -172,11 +172,20 @@ public abstract class SolrRequest<T> implements Serializable {
     this.method = method;
   }
 
+  /**
+   * The URI path to a "request handler", such as "/select". Must start with a "/". For
+   * collection/core requests, this is appended to the core/collection path; otherwise it's a node
+   * level request and thus is relative to the solr root.
+   */
   public String getPath() {
     return path;
   }
 
   public void setPath(String path) {
+    if (path == null || !path.startsWith("/")) {
+      throw new IllegalArgumentException("Must start with a '/': " + path);
+    }
+
     this.path = path;
   }
 
