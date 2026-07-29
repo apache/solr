@@ -482,12 +482,7 @@ public class CSVParser {
       ret = Integer.parseInt(code.toString(), 16);
     } catch (NumberFormatException e) {
       throw new IOException(
-          "(line "
-              + getLineNumber()
-              + ") Wrong unicode escape sequence found '"
-              + code
-              + "'"
-              + e);
+          "(line " + getLineNumber() + ") Wrong unicode escape sequence found '" + code + "'" + e);
     }
     return ret;
   }
