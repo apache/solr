@@ -349,7 +349,7 @@ public class StatusTool extends ToolBase {
     while (System.nanoTime() < timeout) {
 
       try {
-        return getStatus(pidUrl);
+        return getStatus(pidUrl, credentials);
       } catch (Exception exc) {
         if (CLIUtils.exceptionIsAuthRelated(exc)) {
           throw exc;
