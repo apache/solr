@@ -359,14 +359,14 @@ public class HttpJdkSolrClient extends HttpSolrClient {
     // Both remain null if the request has no streamed content, or if the body is never requested
     // (e.g. the connection failed before sending it). Filled in lazily by
     // beginContentWriting once the JDK HttpClient actually requests the body.
-    volatile PipedInputStream contentWritingSink;
-    volatile Future<?> contentWritingFuture;
+    private PipedInputStream contentWritingSink;
+    private Future<?> contentWritingFuture;
 
     PreparedRequest(HttpRequest.Builder reqb) {
       this.reqb = reqb;
     }
 
-    private PipedInputStream beginContentWriting(
+    synchronized PipedInputStream beginContentWriting(
         RequestWriter.ContentWriter contentWriter, ExecutorService bodyExecutor) {
       final PipedOutputStream source = new PipedOutputStream();
       try {
@@ -374,9 +374,11 @@ public class HttpJdkSolrClient extends HttpSolrClient {
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
+
       contentWritingFuture =
           bodyExecutor.submit(
               () -> {
+                // note: doesn't need to synchronize with PreparedRequest.this
                 try (source) {
                   contentWriter.write(source);
                 } catch (Exception e) {
@@ -386,16 +388,16 @@ public class HttpJdkSolrClient extends HttpSolrClient {
       return contentWritingSink;
     }
 
-    private void releaseContentWriting() {
+    synchronized void releaseContentWriting() {
       if (contentWritingFuture != null) {
         contentWritingFuture.cancel(true);
       }
+
       // Closing the sink is what unblocks a writer already stuck in the pipe; cancel() alone does
       // not.
-      PipedInputStream sink = contentWritingSink;
-      if (sink != null) {
+      if (contentWritingSink != null) {
         try {
-          sink.close();
+          contentWritingSink.close();
         } catch (IOException e) {
           log.warn("Could not close content-writing pipe", e);
         }
