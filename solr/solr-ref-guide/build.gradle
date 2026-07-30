@@ -16,6 +16,8 @@
  */
 
 import groovy.json.JsonOutput
+import javax.inject.Inject
+import org.gradle.process.ExecOperations
 import org.apache.tools.ant.util.TeeOutputStream
 
 apply plugin: 'java'
@@ -740,8 +742,15 @@ List<String> buildCliNavEntries(File cliDir) {
 
 // Run ManPageGenerator and return the set of generated files (excluding the top-level solr.adoc).
 // SolrCLI is annotated @Command(name="solr"), so ManPageGenerator writes all files flat into outputDir.
+interface CliDocsExecOperationsHolder {
+  @Inject
+  ExecOperations getExecOperations()
+}
+
 List<File> runManPageGenerator(File outputDir) {
-  javaexec {
+  // Project.javaexec was removed in Gradle 9; use injected ExecOperations instead
+  def execOps = project.objects.newInstance(CliDocsExecOperationsHolder).execOperations
+  execOps.javaexec {
     classpath = configurations.cliClasspath
     mainClass = 'picocli.codegen.docgen.manpage.ManPageGenerator'
     args = ['--outdir', outputDir.absolutePath, 'org.apache.solr.cli.SolrCLI']

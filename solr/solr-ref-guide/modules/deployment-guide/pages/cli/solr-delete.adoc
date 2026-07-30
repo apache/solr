@@ -34,7 +34,7 @@ bin/solr delete - Deletes a collection or core depending on whether Solr is runn
 
 ....
 bin/solr delete [-fhvV] [--delete-config] -c=<name> [-u=<credentials>]
-                [-s=<solrUrl> | -z=<zkHost>]
+                [-s=<solrConnection> | --solr-url=<solrUrl> | -z=<zkHost>]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -61,7 +61,10 @@ Deletes a collection or core depending on whether Solr is running in SolrCloud o
 *-h*, *--help*::
   Show this help message and exit.
 
-*-s*, *--solr-url*=_<solrUrl>_::
+*-s*, *--solr-connection*=_<solrConnection>_::
+  Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to localhost:9983.
+
+*--solr-url*=_<solrUrl>_::
   Base Solr URL, which can be used to determine the zk-host if that's not known.
 
 *-u*, *--credentials*=_<credentials>_::

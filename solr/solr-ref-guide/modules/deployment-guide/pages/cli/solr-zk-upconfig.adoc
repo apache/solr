@@ -33,8 +33,8 @@ bin/solr zk upconfig - Upload a configset from the local filesystem to ZooKeeper
 == Synopsis
 
 ....
-bin/solr zk upconfig [-v] -d=DIR -n=<confName> [-s=<solrUrl>] [-u=<credentials>]
-                     [-z=<zkHost>]
+bin/solr zk upconfig [-v] -d=DIR -n=<confName> [-s=<solrConnection>]
+                     [--solr-url=<solrUrl>] [-u=<credentials>] [-z=<zkHost>]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -87,7 +87,10 @@ If a pre-existing configuration set is specified, it will be overwritten in ZooK
 +
 
 
-*-s*, *--solr-url*=_<solrUrl>_::
+*-s*, *--solr-connection*=_<solrConnection>_::
+  Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to localhost:9983.
+
+*--solr-url*=_<solrUrl>_::
   Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
 
 *-u*, *--credentials*=_<credentials>_::

@@ -33,8 +33,8 @@ bin/solr zk cp - Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeep
 == Synopsis
 
 ....
-bin/solr zk cp [-rv] [-s=<solrUrl>] [--solr-home=DIR] [-u=<credentials>]
-               [-z=<zkHost>] <src> <dst>
+bin/solr zk cp [-rv] [-s=<solrConnection>] [--solr-home=DIR] [--solr-url=<solrUrl>]
+               [-u=<credentials>] [-z=<zkHost>] <src> <dst>
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -58,11 +58,14 @@ and the last element of the <src> path will be appended unless <src> also ends i
 *-r*, *--recursive*::
   Apply the command recursively.
 
-*-s*, *--solr-url*=_<solrUrl>_::
-  Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
+*-s*, *--solr-connection*=_<solrConnection>_::
+  Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to localhost:9983.
 
 *--solr-home*=_DIR_::
   Required to look up configuration for compressing state.json.
+
+*--solr-url*=_<solrUrl>_::
+  Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
 
 *-u*, *--credentials*=_<credentials>_::
   Credentials in the format username:password. Example: --credentials solr:SolrRocks

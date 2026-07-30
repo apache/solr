@@ -33,8 +33,9 @@ bin/solr status - Get the status of a Solr server.
 == Synopsis
 
 ....
-bin/solr status [-v] [--short] [--max-wait-secs=<maxWaitSecs>] [-p=<port>]
-                [-s=<solrUrl>] [-u=<credentials>]
+bin/solr status [-v] [--short] [--max-wait-secs=<maxWaitSecs>] [-u=<credentials>]
+                [-p=<port> | -s=<solrConnection> | --solr-url=<solrUrl> |
+                -z=<zkHost>]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -55,17 +56,23 @@ Get the status of a Solr server.
 *-p*, *--port*=_<port>_::
   Port on localhost to check status for
 
-*-s*, *--solr-url*=_<solrUrl>_::
-  Base Solr URL, which can be used to determine the zk-host if that's not known
+*-s*, *--solr-connection*=_<solrConnection>_::
+  Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to localhost:9983.
 
 *--short*::
   Short format. Prints one URL per line for running instances
+
+*--solr-url*=_<solrUrl>_::
+  Base Solr URL, which can be used to determine the zk-host if that's not known
 
 *-u*, *--credentials*=_<credentials>_::
   Credentials in the format username:password. Example: --credentials solr:SolrRocks
 
 *-v*, *--verbose*::
   Enable verbose mode.
+
+*-z*, *--zk-host*=_<zkHost>_::
+  Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.
 
 // end::picocli-generated-man-section-options[]
 
