@@ -67,6 +67,7 @@ import org.noggit.JSONWriter;
 public class StatusTool extends ToolBase {
   @picocli.CommandLine.Option(
       names = {"--max-wait-secs"},
+      defaultValue = "0",
       description = "Wait up to the specified number of seconds to see Solr running.")
   private Integer maxWaitSecs;
 

@@ -206,7 +206,7 @@ public class CreateTool extends ToolBase {
               cli.getOptionValue(COLLECTION_NAME_OPTION),
               cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET),
               cli.getOptionValue(CONF_NAME_OPTION),
-              cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION, CLIUtils.getDefaultSolrUrl()),
+              CLIUtils.hasConnectionOption(cli) ? CLIUtils.normalizeSolrUrl(cli) : null,
               cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
               cli.getParsedOptionValue(SHARDS_OPTION, 1),
               cli.getParsedOptionValue(REPLICATION_FACTOR_OPTION, 1));
@@ -232,7 +232,8 @@ public class CreateTool extends ToolBase {
     // usually same as solr home, but not always
     String coreRootDirectory = sysResponse.getCoreRoot();
 
-    if (CLIUtils.safeCheckCoreExists(params.solrUrl, params.name, params.credentials)) {
+    String solrUrl = params.solrUrl != null ? params.solrUrl : CLIUtils.getDefaultSolrUrl();
+    if (CLIUtils.safeCheckCoreExists(solrUrl, params.name, params.credentials)) {
       throw new IllegalArgumentException(
           "\nCore '"
               + params.name

@@ -153,23 +153,28 @@ public class DeleteTool extends ToolBase {
               cli.hasOption(DELETE_CONFIG_OPTION),
               cli.hasOption(FORCE_OPTION));
       if (CLIUtils.isCloudMode(solrClient)) {
-        deleteCollection(CLIUtils.getZkHost(cli), params);
+        deleteCollection(CLIUtils.getSolrConnection(cli), params);
       } else {
         deleteCore(params, solrClient);
       }
     }
   }
 
-  private void deleteCollection(String zkHost, DeleteParams params) throws Exception {
+  private void deleteCollection(String connectionString, DeleteParams params) throws Exception {
+    deleteCollection(CloudSolrClient.CloudSolrClientConnection.parse(connectionString), params);
+  }
+
+  private void deleteCollection(
+      CloudSolrClient.CloudSolrClientConnection solrConnection, DeleteParams params)
+      throws Exception {
     var builder =
         new HttpJettySolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(params.credentials);
-    echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
     try (var cloudSolrClient = CLIUtils.getCloudSolrClient(solrConnection, builder)) {
+      echoIfVerbose("Connecting to Solr at " + solrConnection.toString());
       deleteCollection(cloudSolrClient, params);
     }
   }
