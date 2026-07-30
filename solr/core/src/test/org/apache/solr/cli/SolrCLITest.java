@@ -18,6 +18,7 @@ package org.apache.solr.cli;
 
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
+import picocli.CommandLine;
 
 public class SolrCLITest extends SolrTestCase {
 
@@ -39,7 +40,7 @@ public class SolrCLITest extends SolrTestCase {
 
   @Test
   public void testFirstLineOnlyHelpFactoryTruncatesMultiLineDescription() {
-    picocli.CommandLine cmd = new picocli.CommandLine(new MultiLineDescriptionCommand());
+    CommandLine cmd = new CommandLine(new MultiLineDescriptionCommand());
 
     String baseline = cmd.getUsageMessage();
     assertTrue("baseline should include first line", baseline.contains("First line."));
@@ -52,9 +53,9 @@ public class SolrCLITest extends SolrTestCase {
     assertFalse("truncated should NOT include third line", truncated.contains("Third line."));
   }
 
-  @picocli.CommandLine.Command(name = "test")
+  @CommandLine.Command(name = "test")
   private static class MultiLineDescriptionCommand {
-    @picocli.CommandLine.Option(
+    @CommandLine.Option(
         names = "--multi",
         description = {"First line.", "Second line.", "Third line."})
     String multi;

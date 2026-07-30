@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import java.io.IOException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import picocli.CommandLine;
 
@@ -53,7 +54,7 @@ class ConnectionOptions {
    * The effective ZooKeeper connection string, taking {@code --solr-connection} into account, or
    * null if the user targeted Solr via a URL (or gave no target at all).
    */
-  String effectiveZkHost() throws java.io.IOException {
+  String effectiveZkHost() throws IOException {
     if (solrConnection != null) {
       var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
       return connection.isZookeeper() ? solrConnection : null;
@@ -65,7 +66,7 @@ class ConnectionOptions {
    * The effective Solr URL, taking {@code --solr-connection} into account, or null if the user
    * targeted ZooKeeper (or gave no target at all).
    */
-  String effectiveSolrUrl() throws java.io.IOException {
+  String effectiveSolrUrl() throws IOException {
     if (solrConnection != null) {
       var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
       return connection.isZookeeper() ? null : connection.quorumItems().get(0);
