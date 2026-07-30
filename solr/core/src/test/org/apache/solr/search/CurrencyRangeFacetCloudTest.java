@@ -18,8 +18,8 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -68,8 +68,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     assertEquals(
         0,
         (CollectionAdminRequest.createCollection(COLLECTION, CONF, numShards, numReplicas)
-                .setProperties(
-                    Collections.singletonMap(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
+                .setProperties(Map.of(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
                 .process(cluster.getSolrClient()))
             .getStatus());
 

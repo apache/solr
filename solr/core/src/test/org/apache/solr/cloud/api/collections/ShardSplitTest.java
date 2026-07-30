@@ -16,12 +16,12 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,12 +37,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -78,7 +75,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Nightly
+@Nightly
 @LogLevel(
     "org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
 public class ShardSplitTest extends BasicDistributedZkTest {
@@ -153,14 +150,13 @@ public class ShardSplitTest extends BasicDistributedZkTest {
             collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
 
     var builder =
-        new RandomizingCloudSolrClientBuilder(
-            Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
+        new RandomizingCloudSolrClientBuilder(List.of(zkServer.getZkAddress()), Optional.empty());
 
     try (CloudSolrClient client =
         builder
             .withDefaultCollection(collectionName)
             .sendUpdatesOnlyToShardLeaders()
-            .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
+            .withHttpClient(cloudClient.getHttpClient())
             .build()) {
       StoppableIndexingThread thread =
           new StoppableIndexingThread(controlClient, client, "i1", true);
@@ -235,19 +231,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
               CollectionAdminRequest.addReplicaToShard(collectionName, SHARD1_0);
           // use control client because there are fewer chances of it being the node being restarted
           // this is to avoid flakiness of test because of NoHttpResponseExceptions
-          String control_collection =
-              client
-                  .getClusterState()
-                  .getCollection("control_collection")
-                  .getReplicas()
-                  .get(0)
-                  .getBaseUrl();
-          try (var control =
-              new HttpSolrClient.Builder(control_collection)
-                  .withHttpClient(((CloudLegacySolrClient) client).getHttpClient())
-                  .build()) {
-            state = addReplica.processAndWait(control, 30);
-          }
+          state = addReplica.processAndWait(controlClient, 30);
 
           ZkStateReader.from(cloudClient)
               .waitForState(
@@ -308,11 +292,12 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
       var client =
-          new HttpSolrClient.Builder(replica.getBaseUrl())
-              .withDefaultCollection(replica.getCoreName())
-              .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
-              .build();
-      QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
+          clients.stream()
+              .filter(c -> c.getBaseURL().equals(replica.getBaseUrl()))
+              .findAny()
+              .orElseThrow();
+      QueryResponse response =
+          client.query(replica.getCoreName(), new SolrQuery("q", "*:*", "distrib", "false"));
       if (log.isInfoEnabled()) {
         log.info(
             "Found numFound={} on replica: {}",
@@ -339,6 +324,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
    * <p>See SOLR-9439
    */
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18277")
   public void testSplitAfterFailedSplit() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
@@ -351,7 +337,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
   }
 
-  private void splitAfterFailedSplit() throws KeeperException, InterruptedException {
+  private void splitAfterFailedSplit()
+      throws KeeperException, InterruptedException, TimeoutException {
     try {
       CollectionAdminRequest.SplitShard splitShard =
           CollectionAdminRequest.splitShard(AbstractFullDistribZkTestBase.DEFAULT_COLLECTION);
@@ -393,6 +380,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
   @Test
   @Nightly
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18277")
   public void testSplitAfterFailedSplit2() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
@@ -1284,13 +1272,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
-
-    try (SolrClient baseServer =
-        new HttpSolrClient.Builder(baseUrl)
-            .withConnectionTimeout(30, TimeUnit.SECONDS)
-            .withSocketTimeout(5, TimeUnit.MINUTES)
-            .build()) {
+    JettySolrRunner jetty = shardToJetty.get(SHARD1).getFirst().jetty;
+    try (SolrClient baseServer = jetty.newClient(30_000, 300_000)) {
       NamedList<Object> rsp = baseServer.request(request);
       if (log.isInfoEnabled()) {
         log.info("Shard split response: {}", Utils.toJSONString(rsp));

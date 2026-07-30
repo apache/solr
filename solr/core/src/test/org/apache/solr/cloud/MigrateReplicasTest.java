@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -28,15 +26,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -51,6 +42,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrMetricTestUtils;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -123,7 +116,6 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     log.info("excluded_node : {}  ", emptyNode);
     Map<?, ?> response =
         callMigrateReplicas(
-            cloudClient,
             new MigrateReplicasRequestBody(
                 Set.of(nodeToBeDecommissioned), Set.of(emptyNode), true, null));
     assertEquals(
@@ -151,7 +143,6 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     // let's do it back - this time wait for recoveries
     response =
         callMigrateReplicas(
-            cloudClient,
             new MigrateReplicasRequestBody(
                 Set.of(emptyNode), Set.of(nodeToBeDecommissioned), true, null));
     assertEquals(
@@ -259,7 +250,6 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     log.info("### Before decommission: {}", initialCollection);
     Map<?, ?> response =
         callMigrateReplicas(
-            cloudClient,
             new MigrateReplicasRequestBody(
                 new HashSet<>(nodesToBeDecommissioned), Set.of(), true, null));
     assertEquals(
@@ -304,8 +294,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
 
     String liveNode = cloudClient.getClusterState().getLiveNodes().iterator().next();
     Map<?, ?> response =
-        callMigrateReplicas(
-            cloudClient, new MigrateReplicasRequestBody(Set.of(liveNode), Set.of(), true, null));
+        callMigrateReplicas(new MigrateReplicasRequestBody(Set.of(liveNode), Set.of(), true, null));
     assertNotNull(
         "No error in response, when the request should have failed", response.get("error"));
     assertEquals(
@@ -314,37 +303,29 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         ((Map<?, ?>) response.get("error")).get("msg"));
   }
 
-  public Map<?, ?> callMigrateReplicas(CloudSolrClient cloudClient, MigrateReplicasRequestBody body)
-      throws IOException {
-    HttpEntityEnclosingRequestBase httpRequest = null;
-    HttpEntity entity;
-    String response = null;
-    Map<?, ?> r = null;
-
-    String uri =
-        cluster.getJettySolrRunners().get(0).getBaseURLV2().toString()
-            + "/cluster/replicas/migrate";
+  public Map<?, ?> callMigrateReplicas(MigrateReplicasRequestBody body) throws IOException {
+    String rspStr = null;
+    var jetty = cluster.getRandomJetty(random());
+    HttpClient httpClient = jetty.getSolrClient().getHttpClient();
     try {
-      httpRequest = new HttpPost(uri);
-
-      httpRequest.setEntity(
-          new ByteArrayEntity(
-              Utils.toJSON(Utils.getReflectWriter(body)), ContentType.APPLICATION_JSON));
-      httpRequest.setHeader("Accept", "application/json");
-      entity =
-          ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpRequest).getEntity();
-      try {
-        response = EntityUtils.toString(entity, UTF_8);
-        r = (Map<?, ?>) Utils.fromJSONString(response);
-        assertNotNull("No response given from MigrateReplicas API", r);
-        assertNotNull("No responseHeader given from MigrateReplicas API", r.get("responseHeader"));
-      } catch (JSONParser.ParseException e) {
-        log.error("err response: {}", response);
-        throw new AssertionError(e);
-      }
-    } finally {
-      httpRequest.releaseConnection();
+      var rsp =
+          httpClient
+              .POST(jetty.getBaseURLV2() + "/cluster/replicas/migrate")
+              .body(
+                  new BytesRequestContent(
+                      "application/json", Utils.toJSON(Utils.getReflectWriter(body))))
+              .send();
+      rspStr = rsp.getContentAsString();
+      var rspMap = (Map<?, ?>) Utils.fromJSONString(rspStr);
+      assertNotNull("No response given from MigrateReplicas API", rspMap);
+      assertNotNull(
+          "No responseHeader given from MigrateReplicas API", rspMap.get("responseHeader"));
+      return rspMap;
+    } catch (JSONParser.ParseException e) {
+      log.error("err response: {}", rspStr);
+      throw new AssertionError(e);
+    } catch (Exception e) {
+      throw new IOException(e);
     }
-    return r;
   }
 }

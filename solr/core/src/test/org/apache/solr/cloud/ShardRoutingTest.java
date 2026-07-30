@@ -16,14 +16,18 @@
  */
 package org.apache.solr.cloud;
 
+import jakarta.servlet.Filter;
 import java.lang.invoke.MethodHandles;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SequencedMap;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.ServletFixtures;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -327,10 +331,15 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     }
   }
 
+  @Override
+  public SequencedMap<Class<? extends Filter>, String> getExtraRequestFilters() {
+    return new LinkedHashMap<>(Map.of(ServletFixtures.DelayServlet.class, "/*"));
+  }
+
   long getNumRequests() {
-    long n = controlJetty.getDebugFilter().getTotalRequests();
+    long n = controlJetty.getFilter(ServletFixtures.DelayServlet.class).getTotalRequests();
     for (JettySolrRunner jetty : jettys) {
-      n += jetty.getDebugFilter().getTotalRequests();
+      n += jetty.getFilter(ServletFixtures.DelayServlet.class).getTotalRequests();
     }
     return n;
   }

@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import org.apache.lucene.search.Query;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -34,6 +35,7 @@ import org.apache.solr.search.SyntaxError;
 public class CrossCollectionJoinQParser extends QParser {
 
   public static final String ZK_HOST = "zkHost";
+  public static final String SOLR_CONNECTION = "solrConnection";
   public static final String SOLR_URL = "solrUrl";
   public static final String FROM_INDEX = "fromIndex";
   public static final String FROM = "from";
@@ -76,6 +78,7 @@ public class CrossCollectionJoinQParser extends QParser {
   public Query parse() throws SyntaxError {
     String query = localParams.get(QueryParsing.V);
     String zkHost = localParams.get(ZK_HOST);
+    String solrConnectionString = localParams.get(SOLR_CONNECTION);
     String solrUrl = localParams.get(SOLR_URL);
     // Test if this is a valid solr url.
     if (solrUrl != null) {
@@ -108,8 +111,21 @@ public class CrossCollectionJoinQParser extends QParser {
     if (shardsPreference != null && otherParams.get(ShardParams.SHARDS_PREFERENCE) == null) {
       otherParams.set(ShardParams.SHARDS_PREFERENCE, shardsPreference);
     }
-
+    CloudSolrClient.CloudSolrClientConnection solrConnection = null;
+    if (solrConnectionString != null && !solrConnectionString.isBlank()) {
+      solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnectionString);
+    } else if (zkHost != null && !zkHost.isBlank()) {
+      solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    }
     return new CrossCollectionJoinQuery(
-        query, zkHost, solrUrl, collection, fromField, toField, routedByJoinKey, ttl, otherParams);
+        query,
+        solrConnection,
+        solrUrl,
+        collection,
+        fromField,
+        toField,
+        routedByJoinKey,
+        ttl,
+        otherParams);
   }
 }

@@ -339,7 +339,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     RetrievalCombo(String fieldName, String indexValue, String returnValue) {
       this.fieldName = fieldName;
-      this.indexValues = Collections.singletonList(indexValue);
+      this.indexValues = List.of(indexValue);
       this.expectReturnJSON = "'" + returnValue + "'";
     }
   }

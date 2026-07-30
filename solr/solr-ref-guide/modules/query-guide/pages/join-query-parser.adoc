@@ -296,6 +296,17 @@ s|Required |Default: none
 +
 The name of the external Solr collection to be queried to retrieve the set of join key values.
 
+`solrConnection`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The connection string to be used to connect to SolrCloud cluster via ZooKeeper or HTTP(s).
+`solrConnection`, `zkHost` and `solrUrl` are optional parameters, and at most one of them should be specified.
+If neither `solrConnection`, `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used.
+
 `zkHost`::
 +
 [%autowidth,frame=none]
@@ -306,6 +317,7 @@ The name of the external Solr collection to be queried to retrieve the set of jo
 The connection string to be used to connect to ZooKeeper.
 `zkHost` and `solrUrl` are both optional parameters, and at most one of them should be specified.
 If neither `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used.
+This parameter is deprecated. Use `solrConnection` instead.
 
 `solrUrl`::
 +

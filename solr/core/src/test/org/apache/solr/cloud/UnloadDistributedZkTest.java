@@ -30,15 +30,13 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
-import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrCore;
@@ -81,16 +79,6 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
     testUnloadLotsOfCores(); // long
     log.info("###Starting testUnloadShardAndCollection");
     testUnloadShardAndCollection();
-  }
-
-  /**
-   * @param url a Solr node base URL. Should <em>not</em> contain a core or collection name.
-   */
-  private SolrClient newSolrClient(String url) {
-    return new HttpSolrClient.Builder(url)
-        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-        .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
-        .build();
   }
 
   private void checkCoreNamePresenceAndSliceCount(
@@ -247,21 +235,21 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     Random random = random();
     if (random.nextBoolean()) {
-      try (SolrClient collectionClient =
-          getHttpSolrClient(leader.getBaseUrl(), leader.getCoreName())) {
-        // lets try and use the solrj client to index and retrieve a couple
-        // documents
-        SolrInputDocument doc1 =
-            getDoc(id, 6, i1, -600, tlong, 600, t1, "humpty dumpy sat on a wall");
-        SolrInputDocument doc2 =
-            getDoc(id, 7, i1, -600, tlong, 600, t1, "humpty dumpy3 sat on a walls");
-        SolrInputDocument doc3 =
-            getDoc(id, 8, i1, -600, tlong, 600, t1, "humpty dumpy2 sat on a walled");
-        collectionClient.add(doc1);
-        collectionClient.add(doc2);
-        collectionClient.add(doc3);
-        collectionClient.commit();
-      }
+      SolrClient collectionClient =
+          new CollectionScopedSolrClient(getReplicaNodeClient(leader), leader.getCoreName());
+
+      // lets try and use the solrj client to index and retrieve a couple
+      // documents
+      SolrInputDocument doc1 =
+          getDoc(id, 6, i1, -600, tlong, 600, t1, "humpty dumpy sat on a wall");
+      SolrInputDocument doc2 =
+          getDoc(id, 7, i1, -600, tlong, 600, t1, "humpty dumpy3 sat on a walls");
+      SolrInputDocument doc3 =
+          getDoc(id, 8, i1, -600, tlong, 600, t1, "humpty dumpy2 sat on a walled");
+      collectionClient.add(doc1);
+      collectionClient.add(doc2);
+      collectionClient.add(doc3);
+      collectionClient.commit();
     }
 
     assertTrue(
@@ -276,30 +264,22 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
     // so that we start with some versions when we reload...
     TestInjection.skipIndexWriterCommitOnClose = true;
 
-    try (SolrClient addClient =
-        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl().toString())
-            .withDefaultCollection("unloadcollection_shard1_replica3")
-            .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
-            .build()) {
-
+    {
       // add a few docs
       for (int x = 20; x < 100; x++) {
         SolrInputDocument doc1 =
             getDoc(id, x, i1, -600, tlong, 600, t1, "humpty dumpy sat on a wall");
-        addClient.add(doc1);
+        jettys.get(2).getSolrClient().add("unloadcollection_shard1_replica3", doc1);
       }
     }
     // don't commit so they remain in the tran log
     // collectionClient.commit();
 
     // unload the leader
-    try (SolrClient collectionClient = newSolrClient(leader.getBaseUrl())) {
-
+    {
       Unload unloadCmd = new Unload(false);
       unloadCmd.setCoreName(leader.getCoreName());
-      ModifiableSolrParams p = (ModifiableSolrParams) unloadCmd.getParams();
-
-      collectionClient.request(unloadCmd);
+      getReplicaNodeClient(leader).request(unloadCmd);
     }
     //    Thread.currentThread().sleep(500);
     //    printLayout();
@@ -317,19 +297,11 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
     // ensure there is a leader
     zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
 
-    try (SolrClient addClient =
-        new HttpSolrClient.Builder(jettys.get(1).getBaseUrl().toString())
-            .withDefaultCollection("unloadcollection_shard1_replica2")
-            .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
-            .build()) {
-
-      // add a few docs while the leader is down
-      for (int x = 101; x < 200; x++) {
-        SolrInputDocument doc1 =
-            getDoc(id, x, i1, -600, tlong, 600, t1, "humpty dumpy sat on a wall");
-        addClient.add(doc1);
-      }
+    // add a few docs while the leader is down
+    for (int x = 101; x < 200; x++) {
+      SolrInputDocument doc1 =
+          getDoc(id, x, i1, -600, tlong, 600, t1, "humpty dumpy sat on a wall");
+      jettys.get(1).getSolrClient().add("unloadcollection_shard1_replica2", doc1);
     }
 
     assertTrue(
@@ -343,11 +315,10 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     // unload the leader again
     leader = getLeaderFromZk("unloadcollection", "shard1");
-    try (SolrClient collectionClient = newSolrClient(leader.getBaseUrl())) {
-
+    {
       Unload unloadCmd = new Unload(false);
       unloadCmd.setCoreName(leader.getCoreName());
-      collectionClient.request(unloadCmd);
+      getReplicaNodeClient(leader).request(unloadCmd);
     }
     tries = 50;
     while (leader
@@ -374,37 +345,40 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     long found1, found3;
 
-    try (SolrClient adminClient =
-        newSolrClient((jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2"))) {
-      adminClient.commit();
-      SolrQuery q = new SolrQuery("*:*");
-      q.set("distrib", false);
-      found1 = adminClient.query(q).getResults().getNumFound();
+    var params = params("q", "*:*", "distrib", "false");
+
+    {
+      SolrClient adminClient = jettys.get(1).getSolrClient();
+      adminClient.commit("unloadcollection_shard1_replica2");
+      found1 =
+          adminClient.query("unloadcollection_shard1_replica2", params).getResults().getNumFound();
     }
 
-    try (SolrClient adminClient =
-        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl().toString())
-            .withDefaultCollection("unloadcollection_shard1_replica3")
-            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
-            .build()) {
-      adminClient.commit();
-      SolrQuery q = new SolrQuery("*:*");
-      q.set("distrib", false);
-      found3 = adminClient.query(q).getResults().getNumFound();
+    {
+      SolrClient adminClient = jettys.get(2).getSolrClient();
+      adminClient.commit("unloadcollection_shard1_replica3");
+      found3 =
+          adminClient.query("unloadcollection_shard1_replica3", params).getResults().getNumFound();
     }
 
-    try (SolrClient adminClient =
-        newSolrClient((jettys.get(3).getBaseUrl() + "/unloadcollection_shard1_replica4"))) {
-      adminClient.commit();
-      SolrQuery q = new SolrQuery("*:*");
-      q.set("distrib", false);
-      long found4 = adminClient.query(q).getResults().getNumFound();
+    {
+      SolrClient adminClient = jettys.get(3).getSolrClient();
+      adminClient.commit("unloadcollection_shard1_replica4");
+      long found4 =
+          adminClient.query("unloadcollection_shard1_replica4", params).getResults().getNumFound();
 
       // all 3 shards should now have the same number of docs
       assertEquals(found1, found3);
       assertEquals(found3, found4);
     }
+  }
+
+  private SolrClient getReplicaNodeClient(Replica replica) {
+    return jettys.stream()
+        .filter(j -> j.getBaseUrl().toString().equals(replica.getBaseUrl()))
+        .findAny()
+        .orElseThrow()
+        .getSolrClient();
   }
 
   private void testUnloadLotsOfCores() throws Exception {

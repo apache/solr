@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static java.util.Collections.singletonList;
-
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -107,7 +105,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
 
     // shutdown a node to simulate fresh start
     otherJetties.remove(freshNode);
-    forceNodeFailures(singletonList(freshNode));
+    forceNodeFailures(List.of(freshNode));
 
     del("*:*");
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
@@ -125,7 +123,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
 
     // bring down the other node and index a few docs; so the leader and other node segments
     // diverge
-    forceNodeFailures(singletonList(secondNode));
+    forceNodeFailures(List.of(secondNode));
     for (int i = 0; i < 10; i++) {
       indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
       if (i % 2 == 0) {
@@ -133,10 +131,10 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       }
     }
     commit();
-    restartNodes(singletonList(secondNode));
+    restartNodes(List.of(secondNode));
 
     // start the freshNode
-    restartNodes(singletonList(freshNode));
+    restartNodes(List.of(freshNode));
     String coreName = freshNode.jetty.getCoreContainer().getCores().iterator().next().getName();
     Path replicationProperties =
         Path.of(freshNode.jetty.getSolrHome(), "cores", coreName, "data", "replication.properties");
@@ -144,7 +142,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
 
     // shutdown the original leader
     log.info("Now shutting down initial leader");
-    forceNodeFailures(singletonList(initialLeaderJetty));
+    forceNodeFailures(List.of(initialLeaderJetty));
     waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
     waitTillNodesActive();
     log.info("Updating mappings from zk");

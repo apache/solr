@@ -19,25 +19,16 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.cloud.ZkStateReader.ALIASES;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
@@ -60,14 +51,16 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpMethod;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class AliasIntegrationTest extends SolrCloudTestCase {
-
-  private CloseableHttpClient httpClient;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -78,9 +71,6 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-
-    httpClient =
-        (CloseableHttpClient) ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
   }
 
   @After
@@ -238,49 +228,53 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   public void testModifyPropertiesV2() throws Exception {
     final String aliasName = getSaferTestName();
     ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseURLV2().toString();
+    final JettySolrRunner runner = cluster.getRandomJetty(random());
+    final String baseUrl = runner.getBaseURLV2().toString();
+    final HttpClient httpClient = runner.getSolrClient().getHttpClient();
     String aliasApi = String.format(Locale.ENGLISH, "/aliases/%s/properties", aliasName);
 
-    HttpPut withoutBody = new HttpPut(baseUrl + aliasApi);
-    assertEquals(400, httpClient.execute(withoutBody).getStatusLine().getStatusCode());
+    assertEquals(
+        400, httpClient.newRequest(baseUrl + aliasApi).method(HttpMethod.PUT).send().getStatus());
 
-    HttpPut update = new HttpPut(baseUrl + aliasApi);
-    update.setEntity(
-        new StringEntity(
-            "{\n"
-                + "    \"properties\":\n"
-                + "    {\n"
-                + "        \"foo\": \"baz\",\n"
-                + "        \"bar\": \"bam\"\n"
-                + "    }\n"
-                + "}",
-            ContentType.APPLICATION_JSON));
-    assertSuccess(update);
+    String body =
+        "{\n"
+            + "    \"properties\":\n"
+            + "    {\n"
+            + "        \"foo\": \"baz\",\n"
+            + "        \"bar\": \"bam\"\n"
+            + "    }\n"
+            + "}";
+    assertSuccess(
+        httpClient
+            .newRequest(baseUrl + aliasApi)
+            .method(HttpMethod.PUT)
+            .body(new StringRequestContent("application/json", body, StandardCharsets.UTF_8))
+            .send());
     checkFooAndBarMeta(aliasName, zkStateReader, "baz", "bam");
 
     String aliasPropertyApi =
         String.format(Locale.ENGLISH, "/aliases/%s/properties/%s", aliasName, "foo");
-    HttpPut updateByProperty = new HttpPut(baseUrl + aliasPropertyApi);
-    updateByProperty.setEntity(
-        new StringEntity("{ \"value\": \"zab\" }", ContentType.APPLICATION_JSON));
-    assertSuccess(updateByProperty);
+    assertSuccess(
+        httpClient
+            .newRequest(baseUrl + aliasPropertyApi)
+            .method(HttpMethod.PUT)
+            .body(
+                new StringRequestContent(
+                    "application/json", "{ \"value\": \"zab\" }", StandardCharsets.UTF_8))
+            .send());
     checkFooAndBarMeta(aliasName, zkStateReader, "zab", "bam");
 
-    HttpDelete deleteByProperty = new HttpDelete(baseUrl + aliasPropertyApi);
-    assertSuccess(deleteByProperty);
+    assertSuccess(
+        httpClient.newRequest(baseUrl + aliasPropertyApi).method(HttpMethod.DELETE).send());
     checkFooAndBarMeta(aliasName, zkStateReader, null, "bam");
 
-    HttpPut deleteByEmptyValue = new HttpPut(baseUrl + aliasApi);
-    deleteByEmptyValue.setEntity(
-        new StringEntity(
-            "{\n"
-                + "    \"properties\":\n"
-                + "    {\n"
-                + "        \"bar\": \"\"\n"
-                + "    }\n"
-                + "}",
-            ContentType.APPLICATION_JSON));
-    assertSuccess(deleteByEmptyValue);
+    body = "{ \"properties\": { \"bar\": \"\" } }";
+    assertSuccess(
+        httpClient
+            .newRequest(baseUrl + aliasApi)
+            .method(HttpMethod.PUT)
+            .body(new StringRequestContent("application/json", body, StandardCharsets.UTF_8))
+            .send());
     checkFooAndBarMeta(aliasName, zkStateReader, null, null);
   }
 
@@ -289,29 +283,29 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     // note we don't use TZ in this test, thus it's UTC
     final String aliasName = getSaferTestName();
     ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=ALIASPROP"
-                + "&wt=xml"
-                + "&name="
-                + aliasName
-                + "&property.foo=baz"
-                + "&property.bar=bam");
-    assertSuccess(get);
+    final JettySolrRunner runner = cluster.getRandomJetty(random());
+    final String baseUrl = runner.getBaseUrl().toString();
+    final HttpClient httpClient = runner.getSolrClient().getHttpClient();
+    String url =
+        baseUrl
+            + "/admin/collections?action=ALIASPROP"
+            + "&wt=xml"
+            + "&name="
+            + aliasName
+            + "&property.foo=baz"
+            + "&property.bar=bam";
+    assertSuccess(httpClient.GET(url));
     checkFooAndBarMeta(aliasName, zkStateReader, "baz", "bam");
 
-    HttpGet remove =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=ALIASPROP"
-                + "&wt=xml"
-                + "&name="
-                + aliasName
-                + "&property.foo="
-                + "&property.bar=bar");
-    assertSuccess(remove);
+    url =
+        baseUrl
+            + "/admin/collections?action=ALIASPROP"
+            + "&wt=xml"
+            + "&name="
+            + aliasName
+            + "&property.foo="
+            + "&property.bar=bar";
+    assertSuccess(httpClient.GET(url));
     checkFooAndBarMeta(aliasName, zkStateReader, null, "bar");
   }
 
@@ -508,12 +502,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     return zkStateReader;
   }
 
-  private void assertSuccess(HttpUriRequest msg) throws IOException {
-    try (CloseableHttpResponse response = httpClient.execute(msg)) {
-      if (200 != response.getStatusLine().getStatusCode()) {
-        System.err.println(EntityUtils.toString(response.getEntity()));
-        fail("Unexpected status: " + response.getStatusLine());
-      }
+  private void assertSuccess(ContentResponse response) {
+    if (200 != response.getStatus()) {
+      System.err.println(response.getContentAsString());
+      fail("Unexpected status: " + response.getStatus());
     }
   }
 

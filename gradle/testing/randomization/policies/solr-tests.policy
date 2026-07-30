@@ -165,6 +165,8 @@ grant {
   permission java.security.SecurityPermission "putProviderProperty.BC";
   permission java.security.SecurityPermission "removeProviderProperty.BC";
   permission java.security.SecurityPermission "getProperty.org.bouncycastle.x509.allow_non-der_tbscert";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.asn1.max_cons_depth";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.max_f2m_field_size";
 
   // may only be necessary with Java 7?
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KeyTab * \"*\"", "read";

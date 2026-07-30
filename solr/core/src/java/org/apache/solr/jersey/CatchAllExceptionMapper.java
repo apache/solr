@@ -18,6 +18,7 @@
 package org.apache.solr.jersey;
 
 import static org.apache.solr.common.SolrException.ErrorCode.getErrorCode;
+import static org.apache.solr.jersey.RequestContextKeys.CORE_CONTAINER;
 import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
@@ -33,6 +34,7 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -112,13 +114,22 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
         ResponseUtils.getTypedErrorInfo(
             normalizedException,
             log,
-            solrQueryRequest.getCore() != null
-                && solrQueryRequest.getCore().getCoreContainer().hideStackTrace());
+            shouldHideStackTrace(solrQueryRequest, containerRequestContext));
     response.responseHeader.status = response.error.code;
     final String mediaType =
         V2ApiUtils.getMediaTypeFromWtParam(
             solrQueryRequest.getParams(), MediaType.APPLICATION_JSON);
     return Response.status(response.error.code).type(mediaType).entity(response).build();
+  }
+
+  static boolean shouldHideStackTrace(
+      SolrQueryRequest solrQueryRequest, ContainerRequestContext containerRequestContext) {
+    if (solrQueryRequest != null && solrQueryRequest.getCore() != null) {
+      return solrQueryRequest.getCore().getCoreContainer().hideStackTrace();
+    }
+    final CoreContainer coreContainer =
+        (CoreContainer) containerRequestContext.getProperty(CORE_CONTAINER);
+    return coreContainer != null && coreContainer.hideStackTrace();
   }
 
   private Response processWebApplicationException(WebApplicationException wae) {

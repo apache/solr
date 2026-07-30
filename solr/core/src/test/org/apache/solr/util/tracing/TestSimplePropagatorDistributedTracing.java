@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -72,7 +71,7 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
 
     try (LogListener reqLog = LogListener.info(SolrCore.class.getName() + ".Request")) {
 
-      try (SolrClient testClient = newCloudLegacySolrClient()) {
+      try (SolrClient testClient = newCloudSolrClient()) {
         // verify all query events have the same auto-generated trace id
         var r1 = testClient.query(COLLECTION, new SolrQuery("*:*"));
         assertEquals(0, r1.getStatus());
@@ -108,7 +107,7 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
   public void testUpdateRequest() throws IOException, SolrServerException {
     try (LogListener reqLog = LogListener.info(LogUpdateProcessorFactory.class.getName())) {
 
-      try (SolrClient testClient = newCloudLegacySolrClient()) {
+      try (SolrClient testClient = newCloudSolrClient()) {
         // verify all indexing events have trace id present
         testClient.add(COLLECTION, sdoc("id", "1"));
         testClient.add(COLLECTION, sdoc("id", "3"));
@@ -168,12 +167,6 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
       String evTraceId = reqEvent.getContextData().getValue(MDCLoggingContext.TRACE_ID);
       assertEquals(traceId, evTraceId);
     }
-  }
-
-  private CloudSolrClient newCloudLegacySolrClient() {
-    return new CloudLegacySolrClient.Builder(
-            List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
-        .build();
   }
 
   private CloudSolrClient newCloudSolrClient() {

@@ -221,7 +221,7 @@ public class CreateTool extends ToolBase {
   private void createCore(CreateParams params, SolrClient solrClient) throws Exception {
     // we allow them to pass a directory instead of a configset name
     Path configsetDir = Path.of(params.confDir);
-    Path solrInstallDirPath = Path.of(System.getProperty("solr.install.dir"));
+    Path solrInstallDirPath = Path.of(EnvUtils.getProperty("solr.install.dir"));
 
     if (!Files.isDirectory(configsetDir)) {
       ensureConfDirExists(solrInstallDirPath, configsetDir);
@@ -279,7 +279,13 @@ public class CreateTool extends ToolBase {
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(params.credentials);
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost, builder)) {
+    var zkSolrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    if (!zkSolrConnection.isZookeeper()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
+    }
+    try (var cloudSolrClient = CLIUtils.getCloudSolrClient(zkSolrConnection, builder)) {
       createCollection(cloudSolrClient, params);
     }
   }
@@ -287,7 +293,7 @@ public class CreateTool extends ToolBase {
   private void createCollection(CloudSolrClient cloudSolrClient, CreateParams params)
       throws Exception {
 
-    Path solrInstallDirPath = Path.of(System.getProperty("solr.install.dir"));
+    Path solrInstallDirPath = Path.of(EnvUtils.getProperty("solr.install.dir"));
     Path confDirPath = Path.of(params.confDir);
     ensureConfDirExists(solrInstallDirPath, confDirPath);
     printDefaultConfigsetWarning(params);
@@ -321,7 +327,9 @@ public class CreateTool extends ToolBase {
         confName = params.name;
       }
 
-      // TODO: This should be done using the configSet API
+      // TODO: This should be done using the configSet API.  This would let us remove
+      // the direct dependency on ZooKeeper APIs.  Unlike the bin/solr zk comamnds that
+      // work directly with ZooKeeper.
       final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
       ConfigSetService configSetService =
           new ZkConfigSetService(ZkStateReader.from(cloudSolrClient).getZkClient());

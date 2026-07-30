@@ -22,7 +22,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -99,7 +98,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin
           ErrorCode.BAD_REQUEST, "Config for scheme '" + scheme + "' not found!");
     }
 
-    Map<String, Object> updated = plugin.edit(latestPluginConf, Collections.singletonList(c));
+    Map<String, Object> updated = plugin.edit(latestPluginConf, List.of(c));
     if (updated != null) {
       madeChanges = true;
       schemes.set(updateAt, withScheme(scheme, updated));

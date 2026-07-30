@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -690,7 +689,7 @@ public class TrieField extends NumericFieldType {
 
       return fields;
     } else {
-      return Collections.singletonList(createField(sf, value));
+      return List.of(createField(sf, value));
     }
   }
 

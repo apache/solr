@@ -682,11 +682,27 @@ SOLR_OPTS=(${SOLR_OPTS:-})
 SCRIPT_SOLR_OPTS=()
 PASS_TO_RUN_EXAMPLE=()
 SOLR_MODE="solrcloud"
+CLOUD_FLAG_SET=false
+USER_MANAGED_FLAG_SET=false
 
 if [ $# -gt 0 ]; then
   while true; do
     case "${1:-}" in
+        -c|--cloud|-cloud)
+            if [[ "$USER_MANAGED_FLAG_SET" == "true" ]]; then
+              print_usage "$SCRIPT_CMD" "Cannot combine -c/--cloud with --user-managed; choose one."
+              exit 1
+            fi
+            echo "WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default."
+            CLOUD_FLAG_SET=true
+            shift
+        ;;
         --user-managed)
+            if [[ "$CLOUD_FLAG_SET" == "true" ]]; then
+              print_usage "$SCRIPT_CMD" "Cannot combine -c/--cloud with --user-managed; choose one."
+              exit 1
+            fi
+            USER_MANAGED_FLAG_SET=true
             SOLR_MODE="user-managed"
             PASS_TO_RUN_EXAMPLE+=("--user-managed")
             shift

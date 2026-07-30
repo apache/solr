@@ -24,14 +24,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -49,6 +44,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -147,48 +143,45 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testObeysWtParameterWhenProvided() throws Exception {
-    final var httpClient = getRawClient();
-    final var listCollRequest = getListCollectionsRequest();
-    listCollRequest.setURI(
-        new URIBuilder(listCollRequest.getURI()).addParameter("wt", "xml").build());
+    final HttpClient httpClient = getRawClient();
+    final String url = getListCollectionsUrl();
 
-    final var response = httpClient.execute(listCollRequest);
+    final var response = httpClient.GET(url + "?wt=xml");
 
-    assertEquals(200, response.getStatusLine().getStatusCode());
-    assertEquals("application/xml", response.getFirstHeader("Content-type").getValue());
+    assertEquals(200, response.getStatus());
+    assertEquals("application/xml", response.getHeaders().get("Content-type"));
   }
 
   @Test
   public void testObeysAcceptHeaderWhenWtParamNotProvided() throws Exception {
-    final var httpClient = getRawClient();
-    final var listCollRequest = getListCollectionsRequest();
-    listCollRequest.addHeader("Accept", "application/xml");
+    final HttpClient httpClient = getRawClient();
+    final String url = getListCollectionsUrl();
 
-    final var response = httpClient.execute(listCollRequest);
+    final var response =
+        httpClient.newRequest(url).headers(h -> h.add("Accept", "application/xml")).send();
 
-    assertEquals(200, response.getStatusLine().getStatusCode());
-    assertEquals("application/xml", response.getFirstHeader("Content-type").getValue());
+    assertEquals(200, response.getStatus());
+    assertEquals("application/xml", response.getHeaders().get("Content-type"));
   }
 
   @Test
   public void testRespondsWithJsonWhenWtAndAcceptAreMissing() throws Exception {
-    final var httpClient = getRawClient();
-    final var listCollRequest = getListCollectionsRequest();
+    final HttpClient httpClient = getRawClient();
+    final String url = getListCollectionsUrl();
 
-    final var response = httpClient.execute(listCollRequest);
+    final var response = httpClient.GET(url);
 
-    assertEquals(200, response.getStatusLine().getStatusCode());
-    assertEquals("application/json", response.getFirstHeader("Content-type").getValue());
+    assertEquals(200, response.getStatus());
+    assertEquals("application/json", response.getHeaders().get("Content-type"));
   }
 
   private HttpClient getRawClient() {
-    return ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
+    return cluster.getRandomJetty(random()).getSolrClient().getHttpClient();
   }
 
-  private HttpRequestBase getListCollectionsRequest() {
+  private String getListCollectionsUrl() {
     final var v2BaseUrl = cluster.getJettySolrRunner(0).getBaseURLV2().toString();
-    final var listCollUrl = v2BaseUrl + "/collections";
-    return new HttpGet(listCollUrl);
+    return v2BaseUrl + "/collections";
   }
 
   @Test

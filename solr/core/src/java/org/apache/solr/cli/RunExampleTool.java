@@ -28,8 +28,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -674,7 +674,7 @@ public class RunExampleTool extends ToolBase {
   /** wait until the number of live nodes == numNodes. */
   protected void waitToSeeLiveNodes(String zkHost, int numNodes) {
     try (CloudSolrClient cloudClient =
-        new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
+        new CloudSolrClient.Builder(List.of(zkHost), Optional.empty()).build()) {
       Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
       int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
       long timeoutNanos = System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);

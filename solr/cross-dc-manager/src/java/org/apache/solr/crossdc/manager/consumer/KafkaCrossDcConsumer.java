@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -52,6 +51,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.crossdc.common.CrossDcConf;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
@@ -76,6 +76,8 @@ import org.slf4j.LoggerFactory;
 public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String PROP_TOPIC_DEBUG = "solr.crossdc.consumer.topic.debug";
+
   private final KafkaConsumer<String, MirroredSolrRequest<?>> kafkaConsumer;
   private final AdminClient adminClient;
   private final CountDownLatch startLatch;
@@ -95,12 +97,14 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final ThreadPoolExecutor executor;
 
   private final ExecutorService offsetCheckExecutor =
-      ExecutorUtil.newMDCAwareCachedThreadPool(r -> new Thread(r, "offset-check-thread"));
+      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("offset-check-thread"));
   private final PartitionManager partitionManager;
 
   private final BlockingQueue<Runnable> queue = new BlockingQueue<>(10);
 
   private volatile boolean running = false;
+
+  private boolean topicDebug = Boolean.parseBoolean(System.getProperty(PROP_TOPIC_DEBUG, "false"));
 
   /**
    * Supplier for creating and managing a working CloudSolrClient instance. This class ensures that
@@ -126,9 +130,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
     protected CloudSolrClient createSolrClient() {
       log.debug("Creating new SolrClient...");
-      return new CloudSolrClient.Builder(
-              Collections.singletonList(zkConnectString), Optional.empty())
-          .build();
+      return new CloudSolrClient.Builder(List.of(zkConnectString), Optional.empty()).build();
     }
 
     @Override
@@ -178,6 +180,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
             conf.get(CrossDcConf.COLLAPSE_UPDATES), CrossDcConf.CollapseUpdates.PARTIAL);
     this.maxCollapseRecords = conf.getInt(KafkaCrossDcConf.MAX_COLLAPSE_RECORDS);
     this.startLatch = startLatch;
+
     final Properties kafkaConsumerProps = new Properties();
 
     kafkaConsumerProps.put(
@@ -378,6 +381,9 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
       ConsumerRecord<String, MirroredSolrRequest<?>> lastRecord = null;
 
       for (TopicPartition partition : records.partitions()) {
+        if (log.isTraceEnabled()) {
+          log.trace("Checking partition {}", partition.partition());
+        }
         List<ConsumerRecord<String, MirroredSolrRequest<?>>> partitionRecords =
             records.records(partition);
 
@@ -399,18 +405,30 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
             metrics.incrementInputMsgCounter();
             lastRecord = requestRecord;
-            MirroredSolrRequest<?> req = requestRecord.value();
-            SolrRequest<?> solrReq = req.getSolrRequest();
-            MirroredSolrRequest.Type type = req.getType();
+            final MirroredSolrRequest<?> req = requestRecord.value();
+            final SolrRequest<?> solrReq = req.getSolrRequest();
+            final MirroredSolrRequest.Type type = req.getType();
 
             if (type != MirroredSolrRequest.Type.UPDATE) {
               String action = solrReq.getParams().get("action", "unknown");
               metrics.incrementInputReqCounter(type.name(), action);
             }
 
-            ModifiableSolrParams params = new ModifiableSolrParams(solrReq.getParams());
+            final ModifiableSolrParams params = new ModifiableSolrParams(solrReq.getParams());
             if (log.isTraceEnabled()) {
               log.trace("-- picked type={}, params={}", req.getType(), params);
+            }
+            if (topicDebug) {
+              solrReq.addHeader("topic.debug", "true");
+              solrReq.addHeader("record.topic", requestRecord.topic());
+              solrReq.addHeader("record.partition", String.valueOf(requestRecord.partition()));
+              solrReq.addHeader("record.offset", String.valueOf(requestRecord.offset()));
+              solrReq.addHeader("record.timestamp", String.valueOf(requestRecord.timestamp()));
+              solrReq.addHeader("record.key", requestRecord.key());
+              solrReq.addHeader("workUnit.nextOffset", String.valueOf(workUnit.nextOffset));
+              solrReq.addHeader("workUnit.partition", String.valueOf(workUnit.partition));
+              solrReq.addHeader("workUnit.topic", workUnit.topic);
+              solrReq.addHeader("workUnit.items", String.valueOf(workUnit.workItems.size()));
             }
 
             // determine if it's an UPDATE with deletes, or if the existing batch has deletes
@@ -453,6 +471,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
               if (updateReqBatch == null) {
                 // just initialize
                 updateReqBatch = new UpdateRequest();
+                updateReqBatch.addHeaders(solrReq.getHeaders());
               } else {
                 if (collapseUpdates == CrossDcConf.CollapseUpdates.NONE) {
                   throw new RuntimeException("Can't collapse requests.");
@@ -493,6 +512,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
           if (updateReqBatch != null) {
             sendBatch(updateReqBatch, MirroredSolrRequest.Type.UPDATE, lastRecord, workUnit);
+            updateReqBatch = null;
           }
           try {
             partitionManager.checkForOffsetUpdates(partition);

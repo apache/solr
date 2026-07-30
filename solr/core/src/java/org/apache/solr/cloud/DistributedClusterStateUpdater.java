@@ -17,14 +17,12 @@
 
 package org.apache.solr.cloud;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.cloud.overseer.ZkStateWriter.NO_OP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -547,7 +545,7 @@ public class DistributedClusterStateUpdater {
       } else {
         // Collection update or creation
         DocCollection collection = updatedState.getCollection(updater.getCollectionName());
-        byte[] stateJson = Utils.toJSON(singletonMap(updater.getCollectionName(), collection));
+        byte[] stateJson = Utils.toJSON(Map.of(updater.getCollectionName(), collection));
 
         if (updater.isCollectionCreation()) {
           // The state.json file does not exist yet (more precisely it is assumed not to exist)
@@ -809,14 +807,11 @@ public class DistributedClusterStateUpdater {
         throws KeeperException, InterruptedException {
       if (log.isDebugEnabled()) {
         log.debug(
-            "Executing updates for collection "
-                + collectionName
-                + ", is creation="
-                + isCollectionCreation
-                + ", "
-                + mutations.size()
-                + " recorded mutations.",
-            new Exception("StackTraceOnly")); // nowarn
+            "Executing updates for collection {}, is creation={}, {} recorded mutations.",
+            collectionName,
+            isCollectionCreation,
+            mutations.size(),
+            new Exception("StackTraceOnly"));
       }
       if (mutations.isEmpty()) {
         final String err =
@@ -927,10 +922,7 @@ public class DistributedClusterStateUpdater {
       if (docCollection == null) {
         // This is possible but should be rare. Logging warn in case it is seen often and likely a
         // sign of another issue
-        log.warn(
-            "Processing DOWNNODE, collection "
-                + collectionName
-                + " disappeared during iteration"); // nowarn
+        log.warn("Processing DOWNNODE, collection {} disappeared during iteration", collectionName);
       }
 
       if (result.isPresent()) {
@@ -939,10 +931,7 @@ public class DistributedClusterStateUpdater {
             (zkcmd != ZkStateWriter.NO_OP)
                 ? clusterState.copyWith(zkcmd.name, zkcmd.collection)
                 : null;
-        replicaOpsList =
-            (zkcmd.ops != null && zkcmd.ops.get() != null)
-                ? Collections.singletonList(zkcmd.ops)
-                : null;
+        replicaOpsList = (zkcmd.ops != null && zkcmd.ops.get() != null) ? List.of(zkcmd.ops) : null;
       } else {
         computedState = null;
         replicaOpsList = null;

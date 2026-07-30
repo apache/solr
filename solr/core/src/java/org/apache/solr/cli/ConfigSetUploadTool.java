@@ -25,6 +25,7 @@ import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.FileTypeMagicUtil;
 import org.slf4j.Logger;
@@ -129,7 +130,7 @@ public class ConfigSetUploadTool extends ToolBase {
 
   private void doUpconfig(SolrZkClient zkClient, String zkHost, String confName, String confDir)
       throws Exception {
-    final String solrInstallDir = System.getProperty("solr.install.dir");
+    final String solrInstallDir = EnvUtils.getProperty("solr.install.dir");
     Path solrInstallDirPath = Path.of(solrInstallDir);
     final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
     Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());

@@ -387,9 +387,8 @@ public class SuggestComponent extends SearchComponent
     super.initializeMetrics(parentContext, attributes);
     var suggesterAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
-
     this.solrMetricsContext.observableLongGauge(
-        "solr_core_suggester_total_size",
+        "solr.core.suggester.total.size",
         "Total memory size in bytes of all suggester",
         (observableLongMeasurement) -> {
           observableLongMeasurement.record(ramBytesUsed(), suggesterAttributes);

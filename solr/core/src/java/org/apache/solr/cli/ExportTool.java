@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -158,8 +157,8 @@ public class ExportTool extends ToolBase {
         .addOption(LIMIT_OPTION)
         .addOption(QUERY_OPTION)
         .addOption(FIELDS_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   public abstract static class Info {
@@ -247,9 +246,7 @@ public class ExportTool extends ToolBase {
       var builder = new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
-          new CloudSolrClient.Builder(Collections.singletonList(baseurl))
-              .withHttpClientBuilder(builder)
-              .build();
+          new CloudSolrClient.Builder(List.of(baseurl)).withHttpClientBuilder(builder).build();
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(
@@ -284,16 +281,16 @@ public class ExportTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url;
-    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
+    if (CLIUtils.hasConnectionOption(cli)) {
       if (!cli.hasOption(COLLECTION_NAME_OPTION)) {
         throw new IllegalArgumentException(
-            "Must specify -c / --name parameter with --solr-url to post documents.");
+            "Must specify -c / --name parameter with a connection target to export documents.");
       }
       url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     } else {
-      // think about support --zk-host someday.
-      throw new IllegalArgumentException("Must specify --solr-url.");
+      throw new IllegalArgumentException(
+          "Must specify a connection target via -s/--solr-connection, --solr-url, or --zk-host.");
     }
     String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     Info info = new MultiThreadedRunner(runtime, url, credentials);

@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -32,7 +34,6 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -45,31 +46,34 @@ public class SqlStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String zkHost;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
   protected SolrParams params;
   protected transient TupleStream tupleStream;
   protected transient StreamContext streamContext;
 
   /**
-   * @param zkHost Zookeeper ensemble connection string
+   * @param solrConnection Zookeeper or HTTPS(s) ensemble connection string
    * @param collectionName Name of the collection to operate on
    * @param params Map&lt;String, String&gt; of parameter/value pairs
    * @throws IOException Something went wrong
    *     <p>This form does not allow specifying multiple clauses, say "fq" clauses, use the form
    *     that takes a SolrParams. Transition code can call the preferred method that takes
-   *     SolrParams by calling CloudSolrStream(zkHost, collectionName, new
+   *     SolrParams by calling CloudSolrStream(solrConnection, collectionName, new
    *     ModifiableSolrParams(SolrParams.toMultiMap(new NamedList(Map&lt;String, String&gt;)));
    */
-  public SqlStream(String zkHost, String collectionName, SolrParams params) throws IOException {
-    init(collectionName, zkHost, params);
+  public SqlStream(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collectionName,
+      SolrParams params)
+      throws IOException {
+    init(solrConnection, collectionName, params);
   }
 
   public SqlStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
     // Collection Name
     if (null == collectionName) {
@@ -85,31 +89,12 @@ public class SqlStream extends TupleStream implements Expressible {
               expression));
     }
 
-    ModifiableSolrParams mParams = new ModifiableSolrParams();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("aliases")) {
-        mParams.add(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    ModifiableSolrParams mParams =
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection", "aliases"));
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    /*
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
-    }
-    */
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    // We've got all the required items
-    init(collectionName, zkHost, mParams);
+    init(solrConnection, collectionName, mParams);
   }
 
   @Override
@@ -136,8 +121,8 @@ public class SqlStream extends TupleStream implements Expressible {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), value));
     }
 
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }
@@ -173,8 +158,12 @@ public class SqlStream extends TupleStream implements Expressible {
     return explanation;
   }
 
-  protected void init(String collectionName, String zkHost, SolrParams params) throws IOException {
-    this.zkHost = zkHost;
+  protected void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collectionName,
+      SolrParams params)
+      throws IOException {
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);
 
@@ -202,7 +191,7 @@ public class SqlStream extends TupleStream implements Expressible {
   protected void constructStream() throws IOException {
     try {
 
-      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext);
+      List<String> shardUrls = getShards(this.solrConnection, this.collection, this.streamContext);
       Collections.shuffle(shardUrls, new Random());
       String url = shardUrls.get(0);
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);

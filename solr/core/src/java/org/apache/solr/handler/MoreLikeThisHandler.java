@@ -21,10 +21,10 @@ import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.lucene.document.Document;
@@ -447,7 +447,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           buffered.append(chunk, 0, len);
         }
 
-        Collection<Object> streamValue = Collections.singleton(buffered.get().toString());
+        Collection<Object> streamValue = Set.of(buffered.get().toString());
         Map<String, Collection<Object>> multifieldDoc = CollectionUtil.newHashMap(fields.length);
         for (String field : fields) {
           multifieldDoc.put(field, streamValue);

@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.StoredField;
@@ -150,7 +149,7 @@ public class BinaryField extends FieldType {
 
       fval = docval;
     }
-    return Collections.singletonList(fval);
+    return List.of(fval);
   }
 
   @Override

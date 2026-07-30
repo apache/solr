@@ -16,8 +16,12 @@
  */
 package org.apache.solr.crossdc.manager;
 
+import static org.apache.solr.crossdc.common.CrossDcConf.COLLAPSE_UPDATES;
+import static org.apache.solr.crossdc.common.KafkaCrossDcConf.BATCH_SIZE_BYTES;
+import static org.apache.solr.crossdc.common.KafkaCrossDcConf.BOOTSTRAP_SERVERS;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.DEFAULT_MAX_REQUEST_SIZE;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE_DOCS;
+import static org.apache.solr.crossdc.common.KafkaCrossDcConf.TOPIC_NAME;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
@@ -28,14 +32,21 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.apache.commons.io.IOUtils;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -45,6 +56,7 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -56,15 +68,22 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.MirroredSolrRequestSerializer;
 import org.apache.solr.crossdc.manager.consumer.Consumer;
+import org.apache.solr.crossdc.manager.consumer.ConsumerMetrics;
+import org.apache.solr.crossdc.manager.consumer.KafkaCrossDcConsumer;
+import org.apache.solr.crossdc.manager.consumer.PartitionManager;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
+import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -90,10 +109,63 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
   private static final int NUM_BROKERS = 1;
   public EmbeddedKafkaCluster kafkaCluster;
 
+  private static class ConsumerBatch {
+    final String kafkaTopic;
+    final int partitionId;
+    final MirroredSolrRequest.Type type;
+    final String collection;
+    final Map<String, String> headers;
+    final Set<String> addIds = new HashSet<>();
+    final String json;
+
+    public ConsumerBatch(final MirroredSolrRequest.Type type, final SolrRequest<?> solrRequest) {
+      this.kafkaTopic = solrRequest.getHeaders().get("record.topic");
+      this.partitionId = Integer.parseInt(solrRequest.getHeaders().get("record.partition"));
+      this.type = type;
+      this.collection = solrRequest.getCollection();
+      this.headers = solrRequest.getHeaders();
+      if (solrRequest instanceof UpdateRequest) {
+        UpdateRequest updateReq = (UpdateRequest) solrRequest;
+        json =
+            Utils.toJSONString(
+                Map.of("params", updateReq.getParams(), "add", updateReq.getDocuments()));
+        updateReq.getDocuments().forEach(doc -> addIds.add(doc.getFieldValue("id").toString()));
+      } else {
+        json =
+            Utils.toJSONString(
+                Map.of("params", solrRequest.getParams(), "class", solrRequest.getClass()));
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "ConsumerBatch{"
+          + "kafkaTopic='"
+          + kafkaTopic
+          + '\''
+          + ", partitionId="
+          + partitionId
+          + ", type="
+          + type
+          + ", collection='"
+          + collection
+          + '\''
+          + ", headers="
+          + headers
+          + '\''
+          + ", json='"
+          + json
+          + '\''
+          + '}';
+    }
+  }
+
   protected volatile MiniSolrCloudCluster solrCluster1;
   protected volatile MiniSolrCloudCluster solrCluster2;
 
   protected volatile Consumer consumer;
+
+  private BlockingQueue<ConsumerBatch> consumerBatches;
 
   private static final String TOPIC = "topic1";
 
@@ -112,7 +184,28 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     Thread.setDefaultUncaughtExceptionHandler(
         (t, e) -> log.error("Uncaught exception in thread {}", t, e));
     System.setProperty("otel.metrics.exporter", "prometheus");
-    consumer = new Consumer();
+    System.setProperty(KafkaCrossDcConsumer.PROP_TOPIC_DEBUG, "true");
+    consumerBatches = new LinkedBlockingQueue<>();
+    consumer =
+        new Consumer() {
+          @Override
+          protected CrossDcConsumer getCrossDcConsumer(
+              final KafkaCrossDcConf conf,
+              final ConsumerMetrics metrics,
+              final CountDownLatch startLatch) {
+            return new KafkaCrossDcConsumer(conf, metrics, startLatch) {
+              @Override
+              public void sendBatch(
+                  final SolrRequest<? extends SolrResponse> solrReqBatch,
+                  final MirroredSolrRequest.Type type,
+                  final ConsumerRecord<String, MirroredSolrRequest<?>> lastRecord,
+                  final PartitionManager.WorkUnit workUnit) {
+                consumerBatches.offer(new ConsumerBatch(type, solrReqBatch));
+                super.sendBatch(solrReqBatch, type, lastRecord, workUnit);
+              }
+            };
+          }
+        };
     Properties config = new Properties();
 
     kafkaCluster =
@@ -124,13 +217,15 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
         };
     kafkaCluster.start();
 
-    kafkaCluster.createTopic(TOPIC, 10, 1);
+    // create many partitions to test for re-ordered reads
+    kafkaCluster.createTopic(TOPIC, 3, 1);
 
     // ensure small batches to test multi-partition ordering
-    System.setProperty("batchSizeBytes", "128");
-    System.setProperty("solr.crossdc.topicName", TOPIC);
-    System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
+    System.setProperty(BATCH_SIZE_BYTES, "100");
+    System.setProperty(TOPIC_NAME, TOPIC);
+    System.setProperty(BOOTSTRAP_SERVERS, kafkaCluster.bootstrapServers());
     System.setProperty(INDEX_UNMIRRORABLE_DOCS, "false");
+    System.setProperty(COLLAPSE_UPDATES, "none");
 
     solrCluster1 =
         configureCluster(1).addConfig("conf", getFile("configs/cloud-minimal/conf")).configure();
@@ -238,10 +333,90 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
   @Test
-  @Ignore("SOLR-18077")
+  public void testPartitioning() throws Exception {
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(ALT_COLLECTION, "conf", 1, 1);
+    create.process(solrCluster1.getSolrClient());
+    create.process(solrCluster2.getSolrClient());
+    solrCluster1.waitForActiveCollection(ALT_COLLECTION, 1, 1);
+    solrCluster2.waitForActiveCollection(ALT_COLLECTION, 1, 1);
+
+    CloudSolrClient client = solrCluster1.getSolrClient();
+    int NUM_DOCS = 200;
+    for (int i = 0; i < NUM_DOCS; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "id-" + i);
+      doc.addField("id_i", i);
+      doc.addField("text", "some test with a relatively long field. " + LOREM_IPSUM);
+      doc.addField("collection_t", COLLECTION);
+
+      client.add(COLLECTION, doc);
+
+      doc = new SolrInputDocument();
+      doc.addField("id", "id-" + i);
+      doc.addField("id_i", i);
+      doc.addField("text", "some test with a relatively long field. " + LOREM_IPSUM);
+      doc.addField("collection_t", ALT_COLLECTION);
+
+      client.add(ALT_COLLECTION, doc);
+    }
+    client.commit(COLLECTION);
+    client.commit(ALT_COLLECTION);
+
+    assertCluster2EventuallyHasDocs(COLLECTION, "*:*", NUM_DOCS);
+    assertCluster2EventuallyHasDocs(ALT_COLLECTION, "*:*", NUM_DOCS);
+
+    // check that updates to different collections were always sent to the same partition
+    Map<Integer, String> partitionsPerCol = new HashMap<>();
+    Map<String, Set<String>> docsPerCol = new HashMap<>();
+    int batchCount = 0;
+    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.CURRENT_TIME);
+    while (!timeOut.hasTimedOut()) {
+      final ConsumerBatch batch = consumerBatches.poll(2, TimeUnit.SECONDS);
+      if (batch == null) {
+        int totalDocsSeen = docsPerCol.values().stream().mapToInt(Set::size).sum();
+        if (totalDocsSeen == NUM_DOCS * 2) {
+          // we've collected all expected docs
+          break;
+        } else {
+          continue; // keep waiting, it was just a longer pause
+        }
+      }
+      batchCount++;
+      String collection =
+          partitionsPerCol.computeIfAbsent(batch.partitionId, k -> batch.collection);
+      docsPerCol.computeIfAbsent(collection, col -> new HashSet<>()).addAll(batch.addIds);
+      assertEquals(
+          "request in partition "
+              + batch.partitionId
+              + " has wrong collection "
+              + batch.collection
+              + ": "
+              + batch
+              + "\npartitions: "
+              + partitionsPerCol,
+          collection,
+          batch.collection);
+    }
+    if (timeOut.hasTimedOut()) {
+      fail("timed out waiting for batches");
+    }
+    assertTrue("No batches were received from consumer", batchCount > 0);
+    assertEquals("Should have processed both collections", 2, docsPerCol.size());
+    assertTrue("COLLECTION not found in results", docsPerCol.containsKey(COLLECTION));
+    assertTrue("ALT_COLLECTION not found in results", docsPerCol.containsKey(ALT_COLLECTION));
+    assertEquals(
+        "incorrect count in collection " + COLLECTION, NUM_DOCS, docsPerCol.get(COLLECTION).size());
+    assertEquals(
+        "incorrect count in collection " + ALT_COLLECTION,
+        NUM_DOCS,
+        docsPerCol.get(ALT_COLLECTION).size());
+  }
+
+  @Test
   public void testStrictOrdering() throws Exception {
     CloudSolrClient client = solrCluster1.getSolrClient();
-    int NUM_DOCS = 5000;
+    int NUM_DOCS = 1000;
     // delay deletes by this many docs
     int DELTA = 100;
     for (int i = 0; i < NUM_DOCS; i++) {
@@ -407,7 +582,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
       String content =
           IOUtils.toString(
               (InputStream) rsp.get(InputStreamResponseParser.STREAM_KEY), StandardCharsets.UTF_8);
-      assertTrue(content, content.contains("crossdc_consumer_output_total"));
+      assertTrue(content, content.contains("solr_crossdc_consumer_output_total"));
 
       // test the healtcheck endpoint
       req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/health");
@@ -454,11 +629,12 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     boolean foundUpdates = false;
     for (int i = 0; i < 100; i++) {
       client.commit(collection);
-      results = client.query(collection, new SolrQuery(query));
+      results =
+          client.query(collection, new SolrQuery(CommonParams.Q, query, CommonParams.FL, "*"));
       if (results.getResults().getNumFound() == expectedNumDocs) {
         foundUpdates = true;
       } else {
-        Thread.sleep(200);
+        Thread.sleep(300);
       }
     }
 

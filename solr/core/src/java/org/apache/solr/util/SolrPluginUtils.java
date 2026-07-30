@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static java.util.Collections.singletonList;
 import static org.apache.solr.core.PluginInfo.APPENDS;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
@@ -51,6 +50,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
@@ -171,9 +171,7 @@ public class SolrPluginUtils {
       RequestParams requestParams, SolrParams defaults, String paramSets, String type) {
     if (paramSets == null) return defaults;
     List<String> paramSetList =
-        paramSets.indexOf(',') == -1
-            ? singletonList(paramSets)
-            : StrUtils.splitSmart(paramSets, ',');
+        paramSets.indexOf(',') == -1 ? List.of(paramSets) : StrUtils.splitSmart(paramSets, ',');
     for (String name : paramSetList) {
       RequestParams.VersionedParams params = requestParams.getParams(name, type);
       if (params == null) return defaults;
@@ -606,6 +604,19 @@ public class SolrPluginUtils {
     if (0 < msm) {
       q.setMinimumNumberShouldMatch(msm);
     }
+  }
+
+  /**
+   * Applies the appropriate default rules for the "mm" param based on the effective value of the
+   * "q.op" param
+   *
+   * @see QueryParsing#OP
+   * @see DisMaxParams#MM
+   */
+  public static String parseMinShouldMatch(final IndexSchema schema, final SolrParams params) {
+    QueryParser.Operator op = QueryParsing.parseOP(params.get(QueryParsing.OP));
+
+    return params.get(DisMaxParams.MM, op.equals(QueryParser.Operator.AND) ? "100%" : "0%");
   }
 
   public static void setMinShouldMatch(BooleanQuery.Builder q, String spec) {

@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.client.solrj.request.RoutedAliasTypes.TIME;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -27,17 +28,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -49,6 +41,8 @@ import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.DateMathParser;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -92,7 +86,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
     String createNode = cluster.getRandomJetty(random()).getNodeName();
 
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+    final var jetty = cluster.getRandomJetty(random());
+    final String baseUrl = jetty.getBaseUrl().toString();
     // TODO fix Solr test infra so that this /____v2/ becomes /api/
     final String aliasJson =
         "{\n"
@@ -127,9 +122,12 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
             + "      }\n"
             + "    }\n"
             + "  }\n";
-    HttpPost post = new HttpPost(baseUrl + "/____v2/aliases");
-    post.setEntity(new StringEntity(aliasJson, ContentType.APPLICATION_JSON));
-    assertSuccess(post);
+    assertSuccess(
+        jetty
+            .getSolrClient()
+            .getHttpClient()
+            .POST(baseUrl + "/____v2/aliases")
+            .body(new StringRequestContent("application/json", aliasJson, StandardCharsets.UTF_8)));
 
     Date startDate = DateMathParser.parseMath(new Date(), "NOW/DAY");
     String initialCollectionName =
@@ -249,32 +247,38 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void testCantAddRoutingToNonRouted() throws Exception {
     String aliasName = getSaferTestName() + "Alias";
     createCollection();
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=CREATEALIAS"
-                + "&wt=xml"
-                + "&name="
-                + aliasName
-                + "&collections="
-                + getSaferTestName());
-    assertSuccess(get);
+    final var jetty = cluster.getRandomJetty(random());
+    final String baseUrl = jetty.getBaseUrl().toString();
+    assertSuccess(
+        jetty
+            .getSolrClient()
+            .getHttpClient()
+            .newRequest(
+                baseUrl
+                    + "/admin/collections?action=CREATEALIAS"
+                    + "&wt=xml"
+                    + "&name="
+                    + aliasName
+                    + "&collections="
+                    + getSaferTestName()));
 
-    HttpGet get2 =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=CREATEALIAS"
-                + "&wt=json"
-                + "&name="
-                + aliasName
-                + "&router.field=evt_dt"
-                + "&router.name=time"
-                + "&router.start=2018-01-15T00:00:00Z"
-                + "&router.interval=%2B30MINUTE"
-                + "&create-collection.collection.configName=_default"
-                + "&create-collection.numShards=1");
-    assertFailure(get2, "Cannot add routing parameters to existing non-routed Alias");
+    assertFailure(
+        jetty
+            .getSolrClient()
+            .getHttpClient()
+            .newRequest(
+                baseUrl
+                    + "/admin/collections?action=CREATEALIAS"
+                    + "&wt=json"
+                    + "&name="
+                    + aliasName
+                    + "&router.field=evt_dt"
+                    + "&router.name=time"
+                    + "&router.start=2018-01-15T00:00:00Z"
+                    + "&router.interval=%2B30MINUTE"
+                    + "&create-collection.collection.configName=_default"
+                    + "&create-collection.numShards=1"),
+        "Cannot add routing parameters to existing non-routed Alias");
   }
 
   private void createCollection() throws SolrServerException, IOException {
@@ -287,24 +291,27 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void createTRAv1(String aliasName, Instant start) throws IOException {
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=CREATEALIAS"
-                + "&wt=xml"
-                + "&name="
-                + aliasName
-                + "&router.field=evt_dt"
-                + "&router.name=time"
-                + "&router.start="
-                + start
-                + "&router.interval=%2B30MINUTE"
-                + "&create-collection.collection.configName=_default"
-                + "&create-collection.router.field=foo_s"
-                + "&create-collection.numShards=1"
-                + "&create-collection.replicationFactor=2");
-    assertSuccess(get);
+    final var jetty = cluster.getRandomJetty(random());
+    final String baseUrl = jetty.getBaseUrl().toString();
+    assertSuccess(
+        jetty
+            .getSolrClient()
+            .getHttpClient()
+            .newRequest(
+                baseUrl
+                    + "/admin/collections?action=CREATEALIAS"
+                    + "&wt=xml"
+                    + "&name="
+                    + aliasName
+                    + "&router.field=evt_dt"
+                    + "&router.name=time"
+                    + "&router.start="
+                    + start
+                    + "&router.interval=%2B30MINUTE"
+                    + "&create-collection.collection.configName=_default"
+                    + "&create-collection.router.field=foo_s"
+                    + "&create-collection.numShards=1"
+                    + "&create-collection.replicationFactor=2"));
   }
 
   // TZ should not affect the first collection name if absolute date given for start
@@ -345,171 +352,195 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     ZkStateReader zkStateReader = cluster.getZkStateReader();
     zkStateReader.createClusterStateWatchersAndUpdate();
 
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=CREATEALIAS"
-                + "&wt=json"
-                + "&name="
-                + getTestName()
-                + "&collections=collection1meta,collection2meta"
-                + "&router.field=evt_dt"
-                + "&router.name=time"
-                + "&router.start=2018-01-15T00:00:00Z"
-                + "&router.interval=%2B30MINUTE"
-                + "&create-collection.collection.configName=_default"
-                + "&create-collection.numShards=1");
-    assertFailure(get, "Collections cannot be specified");
+    final var jetty = cluster.getRandomJetty(random());
+    final String baseUrl = jetty.getBaseUrl().toString();
+    assertFailure(
+        jetty
+            .getSolrClient()
+            .getHttpClient()
+            .newRequest(
+                baseUrl
+                    + "/admin/collections?action=CREATEALIAS"
+                    + "&wt=json"
+                    + "&name="
+                    + getTestName()
+                    + "&collections=collection1meta,collection2meta"
+                    + "&router.field=evt_dt"
+                    + "&router.name=time"
+                    + "&router.start=2018-01-15T00:00:00Z"
+                    + "&router.interval=%2B30MINUTE"
+                    + "&create-collection.collection.configName=_default"
+                    + "&create-collection.numShards=1"),
+        "Collections cannot be specified");
   }
 
   @Test
   public void testAliasNameMustBeValid() throws Exception {
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=CREATEALIAS"
-                + "&wt=json"
-                + "&name=735741!45"
-                + // ! not allowed
-                "&router.field=evt_dt"
-                + "&router.name=time"
-                + "&router.start=2018-01-15T00:00:00Z"
-                + "&router.interval=%2B30MINUTE"
-                + "&create-collection.collection.configName=_default"
-                + "&create-collection.numShards=1");
-    assertFailure(get, "Invalid alias");
+    final var jetty = cluster.getRandomJetty(random());
+    final String baseUrl = jetty.getBaseUrl().toString();
+    assertFailure(
+        jetty
+            .getSolrClient()
+            .getHttpClient()
+            .newRequest(
+                baseUrl
+                    + "/admin/collections?action=CREATEALIAS"
+                    + "&wt=json"
+                    + "&name=735741!45" // ! not allowed
+                    + "&router.field=evt_dt"
+                    + "&router.name=time"
+                    + "&router.start=2018-01-15T00:00:00Z"
+                    + "&router.interval=%2B30MINUTE"
+                    + "&create-collection.collection.configName=_default"
+                    + "&create-collection.numShards=1"),
+        "Invalid alias");
   }
 
   @Test
   public void testRandomRouterNameFails() throws Exception {
     final String aliasName = getSaferTestName();
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=CREATEALIAS"
-                + "&wt=json"
-                + "&name="
-                + aliasName
-                + "&router.field=evt_dt"
-                + "&router.name=tiafasme"
-                + // bad
-                "&router.start=2018-01-15T00:00:00Z"
-                + "&router.interval=%2B30MINUTE"
-                + "&create-collection.collection.configName=_default"
-                + "&create-collection.numShards=1");
-    assertFailure(get, " is not in supported types, ");
+    final var jetty = cluster.getRandomJetty(random());
+    final String baseUrl = jetty.getBaseUrl().toString();
+    assertFailure(
+        jetty
+            .getSolrClient()
+            .getHttpClient()
+            .newRequest(
+                baseUrl
+                    + "/admin/collections?action=CREATEALIAS"
+                    + "&wt=json"
+                    + "&name="
+                    + aliasName
+                    + "&router.field=evt_dt"
+                    + "&router.name=tiafasme" // bad
+                    + "&router.start=2018-01-15T00:00:00Z"
+                    + "&router.interval=%2B30MINUTE"
+                    + "&create-collection.collection.configName=_default"
+                    + "&create-collection.numShards=1"),
+        " is not in supported types, ");
   }
 
   @Test
   public void testTimeStampWithMsFails() throws Exception {
     final String aliasName = getSaferTestName();
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=CREATEALIAS"
-                + "&wt=json"
-                + "&name="
-                + aliasName
-                + "&router.field=evt_dt"
-                + "&router.name=time"
-                + "&router.start=2018-01-15T00:00:00.001Z"
-                + // bad: no milliseconds permitted
-                "&router.interval=%2B30MINUTE"
-                + "&create-collection.collection.configName=_default"
-                + "&create-collection.numShards=1");
-    assertFailure(get, "Date or date math for start time includes milliseconds");
+    final var jetty = cluster.getRandomJetty(random());
+    final String baseUrl = jetty.getBaseUrl().toString();
+    assertFailure(
+        jetty
+            .getSolrClient()
+            .getHttpClient()
+            .newRequest(
+                baseUrl
+                    + "/admin/collections?action=CREATEALIAS"
+                    + "&wt=json"
+                    + "&name="
+                    + aliasName
+                    + "&router.field=evt_dt"
+                    + "&router.name=time"
+                    + "&router.start=2018-01-15T00:00:00.001Z" // bad: no milliseconds permitted
+                    + "&router.interval=%2B30MINUTE"
+                    + "&create-collection.collection.configName=_default"
+                    + "&create-collection.numShards=1"),
+        "Date or date math for start time includes milliseconds");
   }
 
   @Test
   public void testBadDateMathIntervalFails() throws Exception {
     final String aliasName = getSaferTestName();
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=CREATEALIAS"
-                + "&wt=json"
-                + "&name="
-                + aliasName
-                + "&router.field=evt_dt"
-                + "&router.name=time"
-                + "&router.start=2018-01-15T00:00:00Z"
-                + "&router.interval=%2B30MINUTEx"
-                + // bad; trailing 'x'
-                "&router.maxFutureMs=60000"
-                + "&create-collection.collection.configName=_default"
-                + "&create-collection.numShards=1");
-    assertFailure(get, "Unit not recognized");
+    final var jetty = cluster.getRandomJetty(random());
+    final String baseUrl = jetty.getBaseUrl().toString();
+    assertFailure(
+        jetty
+            .getSolrClient()
+            .getHttpClient()
+            .newRequest(
+                baseUrl
+                    + "/admin/collections?action=CREATEALIAS"
+                    + "&wt=json"
+                    + "&name="
+                    + aliasName
+                    + "&router.field=evt_dt"
+                    + "&router.name=time"
+                    + "&router.start=2018-01-15T00:00:00Z"
+                    + "&router.interval=%2B30MINUTEx" // bad; trailing 'x'
+                    + "&router.maxFutureMs=60000"
+                    + "&create-collection.collection.configName=_default"
+                    + "&create-collection.numShards=1"),
+        "Unit not recognized");
   }
 
   @Test
   public void testNegativeFutureFails() throws Exception {
     final String aliasName = getSaferTestName();
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=CREATEALIAS"
-                + "&wt=json"
-                + "&name="
-                + aliasName
-                + "&router.field=evt_dt"
-                + "&router.name=time"
-                + "&router.start=2018-01-15T00:00:00Z"
-                + "&router.interval=%2B30MINUTE"
-                + "&router.maxFutureMs=-60000"
-                + // bad: negative
-                "&create-collection.collection.configName=_default"
-                + "&create-collection.numShards=1");
-    assertFailure(get, "must be >= 0");
+    final var jetty = cluster.getRandomJetty(random());
+    final String baseUrl = jetty.getBaseUrl().toString();
+    assertFailure(
+        jetty
+            .getSolrClient()
+            .getHttpClient()
+            .newRequest(
+                baseUrl
+                    + "/admin/collections?action=CREATEALIAS"
+                    + "&wt=json"
+                    + "&name="
+                    + aliasName
+                    + "&router.field=evt_dt"
+                    + "&router.name=time"
+                    + "&router.start=2018-01-15T00:00:00Z"
+                    + "&router.interval=%2B30MINUTE"
+                    + "&router.maxFutureMs=-60000" // bad: negative
+                    + "&create-collection.collection.configName=_default"
+                    + "&create-collection.numShards=1"),
+        "must be >= 0");
   }
 
   @Test
   public void testUnParseableFutureFails() throws Exception {
     final String aliasName = "testAlias";
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    HttpGet get =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=CREATEALIAS"
-                + "&wt=json"
-                + "&name="
-                + aliasName
-                + "&router.field=evt_dt"
-                + "&router.name=time"
-                + "&router.start=2018-01-15T00:00:00Z"
-                + "&router.interval=%2B30MINUTE"
-                + "&router.maxFutureMs=SixtyThousandMilliseconds"
-                + // bad
-                "&create-collection.collection.configName=_default"
-                + "&create-collection.numShards=1");
-    assertFailure(get, "SixtyThousandMilliseconds"); // TODO improve SolrParams.getLong
+    final var jetty = cluster.getRandomJetty(random());
+    final String baseUrl = jetty.getBaseUrl().toString();
+    assertFailure(
+        jetty
+            .getSolrClient()
+            .getHttpClient()
+            .newRequest(
+                baseUrl
+                    + "/admin/collections?action=CREATEALIAS"
+                    + "&wt=json"
+                    + "&name="
+                    + aliasName
+                    + "&router.field=evt_dt"
+                    + "&router.name=time"
+                    + "&router.start=2018-01-15T00:00:00Z"
+                    + "&router.interval=%2B30MINUTE"
+                    + "&router.maxFutureMs=SixtyThousandMilliseconds" // bad
+                    + "&create-collection.collection.configName=_default"
+                    + "&create-collection.numShards=1"),
+        "SixtyThousandMilliseconds"); // TODO improve SolrParams.getLong
   }
 
-  private void assertSuccess(HttpUriRequest msg) throws IOException {
-    CloseableHttpClient httpClient =
-        (CloseableHttpClient) ((CloudLegacySolrClient) solrClient).getHttpClient();
-    try (CloseableHttpResponse response = httpClient.execute(msg)) {
-      if (200 != response.getStatusLine().getStatusCode()) {
-        System.err.println(EntityUtils.toString(response.getEntity()));
-        fail("Unexpected status: " + response.getStatusLine());
+  private void assertSuccess(Request req) throws IOException {
+    try {
+      var response = req.send();
+      if (200 != response.getStatus()) {
+        System.err.println(response.getContentAsString());
+        assertEquals("Unexpected status: " + response.getStatus(), 200, response.getStatus());
       }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 
-  private void assertFailure(HttpUriRequest msg, String expectedErrorSubstring) throws IOException {
-    CloseableHttpClient httpClient =
-        (CloseableHttpClient) ((CloudLegacySolrClient) solrClient).getHttpClient();
-    try (CloseableHttpResponse response = httpClient.execute(msg)) {
-      assertEquals(400, response.getStatusLine().getStatusCode());
-      String entity = EntityUtils.toString(response.getEntity());
+  private void assertFailure(Request req, String expectedErrorSubstring) throws IOException {
+    try {
+      var response = req.send();
+      assertEquals(400, response.getStatus());
+      String entity = response.getContentAsString();
       assertTrue(
           "Didn't find expected error string within response: " + entity,
           entity.contains(expectedErrorSubstring));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 

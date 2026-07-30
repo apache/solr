@@ -365,13 +365,8 @@ public class ZkController implements Closeable {
             });
 
     zkStateReader.createClusterStateWatchersAndUpdate(); // and reads cluster properties
-
     // note: Can't read cluster properties until createClusterState ^ is called
-    final String urlSchemeFromClusterProp =
-        zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, ZkStateReader.HTTP);
-    // this must happen after zkStateReader has initialized the cluster props
-    this.baseURL = URLUtil.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
-
+    this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
     // Now that zkStateReader is available, read OVERSEER_ENABLED.
     final boolean overseerEnabled =
         Boolean.parseBoolean(
@@ -2315,7 +2310,7 @@ public class ZkController implements Closeable {
         // listeners
         try (SolrClient client =
             new HttpJettySolrClient.Builder(leaderBaseUrl)
-                .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
+                .withHttpClient((HttpJettySolrClient) getCoreContainer().getDefaultHttpSolrClient())
                 .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
           WaitForState prepCmd = new WaitForState();

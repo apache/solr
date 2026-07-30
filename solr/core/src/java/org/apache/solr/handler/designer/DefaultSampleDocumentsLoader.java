@@ -28,7 +28,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -44,6 +43,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.loader.CSVLoaderBase;
 import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.handler.loader.XMLLoader;
@@ -140,7 +140,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       throws IOException {
     ContentStream stream;
     if (params.get(SEPARATOR) == null) {
-      String csvStr = new String(streamBytes, charset);
+      String csvStr = new String(streamBytes, IOUtils.charsetForName(charset));
       char sep = detectTSV(csvStr);
       ModifiableSolrParams modifiableSolrParams = new ModifiableSolrParams(params);
       modifiableSolrParams.set(SEPARATOR, String.valueOf(sep));
@@ -199,7 +199,8 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
       String jsonStr =
           new String(
-              readAllBytes(stream), charset != null ? charset : ContentStreamBase.DEFAULT_CHARSET);
+              readAllBytes(stream),
+              charset != null ? IOUtils.charsetForName(charset) : StandardCharsets.UTF_8);
       String[] lines = jsonStr.split("\n");
       if (lines.length > 1) {
         for (String line : lines) {
@@ -213,7 +214,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       if (isJsonLines) {
         docs = loadJsonLines(lines);
       } else {
-        docs = Collections.singletonList((Map<String, Object>) json);
+        docs = List.of((Map<String, Object>) json);
       }
     } else {
       throw new SolrException(

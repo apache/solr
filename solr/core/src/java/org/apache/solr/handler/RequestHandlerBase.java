@@ -24,8 +24,8 @@ import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
@@ -187,27 +187,27 @@ public abstract class RequestHandlerBase
 
       requests =
           factory.attributedLongCounter(
-              "solr_core_requests", "HTTP Solr requests", Attributes.empty());
+              "solr.core.requests", "HTTP Solr requests", Attributes.empty());
 
       numServerErrors =
           factory.attributedLongCounter(
-              "solr_core_requests_errors",
+              "solr.core.requests.errors",
               "HTTP Solr request errors",
               Attributes.of(SOURCE_ATTR, "server"));
 
       numClientErrors =
           factory.attributedLongCounter(
-              "solr_core_requests_errors",
+              "solr.core.requests.errors",
               "HTTP Solr request errors",
               Attributes.of(SOURCE_ATTR, "client"));
 
       numTimeouts =
           factory.attributedLongCounter(
-              "solr_core_requests_timeout", "HTTP Solr request timeouts", Attributes.empty());
+              "solr.core.requests.timeout", "HTTP Solr request timeouts", Attributes.empty());
 
       requestTimes =
           factory.attributedLongTimer(
-              "solr_core_requests_times",
+              "solr.core.requests.times",
               "HTTP Solr request times",
               OtelUnit.MILLISECONDS,
               Attributes.empty());
@@ -412,8 +412,7 @@ public abstract class RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    return Collections.singleton(
-        new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
+    return Set.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
   }
 
   /**

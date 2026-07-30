@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -188,8 +190,7 @@ public class DistribFileStore implements FileStore {
 
       try {
         final var metadataRequest = new FileStoreApi.GetFile(getMetaPath());
-        final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
-        final var response = metadataRequest.process(client);
+        final var response = metadataRequest.processWithBaseUrl(solrClient, baseUrl, null);
         try (final var responseStream = response.getResponseStreamIfSuccessful()) {
           metadata = Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept(responseStream);
           m =
@@ -239,8 +240,8 @@ public class DistribFileStore implements FileStore {
           String baseUrl =
               coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(liveNode);
           final var metadataRequest = new FileStoreApi.GetMetadata(path);
-          final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
-          final var metadataResponse = metadataRequest.process(client);
+          final var client = coreContainer.getDefaultHttpSolrClient();
+          final var metadataResponse = metadataRequest.processWithBaseUrl(client, baseUrl, null);
           boolean nodeHasBlob =
               metadataResponse.files != null && metadataResponse.files.containsKey(path);
 
@@ -288,6 +289,9 @@ public class DistribFileStore implements FileStore {
         public Date getTimeStamp() {
           try {
             return new Date(Files.getLastModifiedTime(realPath()).toMillis());
+          } catch (NoSuchFileException e) {
+            // File was deleted concurrently between listing and reading its attributes.
+            return null;
           } catch (IOException e) {
             throw new SolrException(
                 SERVER_ERROR, "Failed to retrieve the last modified time for: " + realPath(), e);
@@ -303,6 +307,9 @@ public class DistribFileStore implements FileStore {
         public long size() {
           try {
             return Files.size(realPath());
+          } catch (NoSuchFileException e) {
+            // File was deleted concurrently between listing and reading its attributes.
+            return -1;
           } catch (IOException e) {
             throw new SolrException(
                 SERVER_ERROR, "Failed to retrieve the file size for: " + realPath(), e);
@@ -396,9 +403,9 @@ public class DistribFileStore implements FileStore {
         try {
           final var pullFileRequest = new FileStoreApi.FetchFile(info.path);
           pullFileRequest.setGetFrom(nodeToFetchFrom);
-          final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
+          final var client = coreContainer.getDefaultHttpSolrClient();
           // fire and forget
-          pullFileRequest.process(client);
+          pullFileRequest.processWithBaseUrl(client, baseUrl, null);
         } catch (Exception e) {
           log.info("Node: {} failed to respond for file fetch notification", node, e);
           // ignore the exception
@@ -521,7 +528,7 @@ public class DistribFileStore implements FileStore {
       String baseUrl =
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
       try {
-        var solrClient = coreContainer.getDefaultHttpSolrClient();
+        var solrClient = (HttpJettySolrClient) coreContainer.getDefaultHttpSolrClient();
         // invoke delete command on all nodes asynchronously
         solrClient.requestWithBaseUrl(baseUrl, client -> client.requestAsync(solrRequest));
       } catch (SolrServerException | IOException e) {

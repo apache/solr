@@ -389,8 +389,7 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
     log.debug("props {}", props);
     if (replica.equals(slice.getLeader()) || waitForFinalState) {
       watcher =
-          new ActiveReplicaWatcher(
-              coll.getName(), null, Collections.singletonList(newCoreName), countDownLatch);
+          new ActiveReplicaWatcher(coll.getName(), null, List.of(newCoreName), countDownLatch);
       log.debug("-- registered watcher {}", watcher);
       ccc.getZkStateReader().registerCollectionStateWatcher(coll.getName(), watcher);
     }

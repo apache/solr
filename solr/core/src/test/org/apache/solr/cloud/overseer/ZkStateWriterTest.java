@@ -19,8 +19,8 @@ package org.apache.solr.cloud.overseer;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -88,8 +88,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c3", true);
 
         Map<String, Object> props =
-            Collections.singletonMap(
-                ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
+            Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
         ZkWriteCommand c1 = new ZkWriteCommand("c1", createDocCollection("c1", props));
         ZkWriteCommand c2 = new ZkWriteCommand("c2", createDocCollection("c2", props));
         ZkWriteCommand c3 = new ZkWriteCommand("c3", createDocCollection("c3", props));
@@ -98,23 +97,17 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
         // First write is flushed immediately
         ClusterState clusterState =
-            writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
-        clusterState =
-            writer.enqueueUpdate(clusterState, Collections.singletonList(c1), FAIL_ON_WRITE);
-        clusterState =
-            writer.enqueueUpdate(clusterState, Collections.singletonList(c2), FAIL_ON_WRITE);
+            writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c1), FAIL_ON_WRITE);
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c2), FAIL_ON_WRITE);
 
         Thread.sleep(Overseer.STATE_UPDATE_DELAY + 100);
         AtomicBoolean didWrite = new AtomicBoolean(false);
-        clusterState =
-            writer.enqueueUpdate(
-                clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c3), () -> didWrite.set(true));
         assertTrue("Exceed the update delay, should be flushed", didWrite.get());
 
         for (int i = 0; i <= Overseer.STATE_UPDATE_BATCH_SIZE; i++) {
-          clusterState =
-              writer.enqueueUpdate(
-                  clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
+          clusterState = writer.enqueueUpdate(clusterState, List.of(c3), () -> didWrite.set(true));
         }
         assertTrue("Exceed the update batch size, should be flushed", didWrite.get());
       }
@@ -172,22 +165,16 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
         // First write is flushed immediately
         ClusterState clusterState =
-            writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
-        clusterState =
-            writer.enqueueUpdate(clusterState, Collections.singletonList(c1), FAIL_ON_WRITE);
-        clusterState =
-            writer.enqueueUpdate(clusterState, Collections.singletonList(c2), FAIL_ON_WRITE);
+            writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c1), FAIL_ON_WRITE);
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c2), FAIL_ON_WRITE);
 
         Thread.sleep(Overseer.STATE_UPDATE_DELAY + 100);
         AtomicBoolean didWrite = new AtomicBoolean(false);
-        clusterState =
-            writer.enqueueUpdate(
-                clusterState, Collections.singletonList(prs1), () -> didWrite.set(true));
+        clusterState = writer.enqueueUpdate(clusterState, List.of(prs1), () -> didWrite.set(true));
         assertTrue("Exceed the update delay, should be flushed", didWrite.get());
         didWrite.set(false);
-        clusterState =
-            writer.enqueueUpdate(
-                clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c3), () -> didWrite.set(true));
         assertTrue("Exceed the update delay, should be flushed", didWrite.get());
         assertTrue(
             "The updates queue should be empty having been flushed", writer.updates.isEmpty());
@@ -247,19 +234,16 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
         // First write is flushed immediately
         ClusterState clusterState =
-            writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+            writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
 
         AtomicBoolean didWrite = new AtomicBoolean(false);
         AtomicBoolean didWritePrs = new AtomicBoolean(false);
         for (int i = 0; i <= Overseer.STATE_UPDATE_BATCH_SIZE; i++) {
-          clusterState =
-              writer.enqueueUpdate(
-                  clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
+          clusterState = writer.enqueueUpdate(clusterState, List.of(c3), () -> didWrite.set(true));
           // Write a PRS update in the middle and make sure we still get the right results
           if (i == (Overseer.STATE_UPDATE_BATCH_SIZE / 2)) {
             clusterState =
-                writer.enqueueUpdate(
-                    clusterState, Collections.singletonList(prs1), () -> didWritePrs.set(true));
+                writer.enqueueUpdate(clusterState, List.of(prs1), () -> didWritePrs.set(true));
           }
         }
         assertTrue("Exceed the update batch size, should be flushed", didWrite.get());
@@ -305,10 +289,10 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                 "c1",
                 createDocCollection(
                     "c1",
-                    Collections.singletonMap(
+                    Map.of(
                         ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME)));
 
-        writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+        writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
         ClusterState clusterState = writer.writePendingUpdates();
 
         Map<?, ?> map =
@@ -364,9 +348,9 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                 "c2",
                 createDocCollection(
                     "c2",
-                    Collections.singletonMap(
+                    Map.of(
                         ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME)));
-        state = writer.enqueueUpdate(state, Collections.singletonList(c2), null);
+        state = writer.enqueueUpdate(state, List.of(c2), null);
         assertFalse(writer.hasPendingUpdates()); // first write is flushed immediately
 
         int c2Version = state.getCollection("c2").getZNodeVersion();
@@ -388,7 +372,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         assertTrue(state.hasCollection("c2"));
         assertEquals(c2Version + 1, state.getCollection("c2").getZNodeVersion());
 
-        writer.enqueueUpdate(state, Collections.singletonList(c2), null);
+        writer.enqueueUpdate(state, List.of(c2), null);
         assertTrue(writer.hasPendingUpdates());
 
         // get the most up-to-date state
@@ -402,18 +386,18 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                 "c1",
                 createDocCollection(
                     "c1",
-                    Collections.singletonMap(
+                    Map.of(
                         ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME)));
 
         try {
-          writer.enqueueUpdate(state, Collections.singletonList(c1), null);
+          writer.enqueueUpdate(state, List.of(c1), null);
           fail("Enqueue should not have succeeded");
         } catch (KeeperException.BadVersionException bve) {
           // expected
         }
 
         try {
-          writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c2), null);
+          writer.enqueueUpdate(reader.getClusterState(), List.of(c2), null);
           fail("enqueueUpdate after BadVersionException should not have succeeded");
         } catch (IllegalStateException e) {
           // expected
@@ -461,7 +445,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         // create new collection with stateFormat = 2
         ZkWriteCommand c1 = new ZkWriteCommand("c1", createDocCollection("c1", new HashMap<>()));
 
-        writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+        writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
         writer.writePendingUpdates();
 
         byte[] data =
@@ -497,7 +481,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                 DocCollection.create(
                     "c2", slices, new HashMap<>(), DocRouter.DEFAULT, 0, Instant.now(), null));
 
-        writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+        writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
         writer.writePendingUpdates();
 
         byte[] dataCompressed =

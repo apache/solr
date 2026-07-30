@@ -1452,8 +1452,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
             SolrException.ErrorCode.BAD_REQUEST,
             "Illegal number of sources.  There must be an even number of sources");
       } else {
-        mvr.mv1 = new VectorValueSource(Collections.singletonList(sources.get(0)));
-        mvr.mv2 = new VectorValueSource(Collections.singletonList(sources.get(1)));
+        mvr.mv1 = new VectorValueSource(List.of(sources.get(0)));
+        mvr.mv2 = new VectorValueSource(List.of(sources.get(1)));
       }
     } else {
       int dim = sources.size() / 2;

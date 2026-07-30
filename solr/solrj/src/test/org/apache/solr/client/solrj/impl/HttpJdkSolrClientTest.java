@@ -20,15 +20,23 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.net.CookieHandler;
 import java.net.CookieManager;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.client.api.util.SolrVersion;
@@ -38,6 +46,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.ResponseParser;
@@ -132,6 +141,132 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     }
   }
 
+  /**
+   * A large content-writing request whose connection drops while the body is still being written
+   * must not leave the body-writing thread blocked forever in {@code
+   * PipedInputStream.awaitSpace()}. The server accepts the connection but never reads the body, so
+   * the pipe buffer fills and the writer blocks; when the connection is then reset the writer must
+   * be released (SOLR-17707).
+   */
+  @Test
+  public void testStuckContentWritingThreadIsReleasedOnFailure() throws Exception {
+    // A body far larger than the PipedInputStream buffer and the socket buffers, so the writer is
+    // still blocked in awaitSpace() when the connection drops.
+    StringBuilder big = new StringBuilder();
+    while (big.length() < 8 * 1024 * 1024) {
+      big.append("id_").append(big.length()).append(' ');
+    }
+    UpdateRequest req = new UpdateRequest();
+    req.deleteByQuery(big.toString());
+
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareCachedThreadPool(new NamedThreadFactory("solr-17707-writer"));
+    try (StallThenResetServer server = new StallThenResetServer();
+        HttpJdkSolrClient client =
+            builder(server.baseUrl()).useHttp1_1(true).withExecutor(executor).build()) {
+
+      CompletableFuture<?> cf = client.requestAsync(req, null);
+      server.awaitConnected(30, TimeUnit.SECONDS);
+      Thread.sleep(1000); // let the writer fill the pipe and block in awaitSpace()
+      server.resetAll(); // drop the connection under the in-flight write
+
+      // The request settles (normally exceptionally, from the dropped connection); either way the
+      // point of the test is the thread check below, so just wait for it to complete.
+      cf.handle((r, t) -> null).get(30, TimeUnit.SECONDS);
+
+      // The writer thread must not remain blocked in the pipe after the request has failed.
+      assertTrue(
+          "content-writing thread leaked, still blocked after failure",
+          waitForNoBlockedWriter(15, TimeUnit.SECONDS));
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+  }
+
+  private static boolean waitForNoBlockedWriter(long timeout, TimeUnit unit)
+      throws InterruptedException {
+    long deadline = System.nanoTime() + unit.toNanos(timeout);
+    while (System.nanoTime() < deadline) {
+      if (!hasBlockedWriterThread()) {
+        return true;
+      }
+      Thread.sleep(100);
+    }
+    return !hasBlockedWriterThread();
+  }
+
+  private static boolean hasBlockedWriterThread() {
+    Thread[] threads = new Thread[Thread.activeCount() * 2];
+    int n = Thread.enumerate(threads);
+    for (int i = 0; i < n; i++) {
+      Thread t = threads[i];
+      if (t != null && t.getName().startsWith("solr-17707-writer")) {
+        for (StackTraceElement el : t.getStackTrace()) {
+          if ("awaitSpace".equals(el.getMethodName())) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  /** A TCP server that accepts a connection, never reads the body, then resets on demand. */
+  private static class StallThenResetServer implements AutoCloseable {
+    private final ServerSocket serverSocket;
+    private final List<Socket> accepted = Collections.synchronizedList(new ArrayList<>());
+    private final CountDownLatch connected = new CountDownLatch(1);
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+
+    StallThenResetServer() throws IOException {
+      this.serverSocket = new ServerSocket(0);
+      Thread acceptThread =
+          new Thread(
+              () -> {
+                while (!serverSocket.isClosed()) {
+                  try {
+                    Socket s = serverSocket.accept();
+                    s.setSoLinger(true, 0); // close() sends RST rather than FIN
+                    accepted.add(s);
+                    connected.countDown();
+                    // never read the body: the client's send buffer and the pipe fill up
+                  } catch (IOException ignored) {
+                    return;
+                  }
+                }
+              },
+              "solr-17707-stall-server");
+      acceptThread.setDaemon(true);
+      acceptThread.start();
+    }
+
+    String baseUrl() {
+      return "http://127.0.0.1:" + serverSocket.getLocalPort() + "/solr";
+    }
+
+    void awaitConnected(long timeout, TimeUnit unit) throws InterruptedException {
+      connected.await(timeout, unit);
+    }
+
+    void resetAll() {
+      for (Socket s : accepted) {
+        try {
+          s.close();
+        } catch (IOException ignored) {
+          // ignore
+        }
+      }
+    }
+
+    @Override
+    public void close() throws IOException {
+      if (closed.compareAndSet(false, true)) {
+        resetAll();
+        serverSocket.close();
+      }
+    }
+  }
+
   @Override
   protected void testQuerySetup(SolrRequest.METHOD method, ResponseParser rp) throws Exception {
     DebugServlet.clear();
@@ -191,7 +326,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   public void testAsyncGet() throws Exception {
     String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     ResponseParser rp = new XMLResponseParser();
-    HttpSolrClientBuilderBase<?, ?> b =
+    HttpSolrClient.BuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     super.testQueryAsync(b);
   }
@@ -438,29 +573,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testProcessorMimeTypes() throws Exception {
-    ResponseParser rp = new XMLResponseParser();
-
-    try (HttpJdkSolrClient client =
-        builder(solrTestRule.getBaseUrl()).withResponseParser(rp).build()) {
-      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
-      assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/json"));
-      queryToHelpJdkReleaseThreads(client);
-    }
-
-    rp = new JavaBinResponseParser();
-    try (HttpJdkSolrClient client =
-        builder(solrTestRule.getBaseUrl()).withResponseParser(rp).build()) {
-      assertTrue(
-          client.processorAcceptsMimeType(
-              rp.getContentTypes(), "application/vnd.apache.solr.javabin"));
-      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/octet-stream"));
-      assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
-      queryToHelpJdkReleaseThreads(client);
-    }
-  }
-
-  @Test
   public void testContentTypeToEncoding() throws Exception {
     try (HttpJdkSolrClient client = builder(solrTestRule.getBaseUrl()).build()) {
       assertEquals("UTF-8", client.contentTypeToEncoding("application/xml; charset=UTF-8"));
@@ -533,7 +645,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
    * @param client the client
    */
   private void queryToHelpJdkReleaseThreads(HttpJdkSolrClient client) throws Exception {
-    client.query("collection1", new MapSolrParams(Collections.singletonMap("q", "*:*")));
+    client.query("collection1", new MapSolrParams(Map.of("q", "*:*")));
   }
 
   private void assertNoHeadRequestWithSsl(HttpJdkSolrClient client) {
@@ -559,7 +671,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Override
   @SuppressWarnings(value = "unchecked")
-  protected <B extends HttpSolrClientBuilderBase<?, ?>> B builder(
+  protected <B extends HttpSolrClient.BuilderBase<?, ?>> B builder(
       String url, int connectionTimeout, int socketTimeout) {
     HttpJdkSolrClient.Builder b =
         new HttpJdkSolrClient.Builder(url)

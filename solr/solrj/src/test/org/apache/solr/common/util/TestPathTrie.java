@@ -17,7 +17,6 @@
 
 package org.apache.solr.common.util;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.api.ApiBag.HANDLER_NAME;
 
 import java.util.HashMap;
@@ -33,7 +32,7 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     pathTrie.insert("/", Map.of(), "R");
     pathTrie.insert("/aa", Map.of(), "d");
     pathTrie.insert("/aa/bb/{cc}/dd", Map.of(), "a");
-    pathTrie.insert("/$handlerName/{cc}/dd", singletonMap(HANDLER_NAME, "test"), "test");
+    pathTrie.insert("/$handlerName/{cc}/dd", Map.of(HANDLER_NAME, "test"), "test");
     pathTrie.insert("/aa/bb/{cc}/{xx}", Map.of(), "b");
     pathTrie.insert("/aa/bb", Map.of(), "c");
 

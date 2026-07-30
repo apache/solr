@@ -16,10 +16,10 @@
  */
 package org.apache.solr.security;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,16 +30,11 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.PublicKey;
-import java.time.Instant;
-import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
-import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.message.BasicHttpRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -47,6 +42,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
+import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
 
@@ -79,14 +75,12 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   }
 
   final AtomicReference<Principal> principal = new AtomicReference<>();
-  final AtomicReference<Header> header = new AtomicReference<>();
+  final AtomicReference<String> headerValue = new AtomicReference<>();
   final AtomicReference<ServletRequest> wrappedRequestByFilter = new AtomicReference<>();
 
   final FilterChain filterChain =
       (servletRequest, servletResponse) -> wrappedRequestByFilter.set(servletRequest);
   final String nodeName = "node_x_233";
-
-  final CryptoKeys.RSAKeyPair aKeyPair = new CryptoKeys.RSAKeyPair();
 
   final SolrQueryRequestBase solrQueryRequestBase =
       new SolrQueryRequestBase(null, new ModifiableSolrParams());
@@ -94,7 +88,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   String headerKey;
   HttpServletRequest mockReq;
   MockPKIAuthenticationPlugin mock;
-  BasicHttpRequest request;
+  Map<String, String> headers;
 
   @Override
   public void setUp() throws Exception {
@@ -102,23 +96,15 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assumeWorkingMockito();
 
     principal.set(null);
-    header.set(null);
+    headerValue.set(null);
     wrappedRequestByFilter.set(null);
 
-    if (random().nextBoolean()) {
-      headerKey = PKIAuthenticationPlugin.HEADER_V2;
-      System.setProperty(PKIAuthenticationPlugin.SEND_VERSION, "v2");
-      System.setProperty(PKIAuthenticationPlugin.ACCEPT_VERSIONS, "v2");
-    } else {
-      headerKey = PKIAuthenticationPlugin.HEADER;
-      System.setProperty(PKIAuthenticationPlugin.SEND_VERSION, "v1");
-      System.setProperty(PKIAuthenticationPlugin.ACCEPT_VERSIONS, "v1,v2");
-    }
+    headerKey = PKIAuthenticationPlugin.HEADER_V2;
 
-    mockReq = createMockRequest(header);
+    mockReq = createMockRequest(headerValue);
     mock = new MockPKIAuthenticationPlugin(nodeName);
     mockMetrics(mock);
-    request = new BasicHttpRequest("GET", "http://localhost:56565");
+    headers = new HashMap<>();
   }
 
   private static void mockMetrics(MockPKIAuthenticationPlugin mock) {
@@ -144,9 +130,9 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     solrQueryRequestBase.setUserPrincipalName(username);
     mock.solrRequestInfo = new SolrRequestInfo(solrQueryRequestBase, new SolrQueryResponse());
     mockSetHeaderOnRequest();
-    header.set(request.getFirstHeader(headerKey));
-    assertNotNull(header.get());
-    assertTrue(header.get().getValue().startsWith(nodeName));
+    headerValue.set(headers.get(headerKey));
+    assertNotNull(headerValue.get());
+    assertTrue(headerValue.get().startsWith(nodeName));
     assertTrue(mock.authenticate(mockReq, null, filterChain));
 
     assertNotNull(wrappedRequestByFilter.get());
@@ -156,7 +142,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   }
 
   private void mockSetHeaderOnRequest() {
-    mock.setHeader((k, v) -> request.setHeader(k, v));
+    mock.setHeader((k, v) -> headers.put(k, v));
   }
 
   public void testSuperUser() throws Exception {
@@ -180,9 +166,9 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     // Setup regular superuser request
     mock.solrRequestInfo = null;
     mockSetHeaderOnRequest();
-    header.set(request.getFirstHeader(headerKey));
-    assertNotNull(header.get());
-    assertTrue(header.get().getValue().startsWith(nodeName));
+    headerValue.set(headers.get(headerKey));
+    assertNotNull(headerValue.get());
+    assertTrue(headerValue.get().startsWith(nodeName));
 
     assertTrue(mock.authenticate(mockReq, null, filterChain));
     assertNotNull(wrappedRequestByFilter.get());
@@ -198,119 +184,36 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testProtocolMismatch() throws Exception {
-    System.setProperty(PKIAuthenticationPlugin.SEND_VERSION, "v1");
-    System.setProperty(PKIAuthenticationPlugin.ACCEPT_VERSIONS, "v2");
-    mock = new MockPKIAuthenticationPlugin(nodeName);
-    mockMetrics(mock);
-
-    principal.set(new BasicUserPrincipal("solr"));
-    mock.solrRequestInfo = new SolrRequestInfo(solrQueryRequestBase, new SolrQueryResponse());
-    mockSetHeaderOnRequest();
+  public void testLegacyV1HeaderRejected() throws Exception {
+    // A request with only the legacy SolrAuth (v1) header and no SolrAuthV2 header should be
+    // rejected, since PKI v1 support has been removed. Verify that the plugin never even consults
+    // the SolrAuth header — the rejection must be due to the absence of SolrAuthV2, not due to
+    // the v1 token being malformed.
+    HttpServletRequest legacyReq = mock(HttpServletRequest.class);
+    when(legacyReq.getHeader(PKIAuthenticationPlugin.HEADER_V2)).thenReturn(null);
+    when(legacyReq.getRequestURI()).thenReturn("/collection1/select");
 
     HttpServletResponse response = mock(HttpServletResponse.class);
-    // This will fail in the same way that a missing header would fail
     assertFalse(
-        "Should have failed authentication", mock.authenticate(mockReq, response, filterChain));
+        "Should have rejected request with only a legacy v1 SolrAuth header",
+        mock.authenticate(legacyReq, response, filterChain));
 
-    verify(response).setHeader(HttpHeaders.WWW_AUTHENTICATE, PKIAuthenticationPlugin.HEADER_V2);
+    verify(legacyReq, never()).getHeader("SolrAuth");
+    verify(response)
+        .setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), PKIAuthenticationPlugin.HEADER_V2);
     verify(response).sendError(ArgumentMatchers.eq(401), anyString());
 
     assertNull(
         "Should not have proceeded after authentication failure", wrappedRequestByFilter.get());
   }
 
-  public void testParseCipher() {
-    for (String validUser : new String[] {"user1", "$", "some user", "some 123"}) {
-      for (long validTimestamp :
-          new long[] {Instant.now().toEpochMilli(), 99999999999L, 9999999999999L}) {
-        String s = validUser + " " + validTimestamp;
-        byte[] payload = s.getBytes(UTF_8);
-        byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
-        String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
-        PKIAuthenticationPlugin.PKIHeaderData header = parseCipher(base64Cipher);
-        assertNotNull(
-            "Expecting valid header for user " + validUser + " and timestamp " + validTimestamp,
-            header);
-        assertEquals(validUser, header.userName);
-        assertEquals(validTimestamp, header.timestamp);
-      }
-    }
-  }
-
-  public void testParseCipherInvalidTimestampTooSmall() {
-    long timestamp = 999999999L;
-    String s = "user1 " + timestamp;
-
-    byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
-    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
-    assertNull(parseCipher(base64Cipher));
-  }
-
-  public void testParseCipherInvalidTimestampTooBig() {
-    long timestamp = 10000000000000L;
-    String s = "user1 " + timestamp;
-
-    byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
-    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
-    assertNull(parseCipher(base64Cipher));
-  }
-
-  public void testParseCipherInvalidKey() {
-    String s = "user1 " + Instant.now().toEpochMilli();
-    byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
-    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
-    assertNull(
-        PKIAuthenticationPlugin.parseCipher(
-            base64Cipher, new CryptoKeys.RSAKeyPair().getPublicKey(), true));
-  }
-
-  public void testParseCipherNoSpace() {
-    String s = "user1" + Instant.now().toEpochMilli(); // missing space
-
-    byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
-    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
-    assertNull(parseCipher(base64Cipher));
-  }
-
-  public void testParseCipherNoTimestamp() {
-    String s = "user1 aaaaaaaaaa";
-
-    byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
-    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
-    assertNull(parseCipher(base64Cipher));
-  }
-
-  private PKIAuthenticationPlugin.PKIHeaderData parseCipher(String base64Cipher) {
-    return PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey(), true);
-  }
-
-  public void testParseCipherInvalidKeyExample() {
-    /*
-    This test shows a case with an invalid public key for which the decrypt will return an output that triggers SOLR-15961.
-     */
-    String base64Cipher =
-        "A8tEkMfmA5m5+wVG9xSI46Lhg8MqDFkjPVqXc6Tf6LT/EVIpW3DUrkIygIjk9tSCCAxhHwSvKfVJeujaBtxr19ajmpWjtZKgZOXkynF5aPbDuI+mnvCiTmhLuZYExvnmeYxag6A4Fu2TpA/Wo97S4cIkRgfyag/ZOYM0pZwVAtNoJgTpmODDGrH4W16BXSZ6xm+EV4vrfUqpuuO7U7YiU5fd1tv22Au0ZaY6lPbxAHjeFyD8WrkPPIkEoM14K0G5vAg4wUxpRF/eVlnzhULoPgKFErz7cKVxuvxSsYpVw5oko+ldzyfsnMrC1brqUKA7NxhpdpJzp7bmd8W8/mvZEw==";
-    String publicKey =
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsJu1O+A/gGikFSeLGYdgNPrz3ef/tqJP1sRqzkVjnBcdyI2oXMmAWF+yDe0Zmya+HevyOI8YN2Yaq6aCLjbHnT364Rno/urhKvR5PmaH/PqXrh3Dl+vn08B74iLVZxZro/v34FGjX8fkiasZggC4AnyLjFkU7POsHhJKSXGslsWe0dq7yaaA2AES/bFwJ3r3FNxUsE+kWEtZG1RKMq8P8wlx/HLDzjYKaGnyApAltBHVx60XHiOC9Oatu5HZb/eKU3jf7sKibrzrRsqwb+iE4ZxxtXkgATuLOl/2ks5Mnkk4u7bPEAgEpEuzQBB4AahMC7r+R5AzRnB4+xx69FP1IwIDAQAB";
-    assertNull(
-        PKIAuthenticationPlugin.parseCipher(
-            base64Cipher, CryptoKeys.deserializeX509PublicKey(publicKey), true));
-  }
-
-  private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {
+  private HttpServletRequest createMockRequest(final AtomicReference<String> headerValue) {
     HttpServletRequest mockReq = mock(HttpServletRequest.class);
     when(mockReq.getHeader(any(String.class)))
         .then(
             invocation -> {
               if (headerKey.equals(invocation.getArgument(0))) {
-                if (header.get() == null) return null;
-                return header.get().getValue();
+                return headerValue.get();
               } else return null;
             });
     when(mockReq.getRequestURI()).thenReturn("/collection1/select");

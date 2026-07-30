@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -41,16 +42,20 @@ abstract class ZkDistributedLock implements DistributedLock {
   static final char LOCK_PREFIX_SUFFIX = '_';
 
   /** Prefix of EPHEMERAL read lock node names */
-  static final String READ_LOCK_PREFIX = "R" + LOCK_PREFIX_SUFFIX;
+  static final char READ_LOCK_PREFIX_CHAR = 'R';
+
+  static final String READ_LOCK_PREFIX = "" + READ_LOCK_PREFIX_CHAR + LOCK_PREFIX_SUFFIX;
 
   /** Prefix of EPHEMERAL write lock node names */
-  static final String WRITE_LOCK_PREFIX = "W" + LOCK_PREFIX_SUFFIX;
+  static final char WRITE_LOCK_PREFIX_CHAR = 'W';
+
+  static final String WRITE_LOCK_PREFIX = "" + WRITE_LOCK_PREFIX_CHAR + LOCK_PREFIX_SUFFIX;
 
   /** Read lock. */
   static class Read extends ZkDistributedLock {
-    protected Read(SolrZkClient zkClient, String lockPath)
+    protected Read(SolrZkClient zkClient, String lockPath, String lockIdToMirror)
         throws KeeperException, InterruptedException {
-      super(zkClient, lockPath, READ_LOCK_PREFIX);
+      super(zkClient, lockPath, READ_LOCK_PREFIX, lockIdToMirror);
     }
 
     @Override
@@ -59,19 +64,35 @@ abstract class ZkDistributedLock implements DistributedLock {
       // Lower numbered read locks are ok, they can coexist.
       return otherLockName.startsWith(WRITE_LOCK_PREFIX);
     }
+
+    @Override
+    boolean canMirrorLock(String lockId) {
+      return true;
+    }
   }
 
   /** Write lock. */
   static class Write extends ZkDistributedLock {
-    protected Write(SolrZkClient zkClient, String lockPath)
+    protected Write(SolrZkClient zkClient, String lockPath, String lockIdToMirror)
         throws KeeperException, InterruptedException {
-      super(zkClient, lockPath, WRITE_LOCK_PREFIX);
+      super(zkClient, lockPath, WRITE_LOCK_PREFIX, lockIdToMirror);
     }
 
     @Override
     boolean isBlockedByNodeType(String otherLockName) {
       // A write lock is blocked by another read or write lock with a lower sequence number
       return true;
+    }
+
+    @Override
+    boolean canMirrorLock(String lockId) {
+      // Only another Write lock can be mirrored
+      int lockTypeSuffixIndex = lockId.lastIndexOf(LOCK_PREFIX_SUFFIX) - 1;
+      if (lockTypeSuffixIndex < 0) {
+        return false;
+      } else {
+        return lockId.charAt(lockTypeSuffixIndex) == WRITE_LOCK_PREFIX_CHAR;
+      }
     }
   }
 
@@ -80,22 +101,43 @@ abstract class ZkDistributedLock implements DistributedLock {
   private final String lockNode;
   protected final long sequence;
   protected volatile boolean released = false;
+  protected final boolean mirrored;
 
-  protected ZkDistributedLock(SolrZkClient zkClient, String lockDir, String lockNodePrefix)
+  protected ZkDistributedLock(
+      SolrZkClient zkClient, String lockDir, String lockNodePrefix, String lockIdToMirror)
       throws KeeperException, InterruptedException {
     this.zkClient = zkClient;
     this.lockDir = lockDir;
 
     // Create the SEQUENTIAL EPHEMERAL node. We enter the locking rat race here. We MUST eventually
     // call release() or we block others.
-    lockNode =
-        zkClient.create(
-            lockDir
-                + DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR
-                + lockNodePrefix,
-            null,
-            CreateMode.EPHEMERAL_SEQUENTIAL);
+    if (StrUtils.isBlank(lockIdToMirror)) {
+      lockNode =
+          zkClient.create(
+              lockDir
+                  + DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR
+                  + lockNodePrefix,
+              null,
+              CreateMode.EPHEMERAL_SEQUENTIAL);
 
+      mirrored = false;
+    } else {
+      if (!lockIdToMirror.startsWith(lockDir)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Requested lock with path: "
+                + lockDir
+                + " cannot mirror the callingLock with id: "
+                + lockIdToMirror);
+      }
+      if (!canMirrorLock(lockIdToMirror)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Cannot mirror lock " + lockIdToMirror + " with given lockPrefix: " + lockNodePrefix);
+      }
+      lockNode = lockIdToMirror;
+      mirrored = true;
+    }
     sequence = getSequenceFromNodename(lockNode);
   }
 
@@ -158,8 +200,10 @@ abstract class ZkDistributedLock implements DistributedLock {
   @Override
   public void release() {
     try {
-      zkClient.delete(lockNode, -1);
-      released = true;
+      if (!mirrored) {
+        zkClient.delete(lockNode, -1);
+        released = true;
+      }
     } catch (KeeperException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
@@ -212,7 +256,11 @@ abstract class ZkDistributedLock implements DistributedLock {
     if (!foundSelf) {
       // If this basic assumption doesn't hold with Zookeeper, we're in deep trouble. And not only
       // here.
-      throw new SolrException(SERVER_ERROR, "Missing lock node " + lockNode);
+      if (mirrored) {
+        throw new SolrException(SERVER_ERROR, "Missing mirrored lock node " + lockNode);
+      } else {
+        throw new SolrException(SERVER_ERROR, "Missing lock node " + lockNode);
+      }
     }
 
     // Didn't return early on any other blocking lock, means we own it
@@ -239,6 +287,18 @@ abstract class ZkDistributedLock implements DistributedLock {
 
     return Long.parseLong(lockNode.substring(lockNode.length() - SEQUENCE_LENGTH));
   }
+
+  @Override
+  public String getLockId() {
+    return lockNode;
+  }
+
+  @Override
+  public boolean isMirroringLock() {
+    return mirrored;
+  }
+
+  abstract boolean canMirrorLock(String lockId);
 
   @Override
   public String toString() {

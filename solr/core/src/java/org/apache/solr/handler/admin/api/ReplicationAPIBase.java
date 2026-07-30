@@ -391,6 +391,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         while (true) {
           offset = offset == -1 ? 0 : offset;
           int read = (int) Math.min(buf.length, filelen - offset);
+
+          if (read <= 0) {
+            writeNothingAndFlush();
+            fos.close();
+            break;
+          }
+
           in.readBytes(buf, 0, read);
 
           fos.writeInt(read);

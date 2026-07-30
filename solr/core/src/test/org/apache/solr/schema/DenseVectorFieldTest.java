@@ -1136,4 +1136,170 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       deleteCore();
     }
   }
+
+  @Test
+  public void fieldDefinition_flatAlgorithm_shouldLoadSchemaField() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+
+      SchemaField vector = schema.getField("vector_flat");
+      assertNotNull(vector);
+
+      DenseVectorField type = (DenseVectorField) vector.getType();
+      assertThat(type.getKnnAlgorithm(), is("flat"));
+      assertThat(type.getDimension(), is(4));
+      assertThat(type.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+
+      assertTrue(vector.indexed());
+      assertTrue(vector.stored());
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_knnQuery_shouldThrowException() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat.xml");
+
+      assertQEx(
+          "Running {!knn} on a flat vector field should raise an Exception",
+          "knnAlgorithm=\"flat\"",
+          req("q", "{!knn f=vector_flat topK=2}[1, 2, 3, 4]", "fl", "id"),
+          SolrException.ErrorCode.BAD_REQUEST);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_vectorSimilarityFunction_shouldReturnResults() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat.xml");
+
+      SolrInputDocument doc1 = new SolrInputDocument();
+      doc1.addField("id", "0");
+      doc1.addField("vector_flat", Arrays.asList(1, 2, 3, 4));
+      assertU(adoc(doc1));
+
+      SolrInputDocument doc2 = new SolrInputDocument();
+      doc2.addField("id", "1");
+      doc2.addField("vector_flat", Arrays.asList(2, 3, 4, 5));
+      assertU(adoc(doc2));
+
+      SolrInputDocument doc3 = new SolrInputDocument();
+      doc3.addField("id", "2");
+      doc3.addField("vector_flat", Arrays.asList(100, 200, 50, 25));
+      assertU(adoc(doc3));
+
+      assertU(commit());
+
+      assertJQ(
+          req(
+              "q", "{!func}vectorSimilarity(vector_flat,[1, 2, 3, 4])",
+              "fl", "id,score"),
+          "/response/numFound==3",
+          "/response/docs/[0]/id=='0'",
+          "/response/docs/[0]/score==1.0");
+
+      // Filtered test
+      assertJQ(
+          req(
+              "q", "{!func}vectorSimilarity(vector_flat,[1, 2, 3, 4])",
+              "fq", "id:(0 2)",
+              "fl", "id,score"),
+          "/response/numFound==2",
+          "/response/docs/[0]/id=='0'",
+          "/response/docs/[0]/score==1.0");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_storedField_shouldBeReturnedInResults() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat.xml");
+
+      SolrInputDocument doc1 = new SolrInputDocument();
+      doc1.addField("id", "0");
+      doc1.addField("vector_flat", Arrays.asList(1.1f, 2.2f, 3.3f, 4.4f));
+      assertU(adoc(doc1));
+      assertU(commit());
+
+      assertJQ(
+          req("q", "id:0", "fl", "vector_flat"),
+          "/response/docs/[0]=={'vector_flat':[1.1,2.2,3.3,4.4]}");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_byteEncoding_shouldWork() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat.xml");
+
+      SolrInputDocument doc1 = new SolrInputDocument();
+      doc1.addField("id", "0");
+      doc1.addField("vector_flat_byte", Arrays.asList(1, 2, 3, 4));
+      assertU(adoc(doc1));
+
+      SolrInputDocument doc2 = new SolrInputDocument();
+      doc2.addField("id", "1");
+      doc2.addField("vector_flat_byte", Arrays.asList(5, 6, 7, 8));
+      assertU(adoc(doc2));
+
+      assertU(commit());
+
+      assertJQ(
+          req(
+              "q", "{!func}vectorSimilarity(vector_flat_byte,[1, 2, 3, 4])",
+              "fl", "id,score"),
+          "/response/numFound==2",
+          "/response/docs/[0]/id=='0'",
+          "/response/docs/[0]/score==1.0");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_vectorSimilarityQParser_shouldThrowException() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat.xml");
+
+      assertQEx(
+          "Running {!vectorSimilarity} on a flat vector field should raise an Exception",
+          "knnAlgorithm=\"flat\"",
+          req(
+              "q", "{!vectorSimilarity f=vector_flat minReturn=0.99}[1, 2, 3, 4]",
+              "fl", "id"),
+          SolrException.ErrorCode.BAD_REQUEST);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_getKnnVectorQuery_shouldThrowException() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_flat");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  type.getKnnVectorQuery(
+                      "vector_flat", "[1, 2, 3, 4]", 3, 3, null, null, null, null));
+      assertTrue(ex.getMessage().contains("knnAlgorithm=\"flat\""));
+    } finally {
+      deleteCore();
+    }
+  }
 }

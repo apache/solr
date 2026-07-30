@@ -21,7 +21,6 @@ import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_
 import static org.apache.solr.handler.designer.ManagedSchemaDiff.mapFieldsToPropertyValues;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +109,7 @@ public class ManagedSchemaDiffTest extends SolrCloudTestCase {
     Map<String, Object> diff = ManagedSchemaDiff.diff(list1, list2);
     assertTrue(diff.containsKey("old"));
     assertTrue(diff.containsKey("new"));
-    assertEquals(Collections.singletonList(obj2), diff.get("old"));
+    assertEquals(List.of(obj2), diff.get("old"));
     assertEquals(Arrays.asList(obj3, obj4), diff.get("new"));
   }
 

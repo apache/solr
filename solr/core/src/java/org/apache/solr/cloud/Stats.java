@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import com.codahale.metrics.Timer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,16 +71,6 @@ public class Stats {
     stat.errors.incrementAndGet();
   }
 
-  public Timer.Context time(String operation) {
-    String op = operation.toLowerCase(Locale.ROOT);
-    Stat stat = stats.get(op);
-    if (stat == null) {
-      stat = new Stat();
-      stats.put(op, stat);
-    }
-    return stat.requestTime.time();
-  }
-
   public void storeFailureDetails(String operation, ZkNodeProps request, SolrResponse resp) {
     String op = operation.toLowerCase(Locale.ROOT);
     Stat stat = stats.get(op);
@@ -116,20 +105,14 @@ public class Stats {
     this.queueLength = queueLength;
   }
 
-  public void clear() {
-    stats.clear();
-  }
-
   public static class Stat {
     public final AtomicInteger success;
     public final AtomicInteger errors;
-    public final Timer requestTime;
     public final ArrayDeque<FailedOp> failureDetails;
 
     public Stat() {
       this.success = new AtomicInteger();
       this.errors = new AtomicInteger();
-      this.requestTime = new Timer();
       this.failureDetails = new ArrayDeque<>();
     }
   }

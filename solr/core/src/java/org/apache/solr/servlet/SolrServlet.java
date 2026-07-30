@@ -32,7 +32,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,7 +155,7 @@ public class SolrServlet extends HttpServlet {
         HttpServletRequest request,
         HttpServletResponse response,
         boolean retry) {
-      if (V2ApiUtils.isEnabled() && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
+      if (path.startsWith("/____v2/") || path.equals("/____v2")) {
         return new V2HttpCall(cores, request, response, retry);
       } else {
         return new HttpSolrCall(cores, request, response, retry);

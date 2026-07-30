@@ -46,6 +46,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
 import org.apache.calcite.util.Pair;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
@@ -156,17 +157,18 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     TupleStream tupleStream;
     String zk = properties.getProperty("zk");
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
     try {
       if (metricPairs.isEmpty() && buckets.isEmpty()) {
-        tupleStream = handleSelect(zk, collection, q, fields, orders, limit, offset);
+        tupleStream = handleSelect(solrConnection, collection, q, fields, orders, limit, offset);
       } else {
         if (buckets.isEmpty()) {
-          tupleStream = handleStats(zk, collection, q, metricPairs, fields);
+          tupleStream = handleStats(solrConnection, collection, q, metricPairs, fields);
         } else {
           if (mapReduce) {
             tupleStream =
                 handleGroupByMapReduce(
-                    zk,
+                    solrConnection,
                     collection,
                     properties,
                     fields,
@@ -179,7 +181,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
           } else {
             tupleStream =
                 handleGroupByFacet(
-                    zk,
+                    solrConnection,
                     collection,
                     fields,
                     q,
@@ -295,7 +297,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   }
 
   private TupleStream handleSelect(
-      String zk,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       String query,
       List<Map.Entry<String, Class<?>>> fields,
@@ -356,17 +358,19 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         StreamComparator streamSorter = new MultipleFieldComparator(getComps(orders));
         limitStream =
             new LimitStream(
-                new SortStream(new CloudSolrStream(zk, collection, params), streamSorter),
+                new SortStream(
+                    new CloudSolrStream(solrConnection, collection, params), streamSorter),
                 limitInt,
                 offsetInt);
       } else {
         params.add(CommonParams.ROWS, limit);
-        limitStream = new LimitStream(new CloudSolrStream(zk, collection, params), limitInt);
+        limitStream =
+            new LimitStream(new CloudSolrStream(solrConnection, collection, params), limitInt);
       }
       return limitStream;
     } else {
       params.add(CommonParams.QT, "/export");
-      return new CloudSolrStream(zk, collection, params);
+      return new CloudSolrStream(solrConnection, collection, params);
     }
   }
 
@@ -493,7 +497,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   }
 
   private TupleStream handleGroupByMapReduce(
-      String zk,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       Properties properties,
       final List<Map.Entry<String, Class<?>>> fields,
@@ -517,7 +521,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     if (metrics.length == 0) {
       return handleSelectDistinctMapReduce(
-          zk, collection, properties, fields, query, orders, buckets, limit);
+          solrConnection, collection, properties, fields, query, orders, buckets, limit);
     } else {
       for (Metric metric : metrics) {
         Class<?> c = fmap.get(metric.getIdentifier());
@@ -554,7 +558,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     TupleStream tupleStream = null;
 
-    CloudSolrStream cstream = new CloudSolrStream(zk, collection, params);
+    CloudSolrStream cstream = new CloudSolrStream(solrConnection, collection, params);
     tupleStream = new RollupStream(cstream, buckets, metrics);
 
     StreamFactory factory =
@@ -591,7 +595,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       StreamComparator comp = bucketSortComp(buckets, sortDirection);
       @SuppressWarnings("resource")
       final ParallelStream parallelStream =
-          new ParallelStream(zk, collection, tupleStream, numWorkers, comp);
+          new ParallelStream(solrConnection, collection, tupleStream, numWorkers, comp);
 
       parallelStream.setStreamFactory(factory);
       tupleStream = parallelStream;
@@ -641,7 +645,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   }
 
   private TupleStream handleGroupByFacet(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       final List<Map.Entry<String, Class<?>>> fields,
       final String query,
@@ -690,7 +694,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     int overfetch = (int) (limit * 1.25);
 
     TupleStream tupleStream =
-        new FacetStream(zkHost, collection, solrParams, buckets, metrics, sorts, overfetch);
+        new FacetStream(solrConnection, collection, solrParams, buckets, metrics, sorts, overfetch);
 
     StreamFactory factory =
         new StreamFactory()
@@ -727,7 +731,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   }
 
   private TupleStream handleSelectDistinctMapReduce(
-      final String zkHost,
+      final CloudSolrClient.CloudSolrClientConnection solrConnection,
       final String collection,
       final Properties properties,
       final List<Map.Entry<String, Class<?>>> fields,
@@ -813,7 +817,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     TupleStream tupleStream = null;
 
-    CloudSolrStream cstream = new CloudSolrStream(zkHost, collection, params);
+    CloudSolrStream cstream = new CloudSolrStream(solrConnection, collection, params);
     tupleStream = new UniqueStream(cstream, ecomp);
 
     if (numWorkers > 1) {
@@ -821,7 +825,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       // Maintain the sort of the Tuples coming from the workers.
       @SuppressWarnings("resource")
       final ParallelStream parallelStream =
-          new ParallelStream(zkHost, collection, tupleStream, numWorkers, comp);
+          new ParallelStream(solrConnection, collection, tupleStream, numWorkers, comp);
 
       StreamFactory factory =
           new StreamFactory()
@@ -877,7 +881,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   }
 
   private TupleStream handleStats(
-      String zk,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       String query,
       List<Pair<String, String>> metricPairs,
@@ -900,7 +904,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       }
     }
 
-    return new StatsStream(zk, collection, solrParams, metrics);
+    return new StatsStream(solrConnection, collection, solrParams, metrics);
   }
 
   @Override

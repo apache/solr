@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,7 +54,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       return delegate.resolveAlias(alias);
     } else {
-      return Collections.singletonList(alias);
+      return List.of(alias);
     }
   }
 

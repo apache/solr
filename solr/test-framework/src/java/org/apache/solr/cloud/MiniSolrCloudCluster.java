@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import com.codahale.metrics.MetricRegistry;
-import io.dropwizard.metrics.jetty12.ee10.InstrumentedEE10Handler;
 import jakarta.servlet.Filter;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -56,8 +54,10 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -84,7 +84,6 @@ import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.server.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,7 +157,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
   private CloudSolrClient solrClient;
   private final JettyConfig jettyConfig;
   private final String solrXml;
-  private final boolean trackJettyMetrics;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
   private final Map<String, CloudSolrClient> solrClientByCollection = new ConcurrentHashMap<>();
@@ -233,47 +231,11 @@ public class MiniSolrCloudCluster implements SolrBackend {
       Optional<String> securityJson,
       boolean formatZkServer)
       throws Exception {
-    this(
-        numServers,
-        baseDir,
-        solrXml,
-        jettyConfig,
-        zkTestServer,
-        securityJson,
-        false,
-        formatZkServer);
-  }
-
-  /**
-   * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
-   * protected to discourage its usage. Ideally *new* functionality should use {@linkplain
-   * SolrCloudTestCase} to configure any additional parameters.
-   *
-   * @param numServers number of Solr servers to start
-   * @param baseDir base directory that the mini cluster should be run from
-   * @param solrXml solr.xml file to be uploaded to ZooKeeper
-   * @param jettyConfig Jetty configuration
-   * @param zkTestServer ZkTestServer to use. If null, one will be created
-   * @param securityJson A string representation of security.json file (optional).
-   * @param trackJettyMetrics supply jetties with metrics registry
-   * @throws Exception if there was an error starting the cluster
-   */
-  MiniSolrCloudCluster(
-      int numServers,
-      Path baseDir,
-      String solrXml,
-      JettyConfig jettyConfig,
-      ZkTestServer zkTestServer,
-      Optional<String> securityJson,
-      boolean trackJettyMetrics,
-      boolean formatZkServer)
-      throws Exception {
 
     Objects.requireNonNull(securityJson);
     this.baseDir = Objects.requireNonNull(baseDir);
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
     this.solrXml = solrXml == null ? DEFAULT_CLOUD_SOLR_XML : solrXml;
-    this.trackJettyMetrics = trackJettyMetrics;
 
     log.info("Starting cluster of {} servers in {}", numServers, baseDir);
 
@@ -490,10 +452,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
     Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
     JettyConfig newConfig = JettyConfig.builder(config).build();
-    JettySolrRunner jetty =
-        !trackJettyMetrics
-            ? new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig)
-            : new JettySolrRunnerWithMetrics(runnerPath.toString(), nodeProps, newConfig);
+    JettySolrRunner jetty = new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
     jetty.start();
     jettys.add(jetty);
     synchronized (startupWait) {
@@ -509,6 +468,15 @@ public class MiniSolrCloudCluster implements SolrBackend {
    */
   public JettySolrRunner startJettySolrRunner() throws Exception {
     return startJettySolrRunner(newNodeName(), jettyConfig, null);
+  }
+
+  /**
+   * Start a new Solr instance, using the default config but with a custom Solr xml
+   *
+   * @return a JettySolrRunner
+   */
+  public JettySolrRunner startJettySolrRunner(String solrXml) throws Exception {
+    return startJettySolrRunner(newNodeName(), jettyConfig, solrXml);
   }
 
   /**
@@ -698,13 +666,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
     return solrClientByCollection.computeIfAbsent(
         collectionName,
         k -> {
-          CloudSolrClient solrClient =
-              new CloudLegacySolrClient.Builder(
-                      Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
-                  .withDefaultCollection(collectionName)
-                  .withSocketTimeout(90000)
-                  .withConnectionTimeout(15000)
-                  .build();
+          CloudSolrClient solrClient = newSolrClient(collectionName);
 
           solrClient.connect();
           if (log.isInfoEnabled()) {
@@ -720,11 +682,13 @@ public class MiniSolrCloudCluster implements SolrBackend {
 
   @Override // SolrBackend
   public CloudSolrClient newSolrClient(String collection) {
-    return new CloudLegacySolrClient.Builder(
-            Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
-        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
-        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+    return new CloudJettySolrClient.Builder(
+            new ZkClientClusterStateProvider(getZkServer().getZkAddress()))
         .withDefaultCollection(collection)
+        .withHttpClientBuilder(
+            new HttpJettySolrClient.Builder()
+                .withConnectionTimeout(15, TimeUnit.SECONDS)
+                .withIdleTimeout(90, TimeUnit.SECONDS))
         .build(); // we choose 90 because we run in some harsh envs
   }
 
@@ -964,25 +928,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
   }
 
-  /**
-   * @lucene.experimental
-   */
-  public static final class JettySolrRunnerWithMetrics extends JettySolrRunner {
-    public JettySolrRunnerWithMetrics(String solrHome, Properties nodeProps, JettyConfig config) {
-      super(solrHome, nodeProps, config);
-    }
-
-    private volatile MetricRegistry metricRegistry;
-
-    @Override
-    protected Handler.Wrapper injectJettyHandlers(Handler.Wrapper chain) {
-      metricRegistry = new MetricRegistry();
-      InstrumentedEE10Handler metrics = new InstrumentedEE10Handler(metricRegistry);
-      metrics.setHandler(chain);
-      return metrics;
-    }
-  }
-
   private static class Config {
     final String name;
     final Path path;
@@ -1005,7 +950,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
     private List<Config> configs = new ArrayList<>();
     private Map<String, Object> clusterProperties = new HashMap<>();
 
-    private boolean trackJettyMetrics;
     private boolean overseerEnabled =
         EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
     private boolean formatZkServer = true;
@@ -1118,11 +1062,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
       return this;
     }
 
-    public Builder withMetrics(boolean trackJettyMetrics) {
-      this.trackJettyMetrics = trackJettyMetrics;
-      return this;
-    }
-
     public Builder formatZkServer(boolean formatZkServer) {
       this.formatZkServer = formatZkServer;
       return this;
@@ -1153,14 +1092,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
       JettyConfig jettyConfig = jettyConfigBuilder.build();
       MiniSolrCloudCluster cluster =
           new MiniSolrCloudCluster(
-              nodeCount,
-              baseDir,
-              solrXml,
-              jettyConfig,
-              null,
-              securityJson,
-              trackJettyMetrics,
-              formatZkServer);
+              nodeCount, baseDir, solrXml, jettyConfig, null, securityJson, formatZkServer);
       for (Config config : configs) {
         cluster.uploadConfigSet(config.path, config.name);
       }

@@ -640,7 +640,14 @@
      </lst>
   </requestHandler>
 
-  <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,update">
+  <requestHandler name="/rrf" class="solr.CombinedQuerySearchHandler">
+  </requestHandler>
+
+  <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
+    <int name="maxCombinerQueries">2</int>
+  </searchComponent>
+
+  <initParams path="/update/**,/query,/search,/select,/tvrh,/elevate,/spell,update">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

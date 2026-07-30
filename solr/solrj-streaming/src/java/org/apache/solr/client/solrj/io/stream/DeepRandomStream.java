@@ -34,8 +34,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -60,7 +62,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String zkHost;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
   protected ModifiableSolrParams params;
   protected Map<String, String> fieldMappings;
@@ -76,14 +78,17 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   }
 
   /**
-   * @param zkHost Zookeeper ensemble connection string
+   * @param solrConnection Zookeeper or HTTPS(s) ensemble connection string
    * @param collectionName Name of the collection to operate on
    * @param params Map&lt;String, String[]&gt; of parameter/value pairs
    * @throws IOException Something went wrong
    */
-  public DeepRandomStream(String zkHost, String collectionName, SolrParams params)
+  public DeepRandomStream(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collectionName,
+      SolrParams params)
       throws IOException {
-    init(collectionName, zkHost, params);
+    init(solrConnection, collectionName, params);
   }
 
   public DeepRandomStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -91,7 +96,6 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter aliasExpression = factory.getNamedOperand(expression, "aliases");
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
     // Collection Name
     if (null == collectionName) {
@@ -102,8 +106,8 @@ public class DeepRandomStream extends TupleStream implements Expressible {
               expression));
     }
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
-    // need to count it twice
+    // Validate there are no unknown parameters - solrConnection and alias are namedParameter,
+    // so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -118,12 +122,8 @@ public class DeepRandomStream extends TupleStream implements Expressible {
               expression));
     }
 
-    ModifiableSolrParams mParams = new ModifiableSolrParams();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("aliases")) {
-        mParams.add(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    ModifiableSolrParams mParams =
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection", "aliases"));
 
     // Aliases, optional, if provided then need to split
     if (null != aliasExpression
@@ -144,24 +144,9 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       }
     }
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    /*
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
-    }
-    */
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    // We've got all the required items
-    init(collectionName, zkHost, mParams);
+    init(solrConnection, collectionName, mParams);
   }
 
   @Override
@@ -187,8 +172,8 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       }
     }
 
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     // aliases
     if (null != fieldMappings && 0 != fieldMappings.size()) {
@@ -239,8 +224,12 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     return explanation;
   }
 
-  void init(String collectionName, String zkHost, SolrParams params) throws IOException {
-    this.zkHost = zkHost;
+  void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collectionName,
+      SolrParams params)
+      throws IOException {
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);
 
@@ -286,7 +275,8 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       mParams = adjustParams(mParams);
       mParams.set(DISTRIB, "false"); // We are the aggregator.
 
-      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext, mParams);
+      List<String> shardUrls =
+          getShards(this.solrConnection, this.collection, this.streamContext, mParams);
 
       String rows = mParams.get(ROWS);
       int r = Integer.parseInt(rows);

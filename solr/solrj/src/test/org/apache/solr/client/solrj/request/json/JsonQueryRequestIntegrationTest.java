@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.request.json;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -45,6 +46,7 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
   private static final int NUM_SCIFI_BOOKS = 2;
   private static final int NUM_IN_STOCK = 8;
   private static final int NUM_IN_STOCK_AND_FIRST_IN_SERIES = 5;
+  private static final int NUM_MARTIN_BOOKS = 3;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -86,6 +88,29 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_SCIFI_BOOKS, queryResponse.getResults().getNumFound());
+  }
+
+  /**
+   * Test multiple queries can use local params syntax with Combined Query Component.
+   *
+   * @throws Exception the exception
+   */
+  @Test
+  public void testMultipleQueriesCanUseLocalParamsSyntax() throws Exception {
+    final Map<String, Object> queriesMap = new HashMap<>();
+    queriesMap.put("query1", "{!lucene df=genre_s v='scifi'}");
+    queriesMap.put("query2", "{!edismax df=author_t v='martin'}");
+    final JsonQueryRequest query =
+        new JsonQueryRequest()
+            .setQueries(queriesMap)
+            .withFilter("inStock:true")
+            .withParam("fl", "name")
+            .withParam("combiner", "true")
+            .withParam("combiner.query", List.of("query1", "query2"));
+    query.setPath("/rrf");
+    QueryResponse queryResponse = query.process(cluster.getSolrClient(), COLLECTION_NAME);
+    assertEquals(0, queryResponse.getStatus());
+    assertEquals(NUM_SCIFI_BOOKS + NUM_MARTIN_BOOKS, queryResponse.getResults().size());
   }
 
   @Test

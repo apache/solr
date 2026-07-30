@@ -69,9 +69,8 @@ import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
@@ -124,7 +123,6 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.jersey.InjectionFactories;
@@ -291,7 +289,7 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
-  public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
+  public final NodeRoles nodeRoles = new NodeRoles(EnvUtils.getProperty(NodeRoles.NODE_ROLES_PROP));
 
   private final ExecutorService indexSearcherExecutor;
 
@@ -557,14 +555,17 @@ public class CoreContainer {
 
     if (pluginClassName != null) {
       log.debug("Authentication plugin class obtained from security.json: {}", pluginClassName);
-    } else if (System.getProperty(AUTHENTICATION_PLUGIN_PROP) != null) {
-      pluginClassName = System.getProperty(AUTHENTICATION_PLUGIN_PROP);
-      log.debug(
-          "Authentication plugin class obtained from system property '{}': {}",
-          AUTHENTICATION_PLUGIN_PROP,
-          pluginClassName);
     } else {
-      log.debug("No authentication plugin used.");
+      String authPluginProp = EnvUtils.getProperty(AUTHENTICATION_PLUGIN_PROP);
+      if (authPluginProp != null) {
+        pluginClassName = authPluginProp;
+        log.debug(
+            "Authentication plugin class obtained from system property '{}': {}",
+            AUTHENTICATION_PLUGIN_PROP,
+            pluginClassName);
+      } else {
+        log.debug("No authentication plugin used.");
+      }
     }
     SecurityPluginHolder<AuthenticationPlugin> old = authenticationPlugin;
     SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin = null;
@@ -708,7 +709,7 @@ public class CoreContainer {
    *
    * @see #getDefaultHttpSolrClient()
    * @see ZkController#getSolrClient()
-   * @see HttpSolrClientBase#requestWithBaseUrl(String, SolrRequest, String)
+   * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    * @deprecated likely to simply be moved to the ObjectCache so as to not be used
    */
   @Deprecated
@@ -721,7 +722,7 @@ public class CoreContainer {
     return objectCache;
   }
 
-  private void registerV2ApiIfEnabled(Object apiObject) {
+  private void registerV2Api(Object apiObject) {
     if (apiObject == null || containerHandlers.getApiBag() == null) {
       return;
     }
@@ -729,7 +730,7 @@ public class CoreContainer {
     containerHandlers.getApiBag().registerObject(apiObject);
   }
 
-  private void registerV2ApiIfEnabled(Class<? extends JerseyResource> clazz) {
+  private void registerV2Api(Class<? extends JerseyResource> clazz) {
     if (containerHandlers.getJerseyEndpoints() == null) {
       return;
     }
@@ -815,7 +816,7 @@ public class CoreContainer {
           caffeineCache.initializeMetrics(
               solrMetricsContext,
               Attributes.builder().put(NAME_ATTR, cacheName).build(),
-              "solr_node_cache");
+              "solr.node.cache");
         }
         m.put(cacheName, c);
       }
@@ -845,12 +846,12 @@ public class CoreContainer {
           Attributes.builder().put(HANDLER_ATTR, "/authentication/pki").build());
 
       fileStore = new DistribFileStore(this);
-      registerV2ApiIfEnabled(ClusterFileStore.class);
+      registerV2Api(ClusterFileStore.class);
 
       packageLoader = new SolrPackageLoader(this);
-      registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
-      registerV2ApiIfEnabled(packageLoader.getPackageAPI().readAPI);
-      registerV2ApiIfEnabled(ZookeeperRead.class);
+      registerV2Api(packageLoader.getPackageAPI().editAPI);
+      registerV2Api(packageLoader.getPackageAPI().readAPI);
+      registerV2Api(ZookeeperRead.class);
     }
 
     MDCLoggingContext.setNode(this);
@@ -872,11 +873,11 @@ public class CoreContainer {
         createHandler(
             CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
-    registerV2ApiIfEnabled(clusterAPI);
-    registerV2ApiIfEnabled(clusterAPI.commands);
+    registerV2Api(clusterAPI);
+    registerV2Api(clusterAPI.commands);
 
     if (isZooKeeperAware()) {
-      registerV2ApiIfEnabled(new SchemaDesignerAPI(this));
+      registerV2Api(new SchemaDesignerAPI(this));
     } // else Schema Designer not available in standalone (non-cloud) mode
 
     /*
@@ -958,7 +959,7 @@ public class CoreContainer {
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
                 new SolrNamedThreadFactory("coreLoadExecutor")),
-            "solr_node_executor",
+            "solr.node.executor",
             "coreLoadExecutor",
             SolrInfoBean.Category.CONTAINER);
 
@@ -1027,8 +1028,8 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       containerPluginsRegistry.refresh();
       getZkController().zkStateReader.registerClusterPropertiesListener(containerPluginsRegistry);
-      registerV2ApiIfEnabled(pluginsSource.getReadApi());
-      registerV2ApiIfEnabled(pluginsSource.getEditApi());
+      registerV2Api(pluginsSource.getReadApi());
+      registerV2Api(pluginsSource.getEditApi());
 
       // initialize the placement plugin factory wrapper
       // with the plugin configuration from the registry
@@ -1051,51 +1052,49 @@ public class CoreContainer {
               });
     }
 
-    if (V2ApiUtils.isEnabled()) {
-      final CoreContainer thisCCRef = this;
-      // Init the Jersey app once all CC endpoints have been registered
-      containerHandlers
-          .getJerseyEndpoints()
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
-                      .to(CoreContainer.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
-                      .to(SolrNodeKeyPair.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
-                      .to(DistribFileStore.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(
-                          new InjectionFactories.SingletonFactory<>(
-                              coreAdminHandler.getCoreAdminAsyncTracker()))
-                      .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
-                      .in(Singleton.class);
-                }
-              });
-      jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
-    }
+    final CoreContainer thisCCRef = this;
+    // Init the Jersey app once all CC endpoints have been registered
+    containerHandlers
+        .getJerseyEndpoints()
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
+                    .to(CoreContainer.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
+                    .to(SolrNodeKeyPair.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
+                    .to(DistribFileStore.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(
+                        new InjectionFactories.SingletonFactory<>(
+                            coreAdminHandler.getCoreAdminAsyncTracker()))
+                    .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
+                    .in(Singleton.class);
+              }
+            });
+    jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
 
     // Do Node setup logic after all handlers have been registered.
     if (isZooKeeperAware()) {
@@ -1144,7 +1143,7 @@ public class CoreContainer {
     }
 
     if (authenticationPlugin != null
-        && StrUtils.isNullOrEmpty(System.getProperty("solr.jetty.https.port"))) {
+        && StrUtils.isNullOrEmpty(EnvUtils.getProperty("solr.jetty.https.port"))) {
       log.warn(
           "Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and data with encryption.");
     }
@@ -1771,7 +1770,7 @@ public class CoreContainer {
 
     CoreInitFailedAction action =
         CoreInitFailedAction.valueOf(
-            System.getProperty(CoreInitFailedAction.class.getSimpleName(), "none"));
+            EnvUtils.getProperty(CoreInitFailedAction.class.getSimpleName(), "none"));
     log.debug("CorruptIndexException while creating core, will attempt to repair via {}", action);
 
     switch (action) {
@@ -2465,10 +2464,10 @@ public class CoreContainer {
    *
    * <p>The caller does not need to close the client.
    *
-   * @return the existing {@link HttpJettySolrClient}
-   * @see HttpSolrClientBase#requestWithBaseUrl(String, SolrRequest, String)
+   * @return the existing {@link HttpSolrClient}
+   * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    */
-  public HttpJettySolrClient getDefaultHttpSolrClient() {
+  public HttpSolrClient getDefaultHttpSolrClient() {
     return solrClientProvider.getSolrClient();
   }
 
@@ -2503,7 +2502,7 @@ public class CoreContainer {
   }
 
   public static void setWeakStringInterner() {
-    boolean enable = "true".equals(System.getProperty("solr.use.str.intern", "true"));
+    boolean enable = "true".equals(EnvUtils.getProperty("solr.use.str.intern", "true"));
     if (!enable) return;
     Interner<String> interner = Interner.newWeakInterner();
     ClusterState.setStrInternerParser(

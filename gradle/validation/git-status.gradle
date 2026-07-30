@@ -49,11 +49,9 @@ configure(rootProject) {
         def ref = repository.findRef("HEAD").getObjectId()
         project.ext.gitRev = ref.name()
         project.ext.gitRevShort = ref.abbreviate(8).name()
-        project.ext.gitStatus = new Git(repository).status().call()
       } catch (RepositoryNotFoundException | NoWorkTreeException e) {
         project.ext.gitRev = "(not a git checkout)"
         project.ext.gitRevShort = "(not a git checkout)"
-        project.ext.gitStatus = null
       } catch (NotSupportedException e) {
         throw new GradleException("jgit does not support git repository version at this location: ${dir}",
             e)
@@ -62,10 +60,19 @@ configure(rootProject) {
   }
 
   // Verify git working copy does not have any unstaged modified files.
+  // Status is captured here (not in gitStatus) so it reflects changes from tests that finalize with this task.
   task checkWorkingCopyClean() {
-    dependsOn gitStatus
     doFirst {
-      def status = rootProject.ext.gitStatus
+      def status
+      try {
+        def repository = new FileRepositoryBuilder()
+            .setWorkTree(rootProject.projectDir)
+            .setMustExist(true)
+            .build()
+        status = new Git(repository).status().call()
+      } catch (RepositoryNotFoundException | NoWorkTreeException e) {
+        status = null
+      }
       if (status == null) {
         if (file("${rootProject.projectDir}/.git").exists()) {
           // Ignore git worktree branches until jgit supports them.
@@ -118,6 +125,18 @@ configure(rootProject) {
             logger.warn("NOTE: ${msg}")
           }
         }
+      }
+    }
+  }
+
+  // Catch tests that write into the working tree.
+  // On CI: finalize every Test task with the clean check (runs even on test failure).
+  // Locally: only enforce ordering when both are already scheduled (e.g. via `check`).
+  allprojects {
+    tasks.withType(Test).configureEach { testTask ->
+      rootProject.checkWorkingCopyClean.mustRunAfter(testTask)
+      if (isCIBuild) {
+        testTask.finalizedBy(rootProject.checkWorkingCopyClean)
       }
     }
   }

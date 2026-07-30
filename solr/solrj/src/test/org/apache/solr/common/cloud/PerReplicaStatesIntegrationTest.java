@@ -21,7 +21,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.client.solrj.SolrClient;
@@ -245,8 +245,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
               DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
       log.info("prs1 : {}", prs1);
 
-      CollectionAdminRequest.modifyCollection(
-              COLL, Collections.singletonMap(PER_REPLICA_STATE, "false"))
+      CollectionAdminRequest.modifyCollection(COLL, Map.of(PER_REPLICA_STATE, "false"))
           .process(cluster.getSolrClient());
       waitForState(
           "Waiting for PRS property",
@@ -255,8 +254,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
           TimeUnit.SECONDS,
           collectionState ->
               "false".equals(collectionState.getProperties().get(PER_REPLICA_STATE)));
-      CollectionAdminRequest.modifyCollection(
-              COLL, Collections.singletonMap(PER_REPLICA_STATE, "true"))
+      CollectionAdminRequest.modifyCollection(COLL, Map.of(PER_REPLICA_STATE, "true"))
           .process(cluster.getSolrClient());
       waitForState(
           "Waiting for PRS property",

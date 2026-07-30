@@ -147,10 +147,8 @@ public class AuthenticationFilter extends CoreContainerAwareHttpFilter {
   }
 
   private boolean isInternodePKI(HttpServletRequest req, CoreContainer cores) {
-    String header = req.getHeader(PKIAuthenticationPlugin.HEADER);
     String headerV2 = req.getHeader(PKIAuthenticationPlugin.HEADER_V2);
-    return (header != null || headerV2 != null)
-        && cores.getPkiAuthenticationSecurityBuilder() != null;
+    return headerV2 != null && cores.getPkiAuthenticationSecurityBuilder() != null;
   }
 
   private void logAuthAttempt(HttpServletRequest req) {

@@ -19,7 +19,6 @@ package org.apache.solr.common.cloud;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -94,6 +93,6 @@ public abstract class HashBasedRouter extends DocRouter {
 
     // use the shardKey as an id for plain hashing
     Slice slice = getTargetSlice(shardKey, null, null, params, collection);
-    return slice == null ? List.of() : Collections.singletonList(slice);
+    return slice == null ? List.of() : List.of(slice);
   }
 }

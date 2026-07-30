@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -263,7 +262,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
           @Override
           public Iterable<ContentStream> getContentStreams() {
-            return Collections.singletonList(
+            return List.of(
                 new ContentStreamBase() {
                   @Override
                   public InputStream getStream() {

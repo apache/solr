@@ -124,6 +124,17 @@ The `Overseer Registry` is initialized when running in SolrCloud mode and includ
 
 * Size of the Overseer queues (collection work queue and cluster state update queue)
 
+=== HTTP Client Registry
+
+Solr exposes metrics for the internal Jetty-based HTTP client used for distributed (shard) requests:
+
+[cols="2,1,3",options="header"]
+|===
+| Prometheus Metric Name | Type | Description
+| `solr_client_request_async_permits{state="max"}` | gauge | Configured maximum number of outstanding concurrent async HTTP requests (controlled by `solr.solrj.http.jetty.async_requests.max`, default 1000).
+| `solr_client_request_async_permits{state="available"}` | gauge | Number of async request permits currently available (i.e., not in use). When this approaches zero, new distributed requests will block waiting for a permit.
+|===
+
 == Core Level Metrics
 
 === Index Merge Metrics
@@ -301,7 +312,7 @@ http://localhost:8983/api/metrics?name=solr_core_index_size_bytes&collection=foo
 
 == OTLP
 
-For users who do not use or support pulling metrics in Prometheus format with the `/metrics` API, Solr also supports pushing metrics natively with https://opentelemetry.io/docs/specs/otlp/[OTLP], which is a vendor-agnostic protocol for pushing metrics via gRPC or HTTP.
+For users who do not use or support pulling metrics in Prometheus format with the `/metrics` API, Solr also supports pushing metrics natively with https://opentelemetry.io/docs/specs/otlp/[OTLP], which is a vendor-agnostic protocol for pushing metrics.
 
 OTLP is widely supported by many tools, vendors, and pipelines. See the OpenTelemetry https://opentelemetry.io/ecosystem/vendors/[vendors list] for more details on available and compatible options.
 
@@ -330,10 +341,12 @@ Boolean value to enable or disable the OTLP metrics exporter.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: grpc
+|Optional |Default: http
 |===
 +
 OTLP protocol to use for pushing metrics. Available options are `grpc`, `http`, or `none` (disabled).
+
+NOTE: gRPC is not supported out of the box. To use it, add the required gRPC and Netty JARs to the `opentelemetry` module's lib directory.
 
 `solr.metrics.otlpExporterInterval`::
 +

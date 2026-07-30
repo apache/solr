@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -227,8 +226,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     assertNotNull(loader.getClassLoader().getResource("aLibFile"));
 
     // add individual jars from other paths
-    loader.addToClassLoader(
-        Collections.singletonList(otherLib.resolve("jar2.jar").toUri().toURL()));
+    loader.addToClassLoader(List.of(otherLib.resolve("jar2.jar").toUri().toURL()));
 
     assertNotNull(loader.getClassLoader().getResource("explicitFile"));
     assertNull(loader.getClassLoader().getResource("otherFile"));

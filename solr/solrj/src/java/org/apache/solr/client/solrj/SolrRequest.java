@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.StreamingResponseCallback;
@@ -172,11 +172,20 @@ public abstract class SolrRequest<T> implements Serializable {
     this.method = method;
   }
 
+  /**
+   * The URI path to a "request handler", such as "/select". Must start with a "/". For
+   * collection/core requests, this is appended to the core/collection path; otherwise it's a node
+   * level request and thus is relative to the solr root.
+   */
   public String getPath() {
     return path;
   }
 
   public void setPath(String path) {
+    if (path == null || !path.startsWith("/")) {
+      throw new IllegalArgumentException("Must start with a '/': " + path);
+    }
+
     this.path = path;
   }
 
@@ -321,7 +330,7 @@ public abstract class SolrRequest<T> implements Serializable {
    * @throws IOException if there is a communication error
    * @lucene.experimental
    */
-  public final T processWithBaseUrl(HttpSolrClientBase client, String baseUrl, String collection)
+  public final T processWithBaseUrl(HttpSolrClient client, String baseUrl, String collection)
       throws SolrServerException, IOException {
     // duplicative with process(), except for requestWithBaseUrl
     long startNanos = System.nanoTime();

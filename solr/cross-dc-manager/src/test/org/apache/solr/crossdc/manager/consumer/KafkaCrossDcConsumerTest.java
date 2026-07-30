@@ -35,7 +35,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -161,7 +160,7 @@ public class KafkaCrossDcConsumerTest {
     List<ConsumerRecord<String, MirroredSolrRequest<?>>> recordsList = new ArrayList<>();
     recordsList.add(
         new ConsumerRecord<>("sample-topic", 0, 0, "key", createSampleMirroredSolrRequest()));
-    return new ConsumerRecords<>(Collections.singletonMap(topicPartition, recordsList));
+    return new ConsumerRecords<>(Map.of(topicPartition, recordsList));
   }
 
   private MirroredSolrRequest<?> createSampleMirroredSolrRequest() {
@@ -309,8 +308,7 @@ public class KafkaCrossDcConsumerTest {
     ConsumerRecord<String, MirroredSolrRequest<?>> record =
         new ConsumerRecord<>("test-topic", 0, 0, "key", new MirroredSolrRequest<>(validRequest));
     ConsumerRecords<String, MirroredSolrRequest<?>> records =
-        new ConsumerRecords<>(
-            Collections.singletonMap(new TopicPartition("test-topic", 0), List.of(record)));
+        new ConsumerRecords<>(Map.of(new TopicPartition("test-topic", 0), List.of(record)));
 
     when(mockConsumer.poll(any())).thenReturn(records).thenThrow(new WakeupException());
 
@@ -358,8 +356,7 @@ public class KafkaCrossDcConsumerTest {
             new MirroredSolrRequest<>(MirroredSolrRequest.Type.UPDATE, new UpdateRequest()));
     ConsumerRecords<String, MirroredSolrRequest<?>> records =
         new ConsumerRecords<>(
-            Collections.singletonMap(
-                new TopicPartition("test-topic", 0), List.of(record1, record2)));
+            Map.of(new TopicPartition("test-topic", 0), List.of(record1, record2)));
 
     when(mockConsumer.poll(any())).thenReturn(records).thenThrow(new WakeupException());
 
@@ -436,8 +433,7 @@ public class KafkaCrossDcConsumerTest {
       records.add(record);
     }
     ConsumerRecords<String, MirroredSolrRequest<?>> consumerRecords =
-        new ConsumerRecords<>(
-            Collections.singletonMap(new TopicPartition("test-topic", 0), records));
+        new ConsumerRecords<>(Map.of(new TopicPartition("test-topic", 0), records));
 
     when(mockConsumer.poll(any())).thenReturn(consumerRecords).thenThrow(new WakeupException());
 
@@ -483,8 +479,7 @@ public class KafkaCrossDcConsumerTest {
     ConsumerRecord<String, MirroredSolrRequest<?>> record =
         new ConsumerRecord<>("test-topic", 0, 0, "key", new MirroredSolrRequest<>(invalidRequest));
     ConsumerRecords<String, MirroredSolrRequest<?>> records =
-        new ConsumerRecords<>(
-            Collections.singletonMap(new TopicPartition("test-topic", 0), List.of(record)));
+        new ConsumerRecords<>(Map.of(new TopicPartition("test-topic", 0), List.of(record)));
 
     when(mockConsumer.poll(any())).thenReturn(records).thenThrow(new WakeupException());
 

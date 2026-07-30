@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.api.model.CoreStatusResponse;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -60,22 +58,20 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     request.setPath("/admin/cores");
     int which = r.nextInt(clients.size());
 
-    // create a client that does not have the /collection1 as part of the URL.
-    try (SolrClient rootClient =
-        new HttpSolrClient.Builder(buildUrl(jettys.get(which).getLocalPort())).build()) {
-      NamedList<?> namedListResponse = rootClient.request(request);
-      final var statusByCore =
-          JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-              namedListResponse.get("status"),
-              new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
-      final String coreName = statusByCore.keySet().stream().findFirst().get();
-      final var collectionStatus = statusByCore.get(coreName);
-      // Make sure the upgrade to managed schema happened
-      assertEquals(
-          "Schema resource name differs from expected name",
-          "managed-schema.xml",
-          collectionStatus.schema);
-    }
+    // use a client that does not have the /collection1 as part of the URL.
+    var rootClient = jettys.get(which).getSolrClient();
+    NamedList<?> namedListResponse = rootClient.request(request);
+    final var statusByCore =
+        JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+            namedListResponse.get("status"),
+            new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
+    final String coreName = statusByCore.keySet().stream().findFirst().get();
+    final var collectionStatus = statusByCore.get(coreName);
+    // Make sure the upgrade to managed schema happened
+    assertEquals(
+        "Schema resource name differs from expected name",
+        "managed-schema.xml",
+        collectionStatus.schema);
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()

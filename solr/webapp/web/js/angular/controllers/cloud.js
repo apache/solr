@@ -367,12 +367,14 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
           nodes[node]['memFree'] = bytesToSize(memFree);
           nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
 
+          var heapMax = s.jvm.memory.raw.max;
           var heapTotal = s.jvm.memory.raw.total;
           var heapFree = s.jvm.memory.raw.free;
-          var heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100);
+          var heapPercentage = Math.floor((heapTotal - heapFree) / heapMax * 100);
           nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
           nodes[node]['heapUsedPct'] = heapPercentage;
           nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
+          nodes[node]['heapMax'] = bytesToSize(heapMax);
           nodes[node]['heapTotal'] = bytesToSize(heapTotal);
           nodes[node]['heapFree'] = bytesToSize(heapFree);
 

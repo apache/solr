@@ -1448,7 +1448,7 @@ For faster aggregation over low to moderate cardinality fields, the `facet` func
 * `StreamExpression` (Mandatory)
 * `over`: (Mandatory) A list of fields to group by.
 * `metrics`: (Mandatory) The list of metrics to compute.
-Currently supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`.
+Currently supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`, `missing(col)`, `countDist(col)`, `per(col, percentile)`.
 
 === rollup Syntax
 
@@ -1465,7 +1465,11 @@ rollup(
    max(a_f),
    avg(a_i),
    avg(a_f),
-   count(*)
+   count(*),
+   missing(a_i),
+   countDist(a_i),
+   per(a_i, 50),
+   per(a_f, 75)
 )
 ----
 

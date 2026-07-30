@@ -124,7 +124,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         String slice = "s" + shardCounts.hashCode();
         List<Replica> replicas = new ArrayList<>();
         for (int myRepNum = 0; myRepNum < shardCounts.myReplicas; myRepNum++) {
-          addNewReplica(replicas, collection, slice, Collections.singletonList(thisNode));
+          addNewReplica(replicas, collection, slice, List.of(thisNode));
           // save this mapping for later
           myCountsToDescs.put(
               shardCounts,
@@ -145,8 +145,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
           DocCollection.create(
               collection,
               sliceMap,
-              Collections.singletonMap(
-                  ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
               DocRouter.DEFAULT,
               Integer.MAX_VALUE,
               Instant.EPOCH,

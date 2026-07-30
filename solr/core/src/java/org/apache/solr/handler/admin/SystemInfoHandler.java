@@ -24,6 +24,7 @@ import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.GetNodeSystemInfo;
+import org.apache.solr.handler.admin.proxy.GenericV1RequestProxy;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -49,8 +50,9 @@ public class SystemInfoHandler extends RequestHandlerBase {
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
 
-    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
-      return; // Request was proxied to other node
+    final var reqProxy = new GenericV1RequestProxy(getCoreContainer(req), req, rsp);
+    if (reqProxy.proxyRequest()) {
+      return;
     }
 
     SystemInfoProvider provider = new SystemInfoProvider(req);

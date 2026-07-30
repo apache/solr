@@ -26,7 +26,6 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrDocument;
@@ -72,8 +71,8 @@ public class InputStreamResponseParserTest extends SolrTestCaseJ4 {
   public void testQueryParse() throws Exception {
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+        solrTestRule
+            .newSolrClientBuilder()
             .withResponseParser(new InputStreamResponseParser("xml"))
             .build()) {
       SolrQuery query = new SolrQuery("id:1234");
