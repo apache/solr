@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.util.Objects;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.zookeeper.data.Stat;
@@ -47,13 +48,13 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
     waitForState(
         "Collection not created",
         collectionName,
-        (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 2, 2));
     assertTrue(
         "Collection path does not exist",
-        zkClient().exists(DocCollection.getCollectionPath(collectionName), true));
+        zkClient().exists(DocCollection.getCollectionPath(collectionName)));
 
     Stat stat = new Stat();
-    zkClient().getData(DocCollection.getCollectionPath(collectionName), null, stat, true);
+    zkClient().getData(DocCollection.getCollectionPath(collectionName), null, stat);
 
     DocCollection c = getCollectionState(collectionName);
 
@@ -64,10 +65,10 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
 
     // remove collection
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-    waitForState("Collection not deleted", collectionName, (n, coll) -> coll == null);
+    waitForState("Collection not deleted", collectionName, Objects::isNull);
 
     assertFalse(
         "collection state should not exist",
-        zkClient().exists(DocCollection.getCollectionPath(collectionName), true));
+        zkClient().exists(DocCollection.getCollectionPath(collectionName)));
   }
 }

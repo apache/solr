@@ -31,13 +31,4 @@ public class ScoreOrderFragmentsBuilder extends SolrFragmentsBuilder {
     sofb.setMultiValuedSeparator(getMultiValuedSeparatorChar(params));
     return sofb;
   }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "ScoreOrderFragmentsBuilder";
-  }
 }

@@ -16,11 +16,11 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-docValues-unsupported" version="1.6">
-  <fieldType name="binary" class="solr.BinaryField"/>
+<schema name="bad-schema-docValues-unsupported" version="1.7">
+  <fieldType name="random" class="solr.RandomSortField" />
 
 
-  <!-- change the type if BinaryField gets doc values -->
-  <field name="id" type="binary" docValues="true"/>
+  <!-- change the type if RandomSortField gets doc values -->
+  <field name="id" type="random" docValues="true"/>
 
 </schema>

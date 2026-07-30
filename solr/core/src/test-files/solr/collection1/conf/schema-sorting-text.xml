@@ -15,38 +15,38 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="minimal" version="1.6">
+<schema name="minimal" version="1.7">
   <uniqueKey>id</uniqueKey>
   
-  <field name="id" type="str" indexed="true" docValues="true" stored="true" />
-  <field name="id_i" type="int" indexed="true" docValues="true" stored="true" />
+  <field name="id" type="str" indexed="true" stored="true" />
+  <field name="id_i" type="int" indexed="true" stored="true" />
 
-  <!-- NOTE: docValues="true" should be implicit for SortableTextField -->
+  <!-- NOTE: should be implicit for SortableTextField -->
 
   <field name="whitespace_stxt" type="whitespace_stxt" indexed="true" stored="true" />
   <field name="whitespace_m_stxt" type="whitespace_stxt" indexed="true" stored="true" multiValued="true" />
   <!-- explicit docValues="false" in this version... -->
   <field name="whitespace_nodv_stxt" type="whitespace_stxt" indexed="true" docValues="false" stored="true" />
   <!-- only docValues in this version, no index or stored... -->
-  <field name="whitespace_nois_stxt" type="whitespace_stxt" indexed="false" docValues="true" stored="false" />
+  <field name="whitespace_nois_stxt" type="whitespace_stxt" indexed="false" stored="false" />
 
   <field name="whitespace_max3_stxt" type="whitespace_max3_stxt" />
   <field name="whitespace_max6_stxt" type="whitespace_max6_stxt" />
   <field name="whitespace_max0_stxt" type="whitespace_max0_stxt" />
   <field name="whitespace_maxNeg_stxt" type="whitespace_maxNeg_stxt" />
   
-  <field name="whitespace_f_stxt" type="whitespace_f_stxt" indexed="true" docValues="true" stored="true" />
-  <field name="whitespace_l_stxt" type="whitespace_l_stxt" indexed="true" docValues="true" stored="true" />
+  <field name="whitespace_f_stxt" type="whitespace_f_stxt" indexed="true" stored="true" />
+  <field name="whitespace_l_stxt" type="whitespace_l_stxt" indexed="true" stored="true" />
 
   <field name="keyword_stxt" type="keyword_stxt" indexed="true" stored="true" />
-  <!-- explicit docValues="true" in this field version... -->
-  <field name="keyword_dv_stxt" type="keyword_stxt" indexed="true" docValues="true" stored="true" />
+  <!-- explicit in this field version... -->
+  <field name="keyword_dv_stxt" type="keyword_stxt" indexed="true" stored="true" />
 
   <!-- for behavioral equivilency testing -->
   <field name="whitespace_plain_txt" type="whitespace_plain_txt" />
   <field name="whitespace_plain_str" type="str" />
-  <field name="keyword_s_dv" type="str" indexed="false" docValues="true" stored="true" />
-  <field name="keyword_s" type="str" indexed="true" docValues="false" stored="true" />
+  <field name="keyword_s_dv" type="str" indexed="false" stored="true" />
+  <field name="keyword_s" type="str" indexed="true" docValues="false" stored="true" uninvertible="true" />
 
   <!-- . -->
   

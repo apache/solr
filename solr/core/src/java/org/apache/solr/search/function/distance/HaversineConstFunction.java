@@ -99,8 +99,7 @@ public class HaversineConstFunction extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof HaversineConstFunction)) return false;
-    HaversineConstFunction other = (HaversineConstFunction) o;
+    if (!(o instanceof HaversineConstFunction other)) return false;
     return this.latCenter == other.latCenter
         && this.lonCenter == other.lonCenter
         && this.p2.equals(other.p2);

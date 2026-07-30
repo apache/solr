@@ -16,6 +16,7 @@
  */
 package org.apache.solr.scripting.update;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.regex.Pattern;
 import javax.script.ScriptEngineManager;
@@ -32,7 +33,7 @@ public class TestBadScriptingUpdateProcessorConfig extends SolrTestCaseJ4 {
     assertConfigs(
         "bad-solrconfig-bogus-scriptengine-name.xml",
         "schema.xml",
-        getFile("scripting/solr/collection1").getParent(),
+        getFile("scripting/solr/collection1").getParent().toString(),
         "giberish");
   }
 
@@ -42,7 +43,7 @@ public class TestBadScriptingUpdateProcessorConfig extends SolrTestCaseJ4 {
     assertConfigs(
         "bad-solrconfig-missing-scriptfile.xml",
         "schema.xml",
-        getFile("scripting/solr/collection1").getParent(),
+        getFile("scripting/solr/collection1").getParent().toString(),
         "a-file-name-that-does-not-exist.js");
   }
 
@@ -52,7 +53,7 @@ public class TestBadScriptingUpdateProcessorConfig extends SolrTestCaseJ4 {
     assertConfigs(
         "bad-solrconfig-invalid-scriptfile.xml",
         "schema.xml",
-        getFile("scripting/solr/collection1").getParent(),
+        getFile("scripting/solr/collection1").getParent().toString(),
         "invalid.script.xml");
   }
 
@@ -74,7 +75,7 @@ public class TestBadScriptingUpdateProcessorConfig extends SolrTestCaseJ4 {
       if (null == solrHome) {
         initCore(solrconfigFile, schemaFile);
       } else {
-        initCore(solrconfigFile, schemaFile, solrHome);
+        initCore(solrconfigFile, schemaFile, Path.of(solrHome));
       }
 
       CoreContainer cc = h.getCoreContainer();

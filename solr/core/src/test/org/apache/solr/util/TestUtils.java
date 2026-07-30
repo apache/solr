@@ -27,11 +27,11 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.CommandOperation;
@@ -138,8 +138,7 @@ public class TestUtils extends SolrTestCaseJ4 {
     ContentStream stream =
         new ContentStreamBase.ByteArrayStream(baos.toByteArray(), null, "application/javabin");
     List<CommandOperation> commands =
-        CommandOperation.readCommands(
-            Collections.singletonList(stream), new NamedList<>(), Collections.singleton("single"));
+        CommandOperation.readCommands(List.of(stream), new NamedList<>(), Set.of("single"));
 
     assertEquals(5, commands.size());
   }

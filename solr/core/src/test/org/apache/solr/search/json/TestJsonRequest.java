@@ -49,8 +49,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
-    System.setProperty("solr.enableStreamBody", "true");
+    systemSetPropertyEnableUrlAllowList(false);
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }
@@ -69,7 +68,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @Test
@@ -319,63 +318,34 @@ public class TestJsonRequest extends SolrTestCaseHS {
     //
     // with body
     //
-    client.testJQ(
-        params(
-            CommonParams.STREAM_BODY,
-            "{query:'cat_s:A'}",
-            "stream.contentType",
-            "application/json"),
-        "response/numFound==2");
+    client.testJQ(params(CommonParams.JSON, "{query:'cat_s:A'}"), "response/numFound==2");
 
-    // test body in conjunction with query params
+    // test json in conjunction with query params
     client.testJQ(
-        params(
-            CommonParams.STREAM_BODY,
-            "{query:'cat_s:A'}",
-            "stream.contentType",
-            "application/json",
-            "json.filter",
-            "'where_s:NY'"),
+        params(CommonParams.JSON, "{query:'cat_s:A'}", "json.filter", "'where_s:NY'"),
         "response/numFound==1");
 
-    // test that json body in params come "after" (will overwrite)
+    // test that json listed twice in params come "after" (will overwrite)
     client.testJQ(
         params(
-            CommonParams.STREAM_BODY,
-            "{query:'*:*', filter:'where_s:NY'}",
-            "stream.contentType",
-            "application/json",
-            "json",
-            "{query:'cat_s:A'}"),
+            CommonParams.JSON, "{query:'*:*', filter:'where_s:NY'}", "json", "{query:'cat_s:A'}"),
         "response/numFound==1");
 
-    // test that json.x params come after body
+    // test that json.x params come after json param
     client.testJQ(
-        params(
-            CommonParams.STREAM_BODY,
-            "{query:'*:*', filter:'where_s:NY'}",
-            "stream.contentType",
-            "application/json",
-            "json.query",
-            "'cat_s:A'"),
+        params(CommonParams.JSON, "{query:'*:*', filter:'where_s:NY'}", "json.query", "'cat_s:A'"),
         "response/numFound==1");
 
     // test facet with json body
     client.testJQ(
-        params(
-            CommonParams.STREAM_BODY,
-            "{query:'*:*', facet:{x:'unique(where_s)'}}",
-            "stream.contentType",
-            "application/json"),
+        params(CommonParams.JSON, "{query:'*:*', facet:{x:'unique(where_s)'}}"),
         "facets=={count:6,x:2}");
 
     // test facet with json body, insert additional facets via query parameter
     client.testJQ(
         params(
-            CommonParams.STREAM_BODY,
+            CommonParams.JSON,
             "{query:'*:*', facet:{x:'unique(where_s)'}}",
-            "stream.contentType",
-            "application/json",
             "json.facet.y",
             "{terms:{field:where_s}}",
             "json.facet.z",
@@ -864,7 +834,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
   }
 
   private static void addDocs(Client client) throws Exception {
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY"), null);
     client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ"), null);
     client.add(sdoc("id", "3"), null);

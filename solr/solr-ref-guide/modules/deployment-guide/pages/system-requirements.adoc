@@ -27,7 +27,7 @@ Solr is tested on several versions of Linux, macOS and Windows.
 //TODO: this with the next big section on Java fragments the Java requirements too much. Consider merging sections.
 === Java Requirements
 
-You will need the Java Runtime Environment (JRE) version 11 or higher.
+You will need the Java Runtime Environment (JRE) version 21 or higher.
 At a command line, check your Java version like this:
 
 [source,bash]
@@ -59,8 +59,7 @@ NOTE: While we reference the Java Development Kit (JDK) on this page, any Java R
 
 == Java and Solr Combinations
 
-The minimum Java version for Solr 9.x is Java 11. This applies both to the Solr server and the SolrJ client libraries.
-The recommended Java version is JRE 17.
+The minimum Java version for Solr 10.x is Java 21 for the Solr server, while the SolrJ client libraries continue to use JDK 17.
 
 This section provides guidance when running Solr with a more recent Java version than the minimum specified.
 

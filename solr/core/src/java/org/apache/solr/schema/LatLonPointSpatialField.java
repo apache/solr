@@ -34,6 +34,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafFieldComparator;
@@ -53,11 +54,10 @@ import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * A spatial implementation based on Lucene's {@code LatLonPoint} and {@code LatLonDocValuesField}.
+ * A spatial implementation based on Lucene's {@link LatLonPoint} and {@link LatLonDocValuesField}.
  * The first is based on Lucene's "Points" API, which is a BKD Index. This field type is strictly
  * limited to coordinates in lat/lon decimal degrees. The accuracy is about a centimeter (1.042cm).
  */
-// TODO once LLP & LLDVF are out of Lucene Sandbox, we should be able to javadoc reference them.
 public class LatLonPointSpatialField
     extends AbstractSpatialFieldType<LatLonPointSpatialField.LatLonPointSpatialStrategy>
     implements SchemaAware {
@@ -67,6 +67,11 @@ public class LatLonPointSpatialField
 
   @Override
   protected void checkSupportsDocValues() { // we support DocValues
+  }
+
+  @Override
+  protected boolean enableDocValuesByDefault() {
+    return true;
   }
 
   @Override
@@ -133,12 +138,11 @@ public class LatLonPointSpatialField
 
     @Override
     public Field[] createIndexableFields(Shape shape) {
-      if (!(shape instanceof Point)) {
+      if (!(shape instanceof Point point)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             getClass().getSimpleName() + " only supports indexing points; got: " + shape);
       }
-      Point point = (Point) shape;
 
       int fieldsLen = (indexed ? 1 : 0) + (docValues ? 1 : 0);
       Field[] fields = new Field[fieldsLen];
@@ -174,17 +178,14 @@ public class LatLonPointSpatialField
     // Uses LatLonPoint
     protected Query makeQueryFromIndex(Shape shape) {
       // note: latitude then longitude order for LLP's methods
-      if (shape instanceof Circle) {
-        Circle circle = (Circle) shape;
+      if (shape instanceof Circle circle) {
         double radiusMeters = circle.getRadius() * DistanceUtils.DEG_TO_KM * 1000;
         return LatLonPoint.newDistanceQuery(
             getFieldName(), circle.getCenter().getY(), circle.getCenter().getX(), radiusMeters);
-      } else if (shape instanceof Rectangle) {
-        Rectangle rect = (Rectangle) shape;
+      } else if (shape instanceof Rectangle rect) {
         return LatLonPoint.newBoxQuery(
             getFieldName(), rect.getMinY(), rect.getMaxY(), rect.getMinX(), rect.getMaxX());
-      } else if (shape instanceof Point) {
-        Point point = (Point) shape;
+      } else if (shape instanceof Point point) {
         return LatLonPoint.newDistanceQuery(getFieldName(), point.getY(), point.getX(), 0);
       } else {
         throw new UnsupportedOperationException(
@@ -199,17 +200,14 @@ public class LatLonPointSpatialField
     // Uses DocValuesField  (otherwise identical to above)
     protected Query makeQueryFromDocValues(Shape shape) {
       // note: latitude then longitude order for LLP's methods
-      if (shape instanceof Circle) {
-        Circle circle = (Circle) shape;
+      if (shape instanceof Circle circle) {
         double radiusMeters = circle.getRadius() * DistanceUtils.DEG_TO_KM * 1000;
         return LatLonDocValuesField.newSlowDistanceQuery(
             getFieldName(), circle.getCenter().getY(), circle.getCenter().getX(), radiusMeters);
-      } else if (shape instanceof Rectangle) {
-        Rectangle rect = (Rectangle) shape;
+      } else if (shape instanceof Rectangle rect) {
         return LatLonDocValuesField.newSlowBoxQuery(
             getFieldName(), rect.getMinY(), rect.getMaxY(), rect.getMinX(), rect.getMaxX());
-      } else if (shape instanceof Point) {
-        Point point = (Point) shape;
+      } else if (shape instanceof Point point) {
         return LatLonDocValuesField.newSlowDistanceQuery(
             getFieldName(), point.getY(), point.getX(), 0);
       } else {
@@ -253,8 +251,7 @@ public class LatLonPointSpatialField
       @Override
       public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof DistanceSortValueSource)) return false;
-        DistanceSortValueSource that = (DistanceSortValueSource) o;
+        if (!(o instanceof DistanceSortValueSource that)) return false;
         return Double.compare(that.multiplier, multiplier) == 0
             && Objects.equals(fieldName, that.fieldName)
             && Objects.equals(queryPoint, that.queryPoint);
@@ -314,11 +311,49 @@ public class LatLonPointSpatialField
 
       @Override
       public SortField getSortField(boolean reverse) {
+        SortField distanceSortAsc =
+            LatLonDocValuesField.newDistanceSort(fieldName, queryPoint.getY(), queryPoint.getX());
+        // If only we could call sortField.setReverse(), we would.  So instead we create a SortField
+        // using a reverse boolean constructor.  The FieldComparatorSource is always ascending.
         if (reverse) {
-          return super.getSortField(true); // will use an impl that calls getValues
+          return new SortField(
+              distanceSortAsc.getField(),
+              new DistanceFieldComparatorSource(distanceSortAsc, queryPoint),
+              true);
         }
-        return LatLonDocValuesField.newDistanceSort(
-            fieldName, queryPoint.getY(), queryPoint.getX());
+        return distanceSortAsc;
+      }
+
+      // to implement equals & hashCode on info that isn't in SortField -- just the queryPoint
+      private static class DistanceFieldComparatorSource extends FieldComparatorSource {
+        private final SortField distanceSortAsc;
+        private final Point queryPoint;
+
+        DistanceFieldComparatorSource(SortField distanceSortAsc, Point queryPoint) {
+          this.distanceSortAsc = distanceSortAsc;
+          this.queryPoint = queryPoint;
+        }
+
+        @Override
+        public FieldComparator<?> newComparator(
+            String fieldName,
+            int numHits,
+            Pruning pruning,
+            boolean reversed) { // 'reversed' is an FYI.  It's implemented by the caller chain.
+          return distanceSortAsc.getComparator(numHits, pruning);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+          if (!(o instanceof DistanceFieldComparatorSource)) return false;
+          var that = (DistanceFieldComparatorSource) o;
+          return Objects.equals(queryPoint, that.queryPoint);
+        }
+
+        @Override
+        public int hashCode() {
+          return Objects.hashCode(queryPoint);
+        }
       }
     }
   }

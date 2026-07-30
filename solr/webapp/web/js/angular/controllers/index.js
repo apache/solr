@@ -23,12 +23,6 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
       const releaseDate = parse_release_date($scope.system.lucene['solr-impl-version'])
       $scope.releaseDaysOld = (new Date() - releaseDate)/1000/60/60/24;
 
-      if ("username" in data.security) {
-        // Needed for Kerberos, since this is the only place from where
-        // Kerberos username can be obtained.
-        sessionStorage.setItem("auth.username", data.security.username);
-      }
-
       if (data.security.authenticationPlugin) {
         $scope.isSecurityEnabled = true
       }
@@ -65,6 +59,54 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
       $scope.javaMemoryTotalDisplay = pretty_print_bytes($scope.javaMemoryTotal);
       $scope.javaMemoryUsedDisplay = pretty_print_bytes($scope.javaMemoryUsed);  // @todo These should really be an AngularJS Filter: {{ javaMemoryUsed | bytes }}
       $scope.javaMemoryMax = pretty_print_bytes(javaMemoryMax);
+
+      // GPU
+      $scope.gpuAvailable = data.gpu && data.gpu.available;
+      if ($scope.gpuAvailable) {
+        $scope.gpuCount = data.gpu.count;
+
+        var devices = data.gpu.devices;
+        $scope.gpuDevices = [];
+        if (devices && Object.keys(devices).length > 0) {
+          var deviceKeys = Object.keys(devices);
+          var firstDevice = devices[deviceKeys[0]];
+          $scope.gpuName = firstDevice.name;
+          $scope.gpuId = firstDevice.id;
+          $scope.gpuCompute = firstDevice.computeCapability;
+
+          if (deviceKeys.length > 1) {
+            $scope.gpuName += " (+" + (deviceKeys.length - 1) + " more)";
+          }
+
+          for (var i = 0; i < deviceKeys.length; i++) {
+            var device = devices[deviceKeys[i]];
+            var gpuData = {
+              id: device.id,
+              name: device.name,
+              computeCapability: device.computeCapability,
+              totalMemory: device.totalMemory,
+              usedMemory: device.usedMemory,
+              freeMemory: device.freeMemory,
+              active: device.active
+            };
+
+            // Add "(active)" indicator to the name for active GPUs
+            if (gpuData.active) {
+              gpuData.name += " (active)";
+            }
+
+            // Only calculate memory display for active GPUs
+            if (gpuData.active && gpuData.totalMemory && gpuData.usedMemory) {
+              var total = parse_memory_value(gpuData.totalMemory);
+              var used = parse_memory_value(gpuData.usedMemory);
+              gpuData.memoryPercentage = (used / total * 100).toFixed(1) + "%";
+              gpuData.totalMemoryDisplay = pretty_print_bytes(total);
+              gpuData.usedMemoryDisplay = pretty_print_bytes(used);
+            }
+            $scope.gpuDevices.push(gpuData);
+          }
+        }
+      }
 
       // no info bar:
       $scope.noInfo = !(

@@ -38,6 +38,8 @@ import org.apache.solr.common.util.SuppressForbidden;
  * like this: <code>
  *   {@literal @}LogLevel("org.apache.solr=DEBUG;org.apache.solr.core=INFO")
  * </code>
+ *
+ * @see LogLevelTestRule
  */
 @Documented
 @Inherited

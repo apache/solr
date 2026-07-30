@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -174,8 +173,8 @@ public class FacetComponent extends SearchComponent {
 
     private FacetContext(List<RangeFacetRequest> allRangeFacets, List<FacetBase> allQueryFacets) {
       // avoid NPEs, set to empty list if parameters are null
-      this.allRangeFacets = allRangeFacets == null ? Collections.emptyList() : allRangeFacets;
-      this.allQueryFacets = allQueryFacets == null ? Collections.emptyList() : allQueryFacets;
+      this.allRangeFacets = allRangeFacets == null ? List.of() : allRangeFacets;
+      this.allQueryFacets = allQueryFacets == null ? List.of() : allQueryFacets;
 
       taggedRangeFacets = new HashMap<>();
       for (RangeFacetRequest rf : this.allRangeFacets) {
@@ -244,7 +243,7 @@ public class FacetComponent extends SearchComponent {
      */
     public List<RangeFacetRequest> getRangeFacetRequestsForTag(String tag) {
       List<RangeFacetRequest> list = taggedRangeFacets.get(tag);
-      return list == null ? Collections.emptyList() : list;
+      return list == null ? List.of() : list;
     }
 
     /**
@@ -254,7 +253,7 @@ public class FacetComponent extends SearchComponent {
      */
     public List<FacetBase> getQueryFacetsForTag(String tag) {
       List<FacetBase> list = taggedQueryFacets.get(tag);
-      return list == null ? Collections.emptyList() : list;
+      return list == null ? List.of() : list;
     }
   }
 
@@ -361,7 +360,7 @@ public class FacetComponent extends SearchComponent {
       return ResponseBuilder.STAGE_DONE;
     }
 
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) {
       return ResponseBuilder.STAGE_DONE;
     }
     // Overlap facet refinement requests (those shards that we need a count
@@ -496,14 +495,13 @@ public class FacetComponent extends SearchComponent {
     shardsRefineRequestPivot.params.set(FacetParams.FACET_PIVOT_MINCOUNT, -1);
     shardsRefineRequestPivot.params.remove(FacetParams.FACET_OFFSET);
 
-    for (int pivotIndex = 0; pivotIndex < fi.pivotFacets.size(); pivotIndex++) {
-      String pivotFacetKey = fi.pivotFacets.getName(pivotIndex);
-      PivotFacet pivotFacet = fi.pivotFacets.getVal(pivotIndex);
+    for (Entry<String, PivotFacet> pfEntry : fi.pivotFacets) {
+      String pivotFacetKey = pfEntry.getKey();
+      PivotFacet pivotFacet = pfEntry.getValue();
 
       List<PivotFacetValue> queuedRefinementsForShard = pivotFacet.getQueuedRefinements(shardNum);
 
       if (!queuedRefinementsForShard.isEmpty()) {
-
         String fieldsKey = PivotFacet.REFINE_PARAM + fi.pivotRefinementCounter;
         String command;
 
@@ -730,9 +728,9 @@ public class FacetComponent extends SearchComponent {
       // handle facet queries
       NamedList<?> facet_queries = (NamedList<?>) facet_counts.get(FACET_QUERY_KEY);
       if (facet_queries != null) {
-        for (int i = 0; i < facet_queries.size(); i++) {
-          String returnedKey = facet_queries.getName(i);
-          long count = ((Number) facet_queries.getVal(i)).longValue();
+        for (Map.Entry<String, ?> fqEntry : facet_queries) {
+          String returnedKey = fqEntry.getKey();
+          long count = ((Number) fqEntry.getValue()).longValue();
           QueryFacet qf = fi.queryFacets.get(returnedKey);
           qf.count += count;
         }
@@ -847,7 +845,7 @@ public class FacetComponent extends SearchComponent {
   }
 
   private void removeQueryFacetsUnderLimits(ResponseBuilder rb) {
-    if (rb.stage != ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() != ResponseBuilder.STAGE_EXECUTE_QUERY) {
       return;
     }
     FacetInfo fi = rb._facetInfo;
@@ -877,7 +875,7 @@ public class FacetComponent extends SearchComponent {
   }
 
   private void removeRangeFacetsUnderLimits(ResponseBuilder rb) {
-    if (rb.stage != ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() != ResponseBuilder.STAGE_EXECUTE_QUERY) {
       return;
     }
 
@@ -896,7 +894,7 @@ public class FacetComponent extends SearchComponent {
   }
 
   private void removeFieldFacetsUnderLimits(ResponseBuilder rb) {
-    if (rb.stage != ResponseBuilder.STAGE_DONE) {
+    if (rb.getStage() != ResponseBuilder.STAGE_DONE) {
       return;
     }
 
@@ -992,16 +990,16 @@ public class FacetComponent extends SearchComponent {
 
       if (facet_fields == null) continue; // this can happen when there's an exception
 
-      for (int i = 0; i < facet_fields.size(); i++) {
-        String key = facet_fields.getName(i);
+      for (Map.Entry<String, ?> fieldEntry : facet_fields) {
+        String key = fieldEntry.getKey();
         DistribFieldFacet dff = fi.facets.get(key);
         if (dff == null) continue;
 
-        NamedList<?> shardCounts = (NamedList<?>) facet_fields.getVal(i);
+        NamedList<?> shardCounts = (NamedList<?>) fieldEntry.getValue();
 
-        for (int j = 0; j < shardCounts.size(); j++) {
-          String name = shardCounts.getName(j);
-          long count = ((Number) shardCounts.getVal(j)).longValue();
+        for (Map.Entry<String, ?> countEntry : shardCounts) {
+          String name = countEntry.getKey();
+          long count = ((Number) countEntry.getValue()).longValue();
           ShardFacetCount sfc = dff.counts.get(name);
           if (sfc == null) {
             // we got back a term we didn't ask for?
@@ -1090,7 +1088,7 @@ public class FacetComponent extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (!rb.doFacets || rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
+    if (!rb.doFacets || rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) return;
     // wait until STAGE_GET_FIELDS
     // so that "result" is already stored in the response (for aesthetics)
 
@@ -1190,7 +1188,7 @@ public class FacetComponent extends SearchComponent {
       PivotFacet pivot = entry.getValue();
       List<NamedList<Object>> trimmedPivots = pivot.getTrimmedPivotsAsListOfNamedLists();
       if (null == trimmedPivots) {
-        trimmedPivots = Collections.<NamedList<Object>>emptyList();
+        trimmedPivots = List.of();
       }
 
       combinedPivotFacets.add(key, trimmedPivots);
@@ -1311,8 +1309,8 @@ public class FacetComponent extends SearchComponent {
     private String key; // label in the response for the result...
     // "foo" for {!key=foo}myfield
     SolrParams localParams; // any local params for the facet
-    private List<String> tags = Collections.emptyList();
-    private List<String> excludeTags = Collections.emptyList();
+    private List<String> tags = List.of();
+    private List<String> excludeTags = List.of();
     private int threadCount = -1;
 
     public FacetBase(ResponseBuilder rb, String facetType, String facetStr) {
@@ -1336,15 +1334,14 @@ public class FacetComponent extends SearchComponent {
         key = localParams.get(CommonParams.OUTPUT_KEY, key);
 
         String tagStr = localParams.get(CommonParams.TAG);
-        this.tags =
-            tagStr == null ? Collections.<String>emptyList() : StrUtils.splitSmart(tagStr, ',');
+        this.tags = tagStr == null ? List.of() : StrUtils.splitSmart(tagStr, ',');
 
         String threadStr = localParams.get(CommonParams.THREADS);
         this.threadCount = threadStr != null ? Integer.parseInt(threadStr) : -1;
 
         String excludeStr = localParams.get(CommonParams.EXCLUDE);
         if (StrUtils.isNullOrEmpty(excludeStr)) {
-          this.excludeTags = Collections.emptyList();
+          this.excludeTags = List.of();
         } else {
           this.excludeTags = StrUtils.splitSmart(excludeStr, ',');
         }
@@ -1470,15 +1467,18 @@ public class FacetComponent extends SearchComponent {
 
     void add(int shardNum, NamedList<?> shardCounts, int numRequested) {
       // shardCounts could be null if there was an exception
-      int sz = shardCounts == null ? 0 : shardCounts.size();
+      if (shardCounts == null) {
+        shardCounts = SimpleOrderedMap.of();
+      }
+      int sz = shardCounts.size();
       int numReceived = sz;
 
       FixedBitSet terms = new FixedBitSet(termNum + sz);
 
       long last = 0;
-      for (int i = 0; i < sz; i++) {
-        String name = shardCounts.getName(i);
-        long count = ((Number) shardCounts.getVal(i)).longValue();
+      for (Entry<String, ?> countEntry : shardCounts) {
+        String name = countEntry.getKey();
+        long count = ((Number) countEntry.getValue()).longValue();
         if (name == null) {
           missingCount += count;
           numReceived--;

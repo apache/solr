@@ -19,7 +19,7 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <indexConfig>
@@ -28,6 +28,7 @@
       <int name="maxMergeAtOnce">19</int>
       <int name="maxMergeAtOnce">7</int>
       <int name="segmentsPerTier">9</int>
+      <int name="targetSearchConcurrency">1</int>
       <double name="noCFSRatio">0.1</double>
     </mergePolicyFactory>
     <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler">

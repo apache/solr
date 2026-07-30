@@ -17,59 +17,35 @@
 package org.apache.solr.servlet;
 
 import static org.apache.solr.core.NodeConfig.loadNodeConfig;
-import static org.apache.solr.servlet.SolrDispatchFilter.PROPERTIES_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLRHOME_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
 
-import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
-import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
-import com.google.common.annotations.VisibleForTesting;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.UnavailableException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.UnavailableException;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.VectorUtil;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean.Group;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.metrics.AltBufferPoolMetricSet;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.OperatingSystemMetricSet;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricManager.ResolutionStrategy;
-import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.servlet.RateLimitManager.Builder;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,14 +56,14 @@ import org.slf4j.LoggerFactory;
  * instance of solr.
  */
 public class CoreContainerProvider implements ServletContextListener {
+  public static final String SOLR_PROPERTIES = "solr.properties";
+  public static final String SOLR_SOLR_HOME = "solr.solr.home";
+  public static final String SOLR_INSTALL_DIR = "solr.install.dir";
+  public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
+  public static final String SOLR_LOG_LEVEL = "solr.log.level";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private CoreContainer cores;
-  private Properties extraProperties;
-  private HttpClient httpClient;
-  private SolrMetricManager metricManager;
-  private RateLimitManager rateLimitManager;
-  private String registryName;
 
   /**
    * Acquires an instance from the context. Never null.
@@ -115,20 +91,10 @@ public class CoreContainerProvider implements ServletContextListener {
     // could remove ourselves from ctx but why bother
   }
 
-  /**
-   * @see SolrDispatchFilter#getCores()
-   */
-  CoreContainer getCoreContainer() throws UnavailableException {
+  /** The CoreContainer. Never null. */
+  public CoreContainer getCoreContainer() throws UnavailableException {
     checkReady();
     return cores;
-  }
-
-  /**
-   * @see SolrDispatchFilter#getHttpClient()
-   */
-  HttpClient getHttpClient() throws UnavailableException {
-    checkReady();
-    return httpClient;
   }
 
   private void checkReady() throws UnavailableException {
@@ -162,23 +128,8 @@ public class CoreContainerProvider implements ServletContextListener {
     //    }
 
     cores = null;
-    try {
-      if (metricManager != null) {
-        try {
-          metricManager.unregisterGauges(registryName, metricTag);
-        } catch (NullPointerException e) {
-          // okay
-        } catch (Exception e) {
-          log.warn("Exception closing FileCleaningTracker", e);
-        } finally {
-          metricManager = null;
-        }
-      }
-    } finally {
-      if (cc != null) {
-        httpClient = null;
-        cc.shutdown();
-      }
+    if (cc != null) {
+      cc.shutdown();
     }
   }
 
@@ -191,37 +142,36 @@ public class CoreContainerProvider implements ServletContextListener {
       // "extra" properties must be initialized first, so we know things like "do we have a zkHost"
       // wrap as defaults (if set) so we can modify w/o polluting the Properties provided by our
       // caller
-      this.extraProperties =
+      Properties extraProperties =
           SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(
-              (Properties) servletContext.getAttribute(PROPERTIES_ATTRIBUTE));
+              (Properties) servletContext.getAttribute(SOLR_PROPERTIES));
 
       StartupLoggingUtils.checkLogDir();
       if (log.isInfoEnabled()) {
         log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
       }
 
-      logWelcomeBanner();
+      logWelcomeBanner(extraProperties);
 
-      String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
+      String muteConsole = EnvUtils.getProperty(SOLR_LOG_MUTECONSOLE);
       if (muteConsole != null
           && !Arrays.asList("false", "0", "off", "no")
               .contains(muteConsole.toLowerCase(Locale.ROOT))) {
         StartupLoggingUtils.muteConsole();
       }
-      String logLevel = System.getProperty(SOLR_LOG_LEVEL);
+      String logLevel = EnvUtils.getProperty(SOLR_LOG_LEVEL);
       if (logLevel != null) {
         log.info("Log level override, property solr.log.level={}", logLevel);
         StartupLoggingUtils.changeLogLevel(logLevel);
       }
 
       // Do initial logs for experimental Lucene classes.
-      // TODO: Use "MethodHandles.lookup().ensureClassInitialized()" instead of "Class.forName()"
-      //   once JDK 15+ is mandatory
+      final var lookup = MethodHandles.lookup();
       Stream.of(MMapDirectory.class, VectorUtil.class)
           .forEach(
               cls -> {
                 try {
-                  Class.forName(cls.getName());
+                  lookup.ensureInitialized(cls);
                 } catch (ReflectiveOperationException re) {
                   throw new SolrException(
                       ErrorCode.SERVER_ERROR, "Could not load Lucene class: " + cls.getName());
@@ -229,23 +179,6 @@ public class CoreContainerProvider implements ServletContextListener {
               });
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
-      this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
-      setupJvmMetrics(coresInit, coresInit.getNodeConfig().getMetricsConfig());
-
-      SolrZkClient zkClient = null;
-      ZkController zkController = coresInit.getZkController();
-
-      if (zkController != null) {
-        zkClient = zkController.getZkClient();
-      }
-
-      Builder builder = new Builder(zkClient);
-
-      this.rateLimitManager = builder.build();
-
-      if (zkController != null) {
-        zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
-      }
 
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
@@ -262,7 +195,7 @@ public class CoreContainerProvider implements ServletContextListener {
     }
   }
 
-  private void logWelcomeBanner() {
+  private void logWelcomeBanner(Properties props) {
     // _Really_ sorry about how clumsy this is as a result of the logging call checker, but this is
     // the only one that's so ugly so far.
     if (log.isInfoEnabled()) {
@@ -271,12 +204,11 @@ public class CoreContainerProvider implements ServletContextListener {
     if (log.isInfoEnabled()) {
       log.info(
           "/ __| ___| |_ _   Starting in {} mode on port {}",
-          isCloudMode() ? "cloud" : "standalone",
+          isCloudMode(props) ? "cloud" : "standalone",
           getSolrPort());
     }
     if (log.isInfoEnabled()) {
-      log.info(
-          "\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
+      log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", EnvUtils.getProperty(SOLR_INSTALL_DIR));
     }
     if (log.isInfoEnabled()) {
       log.info("|___/\\___/_|_|    Start time: {}", Instant.now());
@@ -309,7 +241,7 @@ public class CoreContainerProvider implements ServletContextListener {
               "Solr typically starts with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
                   + "Unable to get the specific file due to an exception."
                   + "The cause of the OOME will be logged in a crash file in the logs directory: %s",
-              System.getProperty("solr.log.dir"));
+              EnvUtils.getProperty("solr.logs.dir"));
       log.info(logMessage, e);
     }
   }
@@ -325,20 +257,21 @@ public class CoreContainerProvider implements ServletContextListener {
   }
 
   private String getSolrPort() {
-    return System.getProperty("jetty.port");
+    return EnvUtils.getProperty("solr.port.listen");
   }
 
   /**
-   * We are in cloud mode if Java option zkRun exists OR zkHost exists and is non-empty
+   * We are in cloud mode if Java option solr.zookeeper.server.enabled exists OR zkHost exists and
+   * is non-empty
    *
    * @see SolrXmlConfig#wrapAndSetZkHostFromSysPropIfNeeded
-   * @see #extraProperties
    * @see #init
+   * @param props the "extra properties" which will indicate cloud mode before startup.
    */
-  private boolean isCloudMode() {
-    assert null != extraProperties; // we should never be called w/o this being initialized
-    return (null != extraProperties.getProperty(SolrXmlConfig.ZK_HOST))
-        || (null != System.getProperty("zkRun"));
+  private boolean isCloudMode(Properties props) {
+    assert null != props; // we should never be called w/o this being initialized
+    return (null != props.getProperty(SolrXmlConfig.ZK_HOST))
+        || EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
   }
 
   /**
@@ -360,8 +293,8 @@ public class CoreContainerProvider implements ServletContextListener {
   private static Path computeSolrHome(ServletContext servletContext) {
 
     // start with explicit check of servlet config...
-    String source = "servlet config: " + SOLRHOME_ATTRIBUTE;
-    String home = (String) servletContext.getAttribute(SOLRHOME_ATTRIBUTE);
+    String source = "servlet config: " + SOLR_SOLR_HOME;
+    String home = (String) servletContext.getAttribute(SOLR_SOLR_HOME);
 
     if (null == home) {
       final String lookup = "java:comp/env/solr/home";
@@ -383,7 +316,7 @@ public class CoreContainerProvider implements ServletContextListener {
       // Now try system property
       final String prop = "solr.solr.home";
       source = "system property: " + prop;
-      home = System.getProperty(prop);
+      home = EnvUtils.getProperty(prop);
     }
 
     if (null == home) {
@@ -391,7 +324,7 @@ public class CoreContainerProvider implements ServletContextListener {
       home = "solr/";
       source = "defaulted to '" + home + "' ... could not find system property or JNDI";
     }
-    final Path solrHome = Paths.get(home).toAbsolutePath().normalize();
+    final Path solrHome = Path.of(home).toAbsolutePath().normalize();
     log.info("Solr Home: {} (source: {})", solrHome, source);
 
     return solrHome;
@@ -407,74 +340,5 @@ public class CoreContainerProvider implements ServletContextListener {
     final CoreContainer coreContainer = new CoreContainer(nodeConfig, true);
     coreContainer.load();
     return coreContainer;
-  }
-
-  private void setupJvmMetrics(CoreContainer coresInit, MetricsConfig config) {
-    metricManager = coresInit.getMetricManager();
-    registryName = SolrMetricManager.getRegistryName(Group.jvm);
-    final NodeConfig nodeConfig = coresInit.getConfig();
-    try {
-      metricManager.registerAll(
-          registryName, new AltBufferPoolMetricSet(), ResolutionStrategy.IGNORE, "buffers");
-      metricManager.registerAll(
-          registryName, new ClassLoadingGaugeSet(), ResolutionStrategy.IGNORE, "classes");
-      metricManager.registerAll(
-          registryName, new OperatingSystemMetricSet(), ResolutionStrategy.IGNORE, "os");
-      metricManager.registerAll(
-          registryName, new GarbageCollectorMetricSet(), ResolutionStrategy.IGNORE, "gc");
-      metricManager.registerAll(
-          registryName, new MemoryUsageGaugeSet(), ResolutionStrategy.IGNORE, "memory");
-
-      if (config.getCacheConfig() != null
-          && config.getCacheConfig().threadsIntervalSeconds != null) {
-        if (log.isInfoEnabled()) {
-          log.info(
-              "Threads metrics will be cached for {} seconds",
-              config.getCacheConfig().threadsIntervalSeconds);
-        }
-        metricManager.registerAll(
-            registryName,
-            new CachedThreadStatesGaugeSet(
-                config.getCacheConfig().threadsIntervalSeconds, TimeUnit.SECONDS),
-            SolrMetricManager.ResolutionStrategy.IGNORE,
-            "threads");
-      } else {
-        metricManager.registerAll(
-            registryName,
-            new ThreadStatesGaugeSet(),
-            SolrMetricManager.ResolutionStrategy.IGNORE,
-            "threads");
-      }
-
-      MetricsMap sysprops =
-          new MetricsMap(
-              map ->
-                  System.getProperties()
-                      .forEach(
-                          (k, v) -> {
-                            if (!nodeConfig.isSysPropHidden(String.valueOf(k))) {
-                              map.putNoEx(String.valueOf(k), v);
-                            }
-                          }));
-      metricManager.registerGauge(
-          null,
-          registryName,
-          sysprops,
-          metricTag,
-          ResolutionStrategy.IGNORE,
-          "properties",
-          "system");
-    } catch (Exception e) {
-      log.warn("Error registering JVM metrics", e);
-    }
-  }
-
-  public RateLimitManager getRateLimitManager() {
-    return rateLimitManager;
-  }
-
-  @VisibleForTesting
-  void setRateLimitManager(RateLimitManager rateLimitManager) {
-    this.rateLimitManager = rateLimitManager;
   }
 }

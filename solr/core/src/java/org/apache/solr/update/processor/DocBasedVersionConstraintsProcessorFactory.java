@@ -19,7 +19,6 @@ package org.apache.solr.update.processor;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -89,7 +88,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
 
   private boolean ignoreOldUpdates = false;
   private List<String> versionFields = null;
-  private List<String> deleteVersionParamNames = Collections.emptyList();
+  private List<String> deleteVersionParamNames = List.of();
   private boolean useFieldCache;
   private boolean supportMissingVersionOnOldDocs = false;
   private NamedList<Object> tombstoneConfig;
@@ -170,13 +169,18 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
 
   @Override
   public void inform(SolrCore core) {
-
-    if (core.getUpdateHandler().getUpdateLog() == null) {
-      throw new SolrException(SERVER_ERROR, "updateLog must be enabled.");
-    }
-
     if (core.getLatestSchema().getUniqueKeyField() == null) {
       throw new SolrException(SERVER_ERROR, "schema must have uniqueKey defined.");
+    }
+
+    // We can only be sure that no-update-log is safe if the core is a SolrCloud replica and is not
+    // leader eligible, because those cores will all have the "isNotLeader()" return true, and the
+    // URP logic will be ignored. Otherwise, we need to ensure an update log exists.
+    if (core.getCoreDescriptor().getCloudDescriptor() == null
+        || core.getCoreDescriptor().getCloudDescriptor().getReplicaType().leaderEligible) {
+      if (core.getUpdateHandler().getUpdateLog() == null) {
+        throw new SolrException(SERVER_ERROR, "updateLog must be enabled.");
+      }
     }
 
     useFieldCache = true;

@@ -24,16 +24,15 @@ import static org.apache.solr.response.RawResponseWriter.CONTENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import java.util.stream.Stream;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
@@ -68,11 +67,8 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
   public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
-        .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
+        .addConfig(DEFAULT_CONFIGSET_NAME, ExternalPaths.DEFAULT_CONFIGSET)
         .configure();
-    // SchemaDesignerAPI depends on the blob store ".system" collection existing.
-    CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(BLOB_STORE_ID, 1, 1);
   }
 
   @AfterClass
@@ -110,7 +106,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     // POST some sample TSV docs
     ContentStream stream = new ContentStreamBase.StringStream(tsv, "text/csv");
-    when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
+    when(req.getContentStreams()).thenReturn(List.of(stream));
 
     // POST /schema-designer/analyze
     schemaDesignerAPI.analyze(req, rsp);
@@ -126,22 +122,29 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     String mutableId = getMutableId(configSet);
     assertFalse(cc.getZkController().getClusterState().hasCollection(mutableId));
     SolrZkClient zkClient = cc.getZkController().getZkClient();
-    assertFalse(zkClient.exists("/configs/" + mutableId, true));
+    assertFalse(zkClient.exists("/configs/" + mutableId));
   }
 
   @Test
   @SuppressWarnings("unchecked")
   public void testAddTechproductsProgressively() throws Exception {
-    File docsDir = new File(ExternalPaths.SOURCE_HOME, "example/exampledocs");
-    assertTrue(docsDir.getAbsolutePath() + " not found!", docsDir.isDirectory());
-    File[] toAdd =
-        docsDir.listFiles(
-            (dir, name) ->
-                name.endsWith(".xml")
-                    || name.endsWith(".json")
-                    || name.endsWith(".csv")
-                    || name.endsWith(".jsonl"));
-    assertNotNull("No test data files found in " + docsDir.getAbsolutePath(), toAdd);
+    Path docsDir = ExternalPaths.SOURCE_HOME.resolve("example/exampledocs");
+    assertTrue(docsDir + " not found!", Files.isDirectory(docsDir));
+    List<Path> toAdd;
+    try (Stream<Path> files = Files.list(docsDir)) {
+      toAdd =
+          files
+              .filter(
+                  (dir) -> {
+                    String name = dir.getFileName().toString();
+                    return name.endsWith(".xml")
+                        || name.endsWith(".json")
+                        || name.endsWith(".csv")
+                        || name.endsWith(".jsonl");
+                  })
+              .toList();
+      assertNotNull("No test data files found in " + docsDir, toAdd);
+    }
 
     String configSet = "techproducts";
 
@@ -159,7 +162,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
             ENABLE_DYNAMIC_FIELDS_PARAM, true,
             ENABLE_FIELD_GUESSING_PARAM, true,
             ENABLE_NESTED_DOCS_PARAM, false,
-            LANGUAGES_PARAM, Collections.emptyList());
+            LANGUAGES_PARAM, List.of());
     assertDesignerSettings(expSettings, rsp.getValues());
     SolrParams rspData = rsp.getValues().toSolrParams();
     int schemaVersion = rspData.getInt(SCHEMA_VERSION_PARAM);
@@ -177,7 +180,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     rspData = rsp.getValues().toSolrParams();
     schemaVersion = rspData.getInt(SCHEMA_VERSION_PARAM);
 
-    for (File next : toAdd) {
+    for (Path next : toAdd) {
       // Analyze some sample documents to refine the schema
       reqParams.clear();
       reqParams.set(CONFIG_SET_PARAM, configSet);
@@ -189,8 +192,9 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
       // POST some sample JSON docs
       ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(next);
-      stream.setContentType(TestSampleDocumentsLoader.guessContentTypeFromFilename(next.getName()));
-      when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
+      stream.setContentType(
+          TestSampleDocumentsLoader.guessContentTypeFromFilename(next.getFileName().toString()));
+      when(req.getContentStreams()).thenReturn(List.of(stream));
 
       rsp = new SolrQueryResponse();
 
@@ -222,7 +226,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
             ENABLE_DYNAMIC_FIELDS_PARAM, false,
             ENABLE_FIELD_GUESSING_PARAM, true,
             ENABLE_NESTED_DOCS_PARAM, false,
-            LANGUAGES_PARAM, Collections.singletonList("en"),
+            LANGUAGES_PARAM, List.of("en"),
             COPY_FROM_PARAM, "_default");
     assertDesignerSettings(expSettings, rsp.getValues());
 
@@ -239,7 +243,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     schemaDesignerAPI.query(req, rsp);
     assertNotNull(rsp.getResponseHeader());
     SolrDocumentList results = (SolrDocumentList) rsp.getResponse();
-    assertEquals(48, results.getNumFound());
+    assertEquals(47, results.getNumFound());
 
     // publish schema to a config set that can be used by real collections
     reqParams.clear();
@@ -288,10 +292,10 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     ModifiableSolrParams reqParams = new ModifiableSolrParams();
 
-    File filmsDir = new File(ExternalPaths.SOURCE_HOME, "example/films");
-    assertTrue(filmsDir.getAbsolutePath() + " not found!", filmsDir.isDirectory());
-    File filmsXml = new File(filmsDir, "films.xml");
-    assertTrue("example/films/films.xml not found", filmsXml.isFile());
+    Path filmsDir = ExternalPaths.SOURCE_HOME.resolve("example/films");
+    assertTrue(filmsDir + " not found!", Files.isDirectory(filmsDir));
+    Path filmsXml = filmsDir.resolve("films.xml");
+    assertTrue("example/films/films.xml not found", Files.isRegularFile(filmsXml));
 
     reqParams.set(CONFIG_SET_PARAM, configSet);
     reqParams.set(ENABLE_DYNAMIC_FIELDS_PARAM, "true");
@@ -302,7 +306,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     // POST some sample XML docs
     ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(filmsXml);
     stream.setContentType("application/xml");
-    when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
+    when(req.getContentStreams()).thenReturn(List.of(stream));
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
@@ -317,7 +321,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(docIds);
     assertEquals(100, docIds.size()); // designer limits the doc ids to top 100
 
-    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM, null);
+    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM);
     assertNotNull(idField);
   }
 
@@ -342,7 +346,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
             ENABLE_DYNAMIC_FIELDS_PARAM, true,
             ENABLE_FIELD_GUESSING_PARAM, true,
             ENABLE_NESTED_DOCS_PARAM, false,
-            LANGUAGES_PARAM, Collections.emptyList(),
+            LANGUAGES_PARAM, List.of(),
             COPY_FROM_PARAM, "_default");
     assertDesignerSettings(expSettings, rsp.getValues());
 
@@ -353,10 +357,10 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
 
     // POST some sample JSON docs
-    File booksJson = new File(ExternalPaths.SOURCE_HOME, "example/exampledocs/books.json");
+    Path booksJson = ExternalPaths.SOURCE_HOME.resolve("example/exampledocs/books.json");
     ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(booksJson);
     stream.setContentType(JSON_MIME);
-    when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
+    when(req.getContentStreams()).thenReturn(List.of(stream));
 
     rsp = new SolrQueryResponse();
 
@@ -368,7 +372,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(rsp.getValues().get("fields"));
     assertNotNull(rsp.getValues().get("fieldTypes"));
     assertNotNull(rsp.getValues().get("docIds"));
-    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM, null);
+    String idField = rsp.getValues()._getStr(UNIQUE_KEY_FIELD_PARAM);
     assertNotNull(idField);
     assertDesignerSettings(expSettings, rsp.getValues());
 
@@ -408,9 +412,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     req = mock(SolrQueryRequest.class);
     when(req.getParams()).thenReturn(reqParams);
     when(req.getContentStreams())
-        .thenReturn(
-            Collections.singletonList(
-                new ContentStreamBase.StringStream(solrconfigXml, "application/xml")));
+        .thenReturn(List.of(new ContentStreamBase.StringStream(solrconfigXml, "application/xml")));
 
     schemaDesignerAPI.updateFileContents(req, rsp);
     rspData = rsp.getValues().toSolrParams();
@@ -426,9 +428,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     req = mock(SolrQueryRequest.class);
     when(req.getParams()).thenReturn(reqParams);
     when(req.getContentStreams())
-        .thenReturn(
-            Collections.singletonList(
-                new ContentStreamBase.StringStream("<config/>", "application/xml")));
+        .thenReturn(List.of(new ContentStreamBase.StringStream("<config/>", "application/xml")));
 
     // this should fail b/c the updated solrconfig.xml is invalid
     schemaDesignerAPI.updateFileContents(req, rsp);
@@ -453,7 +453,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
             ENABLE_DYNAMIC_FIELDS_PARAM, false,
             ENABLE_FIELD_GUESSING_PARAM, false,
             ENABLE_NESTED_DOCS_PARAM, false,
-            LANGUAGES_PARAM, Collections.singletonList("en"),
+            LANGUAGES_PARAM, List.of("en"),
             COPY_FROM_PARAM, "_default");
     assertDesignerSettings(expSettings, rsp.getValues());
 
@@ -510,7 +510,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
             ENABLE_DYNAMIC_FIELDS_PARAM, false,
             ENABLE_FIELD_GUESSING_PARAM, false,
             ENABLE_NESTED_DOCS_PARAM, false,
-            LANGUAGES_PARAM, Collections.emptyList(),
+            LANGUAGES_PARAM, List.of(),
             COPY_FROM_PARAM, "_default");
     assertDesignerSettings(expSettings, rsp.getValues());
 
@@ -555,7 +555,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
     stream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
     stream.setContentType(JSON_MIME);
-    when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
+    when(req.getContentStreams()).thenReturn(List.of(stream));
     rsp = new SolrQueryResponse();
 
     // POST /schema-designer/add
@@ -576,7 +576,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     // "temp" collection
     stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-author-field.json"));
     stream.setContentType(JSON_MIME);
-    when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
+    when(req.getContentStreams()).thenReturn(List.of(stream));
 
     rsp = new SolrQueryResponse();
 
@@ -594,7 +594,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
     stream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json"));
     stream.setContentType(JSON_MIME);
-    when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
+    when(req.getContentStreams()).thenReturn(List.of(stream));
     rsp = new SolrQueryResponse();
 
     // POST /schema-designer/add
@@ -620,7 +620,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
     stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-type.json"));
     stream.setContentType(JSON_MIME);
-    when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
+    when(req.getContentStreams()).thenReturn(List.of(stream));
     rsp = new SolrQueryResponse();
 
     // POST /schema-designer/update
@@ -681,12 +681,12 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     String mutableId = getMutableId(configSet);
     assertFalse(cc.getZkController().getClusterState().hasCollection(mutableId));
     SolrZkClient zkClient = cc.getZkController().getZkClient();
-    assertFalse(zkClient.exists("/configs/" + mutableId, true));
+    assertFalse(zkClient.exists("/configs/" + mutableId));
 
     SolrQuery query = new SolrQuery("*:*");
     query.setRows(0);
     QueryResponse qr = cluster.getSolrClient().query(collection, query);
-    // this proves the docs were stored in the blob store too
+    // this proves the docs were stored in the filestore too
     assertEquals(4, qr.getResults().getNumFound());
   }
 
@@ -716,7 +716,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     ContentStreamBase.FileStream stream =
         new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
     stream.setContentType(JSON_MIME);
-    when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
+    when(req.getContentStreams()).thenReturn(List.of(stream));
     rsp = new SolrQueryResponse();
 
     // POST /schema-designer/add
@@ -740,7 +740,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     String mutableId = getMutableId(configSet);
     SchemaDesignerConfigSetHelper configSetHelper =
-        new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester(cc));
+        new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester());
     ManagedIndexSchema schema = schemaDesignerAPI.loadLatestSchema(mutableId);
 
     // make it required
@@ -788,7 +788,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertFalse(schemaField.isRequired());
     assertTrue(schemaField.stored());
     List<String> srcFields = schema.getCopySources("_text_");
-    assertEquals(Collections.singletonList(fieldName), srcFields);
+    assertEquals(List.of(fieldName), srcFields);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -839,18 +839,19 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     SimpleOrderedMap<Object> idFieldMapUpdated = idFieldMap.clone();
     idFieldMapUpdated.setVal(idFieldMapUpdated.indexOf("docValues", 0), Boolean.FALSE);
     idFieldMapUpdated.setVal(idFieldMapUpdated.indexOf("useDocValuesAsStored", 0), Boolean.FALSE);
+    idFieldMapUpdated.setVal(idFieldMapUpdated.indexOf("uninvertible", 0), Boolean.TRUE);
     idFieldMapUpdated.setVal(
         idFieldMapUpdated.indexOf("omitTermFreqAndPositions", 0), Boolean.FALSE);
 
     SolrParams solrParams = idFieldMapUpdated.toSolrParams();
-    Map<String, Object> mapParams = solrParams.toMap(new HashMap<>());
+    Map<String, Object> mapParams = new SimpleOrderedMap<>(solrParams);
     mapParams.put("termVectors", Boolean.FALSE);
     reqParams.set(
         SCHEMA_VERSION_PARAM, rsp.getValues().toSolrParams().getInt(SCHEMA_VERSION_PARAM));
 
     ContentStreamBase.StringStream stringStream =
         new ContentStreamBase.StringStream(JSONUtil.toJSON(mapParams), JSON_MIME);
-    when(req.getContentStreams()).thenReturn(Collections.singletonList(stringStream));
+    when(req.getContentStreams()).thenReturn(List.of(stringStream));
 
     rsp = new SolrQueryResponse();
     schemaDesignerAPI.updateSchemaObject(req, rsp);
@@ -861,7 +862,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     ContentStreamBase.FileStream fileStream =
         new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
     fileStream.setContentType(JSON_MIME);
-    when(req.getContentStreams()).thenReturn(Collections.singletonList(fileStream));
+    when(req.getContentStreams()).thenReturn(List.of(fileStream));
     rsp = new SolrQueryResponse();
     // POST /schema-designer/add
     schemaDesignerAPI.addSchemaObject(req, rsp);
@@ -872,7 +873,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     reqParams.set(SCHEMA_VERSION_PARAM, schemaVersion);
     fileStream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json"));
     fileStream.setContentType(JSON_MIME);
-    when(req.getContentStreams()).thenReturn(Collections.singletonList(fileStream));
+    when(req.getContentStreams()).thenReturn(List.of(fileStream));
     rsp = new SolrQueryResponse();
     // POST /schema-designer/add
     schemaDesignerAPI.addSchemaObject(req, rsp);
@@ -892,14 +893,23 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertEquals(
         Arrays.asList(
             Map.of(
-                "omitTermFreqAndPositions", true, "useDocValuesAsStored", true, "docValues", true),
+                "omitTermFreqAndPositions",
+                true,
+                "useDocValuesAsStored",
+                true,
+                "docValues",
+                true,
+                "uninvertible",
+                false),
             Map.of(
                 "omitTermFreqAndPositions",
                 false,
                 "useDocValuesAsStored",
                 false,
                 "docValues",
-                false)),
+                false,
+                "uninvertible",
+                true)),
         mapDiff.get("id"));
     assertNotNull(fieldsDiff.get("added"));
     Map<String, Object> fieldsAdded = (Map<String, Object>) fieldsDiff.get("added");

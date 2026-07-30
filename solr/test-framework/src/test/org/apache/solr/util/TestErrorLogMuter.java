@@ -33,10 +33,10 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @LogLevel("=WARN")
-  public void testErrorMutingRegex() throws Exception {
+  public void testErrorMutingRegex() {
 
-    try (LogListener rootWarnCheck = LogListener.warn();
-        LogListener rootErrorCheck = LogListener.error()) {
+    try (LogListener rootWarnCheck = LogListener.warn("");
+        LogListener rootErrorCheck = LogListener.error("")) {
 
       try (ErrorLogMuter x = ErrorLogMuter.regex("eRrOr\\s+Log")) {
         assertEquals(0, x.getCount());
@@ -54,7 +54,7 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
         log.error(
             "This {} because of the {} msg",
             "error",
-            "thowable",
+            "throwable",
             new Exception("outer", new Exception("inner eRrOr Log throwable")));
         assertEquals(2, x.getCount());
       }
@@ -66,10 +66,10 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
   }
 
   @LogLevel("=WARN")
-  public void testMultipleMuters() throws Exception {
+  public void testMultipleMuters() {
 
-    try (LogListener rootWarnCheck = LogListener.warn().substring("xxx");
-        LogListener rootErrorCheck = LogListener.error()) {
+    try (LogListener rootWarnCheck = LogListener.warn("").substring("xxx");
+        LogListener rootErrorCheck = LogListener.error("")) {
 
       // sanity check that muters "mute" in the order used...
       // (If this fails, then it means log4j has changed the precedence order it uses when addFilter
@@ -88,7 +88,7 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
 
         // a warning shouldn't be muted...
         log.warn("xxx  yyy");
-        assertEquals(rootWarnCheck.pollMessage(), "xxx  yyy");
+        assertEquals("xxx  yyy", rootWarnCheck.pollMessage());
 
         log.error("abc", new Exception("yyy"));
 
@@ -104,11 +104,11 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
   }
 
   @LogLevel("=WARN")
-  public void testDeprecatedBaseClassMethods() throws Exception {
+  public void testDeprecatedBaseClassMethods() {
 
     // NOTE: using the same queue for both interceptors (mainly as proof that you can)
-    try (LogListener rootWarnCheck = LogListener.warn();
-        LogListener rootErrorCheck = LogListener.error().setQueue(rootWarnCheck.getQueue())) {
+    try (LogListener rootWarnCheck = LogListener.warn("");
+        LogListener rootErrorCheck = LogListener.error("").setQueue(rootWarnCheck.getQueue())) {
 
       log.error("this matches the default ignore_exception pattern");
       log.error("something matching foo that should make it"); // E1

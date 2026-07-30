@@ -25,15 +25,18 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  SOLR_STOP_WAIT=30 solr stop --all >/dev/null 2>&1
 }
 
 @test "SOLR-11740 check 'solr stop' connection" {
   solr start
-  solr start -p ${SOLR2_PORT}
-  solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
-  solr assert --started http://localhost:${SOLR2_PORT}/solr --timeout 5000
-  run bash -c 'solr stop -all 2>&1'
+  solr start --user-managed -p ${SOLR2_PORT}
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
+  solr assert --not-cloud http://localhost:${SOLR2_PORT} --timeout 5000
+
+  run bash -c 'solr stop --all 2>&1'
   refute_output --partial 'forcefully killing'
 }
 
@@ -41,11 +44,90 @@ teardown() {
 
   solr start
   solr start -p ${SOLR2_PORT}
-  solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
-  solr assert --started http://localhost:${SOLR2_PORT}/solr --timeout 5000
-  
-  run solr stop -p ${SOLR2_PORT}
-  solr assert --not-started http://localhost:${SOLR2_PORT}/solr --timeout 5000
-  solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
 
+  solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --cloud http://localhost:${SOLR2_PORT} --timeout 5000
+
+  run solr stop -p ${SOLR2_PORT}
+  solr assert --not-started http://localhost:${SOLR2_PORT} --timeout 5000
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+
+}
+
+@test "check stop command doesn't hang" {
+  # for start/stop/restart we parse the args separate from picking the command
+  # which means you don't get an error message for passing a start arg, like --jvm-opts to a stop commmand.
+
+  # Pre-check
+  timeout || skip "timeout utility is not available"
+  # Set a timeout duration (in seconds)
+  TIMEOUT_DURATION=2
+
+  # make sure that passing a non flag option (i.e --jvm-opts "blah") doesn't hang the stop command.
+  run timeout $TIMEOUT_DURATION solr stop --jvm-opts
+
+  assert_output --partial "ERROR: JVM options are required when using the --jvm-opts option!"
+
+}
+
+@test "SOLR-16976 solr starts with remote JMX enabled" {
+  export ENABLE_REMOTE_JMX_OPTS=true
+  export RMI_PORT=65535 # need to make sure we don't exceed port range so hard code it
+
+  solr start
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+
+  run cat ${SOLR_LOGS_DIR}/solr-${SOLR_PORT}-console.log
+  refute_output --partial 'Exception in thread'
+}
+
+@test "deprecated system properties converted to modern properties" {
+  solr start -Ddisable.config.edit=true
+  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Deprecated system property disable.config.edit has been replaced by solr.api.config.edit.enabled'
+}
+
+@test "start with custom jetty options" {
+  export ENABLE_REMOTE_JMX_OPTS=true
+  export RMI_PORT=65535 # need to make sure we don't exceed port range so hard code it
+
+  solr start --jettyconfig "--module=server"
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+}
+
+@test "webapp is deployed at the /solr context" {
+  # Jetty 12.1 removed the directory-scanning deployer; the Solr webapp is now added
+  # directly to the context collection in server/etc/jetty.xml. Verify it deploys at
+  # /solr and that the context is bound to that path only (an unmapped path 404s).
+  solr start
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+
+  run curl -s -o /dev/null -w "%{http_code}" "http://localhost:${SOLR_PORT}/solr/admin/info/system"
+  assert_output "200"
+
+  run curl -s -o /dev/null -w "%{http_code}" "http://localhost:${SOLR_PORT}/not-solr/admin/info/system"
+  assert_output "404"
+}
+
+@test "-c flag prints no-op warning and still starts in cloud mode" {
+  run solr start -c
+  assert_output --partial 'WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default.'
+
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000
+}
+
+@test "bootstrapping a configset" {
+  local confdir_path="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs/conf"
+  
+  # Verify the source configset directory exists
+  test -d "${confdir_path}"
+
+  # Start Solr with bootstrap_confdir pointing to techproducts configset
+  solr start -Dbootstrap_confdir="${confdir_path}" -Dcollection.configName=techproducts
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  
+  # Verify the techproducts configset was uploaded
+  config_exists "techproducts"
 }

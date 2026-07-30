@@ -28,7 +28,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
@@ -74,13 +74,13 @@ public class ApiBag {
   public synchronized List<Api> registerObject(Object o) {
     List<Api> l = AnnotatedApi.getApis(o);
     for (Api api : l) {
-      register(api, Collections.emptyMap());
+      register(api, Map.of());
     }
     return l;
   }
 
   public synchronized void register(Api api) {
-    register(api, Collections.emptyMap());
+    register(api, Map.of());
   }
 
   public synchronized void register(Api api, Map<String, String> nameSubstitutes) {
@@ -122,16 +122,14 @@ public class ApiBag {
 
       // If 'o' and 'node.obj' aren't both AnnotatedApi's then we can't aggregate the commands, so
       // fallback to the default behavior
-      if ((!(o instanceof AnnotatedApi)) || (!(node.getObject() instanceof AnnotatedApi))) {
+      if ((!(o instanceof AnnotatedApi beingRegistered))
+          || (!(node.getObject() instanceof AnnotatedApi alreadyRegistered))) {
         super.attachValueToNode(node, o);
         return;
       }
 
-      final AnnotatedApi beingRegistered = (AnnotatedApi) o;
-      final AnnotatedApi alreadyRegistered = (AnnotatedApi) node.getObject();
-      if (alreadyRegistered instanceof CommandAggregatingAnnotatedApi) {
-        final CommandAggregatingAnnotatedApi alreadyRegisteredAsCollapsing =
-            (CommandAggregatingAnnotatedApi) alreadyRegistered;
+      if (alreadyRegistered
+          instanceof CommandAggregatingAnnotatedApi alreadyRegisteredAsCollapsing) {
         alreadyRegisteredAsCollapsing.combineWith(beingRegistered);
       } else {
         final CommandAggregatingAnnotatedApi wrapperApi =
@@ -165,7 +163,7 @@ public class ApiBag {
         getCommands().put(entry.getKey(), entry.getValue());
       }
 
-      // Reference to Api must be saved to to merge uncached values (i.e. 'spec') lazily
+      // Reference to Api must be saved to merge uncached values (i.e. 'spec') lazily
       if (newCommandsAdded) {
         combinedApis.add(api);
       }
@@ -277,9 +275,9 @@ public class ApiBag {
         if (commands != null) {
           ValidatingJsonMap m = commands.getMap(cmd, null);
           if (m == null) {
-            specCopy.put("commands", Collections.singletonMap(cmd, "Command not found!"));
+            specCopy.put("commands", Map.of(cmd, "Command not found!"));
           } else {
-            specCopy.put("commands", Collections.singletonMap(cmd, m));
+            specCopy.put("commands", Map.of(cmd, m));
           }
         }
         result = specCopy;
@@ -387,7 +385,7 @@ public class ApiBag {
         final ValidatingJsonMap spec = new ValidatingJsonMap();
         spec.put("methods", List.of("GET", "POST"));
         final ValidatingJsonMap urlMap = new ValidatingJsonMap();
-        urlMap.put("paths", Collections.singletonList("$" + HANDLER_NAME));
+        urlMap.put("paths", List.of("$" + HANDLER_NAME));
         spec.put("url", urlMap);
         return spec;
       };
@@ -399,16 +397,15 @@ public class ApiBag {
   public void registerLazy(PluginBag.PluginHolder<SolrRequestHandler> holder, PluginInfo info) {
     register(
         new LazyLoadedApi(HANDLER_NAME_SPEC_PROVIDER, holder),
-        Collections.singletonMap(HANDLER_NAME, info.attributes.get(NAME)));
+        Map.of(HANDLER_NAME, info.attributes.get(NAME)));
   }
 
   public static SpecProvider constructSpec(PluginInfo info) {
     Object specObj = info == null ? null : info.attributes.get("spec");
-    if (specObj != null && specObj instanceof Map) {
+    if (specObj != null && specObj instanceof Map<?, ?> map) {
       // Value from Map<String,String> can be a Map because in PluginInfo(String, Map) we assign a
       // Map<String, Object>
       // assert false : "got a map when this should only be Strings";
-      Map<?, ?> map = (Map<?, ?>) specObj;
       return () -> ValidatingJsonMap.getDeepCopy(map, 4, false);
     } else {
       return HANDLER_NAME_SPEC_PROVIDER;
@@ -419,8 +416,7 @@ public class ApiBag {
       ContentStream stream, Map<String, JsonSchemaValidator> validators, boolean validate) {
     List<CommandOperation> parsedCommands = null;
     try {
-      parsedCommands =
-          CommandOperation.readCommands(Collections.singleton(stream), new NamedList<>());
+      parsedCommands = CommandOperation.readCommands(Set.of(stream), new NamedList<>());
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse commands", e);
     }
@@ -451,28 +447,10 @@ public class ApiBag {
     }
     List<Map<String, Object>> errs = CommandOperation.captureErrors(commandsCopy);
     if (!errs.isEmpty()) {
-      throw new ExceptionWithErrObject(
+      throw new SolrErrorWrappingException(
           SolrException.ErrorCode.BAD_REQUEST, "Error in command payload", errs);
     }
     return commandsCopy;
-  }
-
-  public static class ExceptionWithErrObject extends SolrException {
-    private final List<Map<String, Object>> errs;
-
-    public ExceptionWithErrObject(ErrorCode code, String msg, List<Map<String, Object>> errs) {
-      super(code, msg);
-      this.errs = errs;
-    }
-
-    public List<Map<String, Object>> getErrs() {
-      return errs;
-    }
-
-    @Override
-    public String getMessage() {
-      return super.getMessage() + ", errors: " + getErrs() + ", ";
-    }
   }
 
   public static class LazyLoadedApi extends Api {

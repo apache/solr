@@ -22,21 +22,21 @@ import static java.util.Collections.unmodifiableMap;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
+import com.google.common.annotations.VisibleForTesting;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.ConfigNode;
-import org.apache.solr.common.MapSerializable;
-import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.DOMConfigNode;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /** An Object which represents a Plugin of any type */
-public class PluginInfo implements MapSerializable {
+public class PluginInfo implements MapWriter {
   public final String name, className, type, pkgName;
   public final ClassName cName;
   public final NamedList<Object> initArgs;
@@ -59,7 +59,7 @@ public class PluginInfo implements MapSerializable {
       }
     }
     attributes = unmodifiableMap(attrs);
-    this.children = children == null ? Collections.emptyList() : unmodifiableList(children);
+    this.children = children == null ? List.of() : unmodifiableList(children);
     isFromSolrConfig = false;
   }
 
@@ -100,39 +100,23 @@ public class PluginInfo implements MapSerializable {
     }
   }
 
+  /** From XML. */
   public PluginInfo(ConfigNode node, String err, boolean requireName, boolean requireClass) {
     type = node.name();
-    name =
-        node.requiredStrAttr(
-            NAME,
-            requireName
-                ? () -> new RuntimeException(err + ": missing mandatory attribute 'name'")
-                : null);
+    name = requireName ? node.attrRequired(NAME, err) : node.attr(NAME);
     cName =
-        parseClassName(
-            node.requiredStrAttr(
-                CLASS_NAME,
-                requireClass
-                    ? () -> new RuntimeException(err + ": missing mandatory attribute 'class'")
-                    : null));
+        parseClassName(requireClass ? node.attrRequired(CLASS_NAME, err) : node.attr(CLASS_NAME));
     className = cName.className;
     pkgName = cName.pkg;
-    initArgs = DOMUtil.childNodesToNamedList(node);
-    attributes = node.attributes().asMap();
+    initArgs = node.childNodesToNamedList();
+    attributes = node.attributes();
     children = loadSubPlugins(node);
     isFromSolrConfig = true;
   }
 
-  public PluginInfo(Node node, String err, boolean requireName, boolean requireClass) {
-    type = node.getNodeName();
-    name = DOMUtil.getAttr(node, NAME, requireName ? err : null);
-    cName = parseClassName(DOMUtil.getAttr(node, CLASS_NAME, requireClass ? err : null));
-    className = cName.className;
-    pkgName = cName.pkg;
-    initArgs = DOMUtil.childNodesToNamedList(node);
-    attributes = unmodifiableMap(DOMUtil.toMap(node.getAttributes()));
-    children = loadSubPlugins(node);
-    isFromSolrConfig = true;
+  @VisibleForTesting
+  PluginInfo(Node node, String err, boolean requireName, boolean requireClass) {
+    this(new DOMConfigNode(node), err, requireName, requireClass);
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -142,8 +126,7 @@ public class PluginInfo implements MapSerializable {
     for (Map.Entry<String, Object> entry : map.entrySet()) {
       if (NAME.equals(entry.getKey()) || CLASS_NAME.equals(entry.getKey())) continue;
       Object value = entry.getValue();
-      if (value instanceof List) {
-        List<?> list = (List<?>) value;
+      if (value instanceof List<?> list) {
         if (!list.isEmpty() && list.get(0) instanceof Map) { // this is a subcomponent
           for (Object o : list) {
             if (o instanceof Map) o = new NamedList<>((Map) o);
@@ -165,7 +148,7 @@ public class PluginInfo implements MapSerializable {
     // TODO This is not type-safe and needs to be fixed -
     // https://issues.apache.org/jira/browse/SOLR-14696
     attributes = unmodifiableMap(m);
-    this.children = Collections.emptyList();
+    this.children = List.of();
     isFromSolrConfig = true;
   }
 
@@ -179,21 +162,7 @@ public class PluginInfo implements MapSerializable {
           if (pluginInfo.isEnabled()) children.add(pluginInfo);
           return null;
         });
-    return children.isEmpty() ? Collections.emptyList() : unmodifiableList(children);
-  }
-
-  private List<PluginInfo> loadSubPlugins(Node node) {
-    List<PluginInfo> children = new ArrayList<>();
-    // if there is another sub tag with a non namedlist tag that has to be another plugin
-    NodeList nlst = node.getChildNodes();
-    for (int i = 0; i < nlst.getLength(); i++) {
-      Node nd = nlst.item(i);
-      if (nd.getNodeType() != Node.ELEMENT_NODE) continue;
-      if (NL_TAGS.contains(nd.getNodeName())) continue;
-      PluginInfo pluginInfo = new PluginInfo(nd, null, false, false);
-      if (pluginInfo.isEnabled()) children.add(pluginInfo);
-    }
-    return children.isEmpty() ? Collections.emptyList() : unmodifiableList(children);
+    return children.isEmpty() ? List.of() : unmodifiableList(children);
   }
 
   @Override
@@ -225,27 +194,35 @@ public class PluginInfo implements MapSerializable {
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    map.putAll(attributes);
-    Map m = map;
-    if (initArgs != null) m.putAll(initArgs.asMap(3));
-    if (children != null) {
-      for (PluginInfo child : children) {
-        Object old = m.get(child.name);
-        if (old == null) {
-          m.put(child.name, child.toMap(new LinkedHashMap<>()));
-        } else if (old instanceof List) {
-          List list = (List) old;
-          list.add(child.toMap(new LinkedHashMap<>()));
-        } else {
-          ArrayList l = new ArrayList();
-          l.add(old);
-          l.add(child.toMap(new LinkedHashMap<>()));
-          m.put(child.name, l);
-        }
+  public void writeMap(EntryWriter ew) throws IOException {
+    // Direct forEach(ew::putNoEx) does not work: attributes is declared Map<String, String> but
+    // the PluginInfo(String, Map<String, Object>) constructor assigns it via raw types, so values
+    // may not be Strings. The bridge method generated for forEach would CCE on non-String values.
+    new NamedList<>(attributes).writeMap(ew);
+    if (initArgs != null) {
+      initArgs.asMap(3).forEach((k, v) -> ew.putNoEx((String) k, v));
+    }
+    if (children == null || children.isEmpty()) {
+      return;
+    }
+
+    Map<String, Object> childrenGrouped = new LinkedHashMap<>();
+    for (PluginInfo child : children) {
+      Object old = childrenGrouped.get(child.name);
+      if (old == null) {
+        childrenGrouped.put(child.name, child);
+      } else if (old instanceof List list) {
+        list.add(child);
+      } else {
+        List<Object> l = new ArrayList<>();
+        l.add(old);
+        l.add(child);
+        childrenGrouped.put(child.name, l);
       }
     }
-    return m;
+    for (Map.Entry<String, Object> entry : childrenGrouped.entrySet()) {
+      ew.put(entry.getKey(), entry.getValue());
+    }
   }
 
   /**
@@ -262,7 +239,7 @@ public class PluginInfo implements MapSerializable {
   }
 
   public static final PluginInfo EMPTY_INFO =
-      new PluginInfo("", Collections.emptyMap(), new NamedList<>(), Collections.emptyList());
+      new PluginInfo("", Map.of(), new NamedList<>(), List.of());
 
   private static final HashSet<String> NL_TAGS =
       new HashSet<>(asList("lst", "arr", "bool", "str", "int", "long", "float", "double"));

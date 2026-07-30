@@ -22,7 +22,6 @@ import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -544,6 +543,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   private void calculateNumBuckets(SimpleOrderedMap<Object> target) throws IOException {
     DocSet domain = fcontext.base;
     if (freq.prefix != null) {
+      // TODO - Should we enforce minPrefixLength here in the case of 'string' fields, or omit
+      //  since this is an "internal" request? If we want to enforce the limit in this case,
+      //  we should have StrField read the configured limit and cache it in 'init' so that it can
+      //  be read at 'getPrefixQuery' call-time without a QParser.
       Query prefixFilter = sf.getType().getPrefixQuery(null, sf, freq.prefix);
       domain = fcontext.searcher.getDocSet(prefixFilter, domain);
     }
@@ -891,8 +894,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    * @see SweepingCountSlotAcc
    */
   protected boolean registerSweepingAccIfSupportedByCollectAcc() {
-    if (countAcc instanceof SweepingCountSlotAcc && collectAcc instanceof SweepableSlotAcc) {
-      final SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc) countAcc;
+    if (countAcc instanceof SweepingCountSlotAcc sweepingCountAcc
+        && collectAcc instanceof SweepableSlotAcc) {
       collectAcc = ((SweepableSlotAcc<?>) collectAcc).registerSweepingAccs(sweepingCountAcc);
       if (allBucketsAcc != null) {
         allBucketsAcc.collectAcc = collectAcc;
@@ -1038,7 +1041,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   @SuppressWarnings({"unchecked"})
   static <T> List<T> asList(Object list) {
-    return list != null ? (List<T>) list : Collections.emptyList();
+    return list != null ? (List<T>) list : List.of();
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})

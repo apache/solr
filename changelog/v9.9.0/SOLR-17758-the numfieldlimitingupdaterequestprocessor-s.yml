@@ -1,0 +1,9 @@
+title: The NumFieldLimitingUpdateRequestProcessor's "warnOnly" mode has been fixed,
+  and now processes documents even when the limit has been exceeded.
+type: fixed
+authors:
+- name: Jason Gerlowski
+- name: Rahul Goswami
+links:
+- name: SOLR-17758
+  url: https://issues.apache.org/jira/browse/SOLR-17758

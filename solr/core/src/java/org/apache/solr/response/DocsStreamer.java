@@ -16,6 +16,8 @@
  */
 package org.apache.solr.response;
 
+import static org.apache.solr.schema.FieldType.ExternalizeStoredValuesAsObjects;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -55,9 +57,24 @@ import org.apache.solr.search.SolrReturnFields;
 
 /** This streams SolrDocuments from a DocList and applies transformer */
 public class DocsStreamer implements Iterator<SolrDocument> {
-  public static final Set<Class<? extends FieldType>> KNOWN_TYPES = new HashSet<>();
+  /**
+   * A hardcoded list of known Solr field types that will be trusted to control their own conversion
+   * of stored field values into external Objects (via {@link FieldType#toObject}) when returning
+   * {@link SolrDocument} instances to clients.
+   *
+   * <p>For historic reasons, this Set is consulted using an <em>equality</em> basis, so subclasses
+   * of these "known" types are not given the same level of trust.
+   *
+   * <p>Any field type not found in this list will have stored values externalized as
+   * <em>Strings</em> using {@link FieldType#toExternal} unless they implement {@link
+   * ExternalizeStoredValuesAsObjects}
+   *
+   * @deprecated new field types should not be added to this list, instead use {@link
+   *     ExternalizeStoredValuesAsObjects}
+   */
+  @Deprecated public static final Set<Class<? extends FieldType>> KNOWN_TYPES = new HashSet<>();
 
-  private final org.apache.solr.response.ResultContext rctx;
+  private final ResultContext rctx;
   private final SolrDocumentFetcher docFetcher; // a collaborator of SolrIndexSearcher
   private final DocList docs;
 
@@ -73,10 +90,12 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     this.docs = rctx.getDocList();
     transformer = rctx.getReturnFields().getTransformer();
     docIterator = this.docs.iterator();
-    docFetcher = rctx.getSearcher().getDocFetcher();
+    docFetcher = rctx.getDocFetcher();
     solrReturnFields = (SolrReturnFields) rctx.getReturnFields();
 
-    if (transformer != null) transformer.setContext(rctx);
+    if (transformer != null) {
+      transformer.setContext(rctx);
+    }
   }
 
   public int currentIndex() {
@@ -95,13 +114,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     SolrDocument sdoc = docFetcher.solrDoc(id, solrReturnFields);
 
     if (transformer != null) {
-      boolean doScore = rctx.wantsScores();
       try {
-        if (doScore) {
-          transformer.transform(sdoc, id, docIterator.score());
-        } else {
-          transformer.transform(sdoc, id);
-        }
+        transformer.transform(sdoc, id, docIterator);
       } catch (IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Error applying transformer", e);
@@ -114,8 +128,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
    * This method is less efficient then the 3 arg version because it may convert some fields that
    * are not needed
    *
+   * @see #convertLuceneDocToSolrDoc(Document, IndexSchema, ReturnFields)
    * @deprecated use the 3 arg version for better performance
-   * @see #convertLuceneDocToSolrDoc(Document,IndexSchema,ReturnFields)
    */
   @Deprecated
   public static SolrDocument convertLuceneDocToSolrDoc(Document doc, final IndexSchema schema) {
@@ -147,11 +161,11 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     // because that doesn't include extra fields needed by transformers
     final Set<String> fieldNamesNeeded = fields.getLuceneFieldNames();
 
-    BinaryResponseWriter.MaskCharSeqSolrDocument masked = null;
+    JavaBinResponseWriter.MaskCharSeqSolrDocument masked = null;
     final SolrDocument out =
         ResultContext.READASBYTES.get() == null
             ? new SolrDocument()
-            : (masked = new BinaryResponseWriter.MaskCharSeqSolrDocument());
+            : (masked = new JavaBinResponseWriter.MaskCharSeqSolrDocument());
 
     // NOTE: it would be tempting to try and optimize this to loop over fieldNamesNeeded when it's
     // smaller then the IndexableField[] in the Document -- but that's actually *less* effecient
@@ -185,7 +199,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
 
   public static Object getValue(SchemaField sf, IndexableField f) {
     FieldType ft = null;
-    if (sf != null) ft = sf.getType();
+    if (sf != null) {
+      ft = sf.getType();
+    }
 
     if (ft == null) { // handle fields not in the schema
       BytesRef bytesRef = f.binaryValue();
@@ -197,9 +213,12 @@ public class DocsStreamer implements Iterator<SolrDocument> {
           System.arraycopy(bytesRef.bytes, bytesRef.offset, bytes, 0, bytesRef.length);
           return bytes;
         }
-      } else return f.stringValue();
+      } else {
+        return f.stringValue();
+      }
     } else {
-      if (KNOWN_TYPES.contains(ft.getClass())) {
+      if (KNOWN_TYPES.contains(ft.getClass())
+          || ft instanceof FieldType.ExternalizeStoredValuesAsObjects) {
         return ft.toObject(f);
       } else {
         return ft.toExternal(f);
@@ -208,6 +227,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   }
 
   static {
+    // DO NOT ADD TO THIS SET ! ! ! !
+    // SEE JAVADOCS FOR KNOWN_TYPES !
+
     KNOWN_TYPES.add(BoolField.class);
     KNOWN_TYPES.add(StrField.class);
     KNOWN_TYPES.add(TextField.class);
@@ -228,5 +250,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     KNOWN_TYPES.add(DatePointField.class);
     // We do not add UUIDField because UUID object is not a supported type in JavaBinCodec
     // and if we write UUIDField.toObject, we wouldn't know how to handle it in the client side
+
+    // DO NOT ADD TO THIS SET ! ! ! !
+    // SEE JAVADOCS FOR KNOWN_TYPES !
   }
 }

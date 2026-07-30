@@ -110,8 +110,7 @@ public final class QueryResultKey implements Accountable {
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;
-    if (!(o instanceof QueryResultKey)) return false;
-    QueryResultKey other = (QueryResultKey) o;
+    if (!(o instanceof QueryResultKey other)) return false;
 
     // fast check of the whole hash code... most hash tables will only use
     // some of the bits, so if this is a hash collision, it's still likely

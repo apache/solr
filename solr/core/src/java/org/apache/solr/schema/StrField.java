@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -65,12 +64,11 @@ public class StrField extends PrimitiveFieldType {
 
       fval = docval;
     }
-    return Collections.singletonList(fval);
+    return List.of(fval);
   }
 
   public static BytesRef getBytesRef(Object value) {
-    if (value instanceof ByteArrayUtf8CharSequence) {
-      ByteArrayUtf8CharSequence utf8 = (ByteArrayUtf8CharSequence) value;
+    if (value instanceof ByteArrayUtf8CharSequence utf8) {
       return new BytesRef(utf8.getBuf(), utf8.offset(), utf8.size());
     } else return new BytesRef(value.toString());
   }

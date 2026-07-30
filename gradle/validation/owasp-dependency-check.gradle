@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 // This adds OWASP vulnerability validation of project dependencies
 
 // If -Pvalidation.owasp=true is set the validation will also run as part of the check task.
@@ -26,8 +25,8 @@ configure(rootProject) {
   dependencyCheck {
     failBuildOnCVSS = propertyOrDefault("validation.owasp.threshold", 7) as Integer
     formats = ['ALL']
-    skipProjects = [':solr:solr-ref-guide', ':solr-missing-doclet']
-    skipConfigurations = ['unifiedClasspath', 'permitUnusedDeclared']
+    skipProjects = [':solr:solr-ref-guide', ':missing-doclet']
+    skipConfigurations = ['unifiedClasspath']
     suppressionFile = file("${resources}/exclusions.xml")
     analyzers {
       assemblyEnabled = false

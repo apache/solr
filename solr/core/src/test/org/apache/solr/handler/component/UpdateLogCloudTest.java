@@ -25,7 +25,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.MockDirectoryFactory;
@@ -68,7 +68,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     // create an empty collection
     CollectionAdminRequest.createCollection(COLLECTION, "conf", NUM_SHARDS, NUM_REPLICAS)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         COLLECTION, cluster.getZkStateReader(), false, true, DEFAULT_TIMEOUT);
   }
 
@@ -102,7 +102,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     }
 
     cluster.getJettySolrRunner(specialIdx).stop();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         COLLECTION, cluster.getZkStateReader(), false, true, DEFAULT_TIMEOUT);
 
     new UpdateRequest()
@@ -112,7 +112,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), COLLECTION);
 
     cluster.getJettySolrRunner(specialIdx).start();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         COLLECTION, cluster.getZkStateReader(), false, true, DEFAULT_TIMEOUT);
 
     int idx = 0;

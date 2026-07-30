@@ -21,12 +21,10 @@ import static org.hamcrest.Matchers.containsString;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.BasicDistributedZkTest;
@@ -80,7 +78,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     NamedList<Object> createResponse = null;
     try {
       createResponse = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) createResponse.findRecursive("status", "msg");
+      message = createResponse._getStr(List.of("status", "msg"), null);
     } catch (SolrServerException | IOException e) {
       log.error("error sending request", e);
     }
@@ -123,7 +121,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     NamedList<Object> splitResponse = null;
     try {
       splitResponse = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) splitResponse.findRecursive("status", "msg");
+      message = splitResponse._getStr(List.of("status", "msg"), null);
     } catch (SolrServerException | IOException e) {
       log.error("error sending request", e);
     }
@@ -155,7 +153,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     try {
       NamedList<Object> response = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) response.findRecursive("status", "msg");
+      message = response._getStr(List.of("status", "msg"), null);
     } catch (SolrServerException | IOException e) {
       log.error("error sending request", e);
     }
@@ -171,9 +169,9 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     duplicateRequestIdParams.set("collection.configName", "conf1");
     duplicateRequestIdParams.set(CommonAdminParams.ASYNC, "1002");
 
-    final BaseHttpSolrClient.RemoteSolrException thrown =
+    final RemoteSolrException thrown =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               sendRequest(duplicateRequestIdParams);
             });
@@ -230,13 +228,6 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
-
-    try (SolrClient baseServer =
-        new HttpSolrClient.Builder(baseUrl)
-            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-            .build()) {
-      return baseServer.request(request);
-    }
+    return shardToJetty.get(SHARD1).getFirst().jetty.getSolrClient().request(request);
   }
 }

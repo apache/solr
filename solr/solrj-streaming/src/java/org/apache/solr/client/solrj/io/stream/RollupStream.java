@@ -119,8 +119,7 @@ public class RollupStream extends TupleStream implements Expressible {
 
     if (equalitor instanceof FieldEqualitor) {
       flattenedList.add((FieldEqualitor) equalitor);
-    } else if (equalitor instanceof MultipleFieldEqualitor) {
-      MultipleFieldEqualitor mEqualitor = (MultipleFieldEqualitor) equalitor;
+    } else if (equalitor instanceof MultipleFieldEqualitor mEqualitor) {
       for (StreamEqualitor subEqualitor : mEqualitor.getEqs()) {
         flattenedList.addAll(flattenEqualitor(subEqualitor));
       }

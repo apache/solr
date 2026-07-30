@@ -45,8 +45,7 @@ public class MinMaxScaleEvaluator extends RecursiveObjectEvaluator implements Ma
       max = ((Number) values[2]).doubleValue();
     }
 
-    if (values[0] instanceof Matrix) {
-      Matrix matrix = (Matrix) values[0];
+    if (values[0] instanceof Matrix matrix) {
       double[][] data = matrix.getData();
       double[][] scaled = new double[data.length][];
       for (int i = 0; i < scaled.length; i++) {

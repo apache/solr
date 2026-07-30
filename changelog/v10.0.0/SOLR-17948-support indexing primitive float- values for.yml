@@ -1,0 +1,8 @@
+title: Support indexing primitive float[] values for DenseVectorField via JavaBin
+type: added
+authors:
+- name: Puneet Ahuja
+- name: Noble Paul
+links:
+- name: SOLR-17948
+  url: https://issues.apache.org/jira/browse/SOLR-17948

@@ -16,11 +16,11 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-currencyfieldtype-multivalued" version="1.6">
+<schema name="bad-schema-currencyfieldtype-multivalued" version="1.7">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
   <fieldType name="currency" class="solr.CurrencyFieldType" currencyConfig="currency.xml"
              amountLongSuffix="_l" codeStrSuffix="_s"/>
-  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false"/>
   

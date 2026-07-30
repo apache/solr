@@ -291,8 +291,7 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
 
     @Override
     public boolean equals(Object obj) {
-      if (!(obj instanceof TermWithScore)) return false;
-      TermWithScore other = (TermWithScore) obj;
+      if (!(obj instanceof TermWithScore other)) return false;
       return Objects.equals(this.term, other.term);
     }
 

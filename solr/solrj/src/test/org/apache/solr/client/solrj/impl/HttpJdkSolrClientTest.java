@@ -20,60 +20,46 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.net.CookieHandler;
 import java.net.CookieManager;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509ExtendedTrustManager;
 import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.util.SSLTestConfig;
+import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
-
-  private static SSLContext allTrustingSslContext;
-
-  @BeforeClass
-  public static void beforeClass() {
-    try {
-      KeyManagerFactory keyManagerFactory =
-          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-      SSLTestConfig stc = SolrTestCaseJ4.sslConfig;
-      keyManagerFactory.init(stc.defaultKeyStore(), stc.defaultKeyStorePassword().toCharArray());
-
-      SSLContext sslContext = SSLContext.getInstance("SSL");
-      sslContext.init(
-          keyManagerFactory.getKeyManagers(),
-          new TrustManager[] {MOCK_TRUST_MANAGER},
-          stc.notSecureSecureRandom());
-      allTrustingSslContext = sslContext;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
 
   @After
   public void workaroundToReleaseThreads_noClosableUntilJava21() {
@@ -129,14 +115,12 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testDelete() throws Exception {
     DebugServlet.clear();
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpJdkSolrClient client = builder(url).build()) {
       try {
         client.deleteById("id");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
     }
@@ -145,17 +129,141 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testDeleteXml() throws Exception {
     DebugServlet.clear();
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpJdkSolrClient client =
         builder(url).withResponseParser(new XMLResponseParser()).build()) {
       try {
         client.deleteByQuery("*:*");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
+    }
+  }
+
+  /**
+   * A large content-writing request whose connection drops while the body is still being written
+   * must not leave the body-writing thread blocked forever in {@code
+   * PipedInputStream.awaitSpace()}. The server accepts the connection but never reads the body, so
+   * the pipe buffer fills and the writer blocks; when the connection is then reset the writer must
+   * be released (SOLR-17707).
+   */
+  @Test
+  public void testStuckContentWritingThreadIsReleasedOnFailure() throws Exception {
+    // A body far larger than the PipedInputStream buffer and the socket buffers, so the writer is
+    // still blocked in awaitSpace() when the connection drops.
+    StringBuilder big = new StringBuilder();
+    while (big.length() < 8 * 1024 * 1024) {
+      big.append("id_").append(big.length()).append(' ');
+    }
+    UpdateRequest req = new UpdateRequest();
+    req.deleteByQuery(big.toString());
+
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareCachedThreadPool(new NamedThreadFactory("solr-17707-writer"));
+    try (StallThenResetServer server = new StallThenResetServer();
+        HttpJdkSolrClient client =
+            builder(server.baseUrl()).useHttp1_1(true).withExecutor(executor).build()) {
+
+      CompletableFuture<?> cf = client.requestAsync(req, null);
+      server.awaitConnected(30, TimeUnit.SECONDS);
+      Thread.sleep(1000); // let the writer fill the pipe and block in awaitSpace()
+      server.resetAll(); // drop the connection under the in-flight write
+
+      // The request settles (normally exceptionally, from the dropped connection); either way the
+      // point of the test is the thread check below, so just wait for it to complete.
+      cf.handle((r, t) -> null).get(30, TimeUnit.SECONDS);
+
+      // The writer thread must not remain blocked in the pipe after the request has failed.
+      assertTrue(
+          "content-writing thread leaked, still blocked after failure",
+          waitForNoBlockedWriter(15, TimeUnit.SECONDS));
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+  }
+
+  private static boolean waitForNoBlockedWriter(long timeout, TimeUnit unit)
+      throws InterruptedException {
+    long deadline = System.nanoTime() + unit.toNanos(timeout);
+    while (System.nanoTime() < deadline) {
+      if (!hasBlockedWriterThread()) {
+        return true;
+      }
+      Thread.sleep(100);
+    }
+    return !hasBlockedWriterThread();
+  }
+
+  private static boolean hasBlockedWriterThread() {
+    Thread[] threads = new Thread[Thread.activeCount() * 2];
+    int n = Thread.enumerate(threads);
+    for (int i = 0; i < n; i++) {
+      Thread t = threads[i];
+      if (t != null && t.getName().startsWith("solr-17707-writer")) {
+        for (StackTraceElement el : t.getStackTrace()) {
+          if ("awaitSpace".equals(el.getMethodName())) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  /** A TCP server that accepts a connection, never reads the body, then resets on demand. */
+  private static class StallThenResetServer implements AutoCloseable {
+    private final ServerSocket serverSocket;
+    private final List<Socket> accepted = Collections.synchronizedList(new ArrayList<>());
+    private final CountDownLatch connected = new CountDownLatch(1);
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+
+    StallThenResetServer() throws IOException {
+      this.serverSocket = new ServerSocket(0);
+      Thread acceptThread =
+          new Thread(
+              () -> {
+                while (!serverSocket.isClosed()) {
+                  try {
+                    Socket s = serverSocket.accept();
+                    s.setSoLinger(true, 0); // close() sends RST rather than FIN
+                    accepted.add(s);
+                    connected.countDown();
+                    // never read the body: the client's send buffer and the pipe fill up
+                  } catch (IOException ignored) {
+                    return;
+                  }
+                }
+              },
+              "solr-17707-stall-server");
+      acceptThread.setDaemon(true);
+      acceptThread.start();
+    }
+
+    String baseUrl() {
+      return "http://127.0.0.1:" + serverSocket.getLocalPort() + "/solr";
+    }
+
+    void awaitConnected(long timeout, TimeUnit unit) throws InterruptedException {
+      connected.await(timeout, unit);
+    }
+
+    void resetAll() {
+      for (Socket s : accepted) {
+        try {
+          s.close();
+        } catch (IOException ignored) {
+          // ignore
+        }
+      }
+    }
+
+    @Override
+    public void close() throws IOException {
+      if (closed.compareAndSet(false, true)) {
+        resetAll();
+        serverSocket.close();
+      }
     }
   }
 
@@ -170,9 +278,11 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
       DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
     }
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", MUST_ENCODE);
+    q.setParam("case_sensitive_param", "lowercase");
+    q.setParam("CASE_SENSITIVE_PARAM", "uppercase");
     HttpJdkSolrClient.Builder b = builder(url);
     if (rp != null) {
       b.withResponseParser(rp);
@@ -180,21 +290,45 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client = b.build()) {
       client.query(q, method);
       assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+          client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
+    }
+  }
+
+  @Test
+  public void testRequestWithBaseUrl() throws Exception {
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
+    DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
+    String someOtherUrl = solrTestRule.getBaseUrl() + "/some/other/base/url";
+    String intendedUrl = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    SolrQuery q = new SolrQuery("foo");
+    q.setParam("a", MUST_ENCODE);
+
+    HttpJdkSolrClient.Builder b =
+        builder(someOtherUrl).withResponseParser(new JavaBinResponseParser());
+    try (HttpJdkSolrClient client = b.build()) {
+      client.requestWithBaseUrl(intendedUrl, new QueryRequest(q, SolrRequest.METHOD.GET), null);
+      assertEquals(
+          client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
     }
   }
 
   @Test
   public void testGetById() throws Exception {
     DebugServlet.clear();
-    try (HttpJdkSolrClient client = builder(getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
+    try (HttpJdkSolrClient client =
+        builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
       super.testGetById(client);
     }
   }
 
   @Test
   public void testAsyncGet() throws Exception {
-    super.testQueryAsync();
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    ResponseParser rp = new XMLResponseParser();
+    HttpSolrClient.BuilderBase<?, ?> b =
+        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+    super.testQueryAsync(b);
   }
 
   @Test
@@ -211,7 +345,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpJdkSolrClient client =
-        (HttpJdkSolrClient) builder(getBaseUrl() + SLOW_SERVLET_PATH, 500, 500).build()) {
+        (HttpJdkSolrClient)
+            builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH, 500, 500).build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
@@ -224,10 +359,11 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpJdkSolrClient client =
         (HttpJdkSolrClient)
-            builder(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0).build()) {
+            builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
+                .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
     }
   }
@@ -237,7 +373,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpJdkSolrClient client =
         (HttpJdkSolrClient)
-            builder(getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
+            builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
                 .withRequestTimeout(500, TimeUnit.MILLISECONDS)
                 .build()) {
       client.query(q, SolrRequest.METHOD.GET);
@@ -249,7 +385,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testFollowRedirect() throws Exception {
-    final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
+    final String clientUrl = solrTestRule.getBaseUrl() + REDIRECT_SERVLET_PATH;
     try (HttpJdkSolrClient client = builder(clientUrl).withFollowRedirects(true).build()) {
       SolrQuery q = new SolrQuery("*:*");
       client.query(q);
@@ -258,7 +394,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testDoNotFollowRedirect() throws Exception {
-    final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
+    final String clientUrl = solrTestRule.getBaseUrl() + REDIRECT_SERVLET_PATH;
     try (HttpJdkSolrClient client = builder(clientUrl).withFollowRedirects(false).build()) {
       SolrQuery q = new SolrQuery("*:*");
 
@@ -269,7 +405,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testRedirectSwapping() throws Exception {
-    final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
+    final String clientUrl = solrTestRule.getBaseUrl() + REDIRECT_SERVLET_PATH;
     SolrQuery q = new SolrQuery("*:*");
 
     // default for follow redirects is false
@@ -293,7 +429,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   public void testSolrExceptionCodeNotFromSolr() throws IOException, SolrServerException {
-    try (HttpJdkSolrClient client = builder(getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
+    try (HttpJdkSolrClient client =
+        builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
       super.testSolrExceptionCodeNotFromSolr(client);
     } finally {
       DebugServlet.clear();
@@ -301,17 +438,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testSolrExceptionWithNullBaseurl() throws IOException, SolrServerException {
-    try (HttpJdkSolrClient client = builder(null).build()) {
-      super.testSolrExceptionWithNullBaseurl(client);
-    } finally {
-      DebugServlet.clear();
-    }
-  }
-
-  @Test
   public void testUpdateDefault() throws Exception {
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpJdkSolrClient client = builder(url).build()) {
       testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
     }
@@ -328,27 +456,23 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   private void testUpdateXml(boolean http11) throws Exception {
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
 
     // 64k+ post body, just to be sure we are using the [in|out]put streams correctly.
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < 65536; i++) {
-      sb.append("A");
-    }
-    String value = sb.toString();
+    String value = "A".repeat(65536);
 
     try (HttpJdkSolrClient client =
         builder(url)
-            .withRequestWriter(new RequestWriter())
+            .withRequestWriter(new XMLRequestWriter())
             .withResponseParser(new XMLResponseParser())
             .useHttp1_1(http11)
             .build()) {
       testUpdate(client, HttpSolrClientTestBase.WT.XML, "application/xml; charset=UTF-8", value);
       if (http11) {
         assertEquals(HttpClient.Version.HTTP_1_1, client.httpClient.version());
-        assertFalse(
+        assertNull(
             "The HEAD request should not be performed if already forcing Http/1.1.",
-            client.headRequested);
+            client.headSucceededByBaseUri.get(baseUri()));
       } else {
         assertEquals(HttpClient.Version.HTTP_2, client.httpClient.version());
       }
@@ -358,11 +482,11 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testUpdateJavabin() throws Exception {
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpJdkSolrClient client =
         builder(url)
-            .withRequestWriter(new BinaryRequestWriter())
-            .withResponseParser(new BinaryResponseParser())
+            .withRequestWriter(new JavaBinRequestWriter())
+            .withResponseParser(new JavaBinResponseParser())
             .build()) {
       testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
       assertNoHeadRequestWithSsl(client);
@@ -371,9 +495,12 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testCollectionParameters() throws IOException, SolrServerException {
-    HttpJdkSolrClient baseUrlClient = builder(getBaseUrl()).withDefaultCollection(null).build();
+    HttpJdkSolrClient baseUrlClient =
+        builder(solrTestRule.getBaseUrl()).withDefaultCollection(null).build();
     HttpJdkSolrClient collection1UrlClient =
-        builder(getCoreUrl()).withDefaultCollection(null).build();
+        builder(solrTestRule.getBaseUrl() + "/" + DEFAULT_COLLECTION)
+            .withDefaultCollection(null)
+            .build();
     testCollectionParameters(baseUrlClient, collection1UrlClient);
   }
 
@@ -388,7 +515,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client =
         (HttpJdkSolrClient)
             builder(
-                    getBaseUrl() + DEBUG_SERVLET_PATH,
+                    solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH,
                     DEFAULT_CONNECTION_TIMEOUT,
                     DEFAULT_CONNECTION_TIMEOUT)
                 .build()) {
@@ -399,9 +526,9 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testSetCredentialsExplicitly() throws Exception {
     try (HttpJdkSolrClient client =
-        builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+        builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withBasicAuthCredentials("foo", "explicit")
-            .build(); ) {
+            .build()) {
       super.testSetCredentialsExplicitly(client);
     }
   }
@@ -409,16 +536,17 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testPerRequestCredentials() throws Exception {
     try (HttpJdkSolrClient client =
-        builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+        builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withBasicAuthCredentials("foo2", "explicit")
-            .build(); ) {
+            .build()) {
       super.testPerRequestCredentials(client);
     }
   }
 
   @Test
   public void testNoCredentials() throws Exception {
-    try (HttpJdkSolrClient client = builder(getBaseUrl() + DEBUG_SERVLET_PATH).build(); ) {
+    try (HttpJdkSolrClient client =
+        builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
       super.testNoCredentials(client);
     }
   }
@@ -427,9 +555,9 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   public void testUseOptionalCredentials() throws Exception {
     // username foo, password with embedded colon separator is "expli:cit".
     try (HttpJdkSolrClient client =
-        builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+        builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withOptionalBasicAuthCredentials("foo:expli:cit")
-            .build(); ) {
+            .build()) {
       super.testUseOptionalCredentials(client);
     }
   }
@@ -437,37 +565,16 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testUseOptionalCredentialsWithNull() throws Exception {
     try (HttpJdkSolrClient client =
-        builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+        builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withOptionalBasicAuthCredentials(null)
-            .build(); ) {
+            .build()) {
       super.testUseOptionalCredentialsWithNull(client);
     }
   }
 
   @Test
-  public void testProcessorMimeTypes() throws Exception {
-    ResponseParser rp = new XMLResponseParser();
-
-    try (HttpJdkSolrClient client = builder(getBaseUrl()).withResponseParser(rp).build()) {
-      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
-      assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/json"));
-      queryToHelpJdkReleaseThreads(client);
-    }
-
-    rp = new BinaryResponseParser();
-    try (HttpJdkSolrClient client = builder(getBaseUrl()).withResponseParser(rp).build()) {
-      assertTrue(
-          client.processorAcceptsMimeType(
-              rp.getContentTypes(), "application/vnd.apache.solr.javabin"));
-      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/octet-stream"));
-      assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
-      queryToHelpJdkReleaseThreads(client);
-    }
-  }
-
-  @Test
   public void testContentTypeToEncoding() throws Exception {
-    try (HttpJdkSolrClient client = builder(getBaseUrl()).build()) {
+    try (HttpJdkSolrClient client = builder(solrTestRule.getBaseUrl()).build()) {
       assertEquals("UTF-8", client.contentTypeToEncoding("application/xml; charset=UTF-8"));
       assertNull(client.contentTypeToEncoding("application/vnd.apache.solr.javabin"));
       assertNull(client.contentTypeToEncoding("application/octet-stream"));
@@ -481,7 +588,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     ExecutorService myExecutor = null;
     try {
       myExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new NamedThreadFactory("tpiens"));
-      try (HttpJdkSolrClient client = builder(getBaseUrl()).withExecutor(myExecutor).build()) {
+      try (HttpJdkSolrClient client =
+          builder(solrTestRule.getBaseUrl()).withExecutor(myExecutor).build()) {
         assertEquals(myExecutor, client.executor);
         queryToHelpJdkReleaseThreads(client);
       }
@@ -499,7 +607,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   public void testCookieHandlerSettingHonored() throws Exception {
     CookieHandler myCookieHandler = new CookieManager();
     try (HttpJdkSolrClient client =
-        builder(getBaseUrl()).withCookieHandler(myCookieHandler).build()) {
+        builder(solrTestRule.getBaseUrl()).withCookieHandler(myCookieHandler).build()) {
       assertEquals(myCookieHandler, client.httpClient.cookieHandler().get());
       queryToHelpJdkReleaseThreads(client);
     }
@@ -507,10 +615,25 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testPing() throws Exception {
-    try (HttpJdkSolrClient client = builder(getBaseUrl()).build()) {
+    try (HttpJdkSolrClient client = builder(solrTestRule.getBaseUrl()).build()) {
       SolrPingResponse spr = client.ping("collection1");
       assertEquals(0, spr.getStatus());
       assertNull(spr.getException());
+    }
+  }
+
+  @Test
+  public void testMaybeTryHeadRequestHasContentType() throws Exception {
+    DebugServlet.clear();
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    try (HttpJdkSolrClient client = builder(url).build()) {
+      assertTrue(client.maybeTryHeadRequest(url));
+
+      // if https, the client won't attempt a HEAD request
+      if (!client.headSucceededByBaseUri.isEmpty()) {
+        assertEquals("head", DebugServlet.lastMethod);
+        assertTrue(DebugServlet.headers.containsKey("content-type"));
+      }
     }
   }
 
@@ -522,30 +645,40 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
    * @param client the client
    */
   private void queryToHelpJdkReleaseThreads(HttpJdkSolrClient client) throws Exception {
-    client.query("collection1", new MapSolrParams(Collections.singletonMap("q", "*:*")));
+    client.query("collection1", new MapSolrParams(Map.of("q", "*:*")));
   }
 
   private void assertNoHeadRequestWithSsl(HttpJdkSolrClient client) {
     if (isSSLMode()) {
-      assertFalse("The HEAD request should not be performed if using SSL.", client.headRequested);
+      assertNull(
+          "The HEAD request should not be performed if using SSL.",
+          client.headSucceededByBaseUri.get(baseUri()));
+    }
+  }
+
+  private URI baseUri() {
+    try {
+      return new URI(solrTestRule.getBaseUrl());
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
     }
   }
 
   @Override
   protected String expectedUserAgent() {
-    return "Solr[" + HttpJdkSolrClient.class.getName() + "] 1.0";
+    return "Solr[" + HttpJdkSolrClient.class.getName() + "] " + SolrVersion.LATEST_STRING;
   }
 
   @Override
   @SuppressWarnings(value = "unchecked")
-  protected <B extends HttpSolrClientBuilderBase<?, ?>> B builder(
+  protected <B extends HttpSolrClient.BuilderBase<?, ?>> B builder(
       String url, int connectionTimeout, int socketTimeout) {
     HttpJdkSolrClient.Builder b =
         new HttpJdkSolrClient.Builder(url)
             .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
             .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS)
-            .withDefaultCollection(DEFAULT_CORE)
-            .withSSLContext(allTrustingSslContext);
+            .withDefaultCollection(DEFAULT_COLLECTION)
+            .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
     return (B) b;
   }
 
@@ -557,7 +690,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     String[] str = JAVABIN_STR.split(" ");
     byte[] bytes = new byte[str.length];
     for (int i = 0; i < str.length; i++) {
-      int asInt = 0;
       bytes[i] = (byte) Integer.decode("#" + str[i]).intValue();
     }
     return bytes;
@@ -578,52 +710,4 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
           + "6f 6e 21 32 e0 28 72 65 73 "
           + "70 6f 6e 73 65 0c 84 60 60 "
           + "00 01 80";
-
-  /**
-   * Taken from: https://www.baeldung.com/java-httpclient-ssl sec 4.1, 2024/02/12. This is an
-   * all-trusting Trust Manager. Works with self-signed certificates.
-   */
-  private static final TrustManager MOCK_TRUST_MANAGER =
-      new X509ExtendedTrustManager() {
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket)
-            throws CertificateException {
-          // no-op
-        }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket)
-            throws CertificateException {
-          // no-op
-        }
-
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
-            throws CertificateException {
-          // no-op
-        }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
-            throws CertificateException {
-          // no-op
-        }
-
-        @Override
-        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-          return new java.security.cert.X509Certificate[0];
-        }
-
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType)
-            throws CertificateException {
-          // no-op
-        }
-
-        @Override
-        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType)
-            throws CertificateException {
-          // no-op
-        }
-      };
 }

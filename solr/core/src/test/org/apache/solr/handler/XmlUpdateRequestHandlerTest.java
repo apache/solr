@@ -105,7 +105,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExternalEntities() throws Exception {
-    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String file = getFile("mailing_lists.pdf").toUri().toASCIIString();
     String xml =
         "<?xml version=\"1.0\"?>"
             +

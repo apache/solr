@@ -177,13 +177,12 @@ public class BBoxStrategy extends SpatialStrategy {
       numQuads++;
     }
     if (fieldType.indexOptions() != IndexOptions.NONE
-        && fieldType instanceof LegacyFieldType
-        && ((LegacyFieldType) fieldType).numericType() != null) {
+        && fieldType instanceof LegacyFieldType legacyType
+        && legacyType.numericType() != null) {
       if (hasPointVals) {
         throw new IllegalArgumentException(
             "pointValues and LegacyNumericType are mutually exclusive");
       }
-      final LegacyFieldType legacyType = (LegacyFieldType) fieldType;
       if (legacyType.numericType() != LegacyNumericType.DOUBLE) {
         throw new IllegalArgumentException(
             getClass() + " does not support " + legacyType.numericType());
@@ -302,10 +301,9 @@ public class BBoxStrategy extends SpatialStrategy {
   @Override
   public Query makeQuery(SpatialArgs args) {
     Shape shape = args.getShape();
-    if (!(shape instanceof Rectangle))
+    if (!(shape instanceof Rectangle bbox))
       throw new UnsupportedOperationException("Can only query by Rectangle, not " + shape);
 
-    Rectangle bbox = (Rectangle) shape;
     Query spatial;
 
     // Useful for understanding Relations:

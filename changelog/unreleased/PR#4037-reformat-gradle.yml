@@ -1,0 +1,7 @@
+title: Reformat gradle files with IntelliJ / .editorconfig
+type: other
+authors:
+  - name: David Smiley
+links:
+  - name: PR#4037
+    url: https://github.com/apache/solr/pull/4037

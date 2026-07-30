@@ -29,12 +29,13 @@ import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -48,7 +49,7 @@ import org.junit.Test;
 @SuppressSSL
 public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
   JettySolrRunner leaderJetty, followerJetty, followerJettyWithAuth;
-  SolrClient leaderClient, followerClient, followerClientWithAuth;
+  HttpJettySolrClient leaderClient, followerClient, followerClientWithAuth;
   ReplicationTestHelper.SolrInstance leader = null, follower = null, followerWithAuth = null;
 
   private static String user = "solr";
@@ -73,11 +74,9 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
     // leader with Basic auth enabled via security.json
-    leader =
-        new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
     // Configuring basic auth for Leader
     Path solrLeaderHome = Path.of(leader.getHomeDir());
@@ -91,7 +90,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     // follower with no basic auth credentials for leader configured.
     follower =
         new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+            createTempDir("solr-instance"), "follower", leaderJetty.getLocalPort());
     follower.setUp();
     followerJetty = createAndStartJetty(follower);
     followerClient =
@@ -101,7 +100,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     // follower with basic auth credentials for leader configured in solrconfig.xml.
     followerWithAuth =
         new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "follower-auth", leaderJetty.getLocalPort());
+            createTempDir("solr-instance"), "follower-auth", leaderJetty.getLocalPort());
     followerWithAuth.setUp();
     followerJettyWithAuth = createAndStartJetty(followerWithAuth);
     followerClientWithAuth =
@@ -227,7 +226,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     return withBasicAuth(new QueryRequest(q)).process(client);
   }
 
-  private void disablePoll(JettySolrRunner Jetty, SolrClient solrClient)
+  private void disablePoll(JettySolrRunner Jetty, HttpJettySolrClient solrClient)
       throws SolrServerException, IOException {
     ModifiableSolrParams disablePollParams = new ModifiableSolrParams();
     disablePollParams.set(COMMAND, CMD_DISABLE_POLL);
@@ -235,19 +234,18 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     disablePollParams.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(disablePollParams);
     withBasicAuth(req);
-    req.setBasePath(buildUrl(Jetty.getLocalPort()));
 
-    solrClient.request(req, DEFAULT_TEST_CORENAME);
+    final var baseUrl = buildUrl(Jetty.getLocalPort());
+    solrClient.requestWithBaseUrl(baseUrl, req, DEFAULT_TEST_CORENAME);
   }
 
   private void pullIndexFromTo(
       JettySolrRunner srcSolr, JettySolrRunner destSolr, boolean authEnabled)
       throws SolrServerException, IOException {
     String srcUrl = buildUrl(srcSolr.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
-    String destUrl = buildUrl(destSolr.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
     QueryRequest req = getQueryRequestForFetchIndex(authEnabled, srcUrl);
-    req.setBasePath(buildUrl(destSolr.getLocalPort()));
-    followerClient.request(req, DEFAULT_TEST_CORENAME);
+    final var baseUrl = buildUrl(destSolr.getLocalPort());
+    followerClient.requestWithBaseUrl(baseUrl, req, DEFAULT_TEST_CORENAME);
   }
 
   private QueryRequest getQueryRequestForFetchIndex(boolean authEnabled, String srcUrl) {

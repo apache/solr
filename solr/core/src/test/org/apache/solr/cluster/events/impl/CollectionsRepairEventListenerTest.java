@@ -20,9 +20,10 @@ package org.apache.solr.cluster.events.impl;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -36,6 +37,7 @@ import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -105,7 +107,7 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
     V2Request req =
         new V2Request.Builder("/cluster/plugin")
             .withMethod(POST)
-            .withPayload(Collections.singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     V2Response rsp = req.process(cluster.getSolrClient());
     assertNotNull(rsp);
@@ -125,6 +127,17 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     cluster.deleteAllCollections();
+  }
+
+  @AfterClass
+  public static void teardownCluster() throws Exception {
+    CoreContainer cc = cluster.getOpenOverseer().getCoreContainer();
+    cc.getClusterEventProducer().unregisterListener(eventsListener);
+    IOUtils.close(eventsListener);
+    if (repairListener != null) {
+      cc.getClusterEventProducer().unregisterListener(repairListener);
+      IOUtils.close(repairListener);
+    }
   }
 
   @Test

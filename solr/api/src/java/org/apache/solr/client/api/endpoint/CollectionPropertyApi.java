@@ -18,16 +18,36 @@ package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import org.apache.solr.client.api.model.GetCollectionPropertyResponse;
+import org.apache.solr.client.api.model.ListCollectionPropertiesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
 
 /** V2 API definitions for modifying collection-level properties. */
-@Path("/collections/{collName}/properties/{propName}")
+@Path("/collections/{collName}/properties")
 public interface CollectionPropertyApi {
+  @GET
+  @Operation(
+      summary = "List all properties for the specified collection",
+      tags = {"collection-properties"})
+  ListCollectionPropertiesResponse listCollectionProperties(@PathParam("collName") String collName)
+      throws Exception;
+
+  @GET
+  @Path("/{propName}")
+  @Operation(
+      summary = "Get the value of a specific collection property",
+      tags = {"collection-properties"})
+  GetCollectionPropertyResponse getCollectionProperty(
+      @PathParam("collName") String collName, @PathParam("propName") String propName)
+      throws Exception;
+
   @PUT
+  @Path("/{propName}")
   @Operation(
       summary = "Create or update a collection property",
       tags = {"collection-properties"})
@@ -38,6 +58,7 @@ public interface CollectionPropertyApi {
       throws Exception;
 
   @DELETE
+  @Path("/{propName}")
   @Operation(
       summary = "Delete the specified collection property from the collection",
       tags = {"collection-properties"})

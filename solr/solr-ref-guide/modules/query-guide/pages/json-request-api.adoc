@@ -1,4 +1,5 @@
 = JSON Request API
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -22,11 +23,12 @@ There is also some functionality which can only be accessed through this JSON re
 
 == Building JSON Requests
 The core of the JSON Request API is its ability to specify request parameters as JSON in the request body, as shown by the example below:
-[.dynamic-tabs]
---
-[example.tab-pane#curl-simple-json-query]
+
+[tabs#simple-json-query]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -36,15 +38,16 @@ curl http://localhost:8983/solr/techproducts/query -d '
 }'
 ----
 ====
-[example.tab-pane#solrj-simple-json-query]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-query-simple]
 ----
 ====
---
+======
 
 JSON objects are typically sent in the request body, but they can also be sent as values for `json`-prefixed query parameters.  This can be used to override or supplement values specified in the request body.  For example the query parameter `json.limit=5` will override any `limit` value provided in the JSON request body.  You can also specify the entire JSON body in a single `json` query parameter, as shown in the example below:
 [source,bash]
@@ -61,11 +64,11 @@ The JSON Request API has several properties (`filter`, `fields`, etc.) which acc
 
 This layered merging gives the best of both worlds.  Requests can be specified using readable, structured JSON.  But users also have the flexibility to separate out parts of the request that change often.  This can be seen at work in the following example, which combines `json.`-style parameters to override and supplement values found in the main JSON body.
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-query-param-overrides]
+[tabs#json-query-param-overrides]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl 'http://localhost:8983/solr/techproducts/query?json.limit=5&json.filter="cat:electronics"' -d '
@@ -76,23 +79,24 @@ curl 'http://localhost:8983/solr/techproducts/query?json.limit=5&json.filter="ca
 }'
 ----
 ====
-[example.tab-pane#solrj-json-query-param-overrides]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-query-param-overrides]
 ----
 ====
---
+======
 
 This is equivalent to:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-query-param-overrides-equivalent]
+[tabs#json-query-param-overrides-equivalent]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -103,23 +107,24 @@ curl http://localhost:8983/solr/techproducts/query -d '
 }'
 ----
 ====
-[example.tab-pane#solrj-json-query-param-overrides-equivalent]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-query-param-overrides-equivalent]
 ----
 ====
---
+======
 
 
 Similarly, smart merging can be used to create JSON API requests which have no proper request body at all, such as the example below:
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-facet-all-query-params]
+[tabs#json-facet-all-query-params]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&rows=1&
@@ -127,22 +132,23 @@ curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&rows=1&
   json.facet.top_cats={type:terms,field:"cat",limit:3}'
 ----
 ====
-[example.tab-pane#solrj-json-facet-all-query-params]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-facet-all-query-params]
 ----
 ====
---
+======
 
 That is equivalent to the following request:
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-facet-all-query-params-equivalent]
+[tabs#json-facet-all-query-params-equivalent]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -161,15 +167,16 @@ curl http://localhost:8983/solr/techproducts/query -d '
 '
 ----
 ====
-[example.tab-pane#solrj-json-facet-all-query-params-equivalent]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-facet-all-query-params-equivalent]
 ----
 ====
---
+======
 
 See the xref:json-facet-api.adoc[] for more on faceting and analytics commands.
 
@@ -211,11 +218,11 @@ Right now, only some of Solr's traditional query parameters have first class JSO
 
 Parameters not specified in the table above can still be used in the main body of JSON API requests, but they must be put within a `params` block as shown in the example below.
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-query-params-block]
+[tabs#json-query-params-block]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl "http://localhost:8983/solr/techproducts/query?fl=name,price"-d '
@@ -228,16 +235,15 @@ curl "http://localhost:8983/solr/techproducts/query?fl=name,price"-d '
 ----
 ====
 
-[example.tab-pane#solrj-json-query-params-block]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-query-params-block]
 ----
 ====
---
+======
 
 Parameters placed in a `params` block act as if they were added verbatim to the query-parameters of the request.  The request above is equivalent to:
 
@@ -253,11 +259,11 @@ Usage of `queries` key is described in xref:json-query-dsl.adoc#additional-queri
 Of course request templating via parameter substitution works fully with JSON request bodies or parameters as well.
 For example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-query-macro-expansion]
+[tabs#json-query-macro-expansion]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl "http://localhost:8983/solr/techproducts/query?FIELD=text&TERM=memory" -d '
@@ -267,16 +273,15 @@ curl "http://localhost:8983/solr/techproducts/query?FIELD=text&TERM=memory" -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-query-macro-expansion]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-query-macro-expansion]
 ----
 ====
---
+======
 
 === JSON Extensions
 

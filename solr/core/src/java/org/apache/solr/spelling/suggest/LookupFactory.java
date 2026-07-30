@@ -17,18 +17,18 @@
 package org.apache.solr.spelling.suggest;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.spelling.suggest.jaspell.JaspellLookupFactory;
+import org.apache.solr.spelling.suggest.fst.FSTLookupFactory;
 
 /** Suggester factory for creating {@link Lookup} instances. */
 public abstract class LookupFactory {
 
   /** Default lookup implementation to use for SolrSuggester */
-  public static String DEFAULT_FILE_BASED_DICT = JaspellLookupFactory.class.getName();
+  public static String DEFAULT_FILE_BASED_DICT = FSTLookupFactory.class.getName();
 
   /** Create a Lookup using config options in <code>params</code> and current <code>core</code> */
   public abstract Lookup create(NamedList<?> params, SolrCore core);
@@ -50,7 +50,7 @@ public abstract class LookupFactory {
         throw new RuntimeException("Java has no temporary folder property (java.io.tmpdir)?");
       }
       try {
-        tmpBuildDir = FSDirectory.open(Paths.get(tempDirPath));
+        tmpBuildDir = FSDirectory.open(Path.of(tempDirPath));
       } catch (IOException ioe) {
         throw new RuntimeException(ioe);
       }

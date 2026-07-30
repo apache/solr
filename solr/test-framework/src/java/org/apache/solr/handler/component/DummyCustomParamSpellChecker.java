@@ -54,7 +54,7 @@ public class DummyCustomParamSpellChecker extends SolrSpellChecker {
     int i = 0;
     for (String name : lst) {
       String value = options.customParams.get(name);
-      result.add(new Token(name, i, i + 1), Collections.singletonList(value));
+      result.add(new Token(name, i, i + 1), List.of(value));
       i += 2;
     }
     return result;

@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -40,11 +39,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -180,7 +177,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       final byte[] data = writer.toString().getBytes(StandardCharsets.UTF_8);
       if (createOnly) {
         try {
-          zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
+          zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT);
           schemaZkVersion = 0;
           log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
         } catch (KeeperException.NodeExistsException e) {
@@ -192,7 +189,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       } else {
         try {
           // Assumption: the path exists
-          Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion, true);
+          Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion);
           schemaZkVersion = stat.getVersion();
           log.info(
               "Persisted managed schema version {}  at {}", schemaZkVersion, managedSchemaPath);
@@ -253,6 +250,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
 
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
+    // TODO use httpSolrClient.requestAsync instead; it has an executor
     int poolSize = Math.min(concurrentTasks.size(), 10);
     ExecutorService parallelExecutor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
@@ -328,9 +326,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     ClusterState clusterState = zkStateReader.getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-    if (docCollection != null && docCollection.getActiveSlicesArr().length > 0) {
-      final Slice[] activeSlices = docCollection.getActiveSlicesArr();
-      for (Slice next : activeSlices) {
+    if (docCollection != null) {
+      for (Slice next : docCollection.getActiveSlices()) {
         Map<String, Replica> replicasMap = next.getReplicasMap();
         if (replicasMap != null) {
           for (Map.Entry<String, Replica> entry : replicasMap.entrySet()) {
@@ -357,7 +354,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     GetZkSchemaVersionCallable(
         String baseUrl, String coreName, int expectedZkVersion, ZkController zkController) {
-      super(METHOD.GET, "/schema/zkversion");
+      super(METHOD.GET, "/schema/zkversion", SolrRequestType.ADMIN);
       this.zkController = zkController;
       this.baseUrl = baseUrl;
       this.coreName = coreName;
@@ -374,49 +371,45 @@ public final class ManagedIndexSchema extends IndexSchema {
     @Override
     public Integer call() throws Exception {
       int remoteVersion = -1;
-      try (HttpSolrClient solr =
-          new HttpSolrClient.Builder(baseUrl).withDefaultCollection(coreName).build()) {
-        // eventually, this loop will get killed by the ExecutorService's timeout
-        while (remoteVersion == -1
-            || (remoteVersion < expectedZkVersion
-                && !zkController.getCoreContainer().isShutDown())) {
-          try {
-            HttpSolrClient.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
-            NamedList<Object> zkversionResp = mrr.future.get();
-            if (zkversionResp != null) remoteVersion = (Integer) zkversionResp.get("zkversion");
 
-            if (remoteVersion < expectedZkVersion) {
-              // rather than waiting and re-polling, let's be proactive and tell the replica
-              // to refresh its schema from ZooKeeper, if that fails, then the
-              // Thread.sleep(1000); // slight delay before requesting version again
-              log.error(
-                  "Replica {} returned schema version {} and has not applied schema version {}",
-                  coreName,
-                  remoteVersion,
-                  expectedZkVersion);
-            }
+      // eventually, this loop will get killed by the ExecutorService's timeout
+      while (remoteVersion == -1
+          || (remoteVersion < expectedZkVersion && !zkController.getCoreContainer().isShutDown())) {
+        try {
+          NamedList<Object> zkversionResp =
+              zkController
+                  .getCoreContainer()
+                  .getDefaultHttpSolrClient()
+                  .requestWithBaseUrl(baseUrl, this, coreName);
+          if (zkversionResp != null) remoteVersion = (Integer) zkversionResp.get("zkversion");
 
-          } catch (Exception e) {
-            if (e instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-              break; // stop looping
-            } else {
-              log.warn("Failed to get /schema/zkversion from {} due to: ", baseUrl, e);
-            }
+          if (remoteVersion < expectedZkVersion) {
+            // rather than waiting and re-polling, let's be proactive and tell the replica
+            // to refresh its schema from ZooKeeper, if that fails, then the
+            // Thread.sleep(1000); // slight delay before requesting version again
+            log.error(
+                "Replica {} returned schema version {} and has not applied schema version {}",
+                coreName,
+                remoteVersion,
+                expectedZkVersion);
+          }
+
+        } catch (Exception e) {
+          if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+            break; // stop looping
+          } else {
+            log.warn("Failed to get /schema/zkversion from {} due to: ", baseUrl, e);
           }
         }
       }
+
       return remoteVersion;
     }
 
     @Override
-    protected SolrResponse createResponse(SolrClient client) {
-      return null;
-    }
-
-    @Override
-    public String getRequestType() {
-      return SolrRequest.SolrRequestType.ADMIN.toString();
+    protected SolrResponse createResponse(NamedList<Object> namedList) {
+      return new SimpleSolrResponse();
     }
   }
 
@@ -441,7 +434,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     if (isMutable) {
       boolean success = false;
       if (copyFieldNames == null) {
-        copyFieldNames = Collections.emptyMap();
+        copyFieldNames = Map.of();
       }
       newSchema = shallowCopy(true);
 
@@ -645,7 +638,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     if (isMutable) {
       boolean success = false;
       if (copyFieldNames == null) {
-        copyFieldNames = Collections.emptyMap();
+        copyFieldNames = Map.of();
       }
       newSchema = shallowCopy(true);
 

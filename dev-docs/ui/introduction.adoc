@@ -1,0 +1,21 @@
+= New UI
+
+== Introduction
+
+The new UI that is introduced is a standalone frontend client that makes use of Solr's API.
+It is written in Kotlin and uses Compose Multiplatform as the UI framework.
+
+== Overview
+
+Since UI development mostly relies on different technologies and frameworks than backends use,
+the documentation is covering the following topics for new and experienced developers:
+
+- Technology Overview
+- Module Structure and Elements
+- Component Development
+- Testing and Deployment
+
+== Notes
+
+All the references to files and directories in the UI documentation are from within
+the `solr/ui` module, if not otherwise stated.

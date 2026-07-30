@@ -1,0 +1,9 @@
+title: When searching with multiThreaded=true, the internal tasks may now block instead
+  of enqueuing with a risk of rejection. Solr will use less resources under stress
+  but to get the most of your machine, you may want to increase the thread pool.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17414
+  url: https://issues.apache.org/jira/browse/SOLR-17414

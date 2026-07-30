@@ -19,10 +19,9 @@ package org.apache.solr.client.solrj;
 
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.junit.BeforeClass;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the HTTP2 client and the binary codec for
@@ -31,19 +30,14 @@ import org.junit.BeforeClass;
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleBinaryHttp2Test extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
-
   @Override
   public SolrClient createNewSolrClient() {
-    return new Http2SolrClient.Builder(getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+    return new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
         .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-        .withRequestWriter(new BinaryRequestWriter())
+        .withRequestWriter(new JavaBinRequestWriter())
         // where the magic happens
-        .withResponseParser(new BinaryResponseParser())
+        .withResponseParser(new JavaBinResponseParser())
         .build();
   }
 }

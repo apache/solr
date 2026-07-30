@@ -93,14 +93,6 @@ public class XSLTUpdateRequestHandler extends UpdateRequestHandler {
         return;
       }
 
-      if (req.getCore().getCoreDescriptor().isConfigSetTrusted() == false) {
-        throw new SolrException(
-            SolrException.ErrorCode.UNAUTHORIZED,
-            "The configset for this collection was uploaded without any authentication in place,"
-                + " and this operation is not available for collections with untrusted configsets. To use this feature, re-upload the configset"
-                + " after enabling authentication and authorization.");
-      }
-
       final Transformer t = TransformerProvider.getTransformer(req, tr, xsltCacheLifetimeSeconds);
       final DOMResult result = new DOMResult();
 

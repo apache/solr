@@ -73,8 +73,7 @@ public class SpatialFilterQParser extends QParser {
       SchemaField sf = req.getSchema().getField(fields[0]);
       FieldType type = sf.getType();
 
-      if (type instanceof SpatialQueryable) {
-        SpatialQueryable queryable = ((SpatialQueryable) type);
+      if (type instanceof SpatialQueryable queryable) {
         double radius =
             localParams.getDouble(SpatialParams.SPHERE_RADIUS, queryable.getSphereRadius());
         SpatialOptions opts = new SpatialOptions(pointStr, dist, sf, measStr, radius);

@@ -1,0 +1,9 @@
+title: bin/solr stop/start/restart should complain about missing value for options
+  that expect a value.
+type: fixed
+authors:
+- name: Eric Pugh
+- name: Rahul Goswami
+links:
+- name: SOLR-6962
+  url: https://issues.apache.org/jira/browse/SOLR-6962

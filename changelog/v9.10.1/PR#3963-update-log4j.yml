@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Upgrade Log4j to 2.25.3
+type: dependency_update
+authors:
+  - name: Piotr P. Karwasz
+    nick: ppkarwasz
+    url: https://home.apache.org/phonebook.html?uid=pkarwasz
+merge_requests:
+  - 3963

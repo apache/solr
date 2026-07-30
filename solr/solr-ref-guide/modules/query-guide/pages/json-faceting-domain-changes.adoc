@@ -1,4 +1,5 @@
 = JSON Faceting Domain Changes
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -35,11 +36,11 @@ A `\*:*` query facet with a `domain` change can be used to group multiple sub-fa
 The simplest example of a domain change is to specify an additional filter which will be applied to the existing domain.
 This can be done via the `filter` keyword in the `domain` block of the facet.
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-facet-filtered-domain]
+[tabs#json-facet-filtered-domain]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -59,16 +60,15 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-facet-filtered-domain]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-facet-filtered-domain]
 ----
 ====
---
+======
 
 The value of `filter` can be a single query to treat as a filter, or a JSON list of filter queries.
 Each query can be:
@@ -126,11 +126,11 @@ Domains can also be expanded by using the `excludeTags` keyword to discard or ig
 This is used in the example below to show the top two manufacturers matching a search.
 The search results match the filter `manu_id_s:apple`, but the computed facet discards this filter and operates a domain widened by discarding the `manu_id_s`  filter.
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-facet-excludetags-domain]
+[tabs#json-facet-excludetags-domain]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -150,16 +150,15 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-facet-excludetags-domain]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-facet-excludetags-domain]
 ----
 ====
---
+======
 
 The value of `excludeTags` can be a single string tag, an array of string tags, or comma-separated tags in the single string.
 
@@ -175,11 +174,11 @@ But it can also be useful on nested facets when building xref:json-facet-api.ado
 
 Example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-facet-query-domain]
+[tabs#json-facet-query-domain]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -197,16 +196,15 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-facet-query-domain]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-facet-query-domain]
 ----
 ====
---
+======
 
 The value of `query` can be a single query, or a JSON list of queries.
 Each query can be:

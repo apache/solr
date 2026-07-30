@@ -29,10 +29,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -478,6 +478,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       fieldAttributes.put("indexed", "false");
       fieldAttributes.put("multiValued", multi ? "true" : "false");
       fieldAttributes.put("docValues", "true");
+      fieldAttributes.put("useDocValuesAsStored", "true");
       updateList.add(new AddField(fieldAttributes));
     }
   }

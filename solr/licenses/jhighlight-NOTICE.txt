@@ -1,8 +1,0 @@
-JHighlight is Copyright (C) 2000-2006
-* Omnicore Software, Hans Kratz & Dennis Strein GbR,
-* Geert Bevin <gbevin[remove] at uwyn dot com>
-* Arnout Engelen <arnouten[remove] at bzzt dot net>
-
-It is distributed under the terms of either:
-- the common development and distribution license (CDDL), v1.0; or
-- the GNU Lesser General Public License, v2.1 or later

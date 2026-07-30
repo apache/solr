@@ -86,12 +86,12 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
 
   public void testReplicaStateOperations() throws Exception {
     String root = "/testReplicaStateOperations";
-    cluster.getZkClient().create(root, null, CreateMode.PERSISTENT, true);
+    cluster.getZkClient().create(root, null, CreateMode.PERSISTENT);
 
     List<String> states = List.of("R1:2:A", "R1:1:A:L", "R1:0:D", "R3:0:A", "R4:13:A");
 
     for (String state : states) {
-      cluster.getZkClient().create(root + "/" + state, null, CreateMode.PERSISTENT, true);
+      cluster.getZkClient().create(root + "/" + state, null, CreateMode.PERSISTENT);
     }
 
     ZkStateReader zkStateReader = cluster.getZkStateReader();
@@ -106,7 +106,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     rs = PerReplicaStatesOps.fetch(root, zkStateReader.getZkClient(), null);
     assertEquals(4, rs.states.size());
     assertTrue(rs.cversion >= 6);
-    assertEquals(6, cluster.getZkClient().getChildren(root, null, true).size());
+    assertEquals(6, cluster.getZkClient().getChildren(root, null).size());
     ops = PerReplicaStatesOps.flipState("R1", State.DOWN, rs);
 
     assertEquals(4, ops.ops.size());

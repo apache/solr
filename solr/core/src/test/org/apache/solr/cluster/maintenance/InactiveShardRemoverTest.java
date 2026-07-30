@@ -21,7 +21,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -64,9 +63,9 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
       waitForState(
           "Waiting for inactive shard to be deleted",
           collectionName,
-          clusterShape(0, 0),
           5,
-          TimeUnit.SECONDS);
+          TimeUnit.SECONDS,
+          clusterShape(0, 0));
     } finally {
       removePlugin();
     }
@@ -89,16 +88,16 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
       waitForState(
           "Expected shard " + sliceName + " to be in state " + Slice.State.INACTIVE,
           collectionName,
-          (n, c) -> c.getSlice(sliceName).getState() == Slice.State.INACTIVE);
+          c -> c.getSlice(sliceName).getState() == Slice.State.INACTIVE);
 
       final long ttlStart = timeSource.getTimeNs();
 
       waitForState(
           "Waiting for InactiveShardRemover to delete inactive shard",
           collectionName,
-          clusterShape(0, 0),
           ttlSeconds + 5,
-          TimeUnit.SECONDS);
+          TimeUnit.SECONDS,
+          clusterShape(0, 0));
 
       final long ttlEnd = timeSource.getTimeNs();
       final long ttlPeriodSeconds = TimeUnit.NANOSECONDS.toSeconds(ttlEnd - ttlStart);
@@ -168,11 +167,11 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
   private static void addPlugin(final InactiveShardRemoverConfig config)
       throws SolrServerException, IOException {
     PluginMeta plugin = pluginMeta(config);
-    pluginRequest(Collections.singletonMap("add", plugin));
+    pluginRequest(Map.of("add", plugin));
   }
 
   private static void removePlugin() throws SolrServerException, IOException {
-    pluginRequest(Collections.singletonMap("remove", InactiveShardRemover.PLUGIN_NAME));
+    pluginRequest(Map.of("remove", InactiveShardRemover.PLUGIN_NAME));
   }
 
   private static void pluginRequest(Map<String, Object> payload)
@@ -216,7 +215,7 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
                 waitForState(
                     "Expected shard " + s + " to be in state " + Slice.State.INACTIVE,
                     collection.getName(),
-                    (n, c) -> c.getSlice(s.getName()).getState() == Slice.State.INACTIVE);
+                    c -> c.getSlice(s.getName()).getState() == Slice.State.INACTIVE);
               } catch (Exception e) {
                 throw new RuntimeException(e);
               }

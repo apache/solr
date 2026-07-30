@@ -18,7 +18,6 @@ package org.apache.solr.common.cloud;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -40,7 +39,7 @@ import org.apache.solr.common.util.Hash;
  * app/2!user/4!uniqueid
  * </pre>
  *
- * Lets say you had a set of records you want to index together such as a contact in a database,
+ * Let's say you had a set of records you want to index together such as a contact in a database,
  * using a prefix of contact!contactid would allow all contact ids to be bucketed together.
  *
  * <pre>
@@ -99,7 +98,7 @@ public class CompositeIdRouter extends HashBasedRouter {
 
   /**
    * Parse out the route key from {@code id} up to and including the {@link #SEPARATOR}, returning
-   * it's length. If no route key is detected then 0 is returned.
+   * its length. If no route key is detected then 0 is returned.
    */
   public int getRouteKeyWithSeparator(byte[] id, int idOffset, int idLength) {
     final byte SEPARATOR_BYTE = (byte) CompositeIdRouter.SEPARATOR;
@@ -218,14 +217,13 @@ public class CompositeIdRouter extends HashBasedRouter {
 
     if (shardKey.indexOf(SEPARATOR) < 0) {
       // shardKey is a simple id, so don't do a range
-      return Collections.singletonList(
-          hashToSlice(Hash.murmurhash3_x86_32(id, 0, id.length(), 0), collection));
+      return List.of(hashToSlice(Hash.murmurhash3_x86_32(id, 0, id.length(), 0), collection));
     }
 
     Range completeRange = new KeyParser(id).getRange();
 
     List<Slice> targetSlices = new ArrayList<>(1);
-    for (Slice slice : collection.getActiveSlicesArr()) {
+    for (Slice slice : collection.getActiveSlices()) {
       Range range = slice.getRange();
       if (range != null && range.overlaps(completeRange)) {
         targetSlices.add(slice);
@@ -255,7 +253,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       throw new IllegalArgumentException("Key range does not overlap given range");
     }
     if (keyRange.equals(range)) {
-      return Collections.singletonList(keyRange);
+      return List.of(keyRange);
     } else if (keyRange.isSubsetOf(range)) {
       result.add(new Range(range.min, keyRange.min - 1));
       result.add(keyRange);
@@ -276,7 +274,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     int max = range.max;
 
     assert max >= min;
-    if (partitions == 0) return Collections.emptyList();
+    if (partitions == 0) return List.of();
     long rangeSize = (long) max - (long) min;
     long rangeStep = Math.max(1, rangeSize / partitions);
 
@@ -323,7 +321,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     return ranges;
   }
 
-  /** Helper class to calculate parts, masks etc for an id. */
+  /** Helper class to calculate parts, masks etc. for an id. */
   protected static class KeyParser {
     String key;
     int[] numBits;
@@ -347,7 +345,7 @@ public class CompositeIdRouter extends HashBasedRouter {
           if (-1 == secondSeparatorPos) {
             partsList.add(key.substring(firstSeparatorPos + 1));
           } else if (secondSeparatorPos == lastPos) {
-            // Don't make any more parts if the key has exactly two separators and
+            // Don't make any more parts if the key has exactly two separators, and
             // they're the last two chars - back-compatibility with the behavior of
             // String.split() - see SOLR-6257.
             if (firstSeparatorPos < secondSeparatorPos - 1) {
@@ -406,7 +404,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       //  0xF0000000 0xFfffffff
 
       if ((masks[0] == 0 && !triLevel) || (masks[0] == 0 && masks[1] == 0 && triLevel)) {
-        // no bits used from first part of key.. the code above will produce 0x000000000->0xffffffff
+        // no bits used from first part of key, the code above will produce 0x000000000->0xffffffff
         // which only works on unsigned space, but we're using signed space.
         lowerBound = Integer.MIN_VALUE;
         upperBound = Integer.MAX_VALUE;

@@ -18,14 +18,12 @@ package org.apache.solr.highlight;
 
 import org.apache.lucene.search.vectorhighlight.BoundaryScanner;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public abstract class SolrBoundaryScanner extends HighlightingPluginBase
-    implements SolrInfoBean, NamedListInitializedPlugin {
+    implements NamedListInitializedPlugin {
 
   public BoundaryScanner getBoundaryScanner(String fieldName, SolrParams params) {
-    numRequests.inc();
     params = SolrParams.wrapDefaults(params, defaults);
 
     return get(fieldName, params);

@@ -35,14 +35,14 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.FileTypeMagicUtil;
+import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * FileSystem ConfigSetService impl.
+ * File system based ConfigSetService implementation.
  *
  * <p>Loads a ConfigSet defined by the core's configSet property, looking for a directory named for
  * the configSet property value underneath a base directory. If no configSet property is set, loads
@@ -55,15 +55,21 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public static final String METADATA_FILE = ".metadata.json";
 
   private final Path configSetBase;
+  // TODO currently it's not really possible to check paths against allowPaths without a
+  // CoreContainer reference, see SOLR-18059
+  private final CoreContainer cc;
 
   public FileSystemConfigSetService(CoreContainer cc) {
     super(cc.getResourceLoader(), cc.getConfig().hasSchemaCache());
+
+    this.cc = cc;
     this.configSetBase = cc.getConfig().getConfigSetBaseDirectory();
   }
 
   /** Testing purpose */
   protected FileSystemConfigSetService(Path configSetBase) {
     super(null, false);
+    this.cc = null;
     this.configSetBase = configSetBase;
   }
 
@@ -148,28 +154,51 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public void uploadFileToConfig(
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
-    if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
-      log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
-    } else {
-      if (!FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
-        Path filePath = getConfigDir(configName).resolve(normalizePathToOsSeparator(fileName));
-        if (!Files.exists(filePath) || overwriteOnExists) {
-          Files.write(filePath, data);
-        }
-      } else {
-        String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
-        log.warn(
-            "Not including uploading file {}, as it matched the MAGIC signature of a forbidden mime type {}",
-            fileName,
-            mimeType);
+    if (ConfigSetService.isFileForbiddenInConfigSets(fileName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "The file type provided for upload, '"
+              + fileName
+              + "', is forbidden for use in uploading configsets.");
+    }
+    if (FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
+      String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
+      log.warn(
+          "Not including uploading file {}, as it matched the MAGIC signature of a forbidden mime type {}",
+          fileName,
+          mimeType);
+      return;
+    }
+    final var configsetBasePath = getConfigDir(configName);
+    final var configsetFilePath = configsetBasePath.resolve(normalizePathToOsSeparator(fileName));
+    if (!FileUtils.isPathAChildOfParent(
+        configsetBasePath, configsetFilePath)) { // See SOLR-17543 for context
+      log.warn(
+          "Not uploading file [{}], as it resolves to a location [{}] outside of the configset root directory [{}]",
+          fileName,
+          configsetFilePath,
+          configsetBasePath);
+      return;
+    }
+
+    if (overwriteOnExists || !Files.exists(configsetFilePath)) {
+      // Create parent directories if they don't exist (similar to ZK's makePath)
+      Path parent = configsetFilePath.getParent();
+      if (parent != null && !Files.exists(parent)) {
+        Files.createDirectories(parent);
       }
+      Files.write(configsetFilePath, data);
     }
   }
 
   @Override
   public void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
     // store metadata in .metadata.json file
-    Path metadataPath = getConfigDir(configName).resolve(METADATA_FILE);
+    Path configDir = getConfigDir(configName);
+    if (!Files.exists(configDir)) {
+      Files.createDirectory(configDir);
+    }
+    Path metadataPath = configDir.resolve(METADATA_FILE);
     Files.write(metadataPath, Utils.toJSON(data));
   }
 
@@ -181,7 +210,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     try {
       data = Files.readAllBytes(metadataPath);
     } catch (NoSuchFileException e) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     @SuppressWarnings("unchecked")
     Map<String, Object> metadata = (Map<String, Object>) Utils.fromJSON(data);
@@ -209,7 +238,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                 throws IOException {
-              if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(file.getFileName().toString())) {
+              if (ConfigSetService.isFileForbiddenInConfigSets(file.getFileName().toString())) {
                 log.warn(
                     "Not including uploading file to config, as it is a forbidden type: {}",
                     file.getFileName());
@@ -301,6 +330,13 @@ public class FileSystemConfigSetService extends ConfigSetService {
     String configSet = cd.getConfigSet();
     if (configSet == null) return cd.getInstanceDir();
     Path configSetDirectory = configSetBase.resolve(configSet);
+
+    // CoreContainer only null in testing scenarios - bit of a hack, but will go away with
+    // SOLR-18059
+    if (cc != null) {
+      cc.assertPathAllowed(configSetDirectory);
+    }
+
     if (!Files.isDirectory(configSetDirectory))
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,

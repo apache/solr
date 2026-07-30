@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.embedded;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
@@ -41,13 +40,13 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
 
   protected CoreContainer cores = null;
 
-  @Rule public EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
+  @Rule public EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   @Rule public TestRule testRule = new SystemPropertiesRestoreRule();
 
   @BeforeClass
   public static void setUpHome() throws IOException {
-    CONFIG_HOME = getFile("solrj/solr/shared").toPath().toAbsolutePath();
+    CONFIG_HOME = getFile("solrj/solr/shared");
     SOLR_HOME = createTempDir("solrHome");
     FileUtils.copyDirectory(CONFIG_HOME.toFile(), SOLR_HOME.toFile());
   }
@@ -62,28 +61,24 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
     System.setProperty("coreRootDirectory", "."); // relative to Solr home
 
     // The index is always stored within a temporary directory
-    File tempDir = createTempDir().toFile();
+    Path tempDir = createTempDir();
 
-    File dataDir = new File(tempDir, "data1");
-    File dataDir2 = new File(tempDir, "data2");
-    System.setProperty("dataDir1", dataDir.getAbsolutePath());
-    System.setProperty("dataDir2", dataDir2.getAbsolutePath());
-    System.setProperty("tempDir", tempDir.getAbsolutePath());
+    Path dataDir = tempDir.resolve("data1");
+    Path dataDir2 = tempDir.resolve("data2");
+    System.setProperty("dataDir1", dataDir.toString());
+    System.setProperty("dataDir2", dataDir2.toString());
+    System.setProperty("tempDir", tempDir.toString());
     SolrTestCaseJ4.newRandomConfig();
 
-    solrClientTestRule.startSolr(SOLR_HOME);
+    solrTestRule.startSolr(SOLR_HOME);
 
-    cores = solrClientTestRule.getCoreContainer();
+    cores = solrTestRule.getCoreContainer();
   }
 
   @Override
   @After
   public void tearDown() throws Exception {
     if (cores != null) cores.shutdown();
-
-    System.clearProperty("dataDir1");
-    System.clearProperty("dataDir2");
-    System.clearProperty("tests.shardhandler.randomSeed");
 
     deleteAdditionalFiles();
 
@@ -112,6 +107,6 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
   }
 
   protected SolrClient getSolrAdmin() {
-    return solrClientTestRule.getAdminClient();
+    return solrTestRule.getAdminClient();
   }
 }

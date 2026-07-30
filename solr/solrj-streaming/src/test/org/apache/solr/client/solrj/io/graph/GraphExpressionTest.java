@@ -18,9 +18,6 @@
 package org.apache.solr.client.solrj.io.graph;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,7 +27,7 @@ import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -52,11 +49,11 @@ import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -81,7 +78,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
@@ -90,7 +86,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         COLLECTION, cluster.getZkStateReader(), false, true, TIMEOUT);
   }
 
@@ -126,9 +122,11 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
+    var solrConnection =
+        CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withFunctionName("shortestPath", ShortestPathStream.class);
 
     stream =
@@ -418,9 +416,11 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
+    var solrConnection =
+        CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("nodes", GatherNodesStream.class)
             .withFunctionName("search", CloudSolrStream.class)
@@ -744,10 +744,12 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
+    var solrConnection =
+        CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withDefaultZkHost(cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", solrConnection)
+            .withDefaultSolrConnection(solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("scoreNodes", ScoreNodesStream.class)
             .withFunctionName("search", CloudSolrStream.class)
@@ -907,10 +909,12 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
+    var solrConnection =
+        CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withDefaultZkHost(cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", solrConnection)
+            .withDefaultSolrConnection(solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("scoreNodes", ScoreNodesStream.class)
             .withFunctionName("search", CloudSolrStream.class)
@@ -974,9 +978,11 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
+    var solrConnection =
+        CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("count", CountMetric.class)
@@ -1227,13 +1233,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .add(id, "5", "from_s", "jim", "to_s", "ann", "message_t", "Hello steve")
         .commit(cluster.getSolrClient(), COLLECTION);
 
-    commit();
+    SolrClient client = cluster.getRandomJetty(random()).getSolrClient();
 
-    List<JettySolrRunner> runners = cluster.getJettySolrRunners();
-    JettySolrRunner runner = runners.get(0);
-    String url = runner.getBaseUrl().toString();
-
-    SolrClient client = getHttpSolrClient(url);
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     String expr =
@@ -1251,9 +1252,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     NamedList<Object> genericResponse = client.request(query);
 
-    InputStream stream = (InputStream) genericResponse.get("stream");
-    InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
-    String xml = readString(reader);
+    String xml = InputStreamResponseParser.consumeResponseToString(genericResponse);
     // Validate the nodes
     String error =
         BaseTestHarness.validateXPath(
@@ -1280,16 +1279,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     }
 
     client.close();
-  }
-
-  private String readString(InputStreamReader reader) throws Exception {
-    StringBuilder builder = new StringBuilder();
-    int c = 0;
-    while ((c = reader.read()) != -1) {
-      builder.append(((char) c));
-    }
-
-    return builder.toString();
   }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {

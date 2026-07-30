@@ -1,0 +1,9 @@
+title: >
+  HttpJettySolrClient could throw IllegalStateException on connection lost,
+  which foiled LBSolrClient's attempts to classify a request as retry-able.
+type: fixed
+authors:
+  - name: David Smiley
+links:
+  - name: PR#4490
+    url: https://github.com/apache/solr/pull/4490

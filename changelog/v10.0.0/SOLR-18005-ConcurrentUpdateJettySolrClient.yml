@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Renamed ConcurrentUpdateHttp2SolrClient to ConcurrentUpdateBaseSolrClient, made abstract, with a new ConcurrentUpdateJettySolrClient as it's only implementation.
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18005
+    url: https://issues.apache.org/jira/browse/SOLR-18005

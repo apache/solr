@@ -369,9 +369,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
             @Override
             protected void doSetNextReader(LeafReaderContext ctx) throws IOException {
               setNextReaderFirstPhase(ctx);
-              if (globalDocValues instanceof MultiDocValues.MultiSortedDocValues) {
-                MultiDocValues.MultiSortedDocValues multiDocValues =
-                    (MultiDocValues.MultiSortedDocValues) globalDocValues;
+              if (globalDocValues instanceof MultiDocValues.MultiSortedDocValues multiDocValues) {
                 docValues = multiDocValues.values[ctx.ord];
                 toGlobal = multiDocValues.mapping.getGlobalOrds(ctx.ord);
               }

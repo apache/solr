@@ -16,59 +16,171 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.mockito.Mockito.mock;
-
-import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.api.model.DeleteNodeRequestBody;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import java.lang.invoke.MethodHandles;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.NodeApi;
+import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.StrUtils;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** Unit tests for {@link DeleteNode} */
-public class DeleteNodeAPITest extends SolrTestCaseJ4 {
+/** Integration tests for {@link DeleteNode} using the V2 API */
+public class DeleteNodeAPITest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void ensureWorkingMockito() {
-    assumeWorkingMockito();
+  public static void setupCluster() throws Exception {
+    configureCluster(6)
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .configure();
+  }
+
+  @After
+  public void clearCollections() throws Exception {
+    cluster.deleteAllCollections();
   }
 
   @Test
-  public void testV1InvocationThrowsErrorsIfRequiredParametersMissing() {
-    final var api = mock(DeleteNode.class);
-    final SolrException e =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              DeleteNode.invokeUsingV1Inputs(api, new ModifiableSolrParams());
-            });
-    assertEquals("Missing required parameter: node", e.getMessage());
+  public void testDeleteNode() throws Exception {
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    String coll = "deletenodetest_coll";
+    Set<String> liveNodes = cloudClient.getClusterStateProvider().getLiveNodes();
+    ArrayList<String> l = new ArrayList<>(liveNodes);
+    Collections.shuffle(l, random());
+    CollectionAdminRequest.Create create =
+        pickRandom(
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 1, 0),
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 1),
+            // check RF=1
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 0, 0),
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 0));
+    create.setCreateNodeSet(StrUtils.join(l, ','));
+    cloudClient.request(create);
+    String nodeToBeDecommissioned = l.get(0);
+
+    // check what replicas are on the node, and whether the call should fail
+    boolean shouldFail = false;
+    DocCollection docColl = cloudClient.getClusterStateProvider().getCollection(coll);
+    log.info("#### DocCollection: {}", docColl);
+    List<Replica> replicas = docColl.getReplicasOnNode(nodeToBeDecommissioned);
+    for (Replica replica : replicas) {
+      String shard = replica.getShard();
+      Slice slice = docColl.getSlice(shard);
+      boolean hasOtherNonPullReplicas = false;
+      for (Replica r : slice.getReplicas()) {
+        if (!r.getName().equals(replica.getName())
+            && !r.getNodeName().equals(nodeToBeDecommissioned)
+            && r.getType().leaderEligible) {
+          hasOtherNonPullReplicas = true;
+          break;
+        }
+      }
+      if (!hasOtherNonPullReplicas) {
+        shouldFail = true;
+        break;
+      }
+    }
+
+    var request = new NodeApi.DeleteNode(nodeToBeDecommissioned);
+    SubResponseAccumulatingJerseyResponse response = request.process(cloudClient);
+
+    if (log.isInfoEnabled()) {
+      log.info(
+          "####### DocCollection after: {}",
+          cloudClient.getClusterStateProvider().getClusterState().getCollection(coll));
+    }
+
+    if (shouldFail) {
+      assertNotNull(
+          "Expected request to fail, there should be failures sent back",
+          response.failedSubResponsesByNodeName);
+    } else {
+      assertNull(
+          "Expected request to not fail, there should be no failures sent back",
+          response.failedSubResponsesByNodeName);
+    }
   }
 
   @Test
-  public void testValidOverseerMessageIsCreated() {
-    final var requestBody = new DeleteNodeRequestBody();
-    requestBody.async = "async";
-    final ZkNodeProps createdMessage =
-        DeleteNode.createRemoteMessage("nodeNameToDelete", requestBody);
-    final Map<String, Object> createdMessageProps = createdMessage.getProperties();
-    assertEquals(3, createdMessageProps.size());
-    assertEquals("nodeNameToDelete", createdMessageProps.get("node"));
-    assertEquals("async", createdMessageProps.get("async"));
-    assertEquals("deletenode", createdMessageProps.get("operation"));
-  }
+  public void testDeleteNodeAsync() throws Exception {
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    String coll = "deletenodetest_coll_async";
+    Set<String> liveNodes = cloudClient.getClusterStateProvider().getLiveNodes();
+    ArrayList<String> l = new ArrayList<>(liveNodes);
+    Collections.shuffle(l, random());
+    CollectionAdminRequest.Create create =
+        pickRandom(
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 1, 0),
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 1),
+            // check RF=1
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 0, 0),
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 0));
+    create.setCreateNodeSet(StrUtils.join(l, ','));
+    cloudClient.request(create);
+    String nodeToBeDecommissioned = l.get(0);
 
-  @Test
-  public void testRequestBodyCanBeOmitted() throws Exception {
-    final ZkNodeProps createdMessage = DeleteNode.createRemoteMessage("nodeNameToDelete", null);
-    final Map<String, Object> createdMessageProps = createdMessage.getProperties();
-    assertEquals(2, createdMessageProps.size());
-    assertEquals("nodeNameToDelete", createdMessageProps.get("node"));
-    assertEquals("deletenode", createdMessageProps.get("operation"));
-    assertFalse(
-        "Expected message to not contain value for async: " + createdMessageProps.get("async"),
-        createdMessageProps.containsKey("async"));
+    // check what replicas are on the node, and whether the call should fail
+    boolean shouldFail = false;
+    DocCollection docColl = cloudClient.getClusterStateProvider().getCollection(coll);
+    log.info("#### DocCollection: {}", docColl);
+    List<Replica> replicas = docColl.getReplicasOnNode(nodeToBeDecommissioned);
+    for (Replica replica : replicas) {
+      String shard = replica.getShard();
+      Slice slice = docColl.getSlice(shard);
+      boolean hasOtherNonPullReplicas = false;
+      for (Replica r : slice.getReplicas()) {
+        if (!r.getName().equals(replica.getName())
+            && !r.getNodeName().equals(nodeToBeDecommissioned)
+            && r.getType().leaderEligible) {
+          hasOtherNonPullReplicas = true;
+          break;
+        }
+      }
+      if (!hasOtherNonPullReplicas) {
+        shouldFail = true;
+        break;
+      }
+    }
+
+    String asyncId = "003";
+    var request = new NodeApi.DeleteNode(nodeToBeDecommissioned);
+    request.setAsync(asyncId);
+    SubResponseAccumulatingJerseyResponse response = request.process(cloudClient);
+    assertNull(
+        "Expected request to not fail, any failures will be returned in the async status response",
+        response.failedSubResponsesByNodeName);
+
+    // Wait for the async request to complete
+    CollectionAdminRequest.RequestStatusResponse rsp =
+        waitForAsyncClusterRequest(asyncId, Duration.ofSeconds(5));
+
+    if (log.isInfoEnabled()) {
+      log.info(
+          "####### DocCollection after: {}",
+          cloudClient.getClusterStateProvider().getClusterState().getCollection(coll));
+    }
+
+    if (shouldFail) {
+      assertSame(String.valueOf(rsp), RequestStatusState.FAILED, rsp.getRequestStatus());
+    } else {
+      assertNotSame(String.valueOf(rsp), RequestStatusState.FAILED, rsp.getRequestStatus());
+    }
   }
 }

@@ -1,0 +1,9 @@
+title: Add PKI Auth Caching for both generation of the PKI Auth Tokens and validation
+  of received tokens. The default PKI Auth validity TTL has been increased from 5
+  seconds to 10 seconds.
+type: changed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-16951
+  url: https://issues.apache.org/jira/browse/SOLR-16951

@@ -23,18 +23,14 @@ import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
 import java.util.function.Supplier;
-import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,9 +48,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final String configName;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
-  private final Slice[] activeSlicesArr;
   private final Map<String, List<Replica>> nodeNameReplicas;
-  private final Map<String, List<Replica>> nodeNameLeaderReplicas;
   private final DocRouter router;
   private final String znode;
 
@@ -65,28 +59,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Boolean perReplicaState;
   private final Map<String, Replica> replicaMap = new HashMap<>();
   private AtomicReference<PerReplicaStates> perReplicaStatesRef;
-
-  /**
-   * @see DocCollection#create(String, Map, Map, DocRouter, int, Instant, PrsSupplier)
-   */
-  @Deprecated
-  public DocCollection(
-      String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    this(name, slices, props, router, Integer.MAX_VALUE, Instant.EPOCH, null);
-  }
-
-  /**
-   * @see DocCollection#create(String, Map, Map, DocRouter, int, Instant, PrsSupplier)
-   */
-  @Deprecated
-  public DocCollection(
-      String name,
-      Map<String, Slice> slices,
-      Map<String, Object> props,
-      DocRouter router,
-      int zkVersion) {
-    this(name, slices, props, router, zkVersion, Instant.EPOCH, null);
-  }
 
   /**
    * @param name The name of the collection
@@ -114,7 +86,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.configName = (String) props.get(CollectionStateProps.CONFIGNAME);
     this.slices = slices;
     this.activeSlices = new HashMap<>();
-    this.nodeNameLeaderReplicas = new HashMap<>();
     this.nodeNameReplicas = new HashMap<>();
     this.replicationFactor = (Integer) verifyProp(props, CollectionStateProps.REPLICATION_FACTOR);
     this.numReplicas = ReplicaCount.fromProps(props);
@@ -149,7 +120,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         }
       }
     }
-    this.activeSlicesArr = activeSlices.values().toArray(new Slice[0]);
     this.router = router;
     this.znode = getCollectionPath(name);
     assert name != null && slices != null;
@@ -186,8 +156,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
             CollectionStateProps.PER_REPLICA_STATE + " = true , but prsSupplier is not provided");
       }
 
-      if (!hasAnyReplica(
-          slices)) { // a special case, if there is no replica, it should not fetch (first PRS
+      if (!hasAnyReplica(slices)) {
+        // a special case, if there is no replica, it should not fetch (first PRS
         // collection creation with no replicas). Otherwise, it would trigger exception
         // on fetching a state.json that does not exist yet
         perReplicaStates = PerReplicaStates.empty(name);
@@ -232,6 +202,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * that holds the same AtomicReference will see the same update
    *
    * <p>This does not create a new DocCollection.
+   *
+   * @lucene.internal
    */
   public final DocCollection setPerReplicaStates(PerReplicaStates newPerReplicaStates) {
     if (this.perReplicaStatesRef != null) {
@@ -249,22 +221,16 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       nodeNameReplicas.put(replica.getNodeName(), replicas);
     }
     replicas.add(replica);
-
-    if (replica.getStr(ReplicaStateProps.LEADER) != null) {
-      List<Replica> leaderReplicas = nodeNameLeaderReplicas.get(replica.getNodeName());
-      if (leaderReplicas == null) {
-        leaderReplicas = new ArrayList<>();
-        nodeNameLeaderReplicas.put(replica.getNodeName(), leaderReplicas);
-      }
-      leaderReplicas.add(replica);
-    }
   }
 
+  /**
+   * @lucene.internal
+   */
   public static Object verifyProp(Map<String, Object> props, String propName) {
     return verifyProp(props, propName, null);
   }
 
-  public static Object verifyProp(Map<String, Object> props, String propName, Object def) {
+  private static Object verifyProp(Map<String, Object> props, String propName, Object def) {
     Object o = props.get(propName);
     if (o == null) {
       return def;
@@ -336,11 +302,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return activeSlices.values();
   }
 
-  /** Return array of active slices for this collection (performance optimization). */
-  public Slice[] getActiveSlicesArr() {
-    return activeSlicesArr;
-  }
-
   /** Get the map of all slices (sliceName-&gt;Slice) for this collection. */
   public Map<String, Slice> getSlicesMap() {
     return slices;
@@ -351,14 +312,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return activeSlices;
   }
 
-  /** Get the list of replicas hosted on the given node or <code>null</code> if none. */
-  public List<Replica> getReplicas(String nodeName) {
-    return nodeNameReplicas.get(nodeName);
-  }
-
-  /** Get the list of all leaders hosted on the given node or <code>null</code> if none. */
-  public List<Replica> getLeaderReplicas(String nodeName) {
-    return nodeNameLeaderReplicas.get(nodeName);
+  /** Get the list of replicas hosted on the given node, or an empty list if none. */
+  public List<Replica> getReplicasOnNode(String nodeName) {
+    return nodeNameReplicas.getOrDefault(nodeName, List.of());
   }
 
   public int getZNodeVersion() {
@@ -439,36 +395,12 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return slice.getLeader();
   }
 
-  /**
-   * Check that all replicas in a collection are live
-   *
-   * @see CollectionStatePredicate
-   */
-  public static boolean isFullyActive(
-      Set<String> liveNodes,
-      DocCollection collectionState,
-      int expectedShards,
-      int expectedReplicas) {
-    Objects.requireNonNull(liveNodes);
-    if (collectionState == null) return false;
-    int activeShards = 0;
-    for (Slice slice : collectionState) {
-      int activeReplicas = 0;
-      for (Replica replica : slice) {
-        if (replica.isActive(liveNodes) == false) return false;
-        activeReplicas++;
-      }
-      if (activeReplicas != expectedReplicas) return false;
-      activeShards++;
-    }
-    return activeShards == expectedShards;
-  }
-
   @Override
   public Iterator<Slice> iterator() {
     return slices.values().iterator();
   }
 
+  @Deprecated // low usage and builds an ArrayList (surprising)
   public List<Replica> getReplicas() {
     List<Replica> replicas = new ArrayList<>();
     for (Slice slice : this) {
@@ -477,45 +409,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return replicas;
   }
 
-  /**
-   * @param predicate test against shardName vs. replica
-   * @return the first replica that matches the predicate
-   */
-  public Replica getReplica(BiPredicate<String, Replica> predicate) {
-    final Replica[] result = new Replica[1];
-    forEachReplica(
-        (s, replica) -> {
-          if (result[0] != null) return;
-          if (predicate.test(s, replica)) {
-            result[0] = replica;
-          }
-        });
-    return result[0];
-  }
-
-  public List<Replica> getReplicas(EnumSet<Replica.Type> s) {
-    List<Replica> replicas = new ArrayList<>();
-    for (Slice slice : this) {
-      replicas.addAll(slice.getReplicas(s));
-    }
-    return replicas;
-  }
-
-  /** Get the shardId of a core on a specific node */
-  public String getShardId(String nodeName, String coreName) {
-    for (Slice slice : this) {
-      for (Replica replica : slice) {
-        if (Objects.equals(replica.getNodeName(), nodeName)
-            && Objects.equals(replica.getCoreName(), coreName)) return slice.getName();
-      }
-    }
-    return null;
-  }
-
   @Override
   public boolean equals(Object that) {
-    if (!(that instanceof DocCollection)) return false;
-    DocCollection other = (DocCollection) that;
+    if (!(that instanceof DocCollection other)) return false;
     return super.equals(that)
         && Objects.equals(this.name, other.name)
         && this.znodeVersion == other.znodeVersion
@@ -528,33 +424,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /**
-   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#NRT}
-   *     this collection was created with
-   */
-  public Integer getNumNrtReplicas() {
-    return getNumReplicas(Replica.Type.NRT);
-  }
-
-  /**
-   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#TLOG}
-   *     this collection was created with
-   */
-  public Integer getNumTlogReplicas() {
-    return getNumReplicas(Replica.Type.TLOG);
-  }
-
-  /**
-   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PULL}
-   *     this collection was created with
-   */
-  public Integer getNumPullReplicas() {
-    return getNumReplicas(Replica.Type.PULL);
-  }
-
-  /**
    * @return the number of replicas of a given type this collection was created with
    */
-  public Integer getNumReplicas(Replica.Type type) {
+  public int getNumReplicas(Replica.Type type) {
     return numReplicas.get(type);
   }
 
@@ -564,16 +436,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public PerReplicaStates getPerReplicaStates() {
     return perReplicaStatesRef != null ? perReplicaStatesRef.get() : null;
-  }
-
-  @Deprecated
-  public int getExpectedReplicaCount(Replica.Type type, int def) {
-    // def is kept for backwards compatibility.
-    return numReplicas.get(type);
-  }
-
-  public int getExpectedReplicaCount(Replica.Type type) {
-    return numReplicas.get(type);
   }
 
   /** JSON properties related to a collection's state. */

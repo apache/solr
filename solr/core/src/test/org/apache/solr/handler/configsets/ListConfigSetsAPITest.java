@@ -61,7 +61,7 @@ public class ListConfigSetsAPITest extends SolrTestCase {
   }
 
   /**
-   * Test the v2 to v1 response mapping for /cluster/configs
+   * Test the v2 to v1 response mapping for GET /configsets
    *
    * <p>{@link org.apache.solr.handler.admin.ConfigSetsHandler} uses {@link ListConfigSets} (and its
    * response class {@link ListConfigsetsResponse}) internally to serve the v1 version of this

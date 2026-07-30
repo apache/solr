@@ -75,11 +75,6 @@ public class MaxScoreCollectorTest extends SolrTestCase {
     }
 
     @Override
-    public int docID() {
-      return 0;
-    }
-
-    @Override
     public void setMinCompetitiveScore(float minScore) {
       this.minCompetitiveScore = minScore;
     }

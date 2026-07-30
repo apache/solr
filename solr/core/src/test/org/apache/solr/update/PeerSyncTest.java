@@ -22,7 +22,6 @@ import static org.hamcrest.core.StringContains.containsString;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -231,11 +230,11 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertSync(client1, numVersions, false, shardsArr[0]);
 
     // if we turn off fingerprinting, it should succeed
-    System.setProperty("solr.disableFingerprint", "true");
+    System.setProperty("solr.index.replication.fingerprint.enabled", "false");
     try {
       assertSync(client1, numVersions, true, shardsArr[0]);
     } finally {
-      System.clearProperty("solr.disableFingerprint");
+      System.clearProperty("solr.index.replication.fingerprint.enabled");
     }
 
     // let's add the missing document and verify that order doesn't matter
@@ -456,8 +455,8 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
   private static void testHandleVersionsWithRangesNoOther() {
     // no other, solitary us
     for (boolean completeList : new boolean[] {false, true}) {
-      List<Long> otherVersions = Collections.emptyList();
-      List<Long> ourUpdates = Collections.singletonList(42L);
+      List<Long> otherVersions = List.of();
+      List<Long> ourUpdates = List.of(42L);
       assertEquals(1, ourUpdates.size());
       long ourLowThreshold = ourUpdates.get(0);
       MissedUpdatesRequest mur =
@@ -471,8 +470,8 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
   private static void testHandleVersionsWithRangesSameOne() {
     for (boolean completeList : new boolean[] {false, true}) {
-      List<Long> otherVersions = Collections.singletonList(42L);
-      List<Long> ourUpdates = Collections.singletonList(42L);
+      List<Long> otherVersions = List.of(42L);
+      List<Long> ourUpdates = List.of(42L);
       assertEquals(1, ourUpdates.size());
       long ourLowThreshold = ourUpdates.get(0);
       MissedUpdatesRequest mur =

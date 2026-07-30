@@ -1,0 +1,8 @@
+title: Use S3 RetryStrategy instead of RetryPolicy. This fixes the error caused by
+  using the "Adaptive" retry mode.
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-17769
+  url: https://issues.apache.org/jira/browse/SOLR-17769

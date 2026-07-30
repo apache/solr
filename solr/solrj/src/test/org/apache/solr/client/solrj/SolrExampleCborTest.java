@@ -22,21 +22,19 @@ import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import java.util.Set;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
-import org.junit.BeforeClass;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Ignore;
 
 /**
@@ -45,18 +43,13 @@ import org.junit.Ignore;
  * converts them from Map to NamedList
  */
 public class SolrExampleCborTest extends SolrExampleTests {
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new HttpSolrClient.Builder(getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_CORENAME)
-        .allowMultiPartPost(random().nextBoolean())
+    return solrTestRule
+        .newSolrClientBuilder()
         .withRequestWriter(cborRequestWriter())
-        .withResponseParser(cborResponseparser())
+        .withResponseParser(cborResponseParser())
         .build();
   }
 
@@ -199,7 +192,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
   @Override
   @Ignore
-  public void testChildDoctransformer() {
+  public void testChildDocTransformer() {
     /*Ignore*/
   }
 
@@ -241,12 +234,11 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
   @SuppressWarnings("rawtypes")
   private static RequestWriter cborRequestWriter() {
-    return new BinaryRequestWriter() {
+    return new JavaBinRequestWriter() {
 
       @Override
       public ContentWriter getContentWriter(SolrRequest<?> request) {
-        if (request instanceof UpdateRequest) {
-          UpdateRequest updateRequest = (UpdateRequest) request;
+        if (request instanceof UpdateRequest updateRequest) {
           List<SolrInputDocument> docs = updateRequest.getDocuments();
           if (docs == null || docs.isEmpty()) return super.getContentWriter(request);
           return new ContentWriter() {
@@ -255,7 +247,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
               List<Map> mapDocs = new ArrayList<>();
               for (SolrInputDocument doc : docs) {
-                mapDocs.add(doc.toMap(new LinkedHashMap<>()));
+                mapDocs.add(new SimpleOrderedMap(doc));
               }
 
               ObjectMapper cborMapper =
@@ -278,22 +270,10 @@ public class SolrExampleCborTest extends SolrExampleTests {
       public String getUpdateContentType() {
         return "application/cbor";
       }
-
-      @Override
-      public String getPath(SolrRequest<?> req) {
-        if (req instanceof UpdateRequest) {
-          UpdateRequest updateRequest = (UpdateRequest) req;
-          List<SolrInputDocument> docs = updateRequest.getDocuments();
-          if (docs == null || docs.isEmpty()) return super.getPath(req);
-          return "/update/cbor";
-        } else {
-          return super.getPath(req);
-        }
-      }
     };
   }
 
-  private static ResponseParser cborResponseparser() {
+  private static ResponseParser cborResponseParser() {
     return new ResponseParser() {
 
       @Override
@@ -301,29 +281,32 @@ public class SolrExampleCborTest extends SolrExampleTests {
         return "cbor";
       }
 
+      private static final Set<String> CONTENT_TYPES =
+          Set.of("application/cbor", "application/octet-stream");
+
+      @Override
+      public Set<String> getContentTypes() {
+        return CONTENT_TYPES;
+      }
+
       @Override
       @SuppressWarnings({"rawtypes", "unchecked"})
-      public NamedList<Object> processResponse(InputStream b, String encoding) {
+      public NamedList<Object> processResponse(InputStream b, String encoding) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper(new CBORFactory());
-        try {
-          Map m = (Map) objectMapper.readValue(b, Object.class);
-          NamedList nl = new NamedList();
-          m.forEach(
-              (k, v) -> {
-                if (v instanceof Map) {
-                  Map map = (Map) v;
-                  if ("response".equals(k)) {
-                    v = convertResponse((Map) v);
-                  } else {
-                    v = new NamedList(map);
-                  }
+        Map m = (Map) objectMapper.readValue(b, Object.class);
+        NamedList nl = new NamedList();
+        m.forEach(
+            (k, v) -> {
+              if (v instanceof Map map) {
+                if ("response".equals(k)) {
+                  v = convertResponse((Map) v);
+                } else {
+                  v = new NamedList(map);
                 }
-                nl.add(k.toString(), v);
-              });
-          return nl;
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
-        }
+              }
+              nl.add(k.toString(), v);
+            });
+        return nl;
       }
 
       @SuppressWarnings({"rawtypes", "unchecked"})
@@ -345,11 +328,6 @@ public class SolrExampleCborTest extends SolrExampleTests {
           }
         }
         return sdl;
-      }
-
-      @Override
-      public NamedList<Object> processResponse(Reader reader) {
-        return null;
       }
     };
   }

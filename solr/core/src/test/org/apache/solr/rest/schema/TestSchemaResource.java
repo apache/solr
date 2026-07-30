@@ -28,7 +28,7 @@ public class TestSchemaResource extends SolrRestletTestBase {
         "count(/response/lst[@name='schema']/str[@name='name']) = 1",
         "/response/lst[@name='schema']/str[@name='name'][.='test-rest']",
         "count(/response/lst[@name='schema']/float[@name='version']) = 1",
-        "/response/lst[@name='schema']/float[@name='version'][.='1.6']",
+        "/response/lst[@name='schema']/float[@name='version'][.='1.7']",
         "count(/response/lst[@name='schema']/str[@name='uniqueKey']) = 1",
         "/response/lst[@name='schema']/str[@name='uniqueKey'][.='id']",
         "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
@@ -85,7 +85,7 @@ public class TestSchemaResource extends SolrRestletTestBase {
     assertJQ(
         "/schema",
         "/schema/name=='test-rest'",
-        "/schema/version==1.6",
+        "/schema/version==1.7",
         "/schema/uniqueKey=='id'",
         "/schema/fieldTypes/[0]/name=='HTMLstandardtok'",
         "/schema/fieldTypes/[1]/name=='HTMLwhitetok'",
@@ -117,7 +117,7 @@ public class TestSchemaResource extends SolrRestletTestBase {
     assertQ(
         "/schema?wt=schema.xml",
         "/schema/@name = 'test-rest'",
-        "/schema/@version = '1.6'",
+        "/schema/@version = '1.7'",
         "/schema/uniqueKey = 'id'",
         "(/schema/fieldType)[1]/@name = 'HTMLstandardtok'",
         "(/schema/fieldType)[2]/@name = 'HTMLwhitetok'",

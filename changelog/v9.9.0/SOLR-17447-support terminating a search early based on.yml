@@ -1,0 +1,10 @@
+title: Support terminating a search early based on maxHitsAllowed per shard.
+type: added
+authors:
+- name: Siju Varghese
+- name: Houston Putman
+- name: David Smiley
+- name: Gus Heck
+links:
+- name: SOLR-17447
+  url: https://issues.apache.org/jira/browse/SOLR-17447

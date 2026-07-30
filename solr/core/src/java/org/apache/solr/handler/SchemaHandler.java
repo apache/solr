@@ -16,40 +16,44 @@
  */
 package org.apache.solr.handler;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.COPY_FIELDS;
 import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.DYNAMIC_FIELDS;
 import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELDS;
 import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.api.AnnotatedApi;
+import java.util.stream.Collectors;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetSchema;
-import org.apache.solr.handler.admin.api.GetSchemaFieldAPI;
-import org.apache.solr.handler.admin.api.SchemaBulkModifyAPI;
+import org.apache.solr.handler.admin.api.GetSchemaField;
+import org.apache.solr.handler.admin.api.UpdateSchema;
 import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.SchemaManager;
+import org.apache.solr.schema.SchemaManagerUtils;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -62,6 +66,7 @@ public class SchemaHandler extends RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
   private SolrRequestHandler managedResourceRequestHandler;
+  private SolrMetricsContext parentMetricsContext;
 
   // java.util factory collections do not accept null values, so we roll our own
   private static final Map<String, String> level2 = new HashMap<>();
@@ -77,26 +82,45 @@ public class SchemaHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     RequestHandlerUtils.setWt(req, JSON);
-    String httpMethod = (String) req.getContext().get("httpMethod");
-    if ("POST".equals(httpMethod)) {
-      if (isImmutableConfigSet) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "ConfigSet is immutable");
-      }
-      if (req.getContentStreams() == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no stream");
-      }
+    final var httpMethod = (SolrRequest.METHOD) req.getContext().get("httpMethod");
+    switch (httpMethod) {
+      case SolrRequest.METHOD.POST:
+        if (isImmutableConfigSet) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "ConfigSet is immutable");
+        }
+        if (req.getContentStreams() == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no stream");
+        }
 
-      try {
-        List<Map<String, Object>> errs = new SchemaManager(req).performOperations();
-        if (!errs.isEmpty())
-          throw new ApiBag.ExceptionWithErrObject(
-              SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
-      } catch (IOException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Error reading input String " + e.getMessage(), e);
-      }
-    } else {
-      handleGET(req, rsp);
+        try {
+          List<CommandOperation> ops = req.getCommands(false);
+          List<Map<String, Object>> errs = CommandOperation.captureErrors(ops);
+          if (!errs.isEmpty()) {
+            throw new SolrErrorWrappingException(
+                SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
+          }
+
+          final var operationList =
+              ops.stream()
+                  .map(co -> SchemaManagerUtils.convertToSchemaChangeOperations(co))
+                  .collect(Collectors.toList());
+          errs = new SchemaManager(req).performOperations(operationList);
+          if (!errs.isEmpty()) {
+            throw new SolrErrorWrappingException(
+                SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
+          }
+        } catch (IOException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Error reading input String " + e.getMessage(),
+              e);
+        }
+        break;
+      case SolrRequest.METHOD.GET:
+        handleGET(req, rsp);
+        break;
+      default:
+        throw getUnexpectedHttpMethodException(httpMethod.name());
     }
   }
 
@@ -110,8 +134,14 @@ public class SchemaHandler extends RequestHandlerBase
       case "POST":
         return PermissionNameProvider.Name.SCHEMA_EDIT_PERM;
       default:
-        return null;
+        throw getUnexpectedHttpMethodException(ctx.getHttpMethod());
     }
+  }
+
+  public static SolrException getUnexpectedHttpMethodException(String methodName)
+      throws SolrException {
+    return new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST, "Unexpected HTTP method: " + methodName);
   }
 
   private void handleGET(SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -167,10 +197,10 @@ public class SchemaHandler extends RequestHandlerBase
               String realName = parts.get(1);
 
               String pathParam = level2.get(realName); // Might be null
-              if (parts.size() > 2) {
+              if (parts.size() > 2 && pathParam != null) {
                 req.setParams(
                     SolrParams.wrapDefaults(
-                        new MapSolrParams(singletonMap(pathParam, parts.get(2))), req.getParams()));
+                        new MapSolrParams(Map.of(pathParam, parts.get(2))), req.getParams()));
               }
               switch (realName) {
                 case "fields":
@@ -178,12 +208,12 @@ public class SchemaHandler extends RequestHandlerBase
                     if (parts.size() > 2) {
                       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                           rsp,
-                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                          new GetSchemaField(req.getCore().getLatestSchema(), req.getParams())
                               .getFieldInfo(parts.get(2)));
                     } else {
                       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                           rsp,
-                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                          new GetSchemaField(req.getCore().getLatestSchema(), req.getParams())
                               .listSchemaFields());
                     }
                     return;
@@ -192,7 +222,7 @@ public class SchemaHandler extends RequestHandlerBase
                   {
                     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                         rsp,
-                        new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                        new GetSchemaField(req.getCore().getLatestSchema(), req.getParams())
                             .listCopyFields());
                     return;
                   }
@@ -201,12 +231,12 @@ public class SchemaHandler extends RequestHandlerBase
                     if (parts.size() > 2) {
                       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                           rsp,
-                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                          new GetSchemaField(req.getCore().getLatestSchema(), req.getParams())
                               .getDynamicFieldInfo(parts.get(2)));
                     } else {
                       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                           rsp,
-                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                          new GetSchemaField(req.getCore().getLatestSchema(), req.getParams())
                               .listDynamicFields());
                     }
                     return;
@@ -216,12 +246,12 @@ public class SchemaHandler extends RequestHandlerBase
                     if (parts.size() > 2) {
                       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                           rsp,
-                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                          new GetSchemaField(req.getCore().getLatestSchema(), req.getParams())
                               .getFieldTypeInfo(parts.get(2)));
                     } else {
                       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                           rsp,
-                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                          new GetSchemaField(req.getCore().getLatestSchema(), req.getParams())
                               .listSchemaFieldTypes());
                     }
                     return;
@@ -278,23 +308,37 @@ public class SchemaHandler extends RequestHandlerBase
   }
 
   @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    // Store parent context so we can use it in inform() to initialize sub-handlers as siblings
+    this.parentMetricsContext = parentContext;
+    super.initializeMetrics(parentContext, attributes);
+  }
+
+  @Override
   public void inform(SolrCore core) {
     isImmutableConfigSet = SolrConfigHandler.getImmutable(core);
-    this.managedResourceRequestHandler = new ManagedResourceRequestHandler(core.getRestManager());
+    // Only create and initialize the sub-handler if we haven't already
+    if (managedResourceRequestHandler == null) {
+      this.managedResourceRequestHandler = new ManagedResourceRequestHandler(core.getRestManager());
+      // Initialize metrics for the sub-handler as a sibling (using parent context)
+      // This matches the pattern used in InfoHandler
+      // parentMetricsContext should have been set by initializeMetrics() which is called before
+      // inform()
+      if (parentMetricsContext != null) {
+        managedResourceRequestHandler.initializeMetrics(parentMetricsContext, Attributes.empty());
+        getSolrMetricsContext().registerCloseable(managedResourceRequestHandler);
+      }
+    }
   }
 
   @Override
   public Collection<Api> getApis() {
-
-    final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new SchemaBulkModifyAPI(this)));
-
-    return apis;
+    return Collections.EMPTY_LIST;
   }
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(GetSchema.class, GetSchemaFieldAPI.class);
+    return List.of(GetSchema.class, GetSchemaField.class, UpdateSchema.class);
   }
 
   @Override

@@ -52,7 +52,7 @@ public abstract class AbstractDefaultValueUpdateProcessorFactory
     }
 
     if (0 < args.size()) {
-      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): '" + args.getName(0) + "'");
+      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): " + args);
     }
 
     super.init(args);

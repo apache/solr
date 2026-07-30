@@ -30,14 +30,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.handler.admin.api.ModifyRuleBasedAuthConfigAPI;
 import org.slf4j.Logger;
@@ -216,7 +219,7 @@ public abstract class RuleBasedAuthorizationPluginBase
     if (predefinedPermission.wellknownName == PermissionNameProvider.Name.ALL) {
       log.trace("'ALL' perm applies to all requests; perm applies.");
       return true; // 'ALL' applies to everything!
-    } else if (!(context.getHandler() instanceof PermissionNameProvider)) {
+    } else if (!(context.getHandler() instanceof PermissionNameProvider handler)) {
       // TODO: Is this code path needed anymore, now that all handlers implement the interface?
       // context.getHandler returns Object and is not documented
       if (log.isTraceEnabled()) {
@@ -227,8 +230,17 @@ public abstract class RuleBasedAuthorizationPluginBase
       // We're not 'ALL', and the handler isn't associated with any other predefined permissions
       return false;
     } else {
-      PermissionNameProvider handler = (PermissionNameProvider) context.getHandler();
       PermissionNameProvider.Name permissionName = handler.getPermissionName(context);
+      if (permissionName == null) {
+        final var errorMessage =
+            String.format(
+                Locale.ROOT,
+                "Unable to find 'predefined' associated with requestHandler [%s] and request [%s %s]",
+                handler.getClass().getName(),
+                context.getHttpMethod(),
+                context.getResource());
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, errorMessage);
+      }
 
       boolean applies =
           permissionName != null && predefinedPermission.name.equals(permissionName.name);
@@ -347,6 +359,7 @@ public abstract class RuleBasedAuthorizationPluginBase
   }
 
   // this is to do optimized lookup of permissions for a given collection/path
+  @SuppressForbidden(reason = "singletonList(null) is intentional")
   private void add2Mapping(Permission permission) {
     for (String c : permission.collections) {
       WildCardSupportMap m = mapping.computeIfAbsent(c, k -> new WildCardSupportMap());

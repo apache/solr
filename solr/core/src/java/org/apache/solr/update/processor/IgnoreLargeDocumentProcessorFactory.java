@@ -61,7 +61,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
     args.remove(PERMISSIVE_MODE_PARAM);
 
     if (args.size() > 0) {
-      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): '" + args.getName(0) + "'");
+      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): " + args);
     }
   }
 
@@ -170,6 +170,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
     }
 
     private static long primitiveEstimate(Object obj, long def) {
+      if (obj == null) return def;
       Class<?> clazz = obj.getClass();
       if (clazz.isPrimitive()) {
         return primitiveSizes.get(clazz);

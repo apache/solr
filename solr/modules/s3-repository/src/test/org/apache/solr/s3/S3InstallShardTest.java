@@ -20,6 +20,7 @@ package org.apache.solr.s3;
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.apache.solr.cloud.api.collections.AbstractInstallShardTest;
 import org.apache.solr.handler.admin.api.InstallShardData;
 import org.junit.BeforeClass;
@@ -44,6 +45,12 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
           + "    <repository name=\"trackingBackupRepository\" class=\"org.apache.solr.core.TrackingBackupRepository\"> \n"
           + "      <str name=\"delegateRepoName\">s3</str>\n"
           + "    </repository>\n"
+          + "    <repository name=\"errorBackupRepository\" class=\""
+          + AbstractIncrementalBackupTest.ErrorThrowingTrackingBackupRepository.class.getName()
+          + "\"> \n"
+          + "      <str name=\"delegateRepoName\">s3</str>\n"
+          + "      <str name=\"hostPort\">${hostPort:8983}</str>\n"
+          + "    </repository>\n"
           + "    <repository name=\"s3\" class=\"org.apache.solr.s3.S3BackupRepository\"> \n"
           + "      <str name=\"s3.bucket.name\">BUCKET</str>\n"
           + "      <str name=\"s3.region\">REGION</str>\n"
@@ -54,12 +61,9 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
       AbstractInstallShardTest.defaultSolrXmlTextWithBackupRepository(BACKUP_REPOSITORY_XML);
 
   @ClassRule
+  @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder()
-          .silent()
-          .withInitialBuckets(BUCKET_NAME)
-          .withSecureConnection(false)
-          .build();
+      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
 
   @BeforeClass
   public static void setupClass() throws Exception {
@@ -68,8 +72,8 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
 
     AbstractS3ClientTest.setS3ConfFile();
 
-    configureCluster(1) // nodes
-        .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
+    configureCluster(2) // nodes
+        .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
         .withSolrXml(
             SOLR_XML
                 .replace("BUCKET", BUCKET_NAME)

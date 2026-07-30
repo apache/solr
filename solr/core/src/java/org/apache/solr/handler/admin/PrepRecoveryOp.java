@@ -37,6 +37,13 @@ import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Long-polling request sent by a recovering replica to the shard leader. The leader holds the
+ * request open, waiting until it observes the replica reach the expected state (typically
+ * RECOVERING) in ZooKeeper before responding. This synchronization ensures the leader is ready to
+ * accept updates from the replica before recovery proceeds. The wait is bounded by {@code
+ * leaderConflictResolveWait} (default 180s).
+ */
 class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -70,7 +77,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     CloudDescriptor cloudDescriptor;
     try (SolrCore core = coreContainer.getCore(cname)) {
       if (core == null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found: " + cname);
       collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
       cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
     }
@@ -84,11 +91,15 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
               TimeUnit.MILLISECONDS,
               (n, c) -> {
                 if (c == null) return false;
+                if (coreContainer.isShutDown()) {
+                  log.info("Not going to wait for replica to recover - Solr is shutting down");
+                  return false;
+                }
 
                 try (SolrCore core = coreContainer.getCore(cname)) {
                   if (core == null)
                     throw new SolrException(
-                        SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
+                        SolrException.ErrorCode.BAD_REQUEST, "core not found: " + cname);
                   if (onlyIfLeader != null && onlyIfLeader) {
                     if (!core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
                       throw new SolrException(
@@ -158,7 +169,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                               + cname
                               + ", leaderDoesNotNeedRecovery="
                               + leaderDoesNotNeedRecovery
-                              + ", isLeader? "
+                              + ", isLeader="
                               + cloudDescriptor.isLeader()
                               + ", live="
                               + live
@@ -189,11 +200,6 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                       }
                     }
                   }
-                }
-
-                if (coreContainer.isShutDown()) {
-                  throw new SolrException(
-                      SolrException.ErrorCode.BAD_REQUEST, "Solr is shutting down");
                 }
 
                 return false;

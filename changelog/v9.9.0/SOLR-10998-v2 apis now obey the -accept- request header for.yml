@@ -1,0 +1,9 @@
+title: v2 APIs now obey the "Accept" request header for content-negotiation if 'wt'
+  is unspecified. JSON is still used as a default when neither 'Accept' or 'wt' are
+  specified.
+type: changed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-10998
+  url: https://issues.apache.org/jira/browse/SOLR-10998

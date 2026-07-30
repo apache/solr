@@ -27,9 +27,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test for QueryComponent's distributed querying
- *
- * @see org.apache.solr.handler.component.QueryComponent
+ * Tests {@link AnalyticsQuery} and {@link org.apache.solr.handler.component.IterativeMergeStrategy}
  */
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-8433")
 @ThreadLeakScope(Scope.NONE)
@@ -64,15 +62,16 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     commit();
 
     /*
-     *  The count qparser plugin is pointing to AnalyticsTestQParserPlugin. This class defines a simple AnalyticsQuery and
-     *  has two merge strategies. If the "iterate" local param is true then an InteractiveMergeStrategy is used.
+     * The count qparser plugin is pointing to AnalyticsTestQParserPlugin. This class defines a
+     * simple AnalyticsQuery and has two merge strategies. If the "iterate" local param is true then
+     * an IterativeMergeStrategy is used.
      */
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!count}");
     setDistributedParams(params);
-    QueryResponse rsp = queryServer(params);
+    QueryResponse rsp = queryRandomShard(params);
     assertCount(rsp, 11);
 
     // Test IterativeMergeStrategy
@@ -80,14 +79,14 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     params.add("q", "*:*");
     params.add("fq", "{!count iterate=true}");
     setDistributedParams(params);
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
     assertCountOnly(rsp, 44);
 
     params = new ModifiableSolrParams();
     params.add("q", "id:(1 2 5 6)");
     params.add("fq", "{!count}");
     setDistributedParams(params);
-    rsp = queryServer(params);
+    rsp = queryRandomShard(params);
     assertCount(rsp, 4);
   }
 

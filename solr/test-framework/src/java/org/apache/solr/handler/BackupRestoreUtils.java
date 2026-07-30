@@ -20,6 +20,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.URLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,41 +79,28 @@ public class BackupRestoreUtils extends SolrTestCase {
   public static void runCoreAdminCommand(
       String baseUrl, String coreName, String action, Map<String, String> params)
       throws IOException {
-    StringBuilder builder = new StringBuilder();
-    builder.append(baseUrl);
-    builder.append("/admin/cores?action=");
-    builder.append(action);
-    builder.append("&core=");
-    builder.append(coreName);
-    for (Map.Entry<String, String> p : params.entrySet()) {
-      builder.append("&");
-      builder.append(p.getKey());
-      builder.append("=");
-      builder.append(p.getValue());
-    }
-    String leaderUrl = builder.toString();
-    executeHttpRequest(leaderUrl);
+    executeHttpRequest(
+        URLUtil.buildURI(
+            URI.create(baseUrl),
+            "admin/cores",
+            SolrParams.wrapDefaults(
+                new MapSolrParams(params),
+                new MapSolrParams(Map.of("action", action, "core", coreName)))));
   }
 
   public static void runReplicationHandlerCommand(
       String baseUrl, String coreName, String action, String repoName, String backupName)
       throws IOException {
-    String leaderUrl =
-        baseUrl
-            + "/"
-            + coreName
-            + ReplicationHandler.PATH
-            + "?command="
-            + action
-            + "&repository="
-            + repoName
-            + "&name="
-            + backupName;
-    executeHttpRequest(leaderUrl);
+    executeHttpRequest(
+        URLUtil.buildURI(
+            URI.create(baseUrl),
+            coreName + ReplicationHandler.PATH,
+            new MapSolrParams(
+                Map.of("command", action, "repository", repoName, "name", backupName))));
   }
 
-  static void executeHttpRequest(String requestUrl) throws IOException {
-    URL url = new URL(requestUrl);
+  private static void executeHttpRequest(URI uri) throws IOException {
+    URL url = uri.toURL();
     try (InputStream stream = url.openStream()) {
       assert stream != null;
     }

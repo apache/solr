@@ -24,7 +24,7 @@ import java.util.Iterator;
  * <p>The order of the documents is determined by the context in which the DocIterator instance was
  * retrieved.
  */
-public interface DocIterator extends Iterator<Integer> {
+public interface DocIterator extends Iterator<Integer>, DocIterationInfo {
   // already declared in superclass, redeclaring prevents javadoc inheritance
   // public boolean hasNext();
 
@@ -35,12 +35,4 @@ public interface DocIterator extends Iterator<Integer> {
    * @see #next()
    */
   public int nextDoc();
-
-  /**
-   * Returns the score for the document just returned by <code>nextDoc()</code>
-   *
-   * <p>The value returned may be meaningless depending on the context in which the DocIterator
-   * instance was retrieved.
-   */
-  public float score();
 }

@@ -16,14 +16,19 @@
  */
 package org.apache.solr.update;
 
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import java.util.Map;
+import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
+import static org.apache.solr.update.SolrIndexWriter.MERGE_OP_ATTR;
+import static org.apache.solr.update.SolrIndexWriter.MERGE_STATE_ATTR;
+import static org.apache.solr.update.SolrIndexWriter.MERGE_TYPE_ATTR;
+import static org.apache.solr.update.SolrIndexWriter.RESULT_ATTR;
+
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
 import org.junit.Test;
 
@@ -39,7 +44,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = lrf.makeRequest();
     UpdateHandler uh = req.getCore().getUpdateHandler();
     AddUpdateCommand add = new AddUpdateCommand(req);
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 800; i++) {
       add.clear();
       add.solrDoc = new SolrInputDocument();
       add.solrDoc.addField("id", "" + i);
@@ -52,84 +57,152 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testIndexMetricsNoDetails() throws Exception {
-    System.setProperty("solr.tests.metrics.merge", "true");
-    System.setProperty("solr.tests.metrics.mergeDetails", "false");
-    initCore("solrconfig-indexmetrics.xml", "schema.xml");
-
-    addDocs();
-
-    MetricRegistry registry =
-        h.getCoreContainer()
-            .getMetricManager()
-            .registry(h.getCore().getCoreMetricManager().getRegistryName());
-    assertNotNull(registry);
-
-    Map<String, Metric> metrics = registry.getMetrics();
-
-    assertEquals(
-        13, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
-
-    // check basic index meters
-    Timer timer = (Timer) metrics.get("INDEX.merge.minor");
-    assertTrue("minorMerge: " + timer.getCount(), timer.getCount() >= 3);
-    timer = (Timer) metrics.get("INDEX.merge.major");
-    assertEquals("majorMerge: " + timer.getCount(), 0, timer.getCount());
-    // check detailed meters
-    assertNull((Meter) metrics.get("INDEX.merge.major.docs"));
-    Meter meter = (Meter) metrics.get("INDEX.flush");
-    assertTrue("flush: " + meter.getCount(), meter.getCount() > 10);
-  }
-
-  @Test
   public void testIndexNoMetrics() throws Exception {
-    System.setProperty("solr.tests.metrics.merge", "false");
-    System.setProperty("solr.tests.metrics.mergeDetails", "false");
     initCore("solrconfig-indexmetrics.xml", "schema.xml");
-
     addDocs();
-
-    MetricRegistry registry =
-        h.getCoreContainer()
-            .getMetricManager()
-            .registry(h.getCore().getCoreMetricManager().getRegistryName());
-    assertNotNull(registry);
-
-    Map<String, Metric> metrics = registry.getMetrics();
-    // INDEX.size, INDEX.sizeInBytes, INDEX.segmentCount
-    assertEquals(
-        3, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
+    try (SolrCore core = h.getCoreContainer().getCore("collection1")) {
+      var indexSize =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              core,
+              "solr_core_index_size_megabytes",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label("category", "CORE")
+                  .build());
+      var segmentSize =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              core,
+              "solr_core_segments",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label("category", "CORE")
+                  .build());
+      assertNotNull(indexSize);
+      assertNotNull(segmentSize);
+    }
   }
 
   @Test
-  public void testIndexMetricsWithDetails() throws Exception {
-    System.setProperty("solr.tests.metrics.merge", "false"); // test mergeDetails override too
-    System.setProperty("solr.tests.metrics.mergeDetails", "true");
+  public void testIndexMetricsMajorAndMinorMerges() throws Exception {
+    System.setProperty("solr.tests.metrics.majorMergeDocs", "450");
     initCore("solrconfig-indexmetrics.xml", "schema.xml");
 
     addDocs();
 
-    MetricRegistry registry =
-        h.getCoreContainer()
-            .getMetricManager()
-            .registry(h.getCore().getCoreMetricManager().getRegistryName());
-    assertNotNull(registry);
+    try (SolrCore core = h.getCoreContainer().getCore("collection1")) {
+      var prometheusMetricReader = SolrMetricTestUtils.getPrometheusMetricReader(core);
+      assertNotNull(prometheusMetricReader);
+      MetricSnapshots otelMetrics = prometheusMetricReader.collect();
+      assertTrue("Metrics count: " + otelMetrics.size(), otelMetrics.size() >= 18);
 
-    Map<String, Metric> metrics = registry.getMetrics();
+      // addDocs() adds 800 documents and then sends a commit.  maxBufferedDocs==100,
+      // segmentsPerTier==3,
+      //     maxMergeAtOnce==3 and majorMergeDocs==450.  Thus, new documents form segments with 100
+      // docs, merges are
+      //     called for when there are 3 segments at the lowest tier, and the merges are as follows:
+      //     1. 100 + 100 + 100 ==> new 300 doc segment, below the 450 threshold ==> minor merge
+      //     2. 100 + 100 + 100 ==> new 300 doc segment, below the 450 threshold ==> minor merge
+      //     3. 300 + 100 + 100 ==> new 500 doc segment, above the 450 threshold ==> major merge
 
-    assertTrue(
-        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count() >= 12);
+      // check basic index meters
+      var minorMergeTimer =
+          SolrMetricTestUtils.getHistogramDatapoint(
+              core,
+              "solr_core_indexwriter_merge_time_milliseconds",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "minor")
+                  .build());
+      assertEquals(
+          "minorMergeTimer instances should be at least 2, got: " + minorMergeTimer.getCount(),
+          2,
+          minorMergeTimer.getCount());
+      var majorMergeTimer =
+          SolrMetricTestUtils.getHistogramDatapoint(
+              core,
+              "solr_core_indexwriter_merge_time_milliseconds",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "major")
+                  .build());
+      assertEquals(
+          "majorMergeTimer instances should be at least 1, got: " + majorMergeTimer.getCount(),
+          1,
+          majorMergeTimer.getCount());
 
-    // check basic index meters
-    Timer timer = (Timer) metrics.get("INDEX.merge.minor");
-    assertTrue("minorMerge: " + timer.getCount(), timer.getCount() >= 3);
-    timer = (Timer) metrics.get("INDEX.merge.major");
-    assertEquals("majorMerge: " + timer.getCount(), 0, timer.getCount());
-    // check detailed meters
-    Meter meter = (Meter) metrics.get("INDEX.merge.major.docs");
-    assertEquals("majorMergeDocs: " + meter.getCount(), 0, meter.getCount());
+      var minorMergeDocs =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_core_indexwriter_merge_docs",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "minor")
+                  .label(MERGE_OP_ATTR.toString(), "merge")
+                  .label(MERGE_STATE_ATTR.toString(), "completed")
+                  .label(RESULT_ATTR.toString(), "success")
+                  .build());
+      assertEquals(
+          "minorMergeDocs should be 600, got: " + minorMergeDocs.getValue(),
+          600,
+          (long) minorMergeDocs.getValue());
+      var majorMergeDocs =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_core_indexwriter_merge_docs",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "major")
+                  .label(MERGE_OP_ATTR.toString(), "merge")
+                  .label(MERGE_STATE_ATTR.toString(), "completed")
+                  .label(RESULT_ATTR.toString(), "success")
+                  .build());
+      assertEquals(
+          "majorMergeDocs should be 500, got: " + majorMergeDocs.getValue(),
+          500,
+          (long) majorMergeDocs.getValue());
 
-    meter = (Meter) metrics.get("INDEX.flush");
-    assertTrue("flush: " + meter.getCount(), meter.getCount() > 10);
+      // segments metrics
+      var minorSegmentsMergeMetric =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_core_indexwriter_merge_segments",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "minor")
+                  .label(MERGE_STATE_ATTR.toString(), "completed")
+                  .label(RESULT_ATTR.toString(), "success")
+                  .build());
+      assertNotNull("minor segment merges metric should exist", minorSegmentsMergeMetric);
+      assertEquals(
+          "number of minor segments merged should be 6, got: "
+              + minorSegmentsMergeMetric.getValue(),
+          6,
+          (long) minorSegmentsMergeMetric.getValue());
+      var majorSegmentsMergeMetric =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_core_indexwriter_merge_segments",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "major")
+                  .label(MERGE_STATE_ATTR.toString(), "completed")
+                  .label(RESULT_ATTR.toString(), "success")
+                  .build());
+      assertNotNull("major segment merges metric should exist", majorSegmentsMergeMetric);
+      assertEquals(
+          "number of major segments merged should be 3, got: "
+              + majorSegmentsMergeMetric.getValue(),
+          3,
+          (long) majorSegmentsMergeMetric.getValue());
+
+      var flushCounter =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_core_indexwriter_flushes",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .build());
+      assertTrue(
+          "should be at greater than 10 flushes: " + flushCounter.getValue(),
+          flushCounter.getValue() >= 10);
+    }
   }
 }

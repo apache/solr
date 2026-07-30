@@ -20,7 +20,6 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -100,10 +99,10 @@ public abstract class FieldMutatingUpdateProcessorFactory extends UpdateRequestP
     implements SolrCoreAware {
 
   public static final class SelectorParams {
-    public Set<String> fieldName = Collections.emptySet();
-    public Set<String> typeName = Collections.emptySet();
-    public Collection<String> typeClass = Collections.emptyList();
-    public Collection<Pattern> fieldRegex = Collections.emptyList();
+    public Set<String> fieldName = Set.of();
+    public Set<String> typeName = Set.of();
+    public Collection<String> typeClass = List.of();
+    public Collection<Pattern> fieldRegex = List.of();
     public Boolean fieldNameMatchesSchemaField = null; // null => not specified
 
     public boolean noSelectorsSpecified() {
@@ -165,16 +164,15 @@ public abstract class FieldMutatingUpdateProcessorFactory extends UpdateRequestP
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "'exclude' init param can not be null");
       }
-      if (!(excObj instanceof NamedList)) {
+      if (!(excObj instanceof NamedList<?> exc)) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "'exclude' init param must be <lst/>");
       }
-      NamedList<?> exc = (NamedList<?>) excObj;
       exclusions.add(parseSelectorParams(exc));
       if (0 < exc.size()) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
-            "Unexpected 'exclude' init sub-param(s): '" + args.getName(0) + "'");
+            "Unexpected 'exclude' init sub-param(s): " + args);
       }
       // call once per instance
       args.remove("exclude");
@@ -197,8 +195,7 @@ public abstract class FieldMutatingUpdateProcessorFactory extends UpdateRequestP
 
     if (0 < args.size()) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Unexpected init param(s): '" + args.getName(0) + "'");
+          SolrException.ErrorCode.SERVER_ERROR, "Unexpected init param(s): " + args);
     }
   }
 

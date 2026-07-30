@@ -16,14 +16,11 @@
  */
 package org.apache.solr.rest.schema.analysis;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,33 +39,18 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
-
-    final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
+    Path tmpSolrHome = createTempDir();
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
-    createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
-        "solrconfig-managed-schema.xml",
-        "schema-rest.xml",
-        "/solr",
-        true,
-        extraServlets);
+    createJettyAndHarness(tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml");
   }
 
   @After
   public void after() throws Exception {
-    solrClientTestRule.reset();
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("enable.update.log");
-
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
+    solrTestRule.reset();
   }
 
   /**

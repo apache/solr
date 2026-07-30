@@ -17,15 +17,15 @@
   -->
 
 
-<schema name="nested-docs" version="1.6">
+<schema name="nested-docs" version="1.7">
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
-  <field name="id_i" type="int" indexed="true" multiValued="false" docValues="true" stored="false" useDocValuesAsStored="false" />
+  <field name="id_i" type="int" indexed="true" multiValued="false" stored="false" useDocValuesAsStored="false" />
   <!-- copy id field as int -->
   <copyField source="id" dest="id_i"/>
 
   <!-- for versioning -->
-  <field name="_version_" type="long" indexed="false" stored="false" docValues="true"/>
+  <field name="_version_" type="long" indexed="false" stored="false"/>
   <!-- points to the root document of a block of nested documents -->
   <field name="_root_" type="string" indexed="true" stored="false"/>
 
@@ -37,25 +37,25 @@
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
 
   <!-- required to test updates nested inplaceUpdates -->
-  <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false" docValues="true"/>
+  <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false"/>
 
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
   <fieldType name="_nest_path_" class="solr.NestPathField" />
 
   <!-- Point Fields -->
-  <fieldType name="int" class="solr.IntPointField" docValues="true"/>
-  <fieldType name="long" class="solr.LongPointField" docValues="true"/>
-  <fieldType name="double" class="solr.DoublePointField" docValues="true"/>
-  <fieldType name="float" class="solr.FloatPointField" docValues="true"/>
-  <fieldType name="date" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="int" class="solr.IntPointField"/>
+  <fieldType name="long" class="solr.LongPointField"/>
+  <fieldType name="double" class="solr.DoublePointField"/>
+  <fieldType name="float" class="solr.FloatPointField"/>
+  <fieldType name="date" class="solr.DatePointField"/>
 
   <!-- Fields required for SignatureUpdateProcessor -->
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="true" stored="true" multiValued="true"/>
 
   <!-- Fields required for LatLonDocValuesField test -->
-  <fieldType name="latlon" class="solr.LatLonPointSpatialField" docValues="true"/>
+  <fieldType name="latlon" class="solr.LatLonPointSpatialField"/>
   <field name="latlon" type="latlon" indexed="true" stored="false"/>
 
   <uniqueKey>id</uniqueKey>

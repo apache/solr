@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="test" version="1.6">
+<schema name="test" version="1.7">
 
 
   <!-- field type definitions... note that the "name" attribute is
@@ -40,9 +40,9 @@
        to create a schema that matches an existing lucene index.
   -->
 
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" docValues="true"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" docValues="true"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
   <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
@@ -112,7 +112,7 @@
 
 
   <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
-  <fieldtype name="string" class="solr.StrField" sortMissingLast="true" docValues="true"/>
+  <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
 
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.

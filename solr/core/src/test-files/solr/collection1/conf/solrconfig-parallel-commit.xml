@@ -24,11 +24,11 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="solrconfig.snippet.randomindexconfig.xml"/>
   <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   
   <updateHandler class="solr.DirectUpdateHandler2">
-    <updateLog enable="${enable.update.log:true}">
+    <updateLog enable="${solr.index.updatelog.enabled:true}">
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
 

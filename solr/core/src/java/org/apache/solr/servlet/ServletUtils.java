@@ -17,31 +17,20 @@
 
 package org.apache.solr.servlet;
 
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Context;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.servlet.FilterChain;
-import javax.servlet.ReadListener;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
-import org.apache.http.HttpHeaders;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.util.tracing.TraceUtils;
+import org.apache.solr.common.util.Utils;
+import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,200 +61,62 @@ public abstract class ServletUtils {
   }
 
   /**
-   * Wrap the request's input stream with a close shield. If this is a retry, we will assume that
-   * the stream has already been wrapped and do nothing.
+   * Wrap the request's input stream with a close shield.
    *
    * <p>Only the container should ever actually close the servlet output stream. This method
    * possibly should be turned into a servlet filter
    *
    * @param request The request to wrap.
-   * @param retry If this is an original request or a retry.
    * @return A request object with an {@link InputStream} that will ignore calls to close.
    */
-  public static HttpServletRequest closeShield(HttpServletRequest request, boolean retry) {
-    if (!retry) {
-      return new HttpServletRequestWrapper(request) {
-
-        @Override
-        public ServletInputStream getInputStream() throws IOException {
-
-          return new ServletInputStreamWrapper(super.getInputStream()) {
-            @Override
-            public void close() {
-              // even though we skip closes, we let local tests know not to close so that a full
-              // understanding can take place
-              assert !Thread.currentThread()
-                      .getStackTrace()[2]
-                      .getClassName()
-                      .matches("org\\.apache\\.(?:solr|lucene).*")
-                  : CLOSE_STREAM_MSG;
-              this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
-            }
-          };
-        }
-      };
-    } else {
-      return request;
-    }
+  public static HttpServletRequest closeShield(HttpServletRequest request) {
+    return new HttpServletRequestWrapper(request) {
+      @Override
+      public ServletInputStream getInputStream() throws IOException {
+        return new ServletInputStreamWrapper(super.getInputStream()) {
+          @Override
+          public void close() {
+            // even though we skip closes, we let local tests know not to close so that a full
+            // understanding can take place
+            assert !Thread.currentThread()
+                    .getStackTrace()[2]
+                    .getClassName()
+                    .matches("org\\.apache\\.(?:solr|lucene).*")
+                : CLOSE_STREAM_MSG;
+            this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
+          }
+        };
+      }
+    };
   }
 
   /**
-   * Wrap the response's output stream with a close shield. If this is a retry, we will assume that
-   * the stream has already been wrapped and do nothing.
+   * Wrap the response's output stream with a close shield.
    *
    * <p>Only the container should ever actually close the servlet request stream.
    *
    * @param response The response to wrap.
-   * @param retry If this response corresponds to an original request or a retry.
    * @return A response object with an {@link OutputStream} that will ignore calls to close.
    */
-  public static HttpServletResponse closeShield(HttpServletResponse response, boolean retry) {
-    if (!retry) {
-      return new HttpServletResponseWrapper(response) {
-
-        @Override
-        public ServletOutputStream getOutputStream() throws IOException {
-
-          return new ServletOutputStreamWrapper(super.getOutputStream()) {
-            @Override
-            public void close() {
-              // even though we skip closes, we let local tests know not to close so that a full
-              // understanding can take place
-              assert !Thread.currentThread()
-                      .getStackTrace()[2]
-                      .getClassName()
-                      .matches("org\\.apache\\.(?:solr|lucene).*")
-                  : CLOSE_STREAM_MSG;
-              stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
-            }
-          };
-        }
-      };
-    } else {
-      return response;
-    }
-  }
-
-  static boolean excludedPath(
-      List<Pattern> excludePatterns,
-      HttpServletRequest request,
-      HttpServletResponse response,
-      FilterChain chain)
-      throws IOException, ServletException {
-    String requestPath = getPathAfterContext(request);
-    // No need to even create the HttpSolrCall object if this path is excluded.
-    if (excludePatterns != null) {
-      for (Pattern p : excludePatterns) {
-        Matcher matcher = p.matcher(requestPath);
-        if (matcher.lookingAt()) {
-          if (chain != null) {
-            chain.doFilter(request, response);
+  public static HttpServletResponse closeShield(HttpServletResponse response) {
+    return new HttpServletResponseWrapper(response) {
+      @Override
+      public ServletOutputStream getOutputStream() throws IOException {
+        return new ServletOutputStreamWrapper(super.getOutputStream()) {
+          @Override
+          public void close() {
+            // even though we skip closes, we let local tests know not to close so that a full
+            // understanding can take place
+            assert !Thread.currentThread()
+                    .getStackTrace()[2]
+                    .getClassName()
+                    .matches("org\\.apache\\.(?:solr|lucene).*")
+                : CLOSE_STREAM_MSG;
+            stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
           }
-          return true;
-        }
+        };
       }
-    }
-    return false;
-  }
-
-  static boolean excludedPath(
-      List<Pattern> excludePatterns, HttpServletRequest request, HttpServletResponse response)
-      throws IOException, ServletException {
-    return excludedPath(excludePatterns, request, response, null);
-  }
-
-  static void configExcludes(PathExcluder excluder, String patternConfig) {
-    if (patternConfig != null) {
-      String[] excludeArray = patternConfig.split(",");
-      List<Pattern> patterns = new ArrayList<>();
-      excluder.setExcludePatterns(patterns);
-      for (String element : excludeArray) {
-        patterns.add(Pattern.compile(element));
-      }
-    }
-  }
-
-  /**
-   * Enforces rate limiting for a request. Should be converted to a servlet filter at some point.
-   * Currently, this is tightly coupled with request tracing which is not ideal either.
-   *
-   * @param request The request to limit
-   * @param response The associated response
-   * @param limitedExecution code that will be traced
-   */
-  static void rateLimitRequest(
-      RateLimitManager rateLimitManager,
-      HttpServletRequest request,
-      HttpServletResponse response,
-      Runnable limitedExecution)
-      throws ServletException, IOException {
-    boolean accepted = false;
-    try {
-      accepted = rateLimitManager.handleRequest(request);
-      if (!accepted) {
-        response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, RateLimitManager.ERROR_MESSAGE);
-        return;
-      }
-      // todo: this shouldn't be required, tracing and rate limiting should be independently
-      // composable
-      traceHttpRequestExecution2(request, response, limitedExecution);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
-    } finally {
-      if (accepted) {
-        rateLimitManager.decrementActiveRequests(request);
-      }
-    }
-  }
-
-  /**
-   * Sets up tracing for an HTTP request. Perhaps should be converted to a servlet filter at some
-   * point.
-   *
-   * @param request The request to limit
-   * @param response The associated response
-   * @param tracedExecution the executed code
-   */
-  private static void traceHttpRequestExecution2(
-      HttpServletRequest request, HttpServletResponse response, Runnable tracedExecution)
-      throws ServletException, IOException {
-    Context context = TraceUtils.extractContext(request);
-    Span span = TraceUtils.startHttpRequestSpan(request, context);
-
-    final Thread currentThread = Thread.currentThread();
-    final String oldThreadName = currentThread.getName();
-    try (var scope = context.with(span).makeCurrent()) {
-      assert scope != null; // prevent javac warning about scope being unused
-      TraceUtils.setSpan(request, span);
-      TraceUtils.ifValidTraceId(
-          span, s -> MDCLoggingContext.setTracerId(s.getSpanContext().getTraceId()));
-      String traceId = MDCLoggingContext.getTraceId();
-      if (traceId != null) {
-        currentThread.setName(oldThreadName + "-" + traceId);
-      }
-      tracedExecution.run();
-    } catch (ExceptionWhileTracing e) {
-      if (e.e instanceof SolrAuthenticationException) {
-        // done, the response and status code have already been sent
-        return;
-      }
-      if (e.e instanceof ServletException) {
-        throw (ServletException) e.e;
-      }
-      if (e.e instanceof IOException) {
-        throw (IOException) e.e;
-      }
-      if (e.e instanceof RuntimeException) {
-        throw (RuntimeException) e.e;
-      } else {
-        throw new RuntimeException(e.e);
-      }
-    } finally {
-      currentThread.setName(oldThreadName);
-      TraceUtils.setHttpStatus(span, response.getStatus());
-      span.end();
-    }
+    };
   }
 
   // we make sure we read the full client request so that the client does
@@ -273,11 +124,9 @@ public abstract class ServletUtils {
   // connection - see SOLR-8453 and SOLR-8683
   static void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
     try {
-      ServletInputStream is = req.getInputStream();
-      //noinspection StatementWithEmptyBody
-      while (!is.isFinished() && is.read() != -1) {}
+      Utils.readFully(req.getInputStream());
     } catch (IOException e) {
-      if (req.getHeader(HttpHeaders.EXPECT) != null && response.isCommitted()) {
+      if (req.getHeader(HttpHeader.EXPECT.asString()) != null && response.isCommitted()) {
         log.debug("No input stream to consume from client");
       } else {
         log.info("Could not consume full client request", e);

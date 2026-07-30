@@ -113,9 +113,8 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
     for (Map.Entry<String, Object> entry : entries) {
       String name = entry.getKey();
       Object o = entry.getValue();
-      if (o instanceof TupleStream) {
+      if (o instanceof TupleStream tStream) {
         List<Tuple> tuples = new ArrayList<>();
-        TupleStream tStream = (TupleStream) o;
         tStream.setStreamContext(streamContext);
         try {
           tStream.open();

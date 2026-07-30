@@ -47,7 +47,7 @@ public class ConversionEvaluatorsTest extends SolrTestCase {
   }
 
   @Test
-  public void testInvalidExpression() throws Exception {
+  public void testInvalidExpression() {
 
     StreamEvaluator evaluator;
 

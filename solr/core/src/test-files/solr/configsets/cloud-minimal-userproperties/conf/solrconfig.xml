@@ -17,7 +17,6 @@
  limitations under the License.
 -->
 
-<!-- Minimal solrconfig.xml with /select, /admin and /update only -->
 <config>
 
   <dataDir>${solr.data.dir:}</dataDir>
@@ -32,24 +31,20 @@
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
-
   </updateHandler>
+  
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
-      <str name="echoParams">explicit</str>
+      <str name="echoParams">${custom.echoParams:explicit}</str>
       <str name="indent">true</str>
       <str name="df">text</str>
        <str name="dummy1">${solr.core.name}</str>
        <str name="dummy2">${my.custom.prop}</str>
+       <str name="${my.custom.prop:dummy3}">custom-key-value</str>
     </lst>
-
   </requestHandler>
-
-  <initParams path="/select">
-    <lst name="defaults">
-      <str name="df">text</str>
-    </lst>
-  </initParams>
-
+  <updateRequestProcessorChain name="${my.custom.prop:some-name}" default="${update.autoCreateFields:true}">
+    <processor class="solr.RunUpdateProcessorFactory"/>
+  </updateRequestProcessorChain>
 </config>
 

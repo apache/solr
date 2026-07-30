@@ -107,6 +107,14 @@ q=greetings&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=3}&rqq=(hi
 ----
 
 If a document matches the original query, but does not match the re-ranking query, the document's original score will remain.
+For reranked documents, an additional `originalScore()` function in the response will indicate the original score for a reranked doc. This
+is the score for the document prior to rerank being applied. For documents that were not reranked, the `originalScore()` and `score` fields
+will have the same value. For the example above, you would use the following to return the original score:
+
+[source,text]
+----
+q=greetings&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=3}&rqq=(hi+hello+hey+hiya)&fl=id,originalScore()
+----
 
 Setting `reRankOperator` to `multiply` will multiply the three numbers instead. This means that other multiplying operations such as xref:edismax-query-parser.adoc#extended-dismax-parameters[eDisMax `boost` functions] can be converted to Re-Rank operations.
 
@@ -125,6 +133,9 @@ In the example below, the scores for the top 1000 documents matching the query "
 ----
 q=phone&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=1 reRankOperator=replace}&rqq={!func v=div(1,sum(1,price))}
 ----
+
+xref:query-guide:dense-vector-search.adoc[Dense vector fields] can also be used for re-ranking via the xref:query-guide:function-queries.adoc#vectorsimilarity-function[vectorSimilarity()] function query.
+This computes exact vector similarity only for the re-ranked candidate documents. See xref:query-guide:dense-vector-search.adoc#vector-reranking[Usage in Re-Ranking Query] for examples and details.
 
 
 === LTR Query Parser

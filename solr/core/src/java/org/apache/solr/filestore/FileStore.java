@@ -26,11 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.filestore.FileStoreAPI.MetaData;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
-/** The interface to be implemented by any package store provider * @lucene.experimental */
+/**
+ * The interface to be implemented by any package store provider
+ *
+ * @lucene.experimental
+ */
 public interface FileStore {
 
   /**
@@ -39,8 +42,13 @@ public interface FileStore {
    */
   void put(FileEntry fileEntry) throws IOException;
 
-  /** read file content from a given path */
-  void get(String path, Consumer<FileEntry> filecontent, boolean getMissing) throws IOException;
+  /**
+   * Read file content from a given path.
+   *
+   * <p>TODO: Is fetchMissing actually used? I don't see it being used, but the IDE doesn't flag it
+   * not being used!
+   */
+  void get(String path, Consumer<FileEntry> consumer, boolean fetchMissing) throws IOException;
 
   /** Fetch a resource from another node internal API */
   boolean fetch(String path, String from);
@@ -51,7 +59,7 @@ public interface FileStore {
   void syncToAllNodes(String path) throws IOException;
 
   /** get the real path on filesystem */
-  Path getRealpath(String path);
+  Path getRealPath(String path);
 
   /** The type of the resource */
   FileType getType(String path, boolean fetchMissing);
@@ -60,7 +68,7 @@ public interface FileStore {
   Map<String, byte[]> getKeys() throws IOException;
 
   /**
-   * Refresh the files in a path. May be this node does not have all files
+   * Refresh the files in a path. Maybe this node does not have all files?
    *
    * @param path the path to be refreshed.
    */
@@ -72,12 +80,12 @@ public interface FileStore {
   /** Delete file from local file system */
   void deleteLocal(String path);
 
-  public class FileEntry {
+  class FileEntry {
     final ByteBuffer buf;
     final MetaData meta;
     final String path;
 
-    FileEntry(ByteBuffer buf, MetaData meta, String path) {
+    public FileEntry(ByteBuffer buf, MetaData meta, String path) {
       this.buf = buf;
       this.meta = meta;
       this.path = path;
@@ -109,7 +117,9 @@ public interface FileStore {
     METADATA
   }
 
-  interface FileDetails extends MapWriter {
+  interface FileDetails {
+
+    String getSimpleName();
 
     MetaData getMetaData();
 

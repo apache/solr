@@ -229,8 +229,6 @@
    -->
   <fieldType name="ignored" stored="false" indexed="false" class="solr.StrField"/>
 
-  <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" />
-
   <!-- Valid attributes for fields:
     name: mandatory - the name for the field
     type: mandatory - the name of a previously defined type from the <fieldType>s
@@ -281,8 +279,6 @@
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
   <dynamicField name="*_ws" type="text_ws" indexed="true" stored="true"/>
-
-  <dynamicField name="*_extf" type="file"/>
 
   <dynamicField name="*_random" type="random"/>
 

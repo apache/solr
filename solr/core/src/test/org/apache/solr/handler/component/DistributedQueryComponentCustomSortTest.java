@@ -242,7 +242,7 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     // Only query a non-control client, as the control and non-control might get different partial
     // results.
     rsp =
-        queryServer(
+        queryRandomShard(
             createParams(
                 "q", "text:d",
                 "fl", "id",

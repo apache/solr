@@ -24,6 +24,7 @@ import jakarta.inject.Inject;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.api.model.ReplicationBackupRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -65,7 +66,7 @@ public class SnapshotBackupAPITest extends SolrTestCase {
   @Test
   public void testSuccessfulBackupCommand() throws Exception {
     when(replicationHandlerConfig.getNumberBackupsToKeep()).thenReturn(11);
-    final var backupRequestBody = new SnapshotBackupAPI.BackupReplicationRequestBody();
+    final var backupRequestBody = new ReplicationBackupRequestBody();
     backupRequestBody.name = "test";
     backupRequestBody.numberToKeep = 7;
 

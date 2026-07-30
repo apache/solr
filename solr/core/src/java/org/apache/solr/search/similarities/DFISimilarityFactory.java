@@ -39,8 +39,7 @@ import org.apache.solr.schema.SimilarityFactory;
  * Optional settings:
  *
  * <ul>
- *   <li>discountOverlaps (bool): Sets {@link
- *       org.apache.lucene.search.similarities.SimilarityBase#setDiscountOverlaps(boolean)}
+ *   <li>discountOverlaps (bool): Sets {link Similarity#getDiscountOverlaps()}
  * </ul>
  *
  * @lucene.experimental
@@ -59,9 +58,7 @@ public class DFISimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    DFISimilarity sim = new DFISimilarity(independenceMeasure);
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    return new DFISimilarity(independenceMeasure, discountOverlaps);
   }
 
   private Independence parseIndependenceMeasure(String expr) {

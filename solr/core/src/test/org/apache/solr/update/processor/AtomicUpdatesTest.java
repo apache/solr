@@ -42,7 +42,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
     initCore("solrconfig.xml", "schema.xml");
   }
 
@@ -1703,5 +1703,28 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         "//result[@numFound = '1']",
         "*[count(//result/doc[1]/arr[@name='intRemove']/int)=1]",
         "//result/doc[1]/arr[@name='intRemove']/int[1][.=333]");
+  }
+
+  @Test
+  public void testAddDistinctToNullField() {
+    // Test that add-distinct works correctly when the field value is null
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", 9999);
+    doc.setField("cat", null); // Set field to null
+    assertU(adoc(doc));
+    assertU(commit());
+
+    // Now try to add-distinct to the null field
+    doc = new SolrInputDocument();
+    doc.setField("id", 9999);
+    doc.setField("cat", Map.of("add-distinct", "new_value"));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    // Verify the value was added
+    assertQ(
+        req("q", "id:9999", "indent", "true"),
+        "//result[@numFound = '1']",
+        "//doc/arr[@name='cat']/str[.='new_value']");
   }
 }

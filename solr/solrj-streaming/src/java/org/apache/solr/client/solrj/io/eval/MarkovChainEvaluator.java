@@ -50,8 +50,7 @@ public class MarkovChainEvaluator extends RecursiveObjectEvaluator implements Ma
       state = ((Number) values[1]).intValue();
     }
 
-    if (values[0] instanceof Matrix) {
-      Matrix matrix = (Matrix) values[0];
+    if (values[0] instanceof Matrix matrix) {
       return new MarkovChain(matrix, state);
     } else {
       throw new IOException("matrix parameter expected for markovChain function");

@@ -1,0 +1,9 @@
+title: 'All v2 configset APIs have been moved to the slightly different path: `/api/configsets`,
+  to better align with the design of other v2 APIs. SolrJ now offers (experimental)
+  SolrRequest implementations for all v2 configset APIs in `org.apache.solr.client.solrj.request.ConfigsetsApi`.'
+type: changed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-16396
+  url: https://issues.apache.org/jira/browse/SOLR-16396

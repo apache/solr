@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
@@ -52,7 +53,6 @@ public class GraphTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
@@ -93,6 +93,7 @@ public class GraphTest extends SolrCloudTestCase {
     Set<String> paths = null;
     ShortestPathStream stream = null;
     String zkHost = cluster.getZkServer().getZkAddress();
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
     StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
@@ -101,7 +102,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     stream =
         new ShortestPathStream(
-            zkHost, "collection1", "jim", "steve", "from_s", "to_s", sParams, 20, 3, 6);
+            solrConnection, "collection1", "jim", "steve", "from_s", "to_s", sParams, 20, 3, 6);
 
     stream.setStreamContext(context);
     paths = new HashSet<>();
@@ -122,7 +123,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     stream =
         new ShortestPathStream(
-            zkHost, "collection1", "jim", "steve", "from_s", "to_s", sParams, 1, 3, 6);
+            solrConnection, "collection1", "jim", "steve", "from_s", "to_s", sParams, 1, 3, 6);
 
     stream.setStreamContext(context);
     paths = new HashSet<>();
@@ -143,7 +144,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     stream =
         new ShortestPathStream(
-            zkHost, "collection1", "jim", "steve", "from_s", "to_s", sParams, 1, 3, 6);
+            solrConnection, "collection1", "jim", "steve", "from_s", "to_s", sParams, 1, 3, 6);
 
     stream.setStreamContext(context);
     tuples = getTuples(stream);
@@ -156,7 +157,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     stream =
         new ShortestPathStream(
-            zkHost, "collection1", "jim", "steve", "from_s", "to_s", sParams, 1, 3, 2);
+            solrConnection, "collection1", "jim", "steve", "from_s", "to_s", sParams, 1, 3, 2);
 
     stream.setStreamContext(context);
     tuples = getTuples(stream);
@@ -168,7 +169,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     stream =
         new ShortestPathStream(
-            zkHost, "collection1", "jim", "steve", "from_s", "to_s", sParams, 10, 3, 6);
+            solrConnection, "collection1", "jim", "steve", "from_s", "to_s", sParams, 10, 3, 6);
 
     stream.setStreamContext(context);
     paths = new HashSet<>();

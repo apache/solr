@@ -1,0 +1,10 @@
+title: Tests for CLI examples were failing on Windows due to a legacy bug uncovered
+  by fix in SOLR-7962. Additionally achieves simplification of CLI tests
+type: fixed
+authors:
+- name: Rahul Goswami
+links:
+- name: SOLR-17772
+  url: https://issues.apache.org/jira/browse/SOLR-17772
+- name: SOLR-7962
+  url: https://issues.apache.org/jira/browse/SOLR-7962

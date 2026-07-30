@@ -1,0 +1,9 @@
+title: Fix a regression of faceting on multi-valued EnumFieldType, introduced by an
+  earlier 9.x version.
+type: fixed
+authors:
+- name: Thomas Wöckinger
+- name: David Smiley
+links:
+- name: SOLR-17649
+  url: https://issues.apache.org/jira/browse/SOLR-17649

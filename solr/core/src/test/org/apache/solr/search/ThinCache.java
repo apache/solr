@@ -19,11 +19,12 @@ package org.apache.solr.search;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -34,8 +35,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.Accountable;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.util.IOFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -230,7 +231,7 @@ public class ThinCache<S, K, V> extends SolrCacheBase
     @SuppressWarnings("unchecked")
     ThinCache<S, K, V> other = (ThinCache<S, K, V>) old;
     long warmingStartTimeNanos = System.nanoTime();
-    List<HitCountEntry<K, V>> orderedEntries = Collections.emptyList();
+    List<HitCountEntry<K, V>> orderedEntries = List.of();
     // warm entries
     if (isAutowarmingOn()) {
       orderedEntries = new ArrayList<>(other.local.size() << 1); // oversize
@@ -276,7 +277,6 @@ public class ThinCache<S, K, V> extends SolrCacheBase
     return persistence;
   }
 
-  private MetricsMap cacheMap;
   private SolrMetricsContext solrMetricsContext;
 
   private final LongAdder hits = new LongAdder();
@@ -291,45 +291,63 @@ public class ThinCache<S, K, V> extends SolrCacheBase
   private long priorEvictions;
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
-    cacheMap =
-        new MetricsMap(
-            map -> {
-              long hitCount = hits.sum();
-              long insertCount = inserts.sum();
-              long lookupCount = lookups.sum();
-              long evictionCount = evictions.sum();
-
-              map.put(LOOKUPS_PARAM, lookupCount);
-              map.put(HITS_PARAM, hitCount);
-              map.put(HIT_RATIO_PARAM, hitRate(hitCount, lookupCount));
-              map.put(INSERTS_PARAM, insertCount);
-              map.put(EVICTIONS_PARAM, evictionCount);
-              map.put(SIZE_PARAM, local.size());
-              map.put("warmupTime", warmupTimeMillis);
-              map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
-              map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
-
-              long cumLookups = priorLookups + lookupCount;
-              long cumHits = priorHits + hitCount;
-              map.put("cumulative_lookups", cumLookups);
-              map.put("cumulative_hits", cumHits);
-              map.put("cumulative_hitratio", hitRate(cumHits, cumLookups));
-              map.put("cumulative_inserts", priorInserts + insertCount);
-              map.put("cumulative_evictions", priorEvictions + evictionCount);
-            });
-    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    initializeMetrics(parentContext, attributes, "solr_thin_cache");
   }
 
-  @VisibleForTesting
-  MetricsMap getMetricsMap() {
-    return cacheMap;
-  }
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String metricName) {
+    Attributes cacheAttributes =
+        attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
+    this.solrMetricsContext = parentContext.getChildContext(this);
 
-  // TODO: refactor this common method out of here and `CaffeineCache`
-  private static double hitRate(long hitCount, long lookupCount) {
-    return lookupCount == 0 ? 1.0 : (double) hitCount / lookupCount;
+    ObservableLongMeasurement cacheLookupsMetric =
+        solrMetricsContext.longCounterMeasurement(
+            metricName + "_lookups", "Number of cumulative cache lookup results (hits and misses)");
+
+    ObservableLongMeasurement cacheOperationMetric =
+        solrMetricsContext.longCounterMeasurement(
+            metricName + "_ops", "Number of cumulative cache operations (inserts and evictions)");
+
+    ObservableLongMeasurement sizeMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            metricName + "_size", "Current number cache entries");
+
+    ObservableLongMeasurement ramBytesUsedMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            metricName + "_ram_used", "RAM bytes used by cache", OtelUnit.BYTES);
+
+    ObservableLongMeasurement warmupTimeMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            metricName + "_warmup_time", "Cache warmup time (most recent)", OtelUnit.MILLISECONDS);
+
+    solrMetricsContext.batchCallback(
+        () -> {
+          long hitCount = hits.sum();
+          long lookupCount = lookups.sum();
+          long insertCount = inserts.sum();
+          sizeMetric.record(local.size(), cacheAttributes);
+          ramBytesUsedMetric.record(ramBytesUsed(), cacheAttributes);
+          warmupTimeMetric.record(warmupTimeMillis, cacheAttributes);
+          long cumLookups = priorLookups + lookupCount;
+          long cumHits = priorHits + hitCount;
+
+          cacheLookupsMetric.record(
+              cumHits, cacheAttributes.toBuilder().put(RESULT_ATTR, "hit").build());
+          cacheLookupsMetric.record(
+              cumLookups - cumHits, cacheAttributes.toBuilder().put(RESULT_ATTR, "miss").build());
+          cacheOperationMetric.record(
+              priorInserts + insertCount,
+              cacheAttributes.toBuilder().put(OPERATION_ATTR, "inserts").build());
+          cacheOperationMetric.record(
+              priorEvictions + evictions.sum(),
+              cacheAttributes.toBuilder().put(OPERATION_ATTR, "evictions").build());
+        },
+        cacheLookupsMetric,
+        cacheOperationMetric,
+        sizeMetric,
+        ramBytesUsedMetric,
+        warmupTimeMetric);
   }
 
   @Override
@@ -339,21 +357,39 @@ public class ThinCache<S, K, V> extends SolrCacheBase
 
   @Override
   public void close() throws IOException {
-    backing.unregister(scope);
+    if (backing != null) {
+      backing.unregister(scope);
+    }
     SolrCache.super.close();
   }
 
   @Override
   public void onRemoval(K key, V value, RemovalCause cause) {
-    if (cause.wasEvicted()) {
-      evictions.increment();
-    }
-    local.remove(key);
+    // Only remove if the current value is the same as the removal.
+    // RemovalListener gives us no guarantee that onRemoval() will be called
+    // before the same key gets updated again.
+    // We are still not protecting against a removal then a put() with the
+    // same value in quick succession.
+    local.computeIfPresent(
+        key,
+        (keyEntry, valEntry) -> {
+          // Delete only if the value being deleted is the same as what we have locally
+          if (valEntry.ref.refersTo(value)) {
+            if (cause.wasEvicted()) {
+              evictions.increment();
+            }
+            return null;
+          } else {
+            // Otherwise keep the value in the map
+            return valEntry;
+          }
+        });
   }
 
   @Override
   public String toString() {
-    return name() + (cacheMap != null ? cacheMap.getValue().toString() : "");
+    String cacheName = name();
+    return cacheName != null ? cacheName : getClass().getSimpleName();
   }
 
   @Override

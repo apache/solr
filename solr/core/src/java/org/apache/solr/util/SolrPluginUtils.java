@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static java.util.Collections.singletonList;
 import static org.apache.solr.core.PluginInfo.APPENDS;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
@@ -51,6 +50,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
@@ -74,8 +74,10 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.FieldParams;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SortSpecParsing;
@@ -169,9 +171,7 @@ public class SolrPluginUtils {
       RequestParams requestParams, SolrParams defaults, String paramSets, String type) {
     if (paramSets == null) return defaults;
     List<String> paramSetList =
-        paramSets.indexOf(',') == -1
-            ? singletonList(paramSets)
-            : StrUtils.splitSmart(paramSets, ',');
+        paramSets.indexOf(',') == -1 ? List.of(paramSets) : StrUtils.splitSmart(paramSets, ',');
     for (String name : paramSetList) {
       RequestParams.VersionedParams params = requestParams.getParams(name, type);
       if (params == null) return defaults;
@@ -223,7 +223,7 @@ public class SolrPluginUtils {
       ResponseBuilder rb, DocList docs, Query query, SolrQueryRequest req, SolrQueryResponse res)
       throws IOException {
     SolrIndexSearcher searcher = req.getSearcher();
-    if (!searcher.getDocFetcher().isLazyFieldLoadingEnabled()) {
+    if (!searcher.interrogateDocFetcher(SolrDocumentFetcher::isLazyFieldLoadingEnabled)) {
       // nothing to do
       return;
     }
@@ -249,9 +249,10 @@ public class SolrPluginUtils {
       }
 
       // get documents
+      SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
       DocIterator iter = docs.iterator();
       for (int i = 0; i < docs.size(); i++) {
-        searcher.doc(iter.nextDoc(), fieldFilter);
+        docFetcher.doc(iter.nextDoc(), fieldFilter);
       }
     }
   }
@@ -302,6 +303,7 @@ public class SolrPluginUtils {
    * @return The debug info
    * @throws java.io.IOException if there was an IO error
    */
+  @Deprecated // move to DebugComponent
   public static NamedList<Object> doStandardDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -316,6 +318,7 @@ public class SolrPluginUtils {
     return dbg;
   }
 
+  @Deprecated // move to DebugComponent
   public static void doStandardQueryDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -336,6 +339,7 @@ public class SolrPluginUtils {
     }
   }
 
+  @Deprecated
   public static void doStandardResultsDebug(
       SolrQueryRequest req, Query query, DocList results, boolean dbgResults, NamedList<Object> dbg)
       throws IOException {
@@ -404,12 +408,13 @@ public class SolrPluginUtils {
       Query query, DocList docs, SolrIndexSearcher searcher, IndexSchema schema)
       throws IOException {
 
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     NamedList<Explanation> explainList = new SimpleOrderedMap<>();
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int id = iterator.nextDoc();
 
-      Document doc = searcher.doc(id);
+      Document doc = docFetcher.doc(id);
       String strid = schema.printableUniqueKey(doc);
 
       explainList.add(strid, searcher.explain(query, id));
@@ -427,6 +432,7 @@ public class SolrPluginUtils {
   }
 
   /** Executes a basic query */
+  @Deprecated
   public static DocList doSimpleQuery(String sreq, SolrQueryRequest req, int start, int limit)
       throws IOException {
     List<String> commands = StrUtils.splitSmart(sreq, ';');
@@ -442,8 +448,13 @@ public class SolrPluginUtils {
         sort = SortSpecParsing.parseSortSpec(commands.get(1), req).getSort();
       }
 
-      DocList results = req.getSearcher().getDocList(query, sort, start, limit);
-      return results;
+      return new QueryCommand()
+          .setQuery(query)
+          .setSort(sort)
+          .setOffset(start)
+          .setLen(limit)
+          .search(req.getSearcher())
+          .getDocList();
     } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing query: " + qs);
     }
@@ -574,9 +585,9 @@ public class SolrPluginUtils {
     int maxDisjunctsSize = 0;
     int optionalDismaxClauses = 0;
     for (BooleanClause c : q.build().clauses()) {
-      if (c.getOccur() == Occur.SHOULD) {
-        if (mmAutoRelax && c.getQuery() instanceof DisjunctionMaxQuery) {
-          int numDisjuncts = ((DisjunctionMaxQuery) c.getQuery()).getDisjuncts().size();
+      if (c.occur() == Occur.SHOULD) {
+        if (mmAutoRelax && c.query() instanceof DisjunctionMaxQuery) {
+          int numDisjuncts = ((DisjunctionMaxQuery) c.query()).getDisjuncts().size();
           if (numDisjuncts > maxDisjunctsSize) {
             maxDisjunctsSize = numDisjuncts;
             optionalDismaxClauses = 1;
@@ -593,6 +604,19 @@ public class SolrPluginUtils {
     if (0 < msm) {
       q.setMinimumNumberShouldMatch(msm);
     }
+  }
+
+  /**
+   * Applies the appropriate default rules for the "mm" param based on the effective value of the
+   * "q.op" param
+   *
+   * @see QueryParsing#OP
+   * @see DisMaxParams#MM
+   */
+  public static String parseMinShouldMatch(final IndexSchema schema, final SolrParams params) {
+    QueryParser.Operator op = QueryParsing.parseOP(params.get(QueryParsing.OP));
+
+    return params.get(DisMaxParams.MM, op.equals(QueryParser.Operator.AND) ? "100%" : "0%");
   }
 
   public static void setMinShouldMatch(BooleanQuery.Builder q, String spec) {
@@ -697,10 +721,9 @@ public class SolrPluginUtils {
 
     for (BooleanClause clause : from.clauses()) {
 
-      Query cq = clause.getQuery();
+      Query cq = clause.query();
       float boost = fromBoost;
-      while (cq instanceof BoostQuery) {
-        BoostQuery bq = (BoostQuery) cq;
+      while (cq instanceof BoostQuery bq) {
         cq = bq.getQuery();
         boost *= bq.getBoost();
       }
@@ -796,15 +819,15 @@ public class SolrPluginUtils {
       Map<Object, ShardDoc> resultIds,
       Map.Entry<String, Object>[] destArr) {
     assert resultIds.size() == destArr.length;
-    for (int i = 0; i < namedList.size(); i++) {
-      String id = namedList.getName(i);
-      // TODO: lookup won't work for non-string ids... String vs Float
-      ShardDoc sdoc = resultIds.get(id);
-      if (sdoc != null) { // maybe null when rb.onePassDistributedQuery
-        int idx = sdoc.positionInResponse;
-        destArr[idx] = new NamedList.NamedListEntry<>(id, namedList.getVal(i));
-      }
-    }
+    namedList.forEach(
+        (id, val) -> {
+          // TODO: lookup won't work for non-string ids... String vs Float
+          ShardDoc sdoc = resultIds.get(id);
+          if (sdoc != null) { // maybe null when rb.onePassDistributedQuery
+            int idx = sdoc.positionInResponse;
+            destArr[idx] = new NamedList.NamedListEntry<>(id, val);
+          }
+        });
   }
 
   /**

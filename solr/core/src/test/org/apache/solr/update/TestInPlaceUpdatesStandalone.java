@@ -167,7 +167,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                     "id",
                     "1",
                     "inplace_updatable_float",
-                    map("inc", new ArrayList<>(Collections.singletonList(123)))));
+                    map("inc", new ArrayList<>(List.of(123)))));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(
         e.getMessage(), containsString("Invalid input '[123]' for field inplace_updatable_float"));
@@ -1256,10 +1256,9 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
         final long version = addAndGetVersion(sdoc, null);
 
         final Object val = sdoc.getFieldValue(valField);
-        if (val instanceof Map) {
+        if (val instanceof Map<?, ?> atomicUpdate) {
           // atomic update of the field we're modeling
 
-          Map<String, ?> atomicUpdate = (Map) val;
           assertEquals(sdoc.toString(), 1, atomicUpdate.size());
           if (atomicUpdate.containsKey("inc")) {
             // Solr treats inc on a non-existing doc (or doc w/o existing value) as if existing

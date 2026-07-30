@@ -35,7 +35,7 @@ public class GetCenterEvaluator extends RecursiveObjectEvaluator implements OneV
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if (!(value instanceof EnclosingBall)) {
+    if (!(value instanceof EnclosingBall<?, ?> enclosingBall)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -43,7 +43,6 @@ public class GetCenterEvaluator extends RecursiveObjectEvaluator implements OneV
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     } else {
-      EnclosingBall<?, ?> enclosingBall = (EnclosingBall<?, ?>) value;
       Vector2D vec = (Vector2D) enclosingBall.getCenter();
       List<Number> center = new ArrayList<>();
       center.add(vec.getX());

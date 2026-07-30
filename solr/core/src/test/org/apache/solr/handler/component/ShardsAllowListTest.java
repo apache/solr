@@ -27,15 +27,15 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.MultiSolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -69,7 +69,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
   }
 
   @BeforeClass
-  public static void setupClusters() throws Exception {
+  public static void setupClusters() {
 
     final String[] clusterIds = new String[] {IMPLICIT_CLUSTER_KEY, EXPLICIT_CLUSTER_KEY};
 
@@ -121,11 +121,6 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
             doAccept(COLLECTION_NAME, cluster);
           }
         });
-  }
-
-  @AfterClass
-  public static void afterTests() {
-    System.clearProperty(EXPLICIT_ALLOW_LIST_PROPERTY + EXPLICIT_CLUSTER_KEY);
   }
 
   @Test
@@ -270,7 +265,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
       numDocs(query, shards, cluster);
       fail("Expecting failure for shards parameter: '" + shards + "'");
     } catch (SolrServerException e) {
-      assertThat(e.getCause(), instanceOf(SolrException.class));
+      assertThat(e.getCause(), instanceOf(RemoteSolrException.class));
       assertThat(((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
       assertThat(e.getCause().getMessage(), containsString(expectedExceptionMessage));
     } finally {

@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -129,11 +130,14 @@ public class ClusterStateMockUtil {
           collectionProps.put(
               ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
           docCollection =
-              new DocCollection(
+              DocCollection.create(
                   collName = "collection" + (collectionStates.size() + 1),
                   slices,
                   collectionProps,
-                  DocRouter.DEFAULT);
+                  DocRouter.DEFAULT,
+                  Integer.MAX_VALUE,
+                  Instant.EPOCH,
+                  null);
           collectionStates.put(docCollection.getName(), docCollection);
           break;
         case "s":

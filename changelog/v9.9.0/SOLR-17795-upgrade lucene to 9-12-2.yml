@@ -1,0 +1,9 @@
+title: Upgrade Lucene to 9.12.2.
+type: dependency_update
+authors:
+- name: Pierre Salagnac
+- name: Christine Poerschke
+- name: Houston Putman
+links:
+- name: SOLR-17795
+  url: https://issues.apache.org/jira/browse/SOLR-17795

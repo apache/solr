@@ -77,12 +77,12 @@ public final class MurmurHash2 {
   }
 
   /**
-   * Generates 32 bit hash from byte array with default seed value.
+   * Generates 32-bit hash from byte array with default seed value.
    *
    * @param data byte array to hash
    * @param offset the start position in the array to hash
    * @param len length of the array elements to hash
-   * @return 32 bit hash of the given array
+   * @return 32-bit hash of the given array
    */
   public static final int hash32(final byte[] data, int offset, int len) {
     return MurmurHash2.hash(data, 0x9747b28c, offset, len);

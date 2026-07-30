@@ -16,9 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -37,7 +38,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
  * after an add or update.
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18295") // 28-Jun-2026 flaky
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -67,7 +68,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
    */
   @Override
   public JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,
@@ -267,8 +268,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
   protected void sendNonDirectUpdateRequestReplica(
       Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    try (SolrClient solrServer = getHttpSolrClient(zkProps.getBaseUrl(), collection)) {
+    try (SolrClient solrServer = getHttpSolrClient(replica.getBaseUrl(), collection)) {
       NamedList<?> resp = solrServer.request(up);
       NamedList<?> hdr = (NamedList<?>) resp.get("responseHeader");
       Integer batchRf = (Integer) hdr.get(UpdateRequest.REPFACT);

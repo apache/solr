@@ -45,7 +45,7 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
   private Map<String, PackageAPI.PkgVersion> packageVersions = new ConcurrentHashMap<>(1);
 
   private Map<String, String> classNameVsPackageName = new ConcurrentHashMap<>();
-  private final Runnable onReload;
+  private final Runnable reloadAction;
 
   /**
    * @param fallbackClassLoader The {@link SolrClassLoader} to use if no package is specified
@@ -60,11 +60,13 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
     this.coreContainer = coreContainer;
     this.fallbackClassLoader = fallbackClassLoader;
     this.pkgVersionSupplier = pkgVersionSupplier;
-    this.onReload =
+    this.reloadAction =
         () -> {
           packageVersions = new ConcurrentHashMap<>();
           classNameVsPackageName = new ConcurrentHashMap<>();
-          onReload.run();
+          if (onReload != null) {
+            onReload.run();
+          }
         };
   }
 
@@ -103,6 +105,9 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
     return theVersion;
   }
 
+  // Allow method reference to return a reference to a functional interface (Mapwriter),
+  // rather than a reference to a PgkVersion object
+  @SuppressWarnings("UnnecessaryMethodReference")
   @Override
   public MapWriter getPackageVersion(PluginInfo.ClassName cName) {
     if (cName.pkg == null) return null;
@@ -183,7 +188,6 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
   }
 
   protected void doReloadAction(Ctx ctx) {
-    if (onReload == null) return;
-    ctx.runLater(null, onReload);
+    ctx.runLater(null, reloadAction);
   }
 }

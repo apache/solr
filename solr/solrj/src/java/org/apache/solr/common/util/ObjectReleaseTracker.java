@@ -51,7 +51,18 @@ public class ObjectReleaseTracker {
     // This is called from within constructors, be careful not to make assumptions about state of
     // object here
     Throwable submitter = ExecutorUtil.submitter.get(); // Could be null
-    OBJECTS.put(object, new ObjectTrackerException(object.getClass().getName(), submitter));
+    OBJECTS.put(
+        object,
+        new ObjectTrackerException(
+            object.getClass().getName() + "@" + object.hashCode(), submitter));
+    return true;
+  }
+
+  public static boolean track(Object object, String msg) {
+    // This is called from within constructors, be careful not to make assumptions about state of
+    // object here
+    Throwable submitter = ExecutorUtil.submitter.get(); // Could be null
+    OBJECTS.put(object, new ObjectTrackerException(msg, submitter));
     return true;
   }
 
@@ -96,6 +107,22 @@ public class ObjectReleaseTracker {
     }
 
     return error.toString();
+  }
+
+  /**
+   * Returns a list of all tracked objects that are instances of the specified class.
+   *
+   * @param clazz the class to filter by
+   * @return list of tracked objects of the specified type
+   */
+  public static <T> List<T> getTrackedObjectsOfType(Class<T> clazz) {
+    List<T> result = new ArrayList<>();
+    for (Object object : OBJECTS.keySet()) {
+      if (clazz.isInstance(object)) {
+        result.add(clazz.cast(object));
+      }
+    }
+    return result;
   }
 
   public static void tryClose() {

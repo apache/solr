@@ -27,13 +27,13 @@ public class StreamExpressionParserTest extends SolrTestCase {
   }
 
   @Test
-  public void testParsing() throws Exception {
+  public void testParsing() {
     StreamExpression actual, expected;
 
-    actual = StreamExpressionParser.parse("aliases(a_i=alias.a_i)");
+    actual = StreamExpressionParser.parse("aliases(a_i=alias_a_i)");
     expected =
         new StreamExpression("aliases")
-            .withParameter(new StreamExpressionNamedParameter("a_i", "alias.a_i"));
+            .withParameter(new StreamExpressionNamedParameter("a_i", "alias_a_i"));
     assertEquals(expected, actual);
 
     actual = StreamExpressionParser.parse("search(a,b)");

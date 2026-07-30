@@ -60,7 +60,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
   @Test
   public void testCloudClientUploads() throws Exception {
 
-    Path configPath = getFile("solrj").toPath().resolve("solr/configsets/configset-2/conf");
+    Path configPath = getFile("solrj").resolve("solr/configsets/configset-2/conf");
 
     MiniSolrCloudCluster cluster =
         new MiniSolrCloudCluster(0, createTempDir(), JettyConfig.builder().build());
@@ -84,7 +84,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
       assertTrue(
           "List of uploaded configs does not contain 'testconfig'",
-          cluster.getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + "testconfig", true));
+          cluster.getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + "testconfig"));
 
     } finally {
       cluster.shutdown();

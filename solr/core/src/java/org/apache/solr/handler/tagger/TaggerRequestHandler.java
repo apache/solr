@@ -351,8 +351,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
   private boolean fieldHasIndexedStopFilter(String field, SolrQueryRequest req) {
     FieldType fieldType = req.getSchema().getFieldType(field);
     Analyzer analyzer = fieldType.getIndexAnalyzer(); // index analyzer
-    if (analyzer instanceof TokenizerChain) {
-      TokenizerChain tokenizerChain = (TokenizerChain) analyzer;
+    if (analyzer instanceof TokenizerChain tokenizerChain) {
       TokenFilterFactory[] tokenFilterFactories = tokenizerChain.getTokenFilterFactories();
       for (TokenFilterFactory tokenFilterFactory : tokenFilterFactories) {
         if (tokenFilterFactory instanceof StopFilterFactory) return true;

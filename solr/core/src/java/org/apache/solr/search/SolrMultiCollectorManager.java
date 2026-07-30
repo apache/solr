@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
@@ -37,33 +38,23 @@ public class SolrMultiCollectorManager
     implements CollectorManager<SolrMultiCollectorManager.Collectors, Object[]> {
 
   private final CollectorManager<Collector, ?>[] collectorManagers;
+  private LongAdder runningHits = null;
+  private int maxDocsToCollect;
+  private final List<Collectors> reducableCollectors = new ArrayList<>();
 
   @SafeVarargs
   @SuppressWarnings({"varargs", "unchecked"})
   public SolrMultiCollectorManager(
+      QueryCommand queryCommand,
       final CollectorManager<? extends Collector, ?>... collectorManagers) {
     if (collectorManagers.length < 1) {
       throw new IllegalArgumentException("There must be at least one collector");
     }
     this.collectorManagers = (CollectorManager[]) collectorManagers;
-  }
-
-  @Override
-  public Collectors newCollector() throws IOException {
-    return new Collectors();
-  }
-
-  @Override
-  public Object[] reduce(Collection<Collectors> reducableCollectors) throws IOException {
-    final int size = reducableCollectors.size();
-    final Object[] results = new Object[collectorManagers.length];
-    for (int i = 0; i < collectorManagers.length; i++) {
-      final List<Collector> reducableCollector = new ArrayList<>(size);
-      for (Collectors collectors : reducableCollectors)
-        reducableCollector.add(collectors.collectors[i]);
-      results[i] = collectorManagers[i].reduce(reducableCollector);
+    if (queryCommand.shouldEarlyTerminateSearch()) {
+      runningHits = new LongAdder();
+      maxDocsToCollect = queryCommand.getMaxHitsAllowed();
     }
-    return results;
   }
 
   // TODO: could Lucene's MultiCollector permit reuse of its logic?
@@ -79,6 +70,31 @@ public class SolrMultiCollectorManager
     return scoreMode;
   }
 
+  @Override
+  public Collectors newCollector() throws IOException {
+    final Collectors collector = new Collectors();
+    reducableCollectors.add(collector);
+    return collector;
+  }
+
+  @Override
+  public Object[] reduce(Collection<Collectors> reducableCollectors) throws IOException {
+    final int size = reducableCollectors.size();
+    final Object[] results = new Object[collectorManagers.length];
+    for (int i = 0; i < collectorManagers.length; i++) {
+      final List<Collector> reducableCollector = new ArrayList<>(size);
+      for (Collectors collectors : reducableCollectors) {
+        reducableCollector.add(collectors.collectors[i]);
+      }
+      results[i] = collectorManagers[i].reduce(reducableCollector);
+    }
+    return results;
+  }
+
+  public Object[] reduce() throws IOException {
+    return reduce(reducableCollectors);
+  }
+
   /** Wraps multiple collectors for processing */
   class Collectors implements Collector {
 
@@ -86,8 +102,13 @@ public class SolrMultiCollectorManager
 
     private Collectors() throws IOException {
       collectors = new Collector[collectorManagers.length];
-      for (int i = 0; i < collectors.length; i++)
-        collectors[i] = collectorManagers[i].newCollector();
+      for (int i = 0; i < collectors.length; i++) {
+        Collector collector = collectorManagers[i].newCollector();
+        if (runningHits != null) {
+          collector = new EarlyTerminatingCollector(collector, maxDocsToCollect, runningHits);
+        }
+        collectors[i] = collector;
+      }
     }
 
     @Override
@@ -115,15 +136,19 @@ public class SolrMultiCollectorManager
           throws IOException {
         this.skipNonCompetitiveScores = skipNonCompetitiveScores;
         leafCollectors = new LeafCollector[collectors.length];
-        for (int i = 0; i < collectors.length; i++)
+        for (int i = 0; i < collectors.length; i++) {
           leafCollectors[i] = collectors[i].getLeafCollector(context);
+        }
       }
 
       @Override
       public final void setScorer(final Scorable scorer) throws IOException {
         if (skipNonCompetitiveScores) {
-          for (LeafCollector leafCollector : leafCollectors)
-            if (leafCollector != null) leafCollector.setScorer(scorer);
+          for (LeafCollector leafCollector : leafCollectors) {
+            if (leafCollector != null) {
+              leafCollector.setScorer(scorer);
+            }
+          }
         } else {
           FilterScorable fScorer =
               new FilterScorable(scorer) {

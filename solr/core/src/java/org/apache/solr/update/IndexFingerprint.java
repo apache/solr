@@ -19,16 +19,17 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.Bits;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @lucene.internal
  */
-public class IndexFingerprint implements MapSerializable {
+public class IndexFingerprint implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private long maxVersionSpecified;
@@ -176,15 +177,14 @@ public class IndexFingerprint implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    map.put("maxVersionSpecified", maxVersionSpecified);
-    map.put("maxVersionEncountered", maxVersionEncountered);
-    map.put("maxInHash", maxInHash);
-    map.put("versionsHash", versionsHash);
-    map.put("numVersions", numVersions);
-    map.put("numDocs", numDocs);
-    map.put("maxDoc", maxDoc);
-    return map;
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("maxVersionSpecified", maxVersionSpecified)
+        .put("maxVersionEncountered", maxVersionEncountered)
+        .put("maxInHash", maxInHash)
+        .put("versionsHash", versionsHash)
+        .put("numVersions", numVersions)
+        .put("numDocs", numDocs)
+        .put("maxDoc", maxDoc);
   }
 
   private static long getLong(Map<String, Object> m, String key, long def) {
@@ -217,6 +217,31 @@ public class IndexFingerprint implements MapSerializable {
 
   @Override
   public String toString() {
-    return toMap(new LinkedHashMap<>()).toString();
+    return new SimpleOrderedMap<>(this).toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof IndexFingerprint other)) return false;
+    return maxVersionSpecified == other.maxVersionSpecified
+        && this.maxVersionEncountered == other.maxVersionEncountered
+        && this.maxInHash == other.maxInHash
+        && this.versionsHash == other.versionsHash
+        && this.numVersions == other.numVersions
+        && this.numDocs == other.numDocs
+        && this.maxDoc == other.maxDoc;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        maxVersionSpecified,
+        maxVersionEncountered,
+        maxInHash,
+        versionsHash,
+        numVersions,
+        numDocs,
+        maxDoc);
   }
 }

@@ -89,7 +89,7 @@ public class TestPivotHelperCode extends SolrTestCaseJ4 {
     assertEquals(a.compareTo(b), PivotFacetFieldValueCollection.compareWithNullLast(a, b));
     assertEquals(b.compareTo(a), PivotFacetFieldValueCollection.compareWithNullLast(b, a));
 
-    Long bb = new Long(b.longValue());
+    Long bb = Long.valueOf(b.longValue());
     assertEquals(0, PivotFacetFieldValueCollection.compareWithNullLast(b, bb));
 
     assertEquals(0, PivotFacetFieldValueCollection.compareWithNullLast(null, null));

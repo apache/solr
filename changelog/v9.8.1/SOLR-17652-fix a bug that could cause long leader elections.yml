@@ -1,0 +1,8 @@
+title: Fix a bug that could cause long leader elections to leave PULL replicas in
+  DOWN state forever.
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-17652
+  url: https://issues.apache.org/jira/browse/SOLR-17652

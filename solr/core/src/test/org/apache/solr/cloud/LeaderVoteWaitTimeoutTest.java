@@ -17,9 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.cloud.ZkStateReader.HTTP;
-import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -31,17 +28,16 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SocketProxy;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -74,19 +70,11 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   public static void tearDownCluster() {
     proxies = null;
     jettys = null;
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("leaderVoteWait");
-    System.clearProperty("distribUpdateSoTimeout");
-    System.clearProperty("distribUpdateConnTimeout");
   }
 
   @Before
   public void setupTest() throws Exception {
-    configureCluster(NODE_COUNT)
-        .withProperty(ZkStateReader.URL_SCHEME, System.getProperty(URL_SCHEME, HTTP))
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(NODE_COUNT).addConfig("conf", configset("cloud-minimal")).configure();
 
     // Add proxies
     proxies = new HashMap<>(cluster.getJettySolrRunners().size());
@@ -156,7 +144,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     waitForState(
         "Timeout waiting for replica win the election",
         collectionName,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Replica newLeader = collectionState.getSlice("shard1").getLeader();
           if (newLeader == null) {
             return false;
@@ -268,7 +256,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       waitForState(
           "Timeout waiting for new leader",
           collectionName,
-          (liveNodes, collectionState) -> {
+          collectionState -> {
             Replica newLeader = collectionState.getSlice("shard1").getLeader();
             if (newLeader == null) {
               return false;
@@ -279,7 +267,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       List<String> children =
           zkClient()
               .getChildren(
-                  "/collections/" + collectionName + "/leader_elect/shard1/election", null, true);
+                  "/collections/" + collectionName + "/leader_elect/shard1/election", null);
       log.info("{} election nodes:{}", collectionName, children);
       throw e;
     }
@@ -288,60 +276,69 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
     waitForState("Timeout waiting for 1x3 collection", collectionName, clusterShape(1, 3));
     assertDocsExistInAllReplicas(Arrays.asList(leader, replica1), collectionName, 1, 3);
+
+    try (ZkShardTerms zkShardTerms =
+        new ZkShardTerms(collectionName, "shard1", cluster.getZkClient())) {
+      assertEquals(3, zkShardTerms.getTerms().size());
+      assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(leader.getName()));
+      assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(replica1.getName()));
+      assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(replica2.getName()));
+    }
+
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
   private void addDoc(String collection, int docId, JettySolrRunner solrRunner)
       throws IOException, SolrServerException {
-    try (SolrClient solrClient =
-        new HttpSolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
-      solrClient.add(collection, new SolrInputDocument("id", String.valueOf(docId)));
-      solrClient.commit(collection);
-    }
+    var solrClient = solrRunner.getSolrClient();
+    solrClient.add(collection, new SolrInputDocument("id", String.valueOf(docId)));
+    solrClient.commit(collection);
   }
 
   private void assertDocsExistInAllReplicas(
       List<Replica> notLeaders, String testCollectionName, int firstDocId, int lastDocId)
       throws Exception {
     Replica leader = cluster.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
-    SolrClient leaderSolr = getSolrClient(leader, testCollectionName);
+    SolrClient leaderSolr = getJettyForReplica(leader).getSolrClient();
     List<SolrClient> replicas = new ArrayList<>(notLeaders.size());
 
     for (Replica r : notLeaders) {
-      replicas.add(getSolrClient(r, testCollectionName));
+      replicas.add(getJettyForReplica(r).getSolrClient());
     }
-    try {
-      for (int d = firstDocId; d <= lastDocId; d++) {
-        String docId = String.valueOf(d);
-        assertDocExists(leaderSolr, docId);
-        for (SolrClient replicaSolr : replicas) {
-          assertDocExists(replicaSolr, docId);
-        }
-      }
-    } finally {
-      if (leaderSolr != null) {
-        leaderSolr.close();
-      }
+    for (int d = firstDocId; d <= lastDocId; d++) {
+      String docId = String.valueOf(d);
+      assertDocExists(leaderSolr, testCollectionName, docId);
       for (SolrClient replicaSolr : replicas) {
-        replicaSolr.close();
+        assertDocExists(replicaSolr, testCollectionName, docId);
       }
     }
   }
 
-  private void assertDocExists(SolrClient solr, String docId) throws Exception {
-    NamedList<?> rsp = realTimeGetDocId(solr, docId);
+  private JettySolrRunner getJettyForReplica(Replica replica) {
+    return cluster.getJettySolrRunners().stream()
+        .filter(j -> j.getNodeName().equals(replica.getNodeName()))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Cannot find Jetty for replica node: " + replica.getNodeName()));
+  }
+
+  private void assertDocExists(SolrClient solr, String collection, String docId) throws Exception {
+    NamedList<?> rsp = realTimeGetDocId(solr, collection, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
     assertNull("Doc with id=" + docId + " not found due to: " + match + "; rsp=" + rsp, match);
   }
 
-  private NamedList<Object> realTimeGetDocId(SolrClient solr, String docId)
+  private NamedList<Object> realTimeGetDocId(SolrClient solr, String collection, String docId)
       throws SolrServerException, IOException {
-    QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
-    return solr.request(qr);
-  }
-
-  protected SolrClient getSolrClient(Replica replica, String coll) {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    return getHttpSolrClient(zkProps.getBaseUrl(), coll);
+    return solr.request(
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET,
+                "/get",
+                SolrRequestType.QUERY,
+                params("id", docId, "distrib", "false"))
+            .setRequiresCollection(true),
+        collection);
   }
 }

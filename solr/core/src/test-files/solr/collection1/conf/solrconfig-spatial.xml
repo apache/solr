@@ -22,7 +22,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <dataDir>${solr.data.dir:}</dataDir>
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <requestHandler name="/select" class="solr.SearchHandler" />
   <query>
@@ -38,5 +38,12 @@
            initialSize="0"
            autowarmCount="100%"
            regenerator="solr.NoOpRegenerator"/>
+
+    <!-- Needed to trigger SOLR-18006 -->
+    <filterCache
+      size="512"
+      initialSize="512"
+      autowarmCount="2"
+      async="${solr.filterCache.async:false}"/>
   </query>
 </config>

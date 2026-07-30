@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
@@ -403,6 +404,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
         String name = otherKey.toString();
         Integer shardValue = (Integer) rangeFromShard.get(name);
         if (shardValue != null && shardValue > 0) {
+          // TODO: rangeFacet.merge(name, shardValue, (a, b) -> ((Integer)a) + ((Integer)b));
           Integer existingValue = (Integer) rangeFacet.get(name);
           // shouldn't be null
           int idx = rangeFacet.indexOf(name, 0);
@@ -521,7 +523,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
      * Parses a String param into an Range endpoint. Can throw a low level format exception as
      * needed.
      */
-    protected abstract T parseVal(final String rawval) throws java.text.ParseException;
+    protected abstract T parseVal(final String rawval) throws ParseException;
 
     /**
      * Parses a String param into a value that represents the gap and can be included in the
@@ -547,7 +549,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
      *
      * <p>Default Impl calls parseVal
      */
-    protected Object parseGap(final String rawval) throws java.text.ParseException {
+    protected Object parseGap(final String rawval) throws ParseException {
       return parseVal(rawval);
     }
 
@@ -570,7 +572,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
      * Adds the String gap param to a low Range endpoint value to determine the corrisponding high
      * Range endpoint value. Can throw a low level format exception as needed.
      */
-    protected abstract T parseAndAddGap(T value, String gap) throws java.text.ParseException;
+    protected abstract T parseAndAddGap(T value, String gap) throws ParseException;
 
     public List<FacetRange> computeRanges() {
       List<FacetRange> ranges = new ArrayList<>();
@@ -788,7 +790,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     }
 
     @Override
-    public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
+    public Date parseAndAddGap(Date value, String gap) throws ParseException {
       final DateMathParser dmp = new DateMathParser();
       dmp.setNow(value);
       return dmp.parseMath(gap);
@@ -805,14 +807,14 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
       if (!(this.field.getType() instanceof CurrencyFieldType)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "Cannot perform range faceting over non CurrencyField fields");
+            "Cannot perform range faceting over non CurrencyFieldType fields");
       }
       defaultCurrencyCode = ((CurrencyFieldType) this.field.getType()).getDefaultCurrency();
       exchangeRateProvider = ((CurrencyFieldType) this.field.getType()).getProvider();
     }
 
     @Override
-    protected Object parseGap(String rawval) throws java.text.ParseException {
+    protected Object parseGap(String rawval) throws ParseException {
       return parseVal(rawval).strValue();
     }
 

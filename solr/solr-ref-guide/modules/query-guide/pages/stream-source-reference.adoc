@@ -35,7 +35,9 @@ To read more about the `/export` handler requirements review the section xref:ex
 * `q`: (Mandatory) The query to perform on the Solr index.
 * `fl`: (Mandatory) The list of fields to return.
 * `sort`: (Mandatory) The sort criteria.
-* `zkHost`: Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
+* `solrConnection`: (Optional) Only needs to be defined if the collection being queried resides in a different Solr cluster than the local stream handler. The connection can be provided either as an HTTP(S) URL list or as a ZooKeeper connection string.
+When using a zookeeper connection string, zookeeper credentials and ACLs will only be included if the same zookeeper host is used as the Solr instance that you are connecting to (the `chroot` can be different).
+* `zkHost`: (Deprecated, use `solrConnection`) Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
 Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 * `qt`: Specifies the query type, or request handler, to use.
 Set this to `/export` to work with large result sets.
@@ -51,7 +53,7 @@ See the xref:stream-decorator-reference.adoc#parallel[parallel] function for det
 [source,text]
 ----
 expr=search(collection1,
-       zkHost="localhost:9983",
+       solrConnection="localhost:9983",
        qt="/export",
        q="*:*",
        fl="id,a_s,a_i,a_f",
@@ -146,7 +148,7 @@ The `per` metric calculates a percentile
 for a numeric column and can be specified multiple times in the same facet function.
 * `tiered`: (Default true) Flag governing whether the `facet` stream should parallelize JSON Facet requests to multiple Solr collections using a `plist` expression; this option only applies if the `collection` is an alias backed by multiple collections.
 If `tiered` is enabled, then a `rollup` expression is used internally to aggregate the metrics from multiple `facet` expressions into a single result; only `count`, `min`, `max`, `sum`, and `avg` metrics are supported.
-Client applications can disable this globally by setting the `solr.facet.stream.tiered=false` system property.
+Client applications can disable this globally by setting the `solr.streamingexpressions.facet.tiered.enabled=false` system property.
 
 === facet Syntax
 
@@ -225,7 +227,7 @@ This can be used to retrieve the features if they are stored in a SolrCloud coll
 * `field`: (Mandatory) The text field to extract the features from.
 * `outcome`: (Mandatory) The field that defines the class, positive or negative
 * `numTerms`: (Mandatory) How many feature terms to extract.
-* `positiveLabel`: (defaults to 1) The value in the outcome field that defines a postive outcome.
+* `positiveLabel`: (defaults to 1) The value in the outcome field that defines a positive outcome.
 
 === features Syntax
 
@@ -484,7 +486,9 @@ When used in parallel mode the partitionKeys parameter must be provided.
 * `q`: (Mandatory) The query to perform on the Solr index.
 * `fl`: (Mandatory) The list of fields to return.
 * `sort`: (Mandatory) The sort criteria.
-* `zkHost`: Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
+* `solrConnection` (Optional): Only needs to be defined if the collection being queried resides in a different Solr cluster than the local stream handler. The connection can be provided either as an HTTP(S) URL list or as a ZooKeeper connection string.
+When using a zookeeper connection string, zookeeper credentials and ACLs will only be included if the same zookeeper host is used as the Solr instance that you are connecting to (the `chroot` can be different).
+* `zkHost`: (Deprecated, use `solrConnection`) Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
 Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 * `partitionKeys`: Comma delimited list of keys to partition the search results by.
 To be used with the parallel function for parallelizing operations across worker nodes.
@@ -649,7 +653,9 @@ The checkpoints will be saved under this id.
 * `initialCheckpoint`: (Optional) Sets the initial Solr `\_version_` number to start reading from the queue.
 If not set, it defaults to the highest version in the index.
 Setting to 0 will process all records that match query in the index.
-* `zkHost`: (Optional) Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
+* `solrConnection` (Optional): Only needs to be defined if the collection being queried resides in a different Solr cluster than the local stream handler. The connection can be provided either as an HTTP(S) URL list or as a ZooKeeper connection string.
+When using a zookeeper connection string, zookeeper credentials and ACLs will only be included if the same zookeeper host is used as the Solr instance that you are connecting to (the `chroot` can be different).
+* `zkHost`: (Deprecated, use `solrConnection`) Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
 Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 
 === topic Syntax

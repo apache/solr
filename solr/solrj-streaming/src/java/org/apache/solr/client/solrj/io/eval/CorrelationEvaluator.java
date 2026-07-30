@@ -127,8 +127,7 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
         return null;
       }
     } else if (values.length == 1) {
-      if (values[0] instanceof Matrix) {
-        Matrix matrix = (Matrix) values[0];
+      if (values[0] instanceof Matrix matrix) {
         double[][] data = matrix.getData();
         if (type.equals(CorrelationType.pearsons)) {
           PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation(data);

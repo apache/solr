@@ -17,25 +17,21 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 
 import jakarta.inject.Inject;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.DeleteReplicaPropertyApi;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -61,21 +57,13 @@ public class DeleteReplicaProperty extends AdminAPIBase implements DeleteReplica
   public SolrJerseyResponse deleteReplicaProperty(
       String collName, String shardName, String replicaName, String propertyName) throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+    fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
-    final ZkNodeProps remoteMessage =
-        createRemoteMessage(collName, shardName, replicaName, propertyName);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(),
-            remoteMessage,
-            CollectionParams.CollectionAction.DELETEREPLICAPROP,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+    submitRemoteMessageAndHandleException(
+        response,
+        CollectionParams.CollectionAction.DELETEREPLICAPROP,
+        createRemoteMessage(collName, shardName, replicaName, propertyName));
 
     return response;
   }
@@ -100,8 +88,6 @@ public class DeleteReplicaProperty extends AdminAPIBase implements DeleteReplica
       String collName, String shardName, String replicaName, String propName) {
     final Map<String, Object> messageProperties =
         Map.of(
-            QUEUE_OPERATION,
-            CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
             COLLECTION_PROP,
             collName,
             SHARD_ID_PROP,

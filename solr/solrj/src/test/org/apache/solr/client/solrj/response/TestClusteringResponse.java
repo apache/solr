@@ -20,17 +20,16 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
 /** Test for ClusteringComponent's response in Solrj */
-public class TestClusteringResponse extends SolrJettyTestBase {
+public class TestClusteringResponse extends SolrTestCaseJ4 {
 
   @Test
   public void testClusteringResponse() throws Exception {
@@ -38,14 +37,14 @@ public class TestClusteringResponse extends SolrJettyTestBase {
     NamedList<Object> response = null;
 
     /*Load a simple XML with the clustering response encoded in an XML format*/
-    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+    try (SolrResourceLoader loader = new SolrResourceLoader(Path.of("").toAbsolutePath());
         InputStream is = loader.openResource("solrj/sampleClusteringResponse.xml")) {
       assertNotNull(is);
       try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
         response = parser.processResponse(in);
       }
     }
-    QueryResponse qr = new QueryResponse(response, null);
+    QueryResponse qr = new QueryResponse(response);
     ClusteringResponse clusteringResponse = qr.getClusteringResponse();
     List<Cluster> clusters = clusteringResponse.getClusters();
     assertEquals(4, clusters.size());

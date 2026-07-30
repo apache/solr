@@ -20,7 +20,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 
 import jakarta.inject.Inject;
 import java.net.URI;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Optional;
 import org.apache.solr.client.api.endpoint.CreateCoreBackupApi;
 import org.apache.solr.client.api.model.CreateCoreBackupRequestBody;
@@ -78,7 +78,7 @@ public class CreateCoreBackup extends CoreAdminAPIBase implements CreateCoreBack
 
             if (Boolean.TRUE.equals(backupCoreRequestBody.incremental)) {
               if ("file".equals(locationUri.getScheme())) {
-                core.getCoreContainer().assertPathAllowed(Paths.get(locationUri));
+                core.getCoreContainer().assertPathAllowed(Path.of(locationUri));
               }
               ensureRequiredParameterProvided("shardBackupId", backupCoreRequestBody.shardBackupId);
               final ShardBackupId shardBackupId =

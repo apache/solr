@@ -19,12 +19,12 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -c
+  solr start
 }
 
 teardown_file() {
   common_setup
-  solr stop -all
+  solr stop --all
 }
 
 setup() {
@@ -42,7 +42,7 @@ teardown() {
   run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 
-  run solr postlogs -url http://localhost:${SOLR_PORT}/solr/COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
+  run solr postlogs --solr-url http://localhost:${SOLR_PORT} -c COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
   assert_output --partial 'Sending last batch'
   assert_output --partial 'Committed'
 

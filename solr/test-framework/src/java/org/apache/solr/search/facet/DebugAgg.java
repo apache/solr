@@ -38,14 +38,12 @@ class DebugAgg extends AggValueSource {
       parses.incrementAndGet();
       final String what = fp.hasMoreArguments() ? fp.parseId() : "wrap";
 
-      switch (what) {
-        case "wrap":
-          return new DebugAgg(fp);
-        case "numShards":
-          return new DebugAggNumShards();
-        default: /* No-Op */
-      }
-      throw new RuntimeException("No idea what to do with " + what);
+      /* No-Op */
+      return switch (what) {
+        case "wrap" -> new DebugAgg(fp);
+        case "numShards" -> new DebugAggNumShards();
+        default -> throw new RuntimeException("No idea what to do with " + what);
+      };
     }
   }
 
@@ -172,7 +170,7 @@ class DebugAgg extends AggValueSource {
 
     @Override
     public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) {
-      return new NumShardsAcc(fcontext, numDocs, numSlots);
+      return new NumShardsAcc(fcontext);
     }
 
     @Override
@@ -186,7 +184,7 @@ class DebugAgg extends AggValueSource {
     }
 
     public static class NumShardsAcc extends SlotAcc {
-      public NumShardsAcc(FacetContext fcontext, long numDocs, int numSlots) {
+      public NumShardsAcc(FacetContext fcontext) {
         super(fcontext);
       }
 

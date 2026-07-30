@@ -18,7 +18,6 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
@@ -26,10 +25,11 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.uninverting.UninvertingReader;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 /**
  * Allows access to uninverted docvalues by delete-by-queries. this is used e.g. to implement
@@ -54,12 +54,12 @@ final class DeleteByQueryWrapper extends Query {
   // we try to be well-behaved, but we are not (and IW's applyQueryDeletes isn't much better...)
 
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
-    Query rewritten = in.rewrite(reader);
+  public Query rewrite(IndexSearcher searcher) throws IOException {
+    Query rewritten = in.rewrite(searcher);
     if (!rewritten.equals(in)) {
       return new DeleteByQueryWrapper(rewritten, schema);
     } else {
-      return super.rewrite(reader);
+      return super.rewrite(searcher);
     }
   }
 
@@ -77,8 +77,9 @@ final class DeleteByQueryWrapper extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
-        return inner.scorer(privateContext.getIndexReader().leaves().get(0));
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+        return new SolrDefaultScorerSupplier(
+            inner.scorer(privateContext.getIndexReader().leaves().get(0)));
       }
 
       @Override

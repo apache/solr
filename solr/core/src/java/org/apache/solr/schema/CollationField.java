@@ -23,7 +23,6 @@ import java.text.Collator;
 import java.text.ParseException;
 import java.text.RuleBasedCollator;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -149,11 +148,8 @@ public class CollationField extends FieldType {
 
     if (language != null && country == null && variant != null)
       throw new SolrException(ErrorCode.SERVER_ERROR, "To specify variant, country is required");
-    else if (language != null && country != null && variant != null)
-      locale = new Locale(language, country, variant);
-    else if (language != null && country != null) locale = new Locale(language, country);
-    else locale = new Locale(language);
-
+    locale =
+        new Locale.Builder().setLanguage(language).setRegion(country).setVariant(variant).build();
     return Collator.getInstance(locale);
   }
 
@@ -246,6 +242,11 @@ public class CollationField extends FieldType {
   }
 
   @Override
+  protected boolean enableDocValuesByDefault() {
+    return true;
+  }
+
+  @Override
   public List<IndexableField> createFields(SchemaField field, Object value) {
     if (field.hasDocValues()) {
       List<IndexableField> fields = new ArrayList<>();
@@ -258,7 +259,7 @@ public class CollationField extends FieldType {
       }
       return fields;
     } else {
-      return Collections.singletonList(createField(field, value));
+      return List.of(createField(field, value));
     }
   }
 

@@ -17,7 +17,6 @@
 
 package org.apache.solr.cluster.placement.impl;
 
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.instanceOf;
 
 import java.util.Arrays;
@@ -45,7 +44,6 @@ import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.CollectionMetrics;
-import org.apache.solr.cluster.placement.NodeMetric;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.ReplicaMetrics;
@@ -57,6 +55,7 @@ import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
@@ -81,8 +80,9 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    // placement plugins need metrics
+    // placement plugins need metrics and JVM metrics
     System.setProperty("metricsEnabled", "true");
+    System.setProperty("solr.metrics.jvm.enabled", "true");
     configureCluster(3).addConfig("conf", configset("cloud-minimal")).configure();
     cc = cluster.getJettySolrRunner(0).getCoreContainer();
     cloudManager = cc.getZkController().getSolrCloudManager();
@@ -101,6 +101,18 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
               .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
               .build();
       req.process(cluster.getSolrClient());
+      // Wait until we see this locally, this is important for tests to make sure they don't start
+      // without a clean coreContainer
+      RetryUtil.retryUntil(
+          "PlacementPluginFactory not removed in coreContainer within 1 second after removal API call",
+          1000,
+          1,
+          TimeUnit.MILLISECONDS,
+          () -> {
+            DelegatingPlacementPluginFactory pluginFactory =
+                (DelegatingPlacementPluginFactory) cc.getPlacementPluginFactory();
+            return pluginFactory.getDelegate() == null;
+          });
     }
   }
 
@@ -132,7 +144,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     req.process(cluster.getSolrClient());
 
@@ -190,7 +202,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     req.process(cluster.getSolrClient());
 
@@ -208,7 +220,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("update", plugin))
+            .withPayload(Map.of("update", plugin))
             .build();
     req.process(cluster.getSolrClient());
 
@@ -228,7 +240,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("update", plugin))
+            .withPayload(Map.of("update", plugin))
             .build();
     req.process(cluster.getSolrClient());
 
@@ -247,7 +259,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     req.process(cluster.getSolrClient());
     final int oldVersion = version;
@@ -299,7 +311,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     req.process(cluster.getSolrClient());
 
@@ -400,7 +412,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     req.process(cluster.getSolrClient());
 
@@ -434,34 +446,22 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     Cluster cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(cloudManager);
     SolrCollection collection = cluster.getCollection(COLLECTION);
     AttributeFetcher attributeFetcher = new AttributeFetcherImpl(cloudManager);
-    NodeMetric<String> someMetricKey = new NodeMetricImpl<>("solr.jvm:system.properties:user.name");
     String sysprop = "user.name";
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
-        .requestNodeMetric(NodeMetricImpl.HEAP_USAGE)
         .requestNodeMetric(NodeMetricImpl.SYSLOAD_AVG)
         .requestNodeMetric(NodeMetricImpl.NUM_CORES)
         .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB)
         .requestNodeMetric(NodeMetricImpl.TOTAL_DISK_GB)
         .requestNodeMetric(NodeMetricImpl.AVAILABLE_PROCESSORS)
-        .requestNodeMetric(someMetricKey)
         .requestNodeSystemProperty(sysprop)
-        .requestCollectionMetrics(
-            collection,
-            Set.of(
-                ReplicaMetricImpl.INDEX_SIZE_GB,
-                ReplicaMetricImpl.QUERY_RATE_1MIN,
-                ReplicaMetricImpl.UPDATE_RATE_1MIN));
+        .requestCollectionMetrics(collection, Set.of(ReplicaMetricImpl.INDEX_SIZE_GB));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     String userName = System.getProperty("user.name");
     // node metrics
     for (Node node : cluster.getLiveNodes()) {
-      Optional<Double> doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.HEAP_USAGE);
-      assertTrue("heap usage", doubleOpt.isPresent());
-      assertTrue(
-          "heap usage should be 0 < heapUsage < 100 but was " + doubleOpt,
-          doubleOpt.get() > 0 && doubleOpt.get() < 100);
-      doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.TOTAL_DISK_GB);
+      Optional<Double> doubleOpt =
+          attributeValues.getNodeMetric(node, NodeMetricImpl.TOTAL_DISK_GB);
       assertTrue("total disk", doubleOpt.isPresent());
       assertTrue("total disk should be > 0 but was " + doubleOpt, doubleOpt.get() > 0);
       doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB);
@@ -476,9 +476,6 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       assertTrue(
           "availableProcessors",
           attributeValues.getNodeMetric(node, NodeMetricImpl.AVAILABLE_PROCESSORS).isPresent());
-      Optional<String> userNameOpt = attributeValues.getNodeMetric(node, someMetricKey);
-      assertTrue("user.name", userNameOpt.isPresent());
-      assertEquals("userName", userName, userNameOpt.get());
       Optional<String> syspropOpt = attributeValues.getSystemProperty(node, sysprop);
       assertTrue("sysprop", syspropOpt.isPresent());
       assertEquals("user.name sysprop", userName, syspropOpt.get());
@@ -510,13 +507,6 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
                         assertTrue(
                             "indexSize should be < 0.01 but was " + indexSizeOpt.get(),
                             indexSizeOpt.get() < 0.01);
-
-                        assertNotNull(
-                            "queryRate",
-                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.QUERY_RATE_1MIN));
-                        assertNotNull(
-                            "updateRate",
-                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.UPDATE_RATE_1MIN));
                       });
             });
   }

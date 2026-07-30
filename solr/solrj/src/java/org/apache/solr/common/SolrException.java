@@ -19,8 +19,10 @@ package org.apache.solr.common;
 import static org.apache.solr.client.api.model.ErrorInfo.ERROR_CLASS;
 import static org.apache.solr.client.api.model.ErrorInfo.ROOT_ERROR_CLASS;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
@@ -30,7 +32,7 @@ public class SolrException extends RuntimeException {
   private final Map<String, String> mdcContext;
 
   /**
-   * This list of valid HTTP Status error codes that Solr may return in the case of a "Server Side"
+   * This list of valid HTTP Status error codes that Solr may return when there is a "Server Side"
    * error.
    *
    * @since solr 1.2
@@ -45,6 +47,7 @@ public class SolrException extends RuntimeException {
     TOO_MANY_REQUESTS(429),
     SERVER_ERROR(500),
     SERVICE_UNAVAILABLE(503),
+    GATEWAY_TIMEOUT(504),
     INVALID_STATE(510),
     UNKNOWN(0);
     public final int code;
@@ -92,10 +95,11 @@ public class SolrException extends RuntimeException {
 
   int code = 0;
   protected NamedList<String> metadata;
+  protected List<Map<String, Object>> details;
 
   /**
    * The HTTP Status code associated with this Exception. For SolrExceptions thrown by Solr "Server
-   * Side", this should valid {@link ErrorCode}, however client side exceptions may contain an
+   * Side", this should be a valid {@link ErrorCode}, however client side exceptions may contain an
    * arbitrary error code based on the behavior of the Servlet Container hosting Solr, or any HTTP
    * Proxies that may exist between the client and the server.
    *
@@ -121,8 +125,20 @@ public class SolrException extends RuntimeException {
     if (key == null || value == null)
       throw new IllegalArgumentException("Exception metadata cannot be null!");
 
-    if (metadata == null) metadata = new NamedList<>();
+    if (metadata == null) metadata = new SimpleOrderedMap<>();
     metadata.add(key, value);
+  }
+
+  public void setDetails(List<Map<String, Object>> details) {
+    this.details = details;
+  }
+
+  public List<Map<String, Object>> getDetails() {
+    return details;
+  }
+
+  public String getResponseMessage() {
+    return getMessage();
   }
 
   public String getThrowable() {
@@ -157,8 +173,7 @@ public class SolrException extends RuntimeException {
    *     no-op.
    */
   public static SolrException wrapLuceneTragicExceptionIfNecessary(Exception e) {
-    if (e instanceof SolrException) {
-      final SolrException solrException = (SolrException) e;
+    if (e instanceof SolrException solrException) {
       assert solrException.code() >= 500 && solrException.code() < 600;
       return solrException;
     }

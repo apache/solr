@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Upgrade Lucene to 9.12.3
+type: dependency_update
+authors:
+  - name: Christine Poerschke
+    nick: cpoerschke
+    url: https://home.apache.org/phonebook.html?uid=cpoerschke
+links:
+  - name: SOLR-17964
+    url: https://issues.apache.org/jira/browse/SOLR-17964

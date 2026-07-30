@@ -17,55 +17,44 @@
 package org.apache.solr.security;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.Principal;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpException;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponse;
-import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpListenerFactory;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpListenerFactory;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.CryptoKeys;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PKIAuthenticationPlugin extends AuthenticationPlugin
     implements HttpClientBuilderPlugin {
-
-  public static final String ACCEPT_VERSIONS = "solr.pki.acceptVersions";
-  public static final String SEND_VERSION = "solr.pki.sendVersion";
 
   /**
    * Mark the current thread as a server thread and set a flag in SolrRequestInfo to indicate you
@@ -84,21 +73,14 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /** If a number has less than this number of digits, it'll not be considered a timestamp. */
-  private static final int MIN_TIMESTAMP_DIGITS = 10; // a timestamp of 9999999999 is year 1970
-
-  /** If a number has more than this number of digits, it'll not be considered a timestamp. */
-  private static final int MAX_TIMESTAMP_DIGITS = 13; // a timestamp of 9999999999999 is year 2286
-
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final PublicKeyHandler publicKeyHandler;
   private final CoreContainer cores;
-  private static final int MAX_VALIDITY = Integer.getInteger("pkiauth.ttl", 5000);
+  private final LoadingCache<String, PKIHeaderData> validatedHeaderCache;
+  private final LoadingCache<String, String> generatedV2TokenCache;
+  private static final int MAX_VALIDITY = Integer.getInteger("pkiauth.ttl", 10000);
   private final String myNodeName;
-  private final HttpHeaderClientInterceptor interceptor = new HttpHeaderClientInterceptor();
   private boolean interceptorRegistered = false;
-
-  private boolean acceptPkiV1 = false;
 
   public boolean isInterceptorRegistered() {
     return interceptorRegistered;
@@ -113,21 +95,31 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     this.cores = cores;
     myNodeName = nodeName;
 
-    Set<String> knownPkiVersions = Set.of("v1", "v2");
-    // We always accept v2 even if it is not specified
-    String[] versions = System.getProperty(ACCEPT_VERSIONS, "v2").split(",");
-    for (String version : versions) {
-      if (knownPkiVersions.contains(version) == false) {
-        log.warn("Unknown protocol version [{}] specified in {}", version, ACCEPT_VERSIONS);
-      }
-      if ("v1".equals(version)) {
-        log.warn(
-            "System setting {} includes the deprecated v1, which should only be used for compatibility during rolling upgrades. "
-                + "After all servers have been upgraded, consider disabling this compatability layer.",
-            ACCEPT_VERSIONS);
-        acceptPkiV1 = true;
-      }
-    }
+    // Don't expire after read, because there is no reason to add the overhead of updating expiry
+    // information after each read. The expiration time here doesn't matter too much, because we
+    // still check the PKI Token TTL after fetching from the cache. We just want to make sure cache
+    // entries are cleaned up regularly.
+    validatedHeaderCache =
+        Caffeine.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(MAX_VALIDITY, TimeUnit.MILLISECONDS)
+            .build(this::decipherHeaderV2);
+    // We must expire much earlier than the max validity, because these cached Auth tokens still
+    // need to be sent to the server, which will validate the TTL. If we expire at maxValidity, the
+    // TTL check will always fail before the cache entry is expired.
+    long expireAfterTime = MAX_VALIDITY / 4;
+    // Refreshing is done asynchronously, so we want to do it before expiration. This means that
+    // requests are not synchronously blocked when generating new Auth tokens. However, the refresh
+    // will only happen when the cached header is requested. Therefore, we want to give a long-ish
+    // runway for requests to come in to trigger an asynchronous-refresh before expiry causes a
+    // synchronous-refresh.
+    long shouldRefreshTime = Math.max(1, expireAfterTime / 2);
+    generatedV2TokenCache =
+        Caffeine.newBuilder()
+            .maximumSize(100)
+            .refreshAfterWrite(shouldRefreshTime, TimeUnit.MILLISECONDS)
+            .expireAfterWrite(expireAfterTime, TimeUnit.MILLISECONDS)
+            .build(this::generateTokenV2);
   }
 
   @Override
@@ -141,50 +133,31 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     // Getting the received time must be the first thing we do, processing the request can take time
     long receivedTime = System.currentTimeMillis();
 
-    String requestURI = request.getRequestURI();
-    if (requestURI.endsWith(PublicKeyHandler.PATH)) {
-      assert false : "Should already be handled by SolrDispatchFilter.authenticateRequest";
-
-      numPassThrough.inc();
-      filterChain.doFilter(request, response);
-      return true;
-    }
-
-    PKIHeaderData headerData = null;
     String headerV2 = request.getHeader(HEADER_V2);
-    String headerV1 = request.getHeader(HEADER);
-    if (headerV1 == null && headerV2 == null) {
-      return sendError(response, true, "No PKI auth header was provided");
-    } else if (headerV2 != null) {
-      // Try V2 first
-      int nodeNameEnd = headerV2.indexOf(' ');
-      if (nodeNameEnd <= 0) {
-        // Do not log the value as it is likely gibberish
-        return sendError(response, true, "Could not parse node name from SolrAuthV2 header.");
-      }
-
-      headerData = decipherHeaderV2(headerV2, headerV2.substring(0, nodeNameEnd));
-    } else if (headerV1 != null && acceptPkiV1) {
-      List<String> authInfo = StrUtils.splitWS(headerV1, false);
-      if (authInfo.size() != 2) {
-        // We really shouldn't be logging and returning this, but we did it before so keep that
-        return sendError(response, false, "Invalid SolrAuth header: " + headerV1);
-      }
-      headerData = decipherHeader(authInfo.get(0), authInfo.get(1));
+    if (headerV2 == null) {
+      return sendError(response, "No PKI auth header was provided");
     }
+
+    int nodeNameEnd = headerV2.indexOf(' ');
+    if (nodeNameEnd <= 0) {
+      // Do not log the value as it is likely gibberish
+      return sendError(response, "Could not parse node name from SolrAuthV2 header.");
+    }
+
+    PKIHeaderData headerData = validatedHeaderCache.get(headerV2);
 
     if (headerData == null) {
-      return sendError(response, true, "Could not validate PKI header.");
+      return sendError(response, "Could not validate PKI header.");
     }
     long elapsed = receivedTime - headerData.timestamp;
     if (elapsed > MAX_VALIDITY) {
-      return sendError(response, true, "Expired key request timestamp, elapsed=" + elapsed);
+      return sendError(response, "Expired key request timestamp, elapsed=" + elapsed);
     }
 
     final Principal principal =
         "$".equals(headerData.userName)
             ? CLUSTER_MEMBER_NODE
-            : new BasicUserPrincipal(headerData.userName);
+            : new SimplePrincipal(headerData.userName);
 
     numAuthenticated.inc();
     filterChain.doFilter(wrapWithPrincipal(request, principal), response);
@@ -196,16 +169,14 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
    * authentication
    *
    * @param response the response to set error status with
-   * @param v2 whether this authentication used the v1 or v2 header (true if v2)
-   * @param message the message to log and send back to client. do not include anyhting sensitive
+   * @param message the message to log and send back to client. do not include anything sensitive
    *     here about server state
    * @return false to chain with calls from authenticate
    */
-  private boolean sendError(HttpServletResponse response, boolean v2, String message)
-      throws IOException {
-    numErrors.mark();
+  private boolean sendError(HttpServletResponse response, String message) throws IOException {
+    numErrors.inc();
     log.error(message);
-    response.setHeader(HttpHeaders.WWW_AUTHENTICATE, v2 ? HEADER_V2 : HEADER);
+    response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), HEADER_V2);
     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, message);
     return false;
   }
@@ -231,7 +202,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     return key;
   }
 
-  private PKIHeaderData decipherHeaderV2(String header, String nodeName) {
+  private PKIHeaderData decipherHeaderV2(String header) {
+    String nodeName = header.substring(0, header.indexOf(' '));
     PublicKey key = getOrFetchPublicKey(nodeName);
 
     int sigStart = header.lastIndexOf(' ');
@@ -282,53 +254,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
   }
 
-  private PKIHeaderData decipherHeader(String nodeName, String cipherBase64) {
-    PublicKey key = getOrFetchPublicKey(nodeName);
-
-    PKIHeaderData header = parseCipher(cipherBase64, key, false);
-    if (header == null) {
-      log.warn("Failed to decrypt header, trying after refreshing the key ");
-      key = fetchPublicKeyFromRemote(nodeName);
-      return parseCipher(cipherBase64, key, true);
-    } else {
-      return header;
-    }
-  }
-
-  @VisibleForTesting
-  static PKIHeaderData parseCipher(String cipher, PublicKey key, boolean isRetry) {
-    byte[] bytes;
-    try {
-      bytes = CryptoKeys.decryptRSA(Base64.getDecoder().decode(cipher), key);
-    } catch (Exception e) {
-      if (isRetry) {
-        log.error("Decryption failed on retry, key must be wrong", e);
-      } else {
-        log.info("Decryption failed on first attempt, will retry", e);
-      }
-      return null;
-    }
-    String s = new String(bytes, UTF_8).trim();
-    int splitPoint = s.lastIndexOf(' ');
-    int timestampDigits = s.length() - 1 - splitPoint;
-    if (splitPoint == -1
-        || timestampDigits < MIN_TIMESTAMP_DIGITS
-        || timestampDigits > MAX_TIMESTAMP_DIGITS) {
-      log.warn("Invalid cipher {} deciphered data {}", cipher, s);
-      return null;
-    }
-    PKIHeaderData headerData = new PKIHeaderData();
-    try {
-      headerData.timestamp = Long.parseLong(s.substring(splitPoint + 1));
-      headerData.userName = s.substring(0, splitPoint);
-      log.debug("Successfully decrypted header {} {}", headerData.userName, headerData.timestamp);
-      return headerData;
-    } catch (NumberFormatException e) {
-      log.warn("Invalid cipher {}", cipher);
-      return null;
-    }
-  }
-
   private boolean isInLiveNodes(String nodeName) {
     return cores
         .getZkController()
@@ -353,38 +278,35 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       return null;
     }
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
-    HttpEntity entity = null;
     try {
-      String uri = url + PublicKeyHandler.PATH + "?wt=json&omitHeader=true";
-      log.debug("Fetching fresh public key from: {}", uri);
-      HttpResponse rsp =
-          cores
-              .getUpdateShardHandler()
-              .getDefaultHttpClient()
-              .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
-      entity = rsp.getEntity();
-      byte[] bytes = EntityUtils.toByteArray(entity);
-      Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(bytes);
-      String key = (String) m.get("key");
+      final var solrParams = new ModifiableSolrParams();
+      solrParams.add("wt", "json");
+      solrParams.add("omitHeader", "true");
+
+      final var request = new GenericSolrRequest(GET, PublicKeyHandler.PATH, solrParams);
+      log.debug("Fetching fresh public key from: {}", url);
+      var solrClient = cores.getDefaultHttpSolrClient();
+      NamedList<Object> resp = solrClient.requestWithBaseUrl(url, request, null);
+
+      String key = (String) resp.get("key");
       if (key == null) {
         log.error("No key available from {}{}", url, PublicKeyHandler.PATH);
         return null;
       } else {
         log.info("New key obtained from node={}, key={}", nodename, key);
       }
+
       PublicKey pubKey = CryptoKeys.deserializeX509PublicKey(key);
       keyCache.put(nodename, pubKey);
       return pubKey;
     } catch (Exception e) {
       log.error("Exception trying to get public key from: {}", url, e);
       return null;
-    } finally {
-      Utils.consumeFully(entity);
     }
   }
 
   @Override
-  public void setup(Http2SolrClient client) {
+  public void setup(HttpJettySolrClient client) {
     final HttpListenerFactory.RequestResponseListener listener =
         new HttpListenerFactory.RequestResponseListener() {
           private static final String CACHED_REQUEST_USER_KEY = "cachedRequestUser";
@@ -420,15 +342,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
             log.trace("onBegin: {}", request);
 
             final Optional<String> preFetchedUser = getUserFromJettyRequest(request);
-            if ("v1".equals(System.getProperty(SEND_VERSION))) {
-              preFetchedUser
-                  .map(PKIAuthenticationPlugin.this::generateToken)
-                  .ifPresent(token -> request.header(HEADER, token));
-            } else {
-              preFetchedUser
-                  .map(PKIAuthenticationPlugin.this::generateTokenV2)
-                  .ifPresent(token -> request.header(HEADER_V2, token));
-            }
+            preFetchedUser
+                .map(generatedV2TokenCache::get)
+                .ifPresent(
+                    token -> request.headers(httpFields -> httpFields.add(HEADER_V2, token)));
           }
 
           private void cachePreFetchedUserOnJettyRequest(Request request) {
@@ -443,40 +360,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     client.addListenerFactory(() -> listener);
   }
 
-  @Override
-  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
-    HttpClientUtil.addRequestInterceptor(interceptor);
-    interceptorRegistered = true;
-    return builder;
-  }
-
   public boolean needsAuthorization(HttpServletRequest req) {
     return req.getUserPrincipal() != CLUSTER_MEMBER_NODE;
-  }
-
-  private class HttpHeaderClientInterceptor implements HttpRequestInterceptor {
-
-    public HttpHeaderClientInterceptor() {}
-
-    @Override
-    public void process(HttpRequest httpRequest, HttpContext httpContext)
-        throws HttpException, IOException {
-      if (cores.getAuthenticationPlugin() == null) {
-        return;
-      }
-      if (!cores.getAuthenticationPlugin().interceptInternodeRequest(httpRequest, httpContext)) {
-        if (log.isDebugEnabled()) {
-          log.debug("{} secures this internode request", this.getClass().getSimpleName());
-        }
-        setHeader(httpRequest);
-      } else {
-        if (log.isDebugEnabled()) {
-          log.debug(
-              "{} secures this internode request",
-              cores.getAuthenticationPlugin().getClass().getSimpleName());
-        }
-      }
-    }
   }
 
   private Optional<String> getUser() {
@@ -486,7 +371,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       if (principal == null) {
         log.debug("generateToken: principal is null");
         // this had a request but not authenticated
-        // so we don't not need to set a principal
+        // so we do not need to set a principal
         return Optional.empty();
       } else {
         assert principal.getName() != null;
@@ -504,17 +389,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
   }
 
-  @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
-  private String generateToken(String usr) {
-    assert usr != null;
-    String s = usr + " " + System.currentTimeMillis();
-    byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = publicKeyHandler.getKeyPair().encrypt(ByteBuffer.wrap(payload));
-    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
-    log.trace("generateToken: usr={} token={}", usr, base64Cipher);
-    return myNodeName + " " + base64Cipher;
-  }
-
   private String generateTokenV2(String user) {
     assert user != null;
     String s = myNodeName + " " + user + " " + Instant.now().toEpochMilli();
@@ -525,14 +399,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     return s + " " + base64Signature;
   }
 
-  void setHeader(HttpRequest httpRequest) {
-    if ("v1".equals(System.getProperty(SEND_VERSION))) {
-      getUser().map(this::generateToken).ifPresent(token -> httpRequest.setHeader(HEADER, token));
-    } else {
-      getUser()
-          .map(this::generateTokenV2)
-          .ifPresent(token -> httpRequest.setHeader(HEADER_V2, token));
-    }
+  @VisibleForTesting
+  void setHeader(BiConsumer<String, String> httpRequest) {
+    getUser()
+        .map(generatedV2TokenCache::get)
+        .ifPresent(token -> httpRequest.accept(HEADER_V2, token));
   }
 
   boolean isSolrThread() {
@@ -545,8 +416,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
   @Override
   public void close() throws IOException {
-    HttpClientUtil.removeRequestInterceptor(interceptor);
     interceptorRegistered = false;
+    super.close();
   }
 
   @VisibleForTesting
@@ -554,9 +425,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     return publicKeyHandler.getKeyPair().getPublicKeyStr();
   }
 
-  public static final String HEADER = "SolrAuth";
   public static final String HEADER_V2 = "SolrAuthV2";
   public static final String NODE_IS_USER = "$";
   // special principal to denote the cluster member
-  public static final Principal CLUSTER_MEMBER_NODE = new BasicUserPrincipal("$");
+  public static final Principal CLUSTER_MEMBER_NODE = new SimplePrincipal("$");
 }

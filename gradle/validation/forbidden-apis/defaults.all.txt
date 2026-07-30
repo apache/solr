@@ -54,8 +54,31 @@ java.io.File#delete() @ use Files.delete for real exception, IOUtils.deleteFiles
 
 java.util.Collections#shuffle(java.util.List) @ Use shuffle(List, Random) instead so that it can be reproduced
 
+@defaultMessage Use List.of()
+java.util.Collections#emptyList()
+
+@defaultMessage Use Set.of()
+java.util.Collections#emptySet()
+
+@defaultMessage Use Map.of()
+java.util.Collections#emptyMap()
+
+@defaultMessage Use Set.of()
+java.util.Collections#singleton(**)
+
+@defaultMessage Use List.of()
+java.util.Collections#singletonList(**)
+
+@defaultMessage Use Map.of()
+java.util.Collections#singletonMap(**)
+
 java.util.Locale#forLanguageTag(java.lang.String) @ use new Locale.Builder().setLanguageTag(...).build() which has error handling
 java.util.Locale#toString() @ use Locale#toLanguageTag() for a standardized BCP47 locale name
+
+
+@defaultMessage Direct calls to force the JVM to quit are forbidden in server code.
+java.lang.System#exit(int)
+java.lang.Runtime#exit(int)
 
 @defaultMessage Constructors for wrapper classes of Java primitives should be avoided in favor of the public static methods available or autoboxing
 java.lang.Integer#<init>(**)
@@ -83,3 +106,18 @@ java.util.logging.**
 
 @defaultMessage Use List.sort(Comparator) instead of Collections.sort(List, Comparator) please.
 java.util.Collections#sort(java.util.List, java.util.Comparator)
+
+@defaultMessage Use URI.toURL() to construct an instance of URL.
+java.net.URL#<init>(**)
+
+@defaultMessage Use Locale.Builder instead.
+java.util.Locale#<init>(**)
+
+@defaultMessage Use Path.of(...) methods instead.
+java.nio.file.Paths#get(**)
+
+@defaultMessage You probably meant to call String.startsWith
+java.nio.file.Path#startsWith(java.lang.String)
+
+@defaultMessage Use NIO Path instead of File
+java.io.File

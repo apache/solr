@@ -16,13 +16,12 @@
  */
 package org.apache.solr.response.transform;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.apache.solr.JSONTestUtil;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -42,7 +42,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -55,7 +55,7 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@org.apache.solr.SolrTestCaseJ4.SuppressSSL()
+@SuppressSSL()
 public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
   private static final String support = "These guys help customers";
@@ -84,9 +84,9 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
                     "class",
                     RuleBasedAuthorizationPlugin.class.getName(),
                     "user-role",
-                    singletonMap(USER, "admin"),
+                    Map.of(USER, "admin"),
                     "permissions",
-                    singletonList(Map.of("name", "all", "role", "admin"))),
+                    List.of(Map.of("name", "all", "role", "admin"))),
                 "authentication",
                 Map.of(
                     "class",
@@ -94,7 +94,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
                     "blockUnknown",
                     true,
                     "credentials",
-                    singletonMap(USER, getSaltedHashedValue(PASS)),
+                    Map.of(USER, getSaltedHashedValue(PASS)),
                     "forwardCredentials", // forward basic auth credentials during internode
                     // requests instead of relying on PKI authentication; the test should pass
                     // regardless of the setting here, but "true" is the more interesting case that
@@ -128,9 +128,9 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     CloudSolrClient client = cluster.getSolrClient();
 
     ZkStateReader zkStateReader = ZkStateReader.from(client);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(people, zkStateReader, true, true, 30);
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(people, zkStateReader, true, true, 30);
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(depts, zkStateReader, false, true, 30);
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(depts, zkStateReader, false, true, 30);
   }
 
   @SuppressWarnings("serial")
@@ -181,8 +181,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     final SolrDocumentList hits;
     {
       final QueryRequest qr = withBasicAuth(new QueryRequest(params));
-      final QueryResponse rsp = new QueryResponse();
-      rsp.setResponse(cluster.getSolrClient().request(qr, people + "," + depts));
+      final QueryResponse rsp = qr.process(cluster.getSolrClient(), people + "," + depts);
       hits = rsp.getResults();
 
       assertEquals(peopleMultiplier, hits.getNumFound());
@@ -209,12 +208,13 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
     params.set("wt", "json");
     final URL node =
-        new URL(
-            cluster.getRandomJetty(random()).getBaseUrl().toString()
-                + "/"
-                + people
-                + "/select"
-                + params.toQueryString());
+        URI.create(
+                cluster.getRandomJetty(random()).getBaseUrl().toString()
+                    + "/"
+                    + people
+                    + "/select"
+                    + params.toQueryString())
+            .toURL();
 
     final URLConnection urlConnectionWithoutAuth = node.openConnection();
     assertThrows(Exception.class, () -> urlConnectionWithoutAuth.getInputStream());

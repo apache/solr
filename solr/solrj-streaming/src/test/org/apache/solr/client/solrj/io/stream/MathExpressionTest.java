@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -56,19 +56,13 @@ public class MathExpressionTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
                 .resolve("conf"))
         .addConfig(
             "ml",
-            getFile("solrj")
-                .toPath()
-                .resolve("solr")
-                .resolve("configsets")
-                .resolve("ml")
-                .resolve("conf"))
+            getFile("solrj").resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
 
     String collection;
@@ -81,7 +75,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         collection, cluster.getZkStateReader(), false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
@@ -1812,8 +1806,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
     // there are times when tuples are discarded because
     // they contain values with NaN values. This will occur
     // only on the very end of the tails of the normal distribution or other
-    // real distributions and doesn't effect the visual quality of the curve very much.
-    // But it does effect the reliability of tests.
+    // real distributions and doesn't affect the visual quality of the curve very much.
+    // But it does affect the reliability of tests.
     // For this reason the loop below is in place to run the test N times looking
     // for the correct number of tuples before asserting the mean.
 

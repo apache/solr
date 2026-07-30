@@ -16,18 +16,18 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.framework.AuthInfo;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -64,12 +64,10 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    configureCluster(1)
-        .addConfig("_default", new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
-        .configure();
+    configureCluster(1).addConfig("_default", ExternalPaths.DEFAULT_CONFIGSET).configure();
     solrClient =
         new RandomizingCloudSolrClientBuilder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+                List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build();
 
     final String SCHEME = "digest";
@@ -86,7 +84,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
       // Set up chroot
-      client.makePath("/solr", false, true);
+      client.makePath("/solr", false);
     }
 
     defaultClient =
@@ -102,18 +100,17 @@ public class SolrZkClientTest extends SolrCloudTestCase {
                 .withUrl(zkServer.getZkAddress())
                 .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)) {
           @Override
-          protected ZkACLProvider createZkACLProvider() {
-            return new DefaultZkACLProvider() {
-              @Override
-              protected List<ACL> createGlobalACLsToAdd() {
-                try {
-                  Id id = new Id(SCHEME, DigestAuthenticationProvider.generateDigest(AUTH));
-                  return Collections.singletonList(new ACL(ZooDefs.Perms.ALL, id));
-                } catch (NoSuchAlgorithmException e) {
-                  throw new RuntimeException(e);
-                }
-              }
-            };
+          protected ACLProvider createACLProvider() {
+            try {
+              // Must be Arrays.asList(), Zookeeper does not allow for immutable list types for ACLs
+              return new DefaultZkACLProvider(
+                  Arrays.asList(
+                      new ACL(
+                          ZooDefs.Perms.ALL,
+                          new Id(SCHEME, DigestAuthenticationProvider.generateDigest(AUTH)))));
+            } catch (NoSuchAlgorithmException e) {
+              throw new RuntimeException(e);
+            }
           }
         };
 
@@ -124,13 +121,8 @@ public class SolrZkClientTest extends SolrCloudTestCase {
                 .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)) {
           @Override
           protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
-            return new DefaultZkCredentialsProvider() {
-              @Override
-              protected Collection<ZkCredentials> createCredentials() {
-                return Collections.singleton(
-                    new ZkCredentials(SCHEME, AUTH.getBytes(StandardCharsets.UTF_8)));
-              }
-            };
+            return new DefaultZkCredentialsProvider(
+                List.of(new AuthInfo(SCHEME, AUTH.getBytes(StandardCharsets.UTF_8))));
           }
         };
   }
@@ -221,12 +213,10 @@ public class SolrZkClientTest extends SolrCloudTestCase {
 
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData(
-            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null, true);
+        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null);
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData(
-            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped2A, null, true);
+        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrapped2A, null);
 
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(), "baz", "bam")
         .process(solrClient);
@@ -240,12 +230,10 @@ public class SolrZkClientTest extends SolrCloudTestCase {
 
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData(
-            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null, true);
+        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null);
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData(
-            "/collections/" + getSaferTestName() + "/collectionprops.json", wrappedB, null, true);
+        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrappedB, null);
 
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(), "baz", "bang")
         .process(solrClient);
@@ -262,7 +250,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   private static boolean canRead(SolrZkClient zkClient, String path)
       throws KeeperException, InterruptedException {
     try {
-      zkClient.getData(path, null, null, true);
+      zkClient.getData(path, null, null);
       return true;
     } catch (KeeperException.NoAuthException e) {
       return false;
@@ -273,7 +261,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   public void getConfig() {
     // As the embedded ZK is hardcoded to standalone, there is no way to test actual config data
     // here
-    assertEquals("", defaultClient.getConfig());
+    assertEquals("version=0", defaultClient.getConfig());
   }
 
   @Test
@@ -322,12 +310,12 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     try {
       Stat createStat = new Stat();
       defaultClient.create(
-          path, "hello".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, false, createStat);
+          path, "hello".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, createStat);
       Stat readStat = new Stat();
-      defaultClient.getData(path, null, readStat, false);
+      defaultClient.getData(path, null, readStat);
       assertEquals(createStat, readStat);
     } finally {
-      defaultClient.delete(path, 0, false);
+      defaultClient.delete(path, 0);
     }
   }
 
@@ -337,12 +325,12 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     try {
       Stat createStat = new Stat();
       defaultClient.create(
-          path, "hello".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true, createStat);
+          path, "hello".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, createStat);
       Stat readStat = new Stat();
-      defaultClient.getData(path, null, readStat, false);
+      defaultClient.getData(path, null, readStat);
       assertEquals(createStat, readStat);
     } finally {
-      defaultClient.delete(path, 0, false);
+      defaultClient.delete(path, 0);
     }
   }
 }

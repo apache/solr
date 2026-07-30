@@ -18,7 +18,6 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +26,7 @@ import java.util.Set;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica.ReplicaType;
 import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.DeleteCollectionRequest;
 import org.apache.solr.cluster.placement.DeleteReplicasRequest;
@@ -40,13 +40,9 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.CollectionUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** This assign strategy delegates placement computation to "plugin" code. */
 public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final PlacementPlugin plugin;
 
@@ -126,7 +122,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
   private Replica findReplica(
       SolrCloudManager solrCloudManager, org.apache.solr.cluster.Replica replica) {
-    DocCollection collection = null;
+    DocCollection collection;
     try {
       collection =
           solrCloudManager
@@ -198,8 +194,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
     ArrayList<Node> nodeList = new ArrayList<>(request.getTargetNodes());
     for (String shard : request.getShardNames()) {
       int replicaNumOfShard = 0;
-      for (org.apache.solr.cluster.Replica.ReplicaType replicaType :
-          org.apache.solr.cluster.Replica.ReplicaType.values()) {
+      for (ReplicaType replicaType : ReplicaType.values()) {
         for (int i = 0; i < request.getCountReplicasToCreate(replicaType); i++) {
           Node assignedNode = nodeList.get(replicaNumOfShard++ % nodeList.size());
           replicaPositions.add(

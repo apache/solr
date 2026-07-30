@@ -29,8 +29,6 @@ public class CloudConfig {
 
   private final String hostName;
 
-  private final boolean useGenericCoreNames;
-
   private final int leaderVoteWait;
 
   private final int leaderConflictResolveWait;
@@ -49,10 +47,6 @@ public class CloudConfig {
 
   private final String pkiHandlerPublicKeyPath;
 
-  private final boolean useDistributedClusterStateUpdates;
-
-  private final boolean useDistributedCollectionConfigSetExecution;
-
   private final int minStateByteLenForCompression;
 
   private final String stateCompressorClass;
@@ -62,7 +56,6 @@ public class CloudConfig {
       int zkClientTimeout,
       int hostPort,
       String hostName,
-      boolean useGenericCoreNames,
       int leaderVoteWait,
       int leaderConflictResolveWait,
       String zkCredentialsProviderClass,
@@ -72,15 +65,12 @@ public class CloudConfig {
       boolean createCollectionCheckLeaderActive,
       String pkiHandlerPrivateKeyPath,
       String pkiHandlerPublicKeyPath,
-      boolean useDistributedClusterStateUpdates,
-      boolean useDistributedCollectionConfigSetExecution,
       int minStateByteLenForCompression,
       String stateCompressorClass) {
     this.zkHost = zkHost;
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
     this.hostName = hostName;
-    this.useGenericCoreNames = useGenericCoreNames;
     this.leaderVoteWait = leaderVoteWait;
     this.leaderConflictResolveWait = leaderConflictResolveWait;
     this.zkCredentialsProviderClass = zkCredentialsProviderClass;
@@ -90,16 +80,8 @@ public class CloudConfig {
     this.createCollectionCheckLeaderActive = createCollectionCheckLeaderActive;
     this.pkiHandlerPrivateKeyPath = pkiHandlerPrivateKeyPath;
     this.pkiHandlerPublicKeyPath = pkiHandlerPublicKeyPath;
-    this.useDistributedClusterStateUpdates = useDistributedClusterStateUpdates;
-    this.useDistributedCollectionConfigSetExecution = useDistributedCollectionConfigSetExecution;
     this.minStateByteLenForCompression = minStateByteLenForCompression;
     this.stateCompressorClass = stateCompressorClass;
-
-    if (useDistributedCollectionConfigSetExecution && !useDistributedClusterStateUpdates) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "'useDistributedCollectionConfigSetExecution' can't be true if useDistributedClusterStateUpdates is false");
-    }
 
     if (this.hostPort == -1)
       throw new SolrException(
@@ -142,10 +124,6 @@ public class CloudConfig {
     return leaderConflictResolveWait;
   }
 
-  public boolean getGenericCoreNodeNames() {
-    return useGenericCoreNames;
-  }
-
   public int getCreateCollectionWaitTimeTillActive() {
     return createCollectionWaitTimeTillActive;
   }
@@ -160,14 +138,6 @@ public class CloudConfig {
 
   public String getPkiHandlerPublicKeyPath() {
     return pkiHandlerPublicKeyPath;
-  }
-
-  public boolean getDistributedClusterStateUpdates() {
-    return useDistributedClusterStateUpdates;
-  }
-
-  public boolean getDistributedCollectionConfigSetExecution() {
-    return useDistributedCollectionConfigSetExecution;
   }
 
   public int getMinStateByteLenForCompression() {
@@ -191,7 +161,6 @@ public class CloudConfig {
     private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
     private final int hostPort;
     private final String hostName;
-    private boolean useGenericCoreNames;
     private int leaderVoteWait = DEFAULT_LEADER_VOTE_WAIT;
     private int leaderConflictResolveWait = DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT;
     private String zkCredentialsProviderClass;
@@ -202,8 +171,6 @@ public class CloudConfig {
         DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE;
     private String pkiHandlerPrivateKeyPath;
     private String pkiHandlerPublicKeyPath;
-    private boolean useDistributedClusterStateUpdates = false;
-    private boolean useDistributedCollectionConfigSetExecution = false;
     private int minStateByteLenForCompression = DEFAULT_MINIMUM_STATE_SIZE_FOR_COMPRESSION;
 
     private String stateCompressorClass;
@@ -220,11 +187,6 @@ public class CloudConfig {
 
     public CloudConfigBuilder setZkClientTimeout(int zkClientTimeout) {
       this.zkClientTimeout = zkClientTimeout;
-      return this;
-    }
-
-    public CloudConfigBuilder setUseGenericCoreNames(boolean useGenericCoreNames) {
-      this.useGenericCoreNames = useGenericCoreNames;
       return this;
     }
 
@@ -277,18 +239,6 @@ public class CloudConfig {
       return this;
     }
 
-    public CloudConfigBuilder setUseDistributedClusterStateUpdates(
-        boolean useDistributedClusterStateUpdates) {
-      this.useDistributedClusterStateUpdates = useDistributedClusterStateUpdates;
-      return this;
-    }
-
-    public CloudConfigBuilder setUseDistributedCollectionConfigSetExecution(
-        boolean useDistributedCollectionConfigSetExecution) {
-      this.useDistributedCollectionConfigSetExecution = useDistributedCollectionConfigSetExecution;
-      return this;
-    }
-
     public CloudConfigBuilder setMinStateByteLenForCompression(int minStateByteLenForCompression) {
       this.minStateByteLenForCompression = minStateByteLenForCompression;
       return this;
@@ -305,7 +255,6 @@ public class CloudConfig {
           zkClientTimeout,
           hostPort,
           hostName,
-          useGenericCoreNames,
           leaderVoteWait,
           leaderConflictResolveWait,
           zkCredentialsProviderClass,
@@ -315,8 +264,6 @@ public class CloudConfig {
           createCollectionCheckLeaderActive,
           pkiHandlerPrivateKeyPath,
           pkiHandlerPublicKeyPath,
-          useDistributedClusterStateUpdates,
-          useDistributedCollectionConfigSetExecution,
           minStateByteLenForCompression,
           stateCompressorClass);
     }

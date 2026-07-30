@@ -33,7 +33,7 @@ public class DensityEvaluator extends RecursiveObjectEvaluator implements TwoVal
   @Override
   public Object doWork(Object first, Object second) throws IOException {
 
-    if (!(first instanceof MultivariateRealDistribution)) {
+    if (!(first instanceof MultivariateRealDistribution multivariateRealDistribution)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -50,8 +50,6 @@ public class DensityEvaluator extends RecursiveObjectEvaluator implements TwoVal
               first.getClass().getSimpleName()));
     }
 
-    MultivariateRealDistribution multivariateRealDistribution =
-        (MultivariateRealDistribution) first;
     @SuppressWarnings({"unchecked"})
     List<Number> nums = (List<Number>) second;
 

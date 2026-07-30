@@ -36,7 +36,7 @@ public class GetBaryCenterEvaluator extends RecursiveObjectEvaluator implements 
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if (!(value instanceof ConvexHull2D)) {
+    if (!(value instanceof ConvexHull2D convexHull2D)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -44,7 +44,6 @@ public class GetBaryCenterEvaluator extends RecursiveObjectEvaluator implements 
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     } else {
-      ConvexHull2D convexHull2D = (ConvexHull2D) value;
       Vector2D vector2D = (Vector2D) convexHull2D.createRegion().getBarycenter();
       List<Number> vec = new ArrayList<>();
       vec.add(vector2D.getX());

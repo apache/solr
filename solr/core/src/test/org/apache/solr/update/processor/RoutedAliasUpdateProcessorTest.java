@@ -32,6 +32,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -63,8 +64,7 @@ import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix(
-    bugUrl = "https://issues.apache.org/jira/browse/SOLR-13696")
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13696")
 @Ignore // don't try to run abstract base class
 public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -205,8 +205,10 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         String nodeName = jettySolrRunner.getNodeName();
         String collectionName = core.getCollectionName();
         DocCollection collectionOrNull = clusterState.getCollectionOrNull(collectionName);
-        List<Replica> leaderReplicas = collectionOrNull.getLeaderReplicas(nodeName);
-        if (leaderReplicas != null) {
+        if (collectionOrNull != null) {
+          List<Replica> replicas = collectionOrNull.getReplicasOnNode(nodeName);
+          assertNotNull(replicas);
+          List<Replica> leaderReplicas = replicas.stream().filter(Replica::isLeader).toList();
           for (Replica leaderReplica : leaderReplicas) {
             leaders.add(leaderReplica.getCoreName());
           }
@@ -284,7 +286,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     waitForState(
         "waiting for collections to be created",
         collection,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           if (collectionState == null) {
             // per predicate javadoc, this is what we get if the collection doesn't exist at all.
             return false;

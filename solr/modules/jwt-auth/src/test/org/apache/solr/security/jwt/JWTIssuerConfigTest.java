@@ -157,7 +157,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
     SolrException e = expectThrows(SolrException.class, issuerConfig::getHttpsJwks);
     assertEquals(400, e.code());
     assertEquals(
-        "jwksUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.",
+        "jwksUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.outbound.http.enabled=true to allow HTTP for test purposes.",
         e.getMessage());
 
     JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true;
@@ -210,7 +210,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
                     "http://127.0.0.1:45678/.well-known/config"));
     assertEquals(400, e.code());
     assertEquals(
-        "wellKnownUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.",
+        "wellKnownUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.outbound.http.enabled=true to allow HTTP for test purposes.",
         e.getMessage());
 
     JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true;
@@ -241,5 +241,13 @@ public class JWTIssuerConfigTest extends SolrTestCase {
     assertEquals(
         "Well-known config could not be read from url https://127.0.0.1:45678/.well-known/config",
         e.getMessage());
+  }
+
+  @Test
+  public void parseJwkSetSingleBareJwk() throws Exception {
+    // testJwk is a bare JWK map (no "keys" wrapper) — exercises the single-JWK branch
+    JsonWebKeySet result = JWTIssuerConfig.parseJwkSet(testJwk);
+    assertEquals(1, result.getJsonWebKeys().size());
+    assertEquals("k1", result.getJsonWebKeys().get(0).getKeyId());
   }
 }

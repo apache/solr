@@ -40,7 +40,7 @@ public class ConcatOperationTest extends SolrTestCase {
   }
 
   @Test
-  public void concatSingleField() throws Exception {
+  public void concatSingleField() {
     Tuple tuple;
     StreamOperation operation;
 
@@ -59,7 +59,7 @@ public class ConcatOperationTest extends SolrTestCase {
   }
 
   @Test
-  public void concatMultipleFields() throws Exception {
+  public void concatMultipleFields() {
     Tuple tuple;
     StreamOperation operation;
 
@@ -79,7 +79,7 @@ public class ConcatOperationTest extends SolrTestCase {
     assertNotNull(tuple.get("fieldABConcat"));
     assertEquals("bar-baz", tuple.get("fieldABConcat"));
 
-    // do the same in oposite order
+    // do the same in reverse order
     operation = new ConcatOperation(new String[] {"fieldB", "fieldA"}, "fieldABConcat", "-");
     tuple = new Tuple(values);
     operation.operate(tuple);
@@ -95,7 +95,7 @@ public class ConcatOperationTest extends SolrTestCase {
   }
 
   @Test
-  public void concatMultipleFieldsWithIgnoredFields() throws Exception {
+  public void concatMultipleFieldsWithIgnoredFields() {
     Tuple tuple;
     StreamOperation operation;
 
@@ -123,7 +123,7 @@ public class ConcatOperationTest extends SolrTestCase {
     assertNotNull(tuple.get("fieldABConcat"));
     assertEquals("bar-baz", tuple.get("fieldABConcat"));
 
-    // do the same in oposite order
+    // do the same in opposite order
     operation = new ConcatOperation(new String[] {"fieldB", "fieldA"}, "fieldABConcat", "-");
     tuple = new Tuple(values);
     operation.operate(tuple);
@@ -139,7 +139,7 @@ public class ConcatOperationTest extends SolrTestCase {
   }
 
   @Test
-  public void concatWithNullValues() throws Exception {
+  public void concatWithNullValues() {
     Tuple tuple;
     StreamOperation operation;
 
@@ -207,7 +207,7 @@ public class ConcatOperationTest extends SolrTestCase {
     assertNotNull(tuple.get("fieldABConcat"));
     assertEquals("bar-baz", tuple.get("fieldABConcat"));
 
-    // do the same in oposite order
+    // do the same in opposite order
     operation =
         new ConcatOperation(
             StreamExpressionParser.parse(
@@ -259,7 +259,7 @@ public class ConcatOperationTest extends SolrTestCase {
     assertNotNull(tuple.get("fieldABConcat"));
     assertEquals("bar-baz", tuple.get("fieldABConcat"));
 
-    // do the same in oposite order
+    // do the same in opposite order
     operation =
         new ConcatOperation(
             StreamExpressionParser.parse(

@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -99,10 +98,9 @@ public class SortableTextField extends TextField {
   public List<IndexableField> createFields(SchemaField field, Object value) {
     IndexableField f = createField(field, value);
     if (!field.hasDocValues()) {
-      return Collections.singletonList(f);
+      return List.of(f);
     }
-    if (value instanceof ByteArrayUtf8CharSequence) {
-      ByteArrayUtf8CharSequence utf8 = (ByteArrayUtf8CharSequence) value;
+    if (value instanceof ByteArrayUtf8CharSequence utf8) {
       if (utf8.size() < maxCharsForDocValues) {
         BytesRef bytes = new BytesRef(utf8.getBuf(), utf8.offset(), utf8.size());
         return getIndexableFields(field, f, bytes);
@@ -139,7 +137,7 @@ public class SortableTextField extends TextField {
             : new SortedDocValuesField(field.getName(), bytes);
 
     if (null == f) {
-      return Collections.singletonList(docval);
+      return List.of(docval);
     }
     return Arrays.asList(f, docval);
   }
@@ -148,6 +146,11 @@ public class SortableTextField extends TextField {
   @Override
   protected void checkSupportsDocValues() {
     // No-Op
+  }
+
+  @Override
+  protected boolean enableDocValuesByDefault() {
+    return true;
   }
 
   @Override
@@ -222,7 +225,7 @@ public class SortableTextField extends TextField {
     return new SortedSetFieldSource(field.getName(), selectorType);
   }
 
-  /** {@inheritDoc} this field type is not uninvertable, this method always returns null */
+  /** {@inheritDoc} this field type is not uninvertible, this method always returns null */
   @Override
   public Type getUninversionType(SchemaField sf) {
     return null;

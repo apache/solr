@@ -17,23 +17,24 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.util.Arrays;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.cluster.placement.CollectionMetrics;
 import org.apache.solr.cluster.placement.ReplicaMetric;
 import org.apache.solr.cluster.placement.ReplicaMetrics;
 import org.apache.solr.cluster.placement.ShardMetrics;
 import org.junit.Test;
 
-public class CollectionMetricsBuilderTest extends SolrTestCaseJ4 {
+public class CollectionMetricsBuilderTest extends SolrTestCase {
+
+  // Some arbitrary/bogus metric; doesn't matter in this unit test
+  private static final ReplicaMetric<Double> METRIC = new ReplicaMetricImpl<>("aMetric", "aMetric");
 
   @Test
   public void testMultipleShardLeaders() {
     CollectionMetricsBuilder.ReplicaMetricsBuilder r1 =
-        createReplicaMetricsBuilder(
-            "r1", ReplicaMetricImpl.INDEX_SIZE_GB, 1.5 * MetricImpl.GB, true);
+        createReplicaMetricsBuilder("r1", METRIC, 1.5, true);
     CollectionMetricsBuilder.ReplicaMetricsBuilder r2 =
-        createReplicaMetricsBuilder(
-            "r2", ReplicaMetricImpl.INDEX_SIZE_GB, 2.5 * MetricImpl.GB, true);
+        createReplicaMetricsBuilder("r2", METRIC, 2.5, true);
 
     CollectionMetrics metrics = collectionMetricsFromShardReplicaBuilders("shard1", r1, r2);
     ShardMetrics shardMetrics = metrics.getShardMetrics("shard1").get();
@@ -45,20 +46,18 @@ public class CollectionMetricsBuilderTest extends SolrTestCaseJ4 {
 
     // Both replicas claimed to be shard leader, so either metric value is acceptable, and an
     // exception should not be raised
-    Double indexSize = leaderMetrics.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB).get();
+    Double metricVal = leaderMetrics.getReplicaMetric(METRIC).get();
     assertTrue(
-        "Metric value " + indexSize + " should have matched one of the replica's values",
-        indexSize.equals(1.5) || indexSize.equals(2.5));
+        "Metric value " + metricVal + " should have matched one of the replica's values",
+        metricVal.equals(1.5) || metricVal.equals(2.5));
   }
 
   @Test
   public void testNoShardLeader() {
     CollectionMetricsBuilder.ReplicaMetricsBuilder r1 =
-        createReplicaMetricsBuilder(
-            "r1", ReplicaMetricImpl.INDEX_SIZE_GB, 1.5 * MetricImpl.GB, false);
+        createReplicaMetricsBuilder("r1", METRIC, 1.5, false);
     CollectionMetricsBuilder.ReplicaMetricsBuilder r2 =
-        createReplicaMetricsBuilder(
-            "r2", ReplicaMetricImpl.INDEX_SIZE_GB, 2.5 * MetricImpl.GB, false);
+        createReplicaMetricsBuilder("r2", METRIC, 2.5, false);
 
     CollectionMetrics metrics = collectionMetricsFromShardReplicaBuilders("shard1", r1, r2);
     assertTrue("Shard metrics not found", metrics.getShardMetrics("shard1").isPresent());

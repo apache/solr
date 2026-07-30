@@ -17,10 +17,10 @@
 package org.apache.solr.handler.clustering;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -30,7 +30,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.common.SolrDocument;
@@ -40,8 +40,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SearchHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.carrot2.clustering.Cluster;
@@ -55,9 +55,9 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("clustering/solr"), testHome);
-    initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath());
+    Path testHome = createTempDir();
+    PathUtils.copyDirectory(getFile("clustering/solr"), testHome);
+    initCore("solrconfig.xml", "schema.xml", testHome);
 
     String[] languages = {
       "English", "French", "German", "Unknown",
@@ -385,7 +385,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap<>());
-    try (SolrQueryRequest req = new LocalSolrQueryRequest(core, reqParams)) {
+    try (SolrQueryRequest req = new SolrQueryRequestBase(core, reqParams)) {
       handler.handleRequest(req, rsp);
       NamedList<?> values = rsp.getValues();
       @SuppressWarnings("unchecked")

@@ -29,13 +29,13 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
@@ -129,15 +129,15 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
         throw new RuntimeException("No method with @Command in class: " + klas.getName());
       }
       SpecProvider specProvider = readSpec(endPoint, methods);
-      return Collections.singletonList(new AnnotatedApi(specProvider, endPoint, commands, null));
+      return List.of(new AnnotatedApi(specProvider, endPoint, commands, null));
     } else {
       List<Api> apis = new ArrayList<>();
       for (Method m : klas.getMethods()) {
         EndPoint endPoint = m.getAnnotation(EndPoint.class);
         if (endPoint == null) continue;
         Cmd cmd = new Cmd("", obj, m);
-        SpecProvider specProvider = readSpec(endPoint, Collections.singletonList(m));
-        apis.add(new AnnotatedApi(specProvider, endPoint, Collections.singletonMap("", cmd), null));
+        SpecProvider specProvider = readSpec(endPoint, List.of(m));
+        apis.add(new AnnotatedApi(specProvider, endPoint, Map.of("", cmd), null));
       }
       if (!allowEmpty && apis.isEmpty()) {
         throw new RuntimeException("Invalid Class : " + klas.getName() + " No @EndPoints");
@@ -169,9 +169,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
         methods.add(method.name());
       }
       map.put("methods", methods);
-      map.put(
-          "url",
-          new ValidatingJsonMap(Collections.singletonMap("paths", Arrays.asList(endPoint.path()))));
+      map.put("url", new ValidatingJsonMap(Map.of("paths", Arrays.asList(endPoint.path()))));
       Map<String, Object> cmds = new HashMap<>();
 
       for (Method method : m) {
@@ -207,7 +205,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
         fallback.call(req, rsp);
         return;
       } else {
-        throw new ApiBag.ExceptionWithErrObject(
+        throw new SolrErrorWrappingException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Error processing commands",
             CommandOperation.captureErrors(cmds));
@@ -222,7 +220,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     List<Map<String, Object>> errs = CommandOperation.captureErrors(cmds);
     if (!errs.isEmpty()) {
       log.error("{}{}", ERR, Utils.toJSONString(errs));
-      throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, ERR, errs);
+      throw new SolrErrorWrappingException(SolrException.ErrorCode.BAD_REQUEST, ERR, errs);
     }
   }
 
@@ -261,8 +259,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     }
 
     private void readPayloadType(Type t) {
-      if (t instanceof ParameterizedType) {
-        ParameterizedType typ = (ParameterizedType) t;
+      if (t instanceof ParameterizedType typ) {
         if (typ.getRawType() == PayloadObj.class) {
           isWrappedInPayloadObj = true;
           if (typ.getActualTypeArguments().length == 0) {
@@ -271,8 +268,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
             return;
           }
           Type t1 = typ.getActualTypeArguments()[0];
-          if (t1 instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) t1;
+          if (t1 instanceof ParameterizedType parameterizedType) {
             parameterClass = (Class<?>) parameterizedType.getRawType();
           } else {
             parameterClass = (Class<?>) typ.getActualTypeArguments()[0];
@@ -345,9 +341,8 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     public boolean equals(Object rhs) {
       if (null == rhs) return false;
       if (this == rhs) return true;
-      if (!(rhs instanceof Cmd)) return false;
+      if (!(rhs instanceof Cmd rhsCast)) return false;
 
-      final Cmd rhsCast = (Cmd) rhs;
       return Objects.equals(command, rhsCast.command)
           && Objects.equals(method, rhsCast.method)
           && Objects.equals(obj, rhsCast.obj)
@@ -358,10 +353,10 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
 
     private void checkForErrorInPayload(CommandOperation cmd) {
       if (cmd.hasError()) {
-        throw new ApiBag.ExceptionWithErrObject(
+        throw new SolrErrorWrappingException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Error executing command",
-            CommandOperation.captureErrors(Collections.singletonList(cmd)));
+            CommandOperation.captureErrors(List.of(cmd)));
       }
     }
   }
@@ -373,8 +368,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
       t = types[2]; // (SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<PluginMeta>)
     if (types.length == 1) t = types[0]; // (PayloadObj<PluginMeta>)
     if (t != null) {
-      if (t instanceof ParameterizedType) {
-        ParameterizedType typ = (ParameterizedType) t;
+      if (t instanceof ParameterizedType typ) {
         if (typ.getRawType() == PayloadObj.class) {
           t = typ.getActualTypeArguments()[0];
         }

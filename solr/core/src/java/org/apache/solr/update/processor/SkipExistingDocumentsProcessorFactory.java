@@ -21,7 +21,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.util.Set;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -43,9 +43,9 @@ import org.slf4j.LoggerFactory;
  * there already exists a document with the same uniqueKey value in the index. It will also skip
  * Atomic Updates to a document if that document does not already exist. This behaviour is applied
  * to each document in turn, so adding a batch of documents can result in some being added and some
- * ignored, depending on what is already in the index. If all of the documents are skipped, no
- * changes to the index will occur. These two forms of skipping can be switched on or off
- * independently, by using init params:
+ * ignored, depending on what is already in the index. If all the documents are skipped, no changes
+ * to the index will occur. These two forms of skipping can be switched on or off independently, by
+ * using init params:
  *
  * <ul>
  *   <li><code>skipInsertIfExists</code> - This boolean parameter defaults to <code>true</code>, but
@@ -191,17 +191,13 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
       return this.skipUpdateIfMissing;
     }
 
-    boolean doesDocumentExist(BytesRef indexedDocId) throws IOException {
+    boolean doesDocumentExist(BytesRef indexedDocId) {
       assert null != indexedDocId;
 
       // we don't need any fields populated, we just need to know if the doc is in the tlog...
       SolrInputDocument oldDoc =
           RealTimeGetComponent.getInputDocumentFromTlog(
-              core,
-              indexedDocId,
-              null,
-              Collections.emptySet(),
-              RealTimeGetComponent.Resolution.PARTIAL);
+              core, indexedDocId, null, Set.of(), RealTimeGetComponent.Resolution.PARTIAL);
       if (oldDoc == RealTimeGetComponent.DELETED) {
         return false;
       }
@@ -224,6 +220,17 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
       }
     }
 
+    boolean doesChildDocumentExist(AddUpdateCommand cmd) throws IOException {
+      return RealTimeGetComponent.getInputDocument(
+              core,
+              core.getLatestSchema().indexableUniqueKey(cmd.getSelfOrNestedDocIdStr()),
+              cmd.getIndexedId(),
+              null,
+              null,
+              RealTimeGetComponent.Resolution.DOC)
+          != null;
+    }
+
     boolean isLeader(UpdateCommand cmd) {
       if ((cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0) {
         return false;
@@ -241,17 +248,10 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
 
       boolean isUpdate = AtomicUpdateDocumentMerger.isAtomicUpdate(cmd);
 
-      // boolean existsByLookup = (RealTimeGetComponent.getInputDocument(core, indexedDocId) !=
-      // null);
-      // if (docExists != existsByLookup) {
-      //   log.error("Found docExists {} but existsByLookup {} for doc {}", docExists,
-      // existsByLookup, indexedDocId.utf8ToString());
-      // }
-
       if (log.isDebugEnabled()) {
         log.debug(
             "Document ID {} ... exists already? {} ... isAtomicUpdate? {} ... isLeader? {}",
-            indexedDocId.utf8ToString(),
+            cmd.getPrintableId(),
             doesDocumentExist(indexedDocId),
             isUpdate,
             isLeader(cmd));
@@ -259,20 +259,35 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
 
       if (skipInsertIfExists && !isUpdate && isLeader(cmd) && doesDocumentExist(indexedDocId)) {
         if (log.isDebugEnabled()) {
-          log.debug("Skipping insert for pre-existing document ID {}", indexedDocId.utf8ToString());
+          log.debug("Skipping insert for pre-existing document ID {}", cmd.getPrintableId());
         }
         return;
       }
 
-      if (skipUpdateIfMissing && isUpdate && isLeader(cmd) && !doesDocumentExist(indexedDocId)) {
-        if (log.isDebugEnabled()) {
-          log.debug("Skipping update to non-existent document ID {}", indexedDocId.utf8ToString());
+      if (skipUpdateIfMissing && isUpdate && isLeader(cmd)) {
+        if (!cmd.getSelfOrNestedDocIdStr().equals(cmd.getIndexedIdStr())) {
+          // must be a child document
+          if (!doesChildDocumentExist(cmd)) {
+            if (log.isDebugEnabled()) {
+              log.debug(
+                  "Skipping update to non-existent child document ID {}",
+                  cmd.getSelfOrNestedDocIdStr());
+            }
+            return;
+          }
+        } else {
+          // not a child document
+          if (!doesDocumentExist(indexedDocId)) {
+            if (log.isDebugEnabled()) {
+              log.debug("Skipping update to non-existent document ID {}", cmd.getPrintableId());
+            }
+            return;
+          }
         }
-        return;
       }
 
       if (log.isDebugEnabled()) {
-        log.debug("Passing on document ID {}", indexedDocId.utf8ToString());
+        log.debug("Passing on document ID {}", cmd.getPrintableId());
       }
 
       super.processAdd(cmd);

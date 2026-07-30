@@ -16,20 +16,17 @@
  */
 package org.apache.solr.scripting.xslt;
 
-import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.loader.ContentStreamLoader;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
@@ -42,7 +39,7 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").getAbsolutePath());
+    initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr"));
   }
 
   @Override
@@ -70,21 +67,16 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     args.put("tr", "xsl-update-handler-test.xsl");
 
     SolrCore core = h.getCore();
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
-    ArrayList<ContentStream> streams = new ArrayList<>();
-    streams.add(new ContentStreamBase.StringStream(xml));
-    req.setContentStreams(streams);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    req.setContentStreams(List.of(new ContentStreamBase.StringStream(xml)));
     SolrQueryResponse rsp = new SolrQueryResponse();
     // try (UpdateRequestHandler handler = new UpdateRequestHandler()) {
     try (XSLTUpdateRequestHandler handler = new XSLTUpdateRequestHandler()) {
       handler.init(new NamedList<>());
       handler.handleRequestBody(req, rsp);
     }
-    StringWriter sw = new StringWriter(32000);
-    QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-    responseWriter.write(sw, req, rsp);
+    String response = req.getResponseWriter().writeToString(req, rsp);
     req.close();
-    String response = sw.toString();
     assertU(response);
     assertU(commit());
 
@@ -98,7 +90,7 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testEntities() throws Exception {
     // use a binary file, so when it's loaded fail with XML error:
-    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String file = getFile("mailing_lists.pdf").toUri().toASCIIString();
     String xml =
         "<?xml version=\"1.0\"?>"
             + "<!DOCTYPE foo ["

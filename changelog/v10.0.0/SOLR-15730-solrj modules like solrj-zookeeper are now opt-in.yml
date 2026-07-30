@@ -1,0 +1,8 @@
+title: SolrJ modules like SolrJ-Zookeeper are now opt-in from a Maven POM perspective.
+  Previously, the modules would come transitively.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-15730
+  url: https://issues.apache.org/jira/browse/SOLR-15730

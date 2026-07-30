@@ -36,7 +36,7 @@ public class RAMDirectoryFactoryTest extends SolrTestCase {
     RAMDirectoryFactory factory =
         new RAMDirectoryFactory() {
           @Override
-          protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
+          protected Directory create(String path, LockFactory lockFactory) {
             return directory;
           }
         };

@@ -96,11 +96,9 @@ public class StreamExpressionNamedParameter implements StreamExpressionParameter
 
   @Override
   public boolean equals(Object other) {
-    if (!(other instanceof StreamExpressionNamedParameter)) {
+    if (!(other instanceof StreamExpressionNamedParameter check)) {
       return false;
     }
-
-    StreamExpressionNamedParameter check = (StreamExpressionNamedParameter) other;
 
     if (null == this.name && null != check.name) {
       return false;

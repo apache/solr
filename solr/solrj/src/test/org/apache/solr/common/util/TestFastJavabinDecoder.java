@@ -22,14 +22,13 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.FastStreamingDocsCallback;
-import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
+import org.apache.solr.client.solrj.response.FastStreamingDocsCallback;
+import org.apache.solr.client.solrj.response.StreamingJavaBinResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.FastJavaBinDecoder.Tag;
@@ -91,8 +90,8 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
                 .withInputStream(new FastInputStream(null, baos.getbuf(), 0, baos.size()))
                 .decode(FastJavaBinDecoder.getEntryListener());
     assertEquals(
-        Utils.writeJson(m2, new StringWriter(), true).toString(),
-        Utils.writeJson(fastMap, new StringWriter(), true).toString());
+        Utils.writeJson(m2, new StringWriter(), false).toString(),
+        Utils.writeJson(fastMap, new StringWriter(), false).toString());
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     Object newMap =
@@ -125,8 +124,8 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
                 });
     ((Map) m2.get("mapk")).remove("k2");
     assertEquals(
-        Utils.writeJson(m2, new StringWriter(), true).toString(),
-        Utils.writeJson(newMap, new StringWriter(), true).toString());
+        Utils.writeJson(m2, new StringWriter(), false).toString(),
+        Utils.writeJson(newMap, new StringWriter(), false).toString());
   }
 
   public void testFastJavabinStreamingDecoder() throws IOException {
@@ -153,8 +152,8 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
       @SuppressWarnings({"rawtypes"})
       List<NamedList> children;
     }
-    StreamingBinaryResponseParser parser =
-        new StreamingBinaryResponseParser(
+    StreamingJavaBinResponseParser parser =
+        new StreamingJavaBinResponseParser(
             new FastStreamingDocsCallback() {
 
               @Override
@@ -234,8 +233,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
         assertEquals(String.valueOf(subject), String.valueOf(d.getFieldValue("subject")));
         assertEquals(String.valueOf(cat), String.valueOf(d.getFieldValue("cat")));
         assertEquals(
-            Objects.requireNonNullElse(d.getChildDocuments(), Collections.emptyList()).size(),
-            children.size());
+            Objects.requireNonNullElse(d.getChildDocuments(), List.of()).size(), children.size());
         @SuppressWarnings({"unchecked"})
         List<Long> l = (List<Long>) d.getFieldValue("longs");
         if (l != null) {
@@ -253,8 +251,8 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
       }
     }
     List<Pojo> l = new ArrayList<>();
-    StreamingBinaryResponseParser binaryResponseParser =
-        new StreamingBinaryResponseParser(
+    StreamingJavaBinResponseParser binaryResponseParser =
+        new StreamingJavaBinResponseParser(
             new FastStreamingDocsCallback() {
 
               @Override

@@ -75,7 +75,7 @@ public class AscEvaluator extends RecursiveObjectEvaluator implements OneValueWo
         throw new IOException(
             String.format(
                 Locale.ROOT,
-                "Invalid expression %s - value %s is of type %s but we are expeting type %s",
+                "Invalid expression %s - value %s is of type %s but we are expecting type %s",
                 toExpression(constructingFactory),
                 item.toString(),
                 item.getClass().getSimpleName(),

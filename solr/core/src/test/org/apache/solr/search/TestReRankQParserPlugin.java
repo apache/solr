@@ -16,18 +16,25 @@
  */
 package org.apache.solr.search;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.lucene.search.DoubleValuesSourceRescorer;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryRescorer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -62,6 +69,203 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     assertEquals(ReRankQParserPlugin.RERANK_WEIGHT_DEFAULT, 2.0d, 0.0d);
 
     assertEquals(ReRankQParserPlugin.RERANK_OPERATOR, "reRankOperator");
+  }
+
+  public void testIntrospection() throws Exception {
+    final SolrQueryResponse rsp = new SolrQueryResponse();
+    try (SolrQueryRequest req = req(params("r_f", "{!func}field(test_ti)", "r_q", "id:1^=10"))) {
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+
+      { // Sanity check defaults w/simple rank query
+        final AbstractReRankQuery q = parseAndCast("{!rerank reRankQuery=$r_q}", req);
+        assertEquals(ReRankQParserPlugin.RERANK_DOCS_DEFAULT, q.getReRankDocs());
+        assertEquals(ReRankOperator.ADD, q.getReRankOperator());
+        assertThat(q.getRescorer(), instanceOf(QueryRescorer.class));
+        assertFalse(q.getReRankScaler().scaleScores());
+      }
+
+      { // Check defaults with function rank query (using an optimized value source based rescorer)
+        final AbstractReRankQuery q = parseAndCast("{!rerank reRankQuery=$r_f}", req);
+        assertEquals(ReRankQParserPlugin.RERANK_DOCS_DEFAULT, q.getReRankDocs());
+        assertEquals(ReRankOperator.ADD, q.getReRankOperator());
+        assertThat(q.getRescorer(), instanceOf(DoubleValuesSourceRescorer.class));
+        assertFalse(q.getReRankScaler().scaleScores());
+      }
+
+      { // check a re-ranker w/rescaling
+        final AbstractReRankQuery q =
+            parseAndCast(
+                "{!rerank reRankQuery=$r_q reRankOperator=replace reRankScale='0-1'}", req);
+        assertEquals(ReRankQParserPlugin.RERANK_DOCS_DEFAULT, q.getReRankDocs());
+        assertEquals(ReRankOperator.REPLACE, q.getReRankOperator());
+        assertThat(q.getRescorer(), instanceOf(QueryRescorer.class));
+        assertTrue(q.getReRankScaler().scaleScores());
+        assertTrue(q.getReRankScaler().scaleReRankScores());
+        assertFalse(q.getReRankScaler().scaleMainScores());
+        assertEquals(0, q.getReRankScaler().getReRankQueryMin());
+        assertEquals(1, q.getReRankScaler().getReRankQueryMax());
+        assertThat(q.getReRankScaler().getReplaceRescorer(), instanceOf(QueryRescorer.class));
+      }
+
+      { // check a function re-ranker w/rescaling
+        final AbstractReRankQuery q =
+            parseAndCast(
+                "{!rerank reRankQuery=$r_f reRankOperator=multiply reRankScale='1-2' reRankMainScale=0-3}",
+                req);
+        assertEquals(ReRankQParserPlugin.RERANK_DOCS_DEFAULT, q.getReRankDocs());
+        assertEquals(ReRankOperator.MULTIPLY, q.getReRankOperator());
+        assertThat(q.getRescorer(), instanceOf(DoubleValuesSourceRescorer.class));
+        assertTrue(q.getReRankScaler().scaleScores());
+        assertTrue(q.getReRankScaler().scaleReRankScores());
+        assertTrue(q.getReRankScaler().scaleMainScores());
+        assertEquals(1, q.getReRankScaler().getReRankQueryMin());
+        assertEquals(2, q.getReRankScaler().getReRankQueryMax());
+        assertEquals(0, q.getReRankScaler().getMainQueryMin());
+        assertEquals(3, q.getReRankScaler().getMainQueryMax());
+        assertThat(
+            q.getReRankScaler().getReplaceRescorer(), instanceOf(DoubleValuesSourceRescorer.class));
+      }
+
+    } finally {
+      SolrRequestInfo.clearRequestInfo();
+    }
+  }
+
+  @Test
+  public void testRerankReturnOriginalScore() throws Exception {
+
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    String[] doc = {
+      "id", "1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf",
+      "2000"
+    };
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {
+      "id", "2", "term_s", "YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100",
+      "test_tf", "200"
+    };
+    assertU(adoc(doc1));
+
+    String[] doc2 = {
+      "id", "3", "term_s", "YYYY", "test_ti", "5000", "test_tl", "100", "test_tf", "200"
+    };
+    assertU(adoc(doc2));
+    assertU(commit());
+    String[] doc3 = {
+      "id", "4", "term_s", "YYYY", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"
+    };
+    assertU(adoc(doc3));
+
+    String[] doc4 = {
+      "id", "5", "term_s", "YYYY", "group_s", "group2", "test_ti", "4", "test_tl", "10", "test_tf",
+      "2000"
+    };
+    assertU(adoc(doc4));
+    assertU(commit());
+    String[] doc5 = {
+      "id", "6", "term_s", "YYYY", "group_s", "group2", "test_ti", "10", "test_tl", "100",
+      "test_tf", "200"
+    };
+    assertU(adoc(doc5));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(
+        "rq",
+        "{!"
+            + ReRankQParserPlugin.NAME
+            + " "
+            + ReRankQParserPlugin.RERANK_QUERY
+            + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS
+            + "=200}");
+    params.add("q", "term_s:YYYY");
+    params.add("rqq", random().nextBoolean() ? "{!edismax bf=$bff}*:*" : "{!func}sum(1.0,$bff)");
+    params.add("bff", "field(test_ti)");
+    params.add("start", "0");
+    params.add("rows", "6");
+    params.add("df", "text");
+    params.add("fl", "id,test_ti,score,originalScore()");
+
+    assertQ(
+        req(params),
+        "*[count(//doc)=6]",
+        "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[1]/float[@name='score'][.>'10000.03']",
+        "//result/doc[1]/float[@name='originalScore()'][.>'0.03']",
+        "//result/doc[2]/str[@name='id'][.='4']",
+        "//result/doc[2]/float[@name='score'][.>'1000.03']",
+        "//result/doc[2]/float[@name='originalScore()'][.>'0.03']",
+        "//result/doc[3]/str[@name='id'][.='2']",
+        "//result/doc[4]/str[@name='id'][.='6']",
+        "//result/doc[5]/str[@name='id'][.='1']",
+        "//result/doc[6]/str[@name='id'][.='5']");
+  }
+
+  @Test
+  public void testRerankReturnOriginalScoreNotRequested() throws Exception {
+
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    String[] doc = {
+      "id", "1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf",
+      "2000"
+    };
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {
+      "id", "2", "term_s", "YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100",
+      "test_tf", "200"
+    };
+    assertU(adoc(doc1));
+
+    String[] doc2 = {
+      "id", "3", "term_s", "YYYY", "test_ti", "5000", "test_tl", "100", "test_tf", "200"
+    };
+    assertU(adoc(doc2));
+    assertU(commit());
+    String[] doc3 = {
+      "id", "4", "term_s", "YYYY", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"
+    };
+    assertU(adoc(doc3));
+
+    String[] doc4 = {
+      "id", "5", "term_s", "YYYY", "group_s", "group2", "test_ti", "4", "test_tl", "10", "test_tf",
+      "2000"
+    };
+    assertU(adoc(doc4));
+    assertU(commit());
+    String[] doc5 = {
+      "id", "6", "term_s", "YYYY", "group_s", "group2", "test_ti", "10", "test_tl", "100",
+      "test_tf", "200"
+    };
+    assertU(adoc(doc5));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(
+        "rq",
+        "{!"
+            + ReRankQParserPlugin.NAME
+            + " "
+            + ReRankQParserPlugin.RERANK_QUERY
+            + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS
+            + "=200}");
+    params.add("q", "term_s:YYYY");
+    params.add("rqq", random().nextBoolean() ? "{!edismax bf=$bff}*:*" : "{!func}sum(1.0,$bff)");
+    params.add("bff", "field(test_ti)");
+    params.add("start", "0");
+    params.add("rows", "6");
+    params.add("df", "text");
+    params.add("fl", "id,test_ti,score");
+
+    String response = JQ(req(params));
+    assertFalse(response.contains("originalScore()"));
   }
 
   @Test
@@ -116,7 +320,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + ReRankQParserPlugin.RERANK_DOCS
             + "=200}");
     params.add("q", "term_s:YYYY");
-    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("rqq", random().nextBoolean() ? "{!edismax bf=$bff}*:*" : "{!func}sum(1.0,$bff)");
     params.add("bff", "field(test_ti)");
     params.add("start", "0");
     params.add("rows", "6");
@@ -154,7 +358,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
                   + "=200}";
       params.add("rq", rerankQueryByOp.apply(operation));
       params.add("q", "term_s:YYYY^=0.1"); // force score=0.1
-      params.add("rqq", "{!edismax bf=$bff}*:*"); // returns 1 + $bff
+      params.add(
+          "rqq",
+          random().nextBoolean()
+              ? "{!edismax bf=$bff}*:*"
+              : "{!func}sum(1.0,$bff)"); // returns 1 + $bff
       params.add("bff", "field(test_ti)"); // test_ti=5000 for item 3
       params.add("start", "0");
       params.add("rows", "6");
@@ -592,18 +800,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='3']",
         "//result/doc[5]/str[@name='id'][.='2']");
 
-    MetricsMap metrics =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper)
-                    h.getCore()
-                        .getCoreMetricManager()
-                        .getRegistry()
-                        .getMetrics()
-                        .get("CACHE.searcher.queryResultCache"))
-                .getGauge();
-    Map<String, Object> stats = metrics.getValue();
-
-    long inserts = (Long) stats.get("inserts");
+    long inserts =
+        (long)
+            SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                    h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE)
+                .getValue();
 
     assertTrue(inserts > 0);
 
@@ -633,9 +834,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='2']",
         "//result/doc[5]/str[@name='id'][.='1']");
 
-    stats = metrics.getValue();
-
-    long inserts1 = (Long) stats.get("inserts");
+    long inserts1 =
+        (long)
+            SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                    h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE)
+                .getValue();
 
     // Last query was added to the cache
     assertTrue(inserts1 > inserts);
@@ -667,8 +870,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='2']",
         "//result/doc[5]/str[@name='id'][.='1']");
 
-    stats = metrics.getValue();
-    long inserts2 = (Long) stats.get("inserts");
+    long inserts2 =
+        (long)
+            SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                    h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE)
+                .getValue();
     // Last query was NOT added to the cache
     assertEquals(inserts1, inserts2);
 
@@ -1228,7 +1434,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + "=200}");
     params.add("q", "term_t:YYYY");
     params.add("fl", "id,score");
-    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("rqq", random().nextBoolean() ? "{!edismax bf=$bff}*:*" : "{!func}sum(1.0,$bff)");
     params.add("bff", "field(test_ti)");
     params.add("start", "0");
     params.add("rows", "6");
@@ -1269,7 +1475,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + "=200}");
     params.add("q", "term_t:YYYY");
     params.add("fl", "id,score");
-    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("rqq", random().nextBoolean() ? "{!edismax bf=$bff}*:*" : "{!func}sum(1.0,$bff)");
     params.add("bff", "field(test_ti)");
     params.add("start", "0");
     params.add("rows", "4");
@@ -1348,7 +1554,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + "=4}");
     params.add("q", "term_t:YYYY");
     params.add("fl", "id,score");
-    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("rqq", random().nextBoolean() ? "{!edismax bf=$bff}*:*" : "{!func}sum(1.0,$bff)");
     params.add("bff", "field(test_ti)");
     params.add("start", "0");
     params.add("rows", "6");
@@ -1389,7 +1595,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "term_t:YYYY");
     params.add("fq", "id:(4 OR 5)");
     params.add("fl", "id,score");
-    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("rqq", random().nextBoolean() ? "{!edismax bf=$bff}*:*" : "{!func}sum(1.0,$bff)");
     params.add("bff", "field(test_ti)");
     params.add("start", "0");
     params.add("rows", "6");
@@ -1422,7 +1628,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "term_t:YYYY");
     params.add("fq", "id:(4 OR 5)");
     params.add("fl", "id,score");
-    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("rqq", random().nextBoolean() ? "{!edismax bf=$bff}*:*" : "{!func}sum(1.0,$bff)");
     params.add("bff", "field(test_ti)");
     params.add("start", "0");
     params.add("rows", "6");
@@ -1462,7 +1668,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + "=4}");
     params.add("q", "term_t:YYYY");
     params.add("fl", "id,score");
-    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("rqq", random().nextBoolean() ? "{!edismax bf=$bff}*:*" : "{!func}sum(1.0,$bff)");
     params.add("bff", "field(test_ti)");
     params.add("start", "0");
     params.add("rows", "6");
@@ -1609,5 +1815,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     assertTrue(explainResponse.contains("15.5736 = scaled main query score between: 10-20"));
 
     assertTrue(explainResponse.contains("10.0 = scaled main query score between: 10-20"));
+  }
+
+  private static AbstractReRankQuery parseAndCast(final String query, final SolrQueryRequest req)
+      throws Exception {
+    final Query q = QParser.getParser(query, req).getQuery();
+    assertThat(q, instanceOf(AbstractReRankQuery.class));
+    return (AbstractReRankQuery) q;
   }
 }

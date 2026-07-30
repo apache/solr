@@ -23,6 +23,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -285,46 +286,48 @@ public class TestDenseVectorFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void test2ArgsByteFieldAndConstVector() throws Exception {
-    assertQ(
-        req(
-            CommonParams.Q,
-            "{!func} vectorSimilarity(vector_byte_encoding, [1,2,3,3])",
-            "fq",
-            "id:(1 2)",
-            "fl",
-            "id, score",
-            "rows",
-            "1"),
-        "//result[@numFound='" + 2 + "']",
-        "//result/doc[1]/str[@name='id'][.=1]");
-    assertQ(
-        req(
-            CommonParams.Q,
-            "{!func} vectorSimilarity(vector_byte_encoding, [3,3,2,1])",
-            "fq",
-            "id:(1 2)",
-            "fl",
-            "id, score",
-            "rows",
-            "1"),
-        "//result[@numFound='" + 2 + "']",
-        "//result/doc[1]/str[@name='id'][.=2]");
+    for (SolrParams main :
+        Arrays.asList(
+            params(CommonParams.Q, "{!func} vectorSimilarity(vector_byte_encoding, [1,2,3,3])"),
+            params(
+                CommonParams.Q,
+                "{!func} vectorSimilarity(vector_byte_encoding, $vec)",
+                "vec",
+                "[1,2,3,3]"))) {
+      assertQ(
+          req(main, "fq", "id:(1 2)", "fl", "id, score", "rows", "1"),
+          "//result[@numFound='" + 2 + "']",
+          "//result/doc[1]/str[@name='id'][.=1]");
+    }
+    for (SolrParams main :
+        Arrays.asList(
+            params(CommonParams.Q, "{!func} vectorSimilarity(vector_byte_encoding, [3,3,2,1])"),
+            params(
+                CommonParams.Q,
+                "{!func} vectorSimilarity(vector_byte_encoding, $vec)",
+                "vec",
+                "[3,3,2,1]"))) {
+
+      assertQ(
+          req(main, "fq", "id:(1 2)", "fl", "id, score", "rows", "1"),
+          "//result[@numFound='" + 2 + "']",
+          "//result/doc[1]/str[@name='id'][.=2]");
+    }
   }
 
   @Test
   public void test2ArgsFloatFieldAndConstVector() throws Exception {
-    assertQ(
-        req(
-            CommonParams.Q,
-            "{!func} vectorSimilarity(vector, [1,2,3,3])",
-            "fq",
-            "id:(1 2 3)",
-            "fl",
-            "id, score"),
-        "//result[@numFound='" + 3 + "']",
-        "//result/doc[1]/str[@name='id'][.=2]",
-        "//result/doc[2]/str[@name='id'][.=3]",
-        "//result/doc[3]/str[@name='id'][.=1]");
+    for (SolrParams main :
+        Arrays.asList(
+            params(CommonParams.Q, "{!func} vectorSimilarity(vector, [1,2,3,3])"),
+            params(CommonParams.Q, "{!func} vectorSimilarity(vector, $vec)", "vec", "[1,2,3,3]"))) {
+      assertQ(
+          req(main, "fq", "id:(1 2 3)", "fl", "id, score"),
+          "//result[@numFound='" + 3 + "']",
+          "//result/doc[1]/str[@name='id'][.=2]",
+          "//result/doc[2]/str[@name='id'][.=3]",
+          "//result/doc[3]/str[@name='id'][.=1]");
+    }
   }
 
   @Test

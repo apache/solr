@@ -16,24 +16,37 @@
  */
 package org.apache.solr.handler.api;
 
+import static org.apache.solr.client.solrj.response.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
+
+import jakarta.ws.rs.core.MediaType;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
 public class V2ApiUtilsTest extends SolrTestCaseJ4 {
 
   @Test
-  public void testReadsDisableV2ApiSysprop() {
-    System.clearProperty("disable.v2.api");
-    assertTrue("v2 API should be enabled if sysprop not specified", V2ApiUtils.isEnabled());
+  public void testConvertsWtToMediaTypeString() {
+    assertEquals("someDefault", V2ApiUtils.getMediaTypeFromWtParam(SolrParams.of(), "someDefault"));
 
-    System.setProperty("disable.v2.api", "false");
-    assertTrue("v2 API should be enabled if sysprop explicitly enables it", V2ApiUtils.isEnabled());
+    var params = new ModifiableSolrParams();
+    params.add("wt", "json");
+    assertEquals(MediaType.APPLICATION_JSON, V2ApiUtils.getMediaTypeFromWtParam(params, null));
 
-    System.setProperty("disable.v2.api", "asdf");
-    assertTrue("v2 API should be enabled if sysprop has unexpected value", V2ApiUtils.isEnabled());
+    params.set("wt", "xml");
+    assertEquals(MediaType.APPLICATION_XML, V2ApiUtils.getMediaTypeFromWtParam(params, null));
 
-    System.setProperty("disable.v2.api", "true");
-    assertFalse(
-        "v2 API should be disabled if sysprop explicitly disables it", V2ApiUtils.isEnabled());
+    params.set("wt", "javabin");
+    assertEquals(JAVABIN_CONTENT_TYPE_V2, V2ApiUtils.getMediaTypeFromWtParam(params, null));
+
+    params.set("wt", FILE_STREAM);
+    assertEquals(
+        "application/vnd.apache.solr.raw", V2ApiUtils.getMediaTypeFromWtParam(params, null));
+
+    // Defaults to, well the default, whenever an unknown/unexpected/typo'd 'wt' is provided
+    params.set("wt", "josn");
+    assertEquals("someDefault", V2ApiUtils.getMediaTypeFromWtParam(params, "someDefault"));
   }
 }

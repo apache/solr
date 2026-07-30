@@ -23,13 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,16 +58,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
         if (params.get(DISTRIB) == null) {
           params.add(DISTRIB, false);
         }
-        SolrQueryRequest req =
-            new LocalSolrQueryRequest(getCore(), params) {
-              @Override
-              public SolrIndexSearcher getSearcher() {
-                return searcher;
-              }
-
-              @Override
-              public void close() {}
-            };
+        SolrQueryRequest req = SolrQueryRequest.wrapSearcher(searcher, params.toSolrParams());
         SolrQueryResponse rsp = new SolrQueryResponse();
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
         try {
@@ -80,13 +71,17 @@ public class QuerySenderListener extends AbstractSolrEventListener {
           NamedList<?> values = rsp.getValues();
           for (int i = 0; i < values.size(); i++) {
             Object o = values.getVal(i);
-            if (o instanceof ResultContext) {
-              o = ((ResultContext) o).getDocList();
+            SolrDocumentFetcher docFetcher = null;
+            if (o instanceof ResultContext ctx) {
+              o = ctx.getDocList();
+              docFetcher = ctx.getDocFetcher();
             }
-            if (o instanceof DocList) {
-              DocList docs = (DocList) o;
+            if (o instanceof DocList docs) {
+              if (docFetcher == null) {
+                docFetcher = newSearcher.getDocFetcher();
+              }
               for (DocIterator iter = docs.iterator(); iter.hasNext(); ) {
-                newSearcher.doc(iter.nextDoc());
+                docFetcher.doc(iter.nextDoc());
               }
             }
           }
