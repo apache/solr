@@ -25,6 +25,7 @@ public class CliDefaultValueProvider implements CommandLine.IDefaultValueProvide
   public String defaultValue(CommandLine.Model.ArgSpec argSpec) throws Exception {
     return switch (argSpec.paramLabel()) {
       case "<zkHost>" -> EnvUtils.getProperty("zkHost");
+      case "<solrConnection>" -> EnvUtils.getProperty("solr-connection");
       case "<solrUrl>" -> EnvUtils.getProperty("solr.url");
       case "<port>" -> EnvUtils.getProperty("solr.port", "8983");
       case "<maxWaitSecs>" -> EnvUtils.getProperty("solr.max.wait.seconds", "0");

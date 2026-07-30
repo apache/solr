@@ -16,17 +16,27 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import picocli.CommandLine;
 
 /**
  * Picocli ArgGroup for mutually-exclusive Solr URL / ZooKeeper connection options.
  *
  * <p>Use as the type of an {@code @ArgGroup(exclusive = true, multiplicity = "0..1")} field to
- * ensure the user provides at most one of {@code --solr-url} or {@code --zk-host}.
+ * ensure the user provides at most one of {@code --solr-connection}, {@code --solr-url} or {@code
+ * --zk-host}.
  */
 class ConnectionOptions {
   @CommandLine.Option(
-      names = {"-s", "--solr-url"},
+      names = {"-s", "--solr-connection"},
+      description =
+          "Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to "
+              + CommonCLIOptions.DefaultValues.ZK_HOST
+              + ".")
+  String solrConnection;
+
+  @CommandLine.Option(
+      names = {"--solr-url"},
       description =
           "Base Solr URL, which can be used to determine the zk-host if that's not known.")
   String solrUrl;
@@ -38,4 +48,28 @@ class ConnectionOptions {
               + CommonCLIOptions.DefaultValues.ZK_HOST
               + ".")
   String zkHost;
+
+  /**
+   * The effective ZooKeeper connection string, taking {@code --solr-connection} into account, or
+   * null if the user targeted Solr via a URL (or gave no target at all).
+   */
+  String effectiveZkHost() throws java.io.IOException {
+    if (solrConnection != null) {
+      var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
+      return connection.isZookeeper() ? solrConnection : null;
+    }
+    return zkHost;
+  }
+
+  /**
+   * The effective Solr URL, taking {@code --solr-connection} into account, or null if the user
+   * targeted ZooKeeper (or gave no target at all).
+   */
+  String effectiveSolrUrl() throws java.io.IOException {
+    if (solrConnection != null) {
+      var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
+      return connection.isZookeeper() ? null : connection.quorumItems().get(0);
+    }
+    return solrUrl;
+  }
 }

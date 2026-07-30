@@ -18,6 +18,7 @@ package org.apache.solr.cli;
 
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import picocli.CommandLine;
 
 /**
@@ -38,7 +39,15 @@ public class ZkConnectionOptions {
   public String zkHost;
 
   @CommandLine.Option(
-      names = {"-s", "--solr-url"},
+      names = {"-s", "--solr-connection"},
+      description =
+          "Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to "
+              + CommonCLIOptions.DefaultValues.ZK_HOST
+              + '.')
+  public String solrConnection;
+
+  @CommandLine.Option(
+      names = {"--solr-url"},
       description =
           "Base Solr URL, which can be used to determine the zk-host if --zk-host is not known")
   public String solrUrl;
@@ -53,6 +62,8 @@ public class ZkConnectionOptions {
    * Resolves the ZooKeeper connection string using the following precedence:
    *
    * <ol>
+   *   <li>{@code --solr-connection} option value; used directly if it is a ZooKeeper connection
+   *       string, otherwise treated as a Solr URL to query for the ZooKeeper host
    *   <li>Explicit {@code --zk-host} option value
    *   <li>ZooKeeper host derived by querying the Solr instance at {@code --solr-url}
    *   <li>ZooKeeper host derived by querying the default Solr URL ({@code http://localhost:8983}),
@@ -64,6 +75,15 @@ public class ZkConnectionOptions {
    * @throws Exception if the Solr instance cannot be reached
    */
   public String resolveZkHost() throws Exception {
+    if (solrConnection != null) {
+      var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
+      if (connection.isZookeeper()) {
+        return solrConnection;
+      }
+      // HTTP form: the connection string names a Solr URL, so ask that Solr for its ZooKeeper
+      return zkHostFromSolrUrl(CLIUtils.normalizeSolrUrl(connection.quorumItems().get(0)));
+    }
+
     if (zkHost != null) {
       return zkHost;
     }
@@ -72,11 +92,14 @@ public class ZkConnectionOptions {
     if (resolvedSolrUrl == null) {
       resolvedSolrUrl = CLIUtils.getDefaultSolrUrl();
       CLIO.err(
-          "Neither --zk-host or --solr-url parameters, nor ZK_HOST env var provided, so assuming solr url is "
+          "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
               + resolvedSolrUrl
               + ".");
     }
+    return zkHostFromSolrUrl(resolvedSolrUrl);
+  }
 
+  private String zkHostFromSolrUrl(String resolvedSolrUrl) throws Exception {
     try (SolrClient solrClient = CLIUtils.getSolrClient(resolvedSolrUrl, credentials)) {
       Map<String, Object> status = StatusTool.reportStatus(solrClient);
       @SuppressWarnings("unchecked")

@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "solr",
-    version = "Apache Solr version " + SolrVersion.LATEST_STRING,
+    version = "Client version: " + SolrVersion.LATEST_STRING,
     mixinStandardHelpOptions = true,
     synopsisHeading = "usage: bin/",
     commandListHeading = "\nCommands:\n",

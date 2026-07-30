@@ -279,8 +279,10 @@ public class DeleteTool extends ToolBase {
   @Override
   public int callTool() throws Exception {
     String zkHostArg =
-        (connectionOptions != null) ? connectionOptions.zkHost : EnvUtils.getProperty("zkHost");
-    String solrUrlArg = (connectionOptions != null) ? connectionOptions.solrUrl : null;
+        (connectionOptions != null)
+            ? connectionOptions.effectiveZkHost()
+            : EnvUtils.getProperty("zkHost");
+    String solrUrlArg = (connectionOptions != null) ? connectionOptions.effectiveSolrUrl() : null;
     DeleteParams params =
         new DeleteParams(name, credentialsOptions.credentials, deleteConfig, force);
 

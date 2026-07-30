@@ -31,6 +31,7 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ClusterApi;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
@@ -71,14 +72,40 @@ public class StatusTool extends ToolBase {
       description = "Wait up to the specified number of seconds to see Solr running.")
   private Integer maxWaitSecs;
 
-  @picocli.CommandLine.Option(
-      names = {"-p", "--port"},
-      description = "Port on localhost to check status for")
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private TargetOptions targetOptions;
+
+  static class TargetOptions {
+    @picocli.CommandLine.Option(
+        names = {"-p", "--port"},
+        description = "Port on localhost to check status for")
+    private Integer port;
+
+    @picocli.CommandLine.Option(
+        names = {"-s", "--solr-connection"},
+        description =
+            "Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to "
+                + CommonCLIOptions.DefaultValues.ZK_HOST
+                + '.')
+    private String solrConnection;
+
+    @picocli.CommandLine.Option(
+        names = {"--solr-url"},
+        description =
+            "Base Solr URL, which can be used to determine the zk-host if that's not known")
+    private String solrUrl;
+
+    @picocli.CommandLine.Option(
+        names = {"-z", "--zk-host"},
+        description =
+            "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
+                + CommonCLIOptions.DefaultValues.ZK_HOST
+                + '.')
+    private String zkHost;
+  }
+
   private Integer port;
 
-  @picocli.CommandLine.Option(
-      names = {"-s", "--solr-url"},
-      description = "Base Solr URL, which can be used to determine the zk-host if that's not known")
   private String solrUrl;
 
   @picocli.CommandLine.Option(
@@ -400,6 +427,22 @@ public class StatusTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
+    if (targetOptions != null) {
+      port = targetOptions.port;
+      if (targetOptions.solrUrl != null) {
+        solrUrl = targetOptions.solrUrl;
+      } else {
+        String connectionString =
+            targetOptions.solrConnection != null
+                ? targetOptions.solrConnection
+                : targetOptions.zkHost;
+        if (connectionString != null) {
+          solrUrl =
+              CLIUtils.solrUrlFromConnection(
+                  CloudSolrClient.CloudSolrClientConnection.parse(connectionString), credentials);
+        }
+      }
+    }
     return runTool();
   }
 }
