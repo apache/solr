@@ -327,12 +327,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     for (WeightedNode sourceNode : sourceNodes) {
       Map<String, List<Replica>> replicasPerShard =
           sourceNode.getAllReplicasOnNode().stream()
-              .collect(
-                  Collectors.groupingBy(
-                      replica ->
-                          replica.getShard().getCollection().getName()
-                              + "%"
-                              + replica.getShard().getShardName()));
+              .collect(Collectors.groupingBy(replica -> replica.getShard().getUniqueShardId()));
       for (List<Replica> shardReplicas : replicasPerShard.values()) {
         if (shardReplicas.size() < 2) {
           continue;
