@@ -1683,6 +1683,38 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
         clusterBuilder.buildLiveNodes());
   }
 
+  @Test
+  public void testBalancingAvoidMultiReplicaOnNodeAcrossAZs() throws Exception {
+    // Cluster with two nodes in each of two availability zones
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(4);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    for (int i = 0; i < nodeBuilders.size(); i++) {
+      nodeBuilders
+          .get(i)
+          .setSysprop(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP, i < 2 ? "az1" : "az2");
+    }
+
+    // Shard 1 has both its replicas on node 0 in az1
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
+    List<List<String>> shardsReplicas = List.of(List.of("NRT 0", "NRT 0"));
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    BalanceRequestImpl balanceRequest =
+        new BalanceRequestImpl(new HashSet<>(clusterBuilder.buildLiveNodes()));
+    BalancePlan balancePlan =
+        plugin.computeBalancing(balanceRequest, clusterBuilder.buildPlacementContext());
+
+    // The duplicate replica must move to a node in az2 to keep the availability zones balanced,
+    // not to the empty az1 node 1
+    Set<String> expectedPlacements = Set.of("a 1 NRT 0 -> 2");
+    verifyBalancing(
+        expectedPlacements,
+        balancePlan,
+        collectionBuilder.getShardBuilders(),
+        clusterBuilder.buildLiveNodes());
+  }
+
   /** Tests replica balancing across all nodes in a cluster */
   @Test
   public void testBalancingExistingMetrics() throws Exception {

@@ -317,7 +317,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
    * multiple replicas of the same shard on one node give neither availability nor capacity
    * benefits. Placement will never create such a state, per the default {@link
    * WeightedNode#canAddReplica(Replica)}, but users can, e.g. by adding a replica to an explicit
-   * node. Each duplicate replica is moved to the lowest weighted node that accepts it.
+   * node. Each duplicate replica is moved to the accepting node with the lowest projected weight
+   * with the replica added, like {@link #computePlacements(Collection, PlacementContext)} does.
    */
   private static void moveDuplicateShardReplicas(
       Collection<WeightedNode> weightedNodes, Map<Replica, Node> replicaMovements) {
@@ -346,7 +347,10 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           weightedNodes.stream()
               .filter(node -> !node.equals(sourceNode))
               .filter(node -> node.canAddReplica(replica))
-              .min(Comparator.naturalOrder())
+              .min(
+                  Comparator.<WeightedNode>comparingInt(
+                          node -> node.calcRelevantWeightWithReplica(replica))
+                      .thenComparing(Comparator.naturalOrder()))
               .ifPresent(
                   targetNode -> {
                     log.debug(
