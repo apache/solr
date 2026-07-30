@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.net.CookieHandler;
 import java.net.InetSocketAddress;
@@ -149,7 +150,7 @@ public class HttpJdkSolrClient extends HttpSolrClient {
       PreparedRequest pReq = prepareRequest(baseUrl, solrRequest, collection);
       return httpClient
           .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
-          .whenComplete((httpResponse, throwable) -> releaseContentWriting(pReq));
+          .whenComplete((httpResponse, throwable) -> pReq.releaseContentWriting());
     } catch (Exception e) {
       CompletableFuture<HttpResponse<InputStream>> cf = new CompletableFuture<>();
       cf.completeExceptionally(e);
@@ -164,7 +165,7 @@ public class HttpJdkSolrClient extends HttpSolrClient {
       PreparedRequest pReq = prepareRequest(null, solrRequest, collection);
       return httpClient
           .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
-          .whenComplete((httpResponse, throwable) -> releaseContentWriting(pReq))
+          .whenComplete((httpResponse, throwable) -> pReq.releaseContentWriting())
           .thenApply(
               httpResponse -> {
                 try {
@@ -178,21 +179,6 @@ public class HttpJdkSolrClient extends HttpSolrClient {
       CompletableFuture<NamedList<Object>> cf = new CompletableFuture<>();
       cf.completeExceptionally(e);
       return cf;
-    }
-  }
-
-  private void releaseContentWriting(PreparedRequest pReq) {
-    if (pReq.contentWritingFuture != null) {
-      pReq.contentWritingFuture.cancel(true);
-    }
-    // Closing the sink is what unblocks a writer already stuck in the pipe; cancel() alone does
-    // not.
-    if (pReq.contentWritingSink != null) {
-      try {
-        pReq.contentWritingSink.close();
-      } catch (IOException e) {
-        log.warn("Could not close content-writing pipe", e);
-      }
     }
   }
 
@@ -216,9 +202,7 @@ public class HttpJdkSolrClient extends HttpSolrClient {
     } catch (RuntimeException e) {
       throw new SolrServerException(e);
     } finally {
-      if (pReq.contentWritingFuture != null) {
-        pReq.contentWritingFuture.cancel(true);
-      }
+      pReq.releaseContentWriting();
 
       // See
       // https://docs.oracle.com/en/java/javase/17/docs/api/java.net.http/java/net/http/HttpResponse.BodySubscribers.html#ofInputStream()
@@ -254,7 +238,7 @@ public class HttpJdkSolrClient extends HttpSolrClient {
     ResponseParser parserToUse = responseParser(solrRequest);
     ModifiableSolrParams queryParams = initializeSolrParams(solrRequest, parserToUse);
     var reqb = HttpRequest.newBuilder();
-    PreparedRequest pReq = null;
+    PreparedRequest pReq;
     try {
       switch (solrRequest.getMethod()) {
         case GET:
@@ -291,7 +275,7 @@ public class HttpJdkSolrClient extends HttpSolrClient {
     reqb.GET();
     decorateRequest(reqb, solrRequest);
     reqb.uri(new URI(url + queryParams.toQueryString()));
-    return new PreparedRequest(reqb, null, null);
+    return new PreparedRequest(reqb);
   }
 
   private PreparedRequest preparePutOrPost(
@@ -322,28 +306,16 @@ public class HttpJdkSolrClient extends HttpSolrClient {
     }
 
     HttpRequest.BodyPublisher bodyPublisher;
-    Future<?> contentWritingFuture = null;
-    PipedInputStream contentWritingSink = null;
+    PreparedRequest pReq = new PreparedRequest(reqb);
     if (contentWriter != null) {
       boolean success = maybeTryHeadRequest(url);
       if (!success) {
         reqb.version(HttpClient.Version.HTTP_1_1);
       }
 
-      final PipedOutputStream source = new PipedOutputStream();
-      contentWritingSink = new PipedInputStream(source);
-      final PipedInputStream sink = contentWritingSink;
-      bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> sink);
-
-      contentWritingFuture =
-          executor.submit(
-              () -> {
-                try (source) {
-                  contentWriter.write(source);
-                } catch (Exception e) {
-                  log.error("Cannot write Content Stream", e);
-                }
-              });
+      bodyPublisher =
+          HttpRequest.BodyPublishers.ofInputStream(
+              () -> pReq.beginContentWriting(contentWriter, this.executor));
     } else if (streams != null && streams.size() == 1) {
       boolean success = maybeTryHeadRequest(url);
       if (!success) {
@@ -374,25 +346,60 @@ public class HttpJdkSolrClient extends HttpSolrClient {
     URI uriWithQueryParams = new URI(url + queryParams.toQueryString());
     reqb.uri(uriWithQueryParams);
 
-    return new PreparedRequest(reqb, contentWritingFuture, contentWritingSink);
+    return pReq;
   }
 
   protected static class PreparedRequest {
-    Future<?> contentWritingFuture;
-    PipedInputStream contentWritingSink;
-    HttpRequest.Builder reqb;
+    final HttpRequest.Builder reqb;
 
     ResponseParser parserToUse;
 
     String url;
 
-    PreparedRequest(
-        HttpRequest.Builder reqb,
-        Future<?> contentWritingFuture,
-        PipedInputStream contentWritingSink) {
+    // Both remain null if the request has no streamed content, or if the body is never requested
+    // (e.g. the connection failed before sending it). Filled in lazily by
+    // beginContentWriting once the JDK HttpClient actually requests the body.
+    volatile PipedInputStream contentWritingSink;
+    volatile Future<?> contentWritingFuture;
+
+    PreparedRequest(HttpRequest.Builder reqb) {
       this.reqb = reqb;
-      this.contentWritingFuture = contentWritingFuture;
-      this.contentWritingSink = contentWritingSink;
+    }
+
+    private PipedInputStream beginContentWriting(
+        RequestWriter.ContentWriter contentWriter, ExecutorService bodyExecutor) {
+      final PipedOutputStream source = new PipedOutputStream();
+      try {
+        contentWritingSink = new PipedInputStream(source);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+      contentWritingFuture =
+          bodyExecutor.submit(
+              () -> {
+                try (source) {
+                  contentWriter.write(source);
+                } catch (Exception e) {
+                  log.error("Cannot write Content Stream", e);
+                }
+              });
+      return contentWritingSink;
+    }
+
+    private void releaseContentWriting() {
+      if (contentWritingFuture != null) {
+        contentWritingFuture.cancel(true);
+      }
+      // Closing the sink is what unblocks a writer already stuck in the pipe; cancel() alone does
+      // not.
+      PipedInputStream sink = contentWritingSink;
+      if (sink != null) {
+        try {
+          sink.close();
+        } catch (IOException e) {
+          log.warn("Could not close content-writing pipe", e);
+        }
+      }
     }
   }
 
