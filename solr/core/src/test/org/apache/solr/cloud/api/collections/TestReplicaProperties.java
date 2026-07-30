@@ -20,9 +20,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -34,7 +36,6 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 public class TestReplicaProperties extends ReplicaPropertiesBase {
-
   public static final String COLLECTION_NAME = "testcollection";
 
   public TestReplicaProperties() {
@@ -47,11 +48,11 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
   public void test() throws Exception {
 
     try (CloudSolrClient client = createCloudClient(null)) {
-      // Mix up a bunch of different combinations of shards and replicas in order to exercise
-      // boundary cases. shards, replicationFactor
-      int shards = random().nextInt(5) + 2;
-      int replicationFactor = random().nextInt(2) + 2;
-      createCollection(null, COLLECTION_NAME, shards, replicationFactor, client, null, "conf1");
+      int shards = 5;
+      int tlogNodes = 4;
+      int pullNodes = 4;
+      Map<String, Object> replicaProps = createReplicaProps(0, tlogNodes, pullNodes, shards);
+      createCollection(null, COLLECTION_NAME, replicaProps, client, "conf1");
     }
 
     waitForCollection(ZkStateReader.from(cloudClient), COLLECTION_NAME, 2);
@@ -67,8 +68,8 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       @SuppressWarnings({"unchecked"})
@@ -247,6 +248,14 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
         for (Replica replica : slice.getReplicas()) {
           boolean isLeader = replica.getBool("leader", false);
           boolean isPreferred = replica.getBool("property.preferredleader", false);
+          if (!replica.getType().leaderEligible && isPreferred) {
+            lastFailMsg =
+                "Replica "
+                    + replica.getName()
+                    + " of type "
+                    + replica.getType()
+                    + ", that cannot be elected leader, should NOT be marked as a preferred leader";
+          }
           if (isLeader != isPreferred) {
             lastFailMsg =
                 "Replica should NOT have preferredLeader != leader. Preferred: "

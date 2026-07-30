@@ -16,8 +16,8 @@
  */
 package org.apache.solr.client.api.util;
 
-import static org.apache.solr.client.api.util.Constants.STORE_NAME_PATH_PARAMETER;
-import static org.apache.solr.client.api.util.Constants.STORE_TYPE_PATH_PARAMETER;
+import static org.apache.solr.client.api.util.Constants.INDEX_NAME_PATH_PARAMETER;
+import static org.apache.solr.client.api.util.Constants.INDEX_TYPE_PATH_PARAMETER;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -26,11 +26,13 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.apache.solr.client.api.model.StoreType;
+import org.apache.solr.client.api.model.IndexType;
 
 /**
- * Concisely collects the parameters shared by APIs that interact with contents of a specific
- * core/collection.
+ * Concisely collects the parameters shared by APIs that interact with contents of a specific core
+ * OR collection.
+ *
+ * <p>Not to be used on APIs that are only available on cores or only on collections.
  *
  * <p>Used primarily as a way to avoid duplicating these parameter definitions on each relevant
  * interface method in {@link org.apache.solr.client.api.endpoint}
@@ -38,8 +40,8 @@ import org.apache.solr.client.api.model.StoreType;
 @Target({ElementType.METHOD, ElementType.TYPE, ElementType.PARAMETER, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Parameter(
-    name = STORE_TYPE_PATH_PARAMETER,
+    name = INDEX_TYPE_PATH_PARAMETER,
     in = ParameterIn.PATH,
-    schema = @Schema(implementation = StoreType.class, enumAsRef = true))
-@Parameter(name = STORE_NAME_PATH_PARAMETER, in = ParameterIn.PATH)
+    schema = @Schema(implementation = IndexType.class, enumAsRef = true))
+@Parameter(name = INDEX_NAME_PATH_PARAMETER, in = ParameterIn.PATH)
 public @interface StoreApiParameters {}

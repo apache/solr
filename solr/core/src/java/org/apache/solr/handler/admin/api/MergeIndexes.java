@@ -16,16 +16,16 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import javax.inject.Inject;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -39,8 +39,8 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.PermissionNameProvider;
@@ -126,7 +126,7 @@ public class MergeIndexes extends CoreAdminAPIBase implements MergeIndexesApi {
                 // Validate each 'indexDir' input as valid
                 dirNames.stream()
                     .forEach(
-                        indexDir -> core.getCoreContainer().assertPathAllowed(Paths.get(indexDir)));
+                        indexDir -> core.getCoreContainer().assertPathAllowed(Path.of(indexDir)));
                 DirectoryFactory dirFactory = core.getDirectoryFactory();
                 dirNames.stream()
                     .forEach(
@@ -169,7 +169,7 @@ public class MergeIndexes extends CoreAdminAPIBase implements MergeIndexesApi {
 
               UpdateRequestProcessorChain processorChain =
                   core.getUpdateProcessingChain(requestBody.updateChain);
-              wrappedReq = new LocalSolrQueryRequest(core, req.getParams());
+              wrappedReq = new SolrQueryRequestBase(core, req.getParams());
               UpdateRequestProcessor processor = processorChain.createProcessor(wrappedReq, rsp);
               processor.processMergeIndexes(new MergeIndexesCommand(readers, req));
             } catch (Exception e) {

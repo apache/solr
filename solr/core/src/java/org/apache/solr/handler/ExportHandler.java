@@ -19,10 +19,12 @@ package org.apache.solr.handler;
 
 import static org.apache.solr.common.params.CommonParams.JSON;
 
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
@@ -31,6 +33,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.handler.export.ExportWriter;
 import org.apache.solr.handler.export.ExportWriterStream;
@@ -84,9 +87,10 @@ public class ExportHandler extends SearchHandler {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
-    this.writerMetricsPath = SolrMetricManager.mkName("writer", getCategory().toString(), scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    super.initializeMetrics(parentContext, attributes);
+    this.writerMetricsPath =
+        SolrMetricManager.mkName("writer", getCategory().toString(), "/export");
   }
 
   @Override
@@ -101,9 +105,10 @@ public class ExportHandler extends SearchHandler {
     if (coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
-      streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
-      streamFactory.withDefaultZkHost(defaultZkhost);
-      modelCache = new ModelCache(250, defaultZkhost, solrClientCache);
+      var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(defaultZkhost);
+      streamFactory.withCollectionUseThisConnection(defaultCollection, solrConnection);
+      streamFactory.withDefaultSolrConnection(solrConnection);
+      modelCache = new ModelCache(250, solrConnection, solrClientCache);
     }
     streamFactory.withSolrResourceLoader(core.getResourceLoader());
     StreamHandler.addExpressiblePlugins(streamFactory, core);
@@ -125,10 +130,10 @@ public class ExportHandler extends SearchHandler {
     }
     String wt = req.getParams().get(CommonParams.WT, JSON);
     if ("xsort".equals(wt)) wt = JSON;
-    Map<String, String> map = Map.of(CommonParams.WT, ReplicationHandler.FILE_STREAM);
+    Map<String, String> map = Map.of(CommonParams.WT, ReplicationAPIBase.FILE_STREAM);
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), req.getParams()));
     rsp.add(
-        ReplicationHandler.FILE_STREAM,
+        ReplicationAPIBase.FILE_STREAM,
         new ExportWriter(
             req, rsp, wt, initialStreamContext, solrMetricsContext, writerMetricsPath));
   }

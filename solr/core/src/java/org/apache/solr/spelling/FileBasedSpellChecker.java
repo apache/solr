@@ -33,6 +33,7 @@ import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.spell.PlainTextDictionary;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
@@ -81,9 +82,9 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
   private void loadExternalFileDictionary(SolrCore core, SolrIndexSearcher searcher) {
     try {
       IndexSchema schema = null == searcher ? core.getLatestSchema() : searcher.getSchema();
-      // Get the field's analyzer
-      if (fieldTypeName != null && schema.getFieldTypeNoEx(fieldTypeName) != null) {
-        FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
+      // Get the fieldType's analyzer
+      if (fieldTypeName != null && schema.getFieldTypeByName(fieldTypeName) != null) {
+        FieldType fieldType = schema.getFieldTypeByName(fieldTypeName);
         // Do index-time analysis using the given fieldType's analyzer
         Directory ramDir = new ByteBuffersDirectory();
 
@@ -122,7 +123,8 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
           dictionary =
               new PlainTextDictionary(
                   new InputStreamReader(
-                      core.getResourceLoader().openResource(sourceLocation), characterEncoding));
+                      core.getResourceLoader().openResource(sourceLocation),
+                      IOUtils.charsetForName(characterEncoding)));
         }
       }
 

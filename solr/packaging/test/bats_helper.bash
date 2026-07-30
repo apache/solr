@@ -59,14 +59,14 @@ save_home_on_failure() {
 }
 
 shutdown_all() {
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 delete_all_collections() {
   local collection_list="$(solr zk ls /collections -z localhost:${ZK_PORT})"
   for collection in $collection_list; do
     if [[ -n $collection ]]; then
-      solr delete -c $collection >/dev/null 2>&1
+      solr delete -c $collection --delete-config >/dev/null 2>&1
     fi
   done
 }
@@ -95,4 +95,23 @@ collection_exists() {
   done
 
   return 1
+}
+
+# Utility function to retry a command until it succeeds or times out
+wait_for() {
+  local timeout="${1:-30}"     # Default 30 seconds timeout
+  local interval="${2:-1}"     # Default 1 second between retries
+  shift 2                      # Remove timeout and interval from args
+  local command=("$@")         # Remaining args are the command to execute
+  
+  local end_time=$(($(date +%s) + timeout))
+  
+  while [ $(date +%s) -lt $end_time ]; do
+    if "${command[@]}"; then
+      return 0
+    fi
+    sleep "$interval"
+  done
+  
+  return 1  # Timeout reached
 }

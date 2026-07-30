@@ -26,11 +26,11 @@ import static org.apache.solr.client.api.model.Constants.FOLLOW_ALIASES;
 import static org.apache.solr.client.api.model.Constants.ONLY_IF_DOWN;
 
 import io.swagger.v3.oas.annotations.Operation;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.ScaleCollectionRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 

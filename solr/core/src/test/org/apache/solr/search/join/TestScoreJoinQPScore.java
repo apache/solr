@@ -16,25 +16,23 @@
  */
 package org.apache.solr.search.join;
 
-import com.codahale.metrics.Metric;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
@@ -45,7 +43,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.filterCache.async", "true");
     initCore("solrconfig.xml", "schema12.xml");
   }
@@ -216,9 +215,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
             "true");
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse()));
     final Query luceneQ =
-        QParser.getParser(req.getParams().get("q"), req)
-            .getQuery()
-            .rewrite(req.getSearcher().getSlowAtomicReader());
+        QParser.getParser(req.getParams().get("q"), req).getQuery().rewrite(req.getSearcher());
     assertTrue(luceneQ instanceof BoostQuery);
     float boost = ((BoostQuery) luceneQ).getBoost();
     assertEquals("" + luceneQ, Float.floatToIntBits(200), Float.floatToIntBits(boost));
@@ -229,19 +226,17 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
   public void testCacheHit() throws Exception {
     indexDataForScoring();
 
-    Map<String, Metric> metrics =
-        h.getCoreContainer()
-            .getMetricManager()
-            .registry(h.getCore().getCoreMetricManager().getRegistryName())
-            .getMetrics();
-
-    @SuppressWarnings("rawtypes")
-    MetricsMap mm =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper) metrics.get("CACHE.searcher.queryResultCache"))
-                .getGauge();
     {
-      Map<String, Object> statPre = mm.getValue();
+      double lookupsPre =
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot hitsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot insertsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
       h.query(
           req(
               "q",
@@ -250,11 +245,21 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
               "id",
               "omitHeader",
               "true"));
-      assertHitOrInsert(mm.getValue(), statPre);
+
+      assertHitOrInsert(lookupsPre, hitsPre, insertsPre);
     }
 
     {
-      Map<String, Object> statPre = mm.getValue();
+      double lookupsPre =
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot hitsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot insertsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
       h.query(
           req(
               "q",
@@ -263,11 +268,20 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
               "id",
               "omitHeader",
               "true"));
-      assertHit(mm.getValue(), statPre);
+
+      assertHit(lookupsPre, hitsPre, insertsPre);
     }
 
     {
-      Map<String, Object> statPre = mm.getValue();
+      double lookupsPre =
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot hitsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot insertsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
       Random r = random();
       boolean changed = false;
@@ -301,9 +315,19 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
                   "id",
                   "omitHeader",
                   "true"));
-      assertInsert(mm.getValue(), statPre);
 
-      statPre = mm.getValue();
+      assertInsert(lookupsPre, hitsPre, insertsPre);
+
+      double lookupsPreRepeat =
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot hitsPreRepeat =
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot insertsPreRepeat =
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
       final String repeat =
           h.query(
               req(
@@ -322,7 +346,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
                   "id",
                   "omitHeader",
                   "true"));
-      assertHit(mm.getValue(), statPre);
+
+      assertHit(lookupsPreRepeat, hitsPreRepeat, insertsPreRepeat);
 
       assertEquals("lowercase shouldn't change anything", resp, repeat);
 
@@ -343,7 +368,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     // however, it might be better to extract this method into a separate suite
     // for a while let's nuke a cache content, in case of repetitions
     @SuppressWarnings("rawtypes")
-    SolrCache cache = (SolrCache) h.getCore().getInfoRegistry().get("queryResultCache");
+    SolrCache cache =
+        (SolrCache) h.getCore().getInfoRegistry().get(SolrMetricTestUtils.QUERY_RESULT_CACHE);
     cache.clear();
   }
 
@@ -354,27 +380,71 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     return l.get(r.nextInt(l.size()));
   }
 
-  private void assertInsert(Map<String, Object> current, final Map<String, Object> statPre) {
-    assertEquals("it lookups", 1, delta("lookups", current, statPre));
-    assertEquals("it doesn't hit", 0, delta("hits", current, statPre));
-    assertEquals("it inserts", 1, delta("inserts", current, statPre));
+  private void assertInsert(
+      double lookupsPre,
+      CounterSnapshot.CounterDataPointSnapshot hitsPre,
+      CounterSnapshot.CounterDataPointSnapshot insertsPre) {
+    double lookupsPost =
+        SolrMetricTestUtils.getCacheSearcherTotalLookups(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot hitsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot insertsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
+    assertEquals("it lookups", 1, delta(lookupsPost, lookupsPre));
+    assertEquals("it doesn't hit", 0, delta(hitsPost, hitsPre));
+    assertEquals("it inserts", 1, delta(insertsPost, insertsPre));
   }
 
-  private void assertHit(Map<String, Object> current, final Map<String, Object> statPre) {
-    assertEquals("it lookups", 1, delta("lookups", current, statPre));
-    assertEquals("it hits", 1, delta("hits", current, statPre));
-    assertEquals("it doesn't insert", 0, delta("inserts", current, statPre));
+  private void assertHit(
+      double lookupsPre,
+      CounterSnapshot.CounterDataPointSnapshot hitsPre,
+      CounterSnapshot.CounterDataPointSnapshot insertsPre) {
+    double lookupsPost =
+        SolrMetricTestUtils.getCacheSearcherTotalLookups(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot hitsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot insertsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
+    assertEquals("it lookups", 1, delta(lookupsPost, lookupsPre));
+    assertEquals("it hits", 1, delta(hitsPost, hitsPre));
+    assertEquals("it doesn't insert", 0, delta(insertsPost, insertsPre));
   }
 
-  private void assertHitOrInsert(Map<String, Object> current, final Map<String, Object> statPre) {
-    assertEquals("it lookups", 1, delta("lookups", current, statPre));
-    final long mayHit = delta("hits", current, statPre);
+  private void assertHitOrInsert(
+      double lookupsPre,
+      CounterSnapshot.CounterDataPointSnapshot hitsPre,
+      CounterSnapshot.CounterDataPointSnapshot insertsPre) {
+    double lookupsPost =
+        SolrMetricTestUtils.getCacheSearcherTotalLookups(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot hitsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot insertsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
+    assertEquals("it lookups", 1, delta(lookupsPost, lookupsPre));
+    final long mayHit = delta(hitsPost, hitsPre);
     assertTrue("it may hit", 0 == mayHit || 1 == mayHit);
-    assertEquals("or insert on cold", 1, delta("inserts", current, statPre) + mayHit);
+    assertEquals("or insert on cold", 1, delta(insertsPost, insertsPre) + mayHit);
   }
 
-  private long delta(String key, Map<String, Object> a, Map<String, Object> b) {
-    return (Long) a.get(key) - (Long) b.get(key);
+  private long delta(
+      CounterSnapshot.CounterDataPointSnapshot post, CounterSnapshot.CounterDataPointSnapshot pre) {
+    return delta(post.getValue(), pre.getValue());
+  }
+
+  private long delta(double post, double pre) {
+    return (long) post - (long) pre;
   }
 
   private void indexDataForScoring() {

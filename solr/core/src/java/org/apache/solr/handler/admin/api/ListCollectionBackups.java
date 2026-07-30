@@ -24,12 +24,12 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.ListCollectionBackupsApi;
 import org.apache.solr.client.api.model.CollectionBackupDetails;
 import org.apache.solr.client.api.model.ListCollectionBackupsResponse;

@@ -47,10 +47,8 @@ public class PowerEvaluator extends RecursiveNumericEvaluator implements TwoValu
       return null;
     }
 
-    if (first instanceof Number) {
-      Number value = (Number) first;
-      if (second instanceof Number) {
-        Number exponent = (Number) second;
+    if (first instanceof Number value) {
+      if (second instanceof Number exponent) {
         return Math.pow(value.doubleValue(), exponent.doubleValue());
       } else if (second instanceof List) {
         @SuppressWarnings({"unchecked"})
@@ -67,8 +65,7 @@ public class PowerEvaluator extends RecursiveNumericEvaluator implements TwoValu
     } else if (first instanceof List) {
       @SuppressWarnings({"unchecked"})
       List<Number> values = (List<Number>) first;
-      if (second instanceof Number) {
-        Number exponent = (Number) second;
+      if (second instanceof Number exponent) {
 
         List<Number> out = new ArrayList<>(values.size());
         for (Number value : values) {

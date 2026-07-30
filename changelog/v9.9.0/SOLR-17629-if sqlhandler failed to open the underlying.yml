@@ -1,0 +1,9 @@
+title: If SQLHandler failed to open the underlying stream (e.g. Solr returns an error;
+  could be user/syntax problem), it needs to close the stream to cleanup resources
+  but wasn't.
+type: fixed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17629
+  url: https://issues.apache.org/jira/browse/SOLR-17629

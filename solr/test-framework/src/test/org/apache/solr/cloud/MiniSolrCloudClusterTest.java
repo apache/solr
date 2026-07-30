@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -33,6 +32,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
+import org.apache.solr.util.ServletFixtures;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -104,7 +104,7 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
   public void testExtraFilters() throws Exception {
     JettyConfig.Builder jettyConfig = JettyConfig.builder();
     jettyConfig.waitForLoadingCoresToFinish(null);
-    jettyConfig.withFilter(JettySolrRunner.DebugFilter.class, "*");
+    jettyConfig.withFilter(ServletFixtures.DelayServlet.class, "*");
     MiniSolrCloudCluster cluster =
         new MiniSolrCloudCluster(random().nextInt(3) + 1, createTempDir(), jettyConfig.build());
     cluster.shutdown();
@@ -119,8 +119,8 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
     System.setProperty(SOLR_HOME_PROP, fakeSolrHome);
 
     // mock FS from createTempDir don't play nice using 'startsWith' when the solr stack
-    // reconsistutes the path from string so we have to go the string route here as well...
-    final Path workDir = Paths.get(createTempDir().toAbsolutePath().toString());
+    // reconstitutes the path from string so we have to go the string route here as well...
+    final Path workDir = Path.of(createTempDir().toAbsolutePath().toString());
 
     final MiniSolrCloudCluster cluster =
         new MiniSolrCloudCluster(1, workDir, JettyConfig.builder().build());
@@ -130,15 +130,10 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
           jetty.getCoreContainer().getSolrHome() + " vs " + workDir,
           // mock dirs from createTempDir() don't play nice with startsWith, so we have to use the
           // string value
-          Paths.get(jetty.getCoreContainer().getSolrHome()).startsWith(workDir));
+          jetty.getCoreContainer().getSolrHome().startsWith(workDir));
       assertEquals(
           jetty.getCoreContainer().getSolrHome(),
-          jetty
-              .getCoreContainer()
-              .getResourceLoader()
-              .getInstancePath()
-              .toAbsolutePath()
-              .toString());
+          jetty.getCoreContainer().getResourceLoader().getInstancePath().toAbsolutePath());
 
       assertTrue(
           CollectionAdminRequest.createCollection("test", 1, 1)
@@ -195,51 +190,49 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
   }
 
   public void testJettyUsingSysProp() throws Exception {
-    try {
-      // this cluster will use a sysprop to communicate zkHost to it's nodes -- not node props in
-      // the servlet context
-      final MiniSolrCloudCluster x =
-          new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build()) {
-            @Override
-            public JettySolrRunner startJettySolrRunner(
-                String name, JettyConfig config, String solrXml) throws Exception {
-              System.setProperty("zkHost", getZkServer().getZkAddress());
 
-              final Properties nodeProps = new Properties();
-              nodeProps.setProperty("test-from-sysprop", "yup");
+    // this cluster will use a system property to communicate zkHost to its nodes -- not node
+    // props in
+    // the servlet context
+    final MiniSolrCloudCluster x =
+        new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build()) {
+          @Override
+          public JettySolrRunner startJettySolrRunner(
+              String name, JettyConfig config, String solrXml) throws Exception {
+            System.setProperty("zkHost", getZkServer().getZkAddress());
 
-              Path runnerPath = createTempDir(name);
-              if (solrXml == null) {
-                solrXml = DEFAULT_CLOUD_SOLR_XML;
-              }
-              Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
-              JettyConfig newConfig = JettyConfig.builder(config).build();
-              JettySolrRunner jetty =
-                  new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
-              return super.startJettySolrRunner(jetty);
+            final Properties nodeProps = new Properties();
+            nodeProps.setProperty("test-from-sysprop", "yup");
+
+            Path runnerPath = createTempDir(name);
+            if (solrXml == null) {
+              solrXml = DEFAULT_CLOUD_SOLR_XML;
             }
-          };
-      try {
-        // baseline check
-        assertEquals(1, x.getJettySolrRunners().size());
-        assertZkHost("x", x.getZkServer().getZkAddress(), x.getJettySolrRunners().get(0));
+            Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
+            JettyConfig newConfig = JettyConfig.builder(config).build();
+            JettySolrRunner jetty =
+                new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
+            return super.startJettySolrRunner(jetty);
+          }
+        };
+    try {
+      // baseline check
+      assertEquals(1, x.getJettySolrRunners().size());
+      assertZkHost("x", x.getZkServer().getZkAddress(), x.getJettySolrRunners().get(0));
 
-        // verify MiniSolrCloudCluster's impl didn't change out from under us making test useless
-        assertEquals(
-            "yup",
-            x.getJettySolrRunners().get(0).getNodeProperties().getProperty("test-from-sysprop"));
-        assertNull(x.getJettySolrRunners().get(0).getNodeProperties().getProperty("zkHost"));
+      // verify MiniSolrCloudCluster's impl didn't change out from under us making test useless
+      assertEquals(
+          "yup",
+          x.getJettySolrRunners().get(0).getNodeProperties().getProperty("test-from-sysprop"));
+      assertNull(x.getJettySolrRunners().get(0).getNodeProperties().getProperty("zkHost"));
 
-      } finally {
-        x.shutdown();
-      }
     } finally {
-      System.clearProperty("zkHost");
+      x.shutdown();
     }
   }
 
   private static void assertZkHost(
       final String msg, final String zkHost, final JettySolrRunner node) {
-    assertEquals(zkHost, node.getCoreContainer().getNodeConfig().getCloudConfig().getZkHost());
+    assertEquals(msg, zkHost, node.getCoreContainer().getNodeConfig().getCloudConfig().getZkHost());
   }
 }

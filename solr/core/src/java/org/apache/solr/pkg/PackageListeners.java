@@ -46,7 +46,7 @@ public class PackageListeners {
 
   // this registry only keeps a weak reference because it does not want to
   // cause a memory leak if the listener forgets to unregister itself
-  private List<Reference<Listener>> listeners = new CopyOnWriteArrayList<>();
+  private final List<Reference<Listener>> listeners = new CopyOnWriteArrayList<>();
 
   public synchronized void addListener(Listener listener) {
     listeners.add(new SoftReference<>(listener));

@@ -27,14 +27,16 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.util.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,9 +51,6 @@ import org.slf4j.LoggerFactory;
  */
 public class CircuitBreakerRegistry implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final Map<SolrRequestType, List<CircuitBreaker>> circuitBreakerMap = new HashMap<>();
-  private static final Map<SolrRequestType, List<CircuitBreaker>> globalCircuitBreakerMap =
-      new HashMap<>();
   private static final Pattern SYSPROP_REGEX =
       Pattern.compile("solr.circuitbreaker\\.(update|query)\\.(cpu|mem|loadavg)");
   public static final String SYSPROP_PREFIX = "solr.circuitbreaker.";
@@ -61,21 +60,43 @@ public class CircuitBreakerRegistry implements Closeable {
   public static final String SYSPROP_QUERY_CPU = SYSPROP_PREFIX + "query.cpu";
   public static final String SYSPROP_QUERY_MEM = SYSPROP_PREFIX + "query.mem";
   public static final String SYSPROP_QUERY_LOADAVG = SYSPROP_PREFIX + "query.loadavg";
+  public static final String SYSPROP_WARN_ONLY_SUFFIX = ".warnonly";
+
+  /**
+   * Default TTL (ms) of cached load-average / heap samples consulted by {@link
+   * LoadAverageCircuitBreaker} and {@link MemoryCircuitBreaker}. Override per-process via the
+   * {@value #SYSPROP_SAMPLE_TTL_MS} system property.
+   */
+  public static final long DEFAULT_SAMPLE_TTL_MS = 1000L;
+
+  public static final String SYSPROP_SAMPLE_TTL_MS = SYSPROP_PREFIX + "sample.ttl.ms";
+
+  private static boolean globalsInitialized = false;
+  private static final Map<SolrRequestType, List<CircuitBreaker>> globalCircuitBreakerMap =
+      new ConcurrentHashMap<>();
+
+  private final Map<SolrRequestType, List<CircuitBreaker>> circuitBreakerMap = new HashMap<>();
 
   public CircuitBreakerRegistry(CoreContainer coreContainer) {
     initGlobal(coreContainer);
   }
 
-  private static void initGlobal(CoreContainer coreContainer) {
+  public static List<CircuitBreaker> parseCircuitBreakersFromProperties(
+      CoreContainer coreContainer) {
     // Read system properties to register global circuit breakers for update and query:
     // Example: solr.circuitbreaker.update.cpu = 50
-    EnvUtils.getProps().keySet().stream()
+    final var parsedBreakers = new ArrayList<CircuitBreaker>();
+    EnvUtils.getProperties().keySet().stream()
         .map(SYSPROP_REGEX::matcher)
-        .filter(Matcher::matches)
-        .collect(Collectors.groupingBy(m -> m.group(2) + ":" + System.getProperty(m.group(0))))
+        .filter(Matcher::matches) // 0=solr.circuitbreaker.(update|query).(cpu|mem|loadavg),
+        // 1=update|query, 2=cpu|mem|loadavg
+        .collect(Collectors.groupingBy(m -> buildCircuitBreakerKey(m.group(2), m.group(0))))
         .forEach(
             (breakerAndValue, breakers) -> {
               CircuitBreaker breaker;
+              // See 'buildCircuitBreakerKey' for format
+              // 0=metric name (e.g. loadavg), 1=threshold value (e.g. 70), 2=warnOnly flag (e.g.
+              // "false")
               String[] breakerAndValueArr = breakerAndValue.split(":");
               switch (breakerAndValueArr[0]) {
                 case "cpu":
@@ -97,16 +118,32 @@ public class CircuitBreakerRegistry implements Closeable {
                   throw new IllegalArgumentException(
                       "Unknown circuit breaker type: " + breakerAndValueArr[0]);
               }
+              breaker.setWarnOnly(Boolean.parseBoolean(breakerAndValueArr[2]));
               breaker.setRequestTypes(
                   breakers.stream().map(m -> m.group(1)).collect(Collectors.toList()));
-              registerGlobal(breaker);
-              if (log.isInfoEnabled()) {
-                log.info(
-                    "Registered global circuit breaker {} for request type(s) {}",
-                    breakerAndValue,
-                    breaker.getRequestTypes());
-              }
+              parsedBreakers.add(breaker);
             });
+    return parsedBreakers;
+  }
+
+  private static String buildCircuitBreakerKey(String metricType, String thresholdProp) {
+    final var warnOnly = EnvUtils.getProperty(thresholdProp + SYSPROP_WARN_ONLY_SUFFIX, "false");
+    return metricType + ":" + EnvUtils.getProperty(thresholdProp) + ":" + warnOnly;
+  }
+
+  private static synchronized void initGlobal(CoreContainer coreContainer) {
+    if (globalsInitialized) return;
+    final var parsedBreakers = parseCircuitBreakersFromProperties(coreContainer);
+    for (CircuitBreaker breaker : parsedBreakers) {
+      registerGlobal(breaker);
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Registered global circuit breaker {} for request type(s) {}",
+            breaker,
+            breaker.getRequestTypes());
+      }
+    }
+    globalsInitialized = true;
   }
 
   /** List all registered circuit breakers for global context */
@@ -143,7 +180,7 @@ public class CircuitBreakerRegistry implements Closeable {
         .forEach(
             r -> {
               List<CircuitBreaker> list =
-                  globalCircuitBreakerMap.computeIfAbsent(r, k -> new ArrayList<>());
+                  globalCircuitBreakerMap.computeIfAbsent(r, k -> new CopyOnWriteArrayList<>());
               list.add(circuitBreaker);
             });
   }
@@ -213,14 +250,13 @@ public class CircuitBreakerRegistry implements Closeable {
     }
   }
 
-  private static void closeGlobal() {
-    synchronized (globalCircuitBreakerMap) {
-      closeCircuitBreakers(
-          globalCircuitBreakerMap.values().stream()
-              .flatMap(List::stream)
-              .collect(Collectors.toList()));
-      globalCircuitBreakerMap.clear();
-    }
+  private static synchronized void closeGlobal() {
+    closeCircuitBreakers(
+        globalCircuitBreakerMap.values().stream()
+            .flatMap(List::stream)
+            .collect(Collectors.toList()));
+    globalCircuitBreakerMap.clear();
+    globalsInitialized = false;
   }
 
   /**

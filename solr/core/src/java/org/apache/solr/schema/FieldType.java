@@ -43,14 +43,14 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -178,7 +178,8 @@ public abstract class FieldType extends FieldProperties {
    * which is called by this method.
    */
   protected void setArgs(IndexSchema schema, Map<String, String> args) {
-    // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
+    // default to STORED, INDEXED, OMIT_TF_POSITIONS,MULTIVALUED, USE_DOCVALUES_AS_STORED
+    // and DOC_VALUES depending on schema version
     properties = (STORED | INDEXED);
     float schemaVersion = schema.getVersion();
     if (schemaVersion < 1.1f) properties |= MULTIVALUED;
@@ -187,8 +188,9 @@ public abstract class FieldType extends FieldProperties {
       args.remove("compressThreshold");
     }
     if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
+    if (schemaVersion >= 1.7f && enableDocValuesByDefault()) properties |= DOC_VALUES;
 
-    properties |= UNINVERTIBLE;
+    if (schemaVersion < 1.7f) properties |= UNINVERTIBLE;
 
     this.args = Collections.unmodifiableMap(args);
     Map<String, String> initArgs = new HashMap<>(args);
@@ -323,8 +325,7 @@ public abstract class FieldType extends FieldProperties {
    * @param type {@link org.apache.lucene.document.FieldType}
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
-  protected IndexableField createField(
-      String name, String val, org.apache.lucene.index.IndexableFieldType type) {
+  protected IndexableField createField(String name, String val, IndexableFieldType type) {
     return new Field(name, val, type);
   }
 
@@ -347,7 +348,7 @@ public abstract class FieldType extends FieldProperties {
       throw new UnsupportedOperationException(
           "This field type does not support doc values: " + this);
     }
-    return f == null ? Collections.<IndexableField>emptyList() : Collections.singletonList(f);
+    return f == null ? List.of() : List.of(f);
   }
 
   /**
@@ -365,6 +366,10 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Convert the stored-field format to an external (string, human readable) value
    *
+   * <p>This is the default method used for converting a stored field value into an external value
+   * to be returned to clients. See {@link ExternalizeStoredValuesAsObjects} for more details
+   *
+   * @see #toObject(IndexableField)
    * @see #toInternal
    */
   public String toExternal(IndexableField f) {
@@ -382,6 +387,10 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Convert the stored-field format to an external object.
    *
+   * <p>This method is not typically used for custom FieldTypes, see {@link
+   * ExternalizeStoredValuesAsObjects} for more details
+   *
+   * @see #toExternal
    * @see #toInternal
    * @since solr 1.3
    */
@@ -481,8 +490,9 @@ public abstract class FieldType extends FieldProperties {
     if (termStr != null && termStr.isEmpty()) {
       return getExistenceQuery(parser, sf);
     }
-    PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    PrefixQuery query =
+        new PrefixQuery(new Term(sf.getName(), termStr), sf.getType().getRewriteMethod(parser, sf));
+    QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(parser, query, termStr);
     return query;
   }
 
@@ -768,10 +778,8 @@ public abstract class FieldType extends FieldProperties {
       Object missingHigh) {
     field.checkSortability();
 
-    SortField sf = new SortField(field.getName(), sortType, reverse);
-    applySetMissingValue(field, sf, missingLow, missingHigh);
-
-    return sf;
+    return new SortField(
+        field.getName(), sortType, reverse, missingValue(field, reverse, missingLow, missingHigh));
   }
 
   /** Same as {@link #getSortField} but using {@link SortedSetSortField} */
@@ -783,10 +791,8 @@ public abstract class FieldType extends FieldProperties {
       Object missingHigh) {
 
     field.checkSortability();
-    SortField sf = new SortedSetSortField(field.getName(), reverse, selector);
-    applySetMissingValue(field, sf, missingLow, missingHigh);
-
-    return sf;
+    return new SortedSetSortField(
+        field.getName(), reverse, selector, missingValue(field, reverse, missingLow, missingHigh));
   }
 
   /** Same as {@link #getSortField} but using {@link SortedNumericSortField}. */
@@ -799,25 +805,30 @@ public abstract class FieldType extends FieldProperties {
       Object missingHigh) {
 
     field.checkSortability();
-    SortField sf = new SortedNumericSortField(field.getName(), sortType, reverse, selector);
-    applySetMissingValue(field, sf, missingLow, missingHigh);
-
-    return sf;
+    return new SortedNumericSortField(
+        field.getName(),
+        sortType,
+        reverse,
+        selector,
+        missingValue(field, reverse, missingLow, missingHigh));
   }
 
   /**
+   * Computes the sort {@code missingValue} to pass to a {@link SortField} constructor based on the
+   * field's {@code sortMissingFirst}/{@code sortMissingLast} properties and the sort direction.
+   * Returns {@code null} when neither property is set.
+   *
    * @see #getSortField
    * @see #getSortedSetSortField
    */
-  private static void applySetMissingValue(
-      SchemaField field, SortField sortField, Object missingLow, Object missingHigh) {
-    final boolean reverse = sortField.getReverse();
-
+  private static Object missingValue(
+      SchemaField field, boolean reverse, Object missingLow, Object missingHigh) {
     if (field.sortMissingLast()) {
-      sortField.setMissingValue(reverse ? missingLow : missingHigh);
+      return reverse ? missingLow : missingHigh;
     } else if (field.sortMissingFirst()) {
-      sortField.setMissingValue(reverse ? missingHigh : missingLow);
+      return reverse ? missingHigh : missingLow;
     }
+    return null;
   }
 
   /**
@@ -1019,8 +1030,7 @@ public abstract class FieldType extends FieldProperties {
    * to an unbounded rangeQuery.
    *
    * <p>This method should only be overridden whenever a fieldType does not support {@link
-   * org.apache.lucene.search.DocValuesFieldExistsQuery} or {@link
-   * org.apache.lucene.search.NormsFieldExistsQuery}. If a fieldType does not support an unbounded
+   * org.apache.lucene.search.FieldExistsQuery}. If a fieldType does not support an unbounded
    * rangeQuery as an existenceQuery (such as <code>double</code> or <code>float</code> fields),
    * {@link #getSpecializedExistenceQuery} should be overridden.
    *
@@ -1030,10 +1040,10 @@ public abstract class FieldType extends FieldProperties {
    */
   public Query getExistenceQuery(QParser parser, SchemaField field) {
     if (field.hasDocValues()) {
-      return new DocValuesFieldExistsQuery(field.getName());
+      return new FieldExistsQuery(field.getName());
     } else if (!field.omitNorms()
         && !isPointField()) { // TODO: Remove !isPointField() for SOLR-14199
-      return new NormsFieldExistsQuery(field.getName());
+      return new FieldExistsQuery(field.getName());
     } else {
       // Default to an unbounded range query
       return getSpecializedExistenceQuery(parser, field);
@@ -1156,6 +1166,19 @@ public abstract class FieldType extends FieldProperties {
   protected void checkSupportsDocValues() {
     throw new SolrException(
         ErrorCode.SERVER_ERROR, "Field type " + this + " does not support doc values");
+  }
+
+  /**
+   * Returns whether this field type should enable docValues by default for schemaVersion &gt;= 1.7.
+   * This should not be enabled for fields that did not have docValues implemented by Solr 9.7, as
+   * users may have indexed documents without docValues (since they weren't supported). Flipping the
+   * default docValues values when they upgrade to a new version will break their index
+   * compatibility.
+   *
+   * <p>New field types can enable this without issue, as long as they support docValues.
+   */
+  protected boolean enableDocValuesByDefault() {
+    return false;
   }
 
   public static final String TYPE = "type";
@@ -1295,9 +1318,8 @@ public abstract class FieldType extends FieldProperties {
   protected static SimpleOrderedMap<Object> getAnalyzerProperties(Analyzer analyzer) {
     SimpleOrderedMap<Object> analyzerProps = new SimpleOrderedMap<>();
 
-    if (analyzer instanceof TokenizerChain) {
+    if (analyzer instanceof TokenizerChain tokenizerChain) {
       Map<String, String> factoryArgs;
-      TokenizerChain tokenizerChain = (TokenizerChain) analyzer;
       CharFilterFactory[] charFilterFactories = tokenizerChain.getCharFilterFactories();
       if (0 < charFilterFactories.length) {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<>();
@@ -1446,6 +1468,22 @@ public abstract class FieldType extends FieldProperties {
     final byte[] bytes = Base64.getDecoder().decode(val);
     return new BytesRef(bytes);
   }
+
+  /**
+   * A marker interface that can be implemented by any FieldType to indicate that Solr should trust
+   * &amp; delegate to this field type's implementation of {@link
+   * FieldType#toObject(IndexableField)} when converted internal stored fields to an external
+   * representation that will be returned to clients.
+   *
+   * <p>The default behavior if this interface is not implemented, is to delegate to {@link
+   * FieldType#toExternal(IndexableField)}, unless the field type is (exactly equal to) one of a
+   * specific list of {@link org.apache.solr.response.DocsStreamer#KNOWN_TYPES}
+   *
+   * @see #toExternal
+   * @see #toObject(IndexableField)
+   * @see org.apache.solr.response.DocsStreamer#KNOWN_TYPES
+   */
+  public static interface ExternalizeStoredValuesAsObjects {}
 
   /**
    * An enumeration representing various options that may exist for selecting a single value from a

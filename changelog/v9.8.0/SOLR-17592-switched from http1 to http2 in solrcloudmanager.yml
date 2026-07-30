@@ -1,0 +1,9 @@
+title: Switched from HTTP1 to HTTP2 in SolrCloudManager via HttpClient change from
+  Apache to Jetty.
+type: changed
+authors:
+- name: Sanjay Dutt
+- name: David Smiley
+links:
+- name: SOLR-17592
+  url: https://issues.apache.org/jira/browse/SOLR-17592

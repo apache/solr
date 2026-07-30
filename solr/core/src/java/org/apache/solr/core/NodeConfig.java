@@ -21,9 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,14 +32,18 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.api.ClusterPluginsSource;
+import org.apache.solr.api.ContainerPluginsRegistry;
+import org.apache.solr.api.NodeConfigClusterPluginsSource;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.search.CacheConfig;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.ModuleUtils;
 import org.slf4j.Logger;
@@ -79,7 +81,6 @@ public class NodeConfig {
 
   private final PluginInfo shardHandlerFactoryConfig;
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
-  private final PluginInfo replicaPlacementFactoryConfig;
 
   private final String configSetServiceClass;
 
@@ -103,11 +104,9 @@ public class NodeConfig {
 
   private final int replayUpdatesThreads;
 
-  @Deprecated private final int transientCacheSize;
+  private final int indexSearcherExecutorThreads;
 
   private final boolean useSchemaCache;
-
-  private final String managementPath;
 
   private final PluginInfo[] backupRepositoryPlugins;
 
@@ -116,6 +115,8 @@ public class NodeConfig {
   private final Map<String, CacheConfig> cachesConfig;
 
   private final PluginInfo tracerConfig;
+
+  private final PluginInfo[] clusterPlugins;
 
   private final String defaultZkHost;
 
@@ -130,7 +131,6 @@ public class NodeConfig {
       String sharedLibDirectory,
       PluginInfo shardHandlerFactoryConfig,
       UpdateShardHandlerConfig updateShardHandlerConfig,
-      PluginInfo replicaPlacementFactoryConfig,
       String coreAdminHandlerClass,
       Map<String, String> coreAdminHandlerActions,
       String collectionsAdminHandlerClass,
@@ -141,9 +141,8 @@ public class NodeConfig {
       CloudConfig cloudConfig,
       Integer coreLoadThreads,
       int replayUpdatesThreads,
-      int transientCacheSize,
+      int indexSearcherExecutorThreads,
       boolean useSchemaCache,
-      String managementPath,
       Path solrHome,
       SolrResourceLoader loader,
       Properties solrProperties,
@@ -151,6 +150,7 @@ public class NodeConfig {
       MetricsConfig metricsConfig,
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
+      PluginInfo[] clusterPlugins,
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
@@ -169,7 +169,6 @@ public class NodeConfig {
     this.sharedLibDirectory = sharedLibDirectory;
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
-    this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
     this.coreAdminHandlerClass = coreAdminHandlerClass;
     this.coreAdminHandlerActions = coreAdminHandlerActions;
     this.collectionsAdminHandlerClass = collectionsAdminHandlerClass;
@@ -180,16 +179,16 @@ public class NodeConfig {
     this.cloudConfig = cloudConfig;
     this.coreLoadThreads = coreLoadThreads;
     this.replayUpdatesThreads = replayUpdatesThreads;
-    this.transientCacheSize = transientCacheSize;
+    this.indexSearcherExecutorThreads = indexSearcherExecutorThreads;
     this.useSchemaCache = useSchemaCache;
-    this.managementPath = managementPath;
     this.solrHome = solrHome;
     this.loader = loader;
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
     this.metricsConfig = metricsConfig;
-    this.cachesConfig = cachesConfig == null ? Collections.emptyMap() : cachesConfig;
+    this.cachesConfig = cachesConfig == null ? Map.of() : cachesConfig;
     this.tracerConfig = tracerConfig;
+    this.clusterPlugins = clusterPlugins;
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
@@ -211,6 +210,17 @@ public class NodeConfig {
     if (null == this.solrHome) throw new NullPointerException("solrHome");
     if (null == this.loader) throw new NullPointerException("loader");
 
+    if (this.clusterPlugins != null
+        && this.clusterPlugins.length > 0
+        && !ClusterPluginsSource.resolveClassName()
+            .equals(NodeConfigClusterPluginsSource.class.getName())) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Cluster plugins found in solr.xml but the property "
+              + ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED
+              + " is set to true. Cluster plugins may only be declared in solr.xml with immutable configs.");
+    }
+
     setupSharedLib();
     initModules();
   }
@@ -230,10 +240,11 @@ public class NodeConfig {
     //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(zkHost)) {
-      int startUpZkTimeOut = 1000 * Integer.getInteger("waitForZk", 0);
-      if (startUpZkTimeOut == 0) {
-        startUpZkTimeOut = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
-      }
+      int startUpZkTimeOut =
+          1000
+              * Integer.getInteger(
+                  "solr.cloud.wait.for.zk.seconds", SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT);
+
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
@@ -241,7 +252,7 @@ public class NodeConfig {
               .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
               .withSolrClassLoader(loader)
               .build()) {
-        zkClient.exists("/configs", true);
+        zkClient.exists("/configs");
       } catch (Exception e) {
         throw new SolrException(
             ErrorCode.SERVER_ERROR, "Error occurred while testing zookeeper connection", e);
@@ -283,12 +294,12 @@ public class NodeConfig {
    * @return path to install dir or null if solr.install.dir not set.
    */
   public static Path getSolrInstallDir() {
-    String prop = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    String prop = EnvUtils.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
     if (prop == null || prop.isBlank()) {
       log.debug("solr.install.dir property not initialized.");
       return null;
     }
-    return Paths.get(prop);
+    return Path.of(prop);
   }
 
   /**
@@ -308,10 +319,6 @@ public class NodeConfig {
     return updateShardHandlerConfig;
   }
 
-  public PluginInfo getReplicaPlacementFactoryConfig() {
-    return replicaPlacementFactoryConfig;
-  }
-
   public int getCoreLoadThreadCount(boolean zkAware) {
     return coreLoadThreads == null
         ? (zkAware
@@ -322,6 +329,10 @@ public class NodeConfig {
 
   public int getReplayUpdatesThreads() {
     return replayUpdatesThreads;
+  }
+
+  public int getIndexSearcherExecutorThreads() {
+    return indexSearcherExecutorThreads;
   }
 
   /**
@@ -364,10 +375,6 @@ public class NodeConfig {
     return useSchemaCache;
   }
 
-  public String getManagementPath() {
-    return managementPath;
-  }
-
   /** Absolute. */
   public Path getConfigSetBaseDirectory() {
     return configSetBaseDirectory;
@@ -379,10 +386,6 @@ public class NodeConfig {
 
   public CloudConfig getCloudConfig() {
     return cloudConfig;
-  }
-
-  public int getTransientCacheSize() {
-    return transientCacheSize;
   }
 
   protected final Path solrHome;
@@ -417,6 +420,10 @@ public class NodeConfig {
     return tracerConfig;
   }
 
+  public PluginInfo[] getClusterPlugins() {
+    return clusterPlugins;
+  }
+
   /**
    * Extra file paths that will be allowed for core creation, in addition to SOLR_HOME,
    * SOLR_DATA_HOME and coreRootDir
@@ -444,7 +451,7 @@ public class NodeConfig {
     if (solrInstallDir == null) {
       log.warn(
           "Unable to add $SOLR_HOME/lib for shared lib since {} was not set.",
-          SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+          CoreContainerProvider.SOLR_INSTALL_DIR);
     } else {
       // Always add $SOLR_TIP/lib to the shared resource loader
       libDirs.add(solrInstallDir.resolve("lib").toAbsolutePath().normalize().toString());
@@ -472,7 +479,7 @@ public class NodeConfig {
 
   public static final String REDACTED_SYS_PROP_VALUE = "--REDACTED--";
 
-  /** Returns the a system property value, or "--REDACTED--" if the system property is hidden */
+  /** Returns the system property value, or "--REDACTED--" if the system property is hidden */
   public String getRedactedSysPropValue(String sysPropName) {
     return hiddenSysPropPattern.test(sysPropName)
         ? REDACTED_SYS_PROP_VALUE
@@ -517,7 +524,7 @@ public class NodeConfig {
             "Unable to setup modules "
                 + moduleNames
                 + " because "
-                + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE
+                + CoreContainerProvider.SOLR_INSTALL_DIR
                 + " was not set.");
       }
       return;
@@ -571,10 +578,9 @@ public class NodeConfig {
     private String hiddenSysProps;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
-    private PluginInfo replicaPlacementFactoryConfig;
     private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
-    private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
+    private Map<String, String> coreAdminHandlerActions = Map.of();
     private String collectionsAdminHandlerClass = DEFAULT_COLLECTIONSHANDLERCLASS;
     private String healthCheckHandlerClass = DEFAULT_HEALTHCHECKHANDLERCLASS;
     private String infoHandlerClass = DEFAULT_INFOHANDLERCLASS;
@@ -583,18 +589,19 @@ public class NodeConfig {
     private CloudConfig cloudConfig;
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
-    @Deprecated private int transientCacheSize = -1;
+    private int indexSearcherExecutorThreads = DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS;
     private boolean useSchemaCache = false;
-    private String managementPath;
     private Properties solrProperties = new Properties();
     private PluginInfo[] backupRepositoryPlugins;
     private MetricsConfig metricsConfig;
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
+    private PluginInfo[] clusterPlugins;
     private String defaultZkHost;
-    private Set<Path> allowPaths = Collections.emptySet();
-    private List<String> allowUrls = Collections.emptyList();
-    private boolean hideStackTrace = Boolean.getBoolean("solr.hideStackTrace");
+    private Set<Path> allowPaths = Set.of();
+    private List<String> allowUrls = List.of();
+    private boolean hideStackTrace =
+        !EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
 
     private final Path solrHome;
     private final String nodeName;
@@ -602,6 +609,8 @@ public class NodeConfig {
     public static final int DEFAULT_CORE_LOAD_THREADS = 3;
     // No:of core load threads in cloud mode is set to a default of 8
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
+
+    public static final int DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS = 0;
 
     private static final String DEFAULT_CORESLOCATORCLASS =
         "org.apache.solr.core.CorePropertiesLocator";
@@ -621,7 +630,7 @@ public class NodeConfig {
         Set.of(
             "javax\\.net\\.ssl\\.keyStorePassword",
             "javax\\.net\\.ssl\\.trustStorePassword",
-            "basicauth",
+            ".*credentials",
             "zkDigestPassword",
             "zkDigestReadonlyPassword",
             "aws\\.secretKey", // AWS SDK v1
@@ -635,7 +644,7 @@ public class NodeConfig {
       this.solrHome = solrHome.toAbsolutePath();
       this.coreRootDirectory = solrHome;
       // always init from sysprop because <solrDataHome> config element may be missing
-      setSolrDataHome(System.getProperty(SolrXmlConfig.SOLR_DATA_HOME));
+      setSolrDataHome(EnvUtils.getProperty(SolrXmlConfig.SOLR_DATA_HOME));
       setConfigSetBaseDirectory("configsets");
       this.metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     }
@@ -686,12 +695,6 @@ public class NodeConfig {
     public NodeConfigBuilder setUpdateShardHandlerConfig(
         UpdateShardHandlerConfig updateShardHandlerConfig) {
       this.updateShardHandlerConfig = updateShardHandlerConfig;
-      return this;
-    }
-
-    public NodeConfigBuilder setReplicaPlacementFactoryConfig(
-        PluginInfo replicaPlacementFactoryConfig) {
-      this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
       return this;
     }
 
@@ -746,21 +749,13 @@ public class NodeConfig {
       return this;
     }
 
-    // Remove in Solr 10.0
-
-    @Deprecated
-    public NodeConfigBuilder setTransientCacheSize(int transientCacheSize) {
-      this.transientCacheSize = transientCacheSize;
+    public NodeConfigBuilder setIndexSearcherExecutorThreads(int indexSearcherExecutorThreads) {
+      this.indexSearcherExecutorThreads = indexSearcherExecutorThreads;
       return this;
     }
 
     public NodeConfigBuilder setUseSchemaCache(boolean useSchemaCache) {
       this.useSchemaCache = useSchemaCache;
-      return this;
-    }
-
-    public NodeConfigBuilder setManagementPath(String managementPath) {
-      this.managementPath = managementPath;
       return this;
     }
 
@@ -786,6 +781,11 @@ public class NodeConfig {
 
     public NodeConfigBuilder setTracerConfig(PluginInfo tracerConfig) {
       this.tracerConfig = tracerConfig;
+      return this;
+    }
+
+    public NodeConfigBuilder setClusterPlugins(PluginInfo[] clusterPlugins) {
+      this.clusterPlugins = clusterPlugins;
       return this;
     }
 
@@ -831,28 +831,20 @@ public class NodeConfig {
     }
 
     /**
-     * Finds list of hiddenSysProps requested by system property or environment variable or the
-     * default
+     * Finds list of hiddenSysProps requested in priority of solr.xml, system properties or the
+     * default set
      *
-     * @return set of raw hidden sysProps, may be regex
+     * @return set of raw hidden system properties, may be regex
      */
-    private Set<String> resolveHiddenSysPropsFromSysPropOrEnvOrDefault(String hiddenSysProps) {
-      // Fall back to sysprop and env.var if nothing configured through solr.xml
+    private Set<String> resolveHiddenSysProps(String hiddenSysProps) {
+      // Fall back to system properties if nothing configured through solr.xml
       if (!StrUtils.isNotNullOrEmpty(hiddenSysProps)) {
-        String fromProps = System.getProperty("solr.hiddenSysProps");
-        // Back-compat for solr 9x
-        // DEPRECATED: Remove in 10.0
-        if (StrUtils.isNotNullOrEmpty(fromProps)) {
-          fromProps = System.getProperty("solr.redaction.system.pattern");
-        }
-        String fromEnv = System.getenv("SOLR_HIDDEN_SYS_PROPS");
+        String fromProps = EnvUtils.getProperty("solr.responses.hidden.sys.props");
         if (StrUtils.isNotNullOrEmpty(fromProps)) {
           hiddenSysProps = fromProps;
-        } else if (StrUtils.isNotNullOrEmpty(fromEnv)) {
-          hiddenSysProps = fromEnv;
         }
       }
-      Set<String> hiddenSysPropSet = Collections.emptySet();
+      Set<String> hiddenSysPropSet = Set.of();
       if (hiddenSysProps != null) {
         hiddenSysPropSet =
             StrUtils.splitSmart(hiddenSysProps, ',').stream()
@@ -880,7 +872,6 @@ public class NodeConfig {
           sharedLibDirectory,
           shardHandlerFactoryConfig,
           updateShardHandlerConfig,
-          replicaPlacementFactoryConfig,
           coreAdminHandlerClass,
           coreAdminHandlerActions,
           collectionsAdminHandlerClass,
@@ -891,9 +882,8 @@ public class NodeConfig {
           cloudConfig,
           coreLoadThreads,
           replayUpdatesThreads,
-          transientCacheSize,
+          indexSearcherExecutorThreads,
           useSchemaCache,
-          managementPath,
           solrHome,
           loader,
           solrProperties,
@@ -901,13 +891,14 @@ public class NodeConfig {
           metricsConfig,
           cachesConfig,
           tracerConfig,
+          clusterPlugins,
           defaultZkHost,
           allowPaths,
           allowUrls,
           hideStackTrace,
           configSetServiceClass,
           modules,
-          resolveHiddenSysPropsFromSysPropOrEnvOrDefault(hiddenSysProps));
+          resolveHiddenSysProps(hiddenSysProps));
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -60,23 +61,27 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     slices.put("shard2", slice2);
     collectionStates.put(
         "collection1",
-        DocCollection.create("collection1", slices, props, DocRouter.DEFAULT, 0, null));
+        DocCollection.create(
+            "collection1", slices, props, DocRouter.DEFAULT, 0, Instant.EPOCH, null));
     collectionStates.put(
         "collection2",
-        DocCollection.create("collection2", slices, props, DocRouter.DEFAULT, 0, null));
+        DocCollection.create(
+            "collection2", slices, props, DocRouter.DEFAULT, 0, Instant.EPOCH, null));
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     assertFalse(clusterState.getCollection("collection1").getProperties().containsKey("shards"));
 
     byte[] bytes = Utils.toJSON(clusterState);
 
-    ClusterState loadedClusterState = ClusterState.createFromJson(-1, bytes, liveNodes, null);
+    Instant creationTime = Instant.now();
+    ClusterState loadedClusterState =
+        ClusterState.createFromJson(-1, bytes, liveNodes, creationTime, null);
     assertFalse(
         loadedClusterState.getCollection("collection1").getProperties().containsKey("shards"));
 
     assertEquals(
         "Provided liveNodes not used properly", 2, loadedClusterState.getLiveNodes().size());
-    assertEquals("No collections found", 2, loadedClusterState.getCollectionsMap().size());
+    assertEquals("No collections found", 2, loadedClusterState.size());
     assertEquals(
         "Properties not copied properly",
         replica.getStr("prop1"),
@@ -96,16 +101,21 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
             .get("node1")
             .getStr("prop2"));
 
-    loadedClusterState = ClusterState.createFromJson(-1, new byte[0], liveNodes, null);
+    assertEquals(creationTime, loadedClusterState.getCollection("collection1").getCreationTime());
+    assertEquals(creationTime, loadedClusterState.getCollection("collection2").getCreationTime());
+
+    loadedClusterState =
+        ClusterState.createFromJson(-1, new byte[0], liveNodes, Instant.now(), null);
 
     assertEquals(
         "Provided liveNodes not used properly", 2, loadedClusterState.getLiveNodes().size());
-    assertEquals("Should not have collections", 0, loadedClusterState.getCollectionsMap().size());
+    assertEquals("Should not have collections", 0, loadedClusterState.size());
 
-    loadedClusterState = ClusterState.createFromJson(-1, (byte[]) null, liveNodes, null);
+    loadedClusterState =
+        ClusterState.createFromJson(-1, (byte[]) null, liveNodes, Instant.now(), null);
 
     assertEquals(
         "Provided liveNodes not used properly", 2, loadedClusterState.getLiveNodes().size());
-    assertEquals("Should not have collections", 0, loadedClusterState.getCollectionsMap().size());
+    assertEquals("Should not have collections", 0, loadedClusterState.size());
   }
 }

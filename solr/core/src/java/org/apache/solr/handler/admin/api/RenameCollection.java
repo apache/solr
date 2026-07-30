@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.TARGET;
@@ -24,9 +23,9 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.RenameCollectionApi;
 import org.apache.solr.client.api.model.RenameCollectionRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
@@ -69,21 +68,16 @@ public class RenameCollection extends AdminAPIBase implements RenameCollectionAp
 
     final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, requestBody);
     submitRemoteMessageAndHandleResponse(
-        response,
-        CollectionParams.CollectionAction.RENAME,
-        remoteMessage,
-        requestBody != null ? requestBody.async : null);
+        response, CollectionParams.CollectionAction.RENAME, remoteMessage, requestBody.async);
     return response;
   }
 
   public static ZkNodeProps createRemoteMessage(
       String collectionName, RenameCollectionRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.RENAME.toLower());
     remoteMessage.put(NAME, collectionName);
     remoteMessage.put(TARGET, requestBody.to);
     insertIfNotNull(remoteMessage, FOLLOW_ALIASES, requestBody.followAliases);
-    insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
 
     return new ZkNodeProps(remoteMessage);
   }

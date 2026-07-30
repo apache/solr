@@ -1,0 +1,10 @@
+title: Fixed UpdateLog replay bug that shared thread-unsafe SolrQueryRequest objects
+  across threads
+type: fixed
+authors:
+- name: Jason Gerlowski
+- name: David Smiley
+- name: Houston Putman
+links:
+- name: SOLR-17413
+  url: https://issues.apache.org/jira/browse/SOLR-17413

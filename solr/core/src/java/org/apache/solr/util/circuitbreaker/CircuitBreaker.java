@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -49,12 +50,16 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
   private static SolrException.ErrorCode errorCode = resolveExceptionErrorCode();
   // Only query requests are checked by default
   private Set<SolrRequestType> requestTypes = Set.of(SolrRequestType.QUERY);
+  private boolean warnOnly;
   private final List<SolrRequestType> SUPPORTED_TYPES =
       List.of(SolrRequestType.QUERY, SolrRequestType.UPDATE);
 
   @Override
   public void init(NamedList<?> args) {
     SolrPluginUtils.invokeSetters(this, args);
+    if (args.getBooleanArg("warnOnly") != null) {
+      setWarnOnly(args.getBooleanArg("warnOnly"));
+    }
   }
 
   public CircuitBreaker() {
@@ -78,7 +83,7 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
 
   private static SolrException.ErrorCode resolveExceptionErrorCode() {
     int intCode = SolrException.ErrorCode.TOO_MANY_REQUESTS.code;
-    String strCode = System.getProperty(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
+    String strCode = EnvUtils.getProperty(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
     if (strCode != null) {
       try {
         intCode = Integer.parseInt(strCode);
@@ -129,7 +134,32 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
             .collect(Collectors.toSet());
   }
 
+  public void setWarnOnly(boolean warnOnly) {
+    this.warnOnly = warnOnly;
+  }
+
+  public boolean isWarnOnly() {
+    return warnOnly;
+  }
+
   public Set<SolrRequestType> getRequestTypes() {
     return requestTypes;
+  }
+
+  /**
+   * Creates a per-instance {@link TtlSampledMetric} for a breaker's expensive sample (OS load
+   * average, post-GC heap-pool walk). The TTL comes from {@link
+   * CircuitBreakerRegistry#SYSPROP_SAMPLE_TTL_MS} (default {@value
+   * CircuitBreakerRegistry#DEFAULT_SAMPLE_TTL_MS} ms) and is read once here, at construction.
+   *
+   * <p>Per-instance rather than shared: breakers are subclassed (notably in tests) to override the
+   * sampler, and a single shared cache would hand one instance's sample to the others. The TTL
+   * still bounds the underlying sample rate per instance.
+   */
+  protected static <T> TtlSampledMetric<T> newSampleCache() {
+    return new TtlSampledMetric<>(
+        EnvUtils.getPropertyAsLong(
+            CircuitBreakerRegistry.SYSPROP_SAMPLE_TTL_MS,
+            CircuitBreakerRegistry.DEFAULT_SAMPLE_TTL_MS));
   }
 }

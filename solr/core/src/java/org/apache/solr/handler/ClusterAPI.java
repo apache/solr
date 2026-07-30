@@ -23,7 +23,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CollectionParams.ACTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
@@ -33,7 +32,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +41,6 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.request.beans.ClusterPropPayload;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -54,6 +51,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
@@ -97,7 +95,7 @@ public class ClusterAPI {
       if (children != null && !children.isEmpty()) {
         result = new HashMap<>();
       } else {
-        return Collections.emptySet();
+        return Set.of();
       }
       for (String child : children) {
         Object c = readRecursive(path + "/" + child, zk, depth - 1);
@@ -183,7 +181,7 @@ public class ClusterAPI {
             .getSolrCloudManager()
             .getDistribStateManager()
             .listData(ZkStateReader.NODE_ROLES + "/" + roleStr + "/" + modeStr);
-    rsp.add("node-roles", Map.of(roleStr, Collections.singletonMap(modeStr, nodes)));
+    rsp.add("node-roles", Map.of(roleStr, Map.of(modeStr, nodes)));
   }
 
   public static List<String> getNodesByRole(
@@ -192,7 +190,7 @@ public class ClusterAPI {
     try {
       return zk.listData(ZkStateReader.NODE_ROLES + "/" + role + "/" + mode);
     } catch (NoSuchElementException e) {
-      return Collections.emptyList();
+      return List.of();
     }
   }
 
@@ -260,38 +258,20 @@ public class ClusterAPI {
   @EndPoint(method = POST, path = "/cluster", permission = COLL_EDIT_PERM)
   public class Commands {
     @Command(name = "add-role")
+    @Deprecated(since = "10.1")
     public void addRole(PayloadObj<RoleInfo> obj) throws Exception {
       RoleInfo info = obj.get();
-      Map<String, Object> m = info.toMap(new HashMap<>());
+      Map<String, Object> m = new SimpleOrderedMap<>(info);
       m.put("action", ADDROLE.toString());
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 
     @Command(name = "remove-role")
+    @Deprecated(since = "10.1")
     public void removeRole(PayloadObj<RoleInfo> obj) throws Exception {
       RoleInfo info = obj.get();
-      Map<String, Object> m = info.toMap(new HashMap<>());
+      Map<String, Object> m = new SimpleOrderedMap<>(info);
       m.put("action", REMOVEROLE.toString());
-      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
-    }
-
-    @Command(name = "set-obj-property")
-    public void setObjProperty(PayloadObj<ClusterPropPayload> obj) {
-      // Not using the object directly here because the API differentiate between {name:null} and {}
-      Map<String, Object> m = obj.getDataMap();
-      ClusterProperties clusterProperties =
-          new ClusterProperties(getCoreContainer().getZkController().getZkClient());
-      try {
-        clusterProperties.setClusterProperties(m);
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
-      }
-    }
-
-    @Command(name = "set-property")
-    public void setProperty(PayloadObj<Map<String, String>> obj) throws Exception {
-      Map<String, Object> m = obj.getDataMap();
-      m.put("action", CLUSTERPROP.toString());
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 

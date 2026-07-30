@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +36,7 @@ public class CollectionAdminResponse extends SolrResponseBase {
     return (String) getResponse().get("warning");
   }
 
-  // this messages are typically from individual nodes, since
+  // these messages are typically from individual nodes, since
   // all the failures at the router are propagated as exceptions
   @SuppressWarnings("unchecked")
   public NamedList<String> getErrorMessages() {
@@ -67,7 +66,7 @@ public class CollectionAdminResponse extends SolrResponseBase {
     if (response.get("aliases") != null) {
       return ((Map<String, String>) response.get("aliases"));
     }
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   public Map<String, List<String>> getAliasesAsLists() {
@@ -81,7 +80,7 @@ public class CollectionAdminResponse extends SolrResponseBase {
     if (response.get("properties") != null) {
       return ((Map<String, Map<String, String>>) response.get("properties"));
     }
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   @SuppressWarnings("unchecked")

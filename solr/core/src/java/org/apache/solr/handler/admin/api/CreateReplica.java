@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
@@ -40,10 +39,10 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPropertiesWithoutPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.CreateReplicaApi;
 import org.apache.solr.client.api.model.CreateReplicaRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
@@ -90,17 +89,17 @@ public class CreateReplica extends AdminAPIBase implements CreateReplicaApi {
         resolveAndValidateAliasIfEnabled(
             collectionName, Boolean.TRUE.equals(requestBody.followAliases));
 
-    final ZkNodeProps remoteMessage =
-        createRemoteMessage(resolvedCollectionName, shardName, requestBody);
     submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.ADDREPLICA, remoteMessage, requestBody.async);
+        response,
+        CollectionParams.CollectionAction.ADDREPLICA,
+        createRemoteMessage(resolvedCollectionName, shardName, requestBody),
+        requestBody.async);
     return response;
   }
 
   public static ZkNodeProps createRemoteMessage(
       String collectionName, String shardName, CreateReplicaRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.ADDREPLICA.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(SHARD_ID_PROP, shardName);
     insertIfNotNull(remoteMessage, CoreAdminParams.NAME, requestBody.name);
@@ -119,7 +118,6 @@ public class CreateReplica extends AdminAPIBase implements CreateReplicaApi {
     insertIfNotNull(remoteMessage, TLOG_REPLICAS, requestBody.tlogReplicas);
     insertIfNotNull(remoteMessage, PULL_REPLICAS, requestBody.pullReplicas);
     insertIfNotNull(remoteMessage, FOLLOW_ALIASES, requestBody.followAliases);
-    insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
 
     if (requestBody.properties != null) {
       requestBody

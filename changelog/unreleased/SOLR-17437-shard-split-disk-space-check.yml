@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Fix disk space check in shard split operation
+type: fixed
+authors:
+  - name: Matthew Biscocho
+  - name: David Smiley
+links:
+  - name: SOLR-17437
+    url: https://issues.apache.org/jira/browse/SOLR-17437

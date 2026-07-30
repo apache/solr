@@ -31,7 +31,7 @@ import org.apache.solr.cluster.placement.PlacementPluginFactory;
 /**
  * Factory for creating {@link RandomPlacementPlugin}, a placement plugin implementing random
  * placement for new collection creation while preventing two replicas of same shard from being
- * placed on same node..
+ * placed on same node.
  *
  * <p>See {@link RandomNode} for information on how this PlacementFactory weights nodes.
  *

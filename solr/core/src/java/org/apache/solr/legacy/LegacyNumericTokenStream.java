@@ -254,8 +254,7 @@ public final class LegacyNumericTokenStream extends TokenStream {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof LegacyNumericTermAttributeImpl)) return false;
-      LegacyNumericTermAttributeImpl other = (LegacyNumericTermAttributeImpl) obj;
+      if (!(obj instanceof LegacyNumericTermAttributeImpl other)) return false;
       if (precisionStep != other.precisionStep) return false;
       if (shift != other.shift) return false;
       if (value != other.value) return false;

@@ -67,7 +67,8 @@ public class CloudMLTQParser extends SimpleMLTQParser {
     Map<String, Collection<Object>> filteredDocument = new HashMap<>();
 
     for (String field : moreLikeThis.getFieldNames()) {
-      Collection<Object> fieldValues = doc.getFieldValues(field);
+      Collection<Object> fieldValues = getFieldValuesIncludingCopyField(doc, field);
+
       if (fieldValues != null) {
         Collection<Object> values = new ArrayList<>();
         for (Object val : fieldValues) {
@@ -109,5 +110,22 @@ public class CloudMLTQParser extends SimpleMLTQParser {
     NamedList<?> response = rsp.getValues();
 
     return (SolrDocument) response.get("doc");
+  }
+
+  private Collection<Object> getFieldValuesIncludingCopyField(SolrDocument doc, String field) {
+    Collection<Object> fieldValues = doc.getFieldValues(field);
+    if (fieldValues != null) return fieldValues;
+    // Fields created using copyField are not included in documents returned by RealTime Get.
+    // So if a copyField destination is used in the MLT query (qf), we need to get the values
+    // from its source field instead. If there are multiple source fields, their values must be
+    // combined.
+    Collection<Object> combinedValues = new ArrayList<>();
+    for (String sourceField : req.getSchema().getCopySources(field)) {
+      Collection<Object> sourceValues = doc.getFieldValues(sourceField);
+      if (sourceValues != null) {
+        combinedValues.addAll(sourceValues);
+      }
+    }
+    return combinedValues.isEmpty() ? null : combinedValues;
   }
 }

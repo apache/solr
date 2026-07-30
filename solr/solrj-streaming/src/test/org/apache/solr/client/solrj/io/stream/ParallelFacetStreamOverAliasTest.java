@@ -37,6 +37,7 @@ import org.apache.commons.math3.util.Precision;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -84,11 +85,9 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     System.setProperty("solr.tests.numeric.dv", "true");
 
     configureCluster(NUM_COLLECTIONS)
-        .withMetrics(false)
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
@@ -100,7 +99,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     solrClientCache = new SolrClientCache();
   }
 
-  /** setup the testbed with necessary collections, documents, and alias */
+  /** set up the testbed with necessary collections, documents, and alias */
   public static void setupCollectionsAndAlias() throws Exception {
 
     final NormalDistribution[] dists = new NormalDistribution[CARDINALITY];
@@ -275,6 +274,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         };
 
     String zkHost = cluster.getZkServer().getZkAddress();
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
 
@@ -283,7 +283,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     solrParams.add(TIERED_PARAM, "true");
 
     // tiered stats stream
-    StatsStream statsStream = new StatsStream(zkHost, ALIAS_NAME, solrParams, metrics);
+    StatsStream statsStream = new StatsStream(solrConnection, ALIAS_NAME, solrParams, metrics);
     statsStream.setStreamContext(streamContext);
     List<Tuple> tieredTuples = getTuples(statsStream);
     assertEquals(1, tieredTuples.size());
@@ -292,21 +292,21 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     solrParams = new ModifiableSolrParams();
     solrParams.add(CommonParams.Q, "*:*");
     solrParams.add(TIERED_PARAM, "false");
-    statsStream = new StatsStream(zkHost, ALIAS_NAME, solrParams, metrics);
+    statsStream = new StatsStream(solrConnection, ALIAS_NAME, solrParams, metrics);
     statsStream.setStreamContext(streamContext);
     // tiered should match non-tiered results
     assertListOfTuplesEquals(tieredTuples, getTuples(statsStream));
     assertNull(statsStream.parallelizedStream);
   }
 
-  // execute the provided expression with tiered=true and compare to results of tiered=false
+  // execute the provided expression with tiered=true and compare to result of tiered=false
   private void compareTieredStreamWithNonTiered(String facetExprTmpl, int dims) throws IOException {
     String facetExpr = String.format(Locale.US, facetExprTmpl, ALIAS_NAME, "true");
 
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
     StreamFactory factory =
-        new SolrDefaultStreamFactory().withDefaultZkHost(cluster.getZkServer().getZkAddress());
+        new SolrDefaultStreamFactory().withDefaultSolrConnection(getSolrConnection());
 
     TupleStream stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);

@@ -18,8 +18,9 @@ package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,7 +44,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.zookeeper.KeeperException;
-import org.junit.AfterClass;
+import org.apache.zookeeper.data.Stat;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,12 +61,6 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   public static void setup() {
     System.setProperty("solr.OverseerStateUpdateDelay", "1000");
     System.setProperty("solr.OverseerStateUpdateBatchSize", "10");
-  }
-
-  @AfterClass
-  public static void cleanup() {
-    System.clearProperty("solr.OverseerStateUpdateDelay");
-    System.clearProperty("solr.OverseerStateUpdateBatchSize");
   }
 
   public void testZkStateWriterBatching() throws Exception {
@@ -93,39 +88,26 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c3", true);
 
         Map<String, Object> props =
-            Collections.singletonMap(
-                ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
-        ZkWriteCommand c1 =
-            new ZkWriteCommand(
-                "c1", new DocCollection("c1", new HashMap<>(), props, DocRouter.DEFAULT, 0));
-        ZkWriteCommand c2 =
-            new ZkWriteCommand(
-                "c2", new DocCollection("c2", new HashMap<>(), props, DocRouter.DEFAULT, 0));
-        ZkWriteCommand c3 =
-            new ZkWriteCommand(
-                "c3", new DocCollection("c3", new HashMap<>(), props, DocRouter.DEFAULT, 0));
+            Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
+        ZkWriteCommand c1 = new ZkWriteCommand("c1", createDocCollection("c1", props));
+        ZkWriteCommand c2 = new ZkWriteCommand("c2", createDocCollection("c2", props));
+        ZkWriteCommand c3 = new ZkWriteCommand("c3", createDocCollection("c3", props));
         ZkStateWriter writer =
             new ZkStateWriter(reader, new Stats(), -1, STATE_COMPRESSION_PROVIDER);
 
         // First write is flushed immediately
         ClusterState clusterState =
-            writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
-        clusterState =
-            writer.enqueueUpdate(clusterState, Collections.singletonList(c1), FAIL_ON_WRITE);
-        clusterState =
-            writer.enqueueUpdate(clusterState, Collections.singletonList(c2), FAIL_ON_WRITE);
+            writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c1), FAIL_ON_WRITE);
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c2), FAIL_ON_WRITE);
 
         Thread.sleep(Overseer.STATE_UPDATE_DELAY + 100);
         AtomicBoolean didWrite = new AtomicBoolean(false);
-        clusterState =
-            writer.enqueueUpdate(
-                clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c3), () -> didWrite.set(true));
         assertTrue("Exceed the update delay, should be flushed", didWrite.get());
 
         for (int i = 0; i <= Overseer.STATE_UPDATE_BATCH_SIZE; i++) {
-          clusterState =
-              writer.enqueueUpdate(
-                  clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
+          clusterState = writer.enqueueUpdate(clusterState, List.of(c3), () -> didWrite.set(true));
         }
         assertTrue("Exceed the update batch size, should be flushed", didWrite.get());
       }
@@ -161,18 +143,9 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c3", true);
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/prs1", true);
 
-        ZkWriteCommand c1 =
-            new ZkWriteCommand(
-                "c1",
-                new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
-        ZkWriteCommand c2 =
-            new ZkWriteCommand(
-                "c2",
-                new DocCollection("c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
-        ZkWriteCommand c3 =
-            new ZkWriteCommand(
-                "c3",
-                new DocCollection("c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
+        ZkWriteCommand c1 = new ZkWriteCommand("c1", createDocCollection("c1", new HashMap<>()));
+        ZkWriteCommand c2 = new ZkWriteCommand("c2", createDocCollection("c2", new HashMap<>()));
+        ZkWriteCommand c3 = new ZkWriteCommand("c3", createDocCollection("c3", new HashMap<>()));
         Map<String, Object> prsProps = new HashMap<>();
         prsProps.put("perReplicaState", Boolean.TRUE);
         ZkWriteCommand prs1 =
@@ -184,6 +157,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                     prsProps,
                     DocRouter.DEFAULT,
                     0,
+                    Instant.now(),
                     PerReplicaStatesOps.getZkClientPrsSupplier(
                         zkClient, DocCollection.getCollectionPath("c1"))));
         ZkStateWriter writer =
@@ -191,22 +165,16 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
         // First write is flushed immediately
         ClusterState clusterState =
-            writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
-        clusterState =
-            writer.enqueueUpdate(clusterState, Collections.singletonList(c1), FAIL_ON_WRITE);
-        clusterState =
-            writer.enqueueUpdate(clusterState, Collections.singletonList(c2), FAIL_ON_WRITE);
+            writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c1), FAIL_ON_WRITE);
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c2), FAIL_ON_WRITE);
 
         Thread.sleep(Overseer.STATE_UPDATE_DELAY + 100);
         AtomicBoolean didWrite = new AtomicBoolean(false);
-        clusterState =
-            writer.enqueueUpdate(
-                clusterState, Collections.singletonList(prs1), () -> didWrite.set(true));
+        clusterState = writer.enqueueUpdate(clusterState, List.of(prs1), () -> didWrite.set(true));
         assertTrue("Exceed the update delay, should be flushed", didWrite.get());
         didWrite.set(false);
-        clusterState =
-            writer.enqueueUpdate(
-                clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
+        clusterState = writer.enqueueUpdate(clusterState, List.of(c3), () -> didWrite.set(true));
         assertTrue("Exceed the update delay, should be flushed", didWrite.get());
         assertTrue(
             "The updates queue should be empty having been flushed", writer.updates.isEmpty());
@@ -244,21 +212,9 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c3", true);
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/prs1", true);
 
-        ZkWriteCommand c1 =
-            new ZkWriteCommand(
-                "c1",
-                DocCollection.create(
-                    "c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
-        ZkWriteCommand c2 =
-            new ZkWriteCommand(
-                "c2",
-                DocCollection.create(
-                    "c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
-        ZkWriteCommand c3 =
-            new ZkWriteCommand(
-                "c3",
-                DocCollection.create(
-                    "c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
+        ZkWriteCommand c1 = new ZkWriteCommand("c1", createDocCollection("c1", new HashMap<>()));
+        ZkWriteCommand c2 = new ZkWriteCommand("c2", createDocCollection("c2", new HashMap<>()));
+        ZkWriteCommand c3 = new ZkWriteCommand("c3", createDocCollection("c3", new HashMap<>()));
         Map<String, Object> prsProps = new HashMap<>();
         prsProps.put("perReplicaState", Boolean.TRUE);
         ZkWriteCommand prs1 =
@@ -270,6 +226,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                     prsProps,
                     DocRouter.DEFAULT,
                     0,
+                    Instant.now(),
                     PerReplicaStatesOps.getZkClientPrsSupplier(
                         zkClient, DocCollection.getCollectionPath("prs1"))));
         ZkStateWriter writer =
@@ -277,19 +234,16 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
         // First write is flushed immediately
         ClusterState clusterState =
-            writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+            writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
 
         AtomicBoolean didWrite = new AtomicBoolean(false);
         AtomicBoolean didWritePrs = new AtomicBoolean(false);
         for (int i = 0; i <= Overseer.STATE_UPDATE_BATCH_SIZE; i++) {
-          clusterState =
-              writer.enqueueUpdate(
-                  clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
+          clusterState = writer.enqueueUpdate(clusterState, List.of(c3), () -> didWrite.set(true));
           // Write a PRS update in the middle and make sure we still get the right results
           if (i == (Overseer.STATE_UPDATE_BATCH_SIZE / 2)) {
             clusterState =
-                writer.enqueueUpdate(
-                    clusterState, Collections.singletonList(prs1), () -> didWritePrs.set(true));
+                writer.enqueueUpdate(clusterState, List.of(prs1), () -> didWritePrs.set(true));
           }
         }
         assertTrue("Exceed the update batch size, should be flushed", didWrite.get());
@@ -333,23 +287,26 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         ZkWriteCommand c1 =
             new ZkWriteCommand(
                 "c1",
-                new DocCollection(
+                createDocCollection(
                     "c1",
-                    new HashMap<String, Slice>(),
-                    Collections.singletonMap(
-                        ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                    DocRouter.DEFAULT,
-                    0));
+                    Map.of(
+                        ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME)));
 
-        writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
-        writer.writePendingUpdates();
+        writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
+        ClusterState clusterState = writer.writePendingUpdates();
 
         Map<?, ?> map =
             (Map<?, ?>)
                 Utils.fromJSON(
                     zkClient.getData(
-                        ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true));
+                        ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null));
         assertNotNull(map.get("c1"));
+
+        Stat stat = new Stat();
+        zkClient.getData(ZkStateReader.getCollectionPath("c1"), null, stat);
+        assertEquals(
+            Instant.ofEpochMilli(stat.getCtime()),
+            clusterState.getCollection("c1").getCreationTime());
       }
     } finally {
       IOUtils.close(zkClient);
@@ -389,30 +346,33 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         ZkWriteCommand c2 =
             new ZkWriteCommand(
                 "c2",
-                new DocCollection(
+                createDocCollection(
                     "c2",
-                    new HashMap<String, Slice>(),
-                    Collections.singletonMap(
-                        ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                    DocRouter.DEFAULT,
-                    0));
-        state = writer.enqueueUpdate(state, Collections.singletonList(c2), null);
+                    Map.of(
+                        ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME)));
+        state = writer.enqueueUpdate(state, List.of(c2), null);
         assertFalse(writer.hasPendingUpdates()); // first write is flushed immediately
 
         int c2Version = state.getCollection("c2").getZNodeVersion();
 
         // Simulate an external modification to /collections/c2/state.json
-        byte[] data = zkClient.getData(DocCollection.getCollectionPath("c2"), null, null, true);
-        zkClient.setData(DocCollection.getCollectionPath("c2"), data, true);
+        byte[] data = zkClient.getData(DocCollection.getCollectionPath("c2"), null, null);
+        zkClient.setData(DocCollection.getCollectionPath("c2"), data);
 
         // get the most up-to-date state
         reader.forceUpdateCollection("c2");
         state = reader.getClusterState();
+
+        Stat stat = new Stat();
+        zkClient.getData(ZkStateReader.getCollectionPath("c2"), null, stat);
+        assertEquals(
+            Instant.ofEpochMilli(stat.getCtime()), state.getCollection("c2").getCreationTime());
+
         log.info("Cluster state: {}", state);
         assertTrue(state.hasCollection("c2"));
         assertEquals(c2Version + 1, state.getCollection("c2").getZNodeVersion());
 
-        writer.enqueueUpdate(state, Collections.singletonList(c2), null);
+        writer.enqueueUpdate(state, List.of(c2), null);
         assertTrue(writer.hasPendingUpdates());
 
         // get the most up-to-date state
@@ -424,23 +384,20 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         ZkWriteCommand c1 =
             new ZkWriteCommand(
                 "c1",
-                new DocCollection(
+                createDocCollection(
                     "c1",
-                    new HashMap<String, Slice>(),
-                    Collections.singletonMap(
-                        ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                    DocRouter.DEFAULT,
-                    0));
+                    Map.of(
+                        ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME)));
 
         try {
-          writer.enqueueUpdate(state, Collections.singletonList(c1), null);
+          writer.enqueueUpdate(state, List.of(c1), null);
           fail("Enqueue should not have succeeded");
         } catch (KeeperException.BadVersionException bve) {
           // expected
         }
 
         try {
-          writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c2), null);
+          writer.enqueueUpdate(reader.getClusterState(), List.of(c2), null);
           fail("enqueueUpdate after BadVersionException should not have succeeded");
         } catch (IllegalStateException e) {
           // expected
@@ -486,23 +443,13 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
         // create new collection with stateFormat = 2
-        ZkWriteCommand c1 =
-            new ZkWriteCommand(
-                "c1",
-                new DocCollection(
-                    "c1",
-                    new HashMap<String, Slice>(),
-                    new HashMap<String, Object>(),
-                    DocRouter.DEFAULT,
-                    0));
+        ZkWriteCommand c1 = new ZkWriteCommand("c1", createDocCollection("c1", new HashMap<>()));
 
-        writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+        writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
         writer.writePendingUpdates();
 
         byte[] data =
-            zkClient
-                .getZooKeeper()
-                .getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null);
+            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null);
         Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(data);
         assertNotNull(map.get("c1"));
       }
@@ -530,17 +477,30 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         }
         ZkWriteCommand c1 =
             new ZkWriteCommand(
-                "c2", new DocCollection("c2", slices, new HashMap<>(), DocRouter.DEFAULT, 0));
+                "c2",
+                DocCollection.create(
+                    "c2", slices, new HashMap<>(), DocRouter.DEFAULT, 0, Instant.now(), null));
 
-        writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+        writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
         writer.writePendingUpdates();
 
-        byte[] data =
+        byte[] dataCompressed =
             zkClient
-                .getZooKeeper()
-                .getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c2/state.json", null, null);
-        assertTrue(compressor.isCompressedBytes(data));
-        Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(compressor.decompressBytes(data));
+                .getCuratorFramework()
+                .getData()
+                .undecompressed()
+                .forPath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2/state.json");
+        assertTrue(compressor.isCompressedBytes(dataCompressed));
+        Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(compressor.decompressBytes(dataCompressed));
+        assertNotNull(map.get("c2"));
+
+        byte[] dataDecompressed =
+            zkClient
+                .getCuratorFramework()
+                .getData()
+                .forPath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2/state.json");
+        assertFalse(compressor.isCompressedBytes(dataDecompressed));
+        map = (Map<?, ?>) Utils.fromJSON(dataDecompressed);
         assertNotNull(map.get("c2"));
       }
 
@@ -548,5 +508,10 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       IOUtils.close(zkClient);
       server.shutdown();
     }
+  }
+
+  private DocCollection createDocCollection(String name, Map<String, Object> props) {
+    return DocCollection.create(
+        name, new HashMap<>(), props, DocRouter.DEFAULT, 0, Instant.now(), null);
   }
 }

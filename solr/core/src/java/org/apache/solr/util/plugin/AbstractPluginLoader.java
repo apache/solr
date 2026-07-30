@@ -26,7 +26,6 @@ import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrClassLoader;
-import org.apache.solr.common.util.DOMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,9 +132,9 @@ public abstract class AbstractPluginLoader<T> {
       for (ConfigNode node : nodes) {
         String name = null;
         try {
-          name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
-          String className = DOMUtil.getAttr(node, "class", null);
-          String defaultStr = DOMUtil.getAttr(node, "default", null);
+          name = requireName ? node.attrRequired(NAME, type) : node.attr(NAME);
+          String className = node.attr("class");
+          String defaultStr = node.attr("default");
 
           if (Objects.isNull(className) && Objects.isNull(name)) {
             throw new RuntimeException(type + ": missing mandatory attribute 'class' or 'name'");
@@ -219,8 +218,8 @@ public abstract class AbstractPluginLoader<T> {
     T plugin = null;
 
     try {
-      String name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
-      String className = DOMUtil.getAttr(node, "class", type);
+      String name = requireName ? node.attrRequired(NAME, type) : node.attr(NAME);
+      String className = node.attrRequired("class", type);
       plugin = create(loader, name, className, node);
       if (log.isDebugEnabled()) {
         log.debug("created {}: {}", name, plugin.getClass().getName());

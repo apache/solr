@@ -49,7 +49,7 @@ public class SolrTestNonSecureRandomProvider extends Provider {
 
     // Assert that new SecureRandom() and
     // SecureRandom.getInstance("SHA1PRNG") return a SecureRandom backed
-    // by our non secure test provider.
+    // by our non-secure test provider.
     SecureRandom rng1 = new SecureRandom();
     if (!SolrTestNonSecureRandomProvider.class.equals(rng1.getProvider().getClass())) {
       throw new SecurityException(

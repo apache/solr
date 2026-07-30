@@ -1,0 +1,9 @@
+title: Fix race condition in SolrCore's fingerprint cache which caused leader election
+  to hang.
+type: fixed
+authors:
+- name: Luke Kot-Zaniewski
+- name: Matthew Biscocho
+links:
+- name: SOLR-17863
+  url: https://issues.apache.org/jira/browse/SOLR-17863

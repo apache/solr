@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +63,7 @@ public class SliceMutator {
   }
 
   static SolrZkClient getZkClient(SolrCloudManager cloudManager) {
-    if (cloudManager instanceof SolrClientCloudManager) {
-      SolrClientCloudManager manager = (SolrClientCloudManager) cloudManager;
+    if (cloudManager instanceof SolrClientCloudManager manager) {
       return manager.getZkClient();
     } else {
       return null;
@@ -89,11 +89,8 @@ public class SliceMutator {
     }
     String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
     String baseUrl =
-        Utils.getBaseUrlForNodeName(
-            nodeName,
-            cloudManager
-                .getClusterStateProvider()
-                .getClusterProperty(ZkStateReader.URL_SCHEME, "http"));
+        URLUtil.getBaseUrlForNodeName(
+            nodeName, cloudManager.getClusterStateProvider().getUrlScheme());
 
     Map<String, Object> replicaProps =
         Utils.makeMap(
@@ -159,6 +156,10 @@ public class SliceMutator {
       log.error("Could not mark shard leader for non existing collection: {}", collectionName);
       return ZkStateWriter.NO_OP;
     }
+    if (coll.isPerReplicaState()) {
+      log.debug("Do not mark shard leader for PRS collection: {}", collectionName);
+      return ZkStateWriter.NO_OP;
+    }
 
     Map<String, Slice> slices = coll.getSlicesMap();
     Slice slice = slices.get(sliceName);
@@ -168,9 +169,7 @@ public class SliceMutator {
     final Map<String, Replica> newReplicas = new LinkedHashMap<>();
     for (Replica replica : slice.getReplicas()) {
       // TODO: this should only be calculated once and cached somewhere?
-      String coreURL =
-          ZkCoreNodeProps.getCoreUrl(
-              replica.getBaseUrl(), replica.getStr(ZkStateReader.CORE_NAME_PROP));
+      String coreURL = replica.getCoreUrl();
 
       if (replica.equals(oldLeader) && !coreURL.equals(leaderUrl)) {
         replica = ReplicaMutator.unsetLeader(replica);

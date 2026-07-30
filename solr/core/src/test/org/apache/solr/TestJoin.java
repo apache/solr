@@ -40,7 +40,8 @@ public class TestJoin extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.filterCache.async", "true");
 
     // all points change at the same time point fields need docvalues
@@ -390,6 +391,9 @@ public class TestJoin extends SolrTestCaseJ4 {
 
         SolrQueryRequest req =
             req(
+                // all permutations of using/not using param; and unlimited/limited value
+                (random().nextBoolean() ? "timeAllowed" : "__ignored"),
+                (random().nextBoolean() ? "-1" : "99999999999"),
                 "wt",
                 "json",
                 "indent",

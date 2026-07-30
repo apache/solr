@@ -18,7 +18,7 @@
 
 <!-- Test schema file for DenseVectorField -->
 
-<schema name="bad-schema-densevector-multivalued" version="1.0">
+<schema name="bad-schema-densevector-multivalued" version="1.7">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
   <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="euclidean" stored="true"/>
 

@@ -19,10 +19,10 @@ package org.apache.solr.client.api.endpoint;
 import static org.apache.solr.client.api.model.Constants.ASYNC;
 
 import io.swagger.v3.oas.annotations.Operation;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 /** V2 API definition for deleting a particular shard from its collection. */

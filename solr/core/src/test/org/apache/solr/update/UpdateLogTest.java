@@ -19,7 +19,12 @@ package org.apache.solr.update;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.hamcrest.core.StringContains.containsString;
 
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.Locale;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
@@ -28,7 +33,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -182,9 +186,8 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
                       + returnVal);
             });
     assertEquals(ex.toString(), SolrException.ErrorCode.INVALID_STATE.code, ex.code());
-    MatcherAssert.assertThat(
-        ex.getMessage(), containsString("should've been either ADD or UPDATE_INPLACE"));
-    MatcherAssert.assertThat(ex.getMessage(), containsString("looking for id=1"));
+    assertThat(ex.getMessage(), containsString("should've been either ADD or UPDATE_INPLACE"));
+    assertThat(ex.getMessage(), containsString("looking for id=1"));
   }
 
   @Test
@@ -218,6 +221,23 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
       assertEquals(
           UpdateLog.DELETE, (int) entry.get(UpdateLog.FLAGS_IDX) & UpdateLog.OPERATION_MASK);
     }
+  }
+
+  @Test
+  public void testLogCleanupWhenNewTransactionLogConstructionFails() throws Exception {
+    // Simulate the appearance of a new log file after UpdateLog.init().
+    Path tlogDir = Path.of(ulog.getTlogDir());
+    long lastLogId = scanLastLogId(tlogDir);
+    String newLogName =
+        String.format(
+            Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, lastLogId + 1);
+    Path newLogPath = tlogDir.resolve(newLogName);
+    createLogFile(newLogPath);
+
+    // Add a doc and expect no "New transaction log already exists" error when creating the new
+    // transaction log.
+    ulogAdd(
+        ulog, null, sdoc("id", "1", "title_s", "title1", "val1_i_dvo", "1", "_version_", "100"));
   }
 
   /** Simulate a commit on a given updateLog */
@@ -290,5 +310,22 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     assertTrue("", cmd.solrDoc.containsKey(VERSION_FIELD));
     cmd.setVersion(Long.parseLong(cmd.solrDoc.getFieldValue(VERSION_FIELD).toString()));
     return cmd;
+  }
+
+  private long scanLastLogId(Path tlogDir) throws IOException {
+    try (UpdateLog uLog = new UpdateLog()) {
+      String[] tlogFiles = uLog.getLogList(tlogDir);
+      return UpdateLog.scanLastLogId(tlogFiles);
+    }
+  }
+
+  private void createLogFile(Path logPath) throws IOException {
+    FileChannel fc =
+        FileChannel.open(
+            logPath,
+            StandardOpenOption.READ,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE_NEW);
+    fc.close();
   }
 }

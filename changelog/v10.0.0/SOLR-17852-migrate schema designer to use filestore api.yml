@@ -1,0 +1,8 @@
+title: Migrate Schema Designer to use FileStore API instead of BlobHandler for persisting
+  working data.
+type: changed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-17852
+  url: https://issues.apache.org/jira/browse/SOLR-17852

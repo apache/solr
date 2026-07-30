@@ -17,29 +17,29 @@
 
 package org.apache.solr.jersey;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.response.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 import static org.apache.solr.response.QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;
 
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ResourceContext;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ResourceContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyWriter;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
+import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
@@ -66,17 +66,17 @@ public class MessageBodyWriters {
     }
   }
 
-  @Produces(BINARY_CONTENT_TYPE_V2)
+  @Produces(JAVABIN_CONTENT_TYPE_V2)
   public static class JavabinMessageBodyWriter extends BaseMessageBodyWriter
       implements MessageBodyWriter<Object> {
     @Override
     public QueryResponseWriter createResponseWriter() {
-      return new BinaryResponseWriter();
+      return new JavaBinResponseWriter();
     }
 
     @Override
     public String getSupportedMediaType() {
-      return BINARY_CONTENT_TYPE_V2;
+      return JAVABIN_CONTENT_TYPE_V2;
     }
   }
 
@@ -105,6 +105,35 @@ public class MessageBodyWriters {
     @Override
     public String getSupportedMediaType() {
       return CONTENT_TYPE_TEXT_UTF8;
+    }
+  }
+
+  @Produces(PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS)
+  public static class PrometheusMessageBodyWriter extends BaseMessageBodyWriter
+      implements MessageBodyWriter<Object> {
+    @Override
+    public QueryResponseWriter createResponseWriter() {
+      return new PrometheusResponseWriter();
+    }
+
+    @Override
+    public String getSupportedMediaType() {
+      return PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS;
+    }
+  }
+
+  @Produces(PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS)
+  public static class OpenmetricsMessageBodyWriter extends BaseMessageBodyWriter
+      implements MessageBodyWriter<Object> {
+    @Override
+    public QueryResponseWriter createResponseWriter() {
+      // same writer handles both Prometheus and OpenMetrics
+      return new PrometheusResponseWriter();
+    }
+
+    @Override
+    public String getSupportedMediaType() {
+      return PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS;
     }
   }
 
@@ -141,8 +170,7 @@ public class MessageBodyWriters {
           (SolrQueryResponse) requestContext.getProperty(SOLR_QUERY_RESPONSE);
 
       V2ApiUtils.squashIntoSolrResponseWithHeader(solrQueryResponse, toWrite);
-      QueryResponseWriterUtil.writeQueryResponse(
-          entityStream, responseWriter, solrQueryRequest, solrQueryResponse, mediaType.toString());
+      responseWriter.write(entityStream, solrQueryRequest, solrQueryResponse, mediaType.toString());
     }
   }
 }

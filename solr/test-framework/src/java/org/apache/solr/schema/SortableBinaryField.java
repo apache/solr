@@ -18,12 +18,12 @@ package org.apache.solr.schema;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.FieldComparatorSource;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.comparators.TermOrdValComparator;
 import org.apache.lucene.util.BytesRef;
@@ -33,6 +33,11 @@ public class SortableBinaryField extends BinaryField {
 
   @Override
   protected void checkSupportsDocValues() { // we support DocValues
+  }
+
+  @Override
+  protected boolean enableDocValuesByDefault() {
+    return true;
   }
 
   @Override
@@ -54,7 +59,7 @@ public class SortableBinaryField extends BinaryField {
       }
       return fields;
     } else {
-      return Collections.singletonList(createField(field, value));
+      return List.of(createField(field, value));
     }
   }
 
@@ -73,11 +78,11 @@ public class SortableBinaryField extends BinaryField {
             public TermOrdValComparator newComparator(
                 final String fieldname,
                 final int numHits,
-                final boolean enableSkipping,
+                final Pruning pruning,
                 final boolean reversed) {
               final boolean sortMissingLast = false;
               return new TermOrdValComparator(
-                  numHits, fieldname, sortMissingLast, reversed, enableSkipping);
+                  numHits, fieldname, sortMissingLast, reversed, pruning);
             }
           },
           reverse);

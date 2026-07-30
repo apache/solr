@@ -146,9 +146,6 @@ Methods for other nodes to get the queues for interacting with Overseer:
 * Collection queue used to send collection API tasks: `OverseerTaskQueue get**Collection**Queue()`. The queue is in Zookeeper at `/overseer/collection-queue-work`. Actions are processed by `<<OverseerCollectionMessageHandler>>`.
 * Config set queue used to send configset API tasks: `OverseerTaskQueue get**ConfigSet**Queue()`. Returns the Collection queue (in Zookeeper at `/overseer/collection-queue-work`, same queue as the collection queue), actions expected have a `"configsets:"` prefix and are processed by `<<OverseerConfigSetMessageHandler>>`.
 
-The deprecated work queue `ZkDistributedQueue get**InternalWork**Queue()` at `"/overseer/queue-work"` is used by Overseer to store operations removed from the state update queue and currently being executed (and was used to manage Overseer failures). It is no longer used and only supported for migrations from older versions of SolrCloud (7) to version 8. Should be removed by version 9. +
-Do note though that other queues are sometimes called “work queues” because work is enqueued into them.
-
 Zookeeper backed maps used for tracking async tasks (running, successfully completed and failed): `get**RunningMap**()`, `get**CompletedMap**()`, `get**FailureMap**()`. These maps can also be obtained from `ZkController getOverseerRunningMap()`, `getOverseerCompletedMap()` and `getOverseerFailureMap()`. +
 These maps are updated in `<<OverseerTaskProcessor>>` as tasks are executed and are used to wait for async requests to complete (for example `RebalanceLeader.waitAsyncRequests()`) or to get the status of a task (for example `CollectionHandler.CollectionOperation.REQUESTSTATUS_OP` enum implementation). +
 Note “async id” and “request id” are used interchangeably in the code and refer to the same thing.
@@ -160,8 +157,6 @@ Overseer `start()` method creates and starts as `OverseerThread`’s:
 * <<ClusterStateUpdater>>,
 * <<OverseerCollectionConfigSetProcessor>> (consuming collection queue which includes the identical config set queue),
 * OverseerTriggerThread (for Autoscaling, not discussed in this doc)
-
-start() also verifies that the system collection ”.system” is in good shape (segment/Lucene versions).
 
 [[ClusterStateUpdater,ClusterStateUpdater]]
 ==== Inner class ClusterStateUpdater
@@ -192,9 +187,9 @@ But… there is a possibility that an Overseer in `ClusterStateUpdater.run()` wo
 
 A detailed description of the class:
 
-It first (one time only) builds the cluster state (view of the current state of all collections, see `org.apache.solr.common.cloud.ClusterState`) by reading everything from Zookeeper (using `ZkStateReader.forciblyRefreshAllClusterStateSlow()`), then applying state messages from the deprecated internal work queue `"/overseer/queue-work"` (where items unprocessed by a previous Overseer might have been left in Zookeeper from previous versions of Solr, nothing is enqueued there anymore, see https://issues.apache.org/jira/browse/SOLR-11443[SOLR-11443]).
+It first (one time only) builds the cluster state (view of the current state of all collections, see `org.apache.solr.common.cloud.ClusterState`) by reading everything from Zookeeper (using `ZkStateReader.forciblyRefreshAllClusterStateSlow()`).
 
-Once this initial state is built (then updated in Zookeeper if needed but that no longer happens, see deprecation comment in <<Queues for interacting with other nodes>>), the `run()` method switches to consume the `get**StateUpdateQueue**()` at `"/overseer/queue"` and applies changes to Zookeeper as long as the Overseer is on the current node. Note that items from the queue are read by batches of max 1000, the changes are batched (max batching size 10000 see `Overseer.STATE_UPDATE_BATCH_SIZE` and max batching delay 2 seconds see `ZkStateReader.STATE_UPDATE_DELAY`). More than 1000 items can be batched if more items are in the queue or arrive quickly (< 100ms) after previous items were read and processed (batching items limits the number of updates then made to Zookeeper cluster state).
+Once this initial state is built, the `run()` method consumes the `get**StateUpdateQueue**()` at `"/overseer/queue"` and applies changes to Zookeeper as long as the Overseer is on the current node. Note that items from the queue are read by batches of max 1000, the changes are batched (max batching size 10000 see `Overseer.STATE_UPDATE_BATCH_SIZE` and max batching delay 2 seconds see `ZkStateReader.STATE_UPDATE_DELAY`). More than 1000 items can be batched if more items are in the queue or arrive quickly (< 100ms) after previous items were read and processed (batching items limits the number of updates then made to Zookeeper cluster state).
 
 Updates to Zookeeper are done through `ClusterStateUpdater.processQueueItem()` and `ClusterStateUpdater.processMessage()`. Applying these state changes uses the `*Mutator` classes (see `<<ClusterStateMutator>>` and friends). The change only impacts Zookeeper cluster state, not the actual nodes. The Mutator classes end up returning to `ClusterStateUpdater.processQueueItem()` the write commands to apply to Zookeeper and those are applied. Processed messages (a.k.a. tasks) are removed from the queue once written to Zookeeper (call to `ZkStateWriter.writePendingUpdates()`) either through the callback passed to `processQueueItem()` or directly in `ClusterStateUpdater.run()` when the flushing is explicitly made at the end of each loop iteration.
 

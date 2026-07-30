@@ -54,10 +54,8 @@ public class SquaredEuclideanFunction extends VectorDistanceFunction {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof SquaredEuclideanFunction)) return false;
+    if (!(o instanceof SquaredEuclideanFunction that)) return false;
     if (!super.equals(o)) return false;
-
-    SquaredEuclideanFunction that = (SquaredEuclideanFunction) o;
 
     if (!name.equals(that.name)) return false;
 

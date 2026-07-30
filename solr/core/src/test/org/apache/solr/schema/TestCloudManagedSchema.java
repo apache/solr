@@ -16,12 +16,14 @@
  */
 package org.apache.solr.schema;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -40,7 +42,7 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
   @BeforeClass
   public static void initSysProperties() {
     System.setProperty("managed.schema.mutable", "false");
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
   }
 
   @Override
@@ -56,19 +58,20 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     request.setPath("/admin/cores");
     int which = r.nextInt(clients.size());
 
-    // create a client that does not have the /collection1 as part of the URL.
-    try (SolrClient rootClient =
-        new HttpSolrClient.Builder(buildUrl(jettys.get(which).getLocalPort())).build()) {
-      NamedList<?> namedListResponse = rootClient.request(request);
-      NamedList<?> status = (NamedList<?>) namedListResponse.get("status");
-      NamedList<?> collectionStatus = (NamedList<?>) status.getVal(0);
-      String collectionSchema = (String) collectionStatus.get(CoreAdminParams.SCHEMA);
-      // Make sure the upgrade to managed schema happened
-      assertEquals(
-          "Schema resource name differs from expected name",
-          "managed-schema.xml",
-          collectionSchema);
-    }
+    // use a client that does not have the /collection1 as part of the URL.
+    var rootClient = jettys.get(which).getSolrClient();
+    NamedList<?> namedListResponse = rootClient.request(request);
+    final var statusByCore =
+        JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+            namedListResponse.get("status"),
+            new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
+    final String coreName = statusByCore.keySet().stream().findFirst().get();
+    final var collectionStatus = statusByCore.get(coreName);
+    // Make sure the upgrade to managed schema happened
+    assertEquals(
+        "Schema resource name differs from expected name",
+        "managed-schema.xml",
+        collectionStatus.schema);
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
@@ -92,16 +95,16 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
   private String getFileContentFromZooKeeper(SolrZkClient zkClient, String fileName)
       throws KeeperException, InterruptedException {
 
-    return (new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8));
+    return (new String(zkClient.getData(fileName, null, null), StandardCharsets.UTF_8));
   }
 
   protected final void assertFileNotInZooKeeper(
       SolrZkClient zkClient, String parent, String fileName) throws Exception {
-    List<String> kids = zkClient.getChildren(parent, null, true);
+    List<String> kids = zkClient.getChildren(parent, null);
     for (String kid : kids) {
       if (kid.equalsIgnoreCase(fileName)) {
         String rawContent =
-            new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8);
+            new String(zkClient.getData(fileName, null, null), StandardCharsets.UTF_8);
         fail(
             "File '"
                 + fileName

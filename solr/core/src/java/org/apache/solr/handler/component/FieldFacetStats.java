@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -153,7 +152,7 @@ public class FieldFacetStats {
 
   public void setNextReader(LeafReaderContext ctx) throws IOException {
     this.context = ctx;
-    values = valueSource.getValues(Collections.emptyMap(), ctx);
+    values = valueSource.getValues(Map.of(), ctx);
     for (StatsValues stats : facetStatsValues.values()) {
       stats.setNextReader(ctx);
     }

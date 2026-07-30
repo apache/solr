@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.lucene.queries.function.ValueSource;
@@ -152,7 +151,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   @Override
   public List<Collector> create() throws IOException {
     if (firstPhaseGroups.isEmpty()) {
-      return Collections.emptyList();
+      return List.of();
     }
 
     final List<Collector> collectors = new ArrayList<>(1);
@@ -201,7 +200,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     }
     if (needScores) {
       for (GroupDocs<?> group : topGroups.groups) {
-        TopFieldCollector.populateScores(group.scoreDocs, searcher, query);
+        TopFieldCollector.populateScores(group.scoreDocs(), searcher, query);
       }
     }
   }

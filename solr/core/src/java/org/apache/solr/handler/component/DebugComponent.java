@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.FQ;
 import static org.apache.solr.common.params.CommonParams.JSON;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -72,7 +73,7 @@ public class DebugComponent extends SearchComponent {
   public void prepare(ResponseBuilder rb) throws IOException {
     if (rb.isDebugTrack() && rb.isDistrib) {
       rb.setNeedDocList(true);
-      doDebugTrack(rb);
+      rb.addDebug(new SimpleOrderedMap<>(), "track");
     }
   }
 
@@ -139,11 +140,6 @@ public class DebugComponent extends SearchComponent {
     }
   }
 
-  private void doDebugTrack(ResponseBuilder rb) {
-    final String rid = rb.req.getParams().get(CommonParams.REQUEST_ID);
-    rb.addDebug(rid, "track", CommonParams.REQUEST_ID); // to see it in the response
-  }
-
   @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     if (!rb.isDebug()) return;
@@ -175,10 +171,20 @@ public class DebugComponent extends SearchComponent {
     }
     if (rb.isDebugTrack()) {
       sreq.params.add(CommonParams.DEBUG, CommonParams.TRACK);
-      sreq.params.set(CommonParams.REQUEST_ID, rb.req.getParams().get(CommonParams.REQUEST_ID));
       sreq.params.set(
           CommonParams.REQUEST_PURPOSE, SolrPluginUtils.getRequestPurpose(sreq.purpose));
     }
+  }
+
+  @VisibleForTesting
+  protected String getDistributedStageName(int stage) {
+    String stageName = stages.get(stage);
+
+    if (stageName == null) {
+      stageName = "STAGE_" + Integer.toString(stage);
+    }
+
+    return stageName;
   }
 
   @Override
@@ -187,10 +193,11 @@ public class DebugComponent extends SearchComponent {
       @SuppressWarnings("unchecked")
       NamedList<Object> stageList =
           (NamedList<Object>)
-              ((NamedList<Object>) rb.getDebugInfo().get("track")).get(stages.get(rb.stage));
+              ((NamedList<Object>) rb.getDebugInfo().get("track"))
+                  .get(getDistributedStageName(rb.getStage()));
       if (stageList == null) {
         stageList = new SimpleOrderedMap<>();
-        rb.addDebug(stageList, "track", stages.get(rb.stage));
+        rb.addDebug(stageList, "track", getDistributedStageName(rb.getStage()));
       }
       for (ShardResponse response : sreq.responses) {
         stageList.add(response.getShard(), getTrackResponse(response));
@@ -203,7 +210,7 @@ public class DebugComponent extends SearchComponent {
   @Override
   @SuppressWarnings({"unchecked"})
   public void finishStage(ResponseBuilder rb) {
-    if (rb.isDebug() && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.isDebug() && rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
       NamedList<Object> info = rb.getDebugInfo();
       NamedList<Object> explain = new SimpleOrderedMap<>();
 
@@ -251,6 +258,7 @@ public class DebugComponent extends SearchComponent {
         }
       }
       if (rb.isDebugResults()) {
+        // put()
         int idx = info.indexOf("explain", 0);
         if (idx >= 0) {
           info.setVal(idx, explain);
@@ -325,11 +333,11 @@ public class DebugComponent extends SearchComponent {
       }
     }
 
-    if (source instanceof NamedList && dest instanceof NamedList) {
+    if (source instanceof NamedList<?> sl && dest instanceof NamedList) {
       NamedList<Object> tmp = new NamedList<>();
-      NamedList<?> sl = (NamedList<?>) source;
       @SuppressWarnings("unchecked")
       NamedList<Object> dl = (NamedList<Object>) dest;
+      // TODO simplify; drop the same-index optimization and use a Map.compute()
       for (int i = 0; i < sl.size(); i++) {
         String skey = sl.getName(i);
         if (exclude.contains(skey)) continue;
@@ -349,9 +357,9 @@ public class DebugComponent extends SearchComponent {
         }
 
         if (didx == -1) {
-          tmp.add(skey, merge(sval, null, Collections.emptySet()));
+          tmp.add(skey, merge(sval, null, Set.of()));
         } else {
-          dl.setVal(didx, merge(sval, dl.getVal(didx), Collections.emptySet()));
+          dl.setVal(didx, merge(sval, dl.getVal(didx), Set.of()));
         }
       }
       dl.addAll(tmp);

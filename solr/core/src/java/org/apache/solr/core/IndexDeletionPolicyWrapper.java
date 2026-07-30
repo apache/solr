@@ -380,23 +380,6 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   }
 
   /**
-   * Returns the commit with the specified generation <em>if it is known</em>.
-   *
-   * <p><b>NOTE:</b> This method makes no guarantee that the commit returned still exists as the
-   * moment this method completes. Callers are encouraged to use {@link #getAndSaveLatestCommit}
-   * instead.
-   *
-   * @param gen the generation of the commit point requested
-   * @return a commit point corresponding to the given version if available, or null if not yet
-   *     created or already deleted
-   * @deprecated use {@link #getAndSaveCommitPoint} instead
-   */
-  @Deprecated
-  public IndexCommit getCommitPoint(Long gen) {
-    return knownCommits.get(gen);
-  }
-
-  /**
    * Returns a Map of all currently known commits, keyed by their generation.
    *
    * <p><b>NOTE:</b> This map instance may change between commits and commit points may be deleted.

@@ -22,12 +22,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
@@ -51,12 +51,13 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     @Override
     protected Object convertHighlights(NamedList<Object> hl) {
       final ArrayList<SimpleOrderedMap<Object>> hlMaps = new ArrayList<>();
-      for (int i = 0; i < hl.size(); ++i) {
-        SimpleOrderedMap<Object> hlMap = new SimpleOrderedMap<>();
-        hlMap.add(id_key, hl.getName(i));
-        hlMap.add(snippets_key, hl.getVal(i));
-        hlMaps.add(hlMap);
-      }
+      hl.forEach(
+          (name, val) -> {
+            SimpleOrderedMap<Object> hlMap = new SimpleOrderedMap<>();
+            hlMap.add(id_key, name);
+            hlMap.add(snippets_key, val);
+            hlMaps.add(hlMap);
+          });
       return hlMaps;
     }
 
@@ -117,7 +118,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     // create an empty collection
     CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         COLLECTION, cluster.getZkStateReader(), false, true, DEFAULT_TIMEOUT);
   }
 

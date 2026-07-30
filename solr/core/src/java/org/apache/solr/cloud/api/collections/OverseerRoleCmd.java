@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cloud.OverseerNodePrioritizer;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -33,7 +32,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.CreateMode;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,14 +54,14 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     if (ccc.isDistributedCollectionAPI()) {
       // No Overseer (not accessible from Collection API command execution in any case) so this
       // command can't be run...
       log.error(
-          "Cluster is running with distributed Collection API execution. Ignoring Collection API operation "
-              + operation); // nowarn
+          "Cluster is running with distributed Collection API execution. Ignoring Collection API operation {}",
+          operation);
       return;
     }
     ZkStateReader zkStateReader = ccc.getZkStateReader();
@@ -75,12 +74,12 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     String roleName = message.getStr("role");
-    boolean nodeExists = zkClient.exists(ZkStateReader.ROLES, true);
+    boolean nodeExists = zkClient.exists(ZkStateReader.ROLES);
     if (nodeExists) {
       @SuppressWarnings("unchecked")
       Map<String, List<String>> tmp =
           (Map<String, List<String>>)
-              Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
+              Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat()));
       roles = tmp;
     } else {
       roles = CollectionUtil.newLinkedHashMap(1);
@@ -88,18 +87,26 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
 
     List<String> nodeList = roles.computeIfAbsent(roleName, k -> new ArrayList<>());
     if (ADDROLE == operation) {
+      DeprecationLog.log(
+          "CollectionAPI-" + operation,
+          "The "
+              + operation
+              + " API is deprecated and will be removed in Solr 11. "
+              + "Please transition to using Node Roles (-Dsolr.node.roles) at startup instead.");
       log.info("Overseer role added to {}", node);
       if (!nodeList.contains(node)) nodeList.add(node);
     } else if (REMOVEROLE == operation) {
+      DeprecationLog.log(
+          "CollectionAPI-" + operation,
+          "The "
+              + operation
+              + " API is deprecated and will be removed in Solr 11. "
+              + "Please transition to using Node Roles (-Dsolr.node.roles) at startup instead.");
       log.info("Overseer role removed from {}", node);
       nodeList.remove(node);
     }
 
-    if (nodeExists) {
-      zkClient.setData(ZkStateReader.ROLES, Utils.toJSON(roles), true);
-    } else {
-      zkClient.create(ZkStateReader.ROLES, Utils.toJSON(roles), CreateMode.PERSISTENT, true);
-    }
+    zkClient.makePath(ZkStateReader.ROLES, Utils.toJSON(roles), false);
     runPrioritizer();
   }
 

@@ -20,28 +20,24 @@ package org.apache.solr.client.solrj.embedded;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.client.solrj.request.RequestWriter;
-import org.junit.BeforeClass;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the HTTP2 client and the xml codec for
  * communication.
  */
 public class SolrExampleXMLHttp2Test extends SolrExampleTests {
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
 
   @Override
   public SolrClient createNewSolrClient() {
 
-    Http2SolrClient client =
-        new Http2SolrClient.Builder(getCoreUrl())
+    var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .withRequestWriter(new RequestWriter())
+            .withRequestWriter(new XMLRequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build();
     return client;

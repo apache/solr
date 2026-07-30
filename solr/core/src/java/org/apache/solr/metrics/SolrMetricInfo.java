@@ -16,7 +16,6 @@
  */
 package org.apache.solr.metrics;
 
-import com.codahale.metrics.MetricRegistry;
 import java.util.Objects;
 import org.apache.solr.core.SolrInfoBean;
 
@@ -66,17 +65,6 @@ public final class SolrMetricInfo {
     return new SolrMetricInfo(category, scope, name);
   }
 
-  /**
-   * Returns the metric name defined by this object. For example, if the name is `Requests`, scope
-   * is `/admin/ping`, and category is `QUERY`, then the metric name is
-   * `QUERY./admin/ping.Requests`.
-   *
-   * @return the metric name defined by this object
-   */
-  public String getMetricName() {
-    return MetricRegistry.name(category.toString(), scope, name);
-  }
-
   @Override
   public String toString() {
     return "SolrMetricInfo{"
@@ -94,9 +82,8 @@ public final class SolrMetricInfo {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof SolrMetricInfo)) return false;
+    if (!(o instanceof SolrMetricInfo that)) return false;
 
-    SolrMetricInfo that = (SolrMetricInfo) o;
     return Objects.equals(name, that.name)
         && Objects.equals(scope, that.scope)
         && category == that.category;

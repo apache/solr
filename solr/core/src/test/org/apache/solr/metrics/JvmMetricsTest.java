@@ -16,21 +16,27 @@
  */
 package org.apache.solr.metrics;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
+import com.sun.management.OperatingSystemMXBean;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Map;
-import org.apache.solr.SolrJettyTestBase;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.apache.lucene.util.SuppressForbidden;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.util.SolrJettyTestRule;
+import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-/** Test {@link OperatingSystemMetricSet} and proper JVM metrics registration. */
-public class JvmMetricsTest extends SolrJettyTestBase {
+public class JvmMetricsTest extends SolrTestCaseJ4 {
   static final String[] STRING_OS_METRICS = {"arch", "name", "version"};
   static final String[] NUMERIC_OS_METRICS = {"availableProcessors", "systemLoadAverage"};
 
@@ -43,68 +49,12 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     "mapped.TotalCapacity"
   };
 
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
-
-  @Test
-  public void testOperatingSystemMetricSet() {
-    OperatingSystemMetricSet set = new OperatingSystemMetricSet();
-    Map<String, Metric> metrics = set.getMetrics();
-    assertTrue(metrics.size() > 0);
-    for (String metric : NUMERIC_OS_METRICS) {
-      Gauge<?> gauge = (Gauge<?>) metrics.get(metric);
-      assertNotNull(metric, gauge);
-      double value = ((Number) gauge.getValue()).doubleValue();
-      // SystemLoadAverage on Windows may be -1.0
-      assertTrue("unexpected value of " + metric + ": " + value, value >= 0 || value == -1.0);
-    }
-    for (String metric : STRING_OS_METRICS) {
-      Gauge<?> gauge = (Gauge<?>) metrics.get(metric);
-      assertNotNull(metric, gauge);
-      String value = (String) gauge.getValue();
-      assertNotNull(value);
-      assertFalse(value.isEmpty());
-    }
-  }
-
-  @Test
-  public void testAltBufferPoolMetricSet() {
-    AltBufferPoolMetricSet set = new AltBufferPoolMetricSet();
-    Map<String, Metric> metrics = set.getMetrics();
-    assertTrue(metrics.size() > 0);
-    for (String name : BUFFER_METRICS) {
-      assertNotNull(name, metrics.get(name));
-      Object g = metrics.get(name);
-      assertTrue(g instanceof Gauge);
-      Object v = ((Gauge<?>) g).getValue();
-      assertTrue(v instanceof Long);
-    }
-  }
-
-  @Test
-  public void testSystemProperties() {
-    if (System.getProperty("basicauth") == null) {
-      // make sure it's set
-      System.setProperty("basicauth", "foo:bar");
-    }
-    SolrMetricManager metricManager = getJetty().getCoreContainer().getMetricManager();
-    Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
-    Metric metric = metrics.get("system.properties");
-    assertNotNull(metrics.toString(), metric);
-    MetricsMap map = (MetricsMap) ((SolrMetricManager.GaugeWrapper<?>) metric).getGauge();
-    assertNotNull(metrics.toString(), map);
-    Map<String, Object> values = map.getValue();
-    System.getProperties()
-        .forEach(
-            (k, v) -> {
-              if (NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.contains(k)) {
-                assertNull("hidden property " + k + " present!", values.get(k));
-              } else {
-                assertEquals(v, values.get(String.valueOf(k)));
-              }
-            });
+    System.setProperty("solr.metrics.jvm.enabled", "true");
+    solrTestRule.startSolr();
   }
 
   @Test
@@ -124,30 +74,87 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testSetupJvmMetrics() {
-    SolrMetricManager metricManager = getJetty().getCoreContainer().getMetricManager();
-    Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
-    assertTrue(metrics.size() > 0);
+  public void testSetupJvmMetrics() throws InterruptedException {
+    PrometheusMetricReader reader =
+        solrTestRule
+            .getJetty()
+            .getCoreContainer()
+            .getMetricManager()
+            .getPrometheusMetricReader("solr.jvm");
+    MetricSnapshots snapshots = reader.collect();
+    assertTrue("Should have metric snapshots", snapshots.size() > 0);
+
+    Set<String> metricNames =
+        snapshots.stream()
+            .map(metric -> metric.getMetadata().getPrometheusName())
+            .collect(Collectors.toSet());
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("buffers.")));
+        "Should have JVM memory metrics",
+        metricNames.stream().anyMatch(name -> name.startsWith("jvm_memory")));
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("classes.")));
+        "Should have JVM thread metrics",
+        metricNames.stream().anyMatch(name -> name.startsWith("jvm_thread")));
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("os.")));
+        "Should have JVM class metrics",
+        metricNames.stream().anyMatch(name -> name.startsWith("jvm_class")));
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("gc.")));
+        "Should have JVM CPU metrics",
+        metricNames.stream().anyMatch(name -> name.startsWith("jvm_cpu")));
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("memory.")));
+        "Should have JVM buffer metrics",
+        metricNames.stream().anyMatch(name -> name.startsWith("jvm_buffer")));
+  }
+
+  @Test
+  @SuppressForbidden(reason = "Testing com.sun.management.OperatingSystemMXBean availability")
+  public void testSystemMemoryMetrics() {
+    PrometheusMetricReader reader =
+        solrTestRule
+            .getJetty()
+            .getCoreContainer()
+            .getMetricManager()
+            .getPrometheusMetricReader("solr.jvm");
+    MetricSnapshots snapshots = reader.collect();
+
+    Set<String> metricNames =
+        snapshots.stream()
+            .map(metric -> metric.getMetadata().getPrometheusName())
+            .collect(Collectors.toSet());
+
+    // Physical memory metrics are only present when com.sun.management.OperatingSystemMXBean
+    // is available. If absent, the test is skipped.
+    boolean isHotSpot =
+        ManagementFactory.getOperatingSystemMXBean() instanceof OperatingSystemMXBean;
+    Assume.assumeTrue(
+        "Skipping: com.sun.management.OperatingSystemMXBean not available", isHotSpot);
+
     assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("threads.")));
-    assertTrue(
-        metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("system.")));
+        "Should have jvm_system_memory_bytes metric (with state=total and state=free)",
+        metricNames.contains("jvm_system_memory_bytes"));
+  }
+
+  @Test
+  public void testJvmMetricsDisabledNoSystemMemory() throws Exception {
+    // Verify that when JVM metrics are disabled, initialization is a no-op and close() is safe
+    SolrMetricManager metricManager = solrTestRule.getJetty().getCoreContainer().getMetricManager();
+    String prevValue = System.getProperty("solr.metrics.jvm.enabled");
+    System.setProperty("solr.metrics.jvm.enabled", "false");
+    try {
+      OtelRuntimeJvmMetrics disabledMetrics = new OtelRuntimeJvmMetrics();
+      OtelRuntimeJvmMetrics result = disabledMetrics.initialize(metricManager, "solr.jvm");
+      assertFalse("Should not be initialized when JVM metrics disabled", result.isInitialized());
+      disabledMetrics.close(); // must not throw
+    } finally {
+      if (prevValue == null) {
+        System.clearProperty("solr.metrics.jvm.enabled");
+      } else {
+        System.setProperty("solr.metrics.jvm.enabled", prevValue);
+      }
+    }
   }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.solr.security;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.GetPublicKeyApi;
 import org.apache.solr.client.api.model.PublicKeyResponse;

@@ -20,7 +20,6 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -172,16 +171,23 @@ public abstract class ManagedResourceStorage {
         throw new IllegalArgumentException(
             "Required configuration parameter '" + STORAGE_DIR_INIT_ARG + "' not provided!");
 
-      File dir = new File(storageDirArg);
-      if (!dir.isDirectory()) dir.mkdirs();
+      Path dir = Path.of(storageDirArg);
+      if (!Files.isDirectory(dir)) {
+        try {
+          Files.createDirectories(dir);
+        } catch (IOException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, "Unable to create storage directory " + dir, e);
+        }
+      }
 
-      storageDir = dir.getAbsolutePath();
+      storageDir = dir.toAbsolutePath().toString();
       log.info("File-based storage initialized to use dir: {}", storageDir);
     }
 
     @Override
     public boolean exists(String storedResourceId) throws IOException {
-      return (new File(storageDir, storedResourceId)).exists();
+      return Files.exists(Path.of(storageDir, storedResourceId));
     }
 
     @Override
@@ -196,18 +202,18 @@ public abstract class ManagedResourceStorage {
 
     @Override
     public boolean delete(String storedResourceId) throws IOException {
-      File storedFile = new File(storageDir, storedResourceId);
+      Path storedFile = Path.of(storageDir, storedResourceId);
       return deleteIfFile(storedFile);
     }
 
     // TODO: this interface should probably be changed, this simulates the old behavior,
     // only throw security exception, just return false otherwise
-    private boolean deleteIfFile(File f) {
-      if (!f.isFile()) {
+    private boolean deleteIfFile(Path p) {
+      if (!Files.isRegularFile(p)) {
         return false;
       }
       try {
-        Files.delete(f.toPath());
+        Files.delete(p);
         return true;
       } catch (IOException cause) {
         return false;
@@ -228,7 +234,6 @@ public abstract class ManagedResourceStorage {
 
     protected SolrZkClient zkClient;
     protected String znodeBase;
-    protected boolean retryOnConnLoss = true;
 
     public ZooKeeperStorageIO(SolrZkClient zkClient, String znodeBase) {
       this.zkClient = zkClient;
@@ -240,8 +245,8 @@ public abstract class ManagedResourceStorage {
         throws SolrException {
       // validate connectivity and the configured znode base
       try {
-        if (!zkClient.exists(znodeBase, retryOnConnLoss)) {
-          zkClient.makePath(znodeBase, retryOnConnLoss);
+        if (!zkClient.exists(znodeBase)) {
+          zkClient.makePath(znodeBase);
         }
       } catch (Exception exc) {
         String errMsg =
@@ -258,7 +263,7 @@ public abstract class ManagedResourceStorage {
     public boolean exists(String storedResourceId) throws IOException {
       final String znodePath = getZnodeForResource(storedResourceId);
       try {
-        return zkClient.exists(znodePath, retryOnConnLoss);
+        return zkClient.exists(znodePath);
       } catch (Exception e) {
         if (e instanceof IOException) {
           throw (IOException) e;
@@ -273,8 +278,8 @@ public abstract class ManagedResourceStorage {
       final String znodePath = getZnodeForResource(storedResourceId);
       byte[] znodeData = null;
       try {
-        if (zkClient.exists(znodePath, retryOnConnLoss)) {
-          znodeData = zkClient.getData(znodePath, null, null, retryOnConnLoss);
+        if (zkClient.exists(znodePath)) {
+          znodeData = zkClient.getData(znodePath, null, null);
         }
       } catch (Exception e) {
         if (e instanceof IOException) {
@@ -297,20 +302,14 @@ public abstract class ManagedResourceStorage {
     @Override
     public OutputStream openOutputStream(String storedResourceId) throws IOException {
       final String znodePath = getZnodeForResource(storedResourceId);
-      final boolean retryOnConnLoss = this.retryOnConnLoss;
       ByteArrayOutputStream baos =
           new ByteArrayOutputStream() {
             @Override
             public void close() {
               byte[] znodeData = toByteArray();
               try {
-                if (zkClient.exists(znodePath, retryOnConnLoss)) {
-                  zkClient.setData(znodePath, znodeData, retryOnConnLoss);
-                  log.info("Wrote {} bytes to existing znode {}", znodeData.length, znodePath);
-                } else {
-                  zkClient.makePath(znodePath, znodeData, retryOnConnLoss);
-                  log.info("Wrote {} bytes to new znode {}", znodeData.length, znodePath);
-                }
+                zkClient.makePath(znodePath, znodeData, false);
+                log.info("Wrote {} bytes to znode {}", znodeData.length, znodePath);
               } catch (Exception e) {
                 // have to throw a runtimer here as we're in close,
                 // which doesn't throw IOException
@@ -340,10 +339,10 @@ public abstract class ManagedResourceStorage {
 
       // this might be overkill for a delete operation
       try {
-        if (zkClient.exists(znodePath, retryOnConnLoss)) {
+        if (zkClient.exists(znodePath)) {
           log.debug("Attempting to delete znode {}", znodePath);
-          zkClient.delete(znodePath, -1, retryOnConnLoss);
-          wasDeleted = zkClient.exists(znodePath, retryOnConnLoss);
+          zkClient.delete(znodePath, -1);
+          wasDeleted = zkClient.exists(znodePath);
 
           if (wasDeleted) {
             log.info("Deleted znode {}", znodePath);

@@ -27,7 +27,7 @@ In addition to supporting all the DisMax query parser parameters, Extended DisMa
 * includes improved smart partial escaping in the case of syntax errors; fielded queries, +/-, and phrase queries are still supported in this mode.
 * improves proximity boosting by using word shingles; you do not need the query to match all words in the document before proximity boosting is applied.
 * includes advanced stopword handling: stopwords are not required in the mandatory part of the query but are still used in the proximity boosting part.
-If a query consists of all stopwords, such as "to be or not to be", then all words are required.
+If a query consists of all stopwords, such as "to be or not to be", then all words are required. (This feature may be disabled - see `alwaysStopwords` below.)
 * includes improved boost function: in Extended DisMax, the `boost` function is a multiplier xref:dismax-query-parser.adoc#bq-bf-shortcomings[rather than an addend], improving your boost results; the additive boost functions of DisMax (`bf` and `bq`) are also supported.
 * supports pure negative nested queries: queries such as `+foo (-foo)` will match all documents.
 * lets you specify which fields the end user is allowed to query, and to disallow direct fielded searches.
@@ -109,6 +109,10 @@ If not specified, `ps` is used.
 A Boolean parameter indicating if the `StopFilterFactory` configured in the query analyzer should be respected when parsing the query.
 If this is set to `false`, then the `StopFilterFactory` in the query analyzer is ignored.
 
+`alwaysStopwords`::
+A Boolean parameter indicating that the `StopFilterFactory` configured in the query analyzer should always be respected even if all query terms are stopwords.
+This defaults to `false`, in which case if a query consists of all stopwords, such as "to be or not to be", then all words are required.
+
 `uf`::
 Specifies which schema fields the end user is allowed to explicitly query and to toggle whether embedded Solr queries are supported.
 This parameter supports wildcards.
@@ -134,7 +138,7 @@ All of the sample URLs in this section assume you are running Solr's "techproduc
 
 [source,bash]
 ----
-bin/solr -e techproducts
+bin/solr start -e techproducts
 ----
 
 Boost the result of the query term "hello" based on the document's popularity:

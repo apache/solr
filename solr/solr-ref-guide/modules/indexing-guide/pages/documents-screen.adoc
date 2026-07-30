@@ -38,10 +38,10 @@ There are other ways to load data, see also these sections:
 == Common Fields
 * Request-Handler: The first step is to define the RequestHandler.
 By default `/update` will be defined.
-Change the request handler to `/update/extract` to use Solr Cell.
-* Document Type: Select the Document Type to define the format of document to load.
+Change the request handler to `/update/extract` to use Solr Cell, if you are running a Tika Server.
+* Document Type: Select the Document Type to define the format of the document to load.
 The remaining parameters may change depending on the document type selected.
-* Document(s): Enter a properly-formatted Solr document corresponding to the `Document Type` selected.
+* Document(s): Enter a properly formatted Solr document corresponding to the `Document Type` selected.
 XML and JSON documents must be formatted in a Solr-specific format, a small illustrative document will be shown.
 CSV files should have headers corresponding to fields defined in the schema.
 More details can be found in xref:indexing-with-update-handlers.adoc[].
@@ -78,7 +78,7 @@ More information can be found in xref:indexing-with-tika.adoc[].
 
 == Solr Command
 
-The Solr Command option allows you use the `/update` request handler with XML or JSON formatted commands to perform specific actions.
+The Solr Command option allows you to use the `/update` request handler with XML or JSON formatted commands to perform specific actions.
 A few examples are:
 
 * Deleting documents

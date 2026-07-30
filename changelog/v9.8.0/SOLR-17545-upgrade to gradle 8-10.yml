@@ -1,0 +1,7 @@
+title: Upgrade to Gradle 8.10
+type: other
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-17545
+  url: https://issues.apache.org/jira/browse/SOLR-17545

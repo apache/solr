@@ -22,7 +22,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -198,9 +198,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       SolrCmdDistributor.Node targetLeaderNode =
           routeDocToSlice(targetCollection, cmd.getSolrInputDocument());
       cmdDistrib.distribAdd(
-          cmd,
-          Collections.singletonList(targetLeaderNode),
-          new ModifiableSolrParams(outParamsToLeader));
+          cmd, List.of(targetLeaderNode), new ModifiableSolrParams(outParamsToLeader));
     }
   }
 
@@ -266,13 +264,17 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private SolrCmdDistributor.Node lookupShardLeaderOfCollection(String collection) {
-    final Slice[] activeSlices =
-        zkController.getClusterState().getCollection(collection).getActiveSlicesArr();
-    if (activeSlices.length == 0) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Cannot route to collection " + collection);
-    }
-    final Slice slice = activeSlices[0];
+    final Collection<Slice> activeSlices =
+        zkController.getClusterState().getCollection(collection).getActiveSlices();
+    final Slice slice =
+        activeSlices.stream()
+            .findAny()
+            .orElseThrow(
+                () ->
+                    new SolrException(
+                        SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+                        "Cannot route to collection " + collection));
+
     return getLeaderNode(collection, slice);
   }
 

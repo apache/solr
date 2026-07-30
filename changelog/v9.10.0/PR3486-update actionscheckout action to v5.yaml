@@ -1,0 +1,7 @@
+title: Update actions/checkout action to v5
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3486
+  url: https://github.com/apache/solr/pull/3486

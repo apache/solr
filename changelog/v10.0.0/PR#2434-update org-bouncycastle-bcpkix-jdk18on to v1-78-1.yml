@@ -1,0 +1,7 @@
+title: Update org.bouncycastle:bcpkix-jdk18on to v1.78.1
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#2434
+  url: https://github.com/apache/solr/pull/2434

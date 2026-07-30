@@ -15,7 +15,7 @@
   limitations under the License.
   -->
 
-<schema name="test" version="1.0">
+<schema name="test" version="1.7">
   <fieldType name="string" class="solr.StrField" omitNorms="true" positionIncrementGap="0"/>
   <!--  charfilter only at query-time -->
   <fieldType name="text" class="solr.TextField">

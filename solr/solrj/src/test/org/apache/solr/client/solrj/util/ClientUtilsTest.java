@@ -18,7 +18,10 @@ package org.apache.solr.client.solrj.util;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.HealthCheckRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.junit.Test;
 
 /**
@@ -35,18 +38,45 @@ public class ClientUtilsTest extends SolrTestCase {
   }
 
   @Test
-  public void testDeterminesWhenToUseDefaultDataStore() {
+  public void testDeterminesWhenToUseDefaultCollection() {
     final var noDefaultNeededRequest = new CollectionAdminRequest.List();
     final var defaultNeededRequest = new UpdateRequest();
 
     assertFalse(
         "Expected default-coll to be skipped for collection-agnostic request",
-        ClientUtils.shouldApplyDefaultDataStore(null, noDefaultNeededRequest));
+        ClientUtils.shouldApplyDefaultCollection(null, noDefaultNeededRequest));
     assertTrue(
         "Expected default-coll to be used for collection-based request",
-        ClientUtils.shouldApplyDefaultDataStore(null, defaultNeededRequest));
+        ClientUtils.shouldApplyDefaultCollection(null, defaultNeededRequest));
     assertFalse(
         "Expected default-coll to be skipped when a collection is explicitly provided",
-        ClientUtils.shouldApplyDefaultDataStore("someCollection", defaultNeededRequest));
+        ClientUtils.shouldApplyDefaultCollection("someCollection", defaultNeededRequest));
+  }
+
+  @Test
+  public void testUrlBuilding() throws Exception {
+    final var rw = new XMLRequestWriter();
+    // Simple case, non-collection request
+    {
+      final var request = new HealthCheckRequest();
+      final var url = ClientUtils.buildRequestUrl(request, "http://localhost:8983/solr", null);
+      assertEquals("http://localhost:8983/solr/admin/info/health", url);
+    }
+
+    // Simple case, collection request
+    {
+      final var request = new QueryRequest();
+      final var url =
+          ClientUtils.buildRequestUrl(request, "http://localhost:8983/solr", "someColl");
+      assertEquals("http://localhost:8983/solr/someColl/select", url);
+    }
+
+    // Ignores collection when not needed (i.e. obeys SolrRequest.requiresCollection)
+    {
+      final var request = new HealthCheckRequest();
+      final var url =
+          ClientUtils.buildRequestUrl(request, "http://localhost:8983/solr", "unneededCollection");
+      assertEquals("http://localhost:8983/solr/admin/info/health", url);
+    }
   }
 }

@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -111,7 +112,6 @@ public class ClusterStateMockUtil {
   public static ZkStateReader buildClusterState(
       String clusterDescription, int replicationFactor, String... liveNodes) {
     Map<String, Slice> slices = null;
-    Map<String, Replica> replicas = null;
     Map<String, Object> collectionProps = new HashMap<>();
     collectionProps.put(ZkStateReader.REPLICATION_FACTOR, Integer.toString(replicationFactor));
     Map<String, DocCollection> collectionStates = new HashMap<>();
@@ -130,17 +130,20 @@ public class ClusterStateMockUtil {
           collectionProps.put(
               ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
           docCollection =
-              new DocCollection(
+              DocCollection.create(
                   collName = "collection" + (collectionStates.size() + 1),
                   slices,
                   collectionProps,
-                  DocRouter.DEFAULT);
+                  DocRouter.DEFAULT,
+                  Integer.MAX_VALUE,
+                  Instant.EPOCH,
+                  null);
           collectionStates.put(docCollection.getName(), docCollection);
           break;
         case "s":
-          replicas = new HashMap<>();
           if (collName == null) collName = "collection" + (collectionStates.size() + 1);
-          slice = new Slice(sliceName = "slice" + (slices.size() + 1), replicas, null, collName);
+          slice =
+              new Slice(sliceName = "slice" + (slices.size() + 1), new HashMap<>(), null, collName);
           slices.put(slice.getName(), slice);
 
           // hack alert: the DocCollection constructor copies over active slices to its active slice
@@ -168,7 +171,7 @@ public class ClusterStateMockUtil {
           // O(n^2) alert! but this is for mocks and testing so shouldn't be used for very large
           // cluster states
           boolean leaderFound = false;
-          for (Map.Entry<String, Replica> entry : replicas.entrySet()) {
+          for (Map.Entry<String, Replica> entry : slice.getReplicasMap().entrySet()) {
             Replica value = entry.getValue();
             if ("true".equals(value.get(ReplicaStateProps.LEADER))) {
               leaderFound = true;
@@ -178,15 +181,13 @@ public class ClusterStateMockUtil {
           if (!leaderFound && !m.group(1).equals("p")) {
             replicaPropMap.put(ReplicaStateProps.LEADER, "true");
           }
-          replica = new Replica(replicaName, replicaPropMap, collName, sliceName);
-          replicas.put(replica.getName(), replica);
 
           // hack alert: re-create slice with existing data and new replicas map so that it updates
           // its internal leader attribute
-          slice = new Slice(slice.getName(), replicas, null, collName);
+          slice = slice.copyWith(new Replica(replicaName, replicaPropMap, collName, sliceName));
           slices.put(slice.getName(), slice);
-          // we don't need to update doc collection again because we aren't adding a new slice or
-          // changing its state
+          docCollection = docCollection.copyWithSlices(slices);
+          collectionStates.put(docCollection.getName(), docCollection);
           break;
         default:
           break;

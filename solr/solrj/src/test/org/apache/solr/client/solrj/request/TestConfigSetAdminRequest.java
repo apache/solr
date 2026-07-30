@@ -16,11 +16,11 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.io.File;
+import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.params.ConfigSetParams;
+import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 /** Basic error checking of ConfigSetAdminRequests. */
@@ -34,7 +34,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
 
   @Test
   public void testUpload() throws Exception {
-    final File tmpFile = createTempFile().toFile();
+    final Path tmpFile = createTempFile();
     ConfigSetAdminRequest.Upload upload = new ConfigSetAdminRequest.Upload();
     verifyException(upload, "ConfigSet");
 
@@ -95,7 +95,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public ConfigSetAdminResponse createResponse(SolrClient client) {
+    public ConfigSetAdminResponse createResponse(NamedList<Object> namedList) {
       return new ConfigSetAdminResponse();
     }
   }

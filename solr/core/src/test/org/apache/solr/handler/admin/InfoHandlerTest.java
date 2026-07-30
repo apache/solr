@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -67,6 +68,14 @@ public class InfoHandlerTest extends SolrTestCaseJ4 {
     CountLoggingHandler loggingHandler = new CountLoggingHandler(cores);
     CountSystemInfoHandler systemInfoHandler = new CountSystemInfoHandler(cores);
 
+    // Initialize metrics for these test handlers before setting them on InfoHandler
+    // Use a core's metrics context since we don't have direct access to container's context
+    var metricsContext = h.getCore().getCoreMetricManager().getSolrMetricsContext();
+    propHandler.initializeMetrics(metricsContext, Attributes.empty());
+    threadHandler.initializeMetrics(metricsContext, Attributes.empty());
+    loggingHandler.initializeMetrics(metricsContext, Attributes.empty());
+    systemInfoHandler.initializeMetrics(metricsContext, Attributes.empty());
+
     // set the request handlers
     infoHandler.setPropertiesHandler(propHandler);
     infoHandler.setThreadDumpHandler(threadHandler);
@@ -89,6 +98,12 @@ public class InfoHandlerTest extends SolrTestCaseJ4 {
     assertEquals(1, threadHandler.getRequestCount());
     assertEquals(1, loggingHandler.getRequestCount());
     assertEquals(1, systemInfoHandler.getRequestCount());
+
+    // Clean up test handlers
+    propHandler.close();
+    threadHandler.close();
+    loggingHandler.close();
+    systemInfoHandler.close();
   }
 
   // derived request handlers that count the number of request body counts made

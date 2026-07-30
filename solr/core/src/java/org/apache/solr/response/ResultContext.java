@@ -23,16 +23,27 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /** A class to hold the QueryResult and the Query */
 public abstract class ResultContext {
+
+  private SolrDocumentFetcher docFetcher;
 
   public abstract DocList getDocList();
 
   public abstract ReturnFields getReturnFields();
 
   public abstract SolrIndexSearcher getSearcher();
+
+  public SolrDocumentFetcher getDocFetcher() {
+    if (docFetcher == null) {
+      return docFetcher = getSearcher().getDocFetcher();
+    } else {
+      return docFetcher;
+    }
+  }
 
   public abstract Query getQuery();
 

@@ -19,7 +19,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import org.apache.solr.client.api.endpoint.ReloadCoreApi;
 import org.apache.solr.client.api.model.ReloadCoreRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;

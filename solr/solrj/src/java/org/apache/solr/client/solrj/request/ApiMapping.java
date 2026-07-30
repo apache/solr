@@ -19,10 +19,10 @@ package org.apache.solr.client.solrj.request;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.util.CommandOperation;
 
@@ -60,7 +60,7 @@ public class ApiMapping {
       collectKeyNames(map, result, "");
       return result;
     } else {
-      return Collections.emptySet();
+      return Set.of();
     }
   }
 

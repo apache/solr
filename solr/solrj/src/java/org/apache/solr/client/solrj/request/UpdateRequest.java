@@ -19,8 +19,6 @@ package org.apache.solr.client.solrj.request;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -31,11 +29,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
@@ -43,8 +41,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.CollectionUtil;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.XML;
 
 /**
  * @since solr 1.3
@@ -59,6 +55,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   private Iterator<SolrInputDocument> docIterator = null;
   private Map<String, Map<String, Object>> deleteById = null;
   private List<String> deleteQuery = null;
+  private boolean sendToLeaders = true;
 
   private boolean isLastDocInBatch = false;
 
@@ -69,9 +66,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
   public UpdateRequest(String url) {
     super(METHOD.POST, url);
   }
-
-  // ---------------------------------------------------------------------------
-  // ---------------------------------------------------------------------------
 
   /** clear the pending documents and delete commands */
   public void clear() {
@@ -85,9 +79,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
       deleteQuery.clear();
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // ---------------------------------------------------------------------------
 
   /**
    * Add a SolrInputDocument to this request
@@ -228,23 +219,18 @@ public class UpdateRequest extends AbstractUpdateRequest {
     return process(client, collection);
   }
 
-  private interface ReqSupplier<T extends LBSolrClient.Req> {
-    T get(UpdateRequest request, List<String> servers);
-  }
-
-  private <T extends LBSolrClient.Req> Map<String, T> getRoutes(
+  private Map<String, LBSolrClient.Req> getRoutes(
       DocRouter router,
       DocCollection col,
       Map<String, List<String>> urlMap,
       ModifiableSolrParams params,
-      String idField,
-      ReqSupplier<T> reqSupplier) {
+      String idField) {
     if ((documents == null || documents.size() == 0)
         && (deleteById == null || deleteById.size() == 0)) {
       return null;
     }
 
-    Map<String, T> routes = new HashMap<>();
+    Map<String, LBSolrClient.Req> routes = new HashMap<>();
     if (documents != null) {
       Set<Entry<SolrInputDocument, Map<String, Object>>> entries = documents.entrySet();
       for (Entry<SolrInputDocument, Map<String, Object>> entry : entries) {
@@ -262,7 +248,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           return null;
         }
         String leaderUrl = urls.get(0);
-        T request = routes.get(leaderUrl);
+        LBSolrClient.Req request = routes.get(leaderUrl);
         if (request == null) {
           UpdateRequest updateRequest = new UpdateRequest();
           updateRequest.setMethod(getMethod());
@@ -272,7 +258,12 @@ public class UpdateRequest extends AbstractUpdateRequest {
           updateRequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
           updateRequest.setResponseParser(getResponseParser());
           updateRequest.addHeaders(getHeaders());
-          request = reqSupplier.get(updateRequest, urls);
+          request =
+              new LBSolrClient.Req(
+                  updateRequest,
+                  urls.stream()
+                      .map(url -> LBSolrClient.Endpoint.from(url))
+                      .collect(Collectors.toList()));
           routes.put(leaderUrl, request);
         }
         UpdateRequest urequest = (UpdateRequest) request.getRequest();
@@ -315,7 +306,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           return null;
         }
         String leaderUrl = urls.get(0);
-        T request = routes.get(leaderUrl);
+        LBSolrClient.Req request = routes.get(leaderUrl);
         if (request != null) {
           UpdateRequest urequest = (UpdateRequest) request.getRequest();
           urequest.deleteById(deleteId, route, version);
@@ -325,7 +316,12 @@ public class UpdateRequest extends AbstractUpdateRequest {
           urequest.deleteById(deleteId, route, version);
           urequest.setCommitWithin(getCommitWithin());
           urequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
-          request = reqSupplier.get(urequest, urls);
+          request =
+              new LBSolrClient.Req(
+                  urequest,
+                  urls.stream()
+                      .map(url -> LBSolrClient.Endpoint.from(url))
+                      .collect(Collectors.toList()));
           routes.put(leaderUrl, request);
         }
       }
@@ -348,7 +344,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
       Map<String, List<String>> urlMap,
       ModifiableSolrParams params,
       String idField) {
-    return getRoutes(router, col, urlMap, params, idField, LBSolrClient.Req::new);
+    return getRoutes(router, col, urlMap, params, idField);
   }
 
   public void setDocIterator(Iterator<SolrInputDocument> docIterator) {
@@ -358,154 +354,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
   public void setDeleteQuery(List<String> deleteQuery) {
     this.deleteQuery = deleteQuery;
   }
-
-  // --------------------------------------------------------------------------
-  // --------------------------------------------------------------------------
-
-  @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return ClientUtils.toContentStreams(getXML(), ClientUtils.TEXT_XML);
-  }
-
-  public String getXML() throws IOException {
-    StringWriter writer = new StringWriter();
-    writeXML(writer);
-    writer.flush();
-
-    // If action is COMMIT or OPTIMIZE, it is sent with params
-    String xml = writer.toString();
-    // System.out.println( "SEND:"+xml );
-    return (xml.length() > 0) ? xml : null;
-  }
-
-  private List<Map<SolrInputDocument, Map<String, Object>>> getDocLists(
-      Map<SolrInputDocument, Map<String, Object>> documents) {
-    List<Map<SolrInputDocument, Map<String, Object>>> docLists = new ArrayList<>();
-    Map<SolrInputDocument, Map<String, Object>> docList = null;
-    if (this.documents != null) {
-
-      Boolean lastOverwrite = true;
-      Integer lastCommitWithin = -1;
-
-      Set<Entry<SolrInputDocument, Map<String, Object>>> entries = this.documents.entrySet();
-      for (Entry<SolrInputDocument, Map<String, Object>> entry : entries) {
-        Map<String, Object> map = entry.getValue();
-        Boolean overwrite = null;
-        Integer commitWithin = null;
-        if (map != null) {
-          overwrite = (Boolean) entry.getValue().get(OVERWRITE);
-          commitWithin = (Integer) entry.getValue().get(COMMIT_WITHIN);
-        }
-        if (!Objects.equals(overwrite, lastOverwrite)
-            || !Objects.equals(commitWithin, lastCommitWithin)
-            || docLists.isEmpty()) {
-          docList = new LinkedHashMap<>();
-          docLists.add(docList);
-        }
-        docList.put(entry.getKey(), entry.getValue());
-        lastCommitWithin = commitWithin;
-        lastOverwrite = overwrite;
-      }
-    }
-
-    if (docIterator != null) {
-      docList = new LinkedHashMap<>();
-      docLists.add(docList);
-      while (docIterator.hasNext()) {
-        SolrInputDocument doc = docIterator.next();
-        if (doc != null) {
-          docList.put(doc, null);
-        }
-      }
-    }
-
-    return docLists;
-  }
-
-  /**
-   * @since solr 1.4
-   */
-  public UpdateRequest writeXML(Writer writer) throws IOException {
-    List<Map<SolrInputDocument, Map<String, Object>>> getDocLists = getDocLists(documents);
-
-    for (Map<SolrInputDocument, Map<String, Object>> docs : getDocLists) {
-
-      if ((docs != null && docs.size() > 0)) {
-        Entry<SolrInputDocument, Map<String, Object>> firstDoc = docs.entrySet().iterator().next();
-        Map<String, Object> map = firstDoc.getValue();
-        Integer cw = null;
-        Boolean ow = null;
-        if (map != null) {
-          cw = (Integer) firstDoc.getValue().get(COMMIT_WITHIN);
-          ow = (Boolean) firstDoc.getValue().get(OVERWRITE);
-        }
-        if (ow == null) ow = true;
-        int commitWithin = (cw != null && cw != -1) ? cw : this.commitWithin;
-        boolean overwrite = ow;
-        if (commitWithin > -1 || overwrite != true) {
-          writer.write(
-              "<add commitWithin=\"" + commitWithin + "\" " + "overwrite=\"" + overwrite + "\">");
-        } else {
-          writer.write("<add>");
-        }
-
-        Set<Entry<SolrInputDocument, Map<String, Object>>> entries = docs.entrySet();
-        for (Entry<SolrInputDocument, Map<String, Object>> entry : entries) {
-          ClientUtils.writeXML(entry.getKey(), writer);
-        }
-
-        writer.write("</add>");
-      }
-    }
-
-    // Add the delete commands
-    boolean deleteI = deleteById != null && deleteById.size() > 0;
-    boolean deleteQ = deleteQuery != null && deleteQuery.size() > 0;
-    if (deleteI || deleteQ) {
-      if (commitWithin > 0) {
-        writer.append("<delete commitWithin=\"").append(String.valueOf(commitWithin)).append("\">");
-      } else {
-        writer.append("<delete>");
-      }
-      if (deleteI) {
-        for (Map.Entry<String, Map<String, Object>> entry : deleteById.entrySet()) {
-          writer.append("<id");
-          Map<String, Object> map = entry.getValue();
-          if (map != null) {
-            Long version = (Long) map.get(VER);
-            String route = (String) map.get(_ROUTE_);
-            if (version != null) {
-              writer.append(" version=\"").append(String.valueOf(version)).append('"');
-            }
-
-            if (route != null) {
-              writer.append(" _route_=\"").append(route).append('"');
-            }
-          }
-          writer.append(">");
-
-          XML.escapeCharData(entry.getKey(), writer);
-          writer.append("</id>");
-        }
-      }
-      if (deleteQ) {
-        for (String q : deleteQuery) {
-          writer.append("<query>");
-          XML.escapeCharData(q, writer);
-          writer.append("</query>");
-        }
-      }
-      writer.append("</delete>");
-    }
-    return this;
-  }
-
-  // --------------------------------------------------------------------------
-  // --------------------------------------------------------------------------
-
-  // --------------------------------------------------------------------------
-  //
-  // --------------------------------------------------------------------------
 
   public List<SolrInputDocument> getDocuments() {
     if (documents == null) return null;
@@ -542,5 +390,14 @@ public class UpdateRequest extends AbstractUpdateRequest {
 
   public void lastDocInBatch() {
     isLastDocInBatch = true;
+  }
+
+  public boolean isSendToLeaders() {
+    return sendToLeaders;
+  }
+
+  public UpdateRequest setSendToLeaders(final boolean sendToLeaders) {
+    this.sendToLeaders = sendToLeaders;
+    return this;
   }
 }

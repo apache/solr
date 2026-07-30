@@ -38,11 +38,7 @@
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}">
-    <double name="maxWriteMBPerSecDefault">1000000</double>
-    <double name="maxWriteMBPerSecFlush">2000000</double>
-    <double name="maxWriteMBPerSecMerge">3000000</double>
-    <double name="maxWriteMBPerSecRead">4000000</double>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}">
   </directoryFactory>
 
   <schemaFactory class="ClassicIndexSchemaFactory"/>
@@ -60,7 +56,7 @@
     </autoCommit>
     -->
 
-    <updateLog enable="${enable.update.log:true}">
+    <updateLog enable="${solr.index.updatelog.enabled:true}">
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
 
@@ -216,10 +212,6 @@
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>
   </requestDispatcher>
-
-  <!-- test getting system property -->
-  <propTest attr1="${solr.test.sys.prop1}-$${literal}"
-            attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
   <queryParser name="count" class="org.apache.solr.search.AnalyticsTestQParserPlugin"/>
 

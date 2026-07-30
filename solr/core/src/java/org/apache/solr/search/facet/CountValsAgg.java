@@ -20,7 +20,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.IntFunction;
-import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
@@ -102,7 +101,8 @@ public class CountValsAgg extends SimpleAggValueSource {
 
     @Override
     protected void collectValues(int doc, int slot) throws IOException {
-      while (values.nextOrd() != SortedSetDocValues.NO_MORE_ORDS) {
+      for (int o = 0; o < values.docValueCount(); o++) {
+        values.nextOrd();
         result[slot]++;
       }
     }

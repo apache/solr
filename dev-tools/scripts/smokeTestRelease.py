@@ -15,6 +15,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# --------------------------------------------------------------------------
+# Quick local smoke test against a release built from this checkout (no
+# download, no signing). Copy-paste from a shell at the repo root:
+#
+#   VERSION=$(sed -n "s/.*baseVersion = '\(.*\)'/\1/p" build.gradle)-SNAPSHOT
+#   ./gradlew -p solr/distribution assembleRelease -Dversion.release=$VERSION
+#   python3 -u dev-tools/scripts/smokeTestRelease.py \
+#     --tmp-dir /tmp/smoke_solr \
+#     --not-signed \
+#     --revision skip \
+#     --version $VERSION \
+#     file://$(pwd)/solr/distribution/build/release
+#
+# --revision skip bypasses the JAR-manifest git-revision check, which is
+# otherwise brittle against a Gradle build cache holding a stale commit hash.
+# --------------------------------------------------------------------------
+
 import argparse
 import codecs
 import datetime
@@ -23,8 +40,10 @@ import hashlib
 import http.client
 import os
 import platform
+import random
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import textwrap
@@ -40,6 +59,9 @@ import scriptutil
 # This tool expects to find /solr off the base URL.  You
 # must have a working gpg, tar in your path.  This has been
 # tested on Linux and on Cygwin under Windows 7.
+
+BASE_JAVA_VERSION = "21"
+SOLRJ_JAVA_VERSION = "17"
 
 cygwin = platform.system().lower().startswith('cygwin')
 cygwinWindowsRoot = os.popen('cygpath -w /').read().strip().replace('\\','/') if cygwin else ''
@@ -141,15 +163,18 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
 
     s = decodeUTF8(z.read(MANIFEST_FILE_NAME))
 
+    compileJDK = BASE_JAVA_VERSION
+    if 'solrj' in desc or 'api' in desc:
+      compileJDK = SOLRJ_JAVA_VERSION
     for verify in (
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
       'Specification-Title: Apache Solr Search Server:',
       'Implementation-Title: org.apache.solr',
-      'X-Compile-Source-JDK: 11',
-      'X-Compile-Target-JDK: 11',
-      'Specification-Version: %s' % version,
-      'X-Build-JDK: 11.',
+      'X-Compile-Source-JDK: %s' % compileJDK,
+      'X-Compile-Target-JDK: %s' % compileJDK,
+      'Specification-Version: %s' % version.replace('-SNAPSHOT', ''),
+      'X-Build-JDK: %s' % BASE_JAVA_VERSION,
       'Extension-Name: org.apache.solr'):
       if type(verify) is not tuple:
         verify = (verify,)
@@ -203,12 +228,6 @@ def checkAllJARs(topDir, gitRevision, version):
 
     for file in files:
       if file.lower().endswith('.jar'):
-        if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))
-            or (normRoot.endswith('/server/solr-webapp/webapp/WEB-INF/lib') and file.startswith('jakarta.'))
-            or (normRoot.endswith('/server/lib/ext') and file.startswith('jetty-servlet-api-'))):
-          print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
-          continue
         fullPath = '%s/%s' % (root, file)
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
         if file.lower().find('solr') != -1:
@@ -280,30 +299,37 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   if expected != actual:
     raise RuntimeError('solr: wrong artifacts: expected %s but got %s' % (expected, actual))
 
-  # Set up clean gpg world; import keys file:
   gpgHomeDir = '%s/solr.gpg' % tmpDir
-  if os.path.exists(gpgHomeDir):
-    shutil.rmtree(gpgHomeDir)
-  os.makedirs(gpgHomeDir, 0o700)
-  gpgLogFile = '%s/solr.gpg.import.log' % tmpDir
-  run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile), gpgLogFile)
+  if isSigned:
+    # Set up clean gpg world; import keys file:
+    if os.path.exists(gpgHomeDir):
+      shutil.rmtree(gpgHomeDir)
+    os.makedirs(gpgHomeDir, 0o700)
+    gpgLogFile = '%s/solr.gpg.import.log' % tmpDir
+    run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile), gpgLogFile)
+
+  logfile = '%s/solr.assertions.log' % tmpDir
 
   if mavenURL is None:
-    stopGpgAgent(gpgHomeDir, logFile)
+    if isSigned:
+      stopGpgAgent(gpgHomeDir, logfile)
     raise RuntimeError('solr is missing maven')
 
   if dockerURL is None:
-    stopGpgAgent(gpgHomeDir, logFile)
+    if isSigned:
+      stopGpgAgent(gpgHomeDir, logfile)
     raise RuntimeError('solr is missing docker')
 
   if changesURL is None:
-    stopGpgAgent(gpgHomeDir, logfile)
+    if isSigned:
+      stopGpgAgent(gpgHomeDir, logfile)
     raise RuntimeError('solr is missing changes-%s' % version)
   testChanges(version, changesURL)
 
   if openApiURL is None:
-    stopGpgAgent(gpgHomeDir, logfile)
-    raise RuntimeError('solr is missing OpenAPI specification' % version)
+    if isSigned:
+      stopGpgAgent(gpgHomeDir, logfile)
+    raise RuntimeError('solr is missing OpenAPI specification')
   testOpenApi(version, openApiURL)
 
 
@@ -372,15 +398,19 @@ def testOpenApi(version, openApiDirUrl):
     raise RuntimeError('Did not see %s in %s' % expectedSpecFileName, openApiDirUrl)
 
 
-def testChangesText(dir, version):
-  "Checks all CHANGES.txt under this dir."
-  for root, dirs, files in os.walk(dir): # pylint: disable=unused-variable
+def testChangelogMd(dir, version):
+  "Checks CHANGELOG.md file."
+  changelog_path = os.path.join(dir, 'CHANGELOG.md')
 
-    # NOTE: O(N) but N should be smallish:
-    if 'CHANGES.txt' in files:
-      fullPath = '%s/CHANGES.txt' % root
-      #print 'CHECK %s' % fullPath
-      checkChangesContent(open(fullPath, encoding='UTF-8').read(), version, fullPath, False)
+  if not os.path.exists(changelog_path):
+    raise RuntimeError('CHANGELOG.md not found at %s' % changelog_path)
+
+  with open(changelog_path, encoding='UTF-8') as f:
+    content = f.read()
+
+  # Verify that the changelog contains the current version
+  if 'SNAPSHOT' not in version and 'v%s' % version not in content and version not in content:
+    raise RuntimeError('Version %s not found in CHANGELOG.md' % version)
 
 reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
 reUnderbarNotDashHTML = re.compile(r'<li>(\s*(SOLR)_\d\d\d\d+)')
@@ -390,7 +420,7 @@ reUnderbarNotDashTXT = re.compile(r'\s+((SOLR)_\d\d\d\d+)', re.MULTILINE)
 def checkChangesContent(s, version, name, isHTML):
   currentVersionTuple = versionToTuple(version, name)
 
-  if isHTML and s.find('Release %s' % version) == -1:
+  if isHTML and 'SNAPSHOT' not in version and s.find('Release %s' % version) == -1:
     raise RuntimeError('did not see "Release %s" in %s' % (version, name))
 
   if isHTML:
@@ -552,7 +582,7 @@ def getDirEntries(urlString):
   return None
 
 
-def unpackAndVerify(java, tmpDir, artifact, gitRevision, version, testArgs):
+def unpack(tmpDir, artifact):
   destDir = '%s/unpack' % tmpDir
   if os.path.exists(destDir):
     shutil.rmtree(destDir)
@@ -571,9 +601,7 @@ def unpackAndVerify(java, tmpDir, artifact, gitRevision, version, testArgs):
   if l != [expected]:
     raise RuntimeError('unpack produced entries %s; expected only %s' % (l, expected))
 
-  unpackPath = '%s/%s' % (destDir, expected)
-  verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs)
-  return unpackPath
+  return '%s/%s' % (destDir, expected)
 
 SOLR_NOTICE = None
 SOLR_LICENSE = None
@@ -590,216 +618,150 @@ def is_in_list(in_folder, files, indent=4):
       raise RuntimeError('file "%s" is missing' % file_name)
 
 
-def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
+def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs):
+  # The source release is everything in source control minus excluded paths, so we don't
+  # check that it has specific things — the build will fail if something critical is missing.
+  # Also the binary release checks for presence of things that come from source control, so we're
+  # covered that way too.
+  os.chdir(unpackPath)
+  print("  %s" % artifact)
+
+  print('    make sure no JARs/WARs in src dist...')
+  lines = os.popen('find . -name \\*.jar').readlines()
+  if len(lines) != 0:
+    print('    FAILED:')
+    for line in lines:
+      print('      %s' % line.strip())
+    raise RuntimeError('source release has JARs...')
+  lines = os.popen('find . -name \\*.war').readlines()
+  if len(lines) != 0:
+    print('    FAILED:')
+    for line in lines:
+      print('      %s' % line.strip())
+    raise RuntimeError('source release has WARs...')
+
+  logDir = '%s/build' % unpackPath
+  os.makedirs(logDir, exist_ok=True)
+
+  validateCmd = './gradlew rat'
+  print('    run "%s"' % validateCmd)
+  java.run_java(validateCmd, '%s/rat.log' % logDir)
+
+  validateCmd = './gradlew :solr:documentation:check'
+  print('    run "%s"' % validateCmd)
+  java.run_java(validateCmd, '%s/documentation.log' % logDir)
+
+  print("    run tests w/ Java %s and testArgs='%s'..." % (java.version, testArgs))
+  java.run_java('./gradlew test %s' % testArgs, '%s/test.log' % logDir)
+  print("    run integration tests w/ Java %s" % java.version)
+  java.run_java('./gradlew integrationTest -Dversion.release=%s' % version, '%s/itest.log' % logDir)
+  print("    build binary release w/ Java %s" % java.version)
+  java.run_java('./gradlew dev -Dversion.release=%s' % version, '%s/assemble.log' % logDir)
+  testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java_home, False)
+
+  testChangelogMd('.', version)
+
+
+def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
   global SOLR_NOTICE
   global SOLR_LICENSE
 
   os.chdir(unpackPath)
-  isSrc = artifact.find('-src') != -1
-  isSlim = artifact.find('-slim') != -1
-
-  # Check text files in release
+  isSlim = '-slim' in artifact
   print("  %s" % artifact)
-  in_root_folder = list(filter(lambda x: x[0] != '.', os.listdir(unpackPath)))
-  in_solr_folder = []
-  if isSrc:
-    in_solr_folder.extend(os.listdir(os.path.join(unpackPath, 'solr')))
-    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.md', 'CONTRIBUTING.md'])
-    is_in_list(in_solr_folder, ['CHANGES.txt', 'README.adoc'])
-  else:
-    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGES.txt'])
 
   if SOLR_NOTICE is None:
     SOLR_NOTICE = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
   if SOLR_LICENSE is None:
     SOLR_LICENSE = open('%s/LICENSE.txt' % unpackPath, encoding='UTF-8').read()
 
-  # if not isSrc:
-  #   # TODO: we should add verifyModule/verifySubmodule (e.g. analysis) here and recurse through
-  #   expectedJARs = ()
-  #
-  #   for fileName in expectedJARs:
-  #     fileName += '.jar'
-  #     if fileName not in l:
-  #       raise RuntimeError('solr: file "%s" is missing from artifact %s' % (fileName, artifact))
-  #     in_root_folder.remove(fileName)
+  in_root_folder = list(filter(lambda x: x[0] != '.', os.listdir(unpackPath)))
+  is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGELOG.md'])
 
-  if isSrc:
-    expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
-    expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
-    expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
-    is_in_list(in_root_folder, expected_src_root_folders)
-    is_in_list(in_root_folder, expected_src_root_files)
-    is_in_list(in_solr_folder, expected_src_solr_folders)
-    is_in_list(in_solr_folder, expected_src_solr_files)
-    if len(in_solr_folder) > 0:
-      raise RuntimeError('solr: unexpected files/dirs in artifact %s solr/ folder: %s' % (artifact, in_solr_folder))
-  elif isSlim:
-    is_in_list(in_root_folder, ['bin', 'docker', 'docs', 'example', 'licenses', 'server', 'lib'])
+  if isSlim:
+    is_in_list(in_root_folder, ['bin', 'docker', 'example', 'licenses', 'server', 'lib'])
   else:
-    is_in_list(in_root_folder, ['bin', 'modules', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server', 'lib'])
+    is_in_list(in_root_folder, ['bin', 'modules', 'cross-dc-manager', 'docker', 'example', 'licenses', 'server', 'lib'])
 
   if len(in_root_folder) > 0:
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
 
-  if isSrc:
-    print('    make sure no JARs/WARs in src dist...')
-    lines = os.popen('find . -name \\*.jar').readlines()
-    if len(lines) != 0:
-      print('    FAILED:')
-      for line in lines:
-        print('      %s' % line.strip())
-      raise RuntimeError('source release has JARs...')
-    lines = os.popen('find . -name \\*.war').readlines()
-    if len(lines) != 0:
-      print('    FAILED:')
-      for line in lines:
-        print('      %s' % line.strip())
-      raise RuntimeError('source release has WARs...')
+  checkAllJARs(os.getcwd(), gitRevision, version)
 
-    validateCmd = './gradlew --no-daemon check -p solr/documentation'
-    print('    run "%s"' % validateCmd)
-    java.run_java11(validateCmd, '%s/validate.log' % unpackPath)
+  print('    test solr example w/ Java %s...' % java.version)
+  testSolrExample(unpackPath, java.java_home, isSlim)
 
-    print("    run tests w/ Java 11 and testArgs='%s'..." % testArgs)
-    java.run_java11('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
-    print("    run integration tests w/ Java 11")
-    java.run_java11('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
-    print("    build binary release w/ Java 11")
-    java.run_java11('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble.log' % unpackPath)
-    testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java11_home)
-
-    if java.run_java17:
-      print("    run tests w/ Java 17 and testArgs='%s'..." % testArgs)
-      java.run_java17('./gradlew --no-daemon clean test %s' % testArgs, '%s/test-java17.log' % unpackPath)
-      print("    run integration tests w/ Java 17")
-      java.run_java17('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest-java17.log' % unpackPath)
-      print("    build binary release w/ Java 17")
-      java.run_java17('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble-java17.log' % unpackPath)
-      testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java17_home)
-
-  else:
-    # Binary tarball
-    checkAllJARs(os.getcwd(), gitRevision, version)
-
-    print('    copying unpacked distribution for Java 11 ...')
-    java11UnpackPath = '%s-java11' % unpackPath
-    if os.path.exists(java11UnpackPath):
-      shutil.rmtree(java11UnpackPath)
-    shutil.copytree(unpackPath, java11UnpackPath)
-    os.chdir(java11UnpackPath)
-    print('    test solr example w/ Java 11...')
-    testSolrExample(java11UnpackPath, java.java11_home)
-
-    if java.run_java17:
-      print('    copying unpacked distribution for Java 17 ...')
-      java17UnpackPath = '%s-java17' % unpackPath
-      if os.path.exists(java17UnpackPath):
-        shutil.rmtree(java17UnpackPath)
-      shutil.copytree(unpackPath, java17UnpackPath)
-      os.chdir(java17UnpackPath)
-      print('    test solr example w/ Java 17...')
-      testSolrExample(java17UnpackPath, java.java17_home)
-
-    os.chdir(unpackPath)
-
-  testChangesText('.', version)
+  testChangelogMd('.', version)
 
 
-def readSolrOutput(p, startupEvent, failureEvent, logFile):
-  f = open(logFile, 'wb')
-  try:
-    while True:
-      line = p.stdout.readline()
-      if len(line) == 0:
-        p.poll()
-        if not startupEvent.isSet():
-          failureEvent.set()
-          startupEvent.set()
-        break
-      f.write(line)
-      f.flush()
-      #print('SOLR: %s' % line.strip())
-      if not startupEvent.isSet():
-        if line.find(b'Started ServerConnector@') != -1 and line.find(b'{HTTP/1.1}{0.0.0.0:8983}') != -1:
-          startupEvent.set()
-        elif p.poll() is not None:
-          failureEvent.set()
-          startupEvent.set()
-          break
-  except:
-    print()
-    print('Exception reading Solr output:')
-    traceback.print_exc()
-    failureEvent.set()
-    startupEvent.set()
-  finally:
-    f.close()
-
-def is_port_in_use(port):
-    import socket
+def find_available_port(max_attempts=100):
+  """Find an available port by randomly selecting from range 8901-8999.
+  Ensures both the port and port+1000 are available."""
+  for _ in range(max_attempts):
+    port = random.randint(8901, 8999)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) == 0
+      try:
+        s.bind(('localhost', port))
+        # Check if port+1000 is also available
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s2:
+          try:
+            s2.bind(('localhost', port + 1000))
+            return port
+          except OSError:
+            continue
+      except OSError:
+        continue
+  raise RuntimeError('Could not find an available port after %d attempts in range 8901-8999' % max_attempts)
 
-def testSolrExample(binaryDistPath, javaPath):
+
+def testSolrExample(binaryDistPath, javaPath, isSlim):
   # test solr using some examples it comes with
+  port = find_available_port()
   logFile = '%s/solr-example.log' % binaryDistPath
   old_cwd = os.getcwd() # So we can back-track
   os.chdir(binaryDistPath)
 
-  print('      start Solr instance (log=%s)...' % logFile)
+  print('      start Solr instance on port %d (log=%s)...' % (port, logFile))
   env = {}
   env.update(os.environ)
   env['JAVA_HOME'] = javaPath
   env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
 
-  # Stop Solr running on port 8983 (in case a previous run didn't shutdown cleanly)
-  try:
-      if not cygwin:
-        subprocess.call(['bin/solr','stop','-p','8983'])
-      else:
-        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
-  except:
-     print('      Stop failed due to: '+sys.exc_info()[0])
+  example = "techproducts"
+  if isSlim:
+    example = "films"
 
-  print('      Running techproducts example on port 8983 from %s' % binaryDistPath)
+  print('      Running %s example on port %d from %s' % (example, port, binaryDistPath))
   try:
     if not cygwin:
-      runExampleStatus = subprocess.call(['bin/solr','start','-e','techproducts'])
+      runExampleStatus = subprocess.call(['bin/solr','start','-e',example,'-p',str(port)])
     else:
-      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True)
+      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd start -e %s -p %d' % (example, port), shell=True)
 
     if runExampleStatus != 0:
-      raise RuntimeError('Failed to run the techproducts example, check log for previous errors.')
+      raise RuntimeError('Failed to run the %s example, check log for previous errors.' % example)
 
     os.chdir('example')
-    print('      test utf8...')
-    run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
     print('      run query...')
-    s = load('http://localhost:8983/solr/techproducts/select/?q=video')
-    if s.find('"numFound":3,') == -1:
+    s = load('http://localhost:%d/solr/%s/select/?q=video' % (port, example))
+    if s.find('"numFound":%d,' % (8 if isSlim else 3)) == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
-    s = load('http://localhost:8983/api/cores')
+    s = load('http://localhost:%d/api/cores?wt=json' % port)
     if s.find('"status":0,') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query api v2 on solr example instance failed')
   finally:
     # Stop server:
-    print('      stop server using: bin/solr stop -p 8983')
+    print('      stop server using: bin/solr stop -p %d' % port)
     os.chdir(binaryDistPath)
 
     if not cygwin:
-      subprocess.call(['bin/solr','stop','-p','8983'])
+      subprocess.call(['bin/solr','stop','-p',str(port)])
     else:
-      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
+      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p %d' % port, shell=True)
 
   os.chdir(old_cwd)
-
-
-def removeTrailingZeros(version):
-  return re.sub(r'(\.0)*$', '', version)
 
 
 def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
@@ -988,6 +950,9 @@ def verifyDeployedPOMsCoordinates(artifacts, version):
   its filepath, and verify that the corresponding artifact exists.
   """
   print("    verify deployed POMs' coordinates...")
+  if 'SNAPSHOT' in version:
+    print("      (skipping filepath check for SNAPSHOT — timestamp paths differ from coordinate)")
+    return
   for POM in [a for a in artifacts if a.endswith('.pom')]:
     treeRoot = ET.parse(POM).getroot()
     groupId, artifactId, packaging, POMversion = getPOMcoordinate(treeRoot)
@@ -1017,43 +982,44 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         sys.stdout.write('.')
 
 
-def make_java_config(parser, java17_home):
-  def _make_runner(java_home, version):
-    print('Java %s JAVA_HOME=%s' % (version, java_home))
-    if cygwin:
-      java_home = subprocess.check_output('cygpath -u "%s"' % java_home, shell=True).decode('utf-8').strip()
-    cmd_prefix = 'export JAVA_HOME="%s" PATH="%s/bin:$PATH" JAVACMD="%s/bin/java"' % \
-                 (java_home, java_home, java_home)
-    s = subprocess.check_output('%s; java -version' % cmd_prefix,
-                                shell=True, stderr=subprocess.STDOUT).decode('utf-8')
-    if s.find(' version "%s' % version) == -1:
-      parser.error('got wrong version for java %s:\n%s' % (version, s))
-    def run_java(cmd, logfile):
-      run('%s; %s' % (cmd_prefix, cmd), logfile)
-    return run_java
-  java11_home =  os.environ.get('JAVA_HOME')
-  if java11_home is None:
+def make_java_config(parser):
+  java_home = os.environ.get('JAVA_HOME')
+  if java_home is None:
     parser.error('JAVA_HOME must be set')
-  run_java11 = _make_runner(java11_home, '11')
-  run_java17 = None
-  if java17_home is not None:
-    run_java17 = _make_runner(java17_home, '17')
+  if cygwin:
+    java_home = subprocess.check_output('cygpath -u "%s"' % java_home, shell=True).decode('utf-8').strip()
+  cmd_prefix = 'export JAVA_HOME="%s" PATH="%s/bin:$PATH" JAVACMD="%s/bin/java" GRADLE_OPTS="-Dorg.gradle.daemon=false"' % \
+               (java_home, java_home, java_home)
+  s = subprocess.check_output('%s; java -version' % cmd_prefix,
+                              shell=True, stderr=subprocess.STDOUT).decode('utf-8')
+  actual_version = re.search(r'version "([1-9][0-9]*)', s).group(1)
+  print('Java %s JAVA_HOME=%s' % (actual_version, java_home))
 
-  jc = namedtuple('JavaConfig', 'run_java11 java11_home run_java17 java17_home')
-  return jc(run_java11, java11_home, run_java17, java17_home)
+  if int(actual_version) < int(BASE_JAVA_VERSION):
+    parser.error('got wrong version for java %s, must be at least base version %s:\n%s' % (actual_version, BASE_JAVA_VERSION, s))
+
+  def run_java(cmd, logfile):
+    run('%s; %s' % (cmd_prefix, cmd), logfile)
+
+  jc = namedtuple('JavaConfig', 'run_java java_home version')
+  return jc(run_java, java_home, actual_version)
+
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
 revision_re = re.compile(r'rev-([a-f\d]+)')
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage:
-    python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-9.0.0-RC1-rev-c7510a0...
+    python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-c7510a0...
   ''')
   description = 'Utility to test a release.'
   parser = argparse.ArgumentParser(description=description, epilog=epilogue,
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument('--tmp-dir', metavar='PATH',
                       help='Temporary directory to test inside, defaults to /tmp/smoke_solr_$version_$revision')
+  parser.add_argument('--reuse-tmp-dir', action='store_true', default=False,
+                      help='Allows --tmp-dir to already exist and reuses whatever it already downloaded, '
+                           'instead of re-downloading everything from scratch')
   parser.add_argument('--not-signed', dest='is_signed', action='store_false', default=True,
                       help='Indicates the release is not signed')
   parser.add_argument('--local-keys', metavar='PATH',
@@ -1062,8 +1028,6 @@ def parse_config():
                       help='GIT revision number that release was built with, defaults to that in URL')
   parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
                       help='Version of the release, defaults to that in URL')
-  parser.add_argument('--test-java17', metavar='java17_home',
-                      help='Path to Java17 home directory, to run tests with if specified')
   parser.add_argument('--download-only', action='store_true', default=False,
                       help='Only perform download and sha hash check steps')
   parser.add_argument('--dev-mode', action='store_true', default=False,
@@ -1092,7 +1056,7 @@ def parse_config():
   if c.local_keys is not None and not os.path.exists(c.local_keys):
     parser.error('Local KEYS file "%s" not found' % c.local_keys)
 
-  c.java = make_java_config(parser, c.test_java17)
+  c.java = make_java_config(parser)
 
   if c.tmp_dir:
     c.tmp_dir = os.path.abspath(c.tmp_dir)
@@ -1118,13 +1082,32 @@ def main():
   if not c.version.startswith(scriptVersion + '.') and not c.dev_mode:
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
+  global FORCE_CLEAN
+  FORCE_CLEAN = not c.reuse_tmp_dir
+
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
   smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, c.local_keys, ' '.join(c.test_args),
             downloadOnly=c.download_only)
 
 
+def printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs):
+  cmd = ['./smokeTestRelease.py', '--tmp-dir', tmpDir, '--reuse-tmp-dir',
+         '--revision', gitRevision, '--version', version]
+  if not isSigned:
+    cmd.append('--not-signed')
+  if local_keys is not None:
+    cmd.extend(['--local-keys', local_keys])
+  cmd.append(baseURL)
+  if testArgs:
+    cmd.append(testArgs)
+  print()
+  print('NOTE: to re-run (e.g. with a different Java version) reusing what is already downloaded to %s:' % tmpDir)
+  print('  JAVA_HOME=/path/to/java %s' % ' '.join(cmd))
+
+
 def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs, downloadOnly=False):
   startTime = datetime.datetime.now()
+  origTestArgs = testArgs
 
   # Avoid @Nightly and @Badapple tests as they are slow and buggy
   # Instead verify that the recent Jenkins tests pass
@@ -1137,6 +1120,8 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
 
   if not os.path.exists(tmpDir):
     os.makedirs(tmpDir)
+
+  printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, origTestArgs)
 
   solrPath = None
   print()
@@ -1161,32 +1146,36 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   if solrPath is None:
     raise RuntimeError("could not find solr/%s/ subdir" % version)
 
-  print()
-  print('Get KEYS...')
-  if local_keys is not None:
-    print("    Using local KEYS file %s" % local_keys)
-    keysFile = local_keys
-  else:
-    keysFileURL = "https://archive.apache.org/dist/solr/KEYS"
-    print("    Downloading online KEYS file %s" % keysFileURL)
-    scriptutil.download('KEYS', keysFileURL, tmpDir, force_clean=FORCE_CLEAN)
-    keysFile = '%s/KEYS' % (tmpDir)
-
-  if is_port_in_use(8983):
-    raise RuntimeError('Port 8983 is already in use. The smoketester needs it to test Solr')
+  keysFile = None
+  if isSigned or local_keys is not None:
+    print()
+    print('Get KEYS...')
+    if local_keys is not None:
+      print("    Using local KEYS file %s" % local_keys)
+      keysFile = local_keys
+    else:
+      keysFileURL = "https://archive.apache.org/dist/solr/KEYS"
+      print("    Downloading online KEYS file %s" % keysFileURL)
+      scriptutil.download('KEYS', keysFileURL, tmpDir, force_clean=FORCE_CLEAN)
+      keysFile = '%s/KEYS' % (tmpDir)
 
   print()
   print('Test Solr...')
   checkSigs(solrPath, version, tmpDir, isSigned, keysFile)
   if not downloadOnly:
-    unpackAndVerify(java, tmpDir, 'solr-%s.tgz' % version, gitRevision, version, testArgs)
-    unpackAndVerify(java, tmpDir, 'solr-%s-slim.tgz' % version, gitRevision, version, testArgs)
-    unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
+    artifact = 'solr-%s.tgz' % version
+    verifyBinaryUnpacked(java, artifact, unpack(tmpDir, artifact), version, gitRevision)
+    artifact = 'solr-%s-slim.tgz' % version
+    verifyBinaryUnpacked(java, artifact, unpack(tmpDir, artifact), version, gitRevision)
+    artifact = 'solr-%s-src.tgz' % version
+    verifySrcUnpacked(java, artifact, unpack(tmpDir, artifact), version, testArgs)
     print()
     print('Test Maven artifacts...')
     checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)
   else:
     print("Solr test done (--download-only specified)")
+
+  printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, origTestArgs)
 
   print('\nSUCCESS! [%s]\n' % (datetime.datetime.now() - startTime))
 

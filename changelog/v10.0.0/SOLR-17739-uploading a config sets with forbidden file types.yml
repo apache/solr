@@ -1,0 +1,8 @@
+title: Uploading a config sets with forbidden file types will produces a Exception.
+  Previously it was just ignoring those files and logging a WARN.
+type: changed
+authors:
+- name: Abhishek Umarjikar
+links:
+- name: SOLR-17739
+  url: https://issues.apache.org/jira/browse/SOLR-17739

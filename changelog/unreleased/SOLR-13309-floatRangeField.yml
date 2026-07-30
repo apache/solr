@@ -1,0 +1,7 @@
+title: Introduce new `FloatRangeField` field type for storing and querying float-based ranges
+type: added
+authors:
+  - name: Jason Gerlowski
+links:
+  - name: SOLR-13309
+    url: https://issues.apache.org/jira/browse/SOLR-13309

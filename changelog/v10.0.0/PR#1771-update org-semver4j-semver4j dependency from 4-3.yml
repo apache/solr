@@ -1,0 +1,7 @@
+title: Update org.semver4j:semver4j dependency from 4.3 to 5.1
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#1771
+  url: https://github.com/apache/solr/pull/1771

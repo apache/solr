@@ -17,28 +17,39 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.api.collections.CreateCollectionCmd.PRS_DEFAULT_PROP;
+
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.LiveNodesPredicate;
@@ -46,6 +57,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
@@ -75,8 +87,6 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final Boolean USE_PER_REPLICA_STATE =
-      Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
 
   // this is an important timeout for test stability - can't be too short
   public static final int DEFAULT_TIMEOUT = 45;
@@ -90,6 +100,31 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return cluster.getZkStateReader().getZkClient();
   }
 
+  protected CloudSolrClient.CloudSolrClientConnection getZookeeperSolrConnection() {
+    return CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
+  }
+
+  protected CloudSolrClient.CloudSolrClientConnection getHttpSolrConnection() {
+    String connectionString =
+        cluster.getJettySolrRunners().stream()
+            .map(JettySolrRunner::getBaseUrl)
+            .map(URL::toString)
+            .collect(Collectors.joining(","));
+    return CloudSolrClient.CloudSolrClientConnection.parse(connectionString);
+  }
+
+  protected CloudSolrClient.CloudSolrClientConnection getSolrConnection() {
+    return random().nextBoolean() ? getHttpSolrConnection() : getZookeeperSolrConnection();
+  }
+
+  /**
+   * if the system property is not specified, default to false. The SystemProperty will be set in a
+   * beforeClass method.
+   */
+  public static boolean isPRS() {
+    return EnvUtils.getPropertyAsBool(PRS_DEFAULT_PROP, false);
+  }
+
   /**
    * Call this to configure a cluster of n nodes. It will be shut down automatically after the
    * tests.
@@ -99,17 +134,27 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * @param nodeCount the number of nodes
    */
   protected static MiniSolrCloudCluster.Builder configureCluster(int nodeCount) {
-    // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which
-    // collection API strategy to use (distributed or Overseer based) and which cluster update
-    // strategy to use (distributed if collection API is distributed, but Overseer based or
-    // distributed randomly chosen if Collection API is Overseer based)
+    // Default behavior is the MiniSolrCloudCluster being built will randomly (seed based) decide
+    // which
+    // collection API strategy to use (distributed or Overseer based) and whether to use PRS
 
-    boolean useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;
-    boolean useDistributedClusterStateUpdate =
-        useDistributedCollectionConfigSetExecution || LuceneTestCase.random().nextInt(2) == 0;
+    configurePrsDefault();
+
     return new MiniSolrCloudCluster.Builder(nodeCount, createTempDir())
-        .withDistributedClusterStateUpdates(
-            useDistributedCollectionConfigSetExecution, useDistributedClusterStateUpdate);
+        .withOverseer(
+            EnvUtils.getPropertyAsBool(
+                "solr.cloud.overseer.enabled", LuceneTestCase.random().nextBoolean()));
+  }
+
+  public static void configurePrsDefault() {
+    Class<?> target = RandomizedTest.getContext().getTargetClass();
+    boolean usePrs;
+    if (target != null && target.isAnnotationPresent(NoPrs.class)) {
+      usePrs = false;
+    } else {
+      usePrs = EnvUtils.getPropertyAsBool(PRS_DEFAULT_PROP, LuceneTestCase.random().nextBoolean());
+    }
+    System.setProperty(PRS_DEFAULT_PROP, usePrs ? "true" : "false");
   }
 
   @AfterClass
@@ -123,6 +168,39 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
   }
 
+  /**
+   * Check that all replicas in a collection are live
+   *
+   * @see CollectionStatePredicate
+   */
+  public static boolean replicasForCollectionAreFullyActive(
+      Set<String> liveNodes,
+      DocCollection collectionState,
+      int expectedShards,
+      int expectedReplicas) {
+    Objects.requireNonNull(liveNodes);
+    if (collectionState == null) return false;
+    int activeShards = 0;
+    for (Slice slice : collectionState) {
+      int activeReplicas = 0;
+      for (Replica replica : slice) {
+        if (replica.isActive(liveNodes) == false) return false;
+        activeReplicas++;
+      }
+      if (activeReplicas != expectedReplicas) return false;
+      activeShards++;
+    }
+    return activeShards == expectedShards;
+  }
+
+  public static List<Replica> getReplicas(DocCollection collectionState, EnumSet<Replica.Type> s) {
+    List<Replica> replicas = new ArrayList<>();
+    for (Slice slice : collectionState) {
+      replicas.addAll(slice.getReplicas(s));
+    }
+    return replicas;
+  }
+
   @Before
   public void checkClusterConfiguration() {}
 
@@ -133,15 +211,18 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return cluster.getSolrClient().getClusterState().getCollection(collectionName);
   }
 
+  /**
+   * Wait for a particular collection state to appear in the cluster client's state reader
+   *
+   * <p>This is a convenience method using the {@link #DEFAULT_TIMEOUT}.
+   */
   protected static void waitForState(
       String message, String collection, CollectionStatePredicate predicate) {
-    waitForState(message, collection, predicate, DEFAULT_TIMEOUT, TimeUnit.SECONDS);
+    waitForState(message, collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, predicate);
   }
 
   /**
    * Wait for a particular collection state to appear in the cluster client's state reader
-   *
-   * <p>This is a convenience method using the {@link #DEFAULT_TIMEOUT}
    *
    * @param message a message to report on failure
    * @param collection the collection to watch
@@ -150,9 +231,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static void waitForState(
       String message,
       String collection,
-      CollectionStatePredicate predicate,
       int timeout,
-      TimeUnit timeUnit) {
+      TimeUnit timeUnit,
+      CollectionStatePredicate predicate) {
     log.info("waitForState ({}): {}", collection, message);
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
@@ -177,6 +258,47 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
               + Arrays.toString(liveNodesLastSeen.get().toArray())
               + "\nLast available state: "
               + state.get());
+    }
+  }
+
+  /**
+   * Wait for a particular collection state to appear in the cluster client's state reader.
+   *
+   * <p>This is a convenience method using the {@link #DEFAULT_TIMEOUT}.
+   */
+  protected static void waitForState(
+      String message, String collection, Predicate<DocCollection> predicate) {
+    waitForState(message, collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, predicate);
+  }
+
+  /**
+   * Wait for a particular collection state to appear in the cluster client's state reader
+   *
+   * @param message a message to report on failure
+   * @param collection the collection to watch
+   * @param predicate a predicate to match against the collection state
+   */
+  protected static void waitForState(
+      String message,
+      String collection,
+      int timeout,
+      TimeUnit timeUnit,
+      Predicate<DocCollection> predicate) {
+    log.info("waitForState ({}): {}", collection, message);
+    AtomicReference<DocCollection> state = new AtomicReference<>();
+    try {
+      cluster
+          .getZkStateReader()
+          .waitForState(
+              collection,
+              timeout,
+              timeUnit,
+              c -> {
+                state.set(c);
+                return predicate.test(c);
+              });
+    } catch (Exception e) {
+      fail(message + "\n" + e.getMessage() + "\nLast available state: " + state.get());
     }
   }
 
@@ -268,9 +390,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static Slice getRandomShard(DocCollection collection) {
     List<Slice> shards = new ArrayList<>(collection.getActiveSlices());
     if (shards.size() == 0)
-      fail(
-          "Couldn't get random shard for collection as it has no shards!\n"
-              + collection.toString());
+      fail("Couldn't get random shard for collection as it has no shards!\n" + collection);
     Collections.shuffle(shards, random());
     return shards.get(0);
   }
@@ -279,7 +399,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static Replica getRandomReplica(Slice slice) {
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
-      fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
+      fail("Couldn't get random replica from shard as it has no replicas!\n" + slice);
     Collections.shuffle(replicas, random());
     return replicas.get(0);
   }
@@ -288,29 +408,30 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static Replica getRandomReplica(Slice slice, Predicate<Replica> matchPredicate) {
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
-      fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
+      fail("Couldn't get random replica from shard as it has no replicas!\n" + slice);
     Collections.shuffle(replicas, random());
     for (Replica replica : replicas) {
       if (matchPredicate.test(replica)) return replica;
     }
-    fail("Couldn't get random replica that matched conditions\n" + slice.toString());
+    fail("Couldn't get random replica that matched conditions\n" + slice);
     return null; // just to keep the compiler happy - fail will always throw an Exception
   }
 
   /**
-   * Get the {@link CoreStatus} data for a {@link Replica}
+   * Get the {@link org.apache.solr.client.api.model.CoreStatusResponse.SingleCoreData} data for a
+   * {@link Replica}
    *
    * <p>This assumes that the replica is hosted on a live node.
    */
-  protected static CoreStatus getCoreStatus(Replica replica)
+  protected static CoreStatusResponse.SingleCoreData getCoreStatus(Replica replica)
       throws IOException, SolrServerException {
-    JettySolrRunner jetty = cluster.getReplicaJetty(replica);
-    try (SolrClient client =
-        new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
-            .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
-            .build()) {
-      return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
-    }
+    var solrClient = cluster.getReplicaJetty(replica).getSolrClient();
+    return CoreAdminRequest.getCoreStatus(replica.getCoreName(), solrClient);
+  }
+
+  protected CollectionAdminRequest.RequestStatusResponse waitForAsyncClusterRequest(
+      String asyncId, Duration timeout) throws Exception {
+    return waitForAsyncClusterRequest(cluster.getSolrClient(), asyncId, timeout);
   }
 
   @SuppressWarnings({"rawtypes"})
@@ -373,7 +494,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       for (Replica replica : slice.getReplicas()) {
         String coreUrl = replica.getCoreUrl();
         // It seems replica reports its core URL with a trailing slash while shard
-        // info returned from the query doesn't. Oh well. We will include both, just in case
+        // info returned from the query doesn't. Oh, well. We will include both, just in case
         replicaTypeMap.put(coreUrl, replica.getType().toString());
         if (coreUrl.endsWith("/")) {
           replicaTypeMap.put(
@@ -385,4 +506,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
     return replicaTypeMap;
   }
+
+  /**
+   * A marker interface to Ignore PRS in tests. This is for debugging purposes to ensure that PRS is
+   * causing test failures
+   */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface NoPrs {}
 }

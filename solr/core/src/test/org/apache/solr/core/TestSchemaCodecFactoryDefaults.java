@@ -27,7 +27,6 @@ import java.util.Set;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
 /**
@@ -49,18 +48,18 @@ public class TestSchemaCodecFactoryDefaults extends SolrTestCaseJ4 {
     // TODO: replace with EmbeddedSolrServerTestRule (at a glance, I'm not sure how just yet)
     initCore("solrconfig-minimal.xml", "schema-minimal.xml");
 
-    // Some basic assertions that are fundemental to the entire test...
+    // Some basic assertions that are fundamental to the entire test...
 
     assertNull(
         "Someone broke test config so it declares a CodecFactory, making this test useless",
         h.getCore().getSolrConfig().getPluginInfo(CodecFactory.class.getName()));
 
-    MatcherAssert.assertThat(
+    assertThat(
         "WTF: SolrCore's implicit default Codec is literally same object as Lucene default?",
         h.getCore().getCodec(),
         not(sameInstance(LUCENE_DEFAULT_CODEC)));
 
-    MatcherAssert.assertThat(
+    assertThat(
         "WTF: SolrCore's Codec is literally same object as Lucene (test randomixed) default?",
         h.getCore().getCodec(),
         not(sameInstance(Codec.getDefault())));
@@ -68,14 +67,14 @@ public class TestSchemaCodecFactoryDefaults extends SolrTestCaseJ4 {
     // TODO: it would be nice if we could assert something like 'instanceOf(SchemaCodec.class)'
     // But making that kind of assertion would require refactoring SchemaCodecFactory
     // to return an instance of a concreate (named) class -- right now it's anonymous...
-    MatcherAssert.assertThat(
+    assertThat(
         "WTF: SolrCore's implicit default Codec is not anon impl from SchemaCodecFactory",
         h.getCore().getCodec().getClass().getName(),
         containsString(".SchemaCodecFactory$"));
   }
 
   public void testSubclass() {
-    MatcherAssert.assertThat(
+    assertThat(
         "SchemaCodec does not extend current default lucene codec",
         h.getCore().getCodec(),
         instanceOf(LUCENE_DEFAULT_CODEC.getClass()));
@@ -85,7 +84,7 @@ public class TestSchemaCodecFactoryDefaults extends SolrTestCaseJ4 {
    * Methods with these names must exist, take a single String arg, and return instances of the same
    * concrete class as the corrisponding method in the Lucene default codec
    *
-   * @see #testPerFieldMethodEquivilence
+   * @see #testPerFieldMethodEquivalence
    * @see #testCodecDeclaredMethodCoverage
    */
   public static Set<String> PER_FIELD_FORMAT_METHOD_NAMES =
@@ -98,10 +97,10 @@ public class TestSchemaCodecFactoryDefaults extends SolrTestCaseJ4 {
    *
    * <p>The primary purpose of this Set is to list the no-arg versions of per-field methods that are
    * already tested via in {@link #PER_FIELD_FORMAT_METHOD_NAMES} (Because the solr "per-field"
-   * wrapper wll be different then the Lucene "per-field" default impl of these methods)
+   * wrapper will be different from the Lucene "per-field" default impl of these methods)
    *
    * <p>The other reason to include methods in this set, is if they already have bespoke tests
-   * (perhaps because thye require arugments?) and can't be automatically tested via reflection
+   * (perhaps because they require arguments?) and can't be automatically tested via reflection
    *
    * @see #testCodecDeclaredMethodCoverage
    */
@@ -115,7 +114,7 @@ public class TestSchemaCodecFactoryDefaults extends SolrTestCaseJ4 {
    *
    * @see #PER_FIELD_FORMAT_METHOD_NAMES
    */
-  public void testPerFieldMethodEquivilence() throws Exception {
+  public void testPerFieldMethodEquivalence() throws Exception {
     final String fieldNameShouldNotMatter = TestUtil.randomSimpleString(random(), 64);
 
     final Codec expectedCodec = LUCENE_DEFAULT_CODEC;
@@ -139,7 +138,7 @@ public class TestSchemaCodecFactoryDefaults extends SolrTestCaseJ4 {
    * runtime type.
    *
    * <p>Any method found which requires arguments will cause a failure unless it is in {@link
-   * #PER_FIELD_FORMAT_METHOD_NAMES} (which are tested by {@link #testPerFieldMethodEquivilence}) or
+   * #PER_FIELD_FORMAT_METHOD_NAMES} (which are tested by {@link #testPerFieldMethodEquivalence}) or
    * {@link #IGNORED_CODEC_DECLARED_METHOD_NAMES} (Exempt from testing, or should have their own
    * bespoke test)
    */

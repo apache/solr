@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.ref_guide_examples;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -25,10 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.json.DomainMap;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
 import org.apache.solr.client.solrj.request.json.QueryFacetMap;
@@ -57,12 +56,9 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig(CONFIG_NAME, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
-        .configure();
+    configureCluster(1).addConfig(CONFIG_NAME, ExternalPaths.TECHPRODUCTS_CONFIGSET).configure();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
@@ -85,6 +81,76 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     // end::solrj-json-query-simple[]
 
     assertResponseFoundNumDocs(queryResponse, expectedResults);
+  }
+
+  /**
+   * Test json query behaviour in case of multiple query to be executed using Combined Query.
+   *
+   * @throws Exception the exception
+   */
+  @Test
+  public void testSimpleJsonQueryWithQueriesParams() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    final int expectedResults = 2;
+    final Map<String, Object> queriesMap = new HashMap<>();
+    queriesMap.put(
+        "query1",
+        Map.of(
+            "lucene",
+            Map.of(
+                "query", "apache",
+                "df", "manu")));
+    queriesMap.put(
+        "query2",
+        Map.of(
+            "edismax",
+            Map.of(
+                "query", "solr",
+                "df", "name")));
+    final JsonQueryRequest query =
+        new JsonQueryRequest()
+            .setQueries(queriesMap)
+            .withFilter("inStock:true")
+            .withParam("fl", "name")
+            .withParam("combiner", "true")
+            .withParam("combiner.query", List.of("query1", "query2"));
+    query.setPath("/rrf");
+    QueryResponse queryResponse = query.process(solrClient, COLLECTION_NAME);
+    assertResponseFoundNumDocs(queryResponse, expectedResults);
+  }
+
+  /**
+   * Test json query behaviour in case of multiple query to be executed using Additional Queries.
+   *
+   * @throws Exception the exception
+   */
+  @Test
+  public void testAdditionalJsonQueries() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    final int expectedResults = 12;
+    // tag::solrj-json-query-with-queries[]
+    final Map<String, Object> queriesMap = new HashMap<>();
+    queriesMap.put(
+        "electronic",
+        Map.of(
+            "field",
+            Map.of(
+                "query", "electronics",
+                "f", "cat")));
+    queriesMap.put(
+        "manufacturers",
+        List.of(
+            "manu: apple",
+            Map.of(
+                "field",
+                Map.of(
+                    "query", "belkin",
+                    "f", "manu"))));
+    final JsonQueryRequest query =
+        new JsonQueryRequest().setQueries(queriesMap).setQuery(Map.of("param", "electronic"));
+    QueryResponse queryResponse = query.process(solrClient, COLLECTION_NAME);
+    // end::solrj-json-query-with-queries[]
+    assertEquals(expectedResults, queryResponse.getResults().getNumFound());
   }
 
   @Test

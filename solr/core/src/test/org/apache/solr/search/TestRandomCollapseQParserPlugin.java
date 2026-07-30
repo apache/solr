@@ -20,7 +20,6 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.CursorPagingTest;
@@ -32,7 +31,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -269,18 +267,16 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
         "CollapsingPostFilter(CollapsingPostFilter(field=id, "
             + "nullPolicy="
             + nullPolicy
-            + ", GroupHeadSelector(selectorText="
+            + ", GroupHeadSelector[type=SORT, selectorText="
             + groupHeadSort.substring(1, groupHeadSort.length() - 1)
-            + ", type=SORT"
-            + "), hint="
+            + "], hint="
             + collapseHint
             + ", size="
             + collapseSize
             + "))";
-    List<String> expectedParsedFilterQuery = Collections.singletonList(expectedParsedFilterString);
+    List<String> expectedParsedFilterQuery = List.of(expectedParsedFilterString);
     assertEquals(expectedParsedFilterQuery, response.getDebugMap().get("parsed_filter_queries"));
-    assertEquals(
-        Collections.singletonList(filterQuery), response.getDebugMap().get("filter_queries"));
+    assertEquals(List.of(filterQuery), response.getDebugMap().get("filter_queries"));
   }
 
   public void testNullPolicy() {
@@ -292,7 +288,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     SolrException e = expectThrows(SolrException.class, () -> SOLR.query(solrParams));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(e.getMessage(), containsString("Invalid nullPolicy: " + nullPolicy));
+    assertThat(e.getMessage(), containsString("Invalid nullPolicy: " + nullPolicy));
 
     // valid nullPolicy
     assertQ(req("q", "*:*", "fq", "{!collapse field=id nullPolicy=" + randomNullPolicy() + "}"));

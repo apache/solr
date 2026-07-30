@@ -24,9 +24,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CoreAdminParams.CORE;
 import static org.apache.solr.common.params.CoreAdminParams.CORE_NODE_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
-import static org.apache.solr.common.params.CoreAdminParams.OTHER;
 import static org.apache.solr.common.params.CoreAdminParams.RANGES;
-import static org.apache.solr.common.params.CoreAdminParams.REQUESTID;
 import static org.apache.solr.common.params.CoreAdminParams.TARGET_CORE;
 
 import java.util.Arrays;
@@ -63,25 +61,12 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   @Override
   public void populateApiBag() {
     final CoreAdminHandler handler = getRequestHandler();
-    apiBag.registerObject(new RenameCoreAPI(handler));
     apiBag.registerObject(new SplitCoreAPI(handler));
     apiBag.registerObject(new RequestCoreRecoveryAPI(handler));
     apiBag.registerObject(new PrepareCoreRecoveryAPI(handler));
     apiBag.registerObject(new RequestApplyCoreUpdatesAPI(handler));
     apiBag.registerObject(new RequestSyncShardAPI(handler));
     apiBag.registerObject(new RequestBufferUpdatesAPI(handler));
-    apiBag.registerObject(new RequestCoreCommandStatusAPI(handler));
-  }
-
-  @Test
-  public void testRenameCoreAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/coreName", "POST", "{\"rename\": {\"to\": \"otherCore\"}}");
-
-    assertEquals("rename", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-    assertEquals("otherCore", v1Params.get(OTHER));
   }
 
   @Test
@@ -171,16 +156,5 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
 
     assertEquals("requestbufferupdates", v1Params.get(ACTION));
     assertEquals("coreName", v1Params.get(NAME));
-  }
-
-  // Strictly speaking, this API isn't at the /cores/coreName path, but as the only API at its path
-  // (/cores/coreName/command-status/requestId) it doesn't merit its own test class.
-  @Test
-  public void testRequestCommandStatusAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params("/cores/coreName/command-status/someId", "GET", NO_BODY);
-
-    assertEquals("requeststatus", v1Params.get(ACTION));
-    assertEquals("someId", v1Params.get(REQUESTID));
   }
 }

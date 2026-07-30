@@ -20,6 +20,7 @@ package org.apache.solr.util.circuitbreaker;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,11 @@ import org.slf4j.LoggerFactory;
  * uses that data to take a decision. We depend on OperatingSystemMXBean which does not allow a
  * configurable interval of collection of data.
  *
+ * <p>Because the OS load average is a one-minute moving average, polling the metric per request is
+ * wasted work. Successive {@link #isTripped()} invocations reuse a sample for {@link
+ * CircuitBreakerRegistry#SYSPROP_SAMPLE_TTL_MS} (default {@value
+ * CircuitBreakerRegistry#DEFAULT_SAMPLE_TTL_MS} ms).
+ *
  * <p>This Circuit breaker is dependent on the operating system, and may typically not work on
  * Microsoft Windows.
  */
@@ -39,6 +45,10 @@ public class LoadAverageCircuitBreaker extends CircuitBreaker {
       ManagementFactory.getOperatingSystemMXBean();
 
   private double loadAverageThreshold;
+
+  // Per-instance (not shared): tests subclass this breaker and override calculateLiveLoadAverage().
+  // See CircuitBreaker#newSampleCache().
+  private final TtlSampledMetric<Double> loadAverageCache = newSampleCache();
 
   // Assumption -- the value of these parameters will be set correctly before invoking
   // getDebugInfo()
@@ -53,7 +63,7 @@ public class LoadAverageCircuitBreaker extends CircuitBreaker {
   @Override
   public boolean isTripped() {
     double localAllowedLoadAverage = getLoadAverageThreshold();
-    double localSeenLoadAverage = calculateLiveLoadAverage();
+    double localSeenLoadAverage = loadAverageCache.get(this::calculateLiveLoadAverage);
 
     if (localSeenLoadAverage < 0) {
       if (log.isWarnEnabled()) {
@@ -95,5 +105,15 @@ public class LoadAverageCircuitBreaker extends CircuitBreaker {
 
   protected double calculateLiveLoadAverage() {
     return operatingSystemMXBean.getSystemLoadAverage();
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        Locale.ROOT,
+        "%s(threshold=%f, warnOnly=%b)",
+        getClass().getSimpleName(),
+        loadAverageThreshold,
+        isWarnOnly());
   }
 }

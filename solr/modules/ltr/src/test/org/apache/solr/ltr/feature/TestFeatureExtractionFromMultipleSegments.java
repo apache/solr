@@ -18,7 +18,7 @@ package org.apache.solr.ltr.feature;
 
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.junit.AfterClass;
@@ -236,7 +236,8 @@ public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
     query.setQuery(
         "{!edismax qf='description^1' boost='sum(product(pow(normHits, 0.7), 1600), .1)' v='apple'}");
     // request 100 rows, if any rows are fetched from the second or subsequent segments the tests
-    // should succeed if LTRRescorer::extractFeaturesInfo() advances the doc iterator properly
+    // should succeed if LTRFeatureLoggerTransformerFactory::extractFeatures() advances the doc
+    // iterator properly
     int numRows = 100;
     query.add("rows", Integer.toString(numRows));
     query.add("wt", "json");

@@ -18,28 +18,35 @@ package org.apache.solr.client.solrj.request;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * @since solr 1.3
  */
-public class LukeRequest extends DataStoreSolrRequest<LukeResponse> {
+public class LukeRequest extends CollectionRequiringSolrRequest<LukeResponse> {
 
   private List<String> fields;
   private int numTerms = -1;
   private boolean showSchema = false;
   private Boolean includeIndexFieldFlags = null;
+  private SolrParams extraParams;
 
   public LukeRequest() {
-    super(METHOD.GET, "/admin/luke");
+    // this request is not processed as an ADMIN request
+    super(METHOD.GET, "/admin/luke", SolrRequestType.ADMIN);
+  }
+
+  public LukeRequest(SolrParams params) {
+    this();
+    this.extraParams = params;
   }
 
   public LukeRequest(String path) {
-    super(METHOD.GET, path);
+    super(METHOD.GET, path, SolrRequestType.ADMIN);
   }
 
   // ---------------------------------------------------------------------------------
@@ -102,7 +109,7 @@ public class LukeRequest extends DataStoreSolrRequest<LukeResponse> {
   // ---------------------------------------------------------------------------------
 
   @Override
-  protected LukeResponse createResponse(SolrClient client) {
+  protected LukeResponse createResponse(NamedList<Object> namedList) {
     return new LukeResponse();
   }
 
@@ -121,12 +128,10 @@ public class LukeRequest extends DataStoreSolrRequest<LukeResponse> {
     if (includeIndexFieldFlags != null) {
       params.add("includeIndexFieldFlags", includeIndexFieldFlags.toString());
     }
+    if (extraParams != null) {
+      params.add(extraParams);
+    }
 
     return params;
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
   }
 }

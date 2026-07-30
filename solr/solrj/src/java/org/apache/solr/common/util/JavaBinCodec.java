@@ -47,7 +47,6 @@ import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
-import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
@@ -103,6 +102,7 @@ public class JavaBinCodec implements PushWriter {
       MAP_ENTRY = 19,
       UUID = 20, // This is reserved to be used only in LogCodec
       // types that combine tag + length (or other info) in a single byte
+      PRIMITIVE_ARR = 21,
       TAG_AND_LEN = (byte) (1 << 5),
       STR = (byte) (1 << 5),
       SINT = (byte) (2 << 5),
@@ -112,9 +112,10 @@ public class JavaBinCodec implements PushWriter {
       NAMED_LST = (byte) (6 << 5), // NamedList
       EXTERN_STRING = (byte) (7 << 5);
 
+  private static final int MIN_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY = 512;
   private static final int MAX_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY = 65536;
 
-  private static byte VERSION = 2;
+  private static final byte VERSION = 2;
   private final ObjectResolver resolver;
   protected FastOutputStream daos;
   private StringCache stringCache;
@@ -122,6 +123,9 @@ public class JavaBinCodec implements PushWriter {
   private boolean alreadyMarshalled;
   private boolean alreadyUnmarshalled;
   protected boolean readStringAsCharSeq = false;
+
+  private boolean readMapAsNamedList =
+      EnvUtils.getPropertyAsBool("solr.solrj.javabin.readMapAsNamedList", false);
 
   public JavaBinCodec() {
     resolver = null;
@@ -348,6 +352,8 @@ public class JavaBinCodec implements PushWriter {
         return readMapEntry(dis);
       case MAP_ENTRY_ITER:
         return readMapIter(dis);
+      case PRIMITIVE_ARR:
+        return readPrimitiveArray(dis);
     }
 
     throw new RuntimeException("Unknown type " + tagByte);
@@ -421,11 +427,6 @@ public class JavaBinCodec implements PushWriter {
       writeMapEntry((Map.Entry) val);
       return true;
     }
-    if (val instanceof MapSerializable) {
-      // todo find a better way to reuse the map more efficiently
-      writeMap(((MapSerializable) val).toMap(new NamedList().asShallowMap()));
-      return true;
-    }
     if (val instanceof AtomicInteger) {
       writeInt(((AtomicInteger) val).get());
       return true;
@@ -438,7 +439,148 @@ public class JavaBinCodec implements PushWriter {
       writeBoolean(((AtomicBoolean) val).get());
       return true;
     }
+    if (val instanceof float[] ff) {
+      writeFloatArr(ff);
+      return true;
+    }
+    if (val instanceof int[] ii) {
+      writeIntArr(ii);
+      return true;
+    }
+    if (val instanceof long[] ll) {
+      writeLongArr(ll);
+      return true;
+    }
+    if (val instanceof double[] dd) {
+      writeDoubleArr(dd);
+      return true;
+    }
+    if (val instanceof short[] ss) {
+      writeShortArr(ss);
+      return true;
+    }
+    if (val instanceof boolean[] bb) {
+      writeBoolArr(bb);
+      return true;
+    }
     return false;
+  }
+
+  public Object readPrimitiveArray(DataInputInputStream dis) throws IOException {
+    tagByte = dis.readByte();
+    int len = readVInt(dis);
+    switch (tagByte) {
+      case FLOAT:
+        {
+          float[] v = new float[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readFloat();
+          }
+          return v;
+        }
+      case INT:
+        {
+          int[] v = new int[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readInt();
+          }
+          return v;
+        }
+
+      case LONG:
+        {
+          long[] v = new long[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readLong();
+          }
+          return v;
+        }
+      case DOUBLE:
+        {
+          double[] v = new double[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readDouble();
+          }
+          return v;
+        }
+      case SHORT:
+        {
+          short[] v = new short[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readShort();
+          }
+          return v;
+        }
+      case BOOL_TRUE:
+      case BOOL_FALSE:
+        {
+          boolean[] v = new boolean[len];
+          for (int i = 0; i < len; i++) {
+            byte b = dis.readByte();
+            v[i] = b == BOOL_FALSE ? false : true;
+          }
+          return v;
+        }
+      case BYTE:
+        {
+          // it should be possible to serialize byte[] in the new format as well
+          byte[] v = new byte[len];
+          dis.readFully(v);
+          return v;
+        }
+      default:
+        {
+          throw new RuntimeException("Invalid type : " + tagByte);
+        }
+    }
+  }
+
+  public void writePrimitiveArrHeader(byte tag, int len) throws IOException {
+    writeTag(PRIMITIVE_ARR);
+    writeTag(tag);
+    writeVInt(len, daos);
+  }
+
+  public void writeFloatArr(float[] vals) throws IOException {
+    writePrimitiveArrHeader(FLOAT, vals.length);
+    for (float f : vals) {
+      daos.writeFloat(f);
+    }
+  }
+
+  public void writeIntArr(int[] vals) throws IOException {
+    writePrimitiveArrHeader(INT, vals.length);
+    for (int i : vals) {
+      daos.writeInt(i);
+    }
+  }
+
+  public void writeDoubleArr(double[] vals) throws IOException {
+    writePrimitiveArrHeader(DOUBLE, vals.length);
+    for (double d : vals) {
+      daos.writeDouble(d);
+    }
+  }
+
+  public void writeLongArr(long[] vals) throws IOException {
+    writePrimitiveArrHeader(LONG, vals.length);
+    for (long l : vals) {
+      daos.writeLong(l);
+    }
+  }
+
+  public void writeBoolArr(boolean[] vals) throws IOException {
+    writePrimitiveArrHeader(BOOL_TRUE, vals.length);
+    for (boolean b : vals) {
+      writeBoolean(b);
+    }
+  }
+
+  public void writeShortArr(short[] vals) throws IOException {
+    writePrimitiveArrHeader(SHORT, vals.length);
+    for (short l : vals) {
+      daos.writeShort(l);
+    }
   }
 
   public class BinEntryWriter implements MapWriter.EntryWriter {
@@ -704,9 +846,14 @@ public class JavaBinCodec implements PushWriter {
     return size < 0 ? new LinkedHashMap<>() : CollectionUtil.newLinkedHashMap(size);
   }
 
-  public Map<Object, Object> readMap(DataInputInputStream dis) throws IOException {
+  public Map<?, Object> readMap(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
-    return readMap(dis, sz);
+
+    if (readMapAsNamedList) {
+      return readMapAsSimpleOrderedMapForStringKeys(dis, sz);
+    } else {
+      return readMap(dis, sz);
+    }
   }
 
   protected Map<Object, Object> readMap(DataInputInputStream dis, int sz) throws IOException {
@@ -717,6 +864,17 @@ public class JavaBinCodec implements PushWriter {
       m.put(key, val);
     }
     return m;
+  }
+
+  protected Map<?, Object> readMapAsSimpleOrderedMapForStringKeys(DataInputInputStream dis, int sz)
+      throws IOException {
+    SimpleOrderedMap<Object> entries = new SimpleOrderedMap<>(sz);
+    for (int i = 0; i < sz; i++) {
+      Object key = readVal(dis);
+      Object val = readVal(dis);
+      entries.add((String) key, val); // using NL.add() since key won't repeat
+    }
+    return entries;
   }
 
   public final ItemWriter itemWriter =
@@ -887,8 +1045,7 @@ public class JavaBinCodec implements PushWriter {
         if (this == obj) {
           return true;
         }
-        if (obj instanceof Map.Entry<?, ?>) {
-          Entry<?, ?> entry = (Entry<?, ?>) obj;
+        if (obj instanceof Map.Entry<?, ?> entry) {
           return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
         }
         return false;
@@ -910,7 +1067,11 @@ public class JavaBinCodec implements PushWriter {
     int maxSize = end * ByteUtils.MAX_UTF8_BYTES_PER_CHAR;
 
     if (maxSize <= MAX_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY) {
-      if (bytes == null || bytes.length < maxSize) bytes = new byte[maxSize];
+      if (bytes == null || bytes.length < maxSize) {
+        int bufferSize = getBufferSize(maxSize);
+        bytes = new byte[bufferSize];
+      }
+
       int sz = ByteUtils.UTF16toUTF8(s, 0, end, bytes, 0);
       writeTag(STR, sz);
       daos.write(bytes, 0, sz);
@@ -943,7 +1104,10 @@ public class JavaBinCodec implements PushWriter {
 
   private CharSequence _readStr(DataInputInputStream dis, StringCache stringCache, int sz)
       throws IOException {
-    if (bytes == null || bytes.length < sz) bytes = new byte[sz];
+    if (bytes == null || bytes.length < sz) {
+      int bufferSize = getBufferSize(sz);
+      bytes = new byte[bufferSize];
+    }
     dis.readFully(bytes, 0, sz);
     if (stringCache != null) {
       return stringCache.get(bytesRef.reset(bytes, 0, sz));
@@ -951,6 +1115,28 @@ public class JavaBinCodec implements PushWriter {
       arr.reset();
       ByteUtils.UTF8toUTF16(bytes, 0, sz, arr);
       return arr.toString();
+    }
+  }
+
+  /**
+   * Compute the buffer size for given required size. This returns the next power of 2 that is
+   * greater than or equal to the given size.
+   *
+   * <p>This is a trade-off so we don't start with a useless too big buffer, but we don't do too
+   * many allocations.
+   */
+  static int getBufferSize(int required) {
+
+    if (required < MIN_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY) {
+      return MIN_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY;
+    }
+
+    int oneBit = Integer.highestOneBit(required);
+
+    if (oneBit == required) {
+      return oneBit;
+    } else {
+      return oneBit << 1;
     }
   }
 
@@ -1096,8 +1282,7 @@ public class JavaBinCodec implements PushWriter {
     } else if (val instanceof byte[]) {
       writeByteArray((byte[]) val, 0, ((byte[]) val).length);
       return true;
-    } else if (val instanceof ByteBuffer) {
-      ByteBuffer buf = (ByteBuffer) val;
+    } else if (val instanceof ByteBuffer buf) {
       writeByteArray(buf.array(), buf.arrayOffset() + buf.position(), buf.limit() - buf.position());
       return true;
     } else if (val == END_OBJ) {
@@ -1250,7 +1435,7 @@ public class JavaBinCodec implements PushWriter {
      * Examine and attempt to serialize the given object, using a {@link JavaBinCodec} to write it
      * to a stream.
      *
-     * @param o the object that the caller wants serialized.
+     * @param o the object that the caller wants to be serialized.
      * @param codec used to actually serialize {@code o}.
      * @return the object {@code o} itself if it could not be serialized, or {@code null} if the
      *     whole object was successfully serialized.
@@ -1265,15 +1450,12 @@ public class JavaBinCodec implements PushWriter {
     boolean wantsAllFields();
   }
 
-  public static class StringCache {
-    private final Cache<StringBytes, String> cache;
-
-    public StringCache(Cache<StringBytes, String> cache) {
-      this.cache = cache;
-    }
-
+  /**
+   * @lucene.internal
+   */
+  public abstract static class StringCache {
     public String get(StringBytes b) {
-      String result = cache.get(b);
+      String result = getFromCache(b);
       if (result == null) {
         // make a copy because the buffer received may be changed later by the caller
         StringBytes copy =
@@ -1282,16 +1464,30 @@ public class JavaBinCodec implements PushWriter {
         CharArr arr = new CharArr();
         ByteUtils.UTF8toUTF16(b.bytes, b.offset, b.length, arr);
         result = arr.toString();
-        cache.put(copy, result);
+        putIntoCache(copy, result);
       }
       return result;
     }
+
+    protected abstract String getFromCache(StringBytes b);
+
+    protected abstract void putIntoCache(StringBytes b, String val);
   }
 
   @Override
   public void close() throws IOException {
-    if (daos != null) {
+    // marshal() already flushes in its own finally block, so skip the redundant flush.
+    // Flushing again after a marshal failure would re-throw the same exception from the broken
+    // stream, causing "Self-suppression not permitted" in the caller's try-with-resources.
+    if (daos != null && !alreadyMarshalled) {
       daos.flushBuffer();
     }
+  }
+
+  /**
+   * If set, Maps will be deserialized as {@link SimpleOrderedMap} instead of {@link LinkedHashMap}
+   */
+  public void readMapAsNamedList(boolean readMapAsNamedList) {
+    this.readMapAsNamedList = readMapAsNamedList;
   }
 }

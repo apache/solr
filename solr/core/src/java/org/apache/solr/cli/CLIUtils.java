@@ -1,0 +1,440 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.cli;
+
+import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
+import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
+
+import java.io.IOException;
+import java.net.SocketException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.exec.OS;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.CollectionsApi;
+import org.apache.solr.client.solrj.request.CoresApi;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.URLUtil;
+
+/** Utility class that holds various helper methods for the CLI. */
+public final class CLIUtils {
+
+  private CLIUtils() {}
+
+  public static String RED = "\u001B[31m";
+
+  public static String GREEN = "\u001B[32m";
+
+  public static String YELLOW = "\u001B[33m";
+
+  public static String RESET = "\u001B[0m";
+
+  private static final long MAX_WAIT_FOR_CORE_LOAD_NANOS =
+      TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
+
+  private static CloudSolrClient.CloudSolrClientConnection resolveSolrConnectionFromCli(
+      CommandLine cli) throws IOException {
+    String solrConnection =
+        getCliOptionOrPropValue(
+            cli, CommonCLIOptions.SOLR_CONNECTION_OPTION, "solr-connection", null);
+    if (solrConnection != null && !solrConnection.isBlank()) {
+      return CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
+    }
+    String zkHost = getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
+    if (zkHost != null && !zkHost.isBlank()) {
+      var zkSolrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+      if (!zkSolrConnection.isZookeeper()) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
+      }
+      return zkSolrConnection;
+    }
+    return null;
+  }
+
+  private static String resolveZkHostFromCluster(CommandLine cli) throws Exception {
+    String zkHost = null;
+    try (SolrClient solrClient = getSolrClient(cli)) {
+      // hit Solr to get system info
+      Map<String, Object> status = StatusTool.reportStatus(solrClient);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
+      if (cloud != null) {
+        String zookeeper = (String) cloud.get("ZooKeeper");
+        if (zookeeper.endsWith("(embedded)")) {
+          zookeeper = zookeeper.substring(0, zookeeper.length() - "(embedded)".length());
+        }
+        zkHost = zookeeper;
+      }
+    }
+    return zkHost;
+  }
+
+  public static String getDefaultSolrUrl() {
+    // note that ENV_VAR syntax (and the env vars too) are mapped to env.var sys props
+    String scheme = EnvUtils.getProperty("solr.url.scheme", "http");
+    String host = EnvUtils.getProperty("solr.host", "localhost");
+    String port = EnvUtils.getProperty("solr.port.listen", "8983");
+
+    return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
+  }
+
+  /**
+   * Determine if a request to Solr failed due to a communication error, which is generally
+   * retry-able.
+   */
+  public static boolean checkCommunicationError(Exception exc) {
+    Throwable rootCause = SolrException.getRootCause(exc);
+    return (rootCause instanceof SolrServerException || rootCause instanceof SocketException);
+  }
+
+  public static void checkCodeForAuthError(int code) {
+    if (code == UNAUTHORIZED.code || code == FORBIDDEN.code) {
+      throw new SolrException(
+          SolrException.ErrorCode.getErrorCode(code),
+          "Solr requires authentication for request. Please supply valid credentials. HTTP code="
+              + code);
+    }
+  }
+
+  public static boolean exceptionIsAuthRelated(Exception exc) {
+    return (exc instanceof SolrException
+        && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
+  }
+
+  public static SolrClient getSolrClient(String solrUrl, String credentials, boolean barePath) {
+    // today we require all urls to end in /solr, however in the future we will need to support the
+    // /api url end point instead.   Eventually we want to have this method always
+    // return a bare url, and then individual calls decide if they are /solr or /api
+    // The /solr/ check is because sometimes a full url is passed in, like
+    // http://localhost:8983/solr/films_shard1_replica_n1/.
+    if (!barePath && !solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
+      solrUrl = solrUrl + "/solr";
+    }
+    var builder =
+        new HttpJettySolrClient.Builder(solrUrl)
+            .withMaxConnectionsPerHost(32)
+            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
+            .withOptionalBasicAuthCredentials(credentials);
+
+    return builder.build();
+  }
+
+  /**
+   * Helper method for all the places where we assume a /solr on the url.
+   *
+   * @param solrUrl The solr url that you want the client for
+   * @param credentials The username:password for basic auth.
+   * @return The SolrClient
+   */
+  public static SolrClient getSolrClient(String solrUrl, String credentials) {
+    return getSolrClient(solrUrl, credentials, false);
+  }
+
+  public static SolrClient getSolrClient(CommandLine cli, boolean barePath) throws Exception {
+    String solrUrl = normalizeSolrUrl(cli);
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
+    return getSolrClient(solrUrl, credentials, barePath);
+  }
+
+  public static SolrClient getSolrClient(CommandLine cli) throws Exception {
+    String solrUrl = normalizeSolrUrl(cli);
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
+    return getSolrClient(solrUrl, credentials, false);
+  }
+
+  /**
+   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
+   * is used, and warns those users. In the future we'll have urls ending with /api as well.
+   *
+   * @param solrUrl The user supplied url to Solr.
+   * @return a URL without any path, e.g. {@code http://localhost:8983}
+   */
+  public static String normalizeSolrUrl(String solrUrl) {
+    return normalizeSolrUrl(solrUrl, true);
+  }
+
+  /**
+   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
+   * is used, and optionally logs a warning. In the future we'll have urls ending with /api as well.
+   *
+   * @param solrUrl The user supplied url to Solr.
+   * @param logUrlFormatWarning If a warning message should be logged about the url format
+   * @return a URL without any path, e.g. {@code http://localhost:8983}
+   */
+  public static String normalizeSolrUrl(String solrUrl, boolean logUrlFormatWarning) {
+    if (solrUrl != null) {
+      URI uri = URI.create(solrUrl);
+      String urlPath = uri.getRawPath();
+      if (urlPath != null && urlPath.contains("/solr")) {
+        String newSolrUrl =
+            uri.resolve(urlPath.substring(0, urlPath.lastIndexOf("/solr") + 1)).toString();
+        if (logUrlFormatWarning) {
+          CLIO.err(
+              "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
+                  + solrUrl
+                  + "] to ["
+                  + newSolrUrl
+                  + "].");
+        }
+        solrUrl = newSolrUrl;
+      }
+      if (solrUrl.endsWith("/")) {
+        solrUrl = solrUrl.substring(0, solrUrl.length() - 1);
+      }
+    }
+    return solrUrl;
+  }
+
+  /**
+   * Get the base URL of a live Solr instance from either the --solr-url command-line option or from
+   * SolrCloud.
+   */
+  public static String normalizeSolrUrl(CommandLine cli) throws Exception {
+    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
+
+    if (solrUrl == null) {
+      var solrConnection = resolveSolrConnectionFromCli(cli);
+      if (solrConnection == null) {
+        solrUrl = getDefaultSolrUrl();
+        CLIO.err(
+            "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
+                + solrUrl
+                + ".");
+      } else if (!solrConnection.isZookeeper()) {
+        // HTTP form (e.g. `-s http://host:port`): the connection string already names a Solr URL,
+        // so use it directly without spinning up a CloudSolrClient.
+        solrUrl = normalizeSolrUrl(solrConnection.quorumItems().get(0), false);
+      } else {
+        var builder =
+            new HttpJettySolrClient.Builder()
+                .withOptionalBasicAuthCredentials(
+                    cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+        try (CloudSolrClient cloudSolrClient = getCloudSolrClient(solrConnection, builder)) {
+          Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
+          if (liveNodes.isEmpty())
+            throw new IllegalStateException(
+                "No live nodes found! Cannot determine 'solrUrl' from SolrCloud: "
+                    + solrConnection);
+
+          String firstLiveNode = liveNodes.iterator().next();
+          String urlScheme =
+              cloudSolrClient.getClusterStateProvider().getClusterProperty("urlScheme", "http");
+          solrUrl = URLUtil.getBaseUrlForNodeName(firstLiveNode, urlScheme, false);
+          solrUrl = normalizeSolrUrl(solrUrl, false);
+        }
+      }
+    }
+    solrUrl = normalizeSolrUrl(solrUrl);
+    return solrUrl;
+  }
+
+  /**
+   * Returns true if the user supplied any of the connection-related CLI options ({@code
+   * --solr-url}, {@code --solr-connection}, or {@code --zk-host}). Use this to gate logic that
+   * should only run when an explicit connection target was provided.
+   */
+  public static boolean hasConnectionOption(CommandLine cli) {
+    return cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)
+        || cli.hasOption(CommonCLIOptions.SOLR_CONNECTION_OPTION)
+        || cli.hasOption(CommonCLIOptions.ZK_HOST_OPTION);
+  }
+
+  /**
+   * Get the value of the specified CLI option with fallback to system property and default value.
+   *
+   * @param cli the command line
+   * @param option the commons cli {@link Option}
+   * @param sysprop the system property to fall back to
+   * @param defaultValue the default value. Use null if no default value is desired
+   * @return the value of the option or system property or the default value
+   */
+  public static String getCliOptionOrPropValue(
+      CommandLine cli, Option option, String sysprop, String defaultValue) {
+    String value = cli.getOptionValue(option);
+    if (value == null) {
+      value = EnvUtils.getProperty(sysprop, defaultValue);
+    }
+    return value;
+  }
+
+  /**
+   * Get the ZooKeeper connection string from either the zk-host command-line option or if not
+   * configured, from the 'zkHost' system property aka the 'ZK_HOST' environment variable. If
+   * neither is configured, we attempt looking it up from a running Solr instance based on the
+   * solr-url option.
+   */
+  public static String getZkHost(CommandLine cli) throws Exception {
+
+    String zkHost = getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
+    if (zkHost != null && !zkHost.isBlank()) {
+      return zkHost;
+    }
+    return resolveZkHostFromCluster(cli);
+  }
+
+  /**
+   * Resolves a Solr connection definition from command-line options, system properties, environment
+   * variables, or cluster discovery.
+   *
+   * <p>The connection is resolved in the following order of precedence:
+   *
+   * <ul>
+   *   <li>{@code solr-connection} command-line option
+   *   <li>{@code solrConnection} system property or {@code SOLR_CONNECTION} environment variable
+   *   <li>{@code zk-host} command-line option
+   *   <li>{@code zkHost} system property or {@code ZK_HOST} environment variable
+   *   <li>ZooKeeper connection discovered from a running Solr instance using the {@code solr-url}
+   *       option
+   *   <li>{@code null} if none is specified or discoverable
+   * </ul>
+   *
+   * @return the resolved Solr connection, or {@code null} if unavailable
+   */
+  public static CloudSolrClient.CloudSolrClientConnection getSolrConnection(CommandLine cli)
+      throws Exception {
+
+    var solrConnection = resolveSolrConnectionFromCli(cli);
+    if (solrConnection != null) {
+      return solrConnection;
+    }
+    String zkHost = resolveZkHostFromCluster(cli);
+    if (zkHost == null) {
+      return null;
+    }
+    solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    return solrConnection;
+  }
+
+  public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) {
+    if (zkHost == null) {
+      throw new IllegalStateException(
+          "Solr at "
+              + cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION)
+              + " is running in standalone server mode, this command can only be used when running in SolrCloud mode.\n");
+    }
+    return new SolrZkClient.Builder()
+        .withUrl(zkHost)
+        .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+        .build();
+  }
+
+  public static CloudSolrClient getCloudSolrClient(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      HttpJettySolrClient.Builder builder) {
+    return new CloudSolrClient.Builder(solrConnection).withHttpClientBuilder(builder).build();
+  }
+
+  /**
+   * Extracts the port from the provided {@code solrUrl}. If a URL is provided with https scheme and
+   * not explicitly defines the port, the default port for HTTPS (443) is used.
+   *
+   * <p>If URL does not contain a port nor https as scheme, it falls back to port 80.
+   *
+   * @param solrUrl the URL to extract the port from
+   * @return The port that was found.
+   * @throws NullPointerException If solrUrl is null
+   * @throws URISyntaxException If the given string violates RFC 2396, as augmented by the above
+   *     deviations
+   */
+  public static int portFromUrl(String solrUrl) throws URISyntaxException {
+    URI uri = new URI(solrUrl);
+    int port = uri.getPort();
+    if (port == -1) {
+      return uri.getScheme().equals("https") ? 443 : 80;
+    } else {
+      return port;
+    }
+  }
+
+  public static boolean safeCheckCollectionExists(
+      String solrUrl, String collection, String credentials) {
+    boolean exists = false;
+    try (var solrClient = getSolrClient(solrUrl, credentials)) {
+      var response = new CollectionsApi.ListCollections().process(solrClient);
+      exists =
+          response != null
+              && response.collections != null
+              && response.collections.contains(collection);
+    } catch (Exception exc) {
+      // just ignore it since we're only interested in a positive result here
+    }
+    return exists;
+  }
+
+  public static boolean safeCheckCoreExists(String solrUrl, String coreName, String credentials) {
+    boolean exists = false;
+    try (var solrClient = getSolrClient(solrUrl, credentials)) {
+      boolean wait = false;
+      final long startWaitAt = System.nanoTime();
+      do {
+        if (wait) {
+          final int pollIntervalMs = 1000;
+          try {
+            TimeUnit.MILLISECONDS.sleep(pollIntervalMs);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            break;
+          }
+        }
+        final var coreStatusReq = new CoresApi.GetCoreStatus(coreName);
+        final var coreStatusRsp = coreStatusReq.process(solrClient);
+        final var coreStatusByName = coreStatusRsp.status;
+        final var coreStatus = coreStatusByName.get(coreName);
+        final var failureStatus = coreStatusRsp.initFailures;
+        final var initFailureForCore = failureStatus.get(coreName);
+        final boolean hasName = coreStatus != null && coreStatus.name != null;
+        exists = hasName || initFailureForCore != null;
+        wait = hasName && initFailureForCore == null && Boolean.TRUE.equals(coreStatus.isLoading);
+      } while (wait && System.nanoTime() - startWaitAt < MAX_WAIT_FOR_CORE_LOAD_NANOS);
+    } catch (Exception exc) {
+      // just ignore it since we're only interested in a positive result here
+    }
+    return exists;
+  }
+
+  public static boolean isCloudMode(SolrClient solrClient) throws SolrServerException, IOException {
+    SystemInfoResponse sysResponse = new SystemInfoRequest().process(solrClient);
+    return "solrcloud".equals(sysResponse.getMode());
+  }
+
+  public static Path getConfigSetsDir(Path solrInstallDir) {
+    return solrInstallDir.resolve("server/solr/configsets");
+  }
+
+  public static boolean isWindows() {
+    return (OS.isFamilyDOS() || OS.isFamilyWin9x() || OS.isFamilyWindows());
+  }
+}

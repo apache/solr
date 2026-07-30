@@ -16,7 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.util.Collection;
+import java.util.List;
+import org.apache.curator.framework.AuthInfo;
 
 /**
  * Deprecated in favor of a combination of {@link DigestZkCredentialsProvider} and {@link
@@ -64,7 +65,7 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider
   }
 
   @Override
-  protected Collection<ZkCredentials> createCredentials() {
+  protected List<AuthInfo> createCredentials() {
     return digestZkCredentialsProvider.createCredentials();
   }
 }

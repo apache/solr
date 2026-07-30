@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -171,8 +170,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
           new String(
               cluster
                   .getZkClient()
-                  .getData(
-                      "/collections/" + collectionName + "/collectionprops.json", null, null, true),
+                  .getData("/collections/" + collectionName + "/collectionprops.json", null, null),
               StandardCharsets.UTF_8);
     } catch (Exception e) {
       collectionpropsInZk = "Could not get file from ZooKeeper: " + e.getMessage();
@@ -222,7 +220,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     log.info("deleting props");
     zkStateReader
         .getZkClient()
-        .delete("/collections/" + collectionName + "/collectionprops.json", -1, true);
+        .delete("/collections/" + collectionName + "/collectionprops.json", -1);
     assertEquals(1, watcher.waitForTrigger());
     final Map<String, String> props = watcher.getProps();
     assertTrue(props.toString(), props.isEmpty());
@@ -291,7 +289,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
   private class Watcher implements CollectionPropsWatcher {
     private final String name;
     private final boolean forceReadPropsFromZk;
-    private volatile Map<String, String> props = Collections.emptyMap();
+    private volatile Map<String, String> props = Map.of();
     private final AtomicInteger triggered = new AtomicInteger();
 
     public Watcher(final String name, final boolean forceReadPropsFromZk) {

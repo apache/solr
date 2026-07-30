@@ -18,24 +18,25 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -45,14 +46,14 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -62,9 +63,9 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   private static final long serialVersionUID = 1;
 
-  protected String zkHost;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
-  protected Map<String, String> params;
+  protected SolrParams params;
   protected Iterator<Tuple> tupleIterator;
   protected String field;
   protected String outcome;
@@ -76,9 +77,9 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   private transient boolean doCloseCache;
 
   public FeaturesSelectionStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
-      Map<String, String> params,
+      ModifiableSolrParams params,
       String field,
       String outcome,
       String featureSet,
@@ -86,19 +87,28 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       int numTerms)
       throws IOException {
 
-    init(collectionName, zkHost, params, field, outcome, featureSet, positiveLabel, numTerms);
+    init(
+        solrConnection,
+        collectionName,
+        params,
+        field,
+        outcome,
+        featureSet,
+        positiveLabel,
+        numTerms);
   }
 
-  /** logit(collection, zkHost="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20") */
+  /**
+   * logit(collection, solrConnection="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20")
+   */
   public FeaturesSelectionStream(StreamExpression expression, StreamFactory factory)
       throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't
-    // need to count it twice
+    // Validate there are no unknown parameters - solrConnection and alias are namedParameter,
+    // so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -113,7 +123,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
               expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (0 == namedParams.size()) {
       throw new IOException(
           String.format(
@@ -122,12 +132,8 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
               expression));
     }
 
-    Map<String, String> params = new HashMap<>();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost")) {
-        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection"));
 
     String fieldParam = params.get("field");
     if (fieldParam != null) {
@@ -166,26 +172,11 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       throw new IOException("numTerms param cannot be null for FeaturesSelectionStream");
     }
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    if (null == zkHost) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    // We've got all the required items
     init(
+        solrConnection,
         collectionName,
-        zkHost,
         params,
         fieldParam,
         outcomeParam,
@@ -198,43 +189,31 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     // functionName(collectionName, param1, param2, ..., paramN, sort="comp",
     // [aliases="field=alias,..."])
-
-    // function name
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-
-    // collection
-    expression.addParameter(collection);
-
-    // parameters
-    for (Map.Entry<String, String> param : params.entrySet()) {
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
-    }
-
-    expression.addParameter(new StreamExpressionNamedParameter("field", field));
-    expression.addParameter(new StreamExpressionNamedParameter("outcome", outcome));
-    expression.addParameter(new StreamExpressionNamedParameter("featureSet", featureSet));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("positiveLabel", String.valueOf(positiveLabel)));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)));
-
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
-
-    return expression;
+    return new StreamExpression(factory.getFunctionName(this.getClass()))
+        .withParameter(collection)
+        .withMoreParameters(params)
+        .withParameter(new StreamExpressionNamedParameter("field", field))
+        .withParameter(new StreamExpressionNamedParameter("field", field))
+        .withParameter(new StreamExpressionNamedParameter("outcome", outcome))
+        .withParameter(new StreamExpressionNamedParameter("featureSet", featureSet))
+        .withParameter(
+            new StreamExpressionNamedParameter("positiveLabel", String.valueOf(positiveLabel)))
+        .withParameter(new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)))
+        .withParameter(
+            new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
   }
 
   private void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
-      String zkHost,
-      Map<String, String> params,
+      ModifiableSolrParams params,
       String field,
       String outcome,
       String featureSet,
       int positiveLabel,
       int numTopTerms)
       throws IOException {
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = params;
     this.field = field;
@@ -267,8 +246,8 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   private List<String> getShardUrls() throws IOException {
     try {
-      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
-      Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
+      List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
       Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
       List<String> baseUrls = new ArrayList<>();
@@ -284,8 +263,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
         Collections.shuffle(shuffler, new Random());
         Replica rep = shuffler.get(0);
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
+        String url = rep.getCoreUrl();
         baseUrls.add(url);
       }
 
@@ -335,12 +313,13 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
         .withExpression(toExpression(factory).toString());
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public Tuple read() throws IOException {
     try {
       if (tupleIterator == null) {
-        Map<String, Double> termScores = new HashMap<>();
-        Map<String, Long> docFreqs = new HashMap<>();
+        final Map<String, Double> termScores = new HashMap<>();
+        final Map<String, Long> docFreqs = new HashMap<>();
 
         long numDocs = 0;
         for (NamedList<?> resp : callShards(getShardUrls())) {
@@ -352,54 +331,47 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
           numDocs += (Integer) resp.get("numDocs");
 
-          for (int i = 0; i < shardTopTerms.size(); i++) {
-            String term = shardTopTerms.getName(i);
-            double score = shardTopTerms.getVal(i);
-            int docFreq = shardDocFreqs.get(term);
-            double prevScore = termScores.containsKey(term) ? termScores.get(term) : 0;
-            long prevDocFreq = docFreqs.containsKey(term) ? docFreqs.get(term) : 0;
-            termScores.put(term, prevScore + score);
-            docFreqs.put(term, prevDocFreq + docFreq);
-          }
+          shardTopTerms.forEach(
+              (term, score) -> {
+                int docFreq = shardDocFreqs.get(term);
+                termScores.merge(term, score, Double::sum);
+                docFreqs.merge(term, (long) docFreq, Long::sum);
+              });
         }
+        final long numDocsF = numDocs; // make final
 
-        List<Tuple> tuples = new ArrayList<>(numTerms);
-        termScores = sortByValue(termScores);
-        int index = 0;
-        for (Map.Entry<String, Double> termScore : termScores.entrySet()) {
-          if (tuples.size() == numTerms) break;
-          index++;
-          Tuple tuple = new Tuple();
-          tuple.put(ID, featureSet + "_" + index);
-          tuple.put("index_i", index);
-          tuple.put("term_s", termScore.getKey());
-          tuple.put("score_f", termScore.getValue());
-          tuple.put("featureSet_s", featureSet);
-          long docFreq = docFreqs.get(termScore.getKey());
-          double d = Math.log(((double) numDocs / (double) (docFreq + 1)));
-          tuple.put("idf_d", d);
-          tuples.add(tuple);
-        }
+        final AtomicInteger idGen = new AtomicInteger(1);
 
-        tuples.add(Tuple.EOF());
-
-        tupleIterator = tuples.iterator();
+        tupleIterator =
+            termScores.entrySet().stream()
+                .sorted( // sort by score descending
+                    Comparator.<Map.Entry<String, Double>>comparingDouble(Entry::getValue)
+                        .reversed())
+                .limit(numTerms)
+                .map(
+                    (termScore) -> {
+                      int index = idGen.getAndIncrement();
+                      Tuple tuple = new Tuple();
+                      tuple.put(ID, featureSet + "_" + index);
+                      tuple.put("index_i", index);
+                      tuple.put("term_s", termScore.getKey());
+                      tuple.put("score_f", termScore.getValue());
+                      tuple.put("featureSet_s", featureSet);
+                      long docFreq = docFreqs.get(termScore.getKey());
+                      double d = Math.log(((double) numDocsF / (double) (docFreq + 1)));
+                      tuple.put("idf_d", d);
+                      return tuple;
+                    })
+                .iterator();
       }
-
-      return tupleIterator.next();
+      if (tupleIterator.hasNext()) {
+        return tupleIterator.next();
+      } else {
+        return Tuple.EOF();
+      }
     } catch (Exception e) {
       throw new IOException(e);
     }
-  }
-
-  private <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
-    Map<K, V> result = new LinkedHashMap<>();
-    Stream<Map.Entry<K, V>> st = map.entrySet().stream();
-
-    st.sorted(Map.Entry.comparingByValue((c1, c2) -> c2.compareTo(c1)))
-        .forEachOrdered(e -> result.put(e.getKey(), e.getValue()));
-
-    return result;
   }
 
   protected static class FeaturesSelectionCall implements Callable<NamedList<?>> {
@@ -407,14 +379,14 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     private final String baseUrl;
     private final String outcome;
     private final String field;
-    private final Map<String, String> paramsMap;
+    private final SolrParams params;
     private final int positiveLabel;
     private final int numTerms;
     private final SolrClientCache clientCache;
 
     public FeaturesSelectionCall(
         String baseUrl,
-        Map<String, String> paramsMap,
+        SolrParams params,
         String field,
         String outcome,
         int positiveLabel,
@@ -423,7 +395,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       this.baseUrl = baseUrl;
       this.outcome = outcome;
       this.field = field;
-      this.paramsMap = paramsMap;
+      this.params = params;
       this.positiveLabel = positiveLabel;
       this.numTerms = numTerms;
       this.clientCache = clientCache;
@@ -431,22 +403,20 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
     @Override
     public NamedList<?> call() throws Exception {
-      ModifiableSolrParams params = new ModifiableSolrParams();
+      SolrQuery queryParams = new SolrQuery();
       SolrClient solrClient = clientCache.getHttpSolrClient(baseUrl);
 
-      params.add(DISTRIB, "false");
-      params.add("fq", "{!igain}");
+      queryParams.setDistrib(false);
+      queryParams.setFilterQueries("{!igain}");
 
-      for (Map.Entry<String, String> entry : paramsMap.entrySet()) {
-        params.add(entry.getKey(), entry.getValue());
-      }
+      queryParams.add(params);
 
-      params.add("outcome", outcome);
-      params.add("positiveLabel", Integer.toString(positiveLabel));
-      params.add("field", field);
-      params.add("numTerms", String.valueOf(numTerms));
+      queryParams.add("outcome", outcome);
+      queryParams.add("positiveLabel", Integer.toString(positiveLabel));
+      queryParams.add("field", field);
+      queryParams.add("numTerms", String.valueOf(numTerms));
 
-      QueryRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(queryParams);
       QueryResponse response = request.process(solrClient);
       NamedList<?> res = response.getResponse();
       return res;

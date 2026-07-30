@@ -18,7 +18,6 @@ package org.apache.solr.spelling;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -62,7 +61,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   public static final String PARAM_MIN_BREAK_WORD_LENGTH = "minBreakLength";
 
   /** See {@link BreakSuggestionTieBreaker} for options. */
-  public static final String PARAM_BREAK_SUGGESTION_TIE_BREAKER = "breakSugestionTieBreaker";
+  public static final String PARAM_BREAK_SUGGESTION_TIE_BREAKER = "breakSuggestionTieBreaker";
 
   /** See {@link WordBreakSpellChecker#setMaxEvaluations} */
   public static final String PARAM_MAX_EVALUATIONS = "maxEvaluations";
@@ -70,7 +69,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   /** See {@link WordBreakSpellChecker#setMinSuggestionFrequency} */
   public static final String PARAM_MIN_SUGGESTION_FREQUENCY = "minSuggestionFreq";
 
-  /** Specify a value on the "breakSugestionTieBreaker" parameter. The default is MAX_FREQ. */
+  /** Specify a value on the "breakSuggestionTieBreaker" parameter. The default is MAX_FREQ. */
   public enum BreakSuggestionTieBreaker {
     /** See {@link BreakSuggestionSortMethod#NUM_CHANGES_THEN_MAX_FREQUENCY} # */
     MAX_FREQ,
@@ -219,15 +218,15 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     }
     breakSuggestionList.addAll(noBreakSuggestionList);
 
-    List<ResultEntry> combineSuggestionList = Collections.emptyList();
+    List<ResultEntry> combineSuggestionList = List.of();
     CombineSuggestion[] combineSuggestions =
         wbsp.suggestWordCombinations(
             termArr.toArray(new Term[0]), numSuggestions, ir, options.suggestMode);
     if (combineWords) {
       combineSuggestionList = new ArrayList<>(combineSuggestions.length);
       for (CombineSuggestion cs : combineSuggestions) {
-        int firstTermIndex = cs.originalTermIndexes[0];
-        int lastTermIndex = cs.originalTermIndexes[cs.originalTermIndexes.length - 1];
+        int firstTermIndex = cs.originalTermIndexes()[0];
+        int lastTermIndex = cs.originalTermIndexes()[cs.originalTermIndexes().length - 1];
         sb.delete(0, sb.length());
         for (int i = firstTermIndex; i <= lastTermIndex; i++) {
           if (i > firstTermIndex) {
@@ -240,7 +239,8 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
                 sb.toString(),
                 tokenArrWithSeparators.get(firstTermIndex).startOffset(),
                 tokenArrWithSeparators.get(lastTermIndex).endOffset());
-        combineSuggestionList.add(new ResultEntry(token, cs.suggestion.string, cs.suggestion.freq));
+        combineSuggestionList.add(
+            new ResultEntry(token, cs.suggestion().string, cs.suggestion().freq));
       }
     }
 
@@ -321,7 +321,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
       String suggestion,
       int suggestionFrequency) {
     if (suggestion == null) {
-      result.add(token, Collections.<String>emptyList());
+      result.add(token, List.of());
       result.addFrequency(token, tokenFrequency);
     } else {
       result.add(token, suggestion, suggestionFrequency);

@@ -31,7 +31,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.LogListener;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
@@ -68,7 +67,7 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     try (LogListener listener = LogListener.warn(IgnoreLargeDocumentProcessorFactory.class)) {
       processor.processAdd(getUpdate(1024));
 
-      MatcherAssert.assertThat(
+      assertThat(
           listener.pollMessage(),
           containsString("Skipping doc because estimated size exceeds limit"));
     }
@@ -87,6 +86,7 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
 
   @Test
   public void testEstimateObjectSize() {
+    assertEquals(estimate(null), 0);
     assertEquals(estimate("abc"), 6);
     assertEquals(estimate("abcdefgh"), 16);
     List<String> keys = List.of("int", "long", "double", "float", "str");
@@ -100,7 +100,8 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     map.put("double", 12.0);
     map.put("float", 5.0f);
     map.put("str", "duck");
-    assertEquals(estimate(map), 50);
+    map.put("short", null);
+    assertEquals(estimate(map), 60);
 
     SolrInputDocument document = new SolrInputDocument();
     for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -135,7 +136,8 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     mapWChild.put("double", 12.0);
     mapWChild.put("float", 5.0f);
     mapWChild.put("str", "duck");
-    assertEquals(estimate(mapWChild), 50);
+    mapWChild.put("short", null);
+    assertEquals(estimate(mapWChild), 60);
     Map<String, Object> childMap = new HashMap<>(mapWChild);
 
     SolrInputDocument document = new SolrInputDocument();
@@ -176,7 +178,8 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     mapWChild.put("double", 12.0);
     mapWChild.put("float", 5.0f);
     mapWChild.put("str", "duck");
-    assertEquals(estimate(mapWChild), 50);
+    mapWChild.put("short", null);
+    assertEquals(estimate(mapWChild), 60);
     Map<String, Object> childMap = new HashMap<>(mapWChild);
 
     SolrInputDocument document = new SolrInputDocument();

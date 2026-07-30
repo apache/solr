@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,6 +34,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -47,13 +46,15 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.highlight.SolrHighlighter;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
+import org.apache.solr.search.QueryLimits;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.carrot2.clustering.Cluster;
@@ -154,7 +155,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
         NamedList<Object> cluster = new SimpleOrderedMap<>();
         result.add(cluster);
         cluster.add(ClusteringResponse.IS_OTHER_TOPICS, true);
-        cluster.add(ClusteringResponse.LABELS_NODE, Collections.singletonList("Other topics"));
+        cluster.add(ClusteringResponse.LABELS_NODE, List.of("Other topics"));
         cluster.add(ClusteringResponse.SCORE_NODE, 0d);
         cluster.add(
             ClusteringResponse.DOCS_NODE,
@@ -290,6 +291,10 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     EngineParameters parameters = engine.defaults.derivedFrom(rb.req.getParams());
 
     List<InputDocument> inputs = getDocuments(rb, parameters);
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    if (queryLimits.maybeExitWithPartialResults("Clustering process")) {
+      return;
+    }
 
     if (rb.req.getParams().getBool(ShardParams.IS_SHARD, false)
         && rb.req.getParams().getBool(REQUEST_PARAM_COLLECT_INPUTS, false)) {
@@ -321,7 +326,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       return;
     }
 
-    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
       List<InputDocument> inputs = new ArrayList<>();
       rb.finished.stream()
           .filter(shardRequest -> (shardRequest.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0)
@@ -337,7 +342,6 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
                   inputs.addAll(documentsFromNamedList(partialInputs));
                 }
               });
-
       EngineEntry engine = getEngine(rb);
       EngineParameters parameters = engine.defaults.derivedFrom(rb.req.getParams());
       doCluster(rb, engine, inputs, parameters);
@@ -352,6 +356,10 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       EngineParameters parameters) {
     // log.warn("# CLUSTERING: " + inputs.size() + " document(s), contents:\n - "
     //   + inputs.stream().map(Object::toString).collect(Collectors.joining("\n - ")));
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    if (queryLimits.maybeExitWithPartialResults("Clustering doCluster")) {
+      return;
+    }
     List<Cluster<InputDocument>> clusters = engine.get().cluster(parameters, rb.getQuery(), inputs);
     rb.rsp.add(RESPONSE_SECTION_CLUSTERS, clustersToNamedList(inputs, clusters, parameters));
   }
@@ -375,17 +383,22 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       highlighter = // never null
           ((HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME))
               .getHighlighter(new ModifiableSolrParams().add(HighlightParams.METHOD, "original"));
-      Map<String, Object> args = new HashMap<>();
-      args.put(HighlightParams.FIELDS, fieldsToCluster);
-      args.put(HighlightParams.HIGHLIGHT, "true");
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(HighlightParams.FIELDS, fieldsToCluster);
+      params.set(HighlightParams.HIGHLIGHT, "true");
       // We don't want any highlight marks.
-      args.put(HighlightParams.SIMPLE_PRE, "");
-      args.put(HighlightParams.SIMPLE_POST, "");
-      args.put(HighlightParams.FRAGSIZE, requestParameters.contextSize());
-      args.put(HighlightParams.SNIPPETS, requestParameters.contextCount());
+      params.set(HighlightParams.SIMPLE_PRE, "");
+      params.set(HighlightParams.SIMPLE_POST, "");
+      params.set(HighlightParams.FRAGSIZE, requestParameters.contextSize());
+      params.set(HighlightParams.SNIPPETS, requestParameters.contextCount());
       // TODO highlight all docs at once instead of 1-by-1
+
+      params.add(CommonParams.Q, query.toString());
+      params.set(CommonParams.START, 0);
+      params.set(CommonParams.ROWS, 1);
+
       req =
-          new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
+          new SolrQueryRequestBase(core, params) {
             @Override
             public SolrIndexSearcher getSearcher() {
               return indexSearcher;
@@ -407,13 +420,14 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       docLanguage = (doc) -> requestParameters.language();
     }
 
+    SolrDocumentFetcher docFetcher = indexSearcher.getDocFetcher();
     List<InputDocument> result = new ArrayList<>();
     DocIterator it = responseBuilder.getResults().docList.iterator();
     while (it.hasNext()) {
       int docId = it.nextDoc();
 
       Map<String, String> docFieldValues = new LinkedHashMap<>();
-      for (IndexableField indexableField : indexSearcher.doc(docId, fieldsToLoad.keySet())) {
+      for (IndexableField indexableField : docFetcher.doc(docId, fieldsToLoad.keySet())) {
         String fieldName = indexableField.name();
         Function<IndexableField, String> toString = fieldsToLoad.get(fieldName);
         if (toString != null) {

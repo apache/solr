@@ -83,14 +83,12 @@ public class MinMetric extends Metric {
       if (d < doubleMin) {
         doubleMin = d;
       }
-    } else if (o instanceof Float) {
-      Float f = (Float) o;
+    } else if (o instanceof Float f) {
       double d = f.doubleValue();
       if (d < doubleMin) {
         doubleMin = d;
       }
-    } else if (o instanceof Integer) {
-      Integer i = (Integer) o;
+    } else if (o instanceof Integer i) {
       long l = i.longValue();
       if (l < longMin) {
         longMin = l;

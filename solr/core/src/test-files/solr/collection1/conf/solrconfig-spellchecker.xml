@@ -21,7 +21,7 @@
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
@@ -30,21 +30,6 @@
   </updateHandler>
 
   <requestHandler name="/select" class="solr.SearchHandler" />
-
-  <!-- Suggest component -->
-  <searchComponent class="solr.SpellCheckComponent" name="suggest_jaspell">
-    <lst name="spellchecker">
-      <str name="name">suggest</str>
-      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
-      <str name="lookupImpl">org.apache.solr.spelling.suggest.jaspell.JaspellLookup</str>
-      <str name="field">suggest</str>
-      <str name="storeDir">suggest</str>
-      <str name="buildOnCommit">true</str>
-
-      <!-- Suggester properties -->
-      <float name="threshold">0.0</float>
-    </lst>
-  </searchComponent>
 
   <!-- TSTLookup suggest component -->
   <searchComponent class="solr.SpellCheckComponent" name="suggest_tst">
@@ -92,15 +77,15 @@
     </lst>
   </searchComponent>
 
-  <!--  The default (jaspell) -->
+  <!--  The default (ternary tree based) -->
   <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/suggest">
     <lst name="defaults">
       <str name="spellcheck">true</str>
-      <str name="spellcheck.dictionary">suggest</str>
+      <str name="spellcheck.dictionary">suggest_tst</str>
       <str name="spellcheck.collate">true</str>
     </lst>
     <arr name="components">
-      <str>suggest_jaspell</str>
+      <str>suggest_tst</str>
     </arr>
   </requestHandler>
 

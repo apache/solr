@@ -16,11 +16,12 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -107,9 +108,9 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File indexDir = createTempDir().toFile();
+    Path indexDir = createTempDir();
 
-    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
+    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.toString());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
@@ -196,7 +197,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   (int) entry.getValue());
 
               // Check empty token due to spellcheck.q = ""
-              spellOpts.tokens = Collections.singletonList(new Token("", 0, 0));
+              spellOpts.tokens = List.of(new Token("", 0, 0));
               result = checker.getSuggestions(spellOpts);
               assertNotNull(result);
               suggestions = result.get(spellOpts.tokens.iterator().next());
@@ -212,9 +213,9 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File indexDir = createTempDir().toFile();
-    indexDir.mkdirs();
-    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
+    Path indexDir = createTempDir();
+    Files.createDirectories(indexDir);
+    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.toString());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
@@ -274,8 +275,8 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File indexDir = createTempDir().toFile();
-    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
+    Path indexDir = createTempDir();
+    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.toString());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     spellchecker.add(
@@ -318,11 +319,11 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File tmpDir = createTempDir().toFile();
-    File indexDir = new File(tmpDir, "spellingIdx");
+    Path tmpDir = createTempDir();
+    Path indexDir = tmpDir.resolve("spellingIdx");
     // create a standalone index
-    File altIndexDir = new File(tmpDir, "alternateIdx" + new Date().getTime());
-    Directory dir = newFSDirectory(altIndexDir.toPath());
+    Path altIndexDir = tmpDir.resolve("alternateIdx" + new Date().getTime());
+    Directory dir = newFSDirectory(altIndexDir);
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(new WhitespaceAnalyzer()));
     for (String alt_doc : ALT_DOCS) {
       Document doc = new Document();
@@ -332,9 +333,9 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     iw.forceMerge(1);
     iw.close();
     dir.close();
-    indexDir.mkdirs();
-    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
-    spellchecker.add(AbstractLuceneSpellChecker.LOCATION, altIndexDir.getAbsolutePath());
+    Files.createDirectories(indexDir);
+    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.toString());
+    spellchecker.add(AbstractLuceneSpellChecker.LOCATION, altIndexDir.toString());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();

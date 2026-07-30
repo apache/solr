@@ -27,13 +27,4 @@ public class HtmlEncoder extends HighlightingPluginBase implements SolrEncoder {
   public Encoder getEncoder(String fieldName, SolrParams params) {
     return new SimpleHTMLEncoder();
   }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "HtmlEncoder";
-  }
 }

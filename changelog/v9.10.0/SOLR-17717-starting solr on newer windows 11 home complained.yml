@@ -1,0 +1,7 @@
+title: Starting solr on newer Windows 11 Home complained about missing wmic
+type: fixed
+authors:
+- name: Jan Høydahl
+links:
+- name: SOLR-17717
+  url: https://issues.apache.org/jira/browse/SOLR-17717

@@ -58,7 +58,7 @@ public class StringsDSL {
         words.add(scanner.nextLine());
       }
     }
-    Collections.shuffle(words, new Random(BaseBenchState.getRandomSeed()));
+    Collections.shuffle(words, new Random(BaseBenchState.RANDOM_SEED));
     WORD_SIZE = words.size();
   }
 
@@ -108,18 +108,17 @@ public class StringsDSL {
   }
 
   /**
-   * Realistic unicode realistic unicode generator builder.
+   * Realistic unicode generator builder. No whitespace.
    *
    * @param minLength the min length
    * @param maxLength the max length
    * @return the realistic unicode generator builder
    */
   public RealisticUnicodeGeneratorBuilder realisticUnicode(int minLength, int maxLength) {
-    return new RealisticUnicodeGeneratorBuilder(
-        new SolrGen<>() {
+    final var randomUnicodeGen =
+        new SolrGen<String>() {
           @Override
           public String generate(SolrRandomnessSource in) {
-
             int block =
                 integers()
                     .between(0, blockStarts.length - 1)
@@ -131,7 +130,19 @@ public class StringsDSL {
                 .describedAs("Realistic Unicode")
                 .generate(in);
           }
-        });
+        }.assuming(
+            str -> {
+              // The string must not have whitespace
+              for (int i = 0; i < str.length(); i++) {
+                char c = str.charAt(i);
+                if (Character.isWhitespace(c)) {
+                  return false;
+                }
+              }
+              return true;
+            });
+    return new RealisticUnicodeGeneratorBuilder(
+        new SolrDescribingGenerator<>(randomUnicodeGen, Objects::toString));
   }
 
   /**
@@ -368,6 +379,7 @@ public class StringsDSL {
                 new SolrGen<>() {
                   @Override
                   public String generate(SolrRandomnessSource in) {
+                    // TODO DWS: What does it even mean for the cardinality to vary (be generated)?
                     Integer maxCard = maxCardinality.generate(in);
 
                     if (cardinalityStart == null) {
@@ -375,9 +387,12 @@ public class StringsDSL {
                           SolrGenerate.range(0, Integer.MAX_VALUE - maxCard - 1).generate(in);
                     }
 
+                    // pick from maxCardinality seeds
                     long seed =
                         SolrGenerate.range(cardinalityStart, cardinalityStart + maxCard - 1)
                             .generate(in);
+                    // given the seed, generate a string.
+                    //   Final cardinality could be less!  Small strings have limited possibilities.
                     return strings.generate(
                         (RandomnessSource) new SplittableRandomSource(new SplittableRandom(seed)));
                   }

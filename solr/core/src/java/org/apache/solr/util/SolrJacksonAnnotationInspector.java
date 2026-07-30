@@ -52,8 +52,7 @@ public class SolrJacksonAnnotationInspector extends AnnotationIntrospector {
 
   @Override
   public PropertyName findNameForSerialization(Annotated a) {
-    if (a instanceof AnnotatedMethod) {
-      AnnotatedMethod am = (AnnotatedMethod) a;
+    if (a instanceof AnnotatedMethod am) {
       JsonProperty prop = am.getAnnotation(JsonProperty.class);
       if (prop == null) return null;
       if (prop.value().isEmpty()) {
@@ -62,8 +61,7 @@ public class SolrJacksonAnnotationInspector extends AnnotationIntrospector {
         return new PropertyName(prop.value());
       }
     }
-    if (a instanceof AnnotatedField) {
-      AnnotatedField af = (AnnotatedField) a;
+    if (a instanceof AnnotatedField af) {
       JsonProperty prop = af.getAnnotation(JsonProperty.class);
       if (prop == null) return null;
       return prop.value().isEmpty()

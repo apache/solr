@@ -22,7 +22,6 @@ import static org.apache.solr.search.FunctionQParser.FLAG_USE_FIELDNAME_SOURCE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ConstNumberSource;
@@ -227,8 +226,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
       throws SyntaxError {
     SchemaField sf = fp.getReq().getSchema().getField(sfield);
     FieldType type = sf.getType();
-    if (type instanceof AbstractSpatialFieldType) {
-      AbstractSpatialFieldType<?> asft = (AbstractSpatialFieldType<?>) type;
+    if (type instanceof AbstractSpatialFieldType<?> asft) {
       return new SpatialStrategyMultiValueSource(asft.getStrategy(sfield), asft.getDistanceUnits());
     }
     ValueSource vs = type.getValueSource(sf, fp);
@@ -246,7 +244,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     final DistanceUnits distanceUnits;
 
     public SpatialStrategyMultiValueSource(SpatialStrategy strategy, DistanceUnits distanceUnits) {
-      super(Collections.emptyList());
+      super(List.of());
       this.strategy = strategy;
       this.distanceUnits = distanceUnits;
     }

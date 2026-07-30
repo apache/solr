@@ -18,7 +18,7 @@
 
 The following table lists the field types that are available in Solr and are recommended.
 The page further down, lists all the deprecated types for those migrating from older version of Solr.
-The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table.
+The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table, unless otherwise specified.
 
 == Recommended Field Types
 
@@ -43,8 +43,6 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |DoublePointField |Double field (64-bit IEEE floating point). This class encodes double values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
-|ExternalFileField |Pulls values from a file on disk. See the section xref:external-files-processes.adoc[] for more information.
-
 |EnumFieldType |Allows defining an enumerated set of values which may not be easily sorted by either alphabetic or numeric order (such as a list of severities, for example). This field type takes a configuration file, which lists the proper order of the field values. See the section xref:enum-fields.adoc[] for more information.
 
 |FloatPointField |Floating point field (32-bit IEEE floating point). This class encodes float values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
@@ -53,17 +51,21 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |IntPointField |Integer field (32-bit signed integer). This class encodes int values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
+|IntRangeField |Stores single or multi-dimensional ranges, using syntax like `[1 TO 4]` or `[1,2 TO 3,4]`.  Up to 4 dimensions are supported.  Dimensionality is specified on new field-types using a `numDimensions` property, and all values for a particular field must have exactly this number of dimensions. Field type does not support docValues. Typically queried using the xref:query-guide:other-parsers.adoc#numeric-range-query-parser[Numeric Range Query Parser], though the Lucene and other query parsers also support this field by assuming "contains" semantics for searches.
+
 |LatLonPointSpatialField |A latitude/longitude coordinate pair; possibly multi-valued for multiple points. Usually it's specified as "lat,lon" order with a comma. See the section xref:query-guide:spatial-search.adoc[] for more information.
 
 |LongPointField |Long field (64-bit signed integer). This class encodes foo values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
-|NestPathField | Specialized field type storing ehanced information, when xref:indexing-nested-documents.adoc#schema-configuration[working with nested documents].
+|LongRangeField |Stores single or multi-dimensional ranges of long integers, using syntax like `[1000000000 TO 4000000000]` or `[1,2 TO 3,4]`.  Up to 4 dimensions are supported.  Dimensionality is specified on new field-types using a `numDimensions` property, and all values for a particular field must have exactly this number of dimensions. Field type does not support docValues. Typically queried using the xref:query-guide:other-parsers.adoc#numeric-range-query-parser[Numeric Range Query Parser], though the Lucene and other query parsers also support this field by assuming "contains" semantics for searches.
+
+|DoubleRangeField |Stores single or multi-dimensional ranges of double-precision floating-point numbers, using syntax like `[1.5 TO 2.5]` or `[1.0,2.0 TO 3.0,4.0]`.  Up to 4 dimensions are supported.  Dimensionality is specified on new field-types using a `numDimensions` property, and all values for a particular field must have exactly this number of dimensions. Field type does not support docValues. Typically queried using the xref:query-guide:other-parsers.adoc#numeric-range-query-parser[Numeric Range Query Parser], though the Lucene and other query parsers also support this field by assuming "contains" semantics for searches.
+
+|FloatRangeField |Stores single or multi-dimensional ranges of floating-point numbers, using syntax like `[1.5 TO 4.5]` or `[1.0,2.0 TO 3.0,4.0]`.  Up to 4 dimensions are supported.  Dimensionality is specified on new field-types using a `numDimensions` property, and all values for a particular field must have exactly this number of dimensions. Field type does not support docValues. Typically queried using the xref:query-guide:other-parsers.adoc#numeric-range-query-parser[Numeric Range Query Parser], though the Lucene and other query parsers also support this field by assuming "contains" semantics for searches.
+
+|NestPathField | Specialized field type storing enhanced information, when xref:indexing-nested-documents.adoc#schema-configuration[working with nested documents].
 
 |PointType |A single-valued n-dimensional point. It's both for sorting spatial data that is _not_ lat-lon, and for some more rare use-cases. (NOTE: this is _not_ related to the "Point" based numeric fields). See xref:query-guide:spatial-search.adoc[] for more information.
-
-|PreAnalyzedField |Provides a way to send to Solr serialized token streams, optionally with independent stored values of a field, and have this information stored and indexed without any additional text processing.
-
-Configuration and usage of PreAnalyzedField is documented in the section  xref:external-files-processes.adoc#the-preanalyzedfield-type[PreAnalyzedField Type].
 
 |RandomSortField |Does not contain a value. Queries that sort on this field type will return results in random order. Use a dynamic field to use this feature.
 
@@ -75,7 +77,9 @@ Configuration and usage of PreAnalyzedField is documented in the section  xref:e
 
 |SpatialRecursivePrefixTreeFieldType |(RPT for short) Accepts latitude comma longitude strings or other shapes in WKT format. See xref:query-guide:spatial-search.adoc[] for more information.
 
-|StrField |String (UTF-8 encoded string or Unicode). Strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K.
+|StrField |String (UTF-8 encoded string or Unicode). Indexed `indexed="true"` strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K. Non-indexed `indexed="false"` and non-DocValues `docValues="false"` strings are suitable for storing large strings.
+
+|StrFloatLateInteractionVectorField |Supports indexing dense "Multi-Vectors" of float values for use with Late Interaction Query Re-Ranking. See the section xref:query-guide:dense-vector-search.adoc[] for more information.
 
 |TextField |Text, usually multiple words or tokens. In normal usage, only fields of type TextField or SortableTextField will specify an xref:analyzers.adoc[analyzer].
 

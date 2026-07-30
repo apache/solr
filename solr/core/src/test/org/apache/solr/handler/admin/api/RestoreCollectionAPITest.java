@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
@@ -25,36 +24,57 @@ import static org.apache.solr.common.params.CollectionAdminParams.NRT_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.PULL_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
+import org.apache.solr.client.api.model.RestoreCollectionRequestBody;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.hamcrest.MatcherAssert;
+import org.apache.solr.core.backup.repository.BackupRepository;
+import org.junit.Before;
 import org.junit.Test;
 
-/** Unit tests for {@link RestoreCollectionAPI} */
-public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
+/** Unit tests for {@link RestoreCollection} */
+public class RestoreCollectionAPITest extends MockV2APITest {
+
+  private static RestoreCollection api;
+  private BackupRepository mockBackupRepository;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    mockBackupRepository = mock(BackupRepository.class);
+    when(mockCoreContainer.newBackupRepository(eq("someRepository")))
+        .thenReturn(mockBackupRepository);
+    when(mockCoreContainer.newBackupRepository(null)).thenReturn(mockBackupRepository);
+    when(mockBackupRepository.getBackupLocation(eq("someLocation"))).thenReturn("someLocation");
+    URI uri = new URI("someLocation");
+    when(mockBackupRepository.createDirectoryURI(eq("someLocation"))).thenReturn(uri);
+    when(mockBackupRepository.exists(eq(uri))).thenReturn(true);
+
+    api = new RestoreCollection(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
 
   @Test
   public void testReportsErrorIfBackupNameMissing() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "someCollection";
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection(null, requestBody);
-            });
+        expectThrows(SolrException.class, () -> api.restoreCollection(null, requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Required parameter 'backupName' missing", thrown.getMessage());
@@ -63,12 +83,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection("someBackupName", null);
-            });
+        expectThrows(SolrException.class, () -> api.restoreCollection("someBackupName", null));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required request body", thrown.getMessage());
@@ -77,14 +92,10 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
     // No 'collection' set on the requestBody
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     final SolrException thrown =
         expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection("someBackupName", requestBody);
-            });
+            SolrException.class, () -> api.restoreCollection("someBackupName", requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Required parameter 'collection' missing", thrown.getMessage());
@@ -92,50 +103,49 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfProvidedCollectionNameIsInvalid() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "invalid$collection@name";
     final SolrException thrown =
         expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection("someBackupName", requestBody);
-            });
+            SolrException.class, () -> api.restoreCollection("someBackupName", requestBody));
 
     assertEquals(400, thrown.code());
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(), containsString("Invalid collection: [invalid$collection@name]"));
   }
 
   @Test
-  public void testCreatesValidRemoteMessageForExistingCollectionRestore() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+  public void testCreatesValidRemoteMessageForExistingCollectionRestore() throws Exception {
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "someCollectionName";
-    requestBody.location = "/some/location/path";
+    requestBody.location = "someLocation";
     requestBody.backupId = 123;
-    requestBody.repository = "someRepositoryName";
+    requestBody.repository = "someRepository";
     requestBody.async = "someAsyncId";
 
-    final var remoteMessage =
-        RestoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
+    when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
+    api.restoreCollection("someBackupName", requestBody);
 
-    assertEquals(7, remoteMessage.size());
-    assertEquals("restore", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
-    assertEquals("/some/location/path", remoteMessage.get(BACKUP_LOCATION));
-    assertEquals(Integer.valueOf(123), remoteMessage.get(BACKUP_ID));
-    assertEquals("someRepositoryName", remoteMessage.get(BACKUP_REPOSITORY));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
-    assertEquals("someBackupName", remoteMessage.get(NAME));
+    validateRunCommand(
+        CollectionParams.CollectionAction.RESTORE,
+        requestBody.async,
+        message -> {
+          assertEquals(5, message.size());
+          assertEquals("someCollectionName", message.get(COLLECTION));
+          assertEquals("someLocation", message.get(BACKUP_LOCATION));
+          assertEquals(Integer.valueOf(123), message.get(BACKUP_ID));
+          assertEquals("someRepository", message.get(BACKUP_REPOSITORY));
+          assertEquals("someBackupName", message.get(NAME));
+        });
   }
 
   @Test
-  public void testCreatesValidRemoteMessageForNewCollectionRestore() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+  public void testCreatesValidRemoteMessageForNewCollectionRestore() throws Exception {
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "someCollectionName";
-    requestBody.location = "/some/location/path";
+    requestBody.location = "someLocation";
     requestBody.backupId = 123;
-    requestBody.repository = "someRepositoryName";
+    requestBody.repository = "someRepository";
     requestBody.async = "someAsyncId";
     final var createParams = new CreateCollectionRequestBody();
     requestBody.createCollectionParams = createParams;
@@ -146,24 +156,27 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     createParams.nodeSet = List.of("node1", "node2");
     createParams.properties = Map.of("foo", "bar");
 
-    final var remoteMessage =
-        RestoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
+    when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
+    api.restoreCollection("someBackupName", requestBody);
 
-    assertEquals(14, remoteMessage.size());
-    assertEquals("restore", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
-    assertEquals("/some/location/path", remoteMessage.get(BACKUP_LOCATION));
-    assertEquals(Integer.valueOf(123), remoteMessage.get(BACKUP_ID));
-    assertEquals("someRepositoryName", remoteMessage.get(BACKUP_REPOSITORY));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
-    assertEquals("someBackupName", remoteMessage.get(NAME));
-    assertEquals("someConfig", remoteMessage.get(COLL_CONF));
-    assertEquals(Integer.valueOf(123), remoteMessage.get(NRT_REPLICAS));
-    assertEquals(Integer.valueOf(123), remoteMessage.get(REPLICATION_FACTOR));
-    assertEquals(Integer.valueOf(456), remoteMessage.get(TLOG_REPLICAS));
-    assertEquals(Integer.valueOf(789), remoteMessage.get(PULL_REPLICAS));
-    assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET_PARAM));
-    assertEquals("bar", remoteMessage.get("property.foo"));
+    validateRunCommand(
+        CollectionParams.CollectionAction.RESTORE,
+        requestBody.async,
+        message -> {
+          assertEquals(12, message.size());
+          assertEquals("someCollectionName", message.get(COLLECTION));
+          assertEquals("someLocation", message.get(BACKUP_LOCATION));
+          assertEquals(Integer.valueOf(123), message.get(BACKUP_ID));
+          assertEquals("someRepository", message.get(BACKUP_REPOSITORY));
+          assertEquals("someBackupName", message.get(NAME));
+          assertEquals("someConfig", message.get(COLL_CONF));
+          assertEquals(Integer.valueOf(123), message.get(NRT_REPLICAS));
+          assertEquals(Integer.valueOf(123), message.get(REPLICATION_FACTOR));
+          assertEquals(Integer.valueOf(456), message.get(TLOG_REPLICAS));
+          assertEquals(Integer.valueOf(789), message.get(PULL_REPLICAS));
+          assertEquals("node1,node2", message.get(CREATE_NODE_SET_PARAM));
+          assertEquals("bar", message.get("property.foo"));
+        });
   }
 
   @Test
@@ -182,16 +195,17 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     v1Params.add("createNodeSet", "node1,node2");
     v1Params.add("createNodeSet.shuffle", "false");
 
-    final var requestBody =
-        RestoreCollectionAPI.RestoreCollectionRequestBody.fromV1Params(v1Params);
+    final var requestBody = RestoreCollection.createRequestBodyFromV1Params(v1Params);
 
     assertEquals("someCollectionName", requestBody.collection);
     assertEquals("/some/location/str", requestBody.location);
     assertEquals("someRepositoryName", requestBody.repository);
     assertEquals(Integer.valueOf(123), requestBody.backupId);
     assertEquals("someAsyncId", requestBody.async);
+    // Ensure the nested "collection-creation" object looks as expected
     assertNotNull(requestBody.createCollectionParams);
     final var createParams = requestBody.createCollectionParams;
+    assertEquals("someCollectionName", createParams.name);
     assertEquals("someConfig", createParams.config);
     assertEquals(Integer.valueOf(123), createParams.nrtReplicas);
     assertNotNull(createParams.properties);

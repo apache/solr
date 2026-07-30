@@ -31,17 +31,26 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.hamcrest.Matcher;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -69,7 +78,6 @@ public class TestTaskManagement extends SolrCloudTestCase {
     super.setUp();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
@@ -108,8 +116,10 @@ public class TestTaskManagement extends SolrCloudTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("queryUUID", "foobar");
 
-    GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/cancel", params);
+    var request =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/tasks/cancel", SolrRequest.SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
     NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
 
     assertEquals("Query with queryID foobar not found", queryResponse.get("status"));
@@ -170,9 +180,9 @@ public class TestTaskManagement extends SolrCloudTestCase {
       presentQueryIDs.add(Integer.parseInt(entry.getKey()));
     }
 
-    MatcherAssert.assertThat(presentQueryIDs.size(), betweenInclusive(0, 50));
+    assertThat(presentQueryIDs.size(), betweenInclusive(0, 50));
     for (int value : presentQueryIDs) {
-      MatcherAssert.assertThat(value, betweenInclusive(0, 49));
+      assertThat(value, betweenInclusive(0, 49));
     }
   }
 
@@ -185,7 +195,13 @@ public class TestTaskManagement extends SolrCloudTestCase {
     NamedList<Object> response =
         cluster
             .getSolrClient(COLLECTION_NAME)
-            .request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list"));
+            .request(
+                new GenericSolrRequest(
+                        SolrRequest.METHOD.GET,
+                        "/tasks/list",
+                        SolrRequest.SolrRequestType.ADMIN,
+                        SolrParams.of())
+                    .setRequiresCollection(true));
     return (NamedList<String>) response.get("taskList");
   }
 
@@ -194,13 +210,123 @@ public class TestTaskManagement extends SolrCloudTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("taskUUID", "25");
 
-    GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list", params);
+    var request =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/tasks/list", SolrRequest.SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
     NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
 
     String result = (String) queryResponse.get("taskStatus");
 
     assertTrue(result.contains("inactive"));
+  }
+
+  @Test
+  public void testCheckSpecificQueryStatus_Active() throws Exception {
+    for (int i = 0; i < 10; i++) {
+      executeQueryAsync(Integer.toString(i));
+    }
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("taskUUID", "5");
+
+    var request =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/tasks/list", SolrRequest.SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
+    NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
+
+    String result = (String) queryResponse.get("taskStatus");
+
+    assertTrue(result.contains("active"));
+  }
+
+  @Test
+  public void testCheckSpecificQueryStatus_Inactive() throws Exception {
+    for (int i = 0; i < 10; i++) {
+      executeQueryAsync(Integer.toString(i));
+    }
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("taskUUID", "15");
+
+    var request =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/tasks/list", SolrRequest.SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
+    NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
+
+    String result = (String) queryResponse.get("taskStatus");
+
+    assertTrue(result.contains("inactive"));
+  }
+
+  /**
+   * Regression test for cross-shard task visibility.
+   *
+   * <p>On {@code main}, {@code ActiveTasksListHandler.handleRequestBody()} delegates to {@code
+   * processRequest()}, which fans the request out to every shard via the distributed query
+   * pipeline. {@code ActiveTasksListComponent.handleResponses()} then aggregates the per-shard
+   * results, so a task running on shard 2 is visible when the status-check request lands on shard
+   * 1.
+   *
+   * <p>If this handler is migrated to JAX-RS and the fan-out is replaced with a direct call to the
+   * handler node's own {@code CancellableQueryTracker}, a task registered only on shard 2 becomes
+   * invisible to a request handled by shard 1, causing a false "inactive" response.
+   */
+  @Test
+  public void testCrossShardTaskStatusVisibility() throws Exception {
+    DocCollection docCollection =
+        cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
+    List<Slice> slices = new ArrayList<>(docCollection.getSlices());
+    assertEquals("test requires exactly 2 shards", 2, slices.size());
+    Replica shard1Leader = slices.get(0).getLeader();
+    Replica shard2Leader = slices.get(1).getLeader();
+    assumeFalse(
+        "Both shard leaders landed on the same node — cross-shard scenario cannot be tested",
+        shard1Leader.getNodeName().equals(shard2Leader.getNodeName()));
+
+    final String taskId = "cross-shard-visibility-test";
+
+    JettySolrRunner shard2Jetty =
+        cluster.getJettySolrRunners().stream()
+            .filter(j -> j.getNodeName().equals(shard2Leader.getNodeName()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("No Jetty found for shard 2 leader"));
+    try (SolrCore shard2Core = shard2Jetty.getCoreContainer().getCore(shard2Leader.getCoreName())) {
+      assertNotNull("Could not open shard 2 core", shard2Core);
+      ModifiableSolrParams fakeParams = new ModifiableSolrParams();
+      fakeParams.set(CommonParams.QUERY_UUID, taskId);
+      try (var fakeReq = new SolrQueryRequestBase(shard2Core, fakeParams)) {
+        shard2Core.getCancellableQueryTracker().generateQueryID(fakeReq);
+      }
+
+      try {
+        try (var shard1Client =
+            new HttpJettySolrClient.Builder(shard1Leader.getBaseUrl()).build()) {
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set(CommonParams.TASK_CHECK_UUID, taskId);
+          var statusReq =
+              new GenericSolrRequest(
+                      SolrRequest.METHOD.GET, "/tasks/list", SolrRequestType.ADMIN, params)
+                  .setRequiresCollection(true);
+          NamedList<Object> response = shard1Client.request(statusReq, COLLECTION_NAME);
+
+          Object taskStatus = response.get("taskStatus");
+          assertNotNull("taskStatus missing from response", taskStatus);
+          assertTrue(
+              "Task registered on shard 2 must be visible from shard 1 via cross-shard fan-out. "
+                  + "Got: "
+                  + taskStatus
+                  + " ("
+                  + taskStatus.getClass().getSimpleName()
+                  + ") — if this is Boolean.FALSE the distributed aggregation was dropped.",
+              taskStatus instanceof String && ((String) taskStatus).contains("status: active"));
+        }
+      } finally {
+        shard2Core.getCancellableQueryTracker().releaseQueryID(taskId);
+      }
+    }
   }
 
   private CompletableFuture<Void> cancelQuery(
@@ -210,8 +336,10 @@ public class TestTaskManagement extends SolrCloudTestCase {
           ModifiableSolrParams params = new ModifiableSolrParams();
 
           params.set("queryUUID", queryID);
-          SolrRequest<?> request = new QueryRequest(params);
-          request.setPath("/tasks/cancel");
+          var request =
+              new GenericSolrRequest(
+                      SolrRequest.METHOD.POST, "/tasks/cancel", SolrRequestType.ADMIN, params)
+                  .setRequiresCollection(true);
 
           try {
             NamedList<Object> queryResponse;

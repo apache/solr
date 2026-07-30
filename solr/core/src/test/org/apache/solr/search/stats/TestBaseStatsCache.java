@@ -36,7 +36,6 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
   @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
-    System.clearProperty("solr.statsCache");
   }
 
   // in this case, as the number of shards increases, per-shard scores should
@@ -63,5 +62,10 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
       SolrDocument shardDoc = it2.next();
       assertEquals(controlDoc.getFieldValue("score"), shardDoc.getFieldValue("score"));
     }
+  }
+
+  @Override
+  protected void checkDistribStatsException() {
+    // doing nothing on distrib stats
   }
 }

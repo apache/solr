@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -48,7 +49,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
   private String q;
 
   public DrillStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       StreamComparator comp,
@@ -56,11 +57,11 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       String flParam,
       String qParam)
       throws IOException {
-    init(zkHost, collection, tupleStream, comp, sortParam, flParam, qParam);
+    init(solrConnection, collection, tupleStream, comp, sortParam, flParam, qParam);
   }
 
   public DrillStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       String expressionString,
       StreamComparator comp,
@@ -69,7 +70,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       String qParam)
       throws IOException {
     TupleStream tStream = this.streamFactory.constructStream(expressionString);
-    init(zkHost, collection, tStream, comp, sortParam, flParam, qParam);
+    init(solrConnection, collection, tStream, comp, sortParam, flParam, qParam);
   }
 
   public void setStreamFactory(StreamFactory streamFactory) {
@@ -85,8 +86,6 @@ public class DrillStream extends CloudSolrStream implements Expressible {
     StreamExpressionNamedParameter sortExpression = factory.getNamedOperand(expression, SORT);
     StreamExpressionNamedParameter qExpression = factory.getNamedOperand(expression, Q);
     StreamExpressionNamedParameter flExpression = factory.getNamedOperand(expression, FL);
-
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
     // Collection Name
     if (null == collectionName) {
@@ -147,26 +146,8 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       qParam = ((StreamExpressionValue) qExpression.getParameter()).getValue();
     }
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    if (null == zkHost) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    // We've got all the required items
     StreamFactory localFactory = (StreamFactory) factory.clone();
     localFactory.withDefaultSort(sortParam);
     TupleStream stream = localFactory.constructStream(streamExpressions.get(0));
@@ -175,11 +156,11 @@ public class DrillStream extends CloudSolrStream implements Expressible {
             ((StreamExpressionValue) sortExpression.getParameter()).getValue(),
             FieldComparator.class);
     streamFactory = factory;
-    init(zkHost, collectionName, stream, comp, sortParam, flParam, qParam);
+    init(solrConnection, collectionName, stream, comp, sortParam, flParam, qParam);
   }
 
   private void init(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       StreamComparator comp,
@@ -187,7 +168,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       String flParam,
       String qParam)
       throws IOException {
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.comp = comp;
     this.tupleStream = tupleStream;
@@ -228,8 +209,8 @@ public class DrillStream extends CloudSolrStream implements Expressible {
     // sort
     expression.addParameter(new StreamExpressionNamedParameter(SORT, comp.toExpression(factory)));
 
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }
@@ -285,7 +266,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       paramsLoc.set("fl", fl);
       paramsLoc.set("sort", sort);
       paramsLoc.set("q", q);
-      getReplicas(this.zkHost, this.collection, this.streamContext, paramsLoc)
+      getReplicas(this.solrConnection, this.collection, this.streamContext, paramsLoc)
           .forEach(
               r -> {
                 SolrStream solrStream = new SolrStream(r.getBaseUrl(), paramsLoc, r.getCoreName());

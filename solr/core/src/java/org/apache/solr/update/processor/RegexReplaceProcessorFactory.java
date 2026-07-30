@@ -120,8 +120,7 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
         getSelector(),
         next,
         src -> {
-          if (src instanceof CharSequence) {
-            CharSequence txt = (CharSequence) src;
+          if (src instanceof CharSequence txt) {
             return pattern.matcher(txt).replaceAll(replacement);
           }
           return src;

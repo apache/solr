@@ -18,8 +18,9 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Map;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValuesSkipIndexType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -47,7 +48,7 @@ public class NumericHidingLeafReader extends FilterLeafReader {
   public static LeafReader wrap(LeafReader leafReader, String field) {
     return UninvertingReader.wrap(
         new NumericHidingLeafReader(leafReader, field),
-        Collections.singletonMap(field, UninvertingReader.Type.SORTED)::get);
+        Map.of(field, UninvertingReader.Type.SORTED)::get);
   }
 
   private final String field;
@@ -63,20 +64,22 @@ public class NumericHidingLeafReader extends FilterLeafReader {
             new FieldInfo(
                 fi.name,
                 fi.number,
-                fi.hasVectors(),
+                fi.hasTermVectors(),
                 fi.omitsNorms(),
                 fi.hasPayloads(),
                 fi.getIndexOptions(),
                 DocValuesType.NONE,
+                DocValuesSkipIndexType.NONE,
                 -1,
-                Collections.emptyMap(),
+                Map.of(),
                 fi.getPointDimensionCount(),
                 fi.getPointIndexDimensionCount(),
                 fi.getPointNumBytes(),
                 fi.getVectorDimension(),
                 fi.getVectorEncoding(),
                 fi.getVectorSimilarityFunction(),
-                fi.isSoftDeletesField()));
+                fi.isSoftDeletesField(),
+                fi.isParentField()));
       } else {
         filteredInfos.add(fi);
       }

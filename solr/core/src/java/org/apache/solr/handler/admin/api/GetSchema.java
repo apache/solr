@@ -17,8 +17,8 @@
 
 package org.apache.solr.handler.admin.api;
 
+import jakarta.inject.Inject;
 import java.lang.invoke.MethodHandles;
-import javax.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.GetSchemaApi;
 import org.apache.solr.client.api.model.SchemaInfoResponse;
@@ -110,8 +110,7 @@ public class GetSchema extends JerseyResource implements GetSchemaApi {
     final SchemaZkVersionResponse response =
         instantiateJerseyResponse(SchemaZkVersionResponse.class);
     int zkVersion = -1;
-    if (solrCore.getLatestSchema() instanceof ManagedIndexSchema) {
-      ManagedIndexSchema managed = (ManagedIndexSchema) solrCore.getLatestSchema();
+    if (solrCore.getLatestSchema() instanceof ManagedIndexSchema managed) {
       zkVersion = managed.getSchemaZkVersion();
       if (refreshIfBelowVersion != -1 && zkVersion < refreshIfBelowVersion) {
         log.info(

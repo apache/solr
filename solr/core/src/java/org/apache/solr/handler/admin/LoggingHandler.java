@@ -22,12 +22,16 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.LogLevelChange;
+import org.apache.solr.client.api.model.LoggingResponse;
+import org.apache.solr.client.api.model.SetThresholdRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.NodeLoggingAPI;
+import org.apache.solr.handler.admin.api.NodeLogging;
+import org.apache.solr.handler.admin.proxy.GenericV1RequestProxy;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.request.SolrQueryRequest;
@@ -54,25 +58,23 @@ public class LoggingHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final NodeLoggingAPI loggingApi = new NodeLoggingAPI(cc);
+    final NodeLogging loggingApi = new NodeLogging(cc);
 
     SolrParams params = req.getParams();
     if (params.get("threshold") != null) {
       squashV2Response(
           rsp,
-          loggingApi.setMessageThreshold(
-              new NodeLoggingAPI.SetThresholdRequestBody(params.get("threshold"))));
+          loggingApi.setMessageThreshold(new SetThresholdRequestBody(params.get("threshold"))));
     }
 
     // Write something at each level
     if (params.get("test") != null) {
-      NodeLoggingAPI.writeLogsForTesting();
+      NodeLogging.writeLogsForTesting();
     }
 
     String[] set = params.getParams("set");
     if (set != null) {
-      final List<NodeLoggingAPI.LogLevelChange> changes =
-          NodeLoggingAPI.LogLevelChange.createRequestBodyFromV1Params(set);
+      final List<LogLevelChange> changes = NodeLogging.parseLogLevelChanges(set);
       squashV2Response(rsp, loggingApi.modifyLocalLogLevel(changes));
     }
 
@@ -90,12 +92,10 @@ public class LoggingHandler extends RequestHandlerBase {
     }
 
     rsp.setHttpCaching(false);
-    if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
-      return; // Request was proxied to other node
-    }
+    new GenericV1RequestProxy(cc, req, rsp).proxyRequest();
   }
 
-  private void squashV2Response(SolrQueryResponse rsp, NodeLoggingAPI.LoggingResponse response) {
+  private void squashV2Response(SolrQueryResponse rsp, LoggingResponse response) {
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
   }
 
@@ -118,7 +118,7 @@ public class LoggingHandler extends RequestHandlerBase {
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(NodeLoggingAPI.class);
+    return List.of(NodeLogging.class);
   }
 
   @Override

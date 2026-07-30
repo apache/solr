@@ -16,7 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
@@ -28,8 +29,8 @@ import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
@@ -481,14 +482,14 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testRelativeIndexDirLocation() {
     SolrCore core = h.getCore();
-    File indexDir = new File(core.getDataDir() + File.separator + "spellchecker1");
-    assertTrue(indexDir.exists());
+    Path indexDir = Path.of(core.getDataDir(), "spellchecker1");
+    assertTrue(Files.exists(indexDir));
 
-    indexDir = new File(core.getDataDir() + File.separator + "spellchecker2");
-    assertTrue(indexDir.exists());
+    indexDir = Path.of(core.getDataDir(), "spellchecker2");
+    assertTrue(Files.exists(indexDir));
 
-    indexDir = new File(core.getDataDir() + File.separator + "spellchecker3");
-    assertTrue(indexDir.exists());
+    indexDir = Path.of(core.getDataDir(), "spellchecker3");
+    assertTrue(Files.exists(indexDir));
   }
 
   @Test
@@ -621,7 +622,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     SolrRequestHandler handler = core.getRequestHandler("/spellCheckCompRH");
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap<>());
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+    SolrQueryRequest req = new SolrQueryRequestBase(core, params);
     handler.handleRequest(req, rsp);
     req.close();
     NamedList<?> values = rsp.getValues();
@@ -634,7 +635,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
     rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap<>());
-    req = new LocalSolrQueryRequest(core, params);
+    req = new SolrQueryRequestBase(core, params);
     handler.handleRequest(req, rsp);
     req.close();
     values = rsp.getValues();
@@ -642,5 +643,17 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     suggestions = (NamedList<?>) spellCheck.get("suggestions");
     assertNull(suggestions.get("suggestion"));
     assertFalse((Boolean) spellCheck.get("correctlySpelled"));
+  }
+
+  @Test
+  public void testFirstSearcherWarming() throws Exception {
+
+    final long preRestart = h.getCore().withSearcher(s -> s.getOpenNanoTime());
+
+    h.reload();
+
+    try (SolrCore current = h.getCoreInc()) {
+      assertNotEquals(preRestart, (long) current.withSearcher(s -> s.getOpenNanoTime()));
+    }
   }
 }

@@ -17,7 +17,7 @@
 package org.apache.solr.spelling;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
@@ -89,7 +89,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
               assertTrue("suggestions should be empty", suggestions.isEmpty());
 
               // Check empty token due to spellcheck.q = ""
-              spellOpts.tokens = Collections.singletonList(new Token("", 0, 0));
+              spellOpts.tokens = List.of(new Token("", 0, 0));
               result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
               suggestions = result.get(spellOpts.tokens.iterator().next());

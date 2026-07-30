@@ -42,7 +42,7 @@ public class DerivativeEvaluator extends RecursiveObjectEvaluator implements One
               toExpression(constructingFactory)));
     }
 
-    if (!(value instanceof VectorFunction)) {
+    if (!(value instanceof VectorFunction vectorFunction)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -50,8 +50,6 @@ public class DerivativeEvaluator extends RecursiveObjectEvaluator implements One
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     }
-
-    VectorFunction vectorFunction = (VectorFunction) value;
 
     DifferentiableUnivariateFunction func = null;
     double[] x = (double[]) vectorFunction.getFromContext("x");

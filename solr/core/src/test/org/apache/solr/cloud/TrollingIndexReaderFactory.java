@@ -67,7 +67,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
     @Override
     public abstract String toString();
 
-    public static void dumpLastStackTraces(org.slf4j.Logger log) {
+    public static void dumpLastStackTraces(Logger log) {
       ArrayList<List<Object>> stacks = new ArrayList<>();
       lastStacktraces.drainTo(stacks);
       StringBuilder out = new StringBuilder("the last caught stacktraces: \n");

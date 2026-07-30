@@ -43,9 +43,8 @@ public class SumRowsEvaluator extends RecursiveObjectEvaluator implements OneVal
   public Object doWork(Object value) throws IOException {
     if (null == value) {
       return null;
-    } else if (value instanceof Matrix) {
+    } else if (value instanceof Matrix matrix) {
 
-      Matrix matrix = (Matrix) value;
       double[][] data = matrix.getData();
       List<Number> sums = new ArrayList<>(data.length);
 

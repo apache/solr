@@ -23,13 +23,13 @@ resource configuration.
 == When To Use Circuit Breakers
 Circuit breakers should be used when the user wishes to trade request throughput for a higher Solr stability.
 If circuit breakers are enabled, requests may be rejected under the condition of high node duress with HTTP error code 429 'Too Many Requests'.
-
 It is up to the client to handle this error and potentially build retry logic as this should be a transient situation.
 
-In a sharded collection, when a circuit breaker trips on one shard, the entire query will fail,
-even if the other shard requests succeed. This will multiply the failures seen by the end users.
-Setting the `shards.tolerant=true` parameter on requests can help with graceful degradation when
-circuit breaker thresholds are reached on some nodes. See the xref:deployment-guide:solrcloud-distributed-requests.adoc#shards-tolerant-parameter[`shards.tolerant` Parameter] for details.
+Individual circuit breakers may also be enabled in a "warn only" mode.
+"Warn only" breakers whose threshold has been exceeded are logged, but are not used to block or short-circuit requests.
+This may be used as a way to tune circuit breaker thresholds without impacting traffic.
+
+In a request to a sharded collection, the circuit breaker is only checked on the node handling the initial request, not for inter-node requests. It is therefore recommended to load balance client requests across Solr nodes to avoid hotspots.
 
 == Circuit Breaker Configurations
 Circuit breakers can be configured globally for the entire node, or for each collection individually, or a combination. Per-collection circuit breakers are checked before global circuit breakers, and if there is a conflict, the per-collection circuit breaker takes precedence.
@@ -48,10 +48,16 @@ Circuit breakers can be configured globally using environment variables, e.g. in
 |System Load Average |`SOLR_CIRCUITBREAKER_QUERY_LOADAVG`, `SOLR_CIRCUITBREAKER_UPDATE_LOADAVG` |`solr.circuitbreaker.query.loadavg`, `solr.circuitbreaker.update.loadavg`
 |===
 
+Circuit breakers can be configured in "warn only" mode by adding a "warnonly"-suffixed environment variable or system property with a boolean value.
+
 For example, you can enable a global CPU circuit breaker that rejects update requests when above 95% CPU load, by setting the following environment variable: `SOLR_CIRCUITBREAKER_UPDATE_CPU=95`.
+If "warn only" mode is desired for this circuit breaker, the `SOLR_CIRCUITBREAKER_UPDATE_CPU_WARNONLY=true` environment variable or `solr.circuitbreaker.update.cpu.warnonly=true` system property could be set.
 
 === Per Collection Circuit Breakers
-Circuit breakers are configured as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown in the below examples. By default, only search requests are affected.
+Circuit breakers are configured as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown in the below examples.
+By default, only search requests are affected.
+The syntax and semantics of available configuration options differs slightly based on the type of circuit breaker being configured.
+However all circuit breakers support a boolean "warnOnly" setting" that can be used to set the circuit breaker into "warn only" mode (e.g. `<bool name="warnOnly">true</bool>`)
 
 [TIP]
 ====
@@ -64,6 +70,16 @@ HTTP error code from circuit breakers is configurable with java system property 
 
 This circuit breaker tracks JVM heap memory usage and rejects incoming requests with a 429 error code if the heap usage exceeds a configured percentage of maximum heap allocated to the JVM (-Xmx).
 The main configuration for this circuit breaker is controlling the threshold percentage at which the breaker will trip.
+
+The heap-usage signal is read from `MemoryPoolMXBean.getCollectionUsage()` on the old/tenured generation pool — that is, JVM heap usage *immediately after* the most recent collection.
+This is the only heap reading that distinguishes live data from garbage waiting to be reclaimed; on a generational collector, raw `used` heap climbs toward `max` between collections during normal operation, which is the steady-state shape of a healthy JVM rather than a problem worth tripping on.
+
+For non-generational collectors (non-generational ZGC, Shenandoah) where the JVM exposes a single combined heap pool, the breaker sums `getCollectionUsage()` across all `HEAP`-typed pools instead.
+
+[NOTE]
+====
+Until the JVM has performed at least one collection on a heap pool, `getCollectionUsage()` may return `null` on every pool and the breaker will report `0` live bytes — meaning it will not trip. On a freshly started node with a small workload this can take some time, particularly under ZGC or Shenandoah.
+====
 
 To enable and configure the JVM heap usage based circuit breaker, add the following:
 
@@ -148,6 +164,11 @@ SOLR_CIRCUITBREAKER_QUERY_LOADAVG=8.0
 
 The triggering threshold is a floating point number matching load average.
 The example circuit breaker above will trip when the load average is equal to or greater than 8.0.
+
+[NOTE]
+====
+The OS load average is itself a moving average (typically over one minute), so this breaker caches the sampled value for a short TTL and shares it across concurrent requests; under high QPS the underlying `getSystemLoadAverage()` syscall is invoked at most once per TTL window. The TTL defaults to 1000 ms and is configurable per-process with the `solr.circuitbreaker.sample.ttl.ms` system property (or the equivalent `SOLR_CIRCUITBREAKER_SAMPLE_TTL_MS` environment variable). The TTL is read once when each breaker is constructed, so changes apply to subsequently-created breakers, not to instances already in use. The same TTL is also applied to the JVM Heap Usage breaker's post-GC sample.
+====
 
 [NOTE]
 ====

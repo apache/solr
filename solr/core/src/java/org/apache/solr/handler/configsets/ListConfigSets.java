@@ -18,11 +18,11 @@ package org.apache.solr.handler.configsets;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
-import javax.inject.Inject;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.client.api.endpoint.ListConfigsetsApi;
+import org.apache.solr.client.api.endpoint.ConfigsetsApi;
 import org.apache.solr.client.api.model.ListConfigsetsResponse;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
@@ -30,9 +30,9 @@ import org.apache.solr.jersey.PermissionName;
 /**
  * V2 API implementation for listing all available configsets.
  *
- * <p>This API (GET /v2/cluster/configs) is analogous to the v1 /admin/configs?action=LIST command.
+ * <p>This API (GET /v2/configsets) is analogous to the v1 /admin/configs?action=LIST command.
  */
-public class ListConfigSets extends JerseyResource implements ListConfigsetsApi {
+public class ListConfigSets extends JerseyResource implements ConfigsetsApi.List {
 
   @Context public HttpHeaders headers;
 

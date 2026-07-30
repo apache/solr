@@ -23,23 +23,25 @@ import static org.apache.solr.util.QueryMatchers.phraseQuery;
 import static org.apache.solr.util.QueryMatchers.termQuery;
 import static org.hamcrest.core.StringContains.containsString;
 
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PointInSetQuery;
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
@@ -50,15 +52,13 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
-import org.hamcrest.MatcherAssert;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,7 +66,8 @@ import org.junit.Test;
 public class TestSolrQueryParser extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.max.booleanClauses", "42"); // lower for testing
     System.setProperty("solr.filterCache.async", "true"); // for testLocalParamsInQP
     initCore("solrconfig.xml", "schema12.xml");
@@ -247,9 +248,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       SchemaField foo_dt = h.getCore().getLatestSchema().getField("foo_dt");
       String expected = "foo_dt:2013-09-11T00:00:00Z";
       if (foo_dt.getType().isPointField()) {
-        expected = "(foo_dt:[1378857600000 TO 1378857600000])";
+        expected = "foo_dt:[1378857600000 TO 1378857600000]";
         if (foo_dt.hasDocValues() && foo_dt.indexed()) {
-          expected = "IndexOrDocValuesQuery" + expected;
+          expected =
+              "IndexOrDocValuesQuery(IndexOrDocValuesQuery(indexQuery="
+                  + expected
+                  + ", dvQuery="
+                  + expected
+                  + "))";
+        } else {
+          expected = "(" + expected + ")";
         }
       }
       assertJQ(
@@ -331,7 +339,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     sowTrueParamsMap.put("sow", "true");
     List<MapSolrParams> paramMaps =
         Arrays.asList(
-            new MapSolrParams(Collections.emptyMap()), // no sow param (i.e. the default sow value)
+            new MapSolrParams(Map.of()), // no sow param (i.e. the default sow value)
             new MapSolrParams(sowFalseParamsMap),
             new MapSolrParams(sowTrueParamsMap));
 
@@ -366,7 +374,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setIsFilter(true); // this may change in the future
       qParser.setParams(params);
       q = qParser.getQuery();
-      assertEquals(26, ((TermInSetQuery) q).getTermData().size());
+      assertEquals(26, ((TermInSetQuery) q).getTermsCount());
 
       // large numeric filter query should use TermsQuery
       qParser =
@@ -394,7 +402,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
               ((PointInSetQuery) q).getPackedPoints().size());
         }
       } else {
-        assertEquals(20, ((TermInSetQuery) q).getTermData().size());
+        assertEquals(20, ((TermInSetQuery) q).getTermsCount());
       }
 
       // for point fields large filter query should use PointInSetQuery
@@ -420,16 +428,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setParams(params);
       q = qParser.getQuery();
       assertEquals(2, ((BooleanQuery) q).clauses().size());
-      qq = ((BooleanQuery) q).clauses().get(0).getQuery();
+      qq = ((BooleanQuery) q).clauses().get(0).query();
       if (qq instanceof TermQuery) {
-        qq = ((BooleanQuery) q).clauses().get(1).getQuery();
+        qq = ((BooleanQuery) q).clauses().get(1).query();
       }
 
       if (qq instanceof FilterQuery) {
         qq = ((FilterQuery) qq).getQuery();
       }
 
-      assertEquals(26, ((TermInSetQuery) qq).getTermData().size());
+      assertEquals(26, ((TermInSetQuery) qq).getTermsCount());
 
       // test mixed boolean query, including quotes (which shouldn't matter)
       qParser =
@@ -442,10 +450,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       assertEquals(4, ((BooleanQuery) q).clauses().size());
       qq = null;
       for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-        qq = clause.getQuery();
+        qq = clause.query();
         if (qq instanceof TermInSetQuery) break;
       }
-      assertEquals(26, ((TermInSetQuery) qq).getTermData().size());
+      assertEquals(26, ((TermInSetQuery) qq).getTermsCount());
 
       // test terms queries of two different fields (LUCENE-7637 changed to require all terms be in
       // the same field)
@@ -460,8 +468,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       q = qParser.getQuery();
       assertEquals(2, ((BooleanQuery) q).clauses().size());
       for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-        qq = clause.getQuery();
-        assertEquals(17, ((TermInSetQuery) qq).getTermData().size());
+        qq = clause.query();
+        assertEquals(17, ((TermInSetQuery) qq).getTermsCount());
       }
     }
     req.close();
@@ -482,7 +490,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             SolrException.class,
             "expected SolrException",
             () -> assertJQ(req("q", too_long), "/response/numFound==6"));
-    MatcherAssert.assertThat(e.getMessage(), containsString(expectedMsg));
+    assertThat(e.getMessage(), containsString(expectedMsg));
 
     // but should still work as a filter query since TermsQuery can be used...
     assertJQ(req("q", "*:*", "fq", too_long), "/response/numFound==6");
@@ -513,7 +521,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             SolrException.class,
             "expected SolrException",
             () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
-    MatcherAssert.assertThat(e.getMessage(), containsString(expectedMsg));
+    assertThat(e.getMessage(), containsString(expectedMsg));
 
     assertNotNull(e.getCause());
     assertEquals(SyntaxError.class, e.getCause().getClass());
@@ -573,54 +581,40 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     delI("777");
     assertU(commit()); // arg... commit no longer "commits" unless there has been a change.
 
-    final MetricsMap filterCacheStats =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper)
-                    h.getCore()
-                        .getCoreMetricManager()
-                        .getRegistry()
-                        .getMetrics()
-                        .get("CACHE.searcher.filterCache"))
-                .getGauge();
-    assertNotNull(filterCacheStats);
-    final MetricsMap queryCacheStats =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper)
-                    h.getCore()
-                        .getCoreMetricManager()
-                        .getRegistry()
-                        .getMetrics()
-                        .get("CACHE.searcher.queryResultCache"))
-                .getGauge();
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsInitial =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsInitial =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
 
-    assertNotNull(queryCacheStats);
-
-    long inserts = (Long) filterCacheStats.getValue().get("inserts");
-    long hits = (Long) filterCacheStats.getValue().get("hits");
+    long inserts = (long) filterInsertsInitial.getValue();
+    long hits = (long) filterHitsInitial.getValue();
 
     assertJQ(
         req("q", "doesnotexist filter(id:1) filter(qqq_s:X) filter(abcdefg)"),
         "/response/numFound==2");
 
     inserts += 3;
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter1 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter1 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter1.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter1.getValue());
 
     assertJQ(
         req("q", "doesnotexist2 filter(id:1) filter(qqq_s:X) filter(abcdefg)"),
         "/response/numFound==2");
 
     hits += 3;
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter2 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter2 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter2.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter2.getValue());
 
     // make sure normal "fq" parameters also hit the cache the same way
     assertJQ(
@@ -628,12 +622,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         "/response/numFound==0");
 
     hits += 3;
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter3 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter3 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter3.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter3.getValue());
 
     // try a query deeply nested in a FQ
     assertJQ(
@@ -646,12 +641,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     inserts += 1; // +1 for top level fq
     hits += 3;
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter4 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter4 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter4.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter4.getValue());
 
     // retry the complex FQ and make sure hashCode/equals works as expected w/ filter queries
     assertJQ(
@@ -663,24 +659,26 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         "/response/numFound==2");
 
     hits += 1; // top-level fq should have been found.
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter5 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter5 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter5.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter5.getValue());
 
     // try nested filter with multiple top-level args (i.e. a boolean query)
     assertJQ(req("q", "*:* +filter(id:1 filter(qqq_s:X) abcdefg)"), "/response/numFound==2");
 
     hits += 1; // the inner filter
     inserts += 1; // the outer filter
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter6 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter6 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter6.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter6.getValue());
 
     // test the score for a filter, and that default score is 0
     assertJQ(
@@ -1179,7 +1177,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public void testSynonymQueryStyle() throws Exception {
     String field = "t_pick_best_foo";
     Query q = QParser.getParser("tabby", req(params("df", field))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         disjunctionOf(
             termQuery(field, "cat"),
@@ -1189,7 +1187,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     field = "t_as_distinct_foo";
     q = QParser.getParser("tabby", req(params("df", field))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             termQuery(field, "cat"),
@@ -1205,7 +1203,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     field = "t_pick_best_foo";
     q = QParser.getParser("jeans", req(params("df", field, "sow", "false"))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q, booleanQuery(disjunctionOf(termQuery(field, "jean"), phraseQuery(field, "denim pant"))));
   }
 
@@ -1214,8 +1212,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // tiger, tigre|0.9
     String field = "t_pick_best_boosted_foo";
     Query q = QParser.getParser("tiger", req(params("df", field))).getQuery();
-    MatcherAssert.assertThat(
-        q, disjunctionOf(termQuery(field, "tiger"), boosted(field, "tigre", 0.9f)));
+    assertThat(q, disjunctionOf(termQuery(field, "tiger"), boosted(field, "tigre", 0.9f)));
 
     field = "t_as_distinct_boosted_foo";
     q = QParser.getParser("tiger", req(params("df", "t_as_distinct_boosted_foo"))).getQuery();
@@ -1231,12 +1228,12 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // lynx => lince|0.8, lynx_canadensis|0.9
     field = "t_pick_best_boosted_foo";
     q = QParser.getParser("lynx", req(params("df", field))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q, disjunctionOf(boosted(field, "lince", 0.8f), boosted(field, "lynx_canadensis", 0.9f)));
 
     field = "t_as_distinct_boosted_foo";
     q = QParser.getParser("lynx", req(params("df", field))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q, booleanQuery(boosted(field, "lince", 0.8f), boosted(field, "lynx_canadensis", 0.9f)));
 
     field = "t_as_same_term_boosted_foo";
@@ -1251,7 +1248,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // leopard, big cat|0.8, bagheera|0.9, panthera pardus|0.85
     String field = "t_pick_best_boosted_foo";
     Query q = QParser.getParser("leopard", req(params("df", "t_pick_best_boosted_foo"))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1272,7 +1269,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     // lion => panthera leo|0.9, simba leo|0.8, kimba|0.75
     q = QParser.getParser("lion", req(params("df", "t_pick_best_boosted_foo"))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1297,7 +1294,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // lynx => lince|0.8, lynx_canadensis|0.9
     String field = "t_pick_best_boosted_foo";
     Query q = QParser.getParser("tiger lynx", req(params("df", field))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             disjunctionOf(boosted(field, "lince", 0.8f), boosted(field, "lynx_canadensis", 0.9f)),
@@ -1322,7 +1319,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // lion => panthera leo|0.9, simba leo|0.8, kimba|0.75
     String field = "t_pick_best_boosted_foo";
     Query q = QParser.getParser("leopard lion", req(params("df", field))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1359,7 +1356,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     Query q =
         QParser.getParser("panthera pardus story", req(params("df", field, "sow", "false")))
             .getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             termQuery(field, "story"),
@@ -1416,7 +1413,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     String field = "t_pick_best_boosted_foo";
     Query q =
         QParser.getParser("panthera blytheae", req(params("df", field, "sow", "false"))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1447,7 +1444,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     String field = "t_pick_best_boosted_foo";
     Query q =
         QParser.getParser("snow leopard", req(params("df", field, "sow", "false"))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             disjunctionOf( // TODO why does this generate a single clause Boolean?
@@ -1477,7 +1474,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         QParser.getParser(
                 "panthera onca", req(params("df", "t_pick_best_boosted_foo", "sow", "false")))
             .getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1510,7 +1507,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     Query q =
         QParser.getParser("panthera pardus tiger", req(params("df", field, "sow", "false")))
             .getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             disjunctionOf(boosted(field, "leopard", 0.6f), phraseQuery(field, "panthera pardus")),
@@ -1543,7 +1540,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     Query q =
         QParser.getParser("snow leopard panthera onca", req(params("df", field, "sow", "false")))
             .getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1586,7 +1583,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
                 true,
                 req(params("sow", "false", "qf", field + "^10")))
             .getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             booleanQuery(
@@ -1676,7 +1673,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // leopard, big cat|0.8, bagheera|0.9, panthera pardus|0.85
     String field = "t_pick_best_boosted_foo";
     Query q = QParser.getParser("leopard", req(params("df", field))).getQuery();
-    MatcherAssert.assertThat(
+    assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1804,13 +1801,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
           assertFalse(
               "For float and double fields \""
                   + query
-                  + "\" is not an existence query, so the query returned should not be a DocValuesFieldExistsQuery.",
-              createdQuery instanceof DocValuesFieldExistsQuery);
+                  + "\" is not an existence query, so the query returned should not be a FieldExistsQuery.",
+              createdQuery instanceof FieldExistsQuery);
           assertFalse(
               "For float and double fields \""
                   + query
-                  + "\" is not an existence query, so the query returned should not be a NormsFieldExistsQuery.",
-              createdQuery instanceof NormsFieldExistsQuery);
+                  + "\" is not an existence query, so the query returned should not be a FieldExistsQuery.",
+              createdQuery instanceof FieldExistsQuery);
           assertFalse(
               "For float and double fields \""
                   + query
@@ -1826,8 +1823,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             assertTrue(
                 "Field has docValues, so existence query \""
                     + query
-                    + "\" should return DocValuesFieldExistsQuery",
-                createdQuery instanceof DocValuesFieldExistsQuery);
+                    + "\" should return FieldExistsQuery",
+                createdQuery instanceof FieldExistsQuery);
           } else if (!schemaField.omitNorms()
               && !schemaField
                   .getType()
@@ -1835,44 +1832,70 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             assertTrue(
                 "Field has norms and no docValues, so existence query \""
                     + query
-                    + "\" should return NormsFieldExistsQuery",
-                createdQuery instanceof NormsFieldExistsQuery);
+                    + "\" should return FieldExistsQuery",
+                createdQuery instanceof FieldExistsQuery);
           } else if (schemaField.getType().getNumberType() == NumberType.DOUBLE
               || schemaField.getType().getNumberType() == NumberType.FLOAT) {
-            assertTrue(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\".",
-                createdQuery instanceof ConstantScoreQuery);
-            assertTrue(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\".",
-                ((ConstantScoreQuery) createdQuery).getQuery() instanceof BooleanQuery);
-            assertEquals(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\". This boolean query must be an OR.",
-                1,
-                ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery())
-                    .getMinimumNumberShouldMatch());
-            assertEquals(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\". This boolean query must have 2 clauses.",
-                2,
-                ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).clauses().size());
+            if (schemaField.getType().isPointField()) {
+              assertTrue(
+                  "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\".",
+                  createdQuery instanceof PointRangeQuery);
+              if (schemaField.getType().getNumberType() == NumberType.DOUBLE) {
+                assertEquals(
+                    "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                        + query
+                        + "\".",
+                    Double.NaN,
+                    DoublePoint.decodeDimension(
+                        ((PointRangeQuery) createdQuery).getUpperPoint(), 0),
+                    0);
+              } else {
+                assertEquals(
+                    "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                        + query
+                        + "\".",
+                    Float.NaN,
+                    FloatPoint.decodeDimension(((PointRangeQuery) createdQuery).getUpperPoint(), 0),
+                    0);
+              }
+            } else {
+              assertTrue(
+                  "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\".",
+                  createdQuery instanceof ConstantScoreQuery);
+              assertTrue(
+                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\".",
+                  ((ConstantScoreQuery) createdQuery).getQuery() instanceof BooleanQuery);
+              assertEquals(
+                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\". This boolean query must be an OR.",
+                  1,
+                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery())
+                      .getMinimumNumberShouldMatch());
+              assertEquals(
+                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\". This boolean query must have 2 clauses.",
+                  2,
+                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).clauses().size());
+            }
           } else {
             assertFalse(
                 "Field doesn't have docValues, so existence query \""
                     + query
-                    + "\" should not return DocValuesFieldExistsQuery",
-                createdQuery instanceof DocValuesFieldExistsQuery);
+                    + "\" should not return FieldExistsQuery",
+                createdQuery instanceof FieldExistsQuery);
             assertFalse(
                 "Field doesn't have norms, so existence query \""
                     + query
-                    + "\" should not return NormsFieldExistsQuery",
-                createdQuery instanceof NormsFieldExistsQuery);
+                    + "\" should not return FieldExistsQuery",
+                createdQuery instanceof FieldExistsQuery);
           }
         }
       }

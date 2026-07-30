@@ -16,12 +16,13 @@
  */
 package org.apache.solr.embedded;
 
+import jakarta.servlet.Filter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import javax.servlet.Filter;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.jetty.SSLConfig;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 
 public class JettyConfig {
 
@@ -34,6 +35,7 @@ public class JettyConfig {
   public final Map<Class<? extends Filter>, String> extraFilters;
   public final SSLConfig sslConfig;
   public final boolean enableV2;
+  public final boolean enableGracefulShutdown;
 
   private JettyConfig(
       boolean onlyHttp1,
@@ -44,7 +46,8 @@ public class JettyConfig {
       Map<ServletHolder, String> extraServlets,
       Map<Class<? extends Filter>, String> extraFilters,
       SSLConfig sslConfig,
-      boolean enableV2) {
+      boolean enableV2,
+      boolean enableGracefulShutdown) {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
     this.portRetryTime = portRetryTime;
@@ -54,6 +57,7 @@ public class JettyConfig {
     this.extraFilters = extraFilters;
     this.sslConfig = sslConfig;
     this.enableV2 = enableV2;
+    this.enableGracefulShutdown = enableGracefulShutdown;
   }
 
   public static Builder builder() {
@@ -72,6 +76,7 @@ public class JettyConfig {
     builder.extraFilters = other.extraFilters;
     builder.sslConfig = other.sslConfig;
     builder.enableV2 = other.enableV2;
+    builder.enableGracefulShutdown = other.enableGracefulShutdown;
     return builder;
   }
 
@@ -80,11 +85,13 @@ public class JettyConfig {
     boolean onlyHttp1 = false;
     int port = 0;
     boolean enableV2 = true;
+    boolean enableGracefulShutdown = false;
     boolean stopAtShutdown = true;
     Long waitForLoadingCoresToFinishMs = 300000L;
     Map<ServletHolder, String> extraServlets = new TreeMap<>();
     Map<Class<? extends Filter>, String> extraFilters = new LinkedHashMap<>();
-    SSLConfig sslConfig = null;
+    SSLConfig sslConfig =
+        SolrTestCaseJ4.sslConfig != null ? SolrTestCaseJ4.sslConfig.buildServerSSLConfig() : null;
     int portRetryTime = 60;
 
     public Builder useOnlyHttp1(boolean useOnlyHttp1) {
@@ -94,6 +101,11 @@ public class JettyConfig {
 
     public Builder enableV2(boolean flag) {
       this.enableV2 = flag;
+      return this;
+    }
+
+    public Builder enableGracefulShutdown(boolean flag) {
+      this.enableGracefulShutdown = flag;
       return this;
     }
 
@@ -152,7 +164,8 @@ public class JettyConfig {
           extraServlets,
           extraFilters,
           sslConfig,
-          enableV2);
+          enableV2,
+          enableGracefulShutdown);
     }
   }
 }

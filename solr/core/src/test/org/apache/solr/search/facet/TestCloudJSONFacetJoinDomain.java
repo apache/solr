@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +34,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.TestCloudPivotFacet;
 import org.apache.solr.common.SolrException;
@@ -116,16 +115,15 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-tlog.xml");
     collectionProperties.put("schema", "schema_latest.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION_NAME).build();
+    CLOUD_CLIENT = cluster.newSolrClient(COLLECTION_NAME);
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners())
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
 
     final int numDocs = atLeast(100);
     for (int id = 0; id < numDocs; id++) {
@@ -637,7 +635,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
           ((Number) facetResponse.get("count")).longValue());
       if (0 == rsp.getResults().getNumFound()) {
         // when the query matches nothing, we should expect no top level facets
-        expected = Collections.emptyMap();
+        expected = Map.of();
       }
       assertFacetCountsAreCorrect(maxBucketsToCheck, expected, baseParams, facetResponse);
     } catch (AssertionError e) {
@@ -1064,7 +1062,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assertNotNull(client.getDefaultCollection());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
 }

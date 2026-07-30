@@ -26,13 +26,14 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import javax.servlet.http.HttpServletRequest;
-import org.apache.http.HttpRequest;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
-import org.eclipse.jetty.client.api.Request;
+import org.apache.solr.servlet.RequiredSolrRequestFilter;
+import org.eclipse.jetty.client.Request;
 
 /** Utilities for distributed tracing. */
 public class TraceUtils {
@@ -57,14 +58,6 @@ public class TraceUtils {
   public static final AttributeKey<String> TAG_CONTENT_TYPE = AttributeKey.stringKey("contentType");
   public static final AttributeKey<List<String>> TAG_OPS = AttributeKey.stringArrayKey("ops");
   public static final AttributeKey<String> TAG_CLASS = AttributeKey.stringKey("class");
-
-  @Deprecated
-  private static final AttributeKey<String> TAG_HTTP_METHOD_DEP =
-      AttributeKey.stringKey("http.method");
-
-  @Deprecated
-  private static final AttributeKey<Long> TAG_HTTP_STATUS_DEP =
-      AttributeKey.longKey("http.status_code");
 
   public static final String TAG_DB_TYPE_SOLR = "solr";
 
@@ -102,7 +95,6 @@ public class TraceUtils {
 
   public static void setHttpStatus(Span span, int httpStatus) {
     span.setAttribute(TAG_HTTP_STATUS, httpStatus);
-    span.setAttribute(TAG_HTTP_STATUS_DEP, httpStatus);
   }
 
   public static void ifNotNoop(Span span, Consumer<Span> consumer) {
@@ -120,8 +112,10 @@ public class TraceUtils {
    * @param consumer consumer to be called
    */
   public static void ifValidTraceId(Span span, Consumer<Span> consumer) {
-    if (TraceId.isValid(span.getSpanContext().getTraceId())) {
-      consumer.accept(span);
+    if (span.isRecording()) {
+      if (TraceId.isValid(span.getSpanContext().getTraceId())) {
+        consumer.accept(span);
+      }
     }
   }
 
@@ -133,12 +127,12 @@ public class TraceUtils {
     return (Span) req.getAttribute(REQ_ATTR_TRACING_SPAN);
   }
 
-  public static void setTracer(HttpServletRequest req, Tracer t) {
-    req.setAttribute(REQ_ATTR_TRACING_TRACER, t);
-  }
-
   public static Tracer getTracer(HttpServletRequest req) {
-    return (Tracer) req.getAttribute(REQ_ATTR_TRACING_TRACER);
+    // This attribute is required to be not null, this method should only be called after
+    // requiredSolrRequestFilter has invoked chain.doFilter(req, res)
+    return ((CoreContainer)
+            req.getAttribute(RequiredSolrRequestFilter.CORE_CONTAINER_REQUEST_ATTRIBUTE))
+        .getTracer();
   }
 
   public static Context extractContext(HttpServletRequest req) {
@@ -154,14 +148,6 @@ public class TraceUtils {
     textMapPropagator.inject(Context.current(), req, REQUEST_INJECTOR);
   }
 
-  private static final TextMapSetter<HttpRequest> HTTP_REQUEST_INJECTOR =
-      (req, k, v) -> req.setHeader(k, v);
-
-  public static void injectTraceContext(HttpRequest req) {
-    TextMapPropagator textMapPropagator = getTextMapPropagator();
-    textMapPropagator.inject(Context.current(), req, HTTP_REQUEST_INJECTOR);
-  }
-
   public static Span startHttpRequestSpan(HttpServletRequest request, Context context) {
     Tracer tracer = getTracer(request);
     SpanBuilder spanBuilder =
@@ -170,7 +156,6 @@ public class TraceUtils {
             .setParent(context)
             .setSpanKind(SpanKind.SERVER)
             .setAttribute(TAG_HTTP_METHOD, request.getMethod())
-            .setAttribute(TAG_HTTP_METHOD_DEP, request.getMethod())
             .setAttribute(TAG_HTTP_URL, request.getRequestURL().toString());
     if (request.getQueryString() != null) {
       spanBuilder.setAttribute(TAG_HTTP_PARAMS, request.getQueryString());

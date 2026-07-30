@@ -1,4 +1,5 @@
 = Analyzers
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -42,11 +43,11 @@ Setting up an analyzer chain is very straightforward; you specify a simple `<ana
 
 For example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname]
+[tabs#analyzer]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <fieldType name="nametext" class="solr.TextField">
@@ -61,9 +62,10 @@ For example:
 Tokenizer and filter factory classes are referred by their symbolic names (SPI names).
 Here, name="standard" refers `org.apache.lucene.analysis.standard.StandardTokenizerFactory`.
 ====
-[example.tab-pane#byclass]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="nametext" class="solr.TextField">
@@ -77,7 +79,7 @@ Here, name="standard" refers `org.apache.lucene.analysis.standard.StandardTokeni
 ----
 Note that classes in the `org.apache.lucene.analysis` package may be referred to here with the shorthand `solr.` prefix.
 ====
---
+======
 
 In this case, no Analyzer class was specified on the `<analyzer>` element.
 Rather, a sequence of more specialized classes are wired together and collectively act as the Analyzer for the field.
@@ -104,11 +106,11 @@ If you provide a simple `<analyzer>` definition for a field type, as in the exam
 If you want distinct analyzers for each phase, you may include two `<analyzer>` definitions distinguished with a type attribute.
 For example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-phases]
+[tabs#analyzer-phases]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <fieldType name="nametext" class="solr.TextField">
@@ -125,9 +127,10 @@ For example:
 </fieldType>
 ----
 ====
-[example.tab-pane#byclass-phases]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="nametext" class="solr.TextField">
@@ -144,7 +147,7 @@ For example:
 </fieldType>
 ----
 ====
---
+======
 
 In this theoretical example, at index time the text is tokenized, the tokens are set to lowercase, any that are not listed in `keepwords.txt` are discarded and those that remain are mapped to alternate values as defined by the synonym rules in the file `syns.txt`.
 This essentially builds an index from a restricted set of possible values and then normalizes them to values that may not even occur in the original text.

@@ -71,9 +71,7 @@ public class ReverseOrdFieldSource extends ValueSource {
     final int off = readerContext.docBase;
     final LeafReader r;
     Object o = context.get("searcher");
-    if (o instanceof SolrIndexSearcher) {
-      @SuppressWarnings("resource")
-      final SolrIndexSearcher is = (SolrIndexSearcher) o;
+    if (o instanceof @SuppressWarnings("resource") SolrIndexSearcher is) {
       SchemaField sf = is.getSchema().getFieldOrNull(field);
       if (sf != null && sf.getType().isPointField()) {
         throw new SolrException(
@@ -122,8 +120,7 @@ public class ReverseOrdFieldSource extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof ReverseOrdFieldSource)) return false;
-    ReverseOrdFieldSource other = (ReverseOrdFieldSource) o;
+    if (!(o instanceof ReverseOrdFieldSource other)) return false;
     return this.field.equals(other.field);
   }
 

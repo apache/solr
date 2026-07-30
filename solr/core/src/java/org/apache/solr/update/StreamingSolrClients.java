@@ -27,11 +27,13 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
+import org.apache.solr.client.solrj.jetty.ConcurrentUpdateJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.update.SolrCmdDistributor.SolrError;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,9 +45,9 @@ public class StreamingSolrClients {
   private final int pollQueueTimeMillis =
       Integer.getInteger("solr.cloud.client.pollQueueTime", 10000);
 
-  private Http2SolrClient httpClient;
+  private HttpJettySolrClient httpClient;
 
-  private Map<String, ConcurrentUpdateHttp2SolrClient> solrClients = new HashMap<>();
+  private Map<String, ConcurrentUpdateBaseSolrClient> solrClients = new HashMap<>();
   private List<SolrError> errors = Collections.synchronizedList(new ArrayList<>());
 
   private ExecutorService updateExecutor;
@@ -65,13 +67,17 @@ public class StreamingSolrClients {
 
   public synchronized SolrClient getSolrClient(final SolrCmdDistributor.Req req) {
     String url = getFullUrl(req.node.getUrl());
-    ConcurrentUpdateHttp2SolrClient client = solrClients.get(url);
+    ConcurrentUpdateBaseSolrClient client = solrClients.get(url);
     if (client == null) {
       // NOTE: increasing to more than 1 threadCount for the client could cause updates to be
       // reordered on a greater scale since the current behavior is to only increase the number of
       // connections/Runners when the queue is more than half full.
+      final var defaultCore =
+          StrUtils.isNotBlank(req.node.getCoreName()) ? req.node.getCoreName() : null;
       client =
-          new ErrorReportingConcurrentUpdateSolrClient.Builder(url, httpClient, req, errors)
+          new ErrorReportingConcurrentUpdateSolrClient.Builder(
+                  req.node.getBaseUrl(), httpClient, req, errors)
+              .withDefaultCollection(defaultCore)
               .withQueueSize(100)
               .withThreadCount(runnerCount)
               .withExecutorService(updateExecutor)
@@ -87,13 +93,13 @@ public class StreamingSolrClients {
   }
 
   public synchronized void blockUntilFinished() throws IOException {
-    for (ConcurrentUpdateHttp2SolrClient client : solrClients.values()) {
+    for (ConcurrentUpdateBaseSolrClient client : solrClients.values()) {
       client.blockUntilFinished();
     }
   }
 
   public synchronized void shutdown() {
-    for (ConcurrentUpdateHttp2SolrClient client : solrClients.values()) {
+    for (ConcurrentUpdateBaseSolrClient client : solrClients.values()) {
       client.close();
     }
   }
@@ -108,7 +114,7 @@ public class StreamingSolrClients {
     return fullUrl;
   }
 
-  public Http2SolrClient getHttpClient() {
+  public HttpJettySolrClient getHttpClient() {
     return httpClient;
   }
 
@@ -117,7 +123,7 @@ public class StreamingSolrClients {
   }
 }
 
-class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2SolrClient {
+class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrCmdDistributor.Req req;
   private final List<SolrError> errors;
@@ -145,17 +151,25 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
   }
 
   @Override
-  public void onSuccess(Response resp, InputStream respBody) {
-    req.trackRequestResult(resp, respBody, true);
+  public void onSuccess(Object responseMetadata, InputStream respBody) {
+    Response jettyResponse = (Response) responseMetadata;
+    req.trackRequestResult(jettyResponse, respBody, true);
   }
 
-  static class Builder extends ConcurrentUpdateHttp2SolrClient.Builder {
+  static class Builder extends ConcurrentUpdateJettySolrClient.Builder {
     protected SolrCmdDistributor.Req req;
     protected List<SolrError> errors;
 
+    /**
+     * @param baseSolrUrl the base URL of a Solr node. Should <em>not</em> contain a collection or
+     *     core name
+     * @param client the client to use in making requests
+     * @param req the command distributor request object for this client
+     * @param errors a collector for any errors
+     */
     public Builder(
         String baseSolrUrl,
-        Http2SolrClient client,
+        HttpJettySolrClient client,
         SolrCmdDistributor.Req req,
         List<SolrError> errors) {
       super(baseSolrUrl, client);

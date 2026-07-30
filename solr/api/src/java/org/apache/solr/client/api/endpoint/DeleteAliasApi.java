@@ -19,11 +19,11 @@ package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import org.apache.solr.client.api.model.AsyncJerseyResponse;
 
 @Path("/aliases/{aliasName}")
 public interface DeleteAliasApi {
@@ -32,7 +32,7 @@ public interface DeleteAliasApi {
   @Operation(
       summary = "Deletes an alias by its name",
       tags = {"aliases"})
-  SolrJerseyResponse deleteAlias(
+  AsyncJerseyResponse deleteAlias(
       @Parameter(description = "The name of the alias to delete", required = true)
           @PathParam("aliasName")
           String aliasName,

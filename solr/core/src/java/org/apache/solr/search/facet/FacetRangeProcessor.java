@@ -20,6 +20,7 @@ package org.apache.solr.search.facet;
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
@@ -31,11 +32,11 @@ import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.schema.AbstractEnumField;
-import org.apache.solr.schema.AbstractEnumField.EnumMapping;
 import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.CurrencyValue;
 import org.apache.solr.schema.DateRangeField;
+import org.apache.solr.schema.EnumFieldType;
+import org.apache.solr.schema.EnumFieldType.EnumMapping;
 import org.apache.solr.schema.ExchangeRateProvider;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -49,7 +50,7 @@ import org.apache.solr.util.DateMathParser;
 
 class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   // TODO: the code paths for initial faceting, vs refinement, are very different...
-  // TODO: ...it might make sense to have seperate classes w/a common base?
+  // TODO: ...it might make sense to have separate classes w/a common base?
   // TODO: let FacetRange.createFacetProcessor decide which one to instantiate?
 
   final SchemaField sf;
@@ -170,7 +171,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     final FieldType ft = sf.getType();
 
     if (ft.getNumberType() != null) {
-      if (ft instanceof AbstractEnumField) {
+      if (ft instanceof EnumFieldType) {
         return new EnumCalc(sf);
       }
       switch (ft.getNumberType()) {
@@ -297,12 +298,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    * @return list of {@link Range}
    */
   private List<Range> parseRanges(Object input) {
-    if (!(input instanceof List)) {
+    if (!(input instanceof List<?> intervals)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Expected List for ranges but got " + input.getClass().getSimpleName() + " = " + input);
     }
-    List<?> intervals = (List<?>) input;
     List<Range> ranges = new ArrayList<>();
     for (Object obj : intervals) {
       if (!(obj instanceof Map)) {
@@ -681,7 +681,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     /** Parses a String param into a value. Can throw a low level format exception as needed. */
     @SuppressWarnings({"rawtypes"})
-    protected abstract Comparable parseStr(final String rawval) throws java.text.ParseException;
+    protected abstract Comparable parseStr(final String rawval) throws ParseException;
 
     /**
      * Parses a String param into a value that represents the gap and can be included in the
@@ -707,7 +707,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
      *
      * <p>Default Impl calls parseVal
      */
-    protected Object parseGap(final String rawval) throws java.text.ParseException {
+    protected Object parseGap(final String rawval) throws ParseException {
       return parseStr(rawval);
     }
 
@@ -733,7 +733,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
      */
     @SuppressWarnings({"rawtypes"})
     protected abstract Comparable parseAndAddGap(Comparable value, String gap)
-        throws java.text.ParseException;
+        throws ParseException;
   }
 
   private static class FloatCalc extends Calc {
@@ -845,7 +845,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     public EnumCalc(final SchemaField f) {
       super(f);
-      mapping = ((AbstractEnumField) field.getType()).getEnumMapping();
+      mapping = ((EnumFieldType) field.getType()).getEnumMapping();
     }
 
     @Override
@@ -905,7 +905,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     public Date parseAndAddGap(@SuppressWarnings("rawtypes") Comparable value, String gap)
-        throws java.text.ParseException {
+        throws ParseException {
       final DateMathParser dmp = new DateMathParser();
       dmp.setNow((Date) value);
       return dmp.parseMath(gap);
@@ -921,7 +921,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       if (!(this.field.getType() instanceof CurrencyFieldType)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "Cannot perform range faceting over non CurrencyField fields");
+            "Cannot perform range faceting over non CurrencyFieldType fields");
       }
       defaultCurrencyCode = ((CurrencyFieldType) this.field.getType()).getDefaultCurrency();
       exchangeRateProvider = ((CurrencyFieldType) this.field.getType()).getProvider();
@@ -967,19 +967,18 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     @SuppressWarnings({"rawtypes"})
-    protected Comparable parseStr(final String rawval) throws java.text.ParseException {
+    protected Comparable parseStr(final String rawval) throws ParseException {
       return CurrencyValue.parse(rawval, defaultCurrencyCode);
     }
 
     @Override
-    protected Object parseGap(final String rawval) throws java.text.ParseException {
+    protected Object parseGap(final String rawval) throws ParseException {
       return parseStr(rawval);
     }
 
     @Override
     @SuppressWarnings({"rawtypes"})
-    protected Comparable parseAndAddGap(Comparable value, String gap)
-        throws java.text.ParseException {
+    protected Comparable parseAndAddGap(Comparable value, String gap) throws ParseException {
       if (value == null) {
         throw new NullPointerException("Cannot perform range faceting on null CurrencyValue");
       }

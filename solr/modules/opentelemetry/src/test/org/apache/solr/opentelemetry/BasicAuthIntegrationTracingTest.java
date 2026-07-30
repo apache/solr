@@ -16,10 +16,7 @@
  */
 package org.apache.solr.opentelemetry;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.opentelemetry.TestDistributedTracing.getAndClearSpans;
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
@@ -32,7 +29,7 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
-import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.apache.solr.util.SecurityJson;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -41,27 +38,6 @@ import org.junit.Test;
 public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
-  private static final String USER = "solr";
-  private static final String PASS = "SolrRocksAgain";
-  private static final String SECURITY_JSON =
-      Utils.toJSONString(
-          Map.of(
-              "authorization",
-              Map.of(
-                  "class",
-                  RuleBasedAuthorizationPlugin.class.getName(),
-                  "user-role",
-                  singletonMap(USER, "admin"),
-                  "permissions",
-                  singletonList(Map.of("name", "all", "role", "admin"))),
-              "authentication",
-              Map.of(
-                  "class",
-                  BasicAuthPlugin.class.getName(),
-                  "blockUnknown",
-                  true,
-                  "credentials",
-                  singletonMap(USER, getSaltedHashedValue(PASS)))));
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -72,7 +48,7 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .withTraceIdGenerationDisabled()
-        .withSecurityJson(SECURITY_JSON)
+        .withSecurityJson(SecurityJson.SIMPLE)
         .configure();
 
     assertNotEquals(
@@ -81,7 +57,7 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
         GlobalOpenTelemetry.get().getTracerProvider());
 
     CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 2)
-        .setBasicAuthCredentials(USER, PASS)
+        .setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
   }
@@ -106,7 +82,7 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
             .withMethod(SolrRequest.METHOD.POST)
             .withPayload(Utils.toJSONString(ops))
             .build();
-    req.setBasicAuthCredentials(USER, PASS);
+    req.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
     assertEquals(0, req.process(cloudClient, COLLECTION).getStatus());
 
     var finishedSpans = getAndClearSpans();

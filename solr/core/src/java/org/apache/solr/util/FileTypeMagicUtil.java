@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 
 /** Utility class to guess the mime type of file based on its magic number. */
 public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
@@ -60,6 +61,14 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
         new SimpleFileVisitor<>() {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            if (Files.isSymbolicLink(file)) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  String.format(
+                      Locale.ROOT,
+                      "Not uploading symbolic link %s to configset, as symbolic links are not supported in ZooKeeper",
+                      file));
+            }
             if (FileTypeMagicUtil.isFileForbiddenInConfigset(file)) {
               throw new SolrException(
                   SolrException.ErrorCode.BAD_REQUEST,
@@ -186,7 +195,7 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
   private static final Set<String> forbiddenTypes =
       new HashSet<>(
           Arrays.asList(
-              System.getProperty(
+              EnvUtils.getProperty(
                       "solr.configset.upload.mimetypes.forbidden",
                       "application/x-java-applet,application/zip,application/x-tar,text/x-shellscript")
                   .split(",")));

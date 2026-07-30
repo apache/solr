@@ -97,14 +97,14 @@ public class FieldComparator implements StreamComparator {
   }
 
   /*
-   * What're we doing here messing around with lambdas for the comparator logic?
-   * We want the compare(...) function to run as fast as possible because it will be called many many
+   * What are we doing here messing around with lambdas for the comparator logic?
+   * We want the compare(...) function to run as fast as possible because it will be called many
    * times over the lifetime of this object. For that reason we want to limit the number of comparisons
    * taking place in the compare(...) function. Because this class supports both ascending and
    * descending comparisons and the logic for each is slightly different, we want to do the
    *   if(ascending){ compare like this } else { compare like this }
    * check only once - we can do that in the constructor of this class, create a lambda, and then execute
-   * that lambda in the compare function. A little bit of branch prediction savings right here.
+   * that lambda in the compare function. A bit of branch prediction savings right here.
    */
   @SuppressWarnings({"unchecked"})
   private void assignComparator() {
@@ -162,14 +162,12 @@ public class FieldComparator implements StreamComparator {
     if (null == base) {
       return false;
     }
-    if (base instanceof FieldComparator) {
-      FieldComparator baseComp = (FieldComparator) base;
+    if (base instanceof FieldComparator baseComp) {
       return (leftFieldName.equals(baseComp.leftFieldName)
               || rightFieldName.equals(baseComp.rightFieldName))
           && order == baseComp.order;
-    } else if (base instanceof MultipleFieldComparator) {
+    } else if (base instanceof MultipleFieldComparator baseComps) {
       // must equal the first one
-      MultipleFieldComparator baseComps = (MultipleFieldComparator) base;
       if (baseComps.getComps().length > 0) {
         return isDerivedFrom(baseComps.getComps()[0]);
       }
@@ -194,8 +192,7 @@ public class FieldComparator implements StreamComparator {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof FieldComparator)) return false;
-    FieldComparator that = (FieldComparator) o;
+    if (!(o instanceof FieldComparator that)) return false;
     // comparator is based on the other fields so is not needed in this compare
     return leftFieldName.equals(that.leftFieldName)
         && rightFieldName.equals(that.rightFieldName)

@@ -23,5 +23,5 @@
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
   <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
 </config>

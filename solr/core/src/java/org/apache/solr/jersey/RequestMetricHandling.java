@@ -21,18 +21,18 @@ import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.TIMER;
 
-import com.codahale.metrics.Timer;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.Context;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Context;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,9 +89,9 @@ public class RequestMetricHandling {
       final RequestHandlerBase.HandlerMetrics metrics =
           handlerBase.getMetricsForThisRequest(solrQueryRequest);
 
-      requestContext.setProperty(HANDLER_METRICS, metrics);
-      requestContext.setProperty(TIMER, metrics.requestTimes.time());
       metrics.requests.inc();
+      requestContext.setProperty(TIMER, metrics.requestTimes.start());
+      requestContext.setProperty(HANDLER_METRICS, metrics);
     }
   }
 
@@ -113,17 +113,16 @@ public class RequestMetricHandling {
 
       // Increment the timeout count if responseHeader indicates a timeout
       if (responseContext.hasEntity()
-          && SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
+          && responseContext.getEntity() instanceof SolrJerseyResponse) {
         final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
         if (Boolean.TRUE.equals(response.responseHeader.partialResults)) {
-          metrics.numTimeouts.mark();
+          metrics.numTimeouts.inc();
         }
       } else {
         log.debug("Skipping partialResults check because entity was not SolrJerseyResponse");
       }
-
-      final Timer.Context timer = (Timer.Context) requestContext.getProperty(TIMER);
-      metrics.totalTime.inc(timer.stop());
+      final var timer = (AttributedLongTimer.MetricTimer) requestContext.getProperty(TIMER);
+      timer.stop();
     }
   }
 }

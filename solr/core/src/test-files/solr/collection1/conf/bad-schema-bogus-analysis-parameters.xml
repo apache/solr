@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-bogus-analysis-parameters" version="1.6">
+<schema name="bad-schema-bogus-analysis-parameters" version="1.7">
   <fieldType name="text" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory" bogusArg="bogusValue"/>

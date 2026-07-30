@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_ACTIVE_NODES;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -25,10 +24,10 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFI
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.BalanceShardUniqueApi;
 import org.apache.solr.client.api.model.BalanceShardUniqueRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
@@ -70,11 +69,10 @@ public class BalanceShardUnique extends AdminAPIBase implements BalanceShardUniq
     fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, requestBody);
     submitRemoteMessageAndHandleResponse(
         response,
         CollectionParams.CollectionAction.BALANCESHARDUNIQUE,
-        remoteMessage,
+        createRemoteMessage(collectionName, requestBody),
         requestBody.async);
 
     return response;
@@ -83,13 +81,10 @@ public class BalanceShardUnique extends AdminAPIBase implements BalanceShardUniq
   public static ZkNodeProps createRemoteMessage(
       String collectionName, BalanceShardUniqueRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(
-        QUEUE_OPERATION, CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(PROPERTY_PROP, requestBody.property);
     insertIfNotNull(remoteMessage, ONLY_ACTIVE_NODES, requestBody.onlyActiveNodes);
     insertIfNotNull(remoteMessage, SHARD_UNIQUE, requestBody.shardUnique);
-    insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
 
     return new ZkNodeProps(remoteMessage);
   }

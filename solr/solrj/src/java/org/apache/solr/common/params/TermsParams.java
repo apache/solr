@@ -106,7 +106,7 @@ public interface TermsParams {
 
   /**
    * Optional. If true, return the raw characters of the indexed term, regardless of if it is
-   * readable. For instance, the index form of numeric numbers is not human readable. The default is
+   * readable. For instance, the index form of numeric numbers is not human-readable. The default is
    * false.
    */
   String TERMS_RAW = TERMS_PREFIX + "raw";

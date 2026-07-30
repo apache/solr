@@ -28,7 +28,7 @@ All of the sample configuration and queries used in this section assume you are 
 
 [source,bash]
 ----
-bin/solr -e techproducts
+bin/solr start -e techproducts
 ----
 
 == Configuring the Query Elevation Component

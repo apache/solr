@@ -17,7 +17,6 @@
 
 package org.apache.solr.filestore;
 
-import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
 import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -25,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -34,12 +32,11 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.http.client.methods.HttpDelete;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.client.solrj.response.V2Response;
@@ -48,14 +45,14 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.hamcrest.MatcherAssert;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -68,15 +65,11 @@ public class TestDistribFileStore extends SolrCloudTestCase {
 
   @Before
   public void setup() {
-    System.setProperty("enable.packages", "true");
-  }
-
-  @After
-  public void teardown() {
-    System.clearProperty("enable.packages");
+    System.setProperty("solr.packages.enabled", "true");
   }
 
   @Test
+  @SuppressForbidden(reason = "singletonMap with null value is intentional")
   public void testFileStoreManagement() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
@@ -84,9 +77,8 @@ public class TestDistribFileStore extends SolrCloudTestCase {
             .addConfig("conf", configset("cloud-minimal"))
             .configure();
     try {
-
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
-      uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+      uploadKey(derFile, ClusterFileStore.KEYS_DIR + "/pub_key512.der", cluster);
 
       try {
         postFile(
@@ -95,8 +87,8 @@ public class TestDistribFileStore extends SolrCloudTestCase {
             "/package/mypkg/v1.0/runtimelibs.jar",
             "j+Rflxi64tXdqosIhbusqi6GTwZq8znunC/dzwcWW0/dHlFGKDurOaE1Nz9FSPJuXbHkVLj638yZ0Lp1ssnoYA==");
         fail("should have failed because of wrong signature ");
-      } catch (RemoteExecutionException e) {
-        MatcherAssert.assertThat(e.getMessage(), containsString("Signature does not match"));
+      } catch (RemoteSolrException e) {
+        assertThat(e.getMessage(), containsString("Signature does not match"));
       }
 
       postFile(
@@ -112,12 +104,14 @@ public class TestDistribFileStore extends SolrCloudTestCase {
               "/package/mypkg/v1.0/runtimelibs.jar",
               "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
 
-      assertTrue(rsp._getStr("message", "").contains("File with same metadata exists "));
+      assertTrue(
+          Objects.requireNonNullElse(rsp._getStr("message"), "")
+              .contains("File with same metadata exists "));
 
       assertResponseValues(
           10,
           cluster.getSolrClient(),
-          new V2Request.Builder("/node/files/package/mypkg/v1.0")
+          new V2Request.Builder("/cluster/filestore/metadata/package/mypkg/v1.0")
               .withMethod(SolrRequest.METHOD.GET)
               .build(),
           Map.of(
@@ -130,7 +124,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       assertResponseValues(
           10,
           cluster.getSolrClient(),
-          new V2Request.Builder("/node/files/package/mypkg")
+          new V2Request.Builder("/cluster/filestore/metadata/package/mypkg")
               .withMethod(SolrRequest.METHOD.GET)
               .build(),
           Map.of(
@@ -170,19 +164,38 @@ public class TestDistribFileStore extends SolrCloudTestCase {
                     return true;
                   });
       for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-        String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
-        String url = baseUrl + "/node/files/package/mypkg/v1.0?wt=javabin";
+        String baseUrl = jettySolrRunner.getBaseURLV2().toString();
+        String url = baseUrl + "/cluster/filestore/metadata/package/mypkg/v1.0?wt=javabin";
         assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
       }
+
+      // Ensure that invalid 'getFrom' parameter causes failures
+      for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+        final var fetchReq = new FileStoreApi.FetchFile("/package/mypkg/v1.0/runtimelibs.jar2");
+        fetchReq.setGetFrom("someFakeSolrNode:8983_solr");
+        try (final var solrClient = jettySolrRunner.newClient()) {
+          final var expectedExc =
+              expectThrows(
+                  RemoteSolrException.class,
+                  () -> {
+                    fetchReq.process(solrClient);
+                  });
+          assertEquals(400, expectedExc.code());
+          assertThat(
+              expectedExc.getMessage(), containsString("File store cannot fetch from source node"));
+          assertThat(expectedExc.getMessage(), containsString("does not appear in live-nodes"));
+        }
+      }
+
       // Delete Jars
       DistribFileStore.deleteZKFileEntry(
           cluster.getZkClient(), "/package/mypkg/v1.0/runtimelibs.jar");
       JettySolrRunner j = cluster.getRandomJetty(random());
-      String path = j.getBaseURLV2() + "/cluster/files" + "/package/mypkg/v1.0/runtimelibs.jar";
-      HttpDelete del = new HttpDelete(path);
-      try (HttpSolrClient cl = (HttpSolrClient) j.newClient()) {
-        Utils.executeHttpMethod(cl.getHttpClient(), path, Utils.JSONCONSUMER, del);
-      }
+      String path =
+          j.getBaseURLV2() + "/cluster/filestore/files" + "/package/mypkg/v1.0/runtimelibs.jar";
+      var resp = j.getSolrClient().getHttpClient().newRequest(path).method("DELETE").send();
+      assertEquals(200, resp.getStatus());
+
       expected = Collections.singletonMap(":files:/package/mypkg/v1.0/runtimelibs.jar", null);
       checkAllNodesForFile(cluster, "/package/mypkg/v1.0/runtimelibs.jar", expected, false);
     } finally {
@@ -197,21 +210,21 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       boolean verifyContent)
       throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
-      String url = baseUrl + "/node/files" + path + "?wt=javabin&meta=true";
+      String baseUrl = jettySolrRunner.getBaseURLV2().toString();
+      String url = baseUrl + "/cluster/filestore/metadata" + path + "?wt=javabin";
       assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
 
       if (verifyContent) {
-        try (HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
-          ByteBuffer buf =
-              Utils.executeGET(
-                  solrClient.getHttpClient(),
-                  baseUrl + "/node/files" + path,
-                  Utils.newBytesConsumer(Integer.MAX_VALUE));
-          assertEquals(
-              "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
-              DigestUtils.sha512Hex(new ByteBufferInputStream(buf)));
-        }
+        var resp =
+            jettySolrRunner
+                .getSolrClient()
+                .getHttpClient()
+                .GET(baseUrl + "/cluster/filestore/files" + path);
+        assertEquals(200, resp.getStatus());
+        ByteBuffer buf = ByteBuffer.wrap(resp.getContent());
+        assertEquals(
+            "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
+            DigestUtils.sha512Hex(new ByteBufferInputStream(buf)));
       }
     }
   }
@@ -227,10 +240,9 @@ public class TestDistribFileStore extends SolrCloudTestCase {
 
     @Override
     public NavigableObject call() throws Exception {
-      try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
-        return (NavigableObject)
-            Utils.executeGET(solrClient.getHttpClient(), this.url, JAVABINCONSUMER);
-      }
+      var resp = jetty.getSolrClient().getHttpClient().GET(this.url);
+      assertEquals(200, resp.getStatus());
+      return NavigableObject.wrap(new JavaBinCodec().unmarshal(resp.getContent()));
     }
 
     @Override
@@ -247,7 +259,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   public static NavigableObject assertResponseValues(
       int repeats, SolrClient client, SolrRequest<?> req, Map<String, Object> vals)
       throws Exception {
-    Callable<NavigableObject> callable = () -> req.process(client);
+    Callable<NavigableObject> callable = () -> client.request(req);
 
     return assertResponseValues(repeats, callable, vals);
   }
@@ -304,7 +316,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
           // we know these are unequal but call assert instead of fail() because it gives a better
           // error message
           assertEquals(
-              "Failed on path " + key + " of " + description + "after attempt #" + (i + 1),
+              "Failed on path " + key + " of " + description + " after attempt #" + (i + 1),
               val,
               Utils.toJSONString(actual));
         }
@@ -319,12 +331,12 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster)
       throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
-      PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()));
-      String url = jetty.getBaseURLV2() + "/node/files" + path + "?sync=true";
-      Object resp = Utils.executeGET(client.getHttpClient(), url, null);
-      log.info("sync resp: {} was {}", url, resp);
-    }
+    PackageUtils.uploadKey(bytes, path, jetty.getCoreContainer().getSolrHome());
+
+    final var syncReq = new FileStoreApi.SyncFile(path);
+    final var syncRsp = syncReq.process(jetty.getSolrClient());
+    log.info("sync resp for path {} was {}", path, syncRsp.responseHeader.status);
+
     checkAllNodesForFile(
         cluster,
         path,
@@ -335,7 +347,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   public static NavigableObject postFile(
       SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
-    String resource = "/cluster/files" + name;
+    String resource = "/cluster/filestore/files" + name;
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("sig", sig);
     V2Response rsp =

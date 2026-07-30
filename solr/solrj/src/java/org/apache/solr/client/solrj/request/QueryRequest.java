@@ -16,60 +16,70 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import org.apache.solr.client.solrj.SolrClient;
+import java.util.Objects;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
+ * For use with Solr's {@code SearchHandler}, generally at "/select". For other handlers, try {@link
+ * GenericSolrRequest}.
+ *
  * @since solr 1.3
  */
-public class QueryRequest extends DataStoreSolrRequest<QueryResponse> {
+public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> {
 
-  private SolrParams query;
+  private final SolrParams query;
 
   public QueryRequest() {
-    super(METHOD.GET, null);
+    super(METHOD.GET, "/select", SolrRequestType.QUERY);
+    query = SolrParams.of();
   }
 
   public QueryRequest(SolrParams q) {
-    super(METHOD.GET, null);
-    query = q;
+    super(METHOD.GET, pathFromParams(Objects.requireNonNull(q)), SolrRequestType.QUERY);
+    query = paramsWithoutQt(q);
   }
 
   public QueryRequest(SolrParams q, METHOD method) {
-    super(method, null);
-    query = q;
+    super(method, pathFromParams(Objects.requireNonNull(q)), SolrRequestType.QUERY);
+    query = paramsWithoutQt(q);
   }
 
-  /** Use the params 'QT' parameter if it exists */
-  @Override
-  public String getPath() {
-    String qt = query == null ? null : query.get(CommonParams.QT);
-    if (qt == null) {
-      qt = super.getPath();
-    }
-    if (qt != null && qt.startsWith("/")) {
-      return qt;
-    }
-    return "/select";
+  public QueryRequest(String path, SolrParams q) {
+    super(METHOD.GET, Objects.requireNonNull(path), SolrRequestType.QUERY);
+    query = Objects.requireNonNull(q);
+  }
+
+  public QueryRequest(String path, SolrParams q, METHOD method) {
+    super(method, Objects.requireNonNull(path), SolrRequestType.QUERY);
+    query = Objects.requireNonNull(q);
+  }
+
+  private static String pathFromParams(SolrParams q) {
+    String qt = q.get(CommonParams.QT);
+    return (qt != null && qt.startsWith("/")) ? qt : "/select";
+  }
+
+  private static SolrParams paramsWithoutQt(SolrParams q) {
+    if (q.get(CommonParams.QT) == null) return q;
+    ModifiableSolrParams params = new ModifiableSolrParams(q);
+    params.remove(CommonParams.QT);
+    return params;
   }
 
   // ---------------------------------------------------------------------------------
   // ---------------------------------------------------------------------------------
 
   @Override
-  protected QueryResponse createResponse(SolrClient client) {
-    return new QueryResponse(client);
+  protected QueryResponse createResponse(NamedList<Object> namedList) {
+    return new QueryResponse();
   }
 
   @Override
   public SolrParams getParams() {
     return query;
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.QUERY.toString();
   }
 }

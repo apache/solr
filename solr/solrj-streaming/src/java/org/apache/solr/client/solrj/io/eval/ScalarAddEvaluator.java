@@ -53,8 +53,7 @@ public class ScalarAddEvaluator extends RecursiveObjectEvaluator implements TwoV
 
       return out;
 
-    } else if (value2 instanceof Matrix) {
-      Matrix matrix = (Matrix) value2;
+    } else if (value2 instanceof Matrix matrix) {
       double[][] data = matrix.getData();
       double[][] newData = new double[data.length][];
       for (int i = 0; i < data.length; i++) {

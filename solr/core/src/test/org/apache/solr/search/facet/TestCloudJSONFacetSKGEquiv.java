@@ -40,7 +40,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -134,16 +134,15 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-tlog.xml");
     collectionProperties.put("schema", "schema_latest.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION_NAME).build();
+    CLOUD_CLIENT = cluster.newSolrClient(COLLECTION_NAME);
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
     }
 
     final int numDocs = atLeast(100);
@@ -364,8 +363,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("mapped"));
+        assertEquals(List.of(), sweep_debug.get("accs"));
+        assertEquals(List.of(), sweep_debug.get("mapped"));
       }
       { // if we override 'dv' with 'hashdv' which doesn't sweep, our sweep debug should be empty,
         // even if the skg stat does ask for sweeping explicitly...
@@ -420,8 +419,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("mapped"));
+        assertEquals(List.of(), sweep_debug.get("accs"));
+        assertEquals(List.of(), sweep_debug.get("mapped"));
       }
     }
 
@@ -532,7 +531,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       // skip past the (implicit) top Facet query to get it's "sub-facets" (the real facets)...
       @SuppressWarnings({"unchecked"})
       final List<NamedList<Object>> facetDebug =
-          (List<NamedList<Object>>) topNamedList.findRecursive("debug", "facet-trace", "sub-facet");
+          (List<NamedList<Object>>)
+              topNamedList._get(List.of("debug", "facet-trace", "sub-facet"), null);
       assertNotNull(topNamedList + " ... null facet debug?", facetDebug);
       assertFalse(topNamedList + " ... not even one facet debug?", facetDebug.isEmpty());
       return facetDebug.get(0);
@@ -821,10 +821,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
           // it ignores the order of the keys in each bucket...
           final String pathToMismatch =
               BaseDistributedSearchTestCase.compare(
-                  expected,
-                  actual,
-                  0,
-                  Collections.singletonMap("buckets", BaseDistributedSearchTestCase.UNORDERED));
+                  expected, actual, 0, Map.of("buckets", BaseDistributedSearchTestCase.UNORDERED));
           if (null != pathToMismatch) {
             log.error("{}: expected = {}", options, expected);
             log.error("{}: actual = {}", options, actual);
@@ -921,12 +918,12 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
     /** Assumes null for fore/back queries w/no options */
     public RelatednessFacet() {
-      this(null, null, Collections.emptyMap());
+      this(null, null, Map.of());
     }
 
     /** Assumes no options */
     public RelatednessFacet(final String foreQ, final String backQ) {
-      this(foreQ, backQ, Collections.emptyMap());
+      this(foreQ, backQ, Map.of());
     }
 
     public RelatednessFacet(
@@ -1316,7 +1313,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assertNotNull(client.getDefaultCollection());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
 

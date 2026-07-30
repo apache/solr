@@ -24,14 +24,25 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import org.apache.solr.request.SolrQueryRequest;
 
-public class SmileResponseWriter extends BinaryResponseWriter {
+/**
+ * A Smile formatting {@link QueryResponseWriter}.
+ *
+ * @see <a href="https://github.com/FasterXML/smile-format-specification">Smile</a>
+ */
+public class SmileResponseWriter implements QueryResponseWriter {
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
+  public void write(
+      OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
     try (SmileWriter sw = new SmileWriter(out, request, response)) {
       sw.writeResponse();
     }
+  }
+
+  @Override
+  public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
+    return "application/x-jackson-smile";
   }
 
   // smile format is an equivalent of JSON format . So we extend JSONWriter and override the

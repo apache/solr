@@ -1,0 +1,56 @@
+= Expression Value Source Parser
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The `ExpressionValueSourceParser` allows you to implement a custom valueSource merely by adding a concise JavaScript expression to your `solrconfig.xml`.
+The expression is precompiled and offers competitive performance to those written in Java.
+The syntax is a limited subset of JavaScript that is purely numerically oriented, and only certain built-in functions can be called.
+The implementation is based on the Lucene Expressions module, which you can learn more about in the {lucene-javadocs}/expressions/org/apache/lucene/expressions/js/package-summary.html[Lucene Expressions documentation].
+
+== Examples
+
+Expressions can reference field values directly by field name, the document's score using the special name `score`, and positional arguments as `$1`, `$2`, etc.
+The arguments might be constants, fields, or other functions supplying a result.
+
+Here are some example definitions designed to illustrate these features:
+
+[source,xml]
+----
+<valueSourceParser name="sqrt_popularity" class="solr.ExpressionValueSourceParser">
+  <str name="expression">sqrt(popularity)</str>
+</valueSourceParser>
+
+<valueSourceParser name="weighted_sum" class="solr.ExpressionValueSourceParser">
+  <str name="expression">$1 * 0.8 + $2 * 0.2</str>
+</valueSourceParser>
+
+<valueSourceParser name="complex_score" class="solr.ExpressionValueSourceParser">
+  <str name="expression">log(sum(popularity,recency)) * max(score,0.1)</str>
+</valueSourceParser>
+----
+
+Here is one unrealistic query using multiple function queries to illustrate its features:
+
+[source,text]
+----
+&q=my query
+&fq={!frange l=1000}sqrt_popularity()
+&sort=complex_score() desc
+&fl=id,weighted_sum(field1,field2)
+----
+
+Using this VSP to boost/manipulate scores is more efficient than using the `query()` function query, since the latter would execute the underlying `q` an additional time.

@@ -46,9 +46,8 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
 
     int k = ((Number) value2).intValue();
 
-    if (value1 instanceof Matrix) {
+    if (value1 instanceof Matrix matrix) {
 
-      Matrix matrix = (Matrix) value1;
       List<String> features = matrix.getColumnLabels();
 
       if (features == null) {

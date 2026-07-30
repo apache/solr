@@ -17,13 +17,12 @@
 
 package org.apache.solr.client.ref_guide_examples;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -49,7 +48,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
     configureCluster(1)
         // when indexing 'anonymous' kids, we need a schema that doesn't use _nest_path_ so
         // that we can use [child] transformer with a parentFilter...
-        .addConfig(ANON_KIDS_CONFIG, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
+        .addConfig(ANON_KIDS_CONFIG, ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .configure();
   }
 
@@ -71,12 +70,10 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
     final String collection = "test_anon";
 
     CollectionAdminRequest.createCollection(collection, ANON_KIDS_CONFIG, 1, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     // configure the client with the default collection name, to simplify our example below.
-    IndexingNestedDocuments.clientUsedInSolrJExample =
-        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build();
+    IndexingNestedDocuments.clientUsedInSolrJExample = cluster.newSolrClient(collection);
 
     //
     // DO NOT MODIFY THESE EXAMPLE DOCS WITHOUT MAKING THE SAME CHANGES TO THE JSON AND XML
@@ -146,8 +143,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
       assertEquals(1, docs.getNumFound());
       assertEquals("P11!prod", docs.get(0).getFieldValue("id"));
 
-      // [child] returns a flat list of all (anon) descendents
-      assertEquals(5, docs.get(0).getChildDocumentCount());
+      // [child] returns a flat list of all (anon) descendants
       assertEquals(5, docs.get(0).getChildDocuments().size());
 
       // flat list is depth first...
@@ -168,8 +164,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collection, 1, 1).process(cluster.getSolrClient());
 
     // configure the client with the default collection name, to simplify our example below.
-    IndexingNestedDocuments.clientUsedInSolrJExample =
-        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build();
+    IndexingNestedDocuments.clientUsedInSolrJExample = cluster.newSolrClient(collection);
 
     //
     // DO NOT MODIFY THESE EXAMPLE DOCS WITHOUT MAKING THE SAME CHANGES TO THE JSON AND XML

@@ -29,16 +29,6 @@
   <!-- Consult the javadoc of o.e.j.util.thread.QueuedThreadPool   -->
   <!-- for all configuration that may be set here.                 -->
   <!-- =========================================================== -->
-  <Arg name="threadpool">
-    <New id="threadpool" class="io.dropwizard.metrics.jetty10.InstrumentedQueuedThreadPool">
-      <Arg name="registry">
-        <Call id="solrJettyMetricRegistry" name="getOrCreate" class="com.codahale.metrics.SharedMetricRegistries">
-          <Arg>solr.jetty</Arg>
-        </Call>
-      </Arg>
-    </New>
-  </Arg>
-
   <Get name="ThreadPool">
     <Set name="minThreads" type="int"><Property name="solr.jetty.threads.min" default="10"/></Set>
     <Set name="maxThreads" type="int"><Property name="solr.jetty.threads.max" default="10000"/></Set>
@@ -47,6 +37,8 @@
     <Set name="detailedDump">false</Set>
   </Get>
 
+  <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="removeHandlersForRootLogger"/>
+  <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="install"/>
 
   <!-- =========================================================== -->
   <!-- Http Configuration.                                         -->
@@ -70,6 +62,7 @@
     <Set name="outputAggregationSize"><Property name="solr.jetty.output.aggregation.size" default="8192" /></Set>
     <Set name="requestHeaderSize"><Property name="solr.jetty.request.header.size" default="8192" /></Set>
     <Set name="responseHeaderSize"><Property name="solr.jetty.response.header.size" default="8192" /></Set>
+    <Set name="maxResponseHeaderSize"><Property name="solr.jetty.response.header.size.max" default="16384" /></Set>
     <Set name="sendServerVersion"><Property name="solr.jetty.send.server.version" default="false" /></Set>
     <Set name="sendDateHeader"><Property name="solr.jetty.send.date.header" default="false" /></Set>
     <Set name="headerCacheSize"><Property name="solr.jetty.header.cache.size" default="512" /></Set>
@@ -85,8 +78,6 @@
     <!-- RewriteHandle to set headers, redirect root to Solr         -->
     <!-- =========================================================== -->
      <New id="RewriteHandler" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
-      <Set name="rewriteRequestURI">true</Set>
-      <Set name="rewritePathInfo">false</Set>
       <Set name="originalPathAttribute">requestedPath</Set>
 
       <!-- security-related headers -->
@@ -94,8 +85,8 @@
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
             <Set name="pattern">/solr/*</Set>
-            <Set name="name">Content-Security-Policy</Set>
-            <Set name="value">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';</Set>
+            <Set name="headerName">Content-Security-Policy</Set>
+            <Set name="headerValue">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';</Set>
           </New>
         </Arg>
       </Call>
@@ -103,8 +94,8 @@
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
             <Set name="pattern">/solr/*</Set>
-            <Set name="name">X-Content-Type-Options</Set>
-            <Set name="value">nosniff</Set>
+            <Set name="headerName">X-Content-Type-Options</Set>
+            <Set name="headerValue">nosniff</Set>
           </New>
         </Arg>
       </Call>
@@ -112,8 +103,8 @@
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
             <Set name="pattern">/solr/*</Set>
-            <Set name="name">X-Frame-Options</Set>
-            <Set name="value">SAMEORIGIN</Set>
+            <Set name="headerName">X-Frame-Options</Set>
+            <Set name="headerValue">SAMEORIGIN</Set>
           </New>
         </Arg>
       </Call>
@@ -121,8 +112,8 @@
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
             <Set name="pattern">/solr/*</Set>
-            <Set name="name">X-XSS-Protection</Set>
-            <Set name="value">1; mode=block</Set>
+            <Set name="headerName">X-XSS-Protection</Set>
+            <Set name="headerValue">1; mode=block</Set>
           </New>
         </Arg>
       </Call>
@@ -153,7 +144,7 @@
          </Arg>
        </Call>
        <Set name="handler">
-         <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+         <New id="Handlers" class="org.eclipse.jetty.server.Handler$Sequence">
            <Set name="handlers">
              <Array type="org.eclipse.jetty.server.Handler">
                <Item>
@@ -177,14 +168,6 @@
                    </Set>
                  </New>
                </Item>
-               <Item>
-                 <New id="InstrumentedHandler" class="io.dropwizard.metrics.jetty10.InstrumentedHandler">
-                   <Arg><Ref refid="solrJettyMetricRegistry"/></Arg>
-                   <Set name="handler">
-                     <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
-                   </Set>
-                 </New>
-               </Item>
              </Array>
            </Set>
          </New>
@@ -205,44 +188,47 @@
     <Set name="dumpAfterStart">false</Set>
     <Set name="dumpBeforeStop">false</Set>
 
-    <Call name="addBean">
-      <Arg>
-        <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
-          <Set name="contexts">
-            <Ref refid="Contexts" />
-          </Set>
-          <Call name="setContextAttribute">
-            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-            <Arg>.*/servlet-api-[^/]*\.jar$</Arg>
-          </Call>
+    <!-- =========================================================== -->
+    <!-- Deploy the Solr webapp.                                      -->
+    <!-- Solr serves a single, statically-known webapp, so we add it  -->
+    <!-- directly to the context collection rather than using Jetty's -->
+    <!-- directory-scanning deployer (the DeploymentManager /         -->
+    <!-- ContextProvider API was removed in Jetty 12.1).              -->
+    <!-- =========================================================== -->
+    <Ref refid="Contexts">
+      <Call name="addHandler">
+        <Arg>
+          <New class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+            <Set name="contextPath">/solr</Set>
+            <Set name="war"><Property name="jetty.base"/>/solr-webapp/webapp</Set>
+            <Set name="defaultsDescriptor"><Property name="jetty.base"/>/etc/webdefault.xml</Set>
+            <Set name="extractWAR">false</Set>
 
-          <Call name="addAppProvider">
-            <Arg>
-              <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-                <Set name="monitoredDirName"><Property name="jetty.base" default="."/>/contexts</Set>
-                <Set name="scanInterval">0</Set>
-              </New>
-            </Arg>
-          </Call>
-          
-          <!-- Add a customize step to the deployment lifecycle -->
-          <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class 
-          <Call name="insertLifeCycleNode">
-            <Arg>deployed</Arg>
-            <Arg>starting</Arg>
-            <Arg>customise</Arg>
-          </Call>
-          <Call name="addLifeCycleBinding">
-            <Arg>
-              <New class="org.eclipse.jetty.deploy.bindings.DebugBinding">
-                <Arg>customise</Arg>
-              </New>
-            </Arg>
-          </Call>
-          -->
-          
-        </New>
-      </Arg>
-    </Call>
-    
+            <!--
+            The rest of this is necessary to deduplicate jetty server jars in our server build.
+            Jetty disallows "server" classes that are loaded via the server classloader (live in
+            server/lib/ or server/lib/ext/) from being used by the Webapp. Solr has a need for many
+            of these classes, especially http and http2 for its HTTP Client libraries. Setting
+            parentLoaderPriority=true and hiding the "-org.eclipse.jetty." server classes lets the
+            webapp load them from the server classloader instead of duplicating the jars into
+            WEB-INF/lib/.
+            Documentation: https://jetty.org/docs/jetty/12.1/programming-guide/server/http.html#handler-use-webapp-context-class-loading
+            -->
+            <Set name="parentLoaderPriority">true</Set>
+            <Call name="addHiddenClassMatcher">
+              <Arg>
+                <New class="org.eclipse.jetty.util.ClassMatcher">
+                  <Arg>
+                    <Array type="java.lang.String">
+                      <Item>-org.eclipse.jetty.</Item>
+                    </Array>
+                  </Arg>
+                </New>
+              </Arg>
+            </Call>
+          </New>
+        </Arg>
+      </Call>
+    </Ref>
+
 </Configure>

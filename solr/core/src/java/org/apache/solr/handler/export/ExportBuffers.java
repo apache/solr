@@ -31,6 +31,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.handler.export.ExportWriter.MergeIterator;
@@ -42,7 +43,8 @@ import org.slf4j.LoggerFactory;
 class ExportBuffers {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final long EXCHANGE_TIMEOUT_SECONDS = 600;
+  static final long EXCHANGE_TIMEOUT_SECONDS =
+      EnvUtils.getPropertyAsLong("solr.exportbuffers.exchange.timeout.sec", 600L);
   static final String EXPORT_BUFFERS_KEY = "__eb__";
 
   final Buffer bufferOne;
@@ -161,8 +163,6 @@ class ExportBuffers {
 
   public void error(Throwable t) {
     error = t;
-    // break the lock on the other thread too
-    barrier.reset();
   }
 
   public Throwable getError() {

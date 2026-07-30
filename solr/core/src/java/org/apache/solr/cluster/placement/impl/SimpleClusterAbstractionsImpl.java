@@ -34,6 +34,7 @@ import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
@@ -93,7 +94,8 @@ class SimpleClusterAbstractionsImpl {
 
     @Override
     public Iterator<SolrCollection> iterator() {
-      return clusterState.getCollectionsMap().values().stream()
+      return clusterState
+          .collectionStream()
           .map(SolrCollectionImpl::fromDocCollection)
           .collect(Collectors.toSet())
           .iterator();
@@ -138,10 +140,9 @@ class SimpleClusterAbstractionsImpl {
       if (obj == this) {
         return true;
       }
-      if (!(obj instanceof NodeImpl)) {
+      if (!(obj instanceof NodeImpl other)) {
         return false;
       }
-      NodeImpl other = (NodeImpl) obj;
       return Objects.equals(this.nodeName, other.nodeName);
     }
 
@@ -250,20 +251,13 @@ class SimpleClusterAbstractionsImpl {
     }
 
     private ShardState translateState(Slice.State state) {
-      switch (state) {
-        case ACTIVE:
-          return ShardState.ACTIVE;
-        case INACTIVE:
-          return ShardState.INACTIVE;
-        case CONSTRUCTION:
-          return ShardState.CONSTRUCTION;
-        case RECOVERY:
-          return ShardState.RECOVERY;
-        case RECOVERY_FAILED:
-          return ShardState.RECOVERY_FAILED;
-        default:
-          throw new RuntimeException("Unexpected " + state);
-      }
+      return switch (state) {
+        case ACTIVE -> ShardState.ACTIVE;
+        case INACTIVE -> ShardState.INACTIVE;
+        case CONSTRUCTION -> ShardState.CONSTRUCTION;
+        case RECOVERY -> ShardState.RECOVERY;
+        case RECOVERY_FAILED -> ShardState.RECOVERY_FAILED;
+      };
     }
 
     @Override
@@ -306,10 +300,9 @@ class SimpleClusterAbstractionsImpl {
       if (obj == this) {
         return true;
       }
-      if (!(obj instanceof ShardImpl)) {
+      if (!(obj instanceof ShardImpl other)) {
         return false;
       }
-      ShardImpl other = (ShardImpl) obj;
       return Objects.equals(this.shardName, other.shardName)
           && Objects.equals(this.collection, other.collection)
           && Objects.equals(this.shardState, other.shardState)
@@ -385,31 +378,20 @@ class SimpleClusterAbstractionsImpl {
     }
 
     private Replica.ReplicaType translateType(org.apache.solr.common.cloud.Replica.Type type) {
-      switch (type) {
-        case NRT:
-          return Replica.ReplicaType.NRT;
-        case TLOG:
-          return Replica.ReplicaType.TLOG;
-        case PULL:
-          return Replica.ReplicaType.PULL;
-        default:
-          throw new RuntimeException("Unexpected " + type);
-      }
+      return switch (type) {
+        case NRT -> ReplicaType.NRT;
+        case TLOG -> ReplicaType.TLOG;
+        case PULL -> ReplicaType.PULL;
+      };
     }
 
-    private Replica.ReplicaState translateState(org.apache.solr.common.cloud.Replica.State state) {
-      switch (state) {
-        case ACTIVE:
-          return Replica.ReplicaState.ACTIVE;
-        case DOWN:
-          return Replica.ReplicaState.DOWN;
-        case RECOVERING:
-          return Replica.ReplicaState.RECOVERING;
-        case RECOVERY_FAILED:
-          return Replica.ReplicaState.RECOVERY_FAILED;
-        default:
-          throw new RuntimeException("Unexpected " + state);
-      }
+    private Replica.ReplicaState translateState(State state) {
+      return switch (state) {
+        case ACTIVE -> ReplicaState.ACTIVE;
+        case DOWN -> ReplicaState.DOWN;
+        case RECOVERING -> ReplicaState.RECOVERING;
+        case RECOVERY_FAILED -> ReplicaState.RECOVERY_FAILED;
+      };
     }
 
     @Override
@@ -449,16 +431,11 @@ class SimpleClusterAbstractionsImpl {
      * an internal SolrCloud implementation class to the plugin API.
      */
     static org.apache.solr.common.cloud.Replica.Type toCloudReplicaType(ReplicaType type) {
-      switch (type) {
-        case NRT:
-          return org.apache.solr.common.cloud.Replica.Type.NRT;
-        case TLOG:
-          return org.apache.solr.common.cloud.Replica.Type.TLOG;
-        case PULL:
-          return org.apache.solr.common.cloud.Replica.Type.PULL;
-        default:
-          throw new IllegalArgumentException("Unknown " + type);
-      }
+      return switch (type) {
+        case NRT -> org.apache.solr.common.cloud.Replica.Type.NRT;
+        case TLOG -> org.apache.solr.common.cloud.Replica.Type.TLOG;
+        case PULL -> org.apache.solr.common.cloud.Replica.Type.PULL;
+      };
     }
 
     @Override
@@ -466,10 +443,9 @@ class SimpleClusterAbstractionsImpl {
       if (obj == this) {
         return true;
       }
-      if (!(obj instanceof ReplicaImpl)) {
+      if (!(obj instanceof ReplicaImpl other)) {
         return false;
       }
-      ReplicaImpl other = (ReplicaImpl) obj;
       return Objects.equals(this.replicaName, other.replicaName)
           && Objects.equals(this.coreName, other.coreName)
           && Objects.equals(this.shard, other.shard)

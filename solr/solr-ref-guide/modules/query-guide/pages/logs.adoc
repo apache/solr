@@ -32,7 +32,7 @@ The `postlogs` command reads in Solr's log format and indexes it in a Solr colle
 
 `bin/solr postlogs [options]`
 
-`bin/solr postlogs -help`
+`bin/solr postlogs --help`
 
 ==== Healthcheck Parameters
 

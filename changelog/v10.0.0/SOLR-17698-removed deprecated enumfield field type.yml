@@ -1,0 +1,8 @@
+title: Removed deprecated EnumField field type.
+type: removed
+authors:
+- name: Eric Pugh
+- name: David Smiley
+links:
+- name: SOLR-17698
+  url: https://issues.apache.org/jira/browse/SOLR-17698

@@ -17,14 +17,12 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.findTool;
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -46,6 +44,10 @@ public class AuthToolTest extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = createTempDir("AuthToolTest").toAbsolutePath();
+    // Reset ZK security state before each test to avoid interference between tests
+    if (cluster.getZkClient().exists("/security.json")) {
+      cluster.getZkClient().setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8));
+    }
   }
 
   @Override
@@ -64,24 +66,58 @@ public class AuthToolTest extends SolrCloudTestCase {
     String[] args = {
       "auth",
       "enable",
-      "-zkHost",
+      "-z",
       cluster.getZkClient().getZkServerAddress(),
-      "-authConfDir",
+      "--auth-conf-dir",
       dir.toAbsolutePath().toString(),
-      "-solrIncludeFile",
+      "--solr-include-file",
       solrIncludeFile.toAbsolutePath().toString(),
-      "-credentials",
-      "solr:solr",
-      "-blockUnknown",
+      "--credentials",
+      "solr:solrRocks",
+      "--block-unknown",
       "true"
     };
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, AuthTool.class));
   }
 
-  private int runTool(String[] args) throws Exception {
-    Tool tool = findTool(args);
-    assertTrue(tool instanceof AuthTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
-    return tool.runTool(cli);
+  @Test
+  public void testEnableAuthRejectsUsernameEqualPassword() throws Exception {
+    Path solrIncludeFile = Files.createFile(dir.resolve("solrIncludeFile2.txt"));
+    String[] args = {
+      "auth",
+      "enable",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--auth-conf-dir",
+      dir.toAbsolutePath().toString(),
+      "--solr-include-file",
+      solrIncludeFile.toAbsolutePath().toString(),
+      "--credentials",
+      "solr:solr"
+    };
+    assertNotEquals(0, CLITestHelper.runTool(args, AuthTool.class));
+  }
+
+  @Test
+  public void testEnableAuthAllowsUsernameEqualPasswordWithEscapeHatch() throws Exception {
+    System.setProperty(Sha256AuthenticationProvider.ALLOW_USER_AS_PASSWORD_PROP, "true");
+    try {
+      Path solrIncludeFile = Files.createFile(dir.resolve("solrIncludeFile3.txt"));
+      String[] args = {
+        "auth",
+        "enable",
+        "-z",
+        cluster.getZkClient().getZkServerAddress(),
+        "--auth-conf-dir",
+        dir.toAbsolutePath().toString(),
+        "--solr-include-file",
+        solrIncludeFile.toAbsolutePath().toString(),
+        "--credentials",
+        "solr:solr"
+      };
+      assertEquals(0, CLITestHelper.runTool(args, AuthTool.class));
+    } finally {
+      System.clearProperty(Sha256AuthenticationProvider.ALLOW_USER_AS_PASSWORD_PROP);
+    }
   }
 }

@@ -18,9 +18,9 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -31,64 +31,149 @@ import org.junit.Test;
 
 public class LBSolrClientTest extends SolrTestCase {
 
+  private static final List<LBSolrClient.Endpoint> SOLR_ENDPOINTS =
+      List.of("1", "2", "3", "4").stream()
+          .map(url -> new LBSolrClient.Endpoint(url))
+          .collect(Collectors.toList());
+
+  @Test
+  public void testEndpointCorrectlyBuildsFullUrl() {
+    final var baseUrlEndpoint = new LBSolrClient.Endpoint("http://localhost:8983/solr");
+    assertEquals("http://localhost:8983/solr", baseUrlEndpoint.getUrl());
+    assertEquals("http://localhost:8983/solr", baseUrlEndpoint.getBaseUrl());
+    assertNull(
+        "Expected core to be null, but was: " + baseUrlEndpoint.getCore(),
+        baseUrlEndpoint.getCore());
+
+    final var coreEndpoint = new LBSolrClient.Endpoint("http://localhost:8983/solr", "collection1");
+    assertEquals("http://localhost:8983/solr/collection1", coreEndpoint.getUrl());
+    assertEquals("http://localhost:8983/solr", coreEndpoint.getBaseUrl());
+    assertEquals("collection1", coreEndpoint.getCore());
+  }
+
+  @Test
+  public void testEndpointNormalizesProvidedBaseUrl() {
+    final var normalizedBaseUrl = "http://localhost:8983/solr";
+    final var noTrailingSlash = new LBSolrClient.Endpoint(normalizedBaseUrl);
+    final var trailingSlash = new LBSolrClient.Endpoint(normalizedBaseUrl + "/");
+
+    assertEquals(normalizedBaseUrl, noTrailingSlash.getBaseUrl());
+    assertEquals(normalizedBaseUrl, noTrailingSlash.getUrl());
+    assertEquals(normalizedBaseUrl, trailingSlash.getBaseUrl());
+    assertEquals(normalizedBaseUrl, trailingSlash.getUrl());
+  }
+
+  @Test
+  public void testEndpointFactoryParsesUrlsCorrectly() {
+    final var parsedFromBaseUrl =
+        LBSolrClient.Endpoint.from("http://localhost:8983/solr" + rareTrailingSlash());
+    assertEquals("http://localhost:8983/solr", parsedFromBaseUrl.getBaseUrl());
+    assertNull(
+        "Expected core to be null, but was: " + parsedFromBaseUrl.getCore(),
+        parsedFromBaseUrl.getCore());
+
+    final var parsedFromCoreUrl =
+        LBSolrClient.Endpoint.from("http://localhost:8983/solr/collection1" + rareTrailingSlash());
+    assertEquals("http://localhost:8983/solr", parsedFromCoreUrl.getBaseUrl());
+    assertEquals("collection1", parsedFromCoreUrl.getCore());
+  }
+
   @Test
   public void testServerIterator() throws SolrServerException {
-    LBSolrClient.Req req =
-        new LBSolrClient.Req(new QueryRequest(), Arrays.asList("1", "2", "3", "4"));
-    LBSolrClient.ServerIterator serverIterator =
-        new LBSolrClient.ServerIterator(req, new HashMap<>());
-    List<String> actualServers = new ArrayList<>();
-    while (serverIterator.hasNext()) {
-      actualServers.add(serverIterator.nextOrError());
+    LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(), SOLR_ENDPOINTS);
+    LBSolrClient.EndpointIterator endpointIterator =
+        new LBSolrClient.EndpointIterator(req, new HashMap<>());
+    List<LBSolrClient.Endpoint> actualServers = new ArrayList<>();
+    while (endpointIterator.hasNext()) {
+      actualServers.add(endpointIterator.nextOrError());
     }
-    assertEquals(Arrays.asList("1", "2", "3", "4"), actualServers);
-    assertFalse(serverIterator.hasNext());
-    LuceneTestCase.expectThrows(SolrServerException.class, serverIterator::nextOrError);
+    assertEquals(SOLR_ENDPOINTS, actualServers);
+    assertFalse(endpointIterator.hasNext());
+    LuceneTestCase.expectThrows(SolrServerException.class, endpointIterator::nextOrError);
   }
 
   @Test
   public void testServerIteratorWithZombieServers() throws SolrServerException {
-    HashMap<String, LBSolrClient.ServerWrapper> zombieServers = new HashMap<>();
-    LBSolrClient.Req req =
-        new LBSolrClient.Req(new QueryRequest(), Arrays.asList("1", "2", "3", "4"));
-    LBSolrClient.ServerIterator serverIterator =
-        new LBSolrClient.ServerIterator(req, zombieServers);
-    zombieServers.put("2", new LBSolrClient.ServerWrapper("2"));
+    HashMap<String, LBSolrClient.EndpointWrapper> zombieServers = new HashMap<>();
+    LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(), SOLR_ENDPOINTS);
 
-    assertTrue(serverIterator.hasNext());
-    assertEquals("1", serverIterator.nextOrError());
-    assertTrue(serverIterator.hasNext());
-    assertEquals("3", serverIterator.nextOrError());
-    assertTrue(serverIterator.hasNext());
-    assertEquals("4", serverIterator.nextOrError());
-    assertTrue(serverIterator.hasNext());
-    assertEquals("2", serverIterator.nextOrError());
+    // pick a random number of endpoints to mark as zombies
+    final int numToShuffle = random().nextInt(SOLR_ENDPOINTS.size());
+    // yes, this might pick the same endpoint multiple times; fine for our purposes
+    for (int i = 0; i < numToShuffle; i++) {
+      final LBSolrClient.Endpoint z = SOLR_ENDPOINTS.get(random().nextInt(SOLR_ENDPOINTS.size()));
+      zombieServers.put(z.getUrl(), new LBSolrClient.EndpointWrapper(z));
+    }
+    // Try those on the Zombie list after all other possibilities are exhausted.
+    final List<LBSolrClient.Endpoint> expectedOrder = new ArrayList<>(SOLR_ENDPOINTS);
+    for (LBSolrClient.Endpoint e : SOLR_ENDPOINTS) {
+      if (zombieServers.containsKey(e.getUrl())) {
+        expectedOrder.remove(e);
+        expectedOrder.add(e);
+      }
+    }
+
+    final LBSolrClient.EndpointIterator endpointIterator =
+        new LBSolrClient.EndpointIterator(req, zombieServers);
+    final List<LBSolrClient.Endpoint> actualOrder = new ArrayList<>();
+    while (endpointIterator.hasNext()) {
+      actualOrder.add(endpointIterator.nextOrError());
+    }
+    assertFalse(endpointIterator.hasNext()); // sanity check double call
+    assertEquals("randomZombies(" + zombieServers.keySet() + ")", expectedOrder, actualOrder);
+    LuceneTestCase.expectThrows(SolrServerException.class, endpointIterator::nextOrError);
+  }
+
+  @Test
+  public void testServerIteratorWithAllZombies() throws SolrServerException {
+    HashMap<String, LBSolrClient.EndpointWrapper> zombieServers = new HashMap<>();
+    LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(), SOLR_ENDPOINTS);
+    for (LBSolrClient.Endpoint e : SOLR_ENDPOINTS) {
+      zombieServers.put(e.getBaseUrl(), new LBSolrClient.EndpointWrapper(e));
+    }
+
+    final LBSolrClient.EndpointIterator endpointIterator =
+        new LBSolrClient.EndpointIterator(req, zombieServers);
+    // if everyone is a zombie, then the original sorted preference order of
+    // endpoints should still be respected
+    final List<LBSolrClient.Endpoint> actualOrder = new ArrayList<>();
+    while (endpointIterator.hasNext()) {
+      actualOrder.add(endpointIterator.nextOrError());
+    }
+    assertFalse(endpointIterator.hasNext()); // sanity check double call
+    assertEquals(SOLR_ENDPOINTS, actualOrder);
+    LuceneTestCase.expectThrows(SolrServerException.class, endpointIterator::nextOrError);
   }
 
   @Test
   public void testServerIteratorTimeAllowed() throws SolrServerException, InterruptedException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.TIME_ALLOWED, 300);
-    LBSolrClient.Req req =
-        new LBSolrClient.Req(new QueryRequest(params), Arrays.asList("1", "2", "3", "4"), 2);
-    LBSolrClient.ServerIterator serverIterator =
-        new LBSolrClient.ServerIterator(req, new HashMap<>());
-    assertTrue(serverIterator.hasNext());
-    serverIterator.nextOrError();
+    LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(params), SOLR_ENDPOINTS, 2);
+    LBSolrClient.EndpointIterator endpointIterator =
+        new LBSolrClient.EndpointIterator(req, new HashMap<>());
+    assertTrue(endpointIterator.hasNext());
+    endpointIterator.nextOrError();
     Thread.sleep(300);
-    LuceneTestCase.expectThrows(SolrServerException.class, serverIterator::nextOrError);
+    LuceneTestCase.expectThrows(SolrServerException.class, endpointIterator::nextOrError);
   }
 
   @Test
   public void testServerIteratorMaxRetry() throws SolrServerException {
-    LBSolrClient.Req req =
-        new LBSolrClient.Req(new QueryRequest(), Arrays.asList("1", "2", "3", "4"), 2);
-    LBSolrClient.ServerIterator serverIterator =
-        new LBSolrClient.ServerIterator(req, new HashMap<>());
-    assertTrue(serverIterator.hasNext());
-    serverIterator.nextOrError();
-    assertTrue(serverIterator.hasNext());
-    serverIterator.nextOrError();
-    LuceneTestCase.expectThrows(SolrServerException.class, serverIterator::nextOrError);
+    LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(), SOLR_ENDPOINTS, 2);
+    LBSolrClient.EndpointIterator endpointIterator =
+        new LBSolrClient.EndpointIterator(req, new HashMap<>());
+    assertTrue(endpointIterator.hasNext());
+    endpointIterator.nextOrError();
+    assertTrue(endpointIterator.hasNext());
+    endpointIterator.nextOrError();
+    LuceneTestCase.expectThrows(SolrServerException.class, endpointIterator::nextOrError);
+  }
+
+  private String rareTrailingSlash() {
+    if (rarely()) {
+      return "/";
+    }
+    return "";
   }
 }

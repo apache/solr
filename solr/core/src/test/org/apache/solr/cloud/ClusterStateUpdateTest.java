@@ -25,7 +25,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,13 +34,6 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase {
   public static void beforeClass() throws Exception {
     System.setProperty("solrcloud.skip.autorecovery", "true");
     configureCluster(3).addConfig("conf", configset("cloud-minimal")).configure();
-  }
-
-  @AfterClass
-  public static void afterClass() throws Exception {
-    shutdownCluster();
-    System.clearProperty("solrcloud.skip.autorecovery");
-    System.clearProperty("genericCoreNodeNames");
   }
 
   @Test

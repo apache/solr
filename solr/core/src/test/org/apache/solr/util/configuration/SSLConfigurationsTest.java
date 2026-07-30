@@ -26,7 +26,6 @@ import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,14 +74,14 @@ public class SSLConfigurationsTest extends SolrTestCase {
   public void testSslConfigKeystorePwFromKeystoreEnvVar() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, SAMPLE_PW1);
     createSut().init();
-    MatcherAssert.assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW1));
+    assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW1));
   }
 
   @Test
   public void testSslConfigKeystorePwFromClientKeystoreEnvVar() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW2);
     createSut().init();
-    MatcherAssert.assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
+    assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
   }
 
   @Test
@@ -90,7 +89,7 @@ public class SSLConfigurationsTest extends SolrTestCase {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, SAMPLE_PW1);
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW2);
     createSut().init();
-    MatcherAssert.assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
+    assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
   }
 
   @Test
@@ -99,22 +98,21 @@ public class SSLConfigurationsTest extends SolrTestCase {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, SAMPLE_PW1);
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW2);
     createSut().init();
-    MatcherAssert.assertThat(
-        System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW3)); // unchanged
+    assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW3)); // unchanged
   }
 
   @Test
   public void testSslConfigTruststorePwFromKeystoreEnvVar() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD, SAMPLE_PW1);
     createSut().init();
-    MatcherAssert.assertThat(System.getProperty(CLIENT_TRUST_STORE_PASSWORD), is(SAMPLE_PW1));
+    assertThat(System.getProperty(CLIENT_TRUST_STORE_PASSWORD), is(SAMPLE_PW1));
   }
 
   @Test
   public void testSslConfigTruststorePwFromClientKeystoreEnvVar() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD, SAMPLE_PW2);
     createSut().init();
-    MatcherAssert.assertThat(System.getProperty(CLIENT_TRUST_STORE_PASSWORD), is(SAMPLE_PW2));
+    assertThat(System.getProperty(CLIENT_TRUST_STORE_PASSWORD), is(SAMPLE_PW2));
   }
 
   @Test
@@ -122,7 +120,7 @@ public class SSLConfigurationsTest extends SolrTestCase {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD, SAMPLE_PW1);
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD, SAMPLE_PW2);
     createSut().init();
-    MatcherAssert.assertThat(System.getProperty(CLIENT_TRUST_STORE_PASSWORD), is(SAMPLE_PW2));
+    assertThat(System.getProperty(CLIENT_TRUST_STORE_PASSWORD), is(SAMPLE_PW2));
   }
 
   @Test
@@ -131,63 +129,62 @@ public class SSLConfigurationsTest extends SolrTestCase {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD, SAMPLE_PW1);
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD, SAMPLE_PW2);
     createSut().init();
-    MatcherAssert.assertThat(
-        System.getProperty(CLIENT_TRUST_STORE_PASSWORD), is(SAMPLE_PW3)); // unchanged
+    assertThat(System.getProperty(CLIENT_TRUST_STORE_PASSWORD), is(SAMPLE_PW3)); // unchanged
   }
 
   @Test
   public void testGetKeyStorePasswordFromProperty() {
     System.setProperty(KEY_STORE_PASSWORD, SAMPLE_PW1);
-    MatcherAssert.assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW1));
+    assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW1));
   }
 
   @Test
   public void testGetKeyStorePasswordFromEnv() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, SAMPLE_PW2);
-    MatcherAssert.assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
+    assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
   }
 
   @Test
   public void testGetTrustStorePasswordFromProperty() {
     System.setProperty(TRUST_STORE_PASSWORD, SAMPLE_PW1);
-    MatcherAssert.assertThat(createSut().getTrustStorePassword(), is(SAMPLE_PW1));
+    assertThat(createSut().getTrustStorePassword(), is(SAMPLE_PW1));
   }
 
   @Test
   public void testGetTrustStorePasswordFromEnv() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD, SAMPLE_PW2);
-    MatcherAssert.assertThat(createSut().getTrustStorePassword(), is(SAMPLE_PW2));
+    assertThat(createSut().getTrustStorePassword(), is(SAMPLE_PW2));
   }
 
   @Test
   public void testGetClientKeyStorePasswordFromProperty() {
     System.setProperty(CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW1);
-    MatcherAssert.assertThat(createSut().getClientKeyStorePassword(), is(SAMPLE_PW1));
+    assertThat(createSut().getClientKeyStorePassword(), is(SAMPLE_PW1));
   }
 
   @Test
   public void testGetClientKeyStorePasswordFromEnv() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW2);
-    MatcherAssert.assertThat(createSut().getClientKeyStorePassword(), is(SAMPLE_PW2));
+    assertThat(createSut().getClientKeyStorePassword(), is(SAMPLE_PW2));
   }
 
   @Test
   public void testGetClientTrustStorePasswordFromProperty() {
     System.setProperty(CLIENT_TRUST_STORE_PASSWORD, SAMPLE_PW1);
-    MatcherAssert.assertThat(createSut().getClientTrustStorePassword(), is(SAMPLE_PW1));
+    assertThat(createSut().getClientTrustStorePassword(), is(SAMPLE_PW1));
   }
 
   @Test
   public void testGetClientTrustStorePasswordFromEnv() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD, SAMPLE_PW2);
-    MatcherAssert.assertThat(createSut().getClientTrustStorePassword(), is(SAMPLE_PW2));
+    assertThat(createSut().getClientTrustStorePassword(), is(SAMPLE_PW2));
   }
 
   @Test
   public void testSystemPropertyPriorityOverEnvVar() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, SAMPLE_PW2);
-    MatcherAssert.assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
+    assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
     System.setProperty(KEY_STORE_PASSWORD, SAMPLE_PW1);
-    MatcherAssert.assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
+    assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
   }
 }

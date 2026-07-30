@@ -20,6 +20,8 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -30,24 +32,25 @@ import static org.apache.solr.handler.admin.ConfigSetsHandler.getSuffixedNameFor
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Properties;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DelegatingCloudManager;
-import org.apache.solr.client.solrj.cloud.DelegatingClusterStateProvider;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.client.solrj.impl.DelegatingClusterStateProvider;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.RefreshCollectionMessage;
@@ -72,10 +75,10 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -83,7 +86,6 @@ import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.component.ShardHandler;
-import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -94,22 +96,34 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
 
+  public static final String PRS_DEFAULT_PROP = "solr.cloud.prs.enabled";
+
   public CreateCollectionCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     if (ccc.getZkStateReader().aliasesManager != null) { // not a mock ZkStateReader
       ccc.getZkStateReader().aliasesManager.update();
     }
+    ClusterState clusterState = adminCmdContext.getClusterState();
     final Aliases aliases = ccc.getZkStateReader().getAliases();
     final String collectionName = message.getStr(NAME);
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
-    final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, false);
+    boolean prsDefault = EnvUtils.getPropertyAsBool(PRS_DEFAULT_PROP, false);
+    final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, prsDefault);
+    if (log.isInfoEnabled()) {
+      log.info(
+          "solr.cloud.prs.enabled : {} and collection prs : {}, isPRS : {}",
+          prsDefault,
+          message.getStr(CollectionStateProps.PER_REPLICA_STATE),
+          isPRS);
+    }
+
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
@@ -140,9 +154,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     final String collectionPath = DocCollection.getCollectionPath(collectionName);
 
     try {
-
-      final String async = message.getStr(ASYNC);
-
       ZkStateReader zkStateReader = ccc.getZkStateReader();
       message.getProperties().put(COLL_CONF, configName);
 
@@ -162,6 +173,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           collectionName,
           collectionParams,
           ccc.getCoreContainer().getConfigSetService());
+
+      ZkNodeProps m = cloneZkPropsWithOperation(message, CREATE);
 
       // Note that in code below there are two main execution paths: Overseer based cluster state
       // updates and distributed cluster state updates (look for isDistributedStateUpdate()
@@ -185,12 +198,9 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
         // TODO: Consider doing this for all collections, not just the PRS collections.
         ZkWriteCommand command =
-            new ClusterStateMutator(ccc.getSolrCloudManager())
-                .createCollection(clusterState, message);
-        byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-        ccc.getZkStateReader()
-            .getZkClient()
-            .create(collectionPath, data, CreateMode.PERSISTENT, true);
+            new ClusterStateMutator(ccc.getSolrCloudManager()).createCollection(clusterState, m);
+        byte[] data = Utils.toJSON(Map.of(collectionName, command.collection));
+        ccc.getZkStateReader().getZkClient().create(collectionPath, data, CreateMode.PERSISTENT);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
@@ -201,32 +211,27 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           ccc.getDistributedClusterStateUpdater()
               .doSingleStateUpdate(
                   DistributedClusterStateUpdater.MutatingCommand.ClusterCreateCollection,
-                  message,
+                  m,
                   ccc.getSolrCloudManager(),
                   ccc.getZkStateReader());
         } else {
-          ccc.offerStateUpdate(Utils.toJSON(message));
+          ccc.offerStateUpdate(m);
         }
 
         // wait for a while until we see the collection
-        TimeOut waitUntil =
-            new TimeOut(30, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
-        boolean created = false;
-        while (!waitUntil.hasTimedOut()) {
-          waitUntil.sleep(100);
-          created = ccc.getSolrCloudManager().getClusterState().hasCollection(collectionName);
-          if (created) break;
-        }
-        if (!created) {
+        try {
+          newColl =
+              zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, Objects::nonNull);
+        } catch (TimeoutException e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
-              "Could not fully create collection: " + collectionName);
+              "Could not fully create collection: " + collectionName,
+              e);
         }
 
         // refresh cluster state (value read below comes from Zookeeper watch firing following the
         // update done previously, be it by Overseer or by this thread when updates are distributed)
         clusterState = ccc.getSolrCloudManager().getClusterState();
-        newColl = clusterState.getCollection(collectionName);
       }
 
       final List<ReplicaPosition> replicaPositions;
@@ -241,7 +246,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 numReplicas);
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
-        new DeleteCollectionCmd(ccc).call(clusterState, deleteMessage, results);
+        new DeleteCollectionCmd(ccc)
+            .call(
+                adminCmdContext.subRequestContext(DELETE).withClusterState(clusterState),
+                deleteMessage,
+                results);
         // unwrap the exception
         throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
       }
@@ -252,14 +261,16 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
 
       final ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(async, ccc);
+          CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
       if (log.isDebugEnabled()) {
         log.debug(
             formatString(
                 "Creating SolrCores for new collection {0}, shardNames {1} , message : {2}",
                 collectionName, shardNames, message));
       }
-      Map<String, ShardRequest> coresToCreate = new LinkedHashMap<>();
+
+      Map<String, ModifiableSolrParams> coresToCreate = new LinkedHashMap<>();
+      Map<String, String> nodeNames = new HashMap<>();
       ShardHandler shardHandler = ccc.newShardHandler();
       final DistributedClusterStateUpdater.StateChangeRecorder scr;
 
@@ -284,10 +295,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             Assign.buildSolrCoreName(
                 ccc.getSolrCloudManager().getDistribStateManager(),
                 collectionName,
-                ccc.getSolrCloudManager().getClusterState().getCollectionOrNull(collectionName),
                 replicaPosition.shard,
-                replicaPosition.type,
-                true);
+                replicaPosition.type);
         if (log.isDebugEnabled()) {
           log.debug(
               formatString(
@@ -335,7 +344,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
             scr.record(DistributedClusterStateUpdater.MutatingCommand.SliceAddReplica, props);
           } else {
-            ccc.offerStateUpdate(Utils.toJSON(props));
+            ccc.offerStateUpdate(props);
           }
         }
 
@@ -351,31 +360,21 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         params.set(CoreAdminParams.NEW_COLLECTION, "true");
         params.set(CoreAdminParams.REPLICA_TYPE, replicaPosition.type.name());
 
-        if (async != null) {
-          String coreAdminAsyncId = async + Math.abs(System.nanoTime());
+        if (adminCmdContext.getAsyncId() != null) {
+          String coreAdminAsyncId = adminCmdContext.getAsyncId() + Math.abs(System.nanoTime());
           params.add(ASYNC, coreAdminAsyncId);
-          shardRequestTracker.track(nodeName, coreAdminAsyncId);
         }
         CollectionHandlingUtils.addPropertyParams(message, params);
 
-        ShardRequest sreq = new ShardRequest();
-        sreq.nodeName = nodeName;
-        params.set("qt", ccc.getAdminPath());
-        sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
-        sreq.shards = new String[] {baseUrl};
-        sreq.actualShards = sreq.shards;
-        sreq.params = params;
-
-        coresToCreate.put(coreName, sreq);
+        coresToCreate.put(coreName, params);
+        nodeNames.put(coreName, nodeName);
       }
 
       // Update the state.json for PRS collection in a single operation
       if (isPRS) {
         byte[] data =
-            Utils.toJSON(
-                Collections.singletonMap(
-                    collectionName, clusterState.getCollection(collectionName)));
-        zkStateReader.getZkClient().setData(collectionPath, data, true);
+            Utils.toJSON(Map.of(collectionName, clusterState.getCollection(collectionName)));
+        zkStateReader.getZkClient().setData(collectionPath, data);
       }
 
       // Distributed updates don't need to do anything for PRS collections that wrote state.json
@@ -406,14 +405,15 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 coresToCreate.keySet());
       }
 
-      for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
-        ShardRequest sreq = e.getValue();
-        sreq.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
-        shardHandler.submit(sreq, sreq.shards[0], sreq.params);
+      for (Map.Entry<String, ModifiableSolrParams> e : coresToCreate.entrySet()) {
+        ModifiableSolrParams params = e.getValue();
+        String nodeName = nodeNames.get(e.getKey());
+        params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
+        shardRequestTracker.sendShardRequest(
+            nodeName, replicas.get(e.getKey()).getCoreName(), params, shardHandler);
       }
 
-      shardRequestTracker.processResponses(
-          results, shardHandler, false, null, Collections.emptySet());
+      shardRequestTracker.processResponses(results, shardHandler, false, null, Set.of());
       boolean failure =
           results.get("failure") != null
               && ((SimpleOrderedMap<?>) results.get("failure")).size() > 0;
@@ -441,7 +441,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // Let's cleanup as we hit an exception
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain
         // 'success' element, which may be interpreted by the user as a positive ack
-        CollectionHandlingUtils.cleanupCollection(collectionName, new NamedList<>(), ccc);
+        CollectionHandlingUtils.cleanupCollection(
+            adminCmdContext, collectionName, new NamedList<>(), ccc);
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
@@ -503,7 +504,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         Assign.getLiveOrLiveAndCreateNodeSetList(
             clusterState.getLiveNodes(),
             message,
-            CollectionHandlingUtils.RANDOM,
+            Utils.RANDOM,
             cloudManager.getDistribStateManager());
     if (nodeList.isEmpty()) {
       log.warn("It is unusual to create a collection ({}) without cores.", collectionName);
@@ -611,13 +612,9 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       List<String> configNames = null;
       configNames = ccc.getCoreContainer().getConfigSetService().listConfigs();
       if (configNames.contains(DEFAULT_CONFIGSET_NAME)) {
-        if (CollectionAdminParams.SYSTEM_COLL.equals(coll)) {
-          return coll;
-        } else {
-          String intendedConfigSetName = getSuffixedNameForAutoGeneratedConfigSet(coll);
-          copyDefaultConfigSetTo(configNames, intendedConfigSetName);
-          return intendedConfigSetName;
-        }
+        String intendedConfigSetName = getSuffixedNameForAutoGeneratedConfigSet(coll);
+        copyDefaultConfigSetTo(configNames, intendedConfigSetName);
+        return intendedConfigSetName;
       } else if (configNames != null && configNames.size() == 1) {
         configName = configNames.get(0);
         // no config set named, but there is only 1 - use it
@@ -681,32 +678,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                   stateManager, collection, collectionPath, collectionProps, configSetService);
             }
 
-          } else if (System.getProperty("bootstrap_confdir") != null) {
-            String defaultConfigName =
-                System.getProperty(
-                    ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP,
-                    collection);
-
-            // if we are bootstrapping a collection, default the config for
-            // a new collection to the collection we are bootstrapping
-            log.info("Setting config for collection: {} to {}", collection, defaultConfigName);
-
-            Properties sysProps = System.getProperties();
-            for (String sprop : System.getProperties().stringPropertyNames()) {
-              if (sprop.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
-                collectionProps.put(
-                    sprop.substring(ZkController.COLLECTION_PARAM_PREFIX.length()),
-                    sysProps.getProperty(sprop));
-              }
-            }
-
-            // if the config name wasn't passed in, use the default
-            if (!collectionProps.containsKey(ZkController.CONFIGNAME_PROP))
-              collectionProps.put(ZkController.CONFIGNAME_PROP, defaultConfigName);
-
-          } else if (Boolean.getBoolean("bootstrap_conf")) {
-            // the conf name should should be the collection name of this core
-            collectionProps.put(ZkController.CONFIGNAME_PROP, collection);
           } else {
             getConfName(
                 stateManager, collection, collectionPath, collectionProps, configSetService);

@@ -22,7 +22,6 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -34,20 +33,18 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -83,7 +80,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         COLLECTION,
         DEFAULT_TIMEOUT,
         TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 3));
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 3));
 
     final Replica leader = stateReader.getLeaderRetry(COLLECTION, shardId);
 
@@ -110,7 +107,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         maxOnReplica);
 
     // send the same doc but with a lower version than the max in the index
-    try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient client = getHttpSolrClient(replica)) {
       String docId = String.valueOf(1);
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField("id", docId);
@@ -301,7 +298,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     query.addSort(new SolrQuery.SortClause("_version_", SolrQuery.ORDER.desc));
     query.setParam("distrib", false);
 
-    try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient client = getHttpSolrClient(replica)) {
       QueryResponse qr = client.query(query);
       SolrDocumentList hits = qr.getResults();
       if (hits.isEmpty()) fail("No results returned from query: " + query);
@@ -323,9 +320,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       int lastDocId,
       Set<Integer> deletedDocs)
       throws Exception {
-    SolrClient leaderSolr = getHttpSolrClient(leader.getCoreUrl());
+    SolrClient leaderSolr = getHttpSolrClient(leader);
     List<SolrClient> replicas = new ArrayList<SolrClient>(notLeaders.size());
-    for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r.getCoreUrl()));
+    for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r));
 
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {
@@ -353,7 +350,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     doc.addField("id", String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
     AbstractFullDistribZkTestBase.sendDocsWithRetry(
-        cluster.getSolrClient(), COLLECTION, Collections.singletonList(doc), 2, 3, 100);
+        cluster.getSolrClient(), COLLECTION, List.of(doc), 2, 3, 100);
   }
 
   /**
@@ -378,10 +375,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
   }
 
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
-    ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
-    String coreName = coreProps.getCoreName();
+    String coreName = replica.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (SolrClient client = getHttpSolrClient(replica.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -91,15 +91,7 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
     configSetService.uploadFileToConfig(configName, "subdir/file4", data, true);
     assertArrayEquals(configSetService.downloadFileFromConfig(configName, "subdir/file4"), data);
 
-    Map<String, Object> metadata = configSetService.getConfigMetadata(configName);
-    assertTrue(metadata.isEmpty());
-
-    configSetService.setConfigMetadata(configName, Collections.singletonMap("trusted", true));
-    metadata = configSetService.getConfigMetadata(configName);
-    assertTrue(metadata.containsKey("trusted"));
-
-    configSetService.setConfigMetadata(configName, Collections.singletonMap("foo", true));
-    assertFalse(configSetService.getConfigMetadata(configName).containsKey("trusted"));
+    configSetService.setConfigMetadata(configName, new HashMap<>(Map.of("foo", true)));
     assertTrue(configSetService.getConfigMetadata(configName).containsKey("foo"));
 
     List<String> configFiles = configSetService.getAllConfigFiles(configName);

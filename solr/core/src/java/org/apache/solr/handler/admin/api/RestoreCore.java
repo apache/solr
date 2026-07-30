@@ -18,8 +18,8 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.net.URI;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.RestoreCoreApi;
 import org.apache.solr.client.api.model.RestoreCoreRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -132,12 +132,6 @@ public class RestoreCore extends CoreAdminAPIBase implements RestoreCoreApi {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Failed to restore core=" + core.getName());
       }
-      // other replicas to-be-created will know that they are out of date by
-      // looking at their term : 0 compare to term of this core : 1
-      coreContainer
-          .getZkController()
-          .getShardTerms(cd.getCollectionName(), cd.getShardId())
-          .ensureHighestTermsAreNotZero();
 
       // transitions state of update log to ACTIVE
       UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();

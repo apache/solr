@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -31,9 +30,9 @@ import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.DeleteReplicaApi;
 import org.apache.solr.client.api.model.ScaleCollectionRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
@@ -92,8 +91,7 @@ public class DeleteReplica extends AdminAPIBase implements DeleteReplicaApi {
             deleteInstanceDir,
             deleteDataDir,
             deleteIndex,
-            onlyIfDown,
-            async);
+            onlyIfDown);
     submitRemoteMessageAndHandleResponse(
         response, CollectionParams.CollectionAction.DELETEREPLICA, remoteMessage, async);
     return response;
@@ -129,8 +127,7 @@ public class DeleteReplica extends AdminAPIBase implements DeleteReplicaApi {
             deleteInstanceDir,
             deleteDataDir,
             deleteIndex,
-            onlyIfDown,
-            asyncId);
+            onlyIfDown);
     submitRemoteMessageAndHandleResponse(
         response, CollectionParams.CollectionAction.DELETEREPLICA, remoteMessage, asyncId);
     return response;
@@ -172,8 +169,7 @@ public class DeleteReplica extends AdminAPIBase implements DeleteReplicaApi {
             requestBody.deleteInstanceDir,
             requestBody.deleteDataDir,
             requestBody.deleteIndex,
-            requestBody.onlyIfDown,
-            requestBody.async);
+            requestBody.onlyIfDown);
     submitRemoteMessageAndHandleResponse(
         response,
         CollectionParams.CollectionAction.DELETEREPLICA,
@@ -191,10 +187,8 @@ public class DeleteReplica extends AdminAPIBase implements DeleteReplicaApi {
       Boolean deleteInstanceDir,
       Boolean deleteDataDir,
       Boolean deleteIndex,
-      Boolean onlyIfDown,
-      String asyncId) {
+      Boolean onlyIfDown) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETEREPLICA.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
     insertIfNotNull(remoteMessage, SHARD_ID_PROP, shardName);
     insertIfNotNull(remoteMessage, REPLICA, replicaName);
@@ -204,7 +198,6 @@ public class DeleteReplica extends AdminAPIBase implements DeleteReplicaApi {
     insertIfNotNull(remoteMessage, DELETE_DATA_DIR, deleteDataDir);
     insertIfNotNull(remoteMessage, DELETE_INDEX, deleteIndex);
     insertIfNotNull(remoteMessage, ONLY_IF_DOWN, onlyIfDown);
-    insertIfNotNull(remoteMessage, ASYNC, asyncId);
 
     return new ZkNodeProps(remoteMessage);
   }

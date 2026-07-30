@@ -74,19 +74,14 @@ A status=OK indicates that the nodes are responding.
 
 *SolrJ Example with SolrPing*
 
-[source,java]
+[source,java,indent=0]
 ----
-SolrPing ping = new SolrPing();
-ping.getParams().add("distrib", "true"); //To make it a distributed request against a collection
-rsp = ping.process(solrClient, collectionName);
-int status = rsp.getStatus();
+include::example$UsingPingRefGuideExamplesTest.java[tag=solrj-example-with-solrping]
 ----
 
 *SolrJ Example with SolrClient*
 
-[source,java]
+[source,java,indent=0]
 ----
-SolrClient client = new HttpSolrClient.Builder(solrUrl).build();
-SolrPingResponse pingResponse = client.ping(collectionName);
-int status = pingResponse.getStatus();
+include::example$UsingPingRefGuideExamplesTest.java[tag=solrj-example-with-solrclient]
 ----

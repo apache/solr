@@ -38,6 +38,7 @@ import org.apache.solr.highlight.UnifiedSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
@@ -164,6 +165,8 @@ public class HighlightComponent extends SearchComponent
           // TODO ???? add this directly to the response?
           rb.rsp.add(highlightingResponseField(), convertHighlights(sumData));
         }
+        QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+        queryLimits.maybeExitWithPartialResults("Highlighting process");
       }
     }
   }
@@ -209,7 +212,7 @@ public class HighlightComponent extends SearchComponent
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.doHighlights && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.doHighlights && rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
 
       final Object[] objArr = newHighlightsArray(rb.resultIds.size());
       final String highlightingResponseField = highlightingResponseField();
@@ -237,18 +240,9 @@ public class HighlightComponent extends SearchComponent
     }
   }
 
-  ////////////////////////////////////////////
-  ///  SolrInfoBean
-  ////////////////////////////////////////////
-
   @Override
   public String getDescription() {
     return "Highlighting";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.HIGHLIGHTER;
   }
 
   ////////////////////////////////////////////

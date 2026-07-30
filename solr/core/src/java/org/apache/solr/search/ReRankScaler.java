@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.QueryRescorer;
+import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
 
 public class ReRankScaler {
@@ -32,10 +32,10 @@ public class ReRankScaler {
   protected int mainQueryMax = -1;
   protected int reRankQueryMin = -1;
   protected int reRankQueryMax = -1;
-  protected boolean debugQuery;
+  protected boolean explainResults;
   protected ReRankOperator reRankOperator;
   protected ReRankScalerExplain reRankScalerExplain;
-  private QueryRescorer replaceRescorer;
+  private Rescorer replaceRescorer;
   private Set<Integer> reRankSet;
   private double reRankScaleWeight;
 
@@ -44,12 +44,12 @@ public class ReRankScaler {
       String reRankScale,
       double reRankScaleWeight,
       ReRankOperator reRankOperator,
-      QueryRescorer replaceRescorer,
-      boolean debugQuery)
+      Rescorer replaceRescorer,
+      boolean explainResults)
       throws SyntaxError {
 
     this.reRankScaleWeight = reRankScaleWeight;
-    this.debugQuery = debugQuery;
+    this.explainResults = explainResults;
     this.reRankScalerExplain = new ReRankScalerExplain(mainScale, reRankScale);
     this.replaceRescorer = replaceRescorer;
     if (reRankOperator != ReRankOperator.ADD
@@ -84,8 +84,7 @@ public class ReRankScaler {
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof ReRankScaler) {
-      ReRankScaler _reRankScaler = (ReRankScaler) o;
+    if (o instanceof ReRankScaler _reRankScaler) {
       if (mainQueryMin == _reRankScaler.mainQueryMin
           && mainQueryMax == _reRankScaler.mainQueryMax
           && reRankQueryMin == _reRankScaler.reRankQueryMin
@@ -100,7 +99,7 @@ public class ReRankScaler {
     }
   }
 
-  public QueryRescorer getReplaceRescorer() {
+  public Rescorer getReplaceRescorer() {
     return replaceRescorer;
   }
 
@@ -171,12 +170,12 @@ public class ReRankScaler {
       scaledOriginalScoreMap = originalScoreMap;
     }
 
-    this.reRankSet = debugQuery ? new HashSet<>() : null;
+    this.reRankSet = explainResults ? new HashSet<>() : null;
 
     for (int i = 0; i < howMany; i++) {
       ScoreDoc rescoredDoc = rescoredDocs[i];
       int doc = rescoredDoc.doc;
-      if (debugQuery) {
+      if (explainResults) {
         reRankSet.add(doc);
       }
       float score = rescoredDoc.score;
@@ -238,16 +237,7 @@ public class ReRankScaler {
       float reRankScore,
       double reRankScaleWeight,
       ReRankOperator reRankOperator) {
-    switch (reRankOperator) {
-      case ADD:
-        return (float) (orginalScore + reRankScaleWeight * reRankScore);
-      case REPLACE:
-        return (float) (reRankScaleWeight * reRankScore);
-      case MULTIPLY:
-        return (float) (orginalScore * reRankScaleWeight * reRankScore);
-      default:
-        return -1;
-    }
+    return (float) reRankOperator.applyAsDouble(orginalScore, reRankScaleWeight * reRankScore);
   }
 
   public static final class ReRankScalerExplain {
@@ -345,7 +335,14 @@ public class ReRankScaler {
       int doc, Explanation mainQueryExplain, Explanation reRankQueryExplain) {
     float reRankScore = reRankQueryExplain.getDetails()[1].getValue().floatValue();
     float mainScore = mainQueryExplain.getValue().floatValue();
-    if (reRankSet.contains(doc)) {
+    if (null == reRankSet) {
+      // we don't have the data needed to accurately report scaling,
+      // probably due to distributed request
+      return Explanation.match(
+          reRankScore,
+          "ReRank Scaling effects unkown, consider using distrib.singlePass=true (see https://issues.apache.org/jira/browse/SOLR-17299)",
+          reRankQueryExplain);
+    } else if (reRankSet.contains(doc)) {
       if (scaleMainScores() && scaleReRankScores()) {
         if (reRankScore > 0) {
           MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();

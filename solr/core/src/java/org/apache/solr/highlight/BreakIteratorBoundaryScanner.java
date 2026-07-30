@@ -40,7 +40,7 @@ public class BreakIteratorBoundaryScanner extends SolrBoundaryScanner {
     }
     Locale locale = null;
     if (language != null) {
-      locale = country == null ? new Locale(language) : new Locale(language, country);
+      locale = new Locale.Builder().setLanguage(language).setRegion(country).build();
     } else {
       locale = Locale.ROOT;
     }
@@ -62,14 +62,5 @@ public class BreakIteratorBoundaryScanner extends SolrBoundaryScanner {
           ErrorCode.BAD_REQUEST, type + " is invalid for parameter " + HighlightParams.BS_TYPE);
 
     return new org.apache.lucene.search.vectorhighlight.BreakIteratorBoundaryScanner(bi);
-  }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "BreakIteratorBoundaryScanner";
   }
 }

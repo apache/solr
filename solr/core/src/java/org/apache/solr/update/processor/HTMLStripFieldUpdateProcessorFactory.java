@@ -59,8 +59,7 @@ public final class HTMLStripFieldUpdateProcessorFactory
         getSelector(),
         next,
         src -> {
-          if (src instanceof CharSequence) {
-            CharSequence s = (CharSequence) src;
+          if (src instanceof CharSequence s) {
             StringWriter result = new StringWriter(s.length());
             try (Reader in = new HTMLStripCharFilter(new StringReader(s.toString()))) {
               in.transferTo(result);

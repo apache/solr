@@ -79,7 +79,7 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
         String reqPath = (String) req.getContext().get(PATH);
 
         params.set(CommonParams.QT, reqPath);
-        params.setShardAttributesToParams(sreq.purpose);
+        ShardHandler.setShardAttributesToParams(params, sreq.purpose);
 
         if (extraParams != null) {
           for (Map.Entry<String, String> entry : extraParams.entrySet()) {
@@ -114,9 +114,6 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
 
     QueryCancellationComponent component = new QueryCancellationComponent();
     components.add(component);
-
-    ActiveTasksListComponent activeTasksListComponent = new ActiveTasksListComponent();
-    components.add(activeTasksListComponent);
 
     return components;
   }

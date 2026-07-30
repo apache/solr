@@ -16,16 +16,14 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.ReloadCollectionApi;
 import org.apache.solr.client.api.model.ReloadCollectionRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
@@ -66,25 +64,12 @@ public class ReloadCollectionAPI extends AdminAPIBase implements ReloadCollectio
     fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, requestBody);
     submitRemoteMessageAndHandleResponse(
         response,
         CollectionParams.CollectionAction.RELOAD,
-        remoteMessage,
+        new ZkNodeProps(Map.of(NAME, collectionName)),
         requestBody != null ? requestBody.async : null);
     return response;
-  }
-
-  public static ZkNodeProps createRemoteMessage(
-      String collectionName, ReloadCollectionRequestBody requestBody) {
-    final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.RELOAD.toLower());
-    remoteMessage.put(NAME, collectionName);
-    if (requestBody != null) {
-      insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
-    }
-
-    return new ZkNodeProps(remoteMessage);
   }
 
   public static void invokeFromV1Params(

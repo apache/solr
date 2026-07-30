@@ -47,7 +47,7 @@ public class DefaultSolrParams extends SolrParams {
   public Iterator<String> getParameterNamesIterator() {
     // We need to compute the set of all param names in advance
     // So we don't wind up with an iterator that returns the same
-    // String more then once (SOLR-6780)
+    // String more than once (SOLR-6780)
     LinkedHashSet<String> allKeys = new LinkedHashSet<>();
     for (SolrParams p : new SolrParams[] {params, defaults}) {
       Iterator<String> localKeys = p.getParameterNamesIterator();

@@ -19,7 +19,7 @@ package org.apache.solr.common;
 import java.io.Serializable;
 
 /**
- * Represents a Enum field value, which includes integer value (indicating the sort order) and
+ * Represents an Enum field value, which includes integer value (indicating the sort order) and
  * string (displayed) value. Note: this class has a natural ordering that is inconsistent with
  * equals
  */
@@ -42,9 +42,8 @@ public final class EnumFieldValue implements Serializable, Comparable<EnumFieldV
   @Override
   public boolean equals(Object obj) {
     if (obj == null) return false;
-    if (!(obj instanceof EnumFieldValue)) return false;
+    if (!(obj instanceof EnumFieldValue otherEnumFieldValue)) return false;
 
-    EnumFieldValue otherEnumFieldValue = (EnumFieldValue) obj;
     return equalsIntegers(intValue, otherEnumFieldValue.intValue)
         && equalStrings(stringValue, otherEnumFieldValue.stringValue);
   }

@@ -16,11 +16,14 @@
  */
 package org.apache.solr.cloud;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 
@@ -32,18 +35,13 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig());
+    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build());
     solrCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
   }
 
   @Override
   public void tearDown() throws Exception {
     solrCluster.shutdown();
-    System.clearProperty("solr.test.sys.prop1");
-    System.clearProperty("solr.test.sys.prop2");
-
     super.tearDown();
   }
 
@@ -59,13 +57,19 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
       };
       for (String q : queryStrings) {
         try {
-          URL url = new URL(jettySolrRunner.getBaseUrl().toString() + "/collection1/select?" + q);
+          URL url = createURL(jettySolrRunner.getBaseUrl().toString() + "/collection1/select?" + q);
           url.openStream(); // Shouldn't throw any errors
         } catch (Exception ex) {
           throw new RuntimeException("Query '" + q + "' failed, ", ex);
         }
       }
     }
+  }
+
+  // Restricting the Scope of Forbidden API
+  @SuppressForbidden(reason = "java.net.URL#<init> deprecated since Java 20")
+  private URL createURL(String url) throws MalformedURLException {
+    return new URL(url);
   }
 
   private void createCollection(String name, String config) throws Exception {

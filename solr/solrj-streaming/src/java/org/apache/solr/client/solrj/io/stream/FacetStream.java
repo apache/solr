@@ -24,8 +24,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -49,6 +51,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -64,7 +67,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   // allow client apps to disable the auto-plist via system property if they want to turn it off
   // globally
   static final boolean defaultTieredEnabled =
-      Boolean.parseBoolean(System.getProperty("solr.facet.stream.tiered", "true"));
+      EnvUtils.getPropertyAsBool("solr.streamingexpressions.facet.tiered.enabled", true);
 
   static final String TIERED_PARAM = "tiered";
 
@@ -79,7 +82,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   private FieldComparator[] bucketSorts;
   private List<Tuple> tuples = new ArrayList<Tuple>();
   private int index;
-  private String zkHost;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private ModifiableSolrParams params;
   private String collection;
   private boolean resortNeeded;
@@ -91,7 +94,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   protected transient StreamContext context;
 
   public FacetStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       SolrParams params,
       Bucket[] buckets,
@@ -104,6 +107,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       bucketSizeLimit = Integer.MAX_VALUE;
     }
     init(
+        solrConnection,
         collection,
         params,
         buckets,
@@ -115,8 +119,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
         false,
         null,
         true,
-        0,
-        zkHost);
+        0);
   }
 
   public FacetStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -136,7 +139,6 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
         factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
     StreamExpressionNamedParameter bucketLimitExpression =
         factory.getNamedOperand(expression, "bucketSizeLimit");
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
     StreamExpressionNamedParameter rowsExpression = factory.getNamedOperand(expression, "rows");
     StreamExpressionNamedParameter offsetExpression = factory.getNamedOperand(expression, "offset");
     StreamExpressionNamedParameter overfetchExpression =
@@ -159,7 +161,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
               expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (0 == namedParams.size()) {
       throw new IOException(
           String.format(
@@ -169,20 +171,20 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     }
 
     // pull out known named params
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost")
-          && !namedParam.getName().equals("buckets")
-          && !namedParam.getName().equals("bucketSorts")
-          && !namedParam.getName().equals("bucketSizeLimit")
-          && !namedParam.getName().equals("method")
-          && !namedParam.getName().equals("offset")
-          && !namedParam.getName().equals("rows")
-          && !namedParam.getName().equals("refine")
-          && !namedParam.getName().equals("overfetch")) {
-        params.add(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(
+            namedParams,
+            Set.of(
+                "zkHost",
+                "solrConnection",
+                "buckets",
+                "bucketSorts",
+                "bucketSizeLimit",
+                "method",
+                "offset",
+                "rows",
+                "refine",
+                "overfetch"));
 
     if (params.get("q") == null) {
       params.set("q", "*:*");
@@ -357,28 +359,10 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       }
     }
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    if (null == zkHost) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
-
-    // We've got all the required items
     init(
+        solrConnection,
         collectionName,
         params,
         buckets,
@@ -390,8 +374,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
         refine,
         methodStr,
         bucketLimitSet,
-        overfetchInt,
-        zkHost);
+        overfetchInt);
   }
 
   // see usage in parallelize method
@@ -484,6 +467,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   }
 
   private void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       SolrParams params,
       Bucket[] buckets,
@@ -495,10 +479,9 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       boolean refine,
       String method,
       boolean serializeBucketSizeLimit,
-      int overfetch,
-      String zkHost)
+      int overfetch)
       throws IOException {
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     this.params = new ModifiableSolrParams(params);
     this.buckets = buckets;
     this.metrics = metrics;
@@ -512,7 +495,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     this.serializeBucketSizeLimit = serializeBucketSizeLimit;
     this.overfetch = overfetch;
 
-    // In a facet world it only makes sense to have the same field name in all of the sorters
+    // In a facet world it only makes sense to have the same field name in all the sorters
     // Because FieldComparator allows for left and right field names we will need to validate
     // that they are the same
     for (FieldComparator sort : bucketSorts) {
@@ -605,8 +588,8 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       expression.addParameter(new StreamExpressionNamedParameter("method", this.method));
     }
 
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }
@@ -660,7 +643,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     } else {
       doCloseCache = false;
     }
-    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+    var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
 
     // Parallelize the facet expression across multiple collections for an alias using plist if
     // possible
@@ -800,12 +783,12 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     } else if (_sorts.length == 1) {
       FieldComparator[] adjustedSorts = new FieldComparator[_buckets.length];
       if (_sorts[0].getLeftFieldName().contains("(")) {
-        // Its a metric sort so apply the same sort criteria at each level.
+        // It's a metric sort so apply the same sort criteria at each level.
         for (int i = 0; i < adjustedSorts.length; i++) {
           adjustedSorts[i] = _sorts[0];
         }
       } else {
-        // Its an index sort so apply an index sort at each level.
+        // It's an index sort so apply an index sort at each level.
         for (int i = 0; i < adjustedSorts.length; i++) {
           adjustedSorts[i] = new FieldComparator(_buckets[i].toString(), _sorts[0].getOrder());
         }
@@ -1017,6 +1000,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     for (int p = 0; p < streams.length; p++) {
       FacetStream cloned = new FacetStream();
       cloned.init(
+          solrConnection,
           partitions.get(p), /* each collection */
           withoutTieredParam, /* removes the tiered param */
           buckets,
@@ -1028,8 +1012,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
           refine,
           method,
           serializeBucketSizeLimit,
-          overfetch,
-          zkHost);
+          overfetch);
       streams[p] = cloned;
     }
     return streams;

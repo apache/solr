@@ -20,7 +20,6 @@ package org.apache.solr.cli;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
-import java.io.PrintStream;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -33,26 +32,41 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.handler.component.ShardRequest;
 
 /** A command line tool for indexing Solr logs in the out-of-the-box log format. */
 public class PostLogsTool extends ToolBase {
 
-  public PostLogsTool() {
-    this(CLIO.getOutStream());
-  }
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Name of the collection.")
+          .get();
 
-  public PostLogsTool(PrintStream stdout) {
-    super(stdout);
+  private static final Option ROOT_DIR_OPTION =
+      Option.builder()
+          .longOpt("rootdir")
+          .hasArg()
+          .argName("DIRECTORY")
+          .required()
+          .desc("All files found at or below the root directory will be indexed.")
+          .get();
+
+  public PostLogsTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -61,37 +75,40 @@ public class PostLogsTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("url")
-            .longOpt("url")
-            .argName("ADDRESS")
-            .hasArg()
-            .required(true)
-            .desc("Address of the collection, example http://localhost:8983/solr/collection1/.")
-            .build(),
-        Option.builder("rootdir")
-            .longOpt("rootdir")
-            .argName("DIRECTORY")
-            .hasArg()
-            .required(true)
-            .desc("All files found at or below the root directory will be indexed.")
-            .build(),
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(ROOT_DIR_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = cli.getOptionValue("url");
-    String rootDir = cli.getOptionValue("rootdir");
-    String credentials = cli.getOptionValue("credentials", null);
+    String url;
+    if (CLIUtils.hasConnectionOption(cli)) {
+      url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
+
+    } else {
+      throw new IllegalArgumentException(
+          "Must specify a connection target via -s/--solr-connection, --solr-url, or --zk-host.");
+    }
+    String rootDir = cli.getOptionValue(ROOT_DIR_OPTION);
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     runCommand(url, rootDir, credentials);
   }
 
   public void runCommand(String baseUrl, String root, String credentials) throws IOException {
+    if (URLUtil.isBaseUrl(baseUrl)) {
+      throw new IllegalArgumentException(
+          "'url' parameter ["
+              + baseUrl
+              + "] must point to a particular collection but appears to be a Solr base URL");
+    }
 
-    Http2SolrClient.Builder builder =
-        new Http2SolrClient.Builder(baseUrl)
+    var builder =
+        new HttpJettySolrClient.Builder(URLUtil.extractBaseUrl(baseUrl))
+            .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(baseUrl))
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(credentials);
     try (SolrClient client = builder.build()) {
@@ -100,7 +117,7 @@ public class PostLogsTool extends ToolBase {
 
       List<Path> files;
       try (Stream<Path> stream = Files.walk(Path.of(root), Integer.MAX_VALUE)) {
-        files = stream.filter(Files::isRegularFile).collect(Collectors.toList());
+        files = stream.filter(Files::isRegularFile).toList();
       }
 
       for (Path file : files) {
@@ -168,24 +185,24 @@ public class PostLogsTool extends ToolBase {
 
   public static class LogRecordReader {
 
-    private BufferedReader bufferedReader;
+    private final BufferedReader bufferedReader;
     private String pushedBack = null;
     private boolean finished = false;
     private String cause;
-    private Pattern p =
+    private final Pattern p =
         Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d\\:\\d\\d.\\d\\d\\d)");
-    private Pattern minute =
+    private final Pattern minute =
         Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d)");
-    private Pattern tenSecond =
+    private final Pattern tenSecond =
         Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d:\\d)");
 
-    public LogRecordReader(BufferedReader bufferedReader) throws IOException {
+    public LogRecordReader(BufferedReader bufferedReader) {
       this.bufferedReader = bufferedReader;
     }
 
     public SolrInputDocument readRecord() throws IOException {
       while (true) {
-        String line = null;
+        String line;
 
         if (finished) {
           return null;

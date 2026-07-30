@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -56,6 +57,7 @@ import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -63,16 +65,18 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.handler.loader.XMLLoader;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.apache.solr.util.RefCounted;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -95,6 +99,9 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   private RefCounted<SolrIndexSearcher> searcherRef;
   private SolrIndexSearcher _searcher;
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -200,10 +207,10 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertSingleParentOf(searcher, one("ab"), dubbed);
 
     final TopDocs docs = searcher.search(join(one("cd")), 10);
-    assertEquals(2, docs.totalHits.value);
+    assertEquals(2, docs.totalHits.value());
     final String pAct =
-        searcher.doc(docs.scoreDocs[0].doc).get(parent)
-            + searcher.doc(docs.scoreDocs[1].doc).get(parent);
+        searcher.getDocFetcher().doc(docs.scoreDocs[0].doc).get(parent)
+            + searcher.getDocFetcher().doc(docs.scoreDocs[1].doc).get(parent);
     assertTrue(pAct.contains(dubbed) && pAct.contains(overwritten) && pAct.length() == 2);
 
     assertQ(req("id:66", "//*[@numFound='6']"));
@@ -322,7 +329,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     SolrException thrown =
         assertThrows(SolrException.class, () -> indexSolrInputDocumentsDirectly(document1));
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         containsString("Anonymous child docs can only hang from others or the root"));
   }
@@ -446,7 +453,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     Collections.shuffle(docs, random());
     req.add(docs);
 
-    RequestWriter requestWriter = new RequestWriter();
+    RequestWriter requestWriter = new XMLRequestWriter();
     OutputStream os = new ByteArrayOutputStream();
     requestWriter.write(req, os);
     assertBlockU(os.toString());
@@ -513,7 +520,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     Collections.shuffle(docs, random());
     req.add(docs);
 
-    RequestWriter requestWriter = new RequestWriter();
+    RequestWriter requestWriter = new XMLRequestWriter();
     OutputStream os = new ByteArrayOutputStream();
     requestWriter.write(req, os);
     assertBlockU(os.toString());
@@ -609,7 +616,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
                         "child_s",
                         "b",
                         "grandChild",
-                        Collections.singleton(sdoc("id", "7", "child_s", "d"))),
+                        Set.of(sdoc("id", "7", "child_s", "d"))),
                     sdoc("id", "6", "child_s", "c")))
             .toString());
   }
@@ -699,7 +706,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     Collections.shuffle(docs, random());
     req.add(docs);
 
-    RequestWriter requestWriter = new RequestWriter();
+    RequestWriter requestWriter = new XMLRequestWriter();
     OutputStream os = new ByteArrayOutputStream();
     requestWriter.write(req, os);
     assertBlockU(os.toString());
@@ -802,7 +809,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     Collections.shuffle(docs, random());
     req.add(docs);
 
-    RequestWriter requestWriter = new RequestWriter();
+    RequestWriter requestWriter = new XMLRequestWriter();
     OutputStream os = new ByteArrayOutputStream();
     requestWriter.write(req, os);
     assertBlockU(os.toString());
@@ -971,7 +978,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   private void indexSolrInputDocumentsDirectly(SolrInputDocument... docs) throws IOException {
-    SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    SolrQueryRequest coreReq = new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams());
     AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
     for (SolrInputDocument doc : docs) {
       updateCmd.solrDoc = doc;
@@ -1022,8 +1029,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       final SolrIndexSearcher searcher, final String childTerm, String parentExp)
       throws IOException {
     final TopDocs docs = searcher.search(join(childTerm), 10);
-    assertEquals(1, docs.totalHits.value);
-    final String pAct = searcher.doc(docs.scoreDocs[0].doc).get(parent);
+    assertEquals(1, docs.totalHits.value());
+    final String pAct = searcher.getDocFetcher().doc(docs.scoreDocs[0].doc).get(parent);
     assertEquals(parentExp, pAct);
   }
 

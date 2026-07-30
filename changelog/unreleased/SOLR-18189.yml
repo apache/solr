@@ -1,0 +1,8 @@
+title: New ContentHashVersionProcessor to avoid index churn when adding same-content documents.
+type: added
+authors:
+  - name: Francois Huaulme
+  - name: David Smiley
+links:
+  - name: SOLR-18189
+    url: https://issues.apache.org/jira/browse/SOLR-18189

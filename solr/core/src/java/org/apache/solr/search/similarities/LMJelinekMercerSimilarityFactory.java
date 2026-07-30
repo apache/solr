@@ -17,6 +17,7 @@
 package org.apache.solr.search.similarities;
 
 import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity;
+import org.apache.lucene.search.similarities.LMSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
@@ -33,8 +34,7 @@ import org.apache.solr.schema.SimilarityFactory;
  * <p>Optional settings:
  *
  * <ul>
- *   <li>discountOverlaps (bool): Sets {@link
- *       LMJelinekMercerSimilarity#setDiscountOverlaps(boolean)}
+ *   <li>discountOverlaps (bool): Sets {link Similarity#getDiscountOverlaps()}
  * </ul>
  *
  * @lucene.experimental
@@ -52,8 +52,7 @@ public class LMJelinekMercerSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    LMJelinekMercerSimilarity sim = new LMJelinekMercerSimilarity(lambda);
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    LMSimilarity.CollectionModel model = new LMSimilarity.DefaultCollectionModel();
+    return new LMJelinekMercerSimilarity(model, discountOverlaps, lambda);
   }
 }

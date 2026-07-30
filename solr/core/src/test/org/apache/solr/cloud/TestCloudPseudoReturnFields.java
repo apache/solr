@@ -47,7 +47,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.TestPseudoReturnFields;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -73,7 +72,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
-    // replication factor will impact wether we expect a list of urls from the '[shard]'
+    // replication factor will impact whether we expect a list of urls from the '[shard]'
     // augmenter...
     repFactor = usually() ? 1 : 2;
     // ... and we definitely want to ensure forwarded requests to other shards work ...
@@ -98,7 +97,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
     }
 
     assertEquals(
@@ -219,7 +218,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     // that way we can first sanity check a single value in a multivalued field is returned
     // correctly as a "List" of one element, *AND* then we could be testing that a (single valued)
     // pseudo-field correctly overrides that actual (real) value in a multivalued field (ie: not
-    // returning a an List)
+    // returning a List)
     //
     // (NOTE: not doing this yet due to how it will impact most other tests, many of which are
     // currently @AwaitsFix status)
@@ -745,16 +744,15 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
 
         assertTrue(msg, doc.getFieldValue("shard_id") instanceof String);
-        MatcherAssert.assertThat(doc.getFieldValue("shard_id").toString(), startsWith("shard"));
+        assertThat(doc.getFieldValue("shard_id").toString(), startsWith("shard"));
 
         assertTrue(msg, doc.getFieldValue("replica_urls") instanceof String);
-        MatcherAssert.assertThat(
+        assertThat(
             doc.getFieldValue("replica_urls").toString(),
             containsString(
                 "/solr/org.apache.solr.cloud.TestCloudPseudoReturnFields_collection_shard"));
         if (1 < repFactor) {
-          MatcherAssert.assertThat(
-              doc.getFieldValue("replica_urls").toString(), containsString("|"));
+          assertThat(doc.getFieldValue("replica_urls").toString(), containsString("|"));
         }
 
         assertEquals(msg, doc.getFieldValue("shard_id"), doc.getFieldValue("[shard]"));
@@ -791,16 +789,15 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         String msg = p + " => " + doc;
 
         assertTrue(msg, doc.getFieldValue("shard_id") instanceof String);
-        MatcherAssert.assertThat(doc.getFieldValue("shard_id").toString(), startsWith("shard"));
+        assertThat(doc.getFieldValue("shard_id").toString(), startsWith("shard"));
 
         assertTrue(msg, doc.getFieldValue("replica_urls") instanceof String);
-        MatcherAssert.assertThat(
+        assertThat(
             doc.getFieldValue("replica_urls").toString(),
             containsString(
                 "/solr/org.apache.solr.cloud.TestCloudPseudoReturnFields_collection_shard"));
         if (1 < repFactor) {
-          MatcherAssert.assertThat(
-              doc.getFieldValue("replica_urls").toString(), containsString("|"));
+          assertThat(doc.getFieldValue("replica_urls").toString(), containsString("|"));
         }
 
         assertEquals(msg, doc.getFieldValue("shard_id"), doc.getFieldValue("[shard]"));
@@ -915,7 +912,8 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   }
 
   public void testAugmentersAndScore() throws Exception {
-    SolrParams params = params("q", "*:*", "fl", "[docid],x_alias:[value v=10 t=int],score");
+    SolrParams params =
+        params("q", "*:*", "fl", "[docid],x_alias:[value v=10 t=int],s_alias:score");
     SolrDocumentList docs = assertSearch(params);
     assertEquals(params + " => " + docs, 5, docs.getNumFound());
     // shouldn't matter what doc we pick...
@@ -925,7 +923,8 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
       assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
       assertEquals(msg, 10, doc.getFieldValue("x_alias"));
-      assertTrue(msg, doc.getFieldValue("score") instanceof Float);
+      assertTrue(msg, doc.getFieldValue("s_alias") instanceof Float);
+      assertTrue(msg, (Float) doc.getFieldValue("s_alias") > 0);
     }
     for (SolrParams p :
         Arrays.asList(
@@ -963,6 +962,22 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertTrue(msg, doc.getFieldValue("[explain]") instanceof String);
         assertTrue(msg, doc.getFieldValue("score") instanceof Float);
       }
+    }
+    params = params("q", "*:*", "fl", "[docid],x_alias:[value v=10 t=int],s_alias:score,score");
+    docs = assertSearch(params);
+    assertEquals(params + " => " + docs, 5, docs.getNumFound());
+    // shouldn't matter what doc we pick...
+    for (SolrDocument doc : docs) {
+      String msg = params + " => " + doc;
+      assertEquals(msg, 4, doc.size());
+      assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
+      assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
+      assertEquals(msg, 10, doc.getFieldValue("x_alias"));
+      assertTrue(msg, doc.getFieldValue("s_alias") instanceof Float);
+      assertTrue(msg, (Float) doc.getFieldValue("s_alias") > 0);
+      assertTrue(msg, doc.getFieldValue("score") instanceof Float);
+      assertTrue(msg, (Float) doc.getFieldValue("score") > 0);
+      assertEquals(msg, doc.getFieldValue("score"), doc.getFieldValue("s_alias"));
     }
   }
 
@@ -1115,7 +1130,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assertNotNull(client.getDefaultCollection());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
 }

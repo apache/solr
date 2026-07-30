@@ -22,7 +22,6 @@ import static org.hamcrest.core.StringContains.containsString;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,7 +41,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.PeerSync.MissedUpdatesRequest;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
@@ -232,11 +230,11 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertSync(client1, numVersions, false, shardsArr[0]);
 
     // if we turn off fingerprinting, it should succeed
-    System.setProperty("solr.disableFingerprint", "true");
+    System.setProperty("solr.index.replication.fingerprint.enabled", "false");
     try {
       assertSync(client1, numVersions, true, shardsArr[0]);
     } finally {
-      System.clearProperty("solr.disableFingerprint");
+      System.clearProperty("solr.index.replication.fingerprint.enabled");
     }
 
     // let's add the missing document and verify that order doesn't matter
@@ -349,7 +347,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
               add(client0, inPlaceParams, sdoc("id", 6000, "val_i_dvo", 6003, "_version_", 5007));
             });
     assertEquals(ex.toString(), SolrException.ErrorCode.SERVER_ERROR.code, ex.code());
-    MatcherAssert.assertThat(ex.getMessage(), containsString("Can't find document with id=6000"));
+    assertThat(ex.getMessage(), containsString("Can't find document with id=6000"));
 
     // Reordered DBQ with Child-nodes (SOLR-10114)
     docsAdded.clear();
@@ -413,7 +411,9 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     QueryResponse qacResponse;
     qacResponse =
         queryAndCompare(
-            params("q", "*:*", "rows", "10000", "sort", "_version_ desc"), client0, client1);
+            params("q", "*:*", "rows", "10000", "sort", "_version_ desc,id desc"),
+            client0,
+            client1);
     validateQACResponse(docsAdded, qacResponse);
   }
 
@@ -455,8 +455,8 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
   private static void testHandleVersionsWithRangesNoOther() {
     // no other, solitary us
     for (boolean completeList : new boolean[] {false, true}) {
-      List<Long> otherVersions = Collections.emptyList();
-      List<Long> ourUpdates = Collections.singletonList(42L);
+      List<Long> otherVersions = List.of();
+      List<Long> ourUpdates = List.of(42L);
       assertEquals(1, ourUpdates.size());
       long ourLowThreshold = ourUpdates.get(0);
       MissedUpdatesRequest mur =
@@ -470,8 +470,8 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
   private static void testHandleVersionsWithRangesSameOne() {
     for (boolean completeList : new boolean[] {false, true}) {
-      List<Long> otherVersions = Collections.singletonList(42L);
-      List<Long> ourUpdates = Collections.singletonList(42L);
+      List<Long> otherVersions = List.of(42L);
+      List<Long> ourUpdates = List.of(42L);
       assertEquals(1, ourUpdates.size());
       long ourLowThreshold = ourUpdates.get(0);
       MissedUpdatesRequest mur =

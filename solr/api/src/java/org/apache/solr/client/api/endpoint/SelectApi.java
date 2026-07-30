@@ -17,19 +17,19 @@
 package org.apache.solr.client.api.endpoint;
 
 import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
-import static org.apache.solr.client.api.util.Constants.STORE_PATH_PREFIX;
+import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import java.io.InputStream;
 import java.util.List;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
@@ -42,7 +42,7 @@ import org.apache.solr.client.api.util.StoreApiParameters;
  * Solr's OAS (and the clients generated from that) an approximate view of the endpoint until its
  * inputs and outputs can be understood more fully.
  */
-@Path(STORE_PATH_PREFIX + "/select")
+@Path(INDEX_PATH_PREFIX + "/select")
 public interface SelectApi {
   @GET
   @StoreApiParameters

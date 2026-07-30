@@ -132,9 +132,8 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
   @Override
   public boolean equals(Object obj) {
     if (obj == this) return true;
-    if (!(obj instanceof Token)) return false;
+    if (!(obj instanceof Token other)) return false;
 
-    final Token other = (Token) obj;
     return (flags == other.flags && (Objects.equals(payload, other.payload)) && super.equals(obj));
   }
 

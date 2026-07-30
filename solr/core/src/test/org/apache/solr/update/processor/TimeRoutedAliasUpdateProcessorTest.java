@@ -17,7 +17,7 @@
 
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.client.solrj.RoutedAliasTypes.TIME;
+import static org.apache.solr.client.solrj.request.RoutedAliasTypes.TIME;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP;
 import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTER_START;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
@@ -72,7 +72,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13059")
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13059") // TBD
 public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcessorTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -214,8 +214,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
                     + "/"
                     + COLLECTION_PROPS_ZKNODE,
                 null,
-                null,
-                true);
+                null);
     assertNotNull(data);
     assertTrue(data.length > 0);
     @SuppressWarnings("unchecked")
@@ -349,7 +348,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     boolean[] threadFinished = new boolean[2];
     try {
       CountDownLatch starter = new CountDownLatch(1);
-      executorService.submit(
+      executorService.execute(
           () -> {
             threadStarted[0] = true;
             try {
@@ -361,7 +360,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             threadFinished[0] = true;
           });
 
-      executorService.submit(
+      executorService.execute(
           () -> {
             threadStarted[1] = true;
             try {
@@ -489,7 +488,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "8",
@@ -580,8 +579,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
-                sdoc("id", "13", "timestamp_dt", "2017-10-30T23:03:00Z")), // lucky?
+            List.of(sdoc("id", "13", "timestamp_dt", "2017-10-30T23:03:00Z")), // lucky?
             params));
     assertUpdateResponse(solrClient.commit(alias));
     waitColAndAlias(alias, TRA, "2017-10-30", numShards);
@@ -620,7 +618,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "14",
@@ -632,7 +630,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "15",
@@ -644,7 +642,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "16",
@@ -656,7 +654,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "17",
@@ -671,7 +669,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "18",
@@ -725,7 +723,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "6",
@@ -1048,8 +1046,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
                 aliasUpdate.countDown();
               }
             },
-            stat,
-            true);
+            stat);
   }
 
   /**
@@ -1272,18 +1269,18 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     }
 
     // now grab the zk data, so we can hack in our legacy collections...
-    byte[] data = zkStateReader.getZkClient().getData("/aliases.json", null, null, true);
+    byte[] data = zkStateReader.getZkClient().getData("/aliases.json", null, null);
 
     // some tidbits for handling zk data here are swiped from Aliases.json
     Map<String, Map> aliasMap;
     if (data == null || data.length == 0) {
-      aliasMap = Collections.emptyMap();
+      aliasMap = Map.of();
     } else {
       aliasMap = (Map<String, Map>) Utils.fromJSON(data);
     }
     assertNotEquals(0, aliasMap.size());
 
-    Map colAliases = aliasMap.getOrDefault("collection", Collections.emptyMap());
+    Map colAliases = aliasMap.getOrDefault("collection", Map.of());
     assertNotEquals(0, colAliases.size());
 
     String singleInitialCollection = (String) colAliases.get(alias);
@@ -1293,7 +1290,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     colAliases.put(alias, String.join(",", legacy24, legacy23));
 
     data = Utils.toJSON(aliasMap);
-    zkStateReader.getZkClient().setData("/aliases.json", data, true);
+    zkStateReader.getZkClient().setData("/aliases.json", data);
 
     zkStateReader.aliasesManager.update(); // make sure we've updated with the data we just sent
 

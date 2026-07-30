@@ -29,16 +29,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SocketProxy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -86,9 +86,6 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       proxies = null;
     }
     jettys = null;
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("leaderVoteWait");
 
     shutdownCluster();
   }
@@ -157,7 +154,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState(
         "",
         collection,
-        (liveNodes, collectionState) ->
+        collectionState ->
             collectionState.getSlice("shard1").getReplicas().stream()
                     .filter(replica -> replica.getState() == Replica.State.DOWN)
                     .count()
@@ -170,7 +167,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState(
         "",
         collection,
-        (liveNodes, collectionState) ->
+        collectionState ->
             collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
     cluster.getJettySolrRunner(1).start();
@@ -213,7 +210,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState(
         "Timeout waiting for leader",
         collection,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Replica newLeader = collectionState.getLeader("shard1");
           return newLeader != null && newLeader.getName().equals(leader.getName());
         });
@@ -240,7 +237,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState(
         "Timeout waiting for leader goes DOWN",
         collection,
-        (liveNodes, collectionState) ->
+        collectionState ->
             collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
     // the meat of the test -- wait to see if a different replica become a leader
@@ -273,11 +270,11 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     proxies.get(cluster.getJettySolrRunner(0)).reopen();
     cluster.getJettySolrRunner(0).start();
     cluster.waitForAllNodes(30);
-    ;
+
     waitForState(
         "Timeout waiting for leader",
         collection,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Replica newLeader = collectionState.getLeader("shard1");
           return newLeader != null && newLeader.getName().equals(leader.getName());
         });
@@ -299,13 +296,13 @@ public class TestCloudConsistency extends SolrCloudTestCase {
 
   private void addDoc(String collection, int docId, JettySolrRunner solrRunner)
       throws IOException, SolrServerException {
-    try (SolrClient solrClient =
-        new HttpSolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
-      solrClient.add(
-          collection,
-          new SolrInputDocument("id", String.valueOf(docId), "fieldName_s", String.valueOf(docId)));
-      solrClient.commit(collection);
-    }
+    solrRunner
+        .getSolrClient()
+        .add(
+            collection,
+            new SolrInputDocument(
+                "id", String.valueOf(docId), "fieldName_s", String.valueOf(docId)));
+    solrRunner.getSolrClient().commit(collection);
   }
 
   private void assertDocsExistInAllReplicas(
@@ -344,13 +341,16 @@ public class TestCloudConsistency extends SolrCloudTestCase {
 
   private NamedList<Object> realTimeGetDocId(SolrClient solr, String docId)
       throws SolrServerException, IOException {
-    QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
-    return solr.request(qr);
+    return solr.request(
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET,
+                "/get",
+                SolrRequestType.QUERY,
+                params("id", docId, "distrib", "false"))
+            .setRequiresCollection(true));
   }
 
   protected SolrClient getHttpSolrClient(Replica replica, String coll) {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    String url = zkProps.getBaseUrl() + "/" + coll;
-    return getHttpSolrClient(url);
+    return getHttpSolrClient(replica.getBaseUrl(), coll);
   }
 }

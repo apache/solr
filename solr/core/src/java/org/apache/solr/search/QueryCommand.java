@@ -16,10 +16,12 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.solr.schema.SchemaField;
 
 /**
  * A query request command to avoid having to change the method signatures if we want to pass
@@ -32,13 +34,16 @@ public class QueryCommand {
   private boolean isQueryCancellable;
   private List<Query> filterList;
   private Sort sort;
+  private List<SchemaField> sortSchemaFields;
   private int offset;
   private int len;
   private int supersetMaxDoc;
   private int flags;
-  private long timeAllowed = -1;
+  private boolean multiThreaded = false;
   private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
+  private boolean distribStatsDisabled;
+  private int maxHitsAllowed = Integer.MAX_VALUE;
 
   public CursorMark getCursorMark() {
     return cursorMark;
@@ -105,6 +110,15 @@ public class QueryCommand {
     return this;
   }
 
+  public List<SchemaField> getSortSchemaFields() {
+    return sortSchemaFields;
+  }
+
+  public QueryCommand setSortSchemaFields(List<SchemaField> sortSchemaFields) {
+    this.sortSchemaFields = sortSchemaFields;
+    return this;
+  }
+
   public int getOffset() {
     return offset;
   }
@@ -151,12 +165,12 @@ public class QueryCommand {
     return this;
   }
 
-  public long getTimeAllowed() {
-    return timeAllowed;
+  public boolean getMultiThreaded() {
+    return multiThreaded;
   }
 
-  public QueryCommand setTimeAllowed(long timeAllowed) {
-    this.timeAllowed = timeAllowed;
+  public QueryCommand setMultiThreaded(boolean multiThreaded) {
+    this.multiThreaded = multiThreaded;
     return this;
   }
 
@@ -183,6 +197,10 @@ public class QueryCommand {
 
   public boolean getTerminateEarly() {
     return (flags & SolrIndexSearcher.TERMINATE_EARLY) != 0;
+  }
+
+  public boolean shouldEarlyTerminateSearch() {
+    return getTerminateEarly() || getMaxHitsAllowed() < Integer.MAX_VALUE;
   }
 
   public QueryCommand setTerminateEarly(boolean segmentTerminateEarly) {
@@ -219,5 +237,26 @@ public class QueryCommand {
 
   public boolean isQueryCancellable() {
     return isQueryCancellable;
+  }
+
+  public void setDistribStatsDisabled(boolean distribStatsDisabled) {
+    this.distribStatsDisabled = distribStatsDisabled;
+  }
+
+  public boolean isDistribStatsDisabled() {
+    return distribStatsDisabled;
+  }
+
+  /** Calls {@link SolrIndexSearcher#search(QueryCommand)}. */
+  public QueryResult search(SolrIndexSearcher searcher) throws IOException {
+    return searcher.search(this);
+  }
+
+  public int getMaxHitsAllowed() {
+    return maxHitsAllowed;
+  }
+
+  public void setMaxHitsAllowed(int maxHitsAllowed) {
+    this.maxHitsAllowed = maxHitsAllowed;
   }
 }

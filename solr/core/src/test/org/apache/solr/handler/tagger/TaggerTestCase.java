@@ -26,11 +26,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeSet;
 import org.apache.lucene.document.Document;
 import org.apache.solr.SolrTestCaseJ4;
@@ -45,6 +45,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -139,11 +140,12 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     NamedList<?> rspValues = rsp.getValues();
     Map<String, String> matchingNames = new HashMap<>();
     SolrIndexSearcher searcher = req.getSearcher();
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     DocList docList = (DocList) rspValues.get("response");
     DocIterator iter = docList.iterator();
     while (iter.hasNext()) {
       int docId = iter.next();
-      Document doc = searcher.doc(docId);
+      Document doc = docFetcher.doc(docId);
       String id = doc.getField("id").stringValue();
       String name = lookupByName(doc.get("name"));
       assertEquals("looking for " + name, NAMES.indexOf(name) + "", id);
@@ -180,7 +182,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     SolrParams params = SolrParams.wrapDefaults(moreParams, baseParams);
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), params) {};
     Iterable<ContentStream> stream =
-        Collections.singleton((ContentStream) new ContentStreamBase.StringStream(doc));
+        Set.of((ContentStream) new ContentStreamBase.StringStream(doc));
     req.setContentStreams(stream);
     return req;
   }
@@ -241,8 +243,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
     @Override
     public boolean equals(Object obj) {
-      if (!(obj instanceof TestTag)) return false;
-      TestTag that = (TestTag) obj;
+      if (!(obj instanceof TestTag that)) return false;
       return this.startOffset == that.startOffset
           && this.endOffset == that.endOffset
           && Objects.equals(this.docName, that.docName);

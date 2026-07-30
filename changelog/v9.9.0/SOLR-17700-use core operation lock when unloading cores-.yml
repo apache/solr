@@ -1,0 +1,8 @@
+title: Use Core Operation lock when unloading cores. This fixes errors that occur
+  when a collection deletion and reload occur at the same time.
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-17700
+  url: https://issues.apache.org/jira/browse/SOLR-17700

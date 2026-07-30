@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
@@ -211,6 +212,7 @@ public class ReplicaCountTest {
             Map.of("nrtReplicas", 1, "tlogReplicas", 2, "pullReplicas", 3),
             null,
             1,
+            Instant.EPOCH,
             null);
     ReplicaCount numReplicas =
         ReplicaCount.fromMessage(new ZkNodeProps(Map.of("tlogReplicas", 1)), collection);

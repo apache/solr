@@ -19,9 +19,9 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -29,11 +29,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.jetty.ConcurrentUpdateJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -49,6 +48,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SocketProxy;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -89,7 +89,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             name,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 2, 2));
     return name;
   }
 
@@ -167,11 +167,11 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             testCollectionName,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
+            (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 2, 2));
 
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
-    try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
-        SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
+    try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader());
+        SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader())) {
 
       // Add three documents to shard1
       shard1.add(sdoc("id", "1", "title", "s1 one"));
@@ -288,7 +288,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             testCollectionName,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
+            (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 2, 2));
 
     // Add a few documents with diff routes
     cloudClient.add(testCollectionName, sdoc("id", "1", "routefield_s", "europe"));
@@ -322,11 +322,11 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             testCollectionName,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
+            (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 2, 2));
 
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
-    try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
-        SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
+    try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader());
+        SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader())) {
 
       // Add six documents w/diff routes (all sent to shard1 leader's core)
       shard1.add(sdoc("id", "1", "routefield_s", "europe"));
@@ -432,8 +432,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     // pick a (second) random node (which may be the same) for sending updates to
     // (if it's the same, we're testing routing from another shard, if diff we're testing routing
     // from a non-collection node)
-    final String indexingUrl =
-        cluster.getRandomJetty(random()).getProxyBaseUrl() + "/" + collectionName;
+    final String indexingBaseUrl = cluster.getRandomJetty(random()).getProxyBaseUrl().toString();
 
     // create a new node for the purpose of killing it...
     final JettySolrRunner leaderToPartition = cluster.startJettySolrRunner();
@@ -465,15 +464,20 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
                 collectionName,
                 DEFAULT_TIMEOUT,
                 TimeUnit.SECONDS,
-                (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+                (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 2, 1));
 
         { // HACK: Check the leaderProps for the shard hosted on the node we're going to kill...
-          final Replica leaderProps =
+          List<Replica> replicas =
               cloudClient
                   .getClusterState()
                   .getCollection(collectionName)
-                  .getLeaderReplicas(leaderToPartition.getNodeName())
-                  .get(0);
+                  .getReplicasOnNode(leaderToPartition.getNodeName());
+          assertNotNull(replicas);
+          assertFalse(replicas.isEmpty());
+          List<Replica> leaderReplicas = replicas.stream().filter(Replica::isLeader).toList();
+          assertFalse(leaderReplicas.isEmpty());
+          final Replica leaderProps = leaderReplicas.get(0);
+
           // No point in this test if these aren't true...
           assertNotNull(
               "Sanity check: leaderProps isn't a leader?: " + leaderProps.toString(),
@@ -484,7 +488,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         }
 
         // create client to send our updates to...
-        try (SolrClient indexClient = getHttpSolrClient(indexingUrl)) {
+        try (SolrClient indexClient = getHttpSolrClient(indexingBaseUrl, collectionName)) {
 
           // Sanity check: we should be able to send a bunch of updates that work right now...
           for (int i = 0; i < 100; i++) {
@@ -812,9 +816,10 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
     final int numDocs = atLeast(50);
     final JettySolrRunner nodeToUpdate = cluster.getRandomJetty(random());
-    try (ConcurrentUpdateSolrClient indexClient =
-        new ConcurrentUpdateSolrClient.Builder(
-                nodeToUpdate.getProxyBaseUrl() + "/" + collectionName)
+    try (var indexClient =
+        new ConcurrentUpdateJettySolrClient.Builder(
+                nodeToUpdate.getProxyBaseUrl().toString(), nodeToUpdate.getSolrClient(), false)
+            .withDefaultCollection(collectionName)
             .withQueueSize(10)
             .withThreadCount(2)
             .build()) {
@@ -857,11 +862,11 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       final Slice slice = entry.getValue();
       log.info("Checking: {} -> {}", shardName, slice);
       final Replica leader = entry.getValue().getLeader();
-      try (SolrClient leaderClient = getHttpSolrClient(leader.getCoreUrl())) {
+      try (SolrClient leaderClient = getHttpSolrClient(leader)) {
         final SolrDocumentList leaderResults = leaderClient.query(perReplicaParams).getResults();
         log.debug("Shard {}: Leader results: {}", shardName, leaderResults);
         for (Replica replica : slice) {
-          try (SolrClient replicaClient = getHttpSolrClient(replica.getCoreUrl())) {
+          try (SolrClient replicaClient = getHttpSolrClient(replica)) {
             final SolrDocumentList replicaResults =
                 replicaClient.query(perReplicaParams).getResults();
             if (log.isDebugEnabled()) {
@@ -873,7 +878,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             }
             assertEquals(
                 "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
-                Collections.emptySet(),
+                Set.of(),
                 CloudInspectUtil.showDiff(
                     leaderResults,
                     replicaResults,

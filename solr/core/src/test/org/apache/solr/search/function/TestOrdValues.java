@@ -27,6 +27,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
@@ -96,7 +97,7 @@ public class TestOrdValues extends SolrTestCase {
             : "IC"; // smaller than all ids of docs in this test ("ID0001", etc.)
 
     for (int i = 0; i < h.length; i++) {
-      String resID = s.doc(h[i].doc).get(ID_FIELD);
+      String resID = s.storedFields().document(h[i].doc).get(ID_FIELD);
       log(i + ".   score=" + h[i].score + "  -  " + resID);
       log(s.explain(q, h[i].doc));
       if (inOrder) {
@@ -135,11 +136,12 @@ public class TestOrdValues extends SolrTestCase {
     }
     Query q = new FunctionQuery(vs);
     TopDocs td = s.search(q, 1000);
-    assertEquals("All docs should be matched!", N_DOCS, td.totalHits.value);
+    assertEquals("All docs should be matched!", N_DOCS, td.totalHits.value());
     ScoreDoc sd[] = td.scoreDocs;
+    StoredFields storedFields = s.getIndexReader().storedFields();
     for (int i = 0; i < sd.length; i++) {
       float score = sd[i].score;
-      String id = s.getIndexReader().document(sd[i].doc).get(ID_FIELD);
+      String id = storedFields.document(sd[i].doc).get(ID_FIELD);
       log("-------- " + i + ". Explain doc " + id);
       log(s.explain(q, sd[i].doc));
       float expectedScore = N_DOCS - i - 1;

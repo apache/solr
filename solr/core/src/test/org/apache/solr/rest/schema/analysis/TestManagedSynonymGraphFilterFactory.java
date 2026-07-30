@@ -19,19 +19,16 @@ package org.apache.solr.rest.schema.analysis;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 
-import java.io.File;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,40 +37,25 @@ import org.junit.Test;
 // machines occasionally
 public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
-  private static File tmpSolrHome;
+  private static Path tmpSolrHome;
 
   /** Setup to make the schema mutable */
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
-
-    final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
+    tmpSolrHome = createTempDir();
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
-    createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
-        "solrconfig-managed-schema.xml",
-        "schema-rest.xml",
-        "/solr",
-        true,
-        extraServlets);
+    System.setProperty("solr.index.updatelog.enabled", "false");
+    createJettyAndHarness(tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml");
   }
 
   @After
   public void after() throws Exception {
-    solrClientTestRule.reset();
+    solrTestRule.reset();
     if (null != tmpSolrHome) {
-      PathUtils.deleteDirectory(tmpSolrHome.toPath());
+      PathUtils.deleteDirectory(tmpSolrHome);
     }
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("enable.update.log");
-
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
   @Test
@@ -169,7 +151,10 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/response/result[@name='response'][@numFound='1']",
         "/response/result[@name='response']/doc/str[@name='id'][.='5150']");
     assertQ(
-        "/select?q=" + newFieldName + ":" + URLEncoder.encode(multiTermOrigin, "UTF-8"),
+        "/select?q="
+            + newFieldName
+            + ":"
+            + URLEncoder.encode(multiTermOrigin, StandardCharsets.UTF_8),
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='1']",
         "/response/result[@name='response']/doc/str[@name='id'][.='040']");
@@ -187,7 +172,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     assertJPut(endpoint, toJSONString(syns), "/responseHeader/status==0");
 
     assertJQ(
-        endpoint + "/" + URLEncoder.encode(multiTermSynonym, "UTF-8"),
+        endpoint + "/" + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8),
         "/" + multiTermSynonym + "==['" + multiTermOrigin + "']");
 
     // should not match as the synonym mapping between mad and angry does not
@@ -203,7 +188,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/select?q="
             + newFieldName
             + ":("
-            + URLEncoder.encode(multiTermSynonym, "UTF-8")
+            + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8)
             + ")&sow=false",
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='0']");
@@ -222,7 +207,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/select?q="
             + newFieldName
             + ":("
-            + URLEncoder.encode(multiTermSynonym, "UTF-8")
+            + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8)
             + ")&sow=false",
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='1']",

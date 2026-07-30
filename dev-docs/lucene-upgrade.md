@@ -1,20 +1,3 @@
-<!--
-    Licensed to the Apache Software Foundation (ASF) under one or more
-    contributor license agreements.  See the NOTICE file distributed with
-    this work for additional information regarding copyright ownership.
-    The ASF licenses this file to You under the Apache License, Version 2.0
-    the "License"); you may not use this file except in compliance with
-    the License.  You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
- -->
-
 # Lucene upgrade steps
 
 ## Read
@@ -23,27 +6,27 @@ https://lucene.apache.org/core/9_4_0/MIGRATE.html
 
 ## Start
 
-Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for upgrading to Lucene 9.4.0 version.
+Create a new branch locally e.g. `git checkout -b lucene1040 -t origin/main` for upgrading to Lucene 10.4.0 version.
 
 ## Build
 
-### `versions.props` update
+### `gradle/libs.versions.toml` update
 
 ```
-- org.apache.lucene:*=9.3.0
-+ org.apache.lucene:*=9.4.0
+- apache-lucene:*=10.3.0
++ apache-lucene:*=10.4.0
 ```
 
-### `versions.lock` update
+### lockfiles update
 
 ```
-gradlew --write-locks
+./gradlew resolveAndLockAll --write-locks
 ```
 
 ### `solr/licenses` update
 
 ```
-gradlew updateLicenses
+./gradlew updateLicenses
 
 git add solr/licenses
 ```
@@ -51,7 +34,7 @@ git add solr/licenses
 ## Code
 
 ```
-gradlew compileJava
+./gradlew compileJava
 ```
 
 * adjust for signature changes e.g.
@@ -60,23 +43,28 @@ gradlew compileJava
   * additional abstract base class or interface methods
   * inner classes becoming outer classes
 * codec changes (if any)
-  * conceptually `s/org.apache.lucene.codecs.lucene9x.Lucene9x/org.apache.lucene.codecs.lucene94.Lucene94`
+  * conceptually `s/org.apache.lucene.codecs.lucene10x.Lucene10x/org.apache.lucene.codecs.lucene104.Lucene104`
+  * if the Lucene codec version changed, add an entry in `solr/solr-ref-guide/modules/upgrade-notes/pages/major-changes-in-solr-10.adoc` noting the codec change and warning users that downgrading to a prior Solr version after this upgrade may require a full reindex
 
 ## Test
 
 ```
-gradlew compileTestJava
+./gradlew compileTestJava
 ```
 
 ```
-gradlew precommit
+./gradlew precommit
 ```
 
 ```
-gradlew test
+./gradlew test
 ```
 
 ## Finish
 
 Push the local branch to github (fork) and open a pull request.
+
+## Looking for something else?
+
+Thanks for reading these upgrade steps! But perhaps you were looking for information on trying out prerelease Lucene changes or joint local Solr and Lucene development? If so then please see the 'Update Lucene prerelease' and 'Lucene local dependency substitution' sections in the [dev-docs/gradle-help/dependencies.txt](gradle-help/dependencies.txt) documentation.
 

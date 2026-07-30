@@ -16,15 +16,15 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -57,9 +57,10 @@ public class SolrJettyTestRule extends SolrClientTestRule {
         throw e;
       } catch (Exception e) {
         throw new RuntimeException(e);
+      } finally {
+        jetty = null;
+        enableProxy = false;
       }
-      jetty = null;
-      enableProxy = false;
     }
   }
 
@@ -71,12 +72,7 @@ public class SolrJettyTestRule extends SolrClientTestRule {
 
   @Override
   public void startSolr(Path solrHome) {
-    startSolr(
-        solrHome,
-        new Properties(),
-        JettyConfig.builder()
-            .withSSLConfig(SolrTestCaseJ4.sslConfig.buildServerSSLConfig())
-            .build());
+    startSolr(solrHome, new Properties(), JettyConfig.builder().build());
   }
 
   /**
@@ -119,8 +115,19 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   }
 
   protected SolrClient newSolrClient(String collection) {
-    String url = getBaseUrl() + (StrUtils.isBlank(collection) ? "" : "/" + collection);
-    return new HttpSolrClient.Builder(url).build();
+    return newSolrClientBuilder()
+        .withDefaultCollection(collection) // Properly handles when collection is 'null'
+        .build();
+  }
+
+  /**
+   * Creates a client builder with the URL, shared Jetty HttpClient, and default collection
+   * "collection1" (can be changed).
+   */
+  public HttpJettySolrClient.Builder newSolrClientBuilder() {
+    return new HttpJettySolrClient.Builder(getBaseUrl())
+        .withHttpClient(jetty.getSolrClient())
+        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME);
   }
 
   /** URL to Solr. */

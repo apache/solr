@@ -1,0 +1,8 @@
+title: The legacy Circuit Breaker named `CircuitBreakerManager`, is removed. Please
+  use individual Circuit Breaker plugins instead.
+type: removed
+authors:
+- name: janhoy
+links:
+- name: SOLR-16961
+  url: https://issues.apache.org/jira/browse/SOLR-16961

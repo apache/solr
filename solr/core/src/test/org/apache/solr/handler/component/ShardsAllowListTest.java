@@ -27,16 +27,15 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.MultiSolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.hamcrest.MatcherAssert;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -70,7 +69,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
   }
 
   @BeforeClass
-  public static void setupClusters() throws Exception {
+  public static void setupClusters() {
 
     final String[] clusterIds = new String[] {IMPLICIT_CLUSTER_KEY, EXPLICIT_CLUSTER_KEY};
 
@@ -124,26 +123,17 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
         });
   }
 
-  @AfterClass
-  public static void afterTests() {
-    System.clearProperty(EXPLICIT_ALLOW_LIST_PROPERTY + EXPLICIT_CLUSTER_KEY);
-  }
-
   @Test
   public void test() throws Exception {
-    MatcherAssert.assertThat(
-        getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).getHostAllowList(), notNullValue());
-    MatcherAssert.assertThat(
-        getAllowListUrlChecker(IMPLICIT_CLUSTER_KEY).getHostAllowList().isEmpty(), is(true));
+    assertThat(getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).getHostAllowList(), notNullValue());
+    assertThat(getAllowListUrlChecker(IMPLICIT_CLUSTER_KEY).getHostAllowList().isEmpty(), is(true));
 
-    MatcherAssert.assertThat(
-        getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).hasExplicitAllowList(), is(true));
-    MatcherAssert.assertThat(
-        getAllowListUrlChecker(IMPLICIT_CLUSTER_KEY).hasExplicitAllowList(), is(false));
+    assertThat(getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).hasExplicitAllowList(), is(true));
+    assertThat(getAllowListUrlChecker(IMPLICIT_CLUSTER_KEY).hasExplicitAllowList(), is(false));
     for (MiniSolrCloudCluster cluster : clusterId2cluster.values()) {
       for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
         URI uri = runner.getBaseUrl().toURI();
-        MatcherAssert.assertThat(
+        assertThat(
             getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).getHostAllowList(),
             hasItem(uri.getHost() + ":" + uri.getPort()));
       }
@@ -162,21 +152,21 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
       cluster.getSolrClient().commit(COLLECTION_NAME, true, true);
 
       // test using ClusterState elements
-      MatcherAssert.assertThat(
+      assertThat(
           "No shards specified, should work in both clusters",
           numDocs("*:*", null, cluster),
           is(10));
-      MatcherAssert.assertThat(
+      assertThat(
           "Both shards specified, should work in both clusters",
           numDocs("*:*", "shard1,shard2", cluster),
           is(10));
-      MatcherAssert.assertThat(
+      assertThat(
           "Both shards specified with collection name, should work in both clusters",
           numDocs("*:*", COLLECTION_NAME + "_shard1", cluster),
           is(numDocs("*:*", "shard1", cluster)));
 
       // test using explicit urls from within the cluster
-      MatcherAssert.assertThat(
+      assertThat(
           "Shards has the full URLs, should be allowed since they are internal. Cluster="
               + entry.getKey(),
           numDocs(
@@ -184,7 +174,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
               getShardUrl("shard1", cluster) + "," + getShardUrl("shard2", cluster),
               cluster),
           is(10));
-      MatcherAssert.assertThat(
+      assertThat(
           "Full URL without scheme",
           numDocs(
               "*:*",
@@ -195,11 +185,11 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
           is(10));
 
       // Mix shards with URLs
-      MatcherAssert.assertThat(
+      assertThat(
           "Mix URL and cluster state object",
           numDocs("*:*", "shard1," + getShardUrl("shard2", cluster), cluster),
           is(10));
-      MatcherAssert.assertThat(
+      assertThat(
           "Mix URL and cluster state object",
           numDocs("*:*", getShardUrl("shard1", cluster) + ",shard2", cluster),
           is(10));
@@ -207,7 +197,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
 
     // explicit allow-list includes all the nodes in both clusters. Requests should be allowed to go
     // through
-    MatcherAssert.assertThat(
+    assertThat(
         "A request to the explicit cluster with shards that point to the implicit one",
         numDocs(
             "id:implicitCluster*",
@@ -215,7 +205,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
             explicitCluster),
         is(10));
 
-    MatcherAssert.assertThat(
+    assertThat(
         "A request to the explicit cluster with shards that point to the both clusters",
         numDocs(
             "*:*",
@@ -243,7 +233,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
 
     assertForbidden("id:explicitCluster*", getShardUrl("shard1", explicitCluster), implicitCluster);
 
-    MatcherAssert.assertThat(
+    assertThat(
         "A typical internal request, should be handled locally",
         numDocs(
             "id:explicitCluster*",
@@ -275,10 +265,9 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
       numDocs(query, shards, cluster);
       fail("Expecting failure for shards parameter: '" + shards + "'");
     } catch (SolrServerException e) {
-      MatcherAssert.assertThat(e.getCause(), instanceOf(SolrException.class));
-      MatcherAssert.assertThat(
-          ((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-      MatcherAssert.assertThat(e.getCause().getMessage(), containsString(expectedExceptionMessage));
+      assertThat(e.getCause(), instanceOf(RemoteSolrException.class));
+      assertThat(((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+      assertThat(e.getCause().getMessage(), containsString(expectedExceptionMessage));
     } finally {
       unIgnoreException(expectedExceptionMessage);
     }

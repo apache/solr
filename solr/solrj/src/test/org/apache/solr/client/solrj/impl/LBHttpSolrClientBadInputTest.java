@@ -17,15 +17,23 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
+public class LBHttpSolrClientBadInputTest extends SolrTestCaseJ4 {
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
   private static final String ANY_COLLECTION = "ANY_COLLECTION";
@@ -33,16 +41,18 @@ public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    JettyConfig jettyConfig =
-        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP,
+        ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
     try (SolrClient client =
-        new LBHttpSolrClient.Builder()
-            .withBaseSolrUrls(getBaseUrl() + "/" + ANY_COLLECTION)
+        new LBJettySolrClient.Builder(solrTestRule.getJetty().getSolrClient())
+            .withDefaultCollection(ANY_COLLECTION)
             .build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
@@ -71,7 +81,7 @@ public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
     }
 
     try (SolrClient client =
-        new LBHttpSolrClient.Builder().withBaseSolrUrls(getBaseUrl()).build()) {
+        new LBJettySolrClient.Builder(solrTestRule.getJetty().getSolrClient()).build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),

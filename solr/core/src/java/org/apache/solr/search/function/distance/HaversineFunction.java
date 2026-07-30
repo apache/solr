@@ -124,8 +124,7 @@ public class HaversineFunction extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof HaversineFunction)) return false;
-    HaversineFunction other = (HaversineFunction) o;
+    if (!(o instanceof HaversineFunction other)) return false;
     return Objects.equals(this.name(), other.name())
         && Objects.equals(p1, other.p1)
         && Objects.equals(p2, other.p2)

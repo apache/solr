@@ -33,7 +33,7 @@ public class TestNodesSysPropsCacher extends SolrCloudTestCase {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
             .withJettyConfig(jetty -> jetty.enableV2(true))
-            .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+            .addConfig("config", getFile("solrj/solr/collection1/conf"))
             .configure();
 
     System.clearProperty("metricsEnabled");

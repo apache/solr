@@ -18,11 +18,8 @@
 package org.apache.solr.cluster.placement.impl;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
@@ -32,9 +29,7 @@ import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.common.util.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,61 +100,27 @@ public class PlacementPluginFactoryLoader {
     plugins.registerListener(pluginListener);
   }
 
-  /** Returns the default {@link PlacementPluginFactory} configured in solr.xml. */
-  public static PlacementPluginFactory<?> getDefaultPlacementPluginFactory(
-      NodeConfig nodeConfig, SolrResourceLoader loader) {
-    PluginInfo pluginInfo = nodeConfig.getReplicaPlacementFactoryConfig();
-    if (null != pluginInfo) {
-      return getPlacementPluginFactory(pluginInfo, loader);
-    } else {
-      return getDefaultPlacementPluginFactory();
-    }
-  }
-
-  private static PlacementPluginFactory<?> getPlacementPluginFactory(
-      PluginInfo pluginInfo, SolrResourceLoader loader) {
-    // Load placement plugin factory from solr.xml.
-    PlacementPluginFactory<?> placementPluginFactory =
-        loader.newInstance(pluginInfo, PlacementPluginFactory.class, false);
-    if (null != pluginInfo.initArgs) {
-      Map<String, Object> config = new HashMap<>();
-      pluginInfo.initArgs.toMap(config);
-      try {
-        ContainerPluginsRegistry.configure(placementPluginFactory, config, null);
-      } catch (IOException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Invalid " + pluginInfo.type + " configuration",
-            e);
-      }
-    }
-    return placementPluginFactory;
-  }
-
-  private static PlacementPluginFactory<?> getDefaultPlacementPluginFactory() {
-    // Otherwise use the default provided by system properties.
-    String defaultPluginId = System.getProperty(PLACEMENTPLUGIN_DEFAULT_SYSPROP);
+  /** Returns the default {@link PlacementPluginFactory} */
+  public static PlacementPluginFactory<?> getDefaultPlacementPluginFactory() {
+    // Use the default provided by system properties.
+    String defaultPluginId = EnvUtils.getProperty(PLACEMENTPLUGIN_DEFAULT_SYSPROP);
     if (defaultPluginId != null) {
       log.info(
           "Default replica placement plugin set in {} to {}",
           PLACEMENTPLUGIN_DEFAULT_SYSPROP,
           defaultPluginId);
-      switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
-        case "simple":
-          return new SimplePlacementFactory();
-        case "affinity":
-          return new AffinityPlacementFactory();
-        case "minimizecores":
-          return new MinimizeCoresPlacementFactory();
-        case "random":
-          return new RandomPlacementFactory();
-        default:
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Invalid value for system property '"
-                  + PLACEMENTPLUGIN_DEFAULT_SYSPROP
-                  + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
-      }
+      return switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
+        case "simple" -> new SimplePlacementFactory();
+        case "affinity" -> new AffinityPlacementFactory();
+        case "minimizecores" -> new MinimizeCoresPlacementFactory();
+        case "random" -> new RandomPlacementFactory();
+        default ->
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Invalid value for system property '"
+                    + PLACEMENTPLUGIN_DEFAULT_SYSPROP
+                    + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
+      };
     } else {
       // TODO: Consider making the ootb default AffinityPlacementFactory, see
       // https://issues.apache.org/jira/browse/SOLR-16492

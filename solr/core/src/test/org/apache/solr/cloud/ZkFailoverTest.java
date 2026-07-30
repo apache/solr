@@ -18,14 +18,12 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -47,7 +45,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void resetWaitForZk() {
-    System.setProperty("waitForZk", "30");
+    System.setProperty("solr.cloud.wait.for.zk.seconds", "30");
   }
 
   public void testRestartZkWhenClusterDown() throws Exception {
@@ -58,14 +56,17 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     zkTestServer = cluster.getZkServer();
 
     // This attempt will fail since it will time out after 1 second
-    System.setProperty("waitForZk", "1");
+    System.setProperty("solr.cloud.wait.for.zk.seconds", "1");
     restartSolrAndZk();
-    waitForLiveNodes(0);
+    waitForState("Timeout waiting for 0 live nodes", coll, (liveNodes, c) -> liveNodes.isEmpty());
 
     // This attempt will succeed since there will be enough time to connect
-    System.setProperty("waitForZk", "20");
+    System.setProperty("solr.cloud.wait.for.zk.seconds", "20");
     restartSolrAndZk();
-    waitForLiveNodes(2);
+    waitForState(
+        "Timeout waiting for all nodes to come up",
+        coll,
+        (liveNodes, c) -> liveNodes.size() == cluster.getJettySolrRunners().size());
     waitForState("Timeout waiting for " + coll, coll, clusterShape(2, 2));
     QueryResponse rsp =
         new QueryRequest(new SolrQuery("*:*")).process(cluster.getSolrClient(), coll);
@@ -98,15 +99,5 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     for (Thread thread : threads) {
       thread.join();
     }
-  }
-
-  private void waitForLiveNodes(int numNodes) throws InterruptedException, KeeperException {
-    ZkStateReader zkStateReader = cluster.getZkStateReader();
-    for (int i = 0; i < 100; i++) {
-      zkStateReader.updateLiveNodes();
-      if (zkStateReader.getClusterState().getLiveNodes().size() == numNodes) return;
-      Thread.sleep(200);
-    }
-    fail("Timeout waiting for number of live nodes = " + numNodes);
   }
 }

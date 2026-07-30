@@ -95,7 +95,7 @@ plan to reindex your documents to avoid unintended behavior.
 When upgrading between major versions (for example, from a 7.x release to 8.x), a best practice is to always reindex your data.
 The reason for this is that subtle changes may occur in default field type definitions or the underlying code.
 
-Lucene works hard to insure one major version back-compatability, thus Solr 8x functions with indexes created with Solr 7x.
+Lucene works hard to insure one major version back-compatibility, thus Solr 8x functions with indexes created with Solr 7x.
 However, given that this guarantee does _not_ apply to Solr X-2 (Solr 6x in this example) we still recommend completely reindexing when moving from Solr X-1 to Solr X.
 
 [NOTE]

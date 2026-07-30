@@ -26,15 +26,12 @@ import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.VectorEncoding;
-import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
-import org.apache.lucene.queries.function.valuesource.ByteVectorSimilarityFunction;
 import org.apache.lucene.queries.function.valuesource.ConstNumberSource;
 import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.lucene.queries.function.valuesource.DefFunction;
@@ -42,7 +39,6 @@ import org.apache.lucene.queries.function.valuesource.DivFloatFunction;
 import org.apache.lucene.queries.function.valuesource.DocFreqValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
 import org.apache.lucene.queries.function.valuesource.DualFloatFunction;
-import org.apache.lucene.queries.function.valuesource.FloatVectorSimilarityFunction;
 import org.apache.lucene.queries.function.valuesource.IDFValueSource;
 import org.apache.lucene.queries.function.valuesource.IfFunction;
 import org.apache.lucene.queries.function.valuesource.JoinDocFreqValueSource;
@@ -85,6 +81,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.LateInteractionVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TextField;
@@ -125,8 +122,11 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 
 /**
- * A factory that parses user queries to generate ValueSource instances. Intended usage is to create
- * pluggable, named functions for use in function queries.
+ * A factory parsing arguments (from {@link FunctionQParser}) into a real function whose results are
+ * emitted from a {@link ValueSource}. Custom ones can be registered by name and configured in
+ * {@code solrconfig.xml}.
+ *
+ * @see FunctionQParser
  */
 public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   /** Parse the user input into a ValueSource. */
@@ -191,7 +191,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         new ValueSourceParser() {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-            return new LongConstValueSource(Thread.currentThread().getId());
+            return new LongConstValueSource(Thread.currentThread().threadId());
           }
         });
     addParser(
@@ -344,41 +344,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           }
         });
     alias("sum", "add");
-    addParser(
-        "vectorSimilarity",
-        new ValueSourceParser() {
-          @Override
-          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-
-            VectorEncoding vectorEncoding = VectorEncoding.valueOf(fp.parseArg());
-            VectorSimilarityFunction functionName = VectorSimilarityFunction.valueOf(fp.parseArg());
-
-            int vectorEncodingFlag =
-                vectorEncoding.equals(VectorEncoding.BYTE)
-                    ? FunctionQParser.FLAG_PARSE_VECTOR_BYTE_ENCODING
-                    : 0;
-            ValueSource v1 =
-                fp.parseValueSource(
-                    FunctionQParser.FLAG_DEFAULT
-                        | FunctionQParser.FLAG_CONSUME_DELIMITER
-                        | vectorEncodingFlag);
-            ValueSource v2 =
-                fp.parseValueSource(
-                    FunctionQParser.FLAG_DEFAULT
-                        | FunctionQParser.FLAG_CONSUME_DELIMITER
-                        | vectorEncodingFlag);
-
-            switch (vectorEncoding) {
-              case FLOAT32:
-                return new FloatVectorSimilarityFunction(functionName, v1, v2);
-              case BYTE:
-                return new ByteVectorSimilarityFunction(functionName, v1, v2);
-              default:
-                throw new SyntaxError("Invalid vector encoding: " + vectorEncoding);
-            }
-          }
-        });
-
+    addParser("vectorSimilarity", new VectorSimilaritySourceParser());
     addParser(
         "product",
         new ValueSourceParser() {
@@ -579,12 +545,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
             String fieldName = fp.parseArg();
             SchemaField f = fp.getReq().getSchema().getField(fieldName);
-            if (!(f.getType() instanceof CurrencyFieldType)) {
+            if (!(f.getType() instanceof CurrencyFieldType ft)) {
               throw new SolrException(
                   SolrException.ErrorCode.BAD_REQUEST,
                   "Currency function input must be the name of a CurrencyFieldType: " + fieldName);
             }
-            CurrencyFieldType ft = (CurrencyFieldType) f.getType();
             String code = fp.hasMoreArguments() ? fp.parseArg() : null;
             return ft.getConvertedValueSource(code, ft.getValueSource(f, fp));
           }
@@ -1395,6 +1360,31 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         });
 
     addParser("childfield", new ChildFieldValueSourceParser());
+
+    addParser(
+        "lateVector",
+        new ValueSourceParser() {
+
+          @Override
+          public ValueSource parse(final FunctionQParser fp) throws SyntaxError {
+
+            final String fieldName = fp.parseArg();
+            if (null == fieldName) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "Invalid arguments. First argument must be a field name");
+            }
+            final FieldType ft = fp.getReq().getSchema().getFieldType(fieldName);
+            if (ft instanceof LateInteractionVectorField lift) {
+              return ValueSource.fromDoubleValuesSource(
+                  lift.parseLateInteractionValuesSource(fieldName, fp));
+            }
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Field name is not defined in schema as a StrFloatLateInteractionVectorField: "
+                    + fieldName);
+          }
+        });
   }
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -1462,8 +1452,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
             SolrException.ErrorCode.BAD_REQUEST,
             "Illegal number of sources.  There must be an even number of sources");
       } else {
-        mvr.mv1 = new VectorValueSource(Collections.singletonList(sources.get(0)));
-        mvr.mv2 = new VectorValueSource(Collections.singletonList(sources.get(1)));
+        mvr.mv1 = new VectorValueSource(List.of(sources.get(0)));
+        mvr.mv2 = new VectorValueSource(List.of(sources.get(1)));
       }
     } else {
       int dim = sources.size() / 2;
@@ -1644,8 +1634,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof LongConstValueSource)) return false;
-      LongConstValueSource other = (LongConstValueSource) o;
+      if (!(o instanceof LongConstValueSource other)) return false;
       return this.constant == other.constant;
     }
 
@@ -1797,8 +1786,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
       @Override
       public boolean equals(Object o) {
-        if (!(o instanceof Function)) return false;
-        Function other = (Function) o;
+        if (!(o instanceof Function other)) return false;
         return this.a.equals(other.a) && this.b.equals(other.b);
       }
     }
@@ -1837,8 +1825,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof BoolConstValueSource)) return false;
-      BoolConstValueSource other = (BoolConstValueSource) o;
+      if (!(o instanceof BoolConstValueSource other)) return false;
       return this.constant == other.constant;
     }
 

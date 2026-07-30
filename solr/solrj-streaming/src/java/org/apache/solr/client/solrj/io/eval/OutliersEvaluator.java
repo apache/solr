@@ -85,9 +85,7 @@ public class OutliersEvaluator extends RecursiveObjectEvaluator implements ManyV
 
     List<Tuple> outliers = new ArrayList<>();
 
-    if (dist instanceof IntegerDistribution) {
-
-      IntegerDistribution d = (IntegerDistribution) dist;
+    if (dist instanceof IntegerDistribution d) {
 
       for (int i = 0; i < vec.size(); i++) {
 
@@ -110,9 +108,8 @@ public class OutliersEvaluator extends RecursiveObjectEvaluator implements ManyV
 
       return outliers;
 
-    } else if (dist instanceof AbstractRealDistribution) {
+    } else if (dist instanceof AbstractRealDistribution d) {
 
-      AbstractRealDistribution d = (AbstractRealDistribution) dist;
       for (int i = 0; i < vec.size(); i++) {
 
         Number n = vec.get(i);

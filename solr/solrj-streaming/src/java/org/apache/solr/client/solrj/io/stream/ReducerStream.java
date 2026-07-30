@@ -75,8 +75,7 @@ public class ReducerStream extends TupleStream implements Expressible {
   }
 
   private StreamEqualitor convertToEqualitor(StreamComparator comp) {
-    if (comp instanceof MultipleFieldComparator) {
-      MultipleFieldComparator mComp = (MultipleFieldComparator) comp;
+    if (comp instanceof MultipleFieldComparator mComp) {
       StreamEqualitor[] eqs = new StreamEqualitor[mComp.getComps().length];
       for (int idx = 0; idx < mComp.getComps().length; ++idx) {
         eqs[idx] = convertToEqualitor(mComp.getComps()[idx]);

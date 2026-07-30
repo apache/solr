@@ -17,9 +17,7 @@
 package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
-import java.util.Map;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
@@ -27,11 +25,17 @@ import org.apache.solr.common.util.TimeSource;
 /** Base class for overriding some behavior of {@link SolrCloudManager}. */
 public class DelegatingCloudManager implements SolrCloudManager {
   protected final SolrCloudManager delegate;
-  private ObjectCache objectCache = new ObjectCache();
-  private TimeSource timeSource = TimeSource.NANO_TIME;
 
   public DelegatingCloudManager(SolrCloudManager delegate) {
+    if (delegate == null) {
+      throw new IllegalArgumentException("delegate cannot be null");
+    }
     this.delegate = delegate;
+  }
+
+  @Override
+  public CloudSolrClient getSolrClient() {
+    return delegate.getSolrClient();
   }
 
   @Override
@@ -51,7 +55,7 @@ public class DelegatingCloudManager implements SolrCloudManager {
 
   @Override
   public ObjectCache getObjectCache() {
-    return delegate == null ? objectCache : delegate.getObjectCache();
+    return delegate.getObjectCache();
   }
 
   @Override
@@ -61,24 +65,7 @@ public class DelegatingCloudManager implements SolrCloudManager {
 
   @Override
   public TimeSource getTimeSource() {
-    return delegate == null ? timeSource : delegate.getTimeSource();
-  }
-
-  @Override
-  public <T extends SolrResponse> T request(SolrRequest<T> req) throws IOException {
-    return delegate.request(req);
-  }
-
-  @Override
-  public byte[] httpRequest(
-      String url,
-      SolrRequest.METHOD method,
-      Map<String, String> headers,
-      String payload,
-      int timeout,
-      boolean followRedirects)
-      throws IOException {
-    return delegate.httpRequest(url, method, headers, payload, timeout, followRedirects);
+    return delegate.getTimeSource();
   }
 
   @Override

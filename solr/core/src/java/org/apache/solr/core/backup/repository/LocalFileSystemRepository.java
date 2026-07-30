@@ -34,7 +34,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 
 /**
@@ -42,14 +41,7 @@ import org.apache.solr.core.DirectoryFactory;
  * Solr indexes to a local file-system. (Note - This can even be used for a shared file-system if it
  * is exposed via a local file-system interface e.g. NFS).
  */
-public class LocalFileSystemRepository implements BackupRepository {
-
-  private NamedList<?> config = null;
-
-  @Override
-  public void init(NamedList<?> args) {
-    this.config = args;
-  }
+public class LocalFileSystemRepository extends AbstractBackupRepository {
 
   @SuppressWarnings("unchecked")
   @Override
@@ -97,7 +89,7 @@ public class LocalFileSystemRepository implements BackupRepository {
   public void createDirectory(URI path) throws IOException {
     Path p = Path.of(path);
     if (!Files.exists(p, LinkOption.NOFOLLOW_LINKS)) {
-      Files.createDirectory(p);
+      Files.createDirectories(p);
     }
   }
 

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.schema;
 
+import java.nio.file.Path;
+import java.text.ParseException;
 import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -32,7 +34,7 @@ public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
   private static final String ICU_FIELD_UDVAS_PROPNAME = "tests.icu_collation_field.udvas";
   private static final String ICU_TYPE_UDVAS_PROPNAME = "tests.icu_collation_fieldType.udvas";
   private static final String TEST_LUCENE_MATCH_VERSION_PROPNAME = "tests.luceneMatchVersion";
-  private static final Version WARN_CEILING = Version.LUCENE_8_12_0;
+  private static final Version WARN_CEILING = warnCeiling();
   private static String home;
 
   @BeforeClass
@@ -75,7 +77,7 @@ public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
     }
     try (LogListener warnLog =
         LogListener.warn(XmlConfigFile.class).substring(ICUCollationField.UDVAS_MESSAGE)) {
-      initCore("solrconfig.xml", "schema.xml", home);
+      initCore("solrconfig.xml", "schema.xml", Path.of(home));
       switch (mode) {
         case FAIL:
           fail("expected failure for version " + useVersion);
@@ -105,6 +107,16 @@ public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
       System.clearProperty(ICU_FIELD_UDVAS_PROPNAME);
       System.clearProperty(ICU_TYPE_UDVAS_PROPNAME);
       System.setProperty(TEST_LUCENE_MATCH_VERSION_PROPNAME, restoreLuceneMatchVersion);
+    }
+  }
+
+  // TODO How long should we support the "warn-only" behavior controlled by luceneMatchVersion?
+  // 10.0?  11.0? Indefinitely?
+  private static Version warnCeiling() {
+    try {
+      return Version.parse("8.12.0");
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
     }
   }
 }

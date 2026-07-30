@@ -1,0 +1,7 @@
+title: Speed up function queries in 'fl' param.
+type: changed
+authors:
+- name: Yura Korolov
+links:
+- name: SOLR-17775
+  url: https://issues.apache.org/jira/browse/SOLR-17775

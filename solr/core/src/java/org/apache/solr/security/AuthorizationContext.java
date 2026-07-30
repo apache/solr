@@ -42,10 +42,9 @@ public abstract class AuthorizationContext {
   /**
    * This method returns the {@link Principal} corresponding to the authenticated user for the
    * current request. The value returned by {@link Principal#getName()} depends on the
-   * authentication mechanism used (e.g. for user "foo" with BASIC authentication the result would
-   * be "foo". On the other hand with KERBEROS it would be foo@REALMNAME). The {@link
-   * #getUserName()} method may be preferred to extract the identity of the authenticated user
-   * instead of this method.
+   * authentication mechanism used. For example for the user "foo" with BASIC authentication the
+   * result would be "foo". The {@link #getUserName()} method may be preferred to extract the
+   * identity of the authenticated user instead of this method.
    *
    * @return user principal in case of an authenticated request null in case of unauthenticated
    *     request
@@ -56,7 +55,7 @@ public abstract class AuthorizationContext {
    * This method returns the name of the authenticated user for the current request. The return
    * value of this method is agnostic of the underlying authentication mechanism used.
    *
-   * @return user name in case of an authenticated user null in case of unauthenticated request
+   * @return username in case of an authenticated user null in case of unauthenticated request
    */
   public abstract String getUserName();
 

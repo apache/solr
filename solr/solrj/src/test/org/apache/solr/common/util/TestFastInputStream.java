@@ -71,7 +71,7 @@ public class TestFastInputStream extends SolrTestCase {
     }
   }
 
-  // code copied rfrom NamedlistCode#writechars
+  // code copied from NamedlistCode#writechars
   public static void writeChars(OutputStream os, String s, int start, int length)
       throws IOException {
     final int end = start + length;

@@ -7,7 +7,7 @@ Before creating a pull request, please file an issue in the ASF Jira system for 
 
 * https://issues.apache.org/jira/projects/SOLR
 
-For something minor (i.e. that wouldn't be worth putting in release notes), you can skip JIRA. 
+For something minor (i.e. that wouldn't be worth putting in release notes), you can skip JIRA.
 To create a Jira issue, you will need to create an account there first.
 
 The title of the PR should reference the Jira issue number in the form:
@@ -26,6 +26,7 @@ Please provide a short description of the changes you're making with this pull r
 # Solution
 
 Please provide a short description of the approach taken to implement your solution.
+We appreciate transparent disclosure of significant [AI Coding assistants](https://github.com/apache/solr/blob/main/dev-docs/how-to-contribute.adoc#setup-for-contributing) usage.
 
 # Tests
 
@@ -37,8 +38,9 @@ Please review the following and check all that apply:
 
 - [ ] I have reviewed the guidelines for [How to Contribute](https://github.com/apache/solr/blob/main/CONTRIBUTING.md) and my code conforms to the standards described there to the best of my ability.
 - [ ] I have created a Jira issue and added the issue ID to my pull request title.
-- [ ] I have given Solr maintainers [access](https://help.github.com/en/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork) to contribute to my PR branch. (optional but recommended)
+- [ ] I have given Solr maintainers [access](https://help.github.com/en/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork) to contribute to my PR branch. (optional but recommended, not available for branches on forks living under an organisation)
 - [ ] I have developed this patch against the `main` branch.
 - [ ] I have run `./gradlew check`.
 - [ ] I have added tests for my changes.
 - [ ] I have added documentation for the [Reference Guide](https://github.com/apache/solr/tree/main/solr/solr-ref-guide)
+- [ ] I have added a [changelog entry](https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc) for my change

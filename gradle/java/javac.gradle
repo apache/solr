@@ -19,53 +19,51 @@
 
 allprojects {
   plugins.withType(JavaPlugin) {
-    sourceCompatibility = rootProject.minJavaVersion
-    targetCompatibility = rootProject.minJavaVersion
-
+    java {
+      sourceCompatibility = project.minJavaVersion
+      targetCompatibility = project.minJavaVersion
+    }
     // Use 'release' flag instead of 'source' and 'target'
     tasks.withType(JavaCompile) {
-      options.compilerArgs += ["--release", rootProject.minJavaVersion.toString()]
+      compileTestJava {
+        sourceCompatibility = project.minJavaTestVersion
+        targetCompatibility = project.minJavaTestVersion
+        options.compilerArgs += ["--release", project.minJavaTestVersion.toString()]
+      }
+      compileJava {
+        options.compilerArgs += ["--release", project.minJavaVersion.toString()]
+      }
     }
-
     // Configure warnings.
     tasks.withType(JavaCompile) {
       options.encoding = "UTF-8"
       options.compilerArgs += [
-        "-Xlint:-deprecation",
-        "-Xlint:-serial",
-        "-Xlint:cast",
-        "-Xlint:classfile",
-        "-Xlint:dep-ann",
-        "-Xlint:divzero",
-        "-Xlint:empty",
-        "-Xlint:fallthrough",
-        "-Xlint:finally",
-        "-Xlint:options",
-        "-Xlint:overrides",
-        "-Xlint:processing",
-        "-Xlint:rawtypes",
-        "-Xlint:static",
-        "-Xlint:try",
-        "-Xlint:unchecked",
-        "-Xlint:varargs",
-        "-Xdoclint:all/protected",
-        "-Xdoclint:-missing",
-        "-Xdoclint:-accessibility",
-        "-proc:none",  // proc:none was added because of LOG4J2-1925 / JDK-8186647
-      ]
-
-      // enable some warnings only relevant to newer language features
-      if (rootProject.runtimeJavaVersion >= JavaVersion.VERSION_15) {
-        options.compilerArgs += [
-          "-Xlint:text-blocks",
-        ]
-      }
-
-      if (rootProject.runtimeJavaVersion >= JavaVersion.VERSION_16) {
-        options.compilerArgs += [
+          "-Xlint:-deprecation",
+          "-Xlint:-serial",
+          "-Xlint:cast",
+          "-Xlint:classfile",
+          "-Xlint:dep-ann",
+          "-Xlint:divzero",
+          "-Xlint:empty",
+          "-Xlint:fallthrough",
+          "-Xlint:finally",
+          "-Xlint:options",
+          "-Xlint:overrides",
+          "-Xlint:processing",
+          "-Xlint:rawtypes",
+          "-Xlint:static",
+          "-Xlint:try",
+          "-Xlint:unchecked",
+          "-Xlint:varargs",
+          "-Xdoclint:all/protected",
+          "-Xdoclint:-missing",
+          "-Xdoclint:-accessibility",
           "-Xlint:synchronization",
-        ]
-      }
+          "-Xlint:text-blocks",
+          "-proc:none",  // proc:none was added because of LOG4J2-1925 / JDK-8186647
+          "-Xlint:removal",
+          "--should-stop=ifError=FLOW" // error-prone 2.41
+      ]
 
       if (propertyOrDefault("javac.failOnWarnings", true).toBoolean()) {
         options.compilerArgs += "-Werror"
@@ -77,7 +75,7 @@ allprojects {
 configure(project(":solr:benchmark")) {
   plugins.withType(JavaPlugin) {
     tasks.named('compileJava').configure {
-      options.compilerArgs -= [ "-Werror", "-proc:none" ]
+      options.compilerArgs -= ["-Werror", "-proc:none"]
       options.compilerArgs += "-Xlint:none"
     }
   }

@@ -19,11 +19,11 @@ package org.apache.solr.cloud;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -37,7 +37,8 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
   private static final String COLLECTION_NAME = "infected";
 
   private static final String USERNAME = "solr";
-  private static final String PASSWORD = "solr";
+  // Password must differ from the username (Basic Auth policy rejects username==password)
+  private static final String PASSWORD = "SolrRocks";
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -79,43 +80,45 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     // assert all nodes as active
     assertEquals(3, cluster.getSolrClient().getClusterStateProvider().getLiveNodes().size());
 
-    SolrClient client = cluster.getJettySolrRunner(0).newClient();
-
     SolrRequest<QueryResponse> req =
         new QueryRequest(new SolrQuery("*:*").setRows(0))
             .setBasicAuthCredentials(USERNAME, PASSWORD);
 
-    // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the
-    // nodes run out of serviceable threads, and they crash, even for other collections hosted on
-    // the
-    // nodes).
-    SolrException error =
-        expectThrows(
-            SolrException.class,
-            "Request should fail after trying all replica nodes once",
-            () -> client.request(req, COLLECTION_NAME));
+    try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
+      // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the
+      // nodes run out of serviceable threads, and they crash, even for other collections hosted on
+      // the
+      // nodes).
+      SolrException error =
+          expectThrows(
+              SolrException.class,
+              "Request should fail after trying all replica nodes once",
+              () -> client.request(req, COLLECTION_NAME));
 
-    client.close();
-
-    assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
-    assertTrue(
-        error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
+      assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
+      assertTrue(
+          error
+              .getMessage()
+              .contains("No active replicas found for collection: " + COLLECTION_NAME));
+    }
 
     // run same set of tests on v2 client which uses V2HttpCall
-    SolrClient v2Client =
-        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
+    try (SolrClient v2Client =
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+            .build()) {
 
-    error =
-        expectThrows(
-            SolrException.class,
-            "Request should fail after trying all replica nodes once",
-            () -> v2Client.request(req, COLLECTION_NAME));
+      SolrException error =
+          expectThrows(
+              SolrException.class,
+              "Request should fail after trying all replica nodes once",
+              () -> v2Client.request(req, COLLECTION_NAME));
 
-    v2Client.close();
-
-    assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
-    assertTrue(
-        error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
+      assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
+      assertTrue(
+          error
+              .getMessage()
+              .contains("No active replicas found for collection: " + COLLECTION_NAME));
+    }
   }
 
   @SuppressWarnings({"unchecked"})
@@ -123,7 +126,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     byte[] collectionState =
         cluster
             .getZkClient()
-            .getData("/collections/" + COLLECTION_NAME + "/state.json", null, null, true);
+            .getData("/collections/" + COLLECTION_NAME + "/state.json", null, null);
 
     Map<String, Map<String, ?>> infectedState =
         (Map<String, Map<String, ?>>) Utils.fromJSON(collectionState);
@@ -139,8 +142,13 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     cluster
         .getZkClient()
-        .setData(
-            "/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState), true);
+        .setData("/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState));
+
+    cluster
+        .getJettySolrRunner(0)
+        .getCoreContainer()
+        .getZkController()
+        .publishAndWaitForDownStates();
   }
 
   protected static final String STD_CONF =
@@ -148,7 +156,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
           + "  \"authentication\":{\n"
           + "   \"blockUnknown\": true,\n"
           + "   \"class\":\"solr.BasicAuthPlugin\",\n"
-          + "   \"credentials\":{\"solr\":\"EEKn7ywYk5jY8vG9TyqlG2jvYuvh1Q7kCCor6Hqm320= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
+          + "   \"credentials\":{\"solr\":\"JeRyxP8A3dVWhFgFbf/Eg2RXmuoU8BE5gbNQyxmGAJQ= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
           + "  },\n"
           + "  \"authorization\":{\n"
           + "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n"

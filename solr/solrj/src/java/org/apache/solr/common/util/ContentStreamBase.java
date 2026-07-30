@@ -18,17 +18,17 @@ package org.apache.solr.common.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -36,6 +36,7 @@ import java.util.function.Predicate;
 import java.util.zip.GZIPInputStream;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.common.SolrException;
 
 /**
  * Three concrete implementations for ContentStream - one for File/URL/String
@@ -165,15 +166,20 @@ public abstract class ContentStreamBase implements ContentStream {
 
   /** Construct a <code>ContentStream</code> from a <code>File</code> */
   public static class FileStream extends ContentStreamBase {
-    private final File file;
+    private final Path file;
 
-    public FileStream(File f) {
+    public FileStream(Path f) {
       file = f;
 
       contentType = null; // ??
-      name = file.getName();
-      size = file.length();
-      sourceInfo = file.toURI().toString();
+      name = file.getFileName().toString();
+      try {
+        size = Files.size(file);
+      } catch (IOException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Unable to read file size " + file, e);
+      }
+      sourceInfo = file.toUri().toString();
     }
 
     @Override
@@ -186,7 +192,7 @@ public abstract class ContentStreamBase implements ContentStream {
 
     @Override
     public InputStream getStream() throws IOException {
-      InputStream is = new FileInputStream(file);
+      InputStream is = new FileInputStream(file.toFile());
       String lowerName = name.toLowerCase(Locale.ROOT);
       if (lowerName.endsWith(".gz") || lowerName.endsWith(".gzip")) {
         is = new GZIPInputStream(is);
@@ -207,12 +213,7 @@ public abstract class ContentStreamBase implements ContentStream {
       this.str = str;
       this.contentType = contentType;
       name = null;
-      try {
-        size = (long) str.getBytes(DEFAULT_CHARSET).length;
-      } catch (UnsupportedEncodingException e) {
-        // won't happen
-        throw new RuntimeException(e);
-      }
+      size = (long) str.getBytes(StandardCharsets.UTF_8).length;
       sourceInfo = "string";
     }
 
@@ -242,14 +243,16 @@ public abstract class ContentStreamBase implements ContentStream {
 
     @Override
     public InputStream getStream() throws IOException {
-      return new ByteArrayInputStream(str.getBytes(DEFAULT_CHARSET));
+      return new ByteArrayInputStream(str.getBytes(StandardCharsets.UTF_8));
     }
 
-    /** If an charset is defined (by the contentType) use that, otherwise use a StringReader */
+    /** If a charset is defined (by the contentType) use that, otherwise use a StringReader */
     @Override
     public Reader getReader() throws IOException {
       String charset = getCharsetFromContentType(contentType);
-      return charset == null ? new StringReader(str) : new InputStreamReader(getStream(), charset);
+      return charset == null
+          ? new StringReader(str)
+          : new InputStreamReader(getStream(), IOUtils.charsetForName(charset));
     }
   }
 
@@ -261,8 +264,8 @@ public abstract class ContentStreamBase implements ContentStream {
   public Reader getReader() throws IOException {
     String charset = getCharsetFromContentType(getContentType());
     return charset == null
-        ? new InputStreamReader(getStream(), DEFAULT_CHARSET)
-        : new InputStreamReader(getStream(), charset);
+        ? new InputStreamReader(getStream(), StandardCharsets.UTF_8)
+        : new InputStreamReader(getStream(), IOUtils.charsetForName(charset));
   }
 
   // ------------------------------------------------------------------
