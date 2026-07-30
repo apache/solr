@@ -1,4 +1,7 @@
-title: Skip phrase field (pf) boost analysis for single-term queries in DisMax and eDisMax parsers
+title: Skip phrase field (pf) boost analysis for single-term queries in DisMax and eDisMax parsers.
+  This may affect relevancy scores for single-term queries if pf fields differ from qf fields or use
+  different boost weights, since the single-term phrase boost (effectively a redundant term boost) is
+  no longer applied.
 type: changed
 authors:
   - name: Ian Springer
