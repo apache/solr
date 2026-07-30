@@ -337,31 +337,39 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         if (shardReplicas.size() < 2) {
           continue;
         }
-        // Keep one replica of the shard on this node and try to move the others away, choosing
-        // replicas to move in replica name order, like the weight-based balancing below does
+        // Move extra replicas of this shard away until only one remains on the node, in replica
+        // name order like the weight-based balancing below. A replica that cannot be removed or has
+        // no eligible target is left in place and does not stop us from moving the others, so a
+        // single stuck replica no longer leaves the duplicate unresolved.
         shardReplicas.sort(Comparator.comparing(Replica::getReplicaName));
-        for (Replica replica : shardReplicas.subList(0, shardReplicas.size() - 1)) {
+        int remainingOnNode = shardReplicas.size();
+        for (Replica replica : shardReplicas) {
+          if (remainingOnNode < 2) {
+            break;
+          }
           if (!sourceNode.canRemoveReplicas(Set.of(replica)).isEmpty()) {
             continue;
           }
-          weightedNodes.stream()
-              .filter(node -> !node.equals(sourceNode))
-              .filter(node -> node.canAddReplica(replica))
-              .min(
-                  Comparator.<WeightedNode>comparingInt(
-                          node -> node.calcRelevantWeightWithReplica(replica))
-                      .thenComparing(Comparator.naturalOrder()))
-              .ifPresent(
-                  targetNode -> {
-                    log.debug(
-                        "Duplicate replica movement chosen. From: {}, To: {}, Replica: {}",
-                        sourceNode,
-                        targetNode,
-                        replica);
-                    targetNode.addReplica(replica);
-                    sourceNode.removeReplica(replica);
-                    replicaMovements.put(replica, targetNode.getNode());
-                  });
+          Optional<WeightedNode> targetNode =
+              weightedNodes.stream()
+                  .filter(node -> !node.equals(sourceNode))
+                  .filter(node -> node.canAddReplica(replica))
+                  .min(
+                      Comparator.<WeightedNode>comparingInt(
+                              node -> node.calcRelevantWeightWithReplica(replica))
+                          .thenComparing(Comparator.naturalOrder()));
+          if (targetNode.isPresent()) {
+            WeightedNode target = targetNode.get();
+            log.debug(
+                "Duplicate replica movement chosen. From: {}, To: {}, Replica: {}",
+                sourceNode,
+                target,
+                replica);
+            target.addReplica(replica);
+            sourceNode.removeReplica(replica);
+            replicaMovements.put(replica, target.getNode());
+            remainingOnNode--;
+          }
         }
       }
     }
