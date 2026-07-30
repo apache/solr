@@ -227,7 +227,7 @@ public class DisMaxQParser extends QParser {
      * matched those phrases but do match looser phrases.
      */
     String userPhraseQuery = userQuery.replace("\"", "");
-    if (userPhraseQuery.isBlank() || userPhraseQuery.trim().indexOf(' ') < 0) {
+    if (userPhraseQuery.trim().indexOf(' ') < 0) {
       return null;
     }
     return pp.parse("\"" + userPhraseQuery + "\"");
