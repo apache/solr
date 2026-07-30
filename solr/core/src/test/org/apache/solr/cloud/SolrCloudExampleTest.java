@@ -31,7 +31,7 @@ import org.apache.solr.cli.HealthcheckTool;
 import org.apache.solr.cli.PostTool;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.ToolRuntime;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;

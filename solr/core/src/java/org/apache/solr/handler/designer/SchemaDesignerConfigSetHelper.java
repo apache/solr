@@ -41,7 +41,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -62,11 +61,11 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -179,7 +178,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       Object dest = map.get("dest");
       List<String> destFields = null;
       if (dest instanceof String) {
-        destFields = Collections.singletonList((String) dest);
+        destFields = List.of((String) dest);
       } else if (dest instanceof List) {
         destFields = (List<String>) dest;
       } else if (dest instanceof Collection) {
@@ -584,9 +583,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       schema =
           (ManagedIndexSchema)
               schema.addField(
-                  schema.newField(
-                      NEST_PATH_FIELD_NAME, NEST_PATH_FIELD_NAME, Collections.emptyMap()),
-                  false);
+                  schema.newField(NEST_PATH_FIELD_NAME, NEST_PATH_FIELD_NAME, Map.of()), false);
       madeChanges = true;
     }
 
@@ -633,7 +630,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     int currentVersion = -1;
     final String path = getManagedSchemaZkPath(configSet);
     try {
-      Stat stat = cc.getZkController().getZkClient().exists(path, null, true);
+      Stat stat = cc.getZkController().getZkClient().exists(path, null);
       if (stat != null) {
         currentVersion = stat.getVersion();
       }
@@ -855,7 +852,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
     for (String path : toRemoveFiles) {
       try {
-        zkClient.delete(path, -1, false);
+        zkClient.delete(path, -1);
       } catch (KeeperException.NoNodeException nne) {
         // no-op
       } catch (KeeperException | InterruptedException e) {
@@ -921,9 +918,11 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       for (String path : langFilesToRestore) {
         String copyToPath = path.replace(origPathDir, replacePathDir);
         try {
-          if (!zkClient.exists(copyToPath, true)) {
-            zkClient.makePath(copyToPath, false, true);
-            zkClient.setData(copyToPath, zkClient.getData(path, null, null, true), true);
+          // Only restore files that are missing -- do not overwrite an existing file with the
+          // copyFrom version.
+          if (!zkClient.exists(copyToPath)) {
+            zkClient.makePath(copyToPath, false);
+            zkClient.setData(copyToPath, zkClient.getData(path, null, null));
           }
         } catch (KeeperException | InterruptedException e) {
           throw new IOException(

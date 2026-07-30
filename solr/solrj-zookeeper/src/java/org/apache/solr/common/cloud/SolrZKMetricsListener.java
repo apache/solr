@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.curator.drivers.AdvancedTracerDriver;
 import org.apache.curator.drivers.EventTrace;
@@ -24,32 +23,20 @@ import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorListener;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
 
-public class SolrZKMetricsListener extends AdvancedTracerDriver
-    implements ReflectMapWriter, CuratorListener {
-  // all fields of this class are public because ReflectMapWriter requires them to be.
-  // however the object itself is private and only this class can modify it
+public class SolrZKMetricsListener extends AdvancedTracerDriver implements CuratorListener {
 
-  @JsonProperty public final LongAdder watchesFired = new LongAdder();
-  @JsonProperty public final LongAdder reads = new LongAdder();
-  @JsonProperty public final LongAdder writes = new LongAdder();
-  @JsonProperty public final LongAdder bytesRead = new LongAdder();
-  @JsonProperty public final LongAdder bytesWritten = new LongAdder();
-
-  @JsonProperty public final LongAdder multiOps = new LongAdder();
-
-  @JsonProperty public final LongAdder cumulativeMultiOps = new LongAdder();
-
-  @JsonProperty public final LongAdder childFetches = new LongAdder();
-
-  @JsonProperty public final LongAdder cumulativeChildrenFetched = new LongAdder();
-
-  @JsonProperty public final LongAdder existsChecks = new LongAdder();
-
-  @JsonProperty public final LongAdder deletes = new LongAdder();
+  final LongAdder watchesFired = new LongAdder();
+  final LongAdder reads = new LongAdder();
+  final LongAdder writes = new LongAdder();
+  final LongAdder bytesRead = new LongAdder();
+  final LongAdder bytesWritten = new LongAdder();
+  final LongAdder multiOps = new LongAdder();
+  final LongAdder cumulativeMultiOps = new LongAdder();
+  final LongAdder childFetches = new LongAdder();
+  final LongAdder cumulativeChildrenFetched = new LongAdder();
+  final LongAdder existsChecks = new LongAdder();
+  final LongAdder deletes = new LongAdder();
 
   /*
   This is used by curator for all operations, but we will only use it for Foreground operations.
@@ -128,19 +115,47 @@ public class SolrZKMetricsListener extends AdvancedTracerDriver
     }
   }
 
-  @Override
-  public void writeMap(MapWriter.EntryWriter ew) throws IOException {
-    ReflectMapWriter.super.writeMap(
-        new MapWriter.EntryWriter() {
-          @Override
-          public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
-            if (v instanceof LongAdder) {
-              ew.put(k, ((LongAdder) v).longValue());
-            } else {
-              ew.put(k, v);
-            }
-            return this;
-          }
-        });
+  public long getWatchesFired() {
+    return watchesFired.longValue();
+  }
+
+  public long getReads() {
+    return reads.longValue();
+  }
+
+  public long getWrites() {
+    return writes.longValue();
+  }
+
+  public long getBytesRead() {
+    return bytesRead.longValue();
+  }
+
+  public long getBytesWritten() {
+    return bytesWritten.longValue();
+  }
+
+  public long getMultiOps() {
+    return multiOps.longValue();
+  }
+
+  public long getCumulativeMultiOps() {
+    return cumulativeMultiOps.longValue();
+  }
+
+  public long getChildFetches() {
+    return childFetches.longValue();
+  }
+
+  public long getCumulativeChildrenFetched() {
+    return cumulativeChildrenFetched.longValue();
+  }
+
+  public long getExistsChecks() {
+    return existsChecks.longValue();
+  }
+
+  public long getDeletes() {
+    return deletes.longValue();
   }
 }

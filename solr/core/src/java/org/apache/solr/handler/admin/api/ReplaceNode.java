@@ -16,12 +16,9 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
@@ -29,13 +26,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.ReplaceNodeApi;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
-import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -57,21 +51,16 @@ public class ReplaceNode extends AdminAPIBase implements ReplaceNodeApi {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse replaceNode(String sourceNodeName, ReplaceNodeRequestBody requestBody)
-      throws Exception {
-    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    // TODO Record node for log and tracing
-    final ZkNodeProps remoteMessage = createRemoteMessage(sourceNodeName, requestBody);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.REPLACENODE,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+  public SubResponseAccumulatingJerseyResponse replaceNode(
+      String sourceNodeName, ReplaceNodeRequestBody requestBody) throws Exception {
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    fetchAndValidateZooKeeperAwareCoreContainer();
+    recordCollectionForLogAndTracing(null, solrQueryRequest);
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.REPLACENODE,
+        createRemoteMessage(sourceNodeName, requestBody),
+        requestBody != null ? requestBody.async : null);
 
     disableResponseCaching();
     return response;
@@ -83,9 +72,7 @@ public class ReplaceNode extends AdminAPIBase implements ReplaceNodeApi {
     if (requestBody != null) {
       insertIfValueNotNull(remoteMessage, TARGET_NODE, requestBody.targetNodeName);
       insertIfValueNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
-      insertIfValueNotNull(remoteMessage, ASYNC, requestBody.async);
     }
-    remoteMessage.put(QUEUE_OPERATION, CollectionAction.REPLACENODE.toLower());
 
     return new ZkNodeProps(remoteMessage);
   }

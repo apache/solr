@@ -192,12 +192,4 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
     ureq.add(docs);
     ureq.process(cloudClient);
   }
-
-  public int getNumDeletes() {
-    return numDeletes;
-  }
-
-  public int getNumAdds() {
-    return numAdds;
-  }
 }

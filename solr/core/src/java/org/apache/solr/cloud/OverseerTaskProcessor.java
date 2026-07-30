@@ -16,10 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
 
-import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -36,14 +37,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.zookeeper.KeeperException;
@@ -59,7 +63,7 @@ import org.slf4j.LoggerFactory;
  * <p>An {@link OverseerMessageHandlerSelector} determines which {@link OverseerMessageHandler}
  * handles specific messages in the queue.
  */
-public class OverseerTaskProcessor implements Runnable, Closeable {
+public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable {
 
   /** Maximum number of overseer collection operations which can be executed concurrently */
   public static final int MAX_PARALLEL_TASKS = 100;
@@ -148,9 +152,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.runningTasks = new HashMap<>();
     thisNode = MDCLoggingContext.getNodeName();
 
-    overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
-    overseerTaskProcessorMetricsContext.gauge(
-        () -> workQueue.getZkStats().getQueueLength(), true, "collectionWorkQueueSize", "queue");
+    this.overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
+    initializeMetrics(
+        overseerTaskProcessorMetricsContext,
+        Attributes.of(CATEGORY_ATTR, getCategory().toString()));
   }
 
   @Override
@@ -324,8 +329,32 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               workQueue.remove(head, asyncId == null);
               continue;
             }
+            if (operation == null) {
+              log.error("Msg does not have required {} : {}", Overseer.QUEUE_OPERATION, message);
+              workQueue.remove(head, asyncId == null);
+              continue;
+            }
+            String callingLockId = message.getStr(CALLING_LOCK_ID_HEADER);
             OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
-            OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, batchSessionId);
+            OverseerMessageHandler.Lock lock;
+            try {
+              lock = messageHandler.lockTask(message, batchSessionId, callingLockId);
+            } catch (SolrException e) {
+              // Lock acquisition can throw if e.g. callingLockId references an unrelated
+              // action. In that case, fail the task immediately rather than retrying.
+              log.error(
+                  "Error occurred while trying to acquire lock for task [{}]", head.getId(), e);
+              NamedList<Object> errResp = new NamedList<>();
+              errResp.add("exception", e.getMessage());
+              OverseerSolrResponse response = new OverseerSolrResponse(errResp);
+              if (asyncId != null) {
+                failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
+              } else {
+                head.setBytes(OverseerSolrResponseSerializer.serialize(response));
+              }
+              workQueue.remove(head, asyncId == null);
+              continue;
+            }
             if (lock == null) {
               if (log.isDebugEnabled()) {
                 log.debug("Exclusivity check failed for [{}]", message);
@@ -404,15 +433,30 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   }
 
   @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    parentContext.observableLongGauge(
+        "solr_overseer_collection_work_queue_size",
+        "Size of overseer's collection work queue",
+        (observableLongMeasurement) -> {
+          observableLongMeasurement.record(workQueue.getZkStats().getQueueLength(), attributes);
+        });
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return overseerTaskProcessorMetricsContext;
+  }
+
+  @Override
   public void close() {
     isClosed = true;
-    overseerTaskProcessorMetricsContext.unregister();
     if (tpe != null) {
       if (!ExecutorUtil.isShutdown(tpe)) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }
     IOUtils.closeQuietly(selector);
+    IOUtils.closeQuietly(overseerTaskProcessorMetricsContext);
   }
 
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk)
@@ -427,7 +471,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   public static List<String> getSortedElectionNodes(SolrZkClient zk, String path)
       throws KeeperException, InterruptedException {
-    List<String> children = zk.getChildren(path, null, true);
+    List<String> children = zk.getChildren(path, null);
     LeaderElector.sortSeqs(children);
     return children;
   }
@@ -442,7 +486,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       throws KeeperException, InterruptedException {
     byte[] data = null;
     try {
-      data = zkClient.getData(Overseer.OVERSEER_ELECT + "/leader", null, new Stat(), true);
+      data = zkClient.getData(Overseer.OVERSEER_ELECT + "/leader", null, new Stat());
     } catch (KeeperException.NoNodeException e) {
       return null;
     }
@@ -452,15 +496,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   protected LeaderStatus amILeader() {
     String statsName = "collection_am_i_leader";
-    Timer.Context timerContext = stats.time(statsName);
     boolean success = true;
     String propsId = null;
     try {
       ZkNodeProps props =
           ZkNodeProps.load(
-              zkStateReader
-                  .getZkClient()
-                  .getData(Overseer.OVERSEER_ELECT + "/leader", null, null, true));
+              zkStateReader.getZkClient().getData(Overseer.OVERSEER_ELECT + "/leader", null, null));
       propsId = props.getStr(ID);
       if (myId.equals(propsId)) {
         return LeaderStatus.YES;
@@ -481,7 +522,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       success = false;
       Thread.currentThread().interrupt();
     } finally {
-      timerContext.stop();
       if (success) {
         stats.success(statsName);
       } else {
@@ -534,7 +574,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     @Override
     public void run() {
       String statsName = messageHandler.getTimerName(operation);
-      final Timer.Context timerContext = stats.time(statsName);
 
       boolean success = false;
       final String asyncId = message.getStr(ASYNC);
@@ -545,9 +584,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           if (log.isDebugEnabled()) {
             log.debug("Runner processing {}", head.getId());
           }
-          response = messageHandler.processMessage(message, operation);
+          response = messageHandler.processMessage(message, operation, lock);
         } finally {
-          timerContext.stop();
           updateStats(statsName);
         }
 
@@ -665,12 +703,27 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private void printTrackingMaps() {
     if (log.isDebugEnabled()) {
       log.debug("RunningTasks: {}", runningTasks.keySet());
-      log.debug("BlockedTasks: {}", blockedTasks.keySet()); // nowarn
+      log.debug("BlockedTasks: {}", blockedTasks.keySet());
     }
   }
 
   String getId() {
     return myId;
+  }
+
+  @Override
+  public String getName() {
+    return this.getClass().getName();
+  }
+
+  @Override
+  public String getDescription() {
+    return "Processor in Overseer handling items added to a distributed work queue";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.OVERSEER;
   }
 
   /**

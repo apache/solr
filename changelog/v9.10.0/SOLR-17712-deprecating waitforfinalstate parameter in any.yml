@@ -1,0 +1,9 @@
+title: Deprecating waitForFinalState parameter in any SolrCloud command that accepts
+  it. It remains defaulted to false in 9, but will become true and likely removed.
+type: other
+authors:
+- name: Abhishek Umarjikar
+- name: David Smiley
+links:
+- name: SOLR-17712
+  url: https://issues.apache.org/jira/browse/SOLR-17712

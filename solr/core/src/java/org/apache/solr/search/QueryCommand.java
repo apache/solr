@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.solr.schema.SchemaField;
 
 /**
  * A query request command to avoid having to change the method signatures if we want to pass
@@ -33,12 +34,12 @@ public class QueryCommand {
   private boolean isQueryCancellable;
   private List<Query> filterList;
   private Sort sort;
+  private List<SchemaField> sortSchemaFields;
   private int offset;
   private int len;
   private int supersetMaxDoc;
   private int flags;
   private boolean multiThreaded = false;
-  private long timeAllowed = -1;
   private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
   private boolean distribStatsDisabled;
@@ -109,6 +110,15 @@ public class QueryCommand {
     return this;
   }
 
+  public List<SchemaField> getSortSchemaFields() {
+    return sortSchemaFields;
+  }
+
+  public QueryCommand setSortSchemaFields(List<SchemaField> sortSchemaFields) {
+    this.sortSchemaFields = sortSchemaFields;
+    return this;
+  }
+
   public int getOffset() {
     return offset;
   }
@@ -161,15 +171,6 @@ public class QueryCommand {
 
   public QueryCommand setMultiThreaded(boolean multiThreaded) {
     this.multiThreaded = multiThreaded;
-    return this;
-  }
-
-  public long getTimeAllowed() {
-    return timeAllowed;
-  }
-
-  public QueryCommand setTimeAllowed(long timeAllowed) {
-    this.timeAllowed = timeAllowed;
     return this;
   }
 

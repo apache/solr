@@ -26,13 +26,4 @@ public class DefaultEncoder extends HighlightingPluginBase implements SolrEncode
   public Encoder getEncoder(String fieldName, SolrParams params) {
     return new org.apache.lucene.search.highlight.DefaultEncoder();
   }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "DefaultEncoder";
-  }
 }

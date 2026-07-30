@@ -16,12 +16,12 @@
  */
 package org.apache.solr.security;
 
+import io.opentelemetry.api.common.Attributes;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -98,7 +98,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin
           ErrorCode.BAD_REQUEST, "Config for scheme '" + scheme + "' not found!");
     }
 
-    Map<String, Object> updated = plugin.edit(latestPluginConf, Collections.singletonList(c));
+    Map<String, Object> updated = plugin.edit(latestPluginConf, List.of(c));
     if (updated != null) {
       madeChanges = true;
       schemes.set(updateAt, withScheme(scheme, updated));
@@ -130,11 +130,6 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     }
 
     List<Object> schemeList = (List<Object>) o;
-    // if you only have one scheme, then you don't need to use this class
-    if (schemeList.size() < 2) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR, "Invalid config: MultiAuthPlugin requires at least two schemes!");
-    }
 
     for (Object s : schemeList) {
       if (!(s instanceof Map)) {
@@ -194,10 +189,11 @@ public class MultiAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     for (AuthenticationPlugin plugin : pluginMap.values()) {
-      plugin.initializeMetrics(parentContext, scope);
+      plugin.initializeMetrics(parentContext, Attributes.empty());
     }
+    super.initializeMetrics(parentContext, attributes);
   }
 
   private String getSchemeFromAuthHeader(final String authHeader) {
@@ -231,7 +227,14 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     }
 
     final String scheme = getSchemeFromAuthHeader(authHeader);
-    final AuthenticationPlugin plugin = pluginMap.get(scheme);
+    AuthenticationPlugin plugin = pluginMap.get(scheme);
+
+    if (plugin == null && scheme.equalsIgnoreCase("basic")) {
+      // In case no plugin found try looking up custom scheme xBasic when scheme is Basic, so that
+      // clients that use "Basic ..." are resolved with plugin "xBasic ..." if configured
+      plugin = pluginMap.get("x" + scheme);
+    }
+
     if (plugin == null) {
       addWWWAuthenticateHeaders(response);
       response.sendError(
@@ -259,6 +262,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     if (exc != null) {
       throw exc;
     }
+    super.close();
   }
 
   @Override

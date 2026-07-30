@@ -391,6 +391,9 @@ public class TestJoin extends SolrTestCaseJ4 {
 
         SolrQueryRequest req =
             req(
+                // all permutations of using/not using param; and unlimited/limited value
+                (random().nextBoolean() ? "timeAllowed" : "__ignored"),
+                (random().nextBoolean() ? "-1" : "99999999999"),
                 "wt",
                 "json",
                 "indent",

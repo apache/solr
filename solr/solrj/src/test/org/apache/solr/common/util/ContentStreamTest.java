@@ -30,7 +30,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 
-/** Tests {@link ContentStream} such as "stream.file". */
+/** Tests {@link ContentStream}. */
 public class ContentStreamTest extends SolrTestCaseJ4 {
 
   public void testStringStream() throws IOException {

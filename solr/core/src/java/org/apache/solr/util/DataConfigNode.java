@@ -86,7 +86,7 @@ public class DataConfigNode implements ConfigNode {
   public Map<String, String> attributes() {
     if (rawAttributes.isEmpty()) return rawAttributes; // avoid unnecessary object creation
 
-    // Note: using the the 4 arg toMap to force LinkedHashMap.
+    // Note: using the 4 arg toMap to force LinkedHashMap.
     // Duplicate keys should be impossible, but toMap makes us specify a mergeFunction
     return rawAttributes.entrySet().stream()
         .collect(

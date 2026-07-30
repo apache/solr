@@ -17,8 +17,6 @@
 
 package org.apache.solr.common.cloud;
 
-import static java.util.Collections.singletonList;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,12 +57,12 @@ public class PerReplicaStatesOps {
       assert CommonTestInjection.injectBreakpoint(
           PerReplicaStatesOps.class.getName() + "/beforePrsFetch");
       if (current != null) {
-        Stat stat = zkClient.exists(current.path, null, true);
-        if (stat == null) return new PerReplicaStates(path, 0, Collections.emptyList());
+        Stat stat = zkClient.exists(current.path, null);
+        if (stat == null) return new PerReplicaStates(path, 0, List.of());
         if (current.cversion == stat.getCversion()) return current; // not modifiedZkStateReaderTest
       }
       Stat stat = new Stat();
-      List<String> children = zkClient.getChildren(path, null, stat, true);
+      List<String> children = zkClient.getChildren(path, null, stat);
       return new PerReplicaStates(path, stat.getCversion(), Collections.unmodifiableList(children));
     } catch (KeeperException.NoNodeException e) {
       throw new PrsZkNodeNotFoundException(
@@ -115,7 +113,7 @@ public class PerReplicaStatesOps {
     try {
       zkClient.multi(ops);
     } catch (KeeperException e) {
-      log.error("Multi-op exception: {}", zkClient.getChildren(znode, null, true));
+      log.error("Multi-op exception: {}", zkClient.getChildren(znode, null));
       throw e;
     }
   }
@@ -292,7 +290,7 @@ public class PerReplicaStatesOps {
             prs -> {
               List<PerReplicaStates.Operation> result;
               if (prs == null) {
-                result = Collections.emptyList();
+                result = List.of();
               } else {
                 PerReplicaStates.State state = prs.get(replica);
                 result = addDeleteStaleNodes(new ArrayList<>(), state);
@@ -306,7 +304,7 @@ public class PerReplicaStatesOps {
       String replica, Replica.State state, boolean isLeader, PerReplicaStates rs) {
     return new PerReplicaStatesOps(
             perReplicaStates ->
-                singletonList(
+                List.of(
                     new PerReplicaStates.Operation(
                         PerReplicaStates.Operation.Type.ADD,
                         new PerReplicaStates.State(replica, state, isLeader, 0))))
@@ -356,7 +354,7 @@ public class PerReplicaStatesOps {
 
   public List<PerReplicaStates.Operation> get(PerReplicaStates rs) {
     ops = refresh(rs);
-    if (ops == null) ops = Collections.emptyList();
+    if (ops == null) ops = List.of();
     this.rs = rs;
     return ops;
   }

@@ -19,6 +19,7 @@ package org.apache.solr.gcs;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.apache.solr.cloud.api.collections.AbstractInstallShardTest;
 import org.apache.solr.handler.admin.api.InstallShardData;
 import org.junit.AfterClass;
@@ -40,6 +41,12 @@ public class GCSInstallShardTest extends AbstractInstallShardTest {
           + "    <repository name=\"trackingBackupRepository\" class=\"org.apache.solr.core.TrackingBackupRepository\"> \n"
           + "      <str name=\"delegateRepoName\">localfs</str>\n"
           + "    </repository>\n"
+          + "    <repository name=\"errorBackupRepository\" class=\""
+          + AbstractIncrementalBackupTest.ErrorThrowingTrackingBackupRepository.class.getName()
+          + "\"> \n"
+          + "      <str name=\"delegateRepoName\">localfs</str>\n"
+          + "      <str name=\"hostPort\">${hostPort:8983}</str>\n"
+          + "    </repository>\n"
           + "    <repository name=\"localfs\" class=\"org.apache.solr.gcs.LocalStorageGCSBackupRepository\"> \n"
           + "      <str name=\"gcsBucket\">someBucketName</str>\n"
           + "      <str name=\"location\">backup1</str>\n"
@@ -51,7 +58,7 @@ public class GCSInstallShardTest extends AbstractInstallShardTest {
   @BeforeClass
   public static void setupClass() throws Exception {
 
-    configureCluster(1) // nodes
+    configureCluster(2) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
         .withSolrXml(SOLR_XML)
         .configure();

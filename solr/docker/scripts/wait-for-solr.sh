@@ -36,12 +36,12 @@ function usage {
 max_attempts=12
 wait_seconds=5
 
-if ! [[ ${SOLR_PORT:-8983} =~ ^[0-9]+$ ]]; then
-  echo "Invalid SOLR_PORT=${SOLR_PORT:-} environment variable specified"
+if ! [[ ${SOLR_PORT_LISTEN:-8983} =~ ^[0-9]+$ ]]; then
+  echo "Invalid SOLR_PORT=${SOLR_PORT_LISTEN:-} environment variable specified"
   exit 1
 fi
 
-solr_url="http://localhost:${SOLR_PORT:-8983}"
+solr_url="http://localhost:${SOLR_PORT_LISTEN:-8983}"
 
 while (( $# > 0 )); do
   case "$1" in

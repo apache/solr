@@ -33,12 +33,12 @@ class Version(object):
     self.bugfix = bugfix
     self.prerelease = prerelease
     self.previous_dot_matcher = self.make_previous_matcher()
-    self.dot = '%d.%d.%d' % (self.major, self.minor, self.bugfix) 
+    self.dot = '%d.%d.%d' % (self.major, self.minor, self.bugfix)
     self.constant = 'LUCENE_%d_%d_%d' % (self.major, self.minor, self.bugfix)
 
   @classmethod
   def parse(cls, value):
-    match = re.search(r'(\d+)\.(\d+).(\d+)(.1|.2)?', value) 
+    match = re.search(r'(\d+)\.(\d+).(\d+)(.1|.2)?', value)
     if match is None:
       raise argparse.ArgumentTypeError('Version argument must be of format x.y.z(.1|.2)?')
     parts = [int(v) for v in match.groups()[:-1]]
@@ -135,12 +135,12 @@ def run(cmd, cwd=None):
   except subprocess.CalledProcessError as e:
     print(e.output.decode('utf-8'))
     raise e
-  return output.decode('utf-8') 
+  return output.decode('utf-8')
 
 def update_file(filename, line_re, edit):
   infile = open(filename, 'r')
-  buffer = [] 
-  
+  buffer = []
+
   changed = False
   for line in infile:
     if not changed:
@@ -242,6 +242,28 @@ def find_current_lucene_version():
   top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
   versions_file = open('%s/gradle/libs.versions.toml' % top_level_dir).read()
   return lucene_version_prop_re.search(versions_file).group(1).strip()
+
+
+def extract_jira_issues_from_title(title):
+  """Return (cleaned_title, links) where links list unique JIRA issues found in title."""
+  jira = re.compile(r'(?:SOLR|LUCENE|INFRA)-\d+')
+
+  seen = set()
+  links = [
+    {'name': m, 'url': f'https://issues.apache.org/jira/browse/{m}'}
+    for m in jira.findall(title)
+    if not (m in seen or seen.add(m))
+  ]
+
+  cleaned = title
+  # Remove variants at start or when slash-separated, then normalize whitespace
+  cleaned = re.sub(r'^\s*/\s*' + jira.pattern + r'[\s:]*', '', cleaned)
+  cleaned = re.sub(r'\s+/\s*' + jira.pattern + r'[\s:]*', ' ', cleaned)
+  cleaned = re.sub(r'^' + jira.pattern + r'[\s:]*', '', cleaned)
+  cleaned = re.sub(r'^\s*/\s*', '', cleaned).strip()
+  cleaned = re.sub(r'\s+', ' ', cleaned)
+
+  return cleaned, links
 
 
 if __name__ == '__main__':

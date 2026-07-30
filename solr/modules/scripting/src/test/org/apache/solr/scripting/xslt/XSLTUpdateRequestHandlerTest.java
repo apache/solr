@@ -16,18 +16,17 @@
  */
 package org.apache.solr.scripting.xslt;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.loader.ContentStreamLoader;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
@@ -68,10 +67,8 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     args.put("tr", "xsl-update-handler-test.xsl");
 
     SolrCore core = h.getCore();
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
-    ArrayList<ContentStream> streams = new ArrayList<>();
-    streams.add(new ContentStreamBase.StringStream(xml));
-    req.setContentStreams(streams);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    req.setContentStreams(List.of(new ContentStreamBase.StringStream(xml)));
     SolrQueryResponse rsp = new SolrQueryResponse();
     // try (UpdateRequestHandler handler = new UpdateRequestHandler()) {
     try (XSLTUpdateRequestHandler handler = new XSLTUpdateRequestHandler()) {

@@ -76,17 +76,20 @@ modules/
   Contains modules to extend the functionality of Solr.
   Libraries for these modules can be found under modules/*/lib
 
-prometheus-exporter/
-  (Not included in the "slim" release)
-  Contains a separate application to monitor Solr instances and export Prometheus metrics
-
 docker/
   Contains a Dockerfile to build a Docker image using the source or binary distribution.
   `docker/scripts` contains scripts that the Docker image uses to manage Solr.
   Refer to the README.md for instructions on how to build an image.
 
-docs/index.html
-  A link to the online version of Apache Solr Javadoc API documentation and Tutorial
+CHANGELOG.md
+  The list of changes in this release.
+
+Online Documentation
+  The online version of Apache Solr Javadoc API documentation and Tutorial:
+  @SOLR_DOC_URL@
+
+  Changes in this release are also published there, at:
+  @SOLR_CHANGES_URL@
 
 licenses/
   Licenses, notice files and signatures for Solr dependencies.

@@ -17,7 +17,6 @@
 
 package org.apache.solr.jersey;
 
-import com.codahale.metrics.Timer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -27,6 +26,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -50,7 +50,7 @@ public interface RequestContextKeys {
   String SOLR_PARAMS = SolrParams.class.getName();
   String COLLECTION_LIST = "collection_name_list";
   String HANDLER_METRICS = RequestHandlerBase.HandlerMetrics.class.getName();
-  String TIMER = Timer.Context.class.getName();
+  String TIMER = AttributedLongTimer.MetricTimer.class.getName();
   String SOLR_JERSEY_RESPONSE = SolrJerseyResponse.class.getName();
 
   /**
@@ -66,7 +66,7 @@ public interface RequestContextKeys {
    * A flag set by {@link NotFoundExceptionMapper} indicating that a 404 error response was
    * suppressed.
    *
-   * <p>Used primarily to allow Solr to lookup certian APIs in multiple JAX-RS applications.
+   * <p>Used primarily to allow Solr to lookup certain APIs in multiple JAX-RS applications.
    *
    * @see NotFoundExceptionMapper
    */

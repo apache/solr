@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.ROUTER_KEY;
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.SHARD_NAMES;
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
@@ -36,7 +35,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.handler.admin.CollectionsHandler.waitForActiveCollection;
 import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
@@ -70,7 +68,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -99,8 +96,7 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
       throw new SolrException(BAD_REQUEST, "Request body is missing but required");
     }
 
-    final SubResponseAccumulatingJerseyResponse response =
-        instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(requestBody.name, solrQueryRequest);
 
@@ -109,26 +105,12 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
     // Populate any 'null' creation parameters that support COLLECTIONPROP defaults.
     populateDefaultsIfNecessary(coreContainer, requestBody);
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(requestBody);
     final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
+        submitRemoteMessageAndHandleResponse(
+            response,
             CollectionParams.CollectionAction.CREATE,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (requestBody.async != null) {
-      response.requestId = requestBody.async;
-      return response;
-    }
-
-    // Values fetched from remoteResponse may be null
-    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
-    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
-    response.warning = (String) remoteResponse.getResponse().get("warning");
+            createRemoteMessage(requestBody),
+            requestBody.async);
 
     // Even if Overseer does wait for the collection to be created, it sees a different cluster
     // state than this node, so this wait is required to make sure the local node Zookeeper watches
@@ -163,7 +145,6 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
     final Map<String, Object> rawProperties = new HashMap<>();
     rawProperties.put("fromApi", "true");
 
-    rawProperties.put(QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower());
     rawProperties.put(NAME, reqBody.name);
     rawProperties.put(COLL_CONF, reqBody.config);
     rawProperties.put(NUM_SLICES, reqBody.numShards);
@@ -176,7 +157,6 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
     rawProperties.put(WAIT_FOR_FINAL_STATE, reqBody.waitForFinalState);
     rawProperties.put(PER_REPLICA_STATE, reqBody.perReplicaState);
     rawProperties.put(ALIAS, reqBody.alias);
-    rawProperties.put(ASYNC, reqBody.async);
     if (reqBody.createReplicas == null || reqBody.createReplicas) {
       // The remote message expects a single comma-delimited string, so nodeSet requires flattening
       if (reqBody.nodeSet != null) {
@@ -233,7 +213,7 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
   private static Integer readIntegerDefaultFromClusterProp(
       CoreContainer coreContainer, String propName) throws IOException {
     final Object defaultValue =
-        new ClusterProperties(coreContainer.getZkController().getZkStateReader().getZkClient())
+        new ClusterProperties(coreContainer.getZkController().getZkClient())
             .getClusterProperty(
                 List.of(CollectionAdminParams.DEFAULTS, CollectionAdminParams.COLLECTION, propName),
                 null);

@@ -35,8 +35,6 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
     solrCluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build());
     solrCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
   }
@@ -44,9 +42,6 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     solrCluster.shutdown();
-    System.clearProperty("solr.test.sys.prop1");
-    System.clearProperty("solr.test.sys.prop2");
-
     super.tearDown();
   }
 

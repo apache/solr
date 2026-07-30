@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
-
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -35,6 +33,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
@@ -92,9 +91,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-        throws KeeperException, InterruptedException {
-      super.runLeaderProcess(weAreReplacement, pauseBeforeStartMs);
+    void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException {
+      super.runLeaderProcess(weAreReplacement);
       if (runLeaderDelay > 0) {
         log.info("Sleeping for {}ms to simulate leadership takeover delay", runLeaderDelay);
         Thread.sleep(runLeaderDelay);
@@ -233,7 +231,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             elector, "shard2", "collection1", "dummynode1", props, zkController);
     elector.setup(context);
     elector.joinElection(context, false);
-    String urlScheme = zkStateReader.getClusterProperty(URL_SCHEME, "http");
+    String urlScheme = zkStateReader.getUrlScheme();
     assertEquals(urlScheme + "://127.0.0.1:80/solr/", getLeaderUrl("collection1", "shard2"));
   }
 
@@ -259,7 +257,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     Thread.sleep(1000);
 
-    String urlScheme = zkStateReader.getClusterProperty(URL_SCHEME, "http");
+    String urlScheme = zkStateReader.getUrlScheme();
     String url1 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/1/";
     String url2 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/2/";
 
@@ -294,8 +292,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     while (iterCount-- > 0) {
       try {
         byte[] data =
-            zkClient.getData(
-                ZkStateReader.getShardLeadersPath(collection, slice), null, null, true);
+            zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         return leaderProps.getCoreUrl();
       } catch (NoNodeException | SessionExpiredException e) {
@@ -567,6 +564,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
       Thread.sleep(4000);
 
+      // Stop stress threads first before any state changes
       stopStress = true;
 
       scheduleThread.interrupt();
@@ -579,23 +577,33 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       connLossThread.join();
       killThread.join();
 
-      int seq = threads.get(getLeaderThread()).getSeq();
+      // Retry getting leader with extended timeout to handle edge cases where
+      // getLeaderUrl() gets an unexpected exception and throws RuntimeException
+      RetryUtil.retryOnException(
+          Exception.class,
+          60000, // 60 seconds total timeout
+          100, // 100ms between retries
+          () -> {
+            int seq = threads.get(getLeaderThread()).getSeq();
+            log.info("Leader election stress test completed, leader seq: {}", seq);
+          });
 
-      // we have a leader we know, TODO: lets check some other things
     } finally {
       // cleanup any threads still running
       for (ClientThread thread : threads) {
-        thread.close();
-      }
-
-      // cleanup any threads still running
-      for (ClientThread thread : threads) {
-        thread.es.zkClient.close();
-        thread.close();
+        try {
+          thread.close();
+        } catch (Exception e) {
+          // ignore cleanup errors
+        }
       }
 
       for (Thread thread : threads) {
-        thread.join();
+        try {
+          thread.join();
+        } catch (InterruptedException e) {
+          // ignore
+        }
       }
     }
   }

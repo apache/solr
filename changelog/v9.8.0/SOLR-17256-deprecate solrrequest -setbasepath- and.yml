@@ -1,0 +1,11 @@
+title: Deprecate SolrRequest `setBasePath` and `getBasePath` methods. SolrJ users
+  wishing to temporarily override an HTTP client's base URL may use `Http2SolrClient.requestWithBaseUrl`
+  instead.
+type: changed
+authors:
+- name: Jason Gerlowski
+- name: Sanjay Dutt
+- name: David Smiley
+links:
+- name: SOLR-17256
+  url: https://issues.apache.org/jira/browse/SOLR-17256

@@ -64,7 +64,7 @@ Permissions control which roles (and consequently which users) have access to wh
 
 Each permission has two main components: a description of the APIs the permission applies to, and a list of the roles that should be allowed to access to this set of APIs.
 
-Administrators can use permissions from a list of predefined options or define their own custom permissions, are are free to mix and match both.
+Administrators can use permissions from a list of predefined options or define their own custom permissions, they are free to mix and match both.
 
 == Configuring the Rule-Based Authorization Plugins
 

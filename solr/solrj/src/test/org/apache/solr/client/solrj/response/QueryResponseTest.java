@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestRuleLimitSysouts.Limit;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;

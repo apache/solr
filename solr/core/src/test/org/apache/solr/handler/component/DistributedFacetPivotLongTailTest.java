@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.common.params.FacetParams;
@@ -82,7 +83,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     List<PivotField> pivots = null;
 
     List<List<PivotField>> shardPivots = new ArrayList<>(clients.size());
-    for (org.apache.solr.client.solrj.SolrClient client : clients) {
+    for (SolrClient client : clients) {
       shardPivots.add(client.query(req).getFacetPivot().get("foo_s,bar_s"));
     }
 
@@ -131,7 +132,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     List<PivotField> pivots = null;
     PivotField pivot = null;
     pivots =
-        queryServer(
+        queryRandomShard(
                 params(
                     "q",
                     "*:*",
@@ -194,7 +195,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
               "facet", "true",
               "facet.limit", "6",
               "facet.pivot", "foo_s,bar_s"));
-      pivots = queryServer(q).getFacetPivot().get("foo_s,bar_s");
+      pivots = queryRandomShard(q).getFacetPivot().get("foo_s,bar_s");
 
       assertEquals(6, pivots.size());
       for (int i = 0; i < 5; i++) {
@@ -222,7 +223,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     // that we get the correct top5 including "tailB"
 
     pivots =
-        queryServer(
+        queryRandomShard(
                 params(
                     "q", "*:*",
                     "shards", getShardsString(),
@@ -257,7 +258,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     // we're going to miss out on tailB
 
     pivots =
-        queryServer(
+        queryRandomShard(
                 params(
                     "q", "*:*",
                     "shards", getShardsString(),

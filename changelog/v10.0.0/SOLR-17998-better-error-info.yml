@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Return structured error information in responses, parse correctly in SolrJ to give useful SolrExceptions
+type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Houston Putman
+    nick: HoustonPutman
+    url: https://home.apache.org/phonebook.html?uid=houston
+links:
+  - name: SOLR-17998
+    url: https://issues.apache.org/jira/browse/SOLR-17998
+  - name: PR#1382
+    url: https://github.com/apache/solr/pull/1382

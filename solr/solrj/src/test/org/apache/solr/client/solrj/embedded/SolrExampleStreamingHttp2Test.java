@@ -23,14 +23,13 @@ import java.util.EnumSet;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.XMLRequestWriter;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.jetty.ConcurrentUpdateJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.BeforeClass;
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the HTTP2 client and the streaming update
@@ -38,23 +37,18 @@ import org.junit.BeforeClass;
  */
 public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
-
   @Override
   public SolrClient createNewSolrClient() {
-    String url = getBaseUrl();
+    String url = solrTestRule.getBaseUrl();
     // smaller queue size hits locks more often
-    Http2SolrClient solrClient =
-        new Http2SolrClient.Builder()
+    var solrClient =
+        new HttpJettySolrClient.Builder()
             .withRequestWriter(new XMLRequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build();
-    ConcurrentUpdateHttp2SolrClient concurrentClient =
+    var concurrentClient =
         new ErrorTrackingConcurrentUpdateSolrClient.Builder(url, solrClient)
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
             .withQueueSize(2)
             .withThreadCount(5)
             .build();
@@ -64,11 +58,11 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
   public void testWaitOptions() throws Exception {
     // SOLR-3903
     final List<Throwable> failures = new ArrayList<>();
-    final String serverUrl = getBaseUrl();
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
-        ConcurrentUpdateHttp2SolrClient concurrentClient =
+    final String serverUrl = solrTestRule.getBaseUrl();
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
+        var concurrentClient =
             new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl, http2Client)
-                .withDefaultCollection(DEFAULT_TEST_CORENAME)
+                .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
                 .withQueueSize(2)
                 .withThreadCount(2)
                 .build()) {
@@ -94,10 +88,11 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
     }
   }
 
-  static class FailureRecordingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2SolrClient {
+  static class FailureRecordingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolrClient {
     private final List<Throwable> failures = new ArrayList<>();
 
-    public FailureRecordingConcurrentUpdateSolrClient(Builder builder) {
+    public FailureRecordingConcurrentUpdateSolrClient(
+        ConcurrentUpdateJettySolrClient.Builder builder) {
       super(builder);
     }
 
@@ -106,8 +101,8 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
       failures.add(ex);
     }
 
-    static class Builder extends ConcurrentUpdateHttp2SolrClient.Builder {
-      public Builder(String baseSolrUrl, Http2SolrClient http2Client) {
+    static class Builder extends ConcurrentUpdateJettySolrClient.Builder {
+      public Builder(String baseSolrUrl, HttpJettySolrClient http2Client) {
         super(baseSolrUrl, http2Client);
       }
 
@@ -119,10 +114,11 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
   }
 
   public static class ErrorTrackingConcurrentUpdateSolrClient
-      extends ConcurrentUpdateHttp2SolrClient {
+      extends ConcurrentUpdateJettySolrClient {
     public Throwable lastError = null;
 
-    public ErrorTrackingConcurrentUpdateSolrClient(Builder builder) {
+    public ErrorTrackingConcurrentUpdateSolrClient(
+        ConcurrentUpdateJettySolrClient.Builder builder) {
       super(builder);
     }
 
@@ -131,9 +127,9 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
       lastError = ex;
     }
 
-    public static class Builder extends ConcurrentUpdateHttp2SolrClient.Builder {
+    public static class Builder extends ConcurrentUpdateJettySolrClient.Builder {
 
-      public Builder(String baseSolrUrl, Http2SolrClient http2Client) {
+      public Builder(String baseSolrUrl, HttpJettySolrClient http2Client) {
         super(baseSolrUrl, http2Client, true);
       }
 

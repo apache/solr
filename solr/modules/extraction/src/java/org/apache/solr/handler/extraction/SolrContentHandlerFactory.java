@@ -18,7 +18,6 @@ package org.apache.solr.handler.extraction;
 
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.tika.metadata.Metadata;
 
 /** */
 public class SolrContentHandlerFactory {
@@ -26,7 +25,7 @@ public class SolrContentHandlerFactory {
   public SolrContentHandlerFactory() {}
 
   public SolrContentHandler createSolrContentHandler(
-      Metadata metadata, SolrParams params, IndexSchema schema) {
+      ExtractionMetadata metadata, SolrParams params, IndexSchema schema) {
     return new SolrContentHandler(metadata, params, schema);
   }
 }

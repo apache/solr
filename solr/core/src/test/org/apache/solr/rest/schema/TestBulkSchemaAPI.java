@@ -36,7 +36,7 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.DFISimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
@@ -64,17 +64,12 @@ public class TestBulkSchemaAPI extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("solr.index.updatelog.enabled", "false");
 
-    createJettyAndHarness(
-        tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml", "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml");
   }
 
   @After
   public void after() throws Exception {
-    solrClientTestRule.reset();
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
+    solrTestRule.reset();
   }
 
   public void testMultipleAddFieldWithErrors() throws Exception {
@@ -1437,7 +1432,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
   @SuppressWarnings({"unchecked", "varargs"})
   private static <T extends Similarity> void assertFieldSimilarity(
       String fieldname, Class<T> expected, Consumer<T>... validators) {
-    CoreContainer cc = solrClientTestRule.getCoreContainer();
+    CoreContainer cc = solrTestRule.getCoreContainer();
     try (SolrCore core = cc.getCore("collection1")) {
       SimilarityFactory simfac = core.getLatestSchema().getSimilarityFactory();
       assertNotNull(simfac);

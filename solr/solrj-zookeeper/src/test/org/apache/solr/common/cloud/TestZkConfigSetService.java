@@ -131,7 +131,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       Files.write(tempConfig.resolve("file1"), overwritten);
       configSetService.uploadConfig("testconfig", tempConfig);
 
-      assertEquals(2, configSetService.listConfigs().size());
+      assertEquals(1, configSetService.listConfigs().size());
       Path download2 = createTempDir("download2");
       configSetService.downloadConfig("testconfig", download2);
       byte[] checkdata2 = Files.readAllBytes(download2.resolve("file1"));
@@ -139,7 +139,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
       // uploading same files to a new name creates a new config
       configSetService.uploadConfig("config2", tempConfig);
-      assertEquals(3, configSetService.listConfigs().size());
+      assertEquals(2, configSetService.listConfigs().size());
 
       // Test copying a config works in both flavors
       configSetService.copyConfig("config2", "config2copy");

@@ -34,9 +34,9 @@ import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -45,16 +45,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -70,7 +70,7 @@ import org.slf4j.LoggerFactory;
  * This client will connect to solr using Http/2 but can seamlessly downgrade to Http/1.1 when
  * connecting to Solr hosts running on older versions.
  */
-public class HttpJdkSolrClient extends HttpSolrClientBase {
+public class HttpJdkSolrClient extends HttpSolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String USER_AGENT =
@@ -89,7 +89,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     HttpClient.Builder b = HttpClient.newBuilder();
 
     HttpClient.Redirect followRedirects =
-        Boolean.TRUE.equals(builder.followRedirects)
+        Boolean.TRUE.equals(builder.getFollowRedirects())
             ? HttpClient.Redirect.NORMAL
             : HttpClient.Redirect.NEVER;
     b.followRedirects(followRedirects);
@@ -102,8 +102,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       b.sslContext(builder.sslContext);
     }
 
-    if (builder.executor != null) {
-      this.executor = builder.executor;
+    if (builder.getExecutor() != null) {
+      this.executor = builder.getExecutor();
       this.shutdownExecutor = false;
     } else {
       BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(1024);
@@ -128,26 +128,41 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       b.cookieHandler(builder.cookieHandler);
     }
 
-    if (builder.proxyHost != null) {
-      if (builder.proxyIsSocks4) {
+    if (builder.getProxyHost() != null) {
+      if (builder.isProxyIsSocks4()) {
         log.warn(
             "Socks4 is likely not supported by this client.  See https://bugs.openjdk.org/browse/JDK-8214516");
       }
-      b.proxy(ProxySelector.of(new InetSocketAddress(builder.proxyHost, builder.proxyPort)));
+      b.proxy(
+          ProxySelector.of(new InetSocketAddress(builder.getProxyHost(), builder.getProxyPort())));
     }
     this.httpClient = b.build();
-    updateDefaultMimeTypeForParser();
 
     assert ObjectReleaseTracker.track(this);
+  }
+
+  protected CompletableFuture<HttpResponse<InputStream>> requestInputStreamAsync(
+      String baseUrl, final SolrRequest<?> solrRequest, String collection) {
+    try {
+      PreparedRequest pReq = prepareRequest(baseUrl, solrRequest, collection);
+      return httpClient
+          .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
+          .whenComplete((httpResponse, throwable) -> releaseContentWriting(pReq));
+    } catch (Exception e) {
+      CompletableFuture<HttpResponse<InputStream>> cf = new CompletableFuture<>();
+      cf.completeExceptionally(e);
+      return cf;
+    }
   }
 
   @Override
   public CompletableFuture<NamedList<Object>> requestAsync(
       final SolrRequest<?> solrRequest, String collection) {
     try {
-      PreparedRequest pReq = prepareRequest(solrRequest, collection, null);
+      PreparedRequest pReq = prepareRequest(null, solrRequest, collection);
       return httpClient
           .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
+          .whenComplete((httpResponse, throwable) -> releaseContentWriting(pReq))
           .thenApply(
               httpResponse -> {
                 try {
@@ -164,10 +179,26 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
   }
 
-  protected NamedList<Object> requestWithBaseUrl(
+  private void releaseContentWriting(PreparedRequest pReq) {
+    if (pReq.contentWritingFuture != null) {
+      pReq.contentWritingFuture.cancel(true);
+    }
+    // Closing the sink is what unblocks a writer already stuck in the pipe; cancel() alone does
+    // not.
+    if (pReq.contentWritingSink != null) {
+      try {
+        pReq.contentWritingSink.close();
+      } catch (IOException e) {
+        log.warn("Could not close content-writing pipe", e);
+      }
+    }
+  }
+
+  @Override
+  public NamedList<Object> requestWithBaseUrl(
       String baseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
-    PreparedRequest pReq = prepareRequest(solrRequest, collection, baseUrl);
+    PreparedRequest pReq = prepareRequest(baseUrl, solrRequest, collection);
     HttpResponse<InputStream> response = null;
     try {
       response = httpClient.send(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
@@ -205,8 +236,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return requestWithBaseUrl(null, solrRequest, collection);
   }
 
-  private PreparedRequest prepareRequest(
-      SolrRequest<?> solrRequest, String collection, String overrideBaseUrl)
+  protected PreparedRequest prepareRequest(
+      String overrideBaseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     checkClosed();
     if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
@@ -258,7 +289,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     reqb.GET();
     decorateRequest(reqb, solrRequest);
     reqb.uri(new URI(url + queryParams.toQueryString()));
-    return new PreparedRequest(reqb, null);
+    return new PreparedRequest(reqb, null, null);
   }
 
   private PreparedRequest preparePutOrPost(
@@ -290,6 +321,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
     HttpRequest.BodyPublisher bodyPublisher;
     Future<?> contentWritingFuture = null;
+    PipedInputStream contentWritingSink = null;
     if (contentWriter != null) {
       boolean success = maybeTryHeadRequest(url);
       if (!success) {
@@ -297,7 +329,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       }
 
       final PipedOutputStream source = new PipedOutputStream();
-      final PipedInputStream sink = new PipedInputStream(source);
+      contentWritingSink = new PipedInputStream(source);
+      final PipedInputStream sink = contentWritingSink;
       bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> sink);
 
       contentWritingFuture =
@@ -339,20 +372,25 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     URI uriWithQueryParams = new URI(url + queryParams.toQueryString());
     reqb.uri(uriWithQueryParams);
 
-    return new PreparedRequest(reqb, contentWritingFuture);
+    return new PreparedRequest(reqb, contentWritingFuture, contentWritingSink);
   }
 
-  private static class PreparedRequest {
+  protected static class PreparedRequest {
     Future<?> contentWritingFuture;
+    PipedInputStream contentWritingSink;
     HttpRequest.Builder reqb;
 
     ResponseParser parserToUse;
 
     String url;
 
-    PreparedRequest(HttpRequest.Builder reqb, Future<?> contentWritingFuture) {
+    PreparedRequest(
+        HttpRequest.Builder reqb,
+        Future<?> contentWritingFuture,
+        PipedInputStream contentWritingSink) {
       this.reqb = reqb;
       this.contentWritingFuture = contentWritingFuture;
+      this.contentWritingSink = contentWritingSink;
     }
   }
 
@@ -379,24 +417,34 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     if (forceHttp11 || url == null || url.toLowerCase(Locale.ROOT).startsWith("https://")) {
       return true;
     }
-    return maybeTryHeadRequestSync(url);
-  }
-
-  protected volatile boolean headRequested; // must be threadsafe
-  private boolean headSucceeded; // must be threadsafe
-
-  private synchronized boolean maybeTryHeadRequestSync(String url) {
-    if (headRequested) {
-      return headSucceeded;
-    }
-
     URI uriNoQueryParams;
     try {
-      uriNoQueryParams = new URI(url);
+      var uriWithParams = new URI(url);
+      uriNoQueryParams =
+          new URI(
+              uriWithParams.getScheme(),
+              uriWithParams.getUserInfo(),
+              uriWithParams.getHost(),
+              uriWithParams.getPort(),
+              uriWithParams.getPath() == null ? "" : uriWithParams.getPath(),
+              null,
+              null);
     } catch (URISyntaxException e) {
       // If the url is invalid, let a subsequent request try again.
       return false;
     }
+    return maybeTryHeadRequestSync(uriNoQueryParams);
+  }
+
+  protected final Map<URI, Boolean> headSucceededByBaseUri =
+      new HashMap<>(); // use only in synchronized method
+
+  private synchronized boolean maybeTryHeadRequestSync(URI uriNoQueryParams) {
+    Boolean headSucceeded = headSucceededByBaseUri.get(uriNoQueryParams);
+    if (headSucceeded != null) {
+      return headSucceeded;
+    }
+
     HttpRequest.Builder headReqB =
         HttpRequest.newBuilder(uriNoQueryParams)
             .method("HEAD", HttpRequest.BodyPublishers.noBody())
@@ -406,7 +454,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       httpClient.send(headReqB.build(), HttpResponse.BodyHandlers.discarding());
       headSucceeded = true;
     } catch (IOException ioe) {
-      log.warn("Could not issue HEAD request to {} ", url, ioe);
+      log.warn("Could not issue HEAD request to {} ", uriNoQueryParams, ioe);
       headSucceeded = false;
     } catch (InterruptedException ie) {
       Thread.currentThread().interrupt();
@@ -414,7 +462,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     } finally {
 
       // The HEAD request is tried only once.  All future requests will skip this check.
-      headRequested = true;
+      headSucceededByBaseUri.put(uriNoQueryParams, headSucceeded);
 
       if (!headSucceeded) {
         log.info("All unencrypted POST requests with a chunked body will use http/1.1");
@@ -426,14 +474,18 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
     reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
+
     reqb.header("User-Agent", USER_AGENT);
     setBasicAuthHeader(solrRequest, reqb);
-    Map<String, String> headers = solrRequest.getHeaders();
-    if (headers != null) {
-      for (Map.Entry<String, String> entry : headers.entrySet()) {
+    Map<String, String> customHeaders = solrRequest.getHeaders();
+    if (customHeaders != null) {
+      for (Map.Entry<String, String> entry : customHeaders.entrySet()) {
         reqb.header(entry.getKey(), entry.getValue());
       }
     }
+    reqb.header(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
+    // TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
+    reqb.header(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
   }
 
   private void setBasicAuthHeader(SolrRequest<?> solrRequest, HttpRequest.Builder reqb) {
@@ -508,37 +560,16 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  protected boolean processorAcceptsMimeType(
-      Collection<String> processorSupportedContentTypes, String mimeType) {
-    return processorSupportedContentTypes.stream()
-        .map(this::contentTypeToMimeType)
-        .filter(Objects::nonNull)
-        .map(String::trim)
-        .anyMatch(mimeType::equalsIgnoreCase);
+  protected BuilderBase<?, ?> toBuilder(String baseUrl) {
+    return new HttpJdkSolrClient.Builder(baseUrl).withHttpClient(this);
   }
 
   @Override
-  protected void updateDefaultMimeTypeForParser() {
-    defaultParserMimeTypes =
-        parser.getContentTypes().stream()
-            .map(this::contentTypeToMimeType)
-            .filter(Objects::nonNull)
-            .map(s -> s.toLowerCase(Locale.ROOT).trim())
-            .collect(Collectors.toSet());
+  protected LBSolrClient createLBSolrClient() {
+    return new LBSolrClient.Builder<>(this).build();
   }
 
-  @Override
-  protected String allProcessorSupportedContentTypesCommaDelimited(
-      Collection<String> processorSupportedContentTypes) {
-    return processorSupportedContentTypes.stream()
-        .map(this::contentTypeToMimeType)
-        .filter(Objects::nonNull)
-        .map(s -> s.toLowerCase(Locale.ROOT).trim())
-        .collect(Collectors.joining(", "));
-  }
-
-  public static class Builder
-      extends HttpSolrClientBuilderBase<HttpJdkSolrClient.Builder, HttpJdkSolrClient> {
+  public static class Builder extends BuilderBase<Builder, HttpJdkSolrClient> {
 
     private SSLContext sslContext;
 
@@ -556,6 +587,18 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     @Override
     public HttpJdkSolrClient build() {
       return new HttpJdkSolrClient(baseSolrUrl, this);
+    }
+
+    @Override
+    public Builder withHttpClient(HttpJdkSolrClient httpSolrClient) {
+      super.withHttpClient(httpSolrClient);
+      if (this.getExecutor() == null) {
+        this.executor = httpSolrClient.executor;
+      }
+      if (this.sslContext == null) {
+        this.sslContext = httpSolrClient.httpClient.sslContext();
+      }
+      return this;
     }
 
     /**

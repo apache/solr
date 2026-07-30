@@ -16,18 +16,18 @@
  */
 
 configure(allprojects) {
-    tasks.register("tidy").configure {
-        description "Applies formatters and cleanups to sources."
-        group "verification"
-    }
+  tasks.register("tidy").configure {
+    description "Applies formatters and cleanups to sources."
+    group "verification"
+  }
 }
 
 // Locate script-relative resource folder. This is context-sensitive so pass
 // the right buildscript (top-level).
 configure(rootProject) {
-    ext {
-        scriptResources = { buildscript ->
-            return file(buildscript.sourceFile.absolutePath.replaceAll('.gradle$', ""))
-        }
+  ext {
+    scriptResources = {buildscript ->
+      return file(buildscript.sourceFile.absolutePath.replaceAll('.gradle$', ""))
     }
+  }
 }

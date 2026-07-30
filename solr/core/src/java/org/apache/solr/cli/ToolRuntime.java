@@ -30,12 +30,22 @@ public abstract class ToolRuntime {
 
   public abstract void println(String message);
 
+  /** Print an error message, highlighted in red on terminals. */
+  public void printError(String message) {
+    println(CLIUtils.RED + message + CLIUtils.RESET);
+  }
+
+  /** Print a success message, highlighted in green on terminals. */
+  public void printSuccess(String message) {
+    println(CLIUtils.GREEN + message + CLIUtils.RESET);
+  }
+
   /** Invokes {@link System#exit(int)} to force the JVM to immediately quit. */
   @SuppressForbidden(reason = "That's the only method in CLI code where we allow to exit the JVM")
   public void exit(int status) {
     try {
       System.exit(status);
-    } catch (java.lang.SecurityException secExc) {
+    } catch (SecurityException secExc) {
       if (status != 0) throw new RuntimeException("SolrCLI failed to exit with status " + status);
     }
   }

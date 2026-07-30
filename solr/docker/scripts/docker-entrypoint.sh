@@ -26,9 +26,9 @@ if [[ "$VERBOSE" == "yes" ]]; then
     set -x
 fi
 
-if ! [[ ${SOLR_PORT:-} =~ ^[0-9]+$ ]]; then
-  SOLR_PORT=8983
-  export SOLR_PORT
+if ! [[ ${SOLR_PORT_LISTEN:-} =~ ^[0-9]+$ ]]; then
+  SOLR_PORT_LISTEN=8983
+  export SOLR_PORT_LISTEN
 fi
 
 # Essential for running Solr

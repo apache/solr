@@ -17,9 +17,9 @@
 package org.apache.solr.core;
 
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.search.CallerSpecificQueryLimit;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
 import org.junit.Test;
@@ -50,59 +50,33 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testWithExitableDirectoryReader() throws Exception {
-    doTestWithExitableDirectoryReader(true);
-  }
-
-  @Test
-  public void testWithoutExitableDirectoryReader() throws Exception {
-    doTestWithExitableDirectoryReader(false);
-  }
-
-  private void doTestWithExitableDirectoryReader(boolean withExitableDirectoryReader)
-      throws Exception {
-    System.setProperty(
-        SolrIndexSearcher.EXITABLE_READER_PROPERTY, String.valueOf(withExitableDirectoryReader));
+  public void testExitableDirectoryReader() throws Exception {
     initCore("solrconfig-delaying-component.xml", "schema_latest.xml");
     createIndex();
 
     // create a limit that will not trip but will report calls to shouldExit()
     // NOTE: we need to use the inner class name to capture the calls
     String callerExpr = "ExitableTermsEnum:-1";
-    CallerSpecificQueryLimit queryLimit = new CallerSpecificQueryLimit(callerExpr);
+    CallerSpecificQueryLimit queryLimit = new CallerSpecificQueryLimit(Set.of(callerExpr));
     TestInjection.queryTimeout = queryLimit;
     String q = "name:a*";
     assertJQ(req("q", q), assertionString);
-    Map<String, Integer> callCounts = queryLimit.getCallCounts();
-    if (withExitableDirectoryReader) {
-      assertTrue(
-          "there should be some calls from ExitableTermsEnum: " + callCounts,
-          callCounts.get(callerExpr) > 0);
-    } else {
-      assertEquals(
-          "there should be no calls from ExitableTermsEnum", 0, (int) callCounts.get(callerExpr));
-    }
+    Map<String, Integer> callCounts = queryLimit.getCallerMatcher().getCallCounts();
+    assertTrue(
+        "there should be some calls from ExitableTermsEnum: " + callCounts,
+        callCounts.get(callerExpr) > 0);
 
     // check that the limits are tripped in ExitableDirectoryReader if it's in use
     int maxCount = random().nextInt(10) + 1;
     callerExpr = "ExitableTermsEnum:" + maxCount;
-    queryLimit = new CallerSpecificQueryLimit(callerExpr);
+    queryLimit = new CallerSpecificQueryLimit(Set.of(callerExpr));
     TestInjection.queryTimeout = queryLimit;
     // avoid using the cache
     q = "name:b*";
-    if (withExitableDirectoryReader) {
-      assertJQ(req("q", q), failureAssertionString);
-    } else {
-      assertJQ(req("q", q), assertionString);
-    }
-    callCounts = queryLimit.getCallCounts();
-    if (withExitableDirectoryReader) {
-      assertTrue(
-          "there should be at least " + maxCount + " calls from ExitableTermsEnum: " + callCounts,
-          callCounts.get(callerExpr) >= maxCount);
-    } else {
-      assertEquals(
-          "there should be no calls from ExitableTermsEnum", 0, (int) callCounts.get(callerExpr));
-    }
+    assertJQ(req("q", q), failureAssertionString);
+    callCounts = queryLimit.getCallerMatcher().getCallCounts();
+    assertTrue(
+        "there should be at least " + maxCount + " calls from ExitableTermsEnum: " + callCounts,
+        callCounts.get(callerExpr) >= maxCount);
   }
 }

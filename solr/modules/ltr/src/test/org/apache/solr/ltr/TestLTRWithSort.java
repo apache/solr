@@ -18,7 +18,7 @@
 package org.apache.solr.ltr;
 
 import java.util.Random;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.interleaving.algorithms.TeamDraftInterleaving;
 import org.apache.solr.ltr.model.LinearModel;
@@ -93,6 +93,51 @@ public class TestLTRWithSort extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==25.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/score==1.0");
+  }
+
+  @Test
+  public void ltrEchoReRankCutoff_withFunctionSortShouldAddFunctionValue() throws Exception {
+    loadFeature(
+        "powpularityS", SolrFeature.class.getName(), "{\"q\":\"{!func}pow(popularity,2)\"}");
+
+    loadModel(
+        "powpularityS-model",
+        LinearModel.class.getName(),
+        new String[] {"powpularityS"},
+        "{\"weights\":{\"powpularityS\":1.0}}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("title:a1");
+    query.add("fl", "id,score");
+    query.add("rows", "4");
+    query.add("sort", "pow(popularity,2) desc");
+    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=4 echoReRankCutoff=true}");
+
+    assertJQ("/query" + query.toQueryString(), "/responseHeader/reRankCutoff==25.0");
+  }
+
+  @Test
+  public void ltrEchoReRankCutoff_withMultipleFunctionSortsShouldAddAllValues() throws Exception {
+    loadFeature(
+        "powpularityS", SolrFeature.class.getName(), "{\"q\":\"{!func}pow(popularity,2)\"}");
+
+    loadModel(
+        "powpularityS-model",
+        LinearModel.class.getName(),
+        new String[] {"powpularityS"},
+        "{\"weights\":{\"powpularityS\":1.0}}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("title:a1");
+    query.add("fl", "id,score");
+    query.add("rows", "4");
+    query.add("sort", "pow(popularity,2) desc,sum(popularity,1) desc");
+    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=4 echoReRankCutoff=true}");
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/responseHeader/reRankCutoff/[0]==25.0",
+        "/responseHeader/reRankCutoff/[1]==6.0");
   }
 
   @Test

@@ -16,8 +16,9 @@
  */
 package org.apache.solr.core;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricFilter;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +36,6 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SpellCheckComponent;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -97,15 +97,11 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount;
       assertEquals(pathToClassMap.get("/admin/luke"), "solr.LukeRequestHandler");
       ++ihCount;
-      assertEquals(pathToClassMap.get("/admin/mbeans"), "solr.SolrInfoMBeanHandler");
-      ++ihCount;
       assertEquals(pathToClassMap.get("/admin/ping"), "solr.PingRequestHandler");
-      ++ihCount;
-      assertEquals(pathToClassMap.get("/admin/plugins"), "solr.PluginInfoHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/admin/segments"), "solr.SegmentsInfoRequestHandler");
       ++ihCount;
-      assertEquals(pathToClassMap.get("/admin/system"), "solr.SystemInfoHandler");
+      assertEquals(pathToClassMap.get("/admin/info"), "solr.CoreInfoHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/config"), "solr.SolrConfigHandler");
       ++ihCount;
@@ -200,7 +196,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     c1.close();
     cores.shutdown();
     assertEquals("Refcount != 0", 0, core.getOpenCount());
-    assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
+    assertTrue("Handler not closed", core.isClosed() && handler1.closed);
   }
 
   @Test
@@ -267,7 +263,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     cores.shutdown();
     assertEquals("Refcount != 0", 0, core.getOpenCount());
-    assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
+    assertTrue("Handler not closed", core.isClosed() && handler1.closed);
 
     service.shutdown();
     assertTrue("Running for too long...", service.awaitTermination(60, TimeUnit.SECONDS));
@@ -341,7 +337,6 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testCoreInitDeadlockMetrics() throws Exception {
-    SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     CoreContainer coreContainer = h.getCoreContainer();
 
     String coreName = "tmpCore";
@@ -354,15 +349,24 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     executor.execute(
         () -> {
           while (!created.get()) {
-            var metrics =
-                metricManager.getMetrics(
-                    "solr.core." + coreName,
-                    MetricFilter.startsWith(SolrInfoBean.Category.INDEX.toString()));
-            for (var m : metrics.values()) {
-              if (m instanceof Gauge) {
-                var v = ((Gauge<?>) m).getValue();
-                atLeastOnePoll.compareAndSet(false, v != null);
+            try {
+              PrometheusMetricReader reader =
+                  coreContainer
+                      .getMetricManager()
+                      .getPrometheusMetricReader("solr.core." + coreName);
+              if (reader != null) {
+                MetricSnapshots snapshots = reader.collect();
+                for (var snapshot : snapshots) {
+                  if (snapshot instanceof GaugeSnapshot gaugeSnapshot) {
+                    var dataPoints = gaugeSnapshot.getDataPoints();
+                    if (!dataPoints.isEmpty()) {
+                      atLeastOnePoll.compareAndSet(false, true);
+                    }
+                  }
+                }
               }
+            } catch (Exception ignore) {
+              // Ignore in case the core may not be fully initialized
             }
 
             try {

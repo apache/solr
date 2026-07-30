@@ -56,7 +56,6 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -77,20 +76,14 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() {
-    System.setProperty("solr.allowPaths", "*");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("solr.allowPaths");
+    System.setProperty("solr.security.allow.paths", "*");
   }
 
   @Before
   public void beforeTest() throws Exception {
     backupDir = createTempDir(getTestClass().getSimpleName() + "_backups");
 
-    // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient and I can't
-    // bring myself to deal with the nonsense that is SolrJettyTestBase.
+    // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient
 
     // We do however explicitly want a fresh "cluster" every time a test is run
     configureCluster(1)

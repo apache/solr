@@ -167,7 +167,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                     "id",
                     "1",
                     "inplace_updatable_float",
-                    map("inc", new ArrayList<>(Collections.singletonList(123)))));
+                    map("inc", new ArrayList<>(List.of(123)))));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(
         e.getMessage(), containsString("Invalid input '[123]' for field inplace_updatable_float"));

@@ -19,7 +19,6 @@ package org.apache.solr.update.processor;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -89,7 +88,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
 
   private boolean ignoreOldUpdates = false;
   private List<String> versionFields = null;
-  private List<String> deleteVersionParamNames = Collections.emptyList();
+  private List<String> deleteVersionParamNames = List.of();
   private boolean useFieldCache;
   private boolean supportMissingVersionOnOldDocs = false;
   private NamedList<Object> tombstoneConfig;

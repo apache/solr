@@ -1,0 +1,13 @@
+title: Users using query limits (timeAllowed, cpuTimeAllowed) for whom partial results
+  are uninteresting may set partialResults=false. This parameter has been enhanced
+  to reduce time spent processing partial results and omit partialResults from the
+  response. Since this is requested behavior, no exception is thrown and the partialResults
+  response header will always exist if the result was short circuited.
+type: changed
+authors:
+- name: Gus Heck
+- name: Andrzej Bialecki
+- name: hossman
+links:
+- name: SOLR-17158
+  url: https://issues.apache.org/jira/browse/SOLR-17158

@@ -213,7 +213,7 @@ It may not be avoided and is necessary to support future features.
 
 === Dimensional Routed Aliases
 
-For cases where the desired segregation of of data relates to two fields and combination into a single field during indexing is impractical, or the TRA behavior is desired across multiple categories, Dimensional Routed aliases may be used.
+For cases where the desired segregation of data relates to two fields and combination into a single field during indexing is impractical, or the TRA behavior is desired across multiple categories, Dimensional Routed aliases may be used.
 This feature has been designed to handle an arbitrary number and combination of category and time dimensions in any order, but users are cautioned to carefully consider the total number of collections that will result from such configurations.
 Collection counts in the high hundreds or low 1000's begin to pose significant challenges with ZooKeeper.
 

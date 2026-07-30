@@ -281,9 +281,9 @@ public class JSONParser {
       // false-positives while using bare strings (chars "IJMc")
       if (((WS_MASK >> ch) & 0x01) == 0) {
         return ch;
-      } else if (ch <= ' ') {
+      } else //noinspection StatementWithEmptyBody
+      if (ch <= ' ') {
         // this will only be true if one of the whitespace bits was set
-        continue;
       } else if (ch == '/') {
         getSlashComment();
       } else if (ch == '#') {
@@ -883,7 +883,7 @@ public class JSONParser {
     // implementation?
     for (; ; ) {
       switch (ch) {
-          // this is not the exclusive list of whitespace chars... the rest are handled in default:
+        // this is not the exclusive list of whitespace chars... the rest are handled in default:
         case ' ':
         case '\t':
         case '\r':

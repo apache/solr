@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /** The Response for {@link org.apache.solr.client.api.endpoint.CollectionSnapshotApis.Delete} */
-public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
+public class DeleteCollectionSnapshotResponse extends SubResponseAccumulatingJerseyResponse {
   @Schema(description = "The name of the collection.")
   @JsonProperty(COLLECTION)
   public String collection;

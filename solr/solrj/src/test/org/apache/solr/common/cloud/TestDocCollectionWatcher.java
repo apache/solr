@@ -162,7 +162,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
             "waitforstate",
             MAX_WAIT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n1, c1) -> DocCollection.isFullyActive(n1, c1, 1, 1));
+            (n1, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n1, c1, 1, 1));
 
     // several goes, to check that we're not getting delayed state changes
     for (int i = 0; i < 10; i++) {
@@ -172,7 +172,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
                 "waitforstate",
                 1,
                 TimeUnit.SECONDS,
-                (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+                (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
       } catch (TimeoutException e) {
         fail("waitForState should return immediately if the predicate is already satisfied");
       }
@@ -223,7 +223,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
             "falsepredicate",
             MAX_WAIT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n1, c1) -> DocCollection.isFullyActive(n1, c1, 1, 1));
+            (n1, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n1, c1, 1, 1));
 
     // set watcher waiting for at least 3 replicas (will fail initially)
     final AtomicInteger runCount = new AtomicInteger(0);
@@ -251,7 +251,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
             "falsepredicate",
             MAX_WAIT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 2));
 
     // confirm watcher has run at least once and has been retained...
     final int runCountSnapshot = runCount.get();
@@ -302,7 +302,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
             "tobedeleted",
             MAX_WAIT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c1) -> DocCollection.isFullyActive(n, c1, 1, 1));
+            (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 1, 1));
 
     Future<Boolean> future =
         waitInBackground("tobedeleted", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, Objects::isNull);

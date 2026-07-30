@@ -40,7 +40,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -80,7 +80,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     }
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         collection, cluster.getZkStateReader(), false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
@@ -283,7 +283,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class);
 
     List<Tuple> tuples;
@@ -336,7 +336,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("select", SelectStream.class)
             .withFunctionName("innerJoin", InnerJoinStream.class)
@@ -458,7 +458,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("select", SelectStream.class)
             .withFunctionName("innerJoin", InnerJoinStream.class)
@@ -631,7 +631,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("select", SelectStream.class)
             .withFunctionName("hashJoin", HashJoinStream.class)

@@ -19,7 +19,6 @@ package org.apache.solr.pkg;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.Map;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.MapWriter;
@@ -60,7 +59,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
               @Override
               public Map<String, PackageAPI.PkgVersion> packageDetails() {
-                return Collections.singletonMap(info.cName.original, pkgVersion.getPkgVersion());
+                return Map.of(info.cName.original, pkgVersion.getPkgVersion());
               }
 
               @Override
@@ -77,8 +76,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
   public static <T> PluginBag.PluginHolder<T> createHolder(T inst, Class<T> type) {
     SolrConfig.SolrPluginInfo plugin = SolrConfig.classVsSolrPluginInfo.get(type.getName());
-    PluginInfo info =
-        new PluginInfo(plugin.tag, Collections.singletonMap("class", inst.getClass().getName()));
+    PluginInfo info = new PluginInfo(plugin.tag, Map.of("class", inst.getClass().getName()));
     return new PluginBag.PluginHolder<>(info, inst);
   }
 

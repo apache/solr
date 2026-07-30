@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -35,12 +36,13 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,7 +134,7 @@ public class ZkContainer {
             new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config);
 
         if (zkRun) {
-          if (StrUtils.isNotNullOrEmpty(System.getProperty(HTTPS_PORT_PROP))) {
+          if (StrUtils.isNotNullOrEmpty(EnvUtils.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient())
                 .setClusterProperty(ZkStateReader.URL_SCHEME, HTTPS);
@@ -140,16 +142,75 @@ public class ZkContainer {
         }
 
         this.zkController = zkController;
-        MetricsMap metricsMap = new MetricsMap(zkController.getZkClient().getMetrics());
+
         metricProducer =
             new SolrMetricProducer() {
               SolrMetricsContext ctx;
 
               @Override
-              public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+              public void initializeMetrics(
+                  SolrMetricsContext parentContext, Attributes attributes) {
                 ctx = parentContext.getChildContext(this);
-                ctx.gauge(
-                    metricsMap, true, scope, null, SolrInfoBean.Category.CONTAINER.toString());
+
+                var metricsListener = zkController.getZkClient().getMetrics();
+
+                ctx.observableLongCounter(
+                    "solr.zk.ops",
+                    "Total number of ZooKeeper operations",
+                    measurement -> {
+                      measurement.record(
+                          metricsListener.getReads(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "read").build());
+                      measurement.record(
+                          metricsListener.getDeletes(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "delete").build());
+                      measurement.record(
+                          metricsListener.getWrites(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "write").build());
+                      measurement.record(
+                          metricsListener.getMultiOps(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "multi").build());
+                      measurement.record(
+                          metricsListener.getExistsChecks(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "exists").build());
+                    });
+
+                ctx.observableLongCounter(
+                    "solr.zk.read",
+                    "Total bytes read from ZooKeeper",
+                    measurement -> {
+                      measurement.record(metricsListener.getBytesRead(), attributes);
+                    },
+                    OtelUnit.BYTES);
+
+                ctx.observableLongCounter(
+                    "solr.zk.watches_fired",
+                    "Total number of ZooKeeper watches fired",
+                    measurement -> {
+                      measurement.record(metricsListener.getWatchesFired(), attributes);
+                    });
+
+                ctx.observableLongCounter(
+                    "solr.zk.written",
+                    "Total bytes written to ZooKeeper",
+                    measurement -> {
+                      measurement.record(metricsListener.getBytesWritten(), attributes);
+                    },
+                    OtelUnit.BYTES);
+
+                ctx.observableLongCounter(
+                    "solr.zk.cumulative.multi_ops.total",
+                    "Total cumulative multi-operations count",
+                    measurement -> {
+                      measurement.record(metricsListener.getCumulativeMultiOps(), attributes);
+                    });
+
+                ctx.observableLongCounter(
+                    "solr.zk.get_children.ops",
+                    "Total number of ZooKeeper getChildren calls",
+                    measurement -> {
+                      measurement.record(metricsListener.getChildFetches(), attributes);
+                    });
               }
 
               @Override
@@ -248,6 +309,7 @@ public class ZkContainer {
           zkServer.stop();
         }
       }
+      IOUtils.closeQuietly(metricProducer);
     }
   }
 

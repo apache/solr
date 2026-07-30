@@ -46,5 +46,7 @@ public class SplitShardPayload implements ReflectMapWriter {
 
   @JsonProperty public String async;
 
-  @JsonProperty public Boolean waitForFinalState;
+  @JsonProperty
+  @Deprecated(since = "9.10")
+  public Boolean waitForFinalState;
 }

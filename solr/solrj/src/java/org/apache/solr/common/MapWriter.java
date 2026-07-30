@@ -18,7 +18,6 @@
 package org.apache.solr.common;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
@@ -31,18 +30,13 @@ import org.noggit.JSONWriter;
  * and is supposed to be memory efficient. If the entries are primitives, unnecessary boxing is also
  * avoided.
  */
-public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.Writable {
+public interface MapWriter extends NavigableObject, JSONWriter.Writable {
 
   /** Writes this object's entries out to {@code ew}. */
   void writeMap(EntryWriter ew) throws IOException;
 
   default String jsonStr() {
     return Utils.toJSONString(this);
-  }
-
-  @Override
-  default Map<String, Object> toMap(Map<String, Object> map) {
-    return Utils.convertToMap(this, map);
   }
 
   /** For implementing Noggit {@link org.noggit.JSONWriter.Writable}. */
@@ -148,10 +142,10 @@ public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.
     }
 
     default BiConsumer<CharSequence, Object> getBiConsumer() {
-      return (k, v) -> putNoEx(k, v);
+      return this::putNoEx;
     }
   }
 
   @Deprecated // use SimpleOrderedMap.of()
-  MapWriter EMPTY = new MapWriterMap(Collections.emptyMap());
+  MapWriter EMPTY = new MapWriterMap(Map.of());
 }

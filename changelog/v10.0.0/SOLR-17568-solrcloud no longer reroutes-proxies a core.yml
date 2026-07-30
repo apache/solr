@@ -1,0 +1,8 @@
+title: SolrCloud no longer reroutes/proxies a core request to another node if not
+  found locally.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17568
+  url: https://issues.apache.org/jira/browse/SOLR-17568

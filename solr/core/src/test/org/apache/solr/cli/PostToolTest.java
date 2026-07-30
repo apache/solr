@@ -28,9 +28,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
@@ -76,9 +76,10 @@ public class PostToolTest extends SolrCloudTestCase {
 
     Path jsonDoc = Files.createTempFile("temp", ".json");
 
-    BufferedWriter fw = Files.newBufferedWriter(jsonDoc, StandardCharsets.UTF_8);
-    Utils.writeJson(Map.of("id", "1", "title_s", "mytitle"), fw, true);
-    fw.flush();
+    try (BufferedWriter fw = Files.newBufferedWriter(jsonDoc, StandardCharsets.UTF_8)) {
+      Utils.writeJson(Map.of("id", "1", "title_s", "mytitle"), fw, true);
+      fw.flush();
+    }
 
     String[] args = {
       "post",
@@ -113,16 +114,17 @@ public class PostToolTest extends SolrCloudTestCase {
     final String collection = "testRunWithCollectionParam";
 
     // Provide the port for the PostTool to look up.
-    EnvUtils.setProperty("jetty.port", cluster.getJettySolrRunner(0).getLocalPort() + "");
+    EnvUtils.setProperty("solr.port.listen", cluster.getJettySolrRunner(0).getLocalPort() + "");
 
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
 
     Path jsonDoc = Files.createTempFile("temp", ".json");
 
-    BufferedWriter fw = Files.newBufferedWriter(jsonDoc, StandardCharsets.UTF_8);
-    Utils.writeJson(Map.of("id", "1", "title_s", "mytitle"), fw, true);
-    fw.flush();
+    try (BufferedWriter fw = Files.newBufferedWriter(jsonDoc, StandardCharsets.UTF_8)) {
+      Utils.writeJson(Map.of("id", "1", "title_s", "mytitle"), fw, true);
+      fw.flush();
+    }
 
     String[] args = {
       "post", "-c", collection, "--credentials", SecurityJson.USER_PASS, jsonDoc.toString(),
@@ -150,7 +152,7 @@ public class PostToolTest extends SolrCloudTestCase {
     final String collection = "testRunCsvWithCustomSeparatorParam";
 
     // Provide the port for the PostTool to look up.
-    EnvUtils.setProperty("jetty.port", cluster.getJettySolrRunner(0).getLocalPort() + "");
+    EnvUtils.setProperty("solr.port.listen", cluster.getJettySolrRunner(0).getLocalPort() + "");
 
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
@@ -334,7 +336,7 @@ public class PostToolTest extends SolrCloudTestCase {
     assertEquals(3, num);
 
     // Without respecting robots.txt
-    postTool.pageFetcher.robotsCache.put("[ff01::114]", Collections.emptyList());
+    postTool.pageFetcher.robotsCache.put("[ff01::114]", List.of());
     postTool.recursive = 5;
     num = postTool.postWebPages(new String[] {"http://[ff01::114]/#removeme"}, 0, null);
     assertEquals(6, num);
@@ -403,11 +405,13 @@ public class PostToolTest extends SolrCloudTestCase {
 
       // Simulate a robots.txt file with comments and a few disallows
       String sb =
-          "# Comments appear after the \"#\" symbol at the start of a line, or after a directive\n"
-              + "User-agent: * # match all bots\n"
-              + "Disallow:  # This is void\n"
-              + "Disallow: /disallow # Disallow this path\n"
-              + "Disallow: /nonexistentpath # Disallow this path\n";
+          """
+              # Comments appear after the "#" symbol at the start of a line, or after a directive
+              User-agent: * # match all bots
+              Disallow:  # This is void
+              Disallow: /disallow # Disallow this path
+              Disallow: /nonexistentpath # Disallow this path
+              """;
       this.robotsCache.put(
           "[ff01::114]",
           super.parseRobotsTxt(new ByteArrayInputStream(sb.getBytes(StandardCharsets.UTF_8))));

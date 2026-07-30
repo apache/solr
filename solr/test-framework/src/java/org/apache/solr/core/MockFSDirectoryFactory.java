@@ -51,7 +51,7 @@ public class MockFSDirectoryFactory extends StandardDirectoryFactory {
   @Override
   public boolean isAbsolute(String path) {
     // TODO: kind of a hack - we don't know what the delegate is, so
-    // we treat it as file based since this works on most ephem impls
+    // we treat it as file based since this works on most ephemeral implementations
     return Path.of(path).isAbsolute();
   }
 

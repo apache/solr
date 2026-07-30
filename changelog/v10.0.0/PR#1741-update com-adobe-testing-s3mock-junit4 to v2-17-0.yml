@@ -1,0 +1,7 @@
+title: Update com.adobe.testing:s3mock-junit4 to v2.17.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#1741
+  url: https://github.com/apache/solr/pull/1741

@@ -18,7 +18,7 @@ package org.apache.solr.search;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.Map;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.schema.IndexSchema;
@@ -65,7 +65,7 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     unIgnoreException("unknown field");
 
     IndexSchema schema = h.getCore().getLatestSchema();
-    SchemaField newField = schema.newField(newFieldName, newFieldType, Collections.emptyMap());
+    SchemaField newField = schema.newField(newFieldName, newFieldType, Map.of());
     IndexSchema newSchema = schema.addField(newField);
     h.getCore().setLatestSchema(newSchema);
 

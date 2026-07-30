@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import org.apache.tools.ant.filters.ReplaceTokens
 import org.apache.tools.ant.util.TeeOutputStream
 
 // This project puts together a "distribution", assembling dependencies from
@@ -32,15 +33,17 @@ ext {
   slimDistDir = file("$buildDir/solr-${version}-slim")
   devDir = file("$buildDir/dev")
   slimDevDir = file("$buildDir/dev-slim")
+  batsLibsDir = file("$buildDir/bats-libs")
+  onlineDocUnavailable = "Not available for custom/SNAPSHOT builds -- run './gradlew documentation' from the source distribution to build docs locally."
+  onlineDocUrl = (project.solrDocUrl ? "${project.solrDocUrl}/" : onlineDocUnavailable).toString()
+  onlineChangesUrl = (project.solrDocUrl ? "${project.solrDocUrl}/changes/Changes.html" : onlineDocUnavailable).toString()
 }
 
 configurations {
   modules
   example
-  prometheusExporter
   crossDcManager
   server
-  docs
   docker
   solrFullTgz
   solrSlimTgz
@@ -49,19 +52,14 @@ configurations {
 }
 
 dependencies {
-  project(":solr:modules").childProjects.values().stream().map(project -> project.path).each { module ->
-    modules project(path: module, configuration: "packaging")
+  rootProject.project(":solr:modules").childProjects.values().stream().map {project -> project.path}.each {
+    module -> modules project(path: module, configuration: "packaging")
   }
-
-  prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
 
   crossDcManager project(path: ":solr:cross-dc-manager", configuration: "packaging")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
-
-  // Copy files from documentation output
-  docs project(path: ':solr:documentation', configuration: 'minimalSite')
 
   docker project(path: ':solr:docker', configuration: 'packaging')
 
@@ -83,20 +81,24 @@ distributions {
       from(rootDir, {
         include "LICENSE.txt"
         include "NOTICE.txt"
+        include "CHANGELOG.md"
       })
 
       from(project(":solr").projectDir, {
         include "bin/**"
         include "licenses/**"
         exclude "licenses/README.committers.txt"
-        include "CHANGES.txt"
       })
 
       from(projectDir, {
         include "README.txt"
+        filter(ReplaceTokens, tokens: [
+            SOLR_DOC_URL: onlineDocUrl,
+            SOLR_CHANGES_URL: onlineChangesUrl,
+        ])
       })
 
-      from ('static/lib', {
+      from('static/lib', {
         into 'lib'
       })
 
@@ -108,16 +110,12 @@ distributions {
         into "server"
       })
 
-      from(configurations.docs, {
-        into "docs"
-      })
-
       from(configurations.docker, {
         into "docker"
         filesMatching([
             "scripts/**",
-        ]) { copy ->
-          copy.setMode(0755)
+        ]) {copy ->
+          copy.permissions { unix("0755") }
         }
       })
 
@@ -126,8 +124,8 @@ distributions {
           "**/*.sh",
           "**/bin/solr",
           "**/bin/systemd/solr.service",
-      ]) { copy ->
-        copy.setMode(0755)
+      ]) {copy ->
+        copy.permissions { unix("0755") }
       }
 
     }
@@ -142,21 +140,12 @@ distributions {
         into "modules"
       })
 
-      from(configurations.prometheusExporter, {
-        into "prometheus-exporter"
-        filesMatching([
-                "bin/*",
-        ]) { copy ->
-          copy.setMode(0755)
-        }
-      })
-
       from(configurations.crossDcManager, {
         into "cross-dc-manager"
         filesMatching([
-                "bin/*",
-        ]) { copy ->
-          copy.setMode(0755)
+            "bin/*",
+        ]) {copy ->
+          copy.permissions { unix("0755") }
         }
       })
     }
@@ -227,18 +216,73 @@ artifacts {
   solrSlimTgz(slimDistTar)
 }
 
-task downloadBats(type: NpmTask) {
-  group = 'Build Dependency Download'
-  args = ["install", "https://github.com/bats-core/bats-core#v${libs.versions.bats.core.get()}",
-                     "https://github.com/bats-core/bats-assert#v${libs.versions.bats.assert.get()}",
-                     "https://github.com/bats-core/bats-file#v${libs.versions.bats.file.get()}",
-  ]
+tasks.register('runDev', JavaExec) {
+  group = 'application'
+  description = 'Starts Solr for local experimentation.  Does NOT use the bin/solr script.'
+  dependsOn 'devSlim'
 
-  inputs.files("${project.ext.nodeProjectDir}/package.json")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-support")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-assert")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-file")
+  workingDir = file("$slimDevDir/server")
+
+  // Intentionally not synchronizing the logic here with bin/solr; don't want the burden
+
+  doFirst {
+    println "To attach a debugger, at the CLI pass: --debug-jvm"
+    println "To pass JVM args, at the CLI pass: -PjvmArgs='--add-modules jdk.incubator.vector'"
+    println "To pass system properties, at the CLI pass: -Dsolr.port.listen=8983"
+  }
+
+  maxHeapSize = project.findProperty('maxHeapSize') ?: '1G'
+
+  jvmArgs = [] // don't use defaults from our build that assume this is a typical build task
+  jvmArgs((project.findProperty('jvmArgs') ?: '').split())
+
+  systemProperty 'solr.host.advertise', '127.0.0.1'
+  systemProperty 'solr.port.listen', '8983'
+  systemProperty 'solr.install.dir', file("$workingDir/..")
+  systemProperty 'solr.logs.dir', file("$workingDir/logs")
+  systemProperty 'solr.zookeeper.server.enabled', 'true' // SolrCloud; embedded ZK
+
+  // Propagate CLI system properties (override defaults above)
+  systemProperties += gradle.startParameter.systemPropertiesArgs
+
+  classpath = files("$workingDir/start.jar")
+
+  args((project.findProperty('args') ?: '--module=http').split())
+}
+
+tasks.register('downloadBats') {
+  group = 'Build Dependency Download'
+  description =
+      'Downloads BATS and its helper libraries (bats-support, bats-assert, bats-file) used by integrationTests'
+
+  def batsLibs = [
+      [org: 'bats-core', repo: 'bats-core', version: libs.versions.bats.core.get()],
+      [org: 'ztombol', repo: 'bats-support', version: libs.versions.bats.support.get()],
+      [org: 'bats-core', repo: 'bats-assert', version: libs.versions.bats.assert.get()],
+      [org: 'bats-core', repo: 'bats-file', version: libs.versions.bats.file.get()],
+  ]
+  def downloadDir = file("$buildDir/bats-downloads")
+
+  inputs.property('batsLibs', batsLibs)
+  outputs.dir(batsLibsDir)
+
+  doLast {
+    delete batsLibsDir
+    mkdir downloadDir
+    batsLibs.each {lib ->
+      def archiveUrl = "https://github.com/${lib.org}/${lib.repo}/archive/refs/tags/v${lib.version}.tar.gz"
+      def archiveFile = new File(downloadDir, "${lib.repo}-${lib.version}.tar.gz")
+      ant.get(src: archiveUrl, dest: archiveFile, skipexisting: true)
+      copy {
+        from(tarTree(resources.gzip(archiveFile))) {
+          // Strip the leading "<repo>-<version>/" directory that GitHub's archive adds.
+          eachFile {details -> details.path = details.path.substring(details.path.indexOf('/') + 1)}
+          includeEmptyDirs = false
+        }
+        into "$batsLibsDir/${lib.repo}"
+      }
+    }
+  }
 }
 
 task integrationTests(type: BatsTask) {
@@ -248,7 +292,8 @@ task integrationTests(type: BatsTask) {
   def integrationTestOutput = "$buildDir/test-output"
   def solrHome = "$integrationTestOutput/solr-home"
   def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
-  var solrPort = Integer.parseInt((String) project.findProperty('bats.port') ?: System.getProperty("bats.port", "-1"))
+  var solrPort = Integer
+      .parseInt((String) project.findProperty('bats.port') ?: System.getProperty("bats.port", "-1"))
   while (solrPort > 64000 || solrPort < 0) { // We need room for +1000 for ZK
     try (ServerSocket s = new ServerSocket(0)) {
       solrPort = s.getLocalPort()
@@ -258,7 +303,12 @@ task integrationTests(type: BatsTask) {
     }
   }
 
+  if (!Boolean.parseBoolean((String) project.findProperty('solr.bats.nightly'))) {
+    filterTags = '!nightly'
+  }
+
   inputs.dir(distDir)
+  inputs.dir('test')  // Track .bats test files and helper as inputs
   outputs.dir(integrationTestOutput)
 
   doFirst {
@@ -268,47 +318,60 @@ task integrationTests(type: BatsTask) {
     mkdir solrTestFailuresDir
 
     // TODO - if quiet then don't tee
-    standardOutput = new TeeOutputStream(System.out, new FileOutputStream("$integrationTestOutput/test-output.txt"))
+    standardOutput = new TeeOutputStream(System.out,
+        new FileOutputStream("$integrationTestOutput/test-output.txt"))
     println("Running BATS tests with Solr base port ${solrPort}")
   }
 
   environment SOLR_TIP: distDir.toString()
   environment SOLR_HOME: solrHome
   environment SOLR_PID_DIR: solrHome
+  environment SOLR_PORT_LISTEN: solrPort
   environment SOLR_PORT: solrPort
   environment SOLR2_PORT: solrPort + 1
   environment SOLR3_PORT: solrPort + 2
   environment ZK_PORT: solrPort + 1000
-  environment SOLR_EXPORTER_PORT: solrPort + 100
   environment SOLR_LOGS_DIR: "$solrHome/logs"
   environment TEST_OUTPUT_DIR: integrationTestOutput
   environment TEST_FAILURE_DIR: solrTestFailuresDir
-  environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
+  environment BATS_LIB_PREFIX: batsLibsDir
 }
 
-class BatsTask extends Exec {
-  @InputDirectory
+abstract class BatsTask extends Exec {
+  // Note: testDir is marked @Internal because it's a String configuration property, not a trackable input.
+  // The task using BatsTask should explicitly declare inputs.dir(testDir) in its configuration.
+  @Internal
   String testDir = 'test'
 
   @Input
   var testFiles = []
 
+  @Input
+  @Optional
+  String filterTags = null
+
   @Option(option = "tests", description = "Sets test cases to be included")
   public void setTestNamePatterns(List<String> tests) {
     // TODO: bats --filter <regex>
-    tests.each { testFiles << "$testDir/$it" }
+    tests.each {testFiles << "$testDir/$it"}
   }
 
   @Override
   @TaskAction
   protected void exec() {
-    executable "$project.ext.nodeProjectDir/node_modules/bats/bin/bats"
+    executable "$project.ext.batsLibsDir/bats-core/bin/bats"
 
+    def batsArgs = []
+    if (logger.isInfoEnabled()) {
+      batsArgs << '--verbose-run'
+    }
+    if (filterTags) {
+      batsArgs += ['--filter-tags', filterTags]
+    }
+    batsArgs += ['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', "$project.buildDir/test-output"]
     // Note: tests to run must be listed after all other arguments
-    // Additional debugging output: -x, --verbose-run
-    setArgs(['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', "$project.buildDir/test-output"] + (testFiles.empty ? testDir : testFiles))
-
-
+    batsArgs += testFiles.empty ? [testDir] : testFiles
+    setArgs(batsArgs)
     super.exec()
   }
 }

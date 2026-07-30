@@ -36,7 +36,7 @@ That is: they are VMs requested by a project for their exclusive use.
 
 Maintenance of these agent VMs falls into a bit of a gray area.
 INFRA will still intervene when asked: to reboot nodes, to deploy OS upgrades, etc.
-But some burden also falls on Lucene and Solr as project teams to monitor the the VMs and keep them healthy.
+But some burden also falls on Lucene and Solr as project teams to monitor the VMs and keep them healthy.
 
 === Accessing Jenkins Agents
 
@@ -47,7 +47,7 @@ With a few steps, Solr committers can access our project's Jenkins agent VMs via
 3. SSH into the desired box with: `ssh <apache-id>@$HOSTNAME` (where `$HOSTNAME` is either `lucene1-us-west.apache.org` or `lucene-us-west.apache.org`)
 
 Often, SSH access on the boxes is not sufficient, and administrators require "root" access to diagnose and solve problems.
-Sudo/su priveleges can be accessed via a one-time pad ("OTP") challenge, managed by the "Orthrus PAM" module.
+Sudo/su privileges can be accessed via a one-time pad ("OTP") challenge, managed by the "Orthrus PAM" module.
 Users in need of root access can perform the following steps:
 
 1. Open the ASF's [OTP Generator Tool](https://selfserve.apache.org/otp-calculator.html) in your browser of choice

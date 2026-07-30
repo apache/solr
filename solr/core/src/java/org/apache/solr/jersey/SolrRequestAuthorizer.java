@@ -89,7 +89,7 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
         AuthorizationUtils.authorize(servletRequest, servletResponse, coreContainer, authzContext);
     if (authzFailure != null) {
       final Response failureResponse =
-          Response.status(authzFailure.getStatusCode()).entity(authzFailure.getMessage()).build();
+          Response.status(authzFailure.statusCode()).entity(authzFailure.message()).build();
       requestContext.abortWith(failureResponse);
     }
   }

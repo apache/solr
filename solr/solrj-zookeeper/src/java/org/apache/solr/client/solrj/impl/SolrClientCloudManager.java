@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -26,14 +25,11 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Class that implements {@link SolrCloudManager} using a SolrClient */
 public class SolrClientCloudManager implements SolrCloudManager {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloudHttp2SolrClient cloudSolrClient;
+  private final CloudSolrClient cloudSolrClient;
   private final ZkDistribStateManager stateManager;
   private final ZkStateReader zkStateReader;
   private final SolrZkClient zkClient;
@@ -41,7 +37,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
   private final boolean closeObjectCache;
   private volatile boolean isClosed;
 
-  public SolrClientCloudManager(CloudHttp2SolrClient client, ObjectCache objectCache) {
+  public SolrClientCloudManager(CloudSolrClient client, ObjectCache objectCache) {
     this.cloudSolrClient = client;
     this.zkStateReader = ZkStateReader.from(client);
     this.zkClient = zkStateReader.getZkClient();

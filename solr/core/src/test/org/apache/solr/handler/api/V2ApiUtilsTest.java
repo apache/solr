@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.api;
 
-import static org.apache.solr.client.solrj.impl.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.response.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 
 import jakarta.ws.rs.core.MediaType;
@@ -26,19 +26,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
 public class V2ApiUtilsTest extends SolrTestCaseJ4 {
-
-  @Test
-  public void testReadsEnableV2ApiSysprop() {
-    System.clearProperty("solr.api.v2.enabled");
-    assertTrue("v2 API should be enabled if sysprop not specified", V2ApiUtils.isEnabled());
-
-    System.setProperty("solr.api.v2.enabled", "true");
-    assertTrue("v2 API should be enabled if sysprop explicitly enables it", V2ApiUtils.isEnabled());
-
-    System.setProperty("solr.api.v2.enabled", "false");
-    assertFalse(
-        "v2 API should be disabled if sysprop explicitly disables it", V2ApiUtils.isEnabled());
-  }
 
   @Test
   public void testConvertsWtToMediaTypeString() {

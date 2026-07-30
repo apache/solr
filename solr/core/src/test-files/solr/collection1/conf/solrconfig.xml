@@ -39,10 +39,6 @@
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}">
-    <double name="maxWriteMBPerSecDefault">1000000</double>
-    <double name="maxWriteMBPerSecFlush">2000000</double>
-    <double name="maxWriteMBPerSecMerge">3000000</double>
-    <double name="maxWriteMBPerSecRead">4000000</double>   
   </directoryFactory>
 
   <schemaFactory class="ClassicIndexSchemaFactory"/>
@@ -380,6 +376,9 @@
       </arr>
  </requestHandler>
 
+  <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
+  </searchComponent>
+
   <requestHandler name="/mltrh" class="org.apache.solr.handler.component.SearchHandler">
 
   </requestHandler>
@@ -466,10 +465,6 @@
       <str name="facet.query">foo_s:bar</str>
     </lst>
   </requestHandler>
-
-  <!-- test getting system property -->
-  <propTest attr1="${solr.test.sys.prop1}-$${literal}"
-            attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
   <queryParser name="foo" class="FooQParserPlugin"/>
 

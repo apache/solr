@@ -107,8 +107,6 @@ public abstract class CoreAdminParams {
 
   public static final String LOAD_ON_STARTUP = "loadOnStartup";
 
-  public static final String TRANSIENT = "transient";
-
   // Node to create a replica on for ADDREPLICA at least.
   public static final String NODE = "node";
 
@@ -180,7 +178,8 @@ public abstract class CoreAdminParams {
     INSTALLCOREDATA,
     CREATESNAPSHOT,
     DELETESNAPSHOT,
-    LISTSNAPSHOTS;
+    LISTSNAPSHOTS,
+    UPGRADEINDEX;
 
     public final boolean isRead;
 

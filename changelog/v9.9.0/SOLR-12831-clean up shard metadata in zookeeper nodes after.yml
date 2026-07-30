@@ -1,0 +1,9 @@
+title: Clean up shard metadata in ZooKeeper nodes after shard deletion is invoked.
+  This makes sure Zookeeper nodes for leader election and terms are not left behind
+type: fixed
+authors:
+- name: Andy Vuong
+- name: Pierre Salagnac
+links:
+- name: SOLR-12831
+  url: https://issues.apache.org/jira/browse/SOLR-12831

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
@@ -53,15 +52,16 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -75,6 +75,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -131,24 +132,29 @@ public class SolrConfigHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
     RequestHandlerUtils.setWt(req, CommonParams.JSON);
-    String httpMethod = (String) req.getContext().get("httpMethod");
-    Command command = new Command(req, rsp, httpMethod);
-    if ("POST".equals(httpMethod)) {
-      if (!configEditingEnabled || isImmutableConfigSet) {
-        final String reason =
-            !configEditingEnabled
-                ? "due to " + CONFIG_EDITING_ENABLED_ARG + " setting"
-                : "because ConfigSet is marked immutable";
-        throw new SolrException(
-            SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
-      }
-      try {
-        command.handlePOST();
-      } finally {
-        RequestHandlerUtils.addExperimentalFormatWarning(rsp);
-      }
-    } else {
-      command.handleGET();
+    final var httpMethod = (SolrRequest.METHOD) req.getContext().get("httpMethod");
+    Command command = new Command(req, rsp, httpMethod.name());
+    switch (httpMethod) {
+      case SolrRequest.METHOD.POST:
+        if (!configEditingEnabled || isImmutableConfigSet) {
+          final String reason =
+              !configEditingEnabled
+                  ? "due to " + CONFIG_EDITING_ENABLED_ARG + " setting"
+                  : "because ConfigSet is marked immutable";
+          throw new SolrException(
+              SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
+        }
+        try {
+          command.handlePOST();
+        } finally {
+          RequestHandlerUtils.addExperimentalFormatWarning(rsp);
+        }
+        break;
+      case SolrRequest.METHOD.GET:
+        command.handleGET();
+        break;
+      default:
+        throw SchemaHandler.getUnexpectedHttpMethodException(httpMethod.name());
     }
   }
 
@@ -199,7 +205,7 @@ public class SolrConfigHandler extends RequestHandlerBase
             Map<String, Object> m = new LinkedHashMap<>();
             m.put(ZNODEVER, params.getZnodeVersion());
             if (p != null) {
-              m.put(RequestParams.NAME, Map.of(parts.get(2), p.toMap(new LinkedHashMap<>())));
+              m.put(RequestParams.NAME, Map.of(parts.get(2), p));
             }
             resp.add(SolrQueryResponse.NAME, m);
           } else {
@@ -278,16 +284,16 @@ public class SolrConfigHandler extends RequestHandlerBase
               Map pluginNameVsPluginInfo = (Map) val.get(parts.get(1));
               if (pluginNameVsPluginInfo != null) {
                 Object o =
-                    pluginNameVsPluginInfo instanceof MapSerializable
+                    pluginNameVsPluginInfo instanceof MapWriter
                         ? pluginNameVsPluginInfo
                         : pluginNameVsPluginInfo.get(componentName);
                 Map<String, Object> pluginInfo =
-                    o instanceof MapSerializable
-                        ? ((MapSerializable) o).toMap(new LinkedHashMap<>())
+                    o instanceof MapWriter
+                        ? new SimpleOrderedMap<>((MapWriter) o)
                         : (Map<String, Object>) o;
                 val.put(
                     parts.get(1),
-                    pluginNameVsPluginInfo instanceof PluginInfo
+                    pluginNameVsPluginInfo instanceof MapWriter
                         ? pluginInfo
                         : Map.of(componentName, pluginInfo));
                 if (req.getParams().getBool("meta", false)) {
@@ -301,8 +307,10 @@ public class SolrConfigHandler extends RequestHandlerBase
                     if (infos == null || infos.isEmpty()) continue;
                     infos.forEach(
                         (s, mapWriter) -> {
-                          if (s.equals(pluginInfo.get("class"))) {
-                            (pluginInfo).put("_packageinfo_", mapWriter);
+                          Map<String, Object> componentInfo =
+                              getComponentInfo(pluginInfo, componentName);
+                          if (s.equals(componentInfo.get("class"))) {
+                            (componentInfo).put("_packageinfo_", mapWriter);
                           }
                         });
                   }
@@ -315,10 +323,21 @@ public class SolrConfigHandler extends RequestHandlerBase
       }
     }
 
+    @SuppressWarnings({"unchecked"})
+    private Map<String, Object> getComponentInfo(
+        Map<String, Object> pluginInfo, String componentName) {
+      if (pluginInfo.containsKey("class")) {
+        return pluginInfo;
+      }
+      return (Map<String, Object>)
+          pluginInfo.computeIfAbsent(componentName, k -> new LinkedHashMap<>());
+    }
+
     private Map<String, Object> getConfigDetails(String componentType, SolrQueryRequest req) {
       String componentName = componentType == null ? null : req.getParams().get("componentName");
       boolean showParams = req.getParams().getBool("expandParams", false);
-      Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
+      Map<String, Object> map =
+          Utils.convertToMap(this.req.getCore().getSolrConfig(), new LinkedHashMap<>());
       if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
 
       @SuppressWarnings({"unchecked"})
@@ -351,7 +370,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       if (plugin instanceof Map) {
         pluginInfo = (Map) plugin;
       } else if (plugin instanceof PluginInfo) {
-        pluginInfo = ((PluginInfo) plugin).toMap(new LinkedHashMap<>());
+        pluginInfo = Utils.convertToMap((PluginInfo) plugin, new LinkedHashMap<>());
       }
       String useParams = (String) pluginInfo.get(USEPARAM);
       String useParamsInReq = req.getOriginalParams().get(USEPARAM);
@@ -417,7 +436,7 @@ public class SolrConfigHandler extends RequestHandlerBase
         }
       } catch (Exception e) {
         resp.setException(e);
-        resp.add(CommandOperation.ERR_MSGS, singletonList(SchemaManager.getErrorStr(e)));
+        resp.add(CommandOperation.ERR_MSGS, List.of(SchemaManager.getErrorStr(e)));
       }
     }
 
@@ -495,7 +514,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       @SuppressWarnings({"rawtypes"})
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
-        throw new ApiBag.ExceptionWithErrObject(
+        throw new SolrErrorWrappingException(
             SolrException.ErrorCode.BAD_REQUEST, "error processing params", errs);
       }
 
@@ -505,9 +524,7 @@ public class SolrConfigHandler extends RequestHandlerBase
           ZkController.touchConfDir(zkLoader);
         } else {
           if (log.isDebugEnabled()) {
-            log.debug(
-                "persisting params data : {}",
-                Utils.toJSONString(params.toMap(new LinkedHashMap<>())));
+            log.debug("persisting params data : {}", Utils.toJSONString(params));
           }
           int latestVersion =
               ZkController.persistConfigResourceToZooKeeper(
@@ -577,7 +594,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
         log.error("ERROR:{}", Utils.toJSONString(errs));
-        throw new ApiBag.ExceptionWithErrObject(
+        throw new SolrErrorWrappingException(
             SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
       }
 
@@ -844,10 +861,10 @@ public class SolrConfigHandler extends RequestHandlerBase
     // course)
     List<PerReplicaCallable> concurrentTasks = new ArrayList<>();
 
-    var http2SolrClient = zkController.getCoreContainer().getDefaultHttpSolrClient();
+    var httpSolrClient = zkController.getCoreContainer().getDefaultHttpSolrClient();
     for (Replica replica : getActiveReplicas(zkController, collection)) {
       PerReplicaCallable e =
-          new PerReplicaCallable(http2SolrClient, replica, prop, expectedVersion, maxWaitSecs);
+          new PerReplicaCallable(httpSolrClient, replica, prop, expectedVersion, maxWaitSecs);
       concurrentTasks.add(e);
     }
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
@@ -957,13 +974,13 @@ public class SolrConfigHandler extends RequestHandlerBase
       case "POST":
         return Name.CONFIG_EDIT_PERM;
       default:
-        return null;
+        throw SchemaHandler.getUnexpectedHttpMethodException(ctx.getHttpMethod());
     }
   }
 
   private static class PerReplicaCallable extends CollectionRequiringSolrRequest<SolrResponse>
       implements Callable<Boolean> {
-    private final Http2SolrClient solrClient;
+    private final HttpSolrClient solrClient;
     Replica replica;
     String prop;
     int expectedZkVersion;
@@ -971,7 +988,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     int maxWait;
 
     PerReplicaCallable(
-        Http2SolrClient solrClient,
+        HttpSolrClient solrClient,
         Replica replica,
         String prop,
         int expectedZkVersion,
@@ -1006,9 +1023,7 @@ public class SolrConfigHandler extends RequestHandlerBase
           Thread.sleep(100);
 
           NamedList<Object> resp =
-              solrClient
-                  .requestWithBaseUrl(replica.getBaseUrl(), replica.getCoreName(), this)
-                  .getResponse();
+              solrClient.requestWithBaseUrl(replica.getBaseUrl(), this, replica.getCoreName());
           if (resp != null) {
             @SuppressWarnings({"rawtypes"})
             Map m = (Map) resp.get(ZNODEVER);

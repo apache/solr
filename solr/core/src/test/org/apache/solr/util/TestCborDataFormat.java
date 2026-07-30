@@ -32,15 +32,15 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -104,7 +104,6 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       QueryResponse result = new QueryRequest(q).process(client, testCollection);
       assertEquals(6, result.getResults().size());
     } finally {
-      System.clearProperty("managed.schema.mutable");
       cluster.shutdown();
     }
   }
@@ -136,8 +135,10 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       request.setResponseParser(new InputStreamResponseParser(wt));
     }
     result = client.request(request, testCollection);
-    InputStream inputStream = (InputStream) result.get("stream");
-    byte[] b = inputStream.readAllBytes();
+    byte[] b;
+    try (InputStream inputStream = (InputStream) result.get("stream")) {
+      b = inputStream.readAllBytes();
+    }
     System.out.println(wt + "_time : " + timer.getTime());
     System.out.println(wt + "_size : " + b.length);
     return b;
@@ -217,7 +218,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
 
     byte[] b = Files.readAllBytes(filmsJson);
     byte[] bytes = serializeToCbor(b);
-    assertEquals(210439, bytes.length);
+    assertEquals(209339, bytes.length);
     LongAdder docsSz = new LongAdder();
     new CborLoader(null, (document) -> docsSz.increment()).stream(new ByteArrayInputStream(bytes));
     assertEquals(films.size(), docsSz.intValue());

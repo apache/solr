@@ -21,6 +21,7 @@ solrAdminApp.controller('QueryController',
 
     $scope._models = [];
     $scope.filters = [{fq:""}];
+    $scope.facetFields = [{value:""}];
     $scope.rawParams = [{rawParam:""}];
     $scope.val = {};
     $scope.val['q'] = "*:*";
@@ -72,6 +73,8 @@ solrAdminApp.controller('QueryController',
         // filters and rawParams are handled specially because of possible multiple values
         if( p === "fq" ) {
             addFilters(urlParams[p]);
+        } else if( p === "facet.field" ) {
+            addFacetFields(urlParams[p]);
         } else {
             setParam(p, urlParams[p]);
         }
@@ -125,6 +128,18 @@ solrAdminApp.controller('QueryController',
             }
           } else {
             $scope.filters.push({fq: argObject});
+          }
+      }
+    }
+    function addFacetFields(argObject){
+      if( argObject ){
+        $scope.facetFields = [];
+          if( Array.isArray(argObject) ){
+            for( var i = 0, iLen = argObject.length; i<iLen; i++ ){
+              $scope.facetFields.push({value: argObject[i]});
+            }
+          } else {
+            $scope.facetFields.push({value: argObject});
           }
       }
     }
@@ -187,6 +202,12 @@ solrAdminApp.controller('QueryController',
 
       for (var filter in $scope.filters) {
         copy(params, $scope.filters[filter]);
+      }
+
+      for (var fi in $scope.facetFields) {
+        if ($scope.facetFields[fi].value) {
+          set("facet.field", $scope.facetFields[fi].value);
+        }
       }
 
       for (var rawIndex in $scope.rawParams) {
@@ -293,6 +314,16 @@ solrAdminApp.controller('QueryController',
     };
     $scope.addFilter = function(index) {
       $scope.filters.splice(index+1, 0, {fq:""});
+    };
+    $scope.removeFacetField = function(index) {
+      if ($scope.facetFields.length === 1) {
+        $scope.facetFields = [{value: ""}];
+      } else {
+        $scope.facetFields.splice(index, 1);
+      }
+    };
+    $scope.addFacetField = function(index) {
+      $scope.facetFields.splice(index+1, 0, {value:""});
     };
     $scope.removeRawParam = function (index) {
       if ($scope.rawParams.length === 1) {

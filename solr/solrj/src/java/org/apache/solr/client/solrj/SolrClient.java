@@ -21,21 +21,22 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
-import org.apache.solr.client.solrj.impl.StreamingJavaBinResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.FastStreamingDocsCallback;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.response.StreamingJavaBinResponseParser;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -1070,7 +1071,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public SolrDocument getById(String collection, String id, SolrParams params)
       throws SolrServerException, IOException {
-    SolrDocumentList docs = getById(collection, Collections.singletonList(id), params);
+    SolrDocumentList docs = getById(collection, List.of(id), params);
     if (!docs.isEmpty()) {
       return docs.get(0);
     }
@@ -1198,6 +1199,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * communication between Solr nodes or as an external client). The default value is {@code
    * SolrClientContext#Client}
    */
+  @Deprecated(since = "10.1") // TODO replace or refactor; see SOLR-14720 related
   public SolrRequest.SolrClientContext getContext() {
     return SolrRequest.SolrClientContext.CLIENT;
   }
@@ -1211,19 +1213,9 @@ public abstract class SolrClient implements Serializable, Closeable {
     return defaultCollection;
   }
 
-  /**
-   * Subclass of SolrException that allows us to capture an arbitrary HTTP status code that may have
-   * been returned by the remote server or a proxy along the way.
-   */
-  public static class RemoteSolrException extends SolrException {
-    /**
-     * @param remoteHost the host the error was received from
-     * @param code Arbitrary HTTP status code
-     * @param msg Exception Message
-     * @param th Throwable to wrap with this Exception
-     */
-    public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
-      super(code, "Error from server at " + remoteHost + ": " + msg, th);
-    }
+  /** A lambda intended for invoking SolrClient operations */
+  @FunctionalInterface
+  public interface SolrClientFunction<C extends SolrClient, R> {
+    R apply(C c) throws IOException, SolrServerException;
   }
 }

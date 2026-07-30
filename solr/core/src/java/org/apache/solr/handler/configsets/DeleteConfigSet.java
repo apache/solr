@@ -32,7 +32,11 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/** V2 API implementation for ConfigsetsApi.Delete */
+/**
+ * V2 API implementation for deleting a configset
+ *
+ * <p>This API (GET /v2/configsets) is analogous to the v1 /admin/configs?action=DELETE command.
+ */
 public class DeleteConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Delete {
 
   @Inject
@@ -47,7 +51,7 @@ public class DeleteConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.D
   @PermissionName(CONFIG_EDIT_PERM)
   public SolrJerseyResponse deleteConfigSet(String configSetName) throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    if (StrUtils.isNullOrEmpty(configSetName)) {
+    if (StrUtils.isNullOrEmpty(configSetName) || StrUtils.isBlank(configSetName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "No configset name provided to delete");
     }

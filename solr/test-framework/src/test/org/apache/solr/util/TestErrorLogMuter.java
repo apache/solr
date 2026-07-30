@@ -33,7 +33,7 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @LogLevel("=WARN")
-  public void testErrorMutingRegex() throws Exception {
+  public void testErrorMutingRegex() {
 
     try (LogListener rootWarnCheck = LogListener.warn("");
         LogListener rootErrorCheck = LogListener.error("")) {
@@ -54,7 +54,7 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
         log.error(
             "This {} because of the {} msg",
             "error",
-            "thowable",
+            "throwable",
             new Exception("outer", new Exception("inner eRrOr Log throwable")));
         assertEquals(2, x.getCount());
       }
@@ -66,7 +66,7 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
   }
 
   @LogLevel("=WARN")
-  public void testMultipleMuters() throws Exception {
+  public void testMultipleMuters() {
 
     try (LogListener rootWarnCheck = LogListener.warn("").substring("xxx");
         LogListener rootErrorCheck = LogListener.error("")) {
@@ -88,7 +88,7 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
 
         // a warning shouldn't be muted...
         log.warn("xxx  yyy");
-        assertEquals(rootWarnCheck.pollMessage(), "xxx  yyy");
+        assertEquals("xxx  yyy", rootWarnCheck.pollMessage());
 
         log.error("abc", new Exception("yyy"));
 
@@ -104,7 +104,7 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
   }
 
   @LogLevel("=WARN")
-  public void testDeprecatedBaseClassMethods() throws Exception {
+  public void testDeprecatedBaseClassMethods() {
 
     // NOTE: using the same queue for both interceptors (mainly as proof that you can)
     try (LogListener rootWarnCheck = LogListener.warn("");

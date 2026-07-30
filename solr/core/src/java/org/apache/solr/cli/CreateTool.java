@@ -29,22 +29,17 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cli.CommonCLIOptions.DefaultValues;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.CollectionsApi;
+import org.apache.solr.client.solrj.request.CoresApi;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.ConfigSetService;
-import org.noggit.CharArr;
-import org.noggit.JSONWriter;
 
 /** Supports create command in the bin/solr script. */
 public class CreateTool extends ToolBase {
@@ -56,7 +51,7 @@ public class CreateTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of collection or core to create.")
-          .build();
+          .get();
 
   private static final Option SHARDS_OPTION =
       Option.builder("sh")
@@ -65,7 +60,7 @@ public class CreateTool extends ToolBase {
           .argName("#")
           .type(Integer.class)
           .desc("Number of shards; default is 1.")
-          .build();
+          .get();
 
   private static final Option REPLICATION_FACTOR_OPTION =
       Option.builder("rf")
@@ -75,7 +70,7 @@ public class CreateTool extends ToolBase {
           .type(Integer.class)
           .desc(
               "Number of copies of each document across the collection (replicas per shard); default is 1.")
-          .build();
+          .get();
 
   private static final Option CONF_DIR_OPTION =
       Option.builder("d")
@@ -86,7 +81,7 @@ public class CreateTool extends ToolBase {
               "Configuration directory to copy when creating the new collection; default is "
                   + DefaultValues.DEFAULT_CONFIG_SET
                   + '.')
-          .build();
+          .get();
 
   private static final Option CONF_NAME_OPTION =
       Option.builder("n")
@@ -94,7 +89,7 @@ public class CreateTool extends ToolBase {
           .hasArg()
           .argName("NAME")
           .desc("Configuration name; default is the collection name.")
-          .build();
+          .get();
 
   public CreateTool(ToolRuntime runtime) {
     super(runtime);
@@ -107,25 +102,23 @@ public class CreateTool extends ToolBase {
 
   @Override
   public String getHeader() {
-    return "Creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).\n"
-        + "If you are using standalone mode you must run this command on the Solr server itself.\n"
-        + "\n"
-        + "List of options:";
+    return """
+        Creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).
+        If you are using standalone mode you must run this command on the Solr server itself.
+
+        List of options:""";
   }
 
   @Override
   public Options getOptions() {
-    Options opts =
-        super.getOptions()
-            .addOption(COLLECTION_NAME_OPTION)
-            .addOption(SHARDS_OPTION)
-            .addOption(REPLICATION_FACTOR_OPTION)
-            .addOption(CONF_DIR_OPTION)
-            .addOption(CONF_NAME_OPTION)
-            .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-            .addOptionGroup(getConnectionOptions());
-
-    return opts;
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(SHARDS_OPTION)
+        .addOption(REPLICATION_FACTOR_OPTION)
+        .addOption(CONF_DIR_OPTION)
+        .addOption(CONF_NAME_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
@@ -141,10 +134,9 @@ public class CreateTool extends ToolBase {
 
   protected void createCore(CommandLine cli, SolrClient solrClient) throws Exception {
     String coreName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    String solrUrl =
-        cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION, CLIUtils.getDefaultSolrUrl());
+    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
 
-    final String solrInstallDir = System.getProperty("solr.install.dir");
+    final String solrInstallDir = EnvUtils.getProperty("solr.install.dir");
     final String confDirName =
         cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
 
@@ -157,14 +149,9 @@ public class CreateTool extends ToolBase {
     }
     printDefaultConfigsetWarningIfNecessary(cli);
 
-    String coreRootDirectory; // usually same as solr home, but not always
-
-    NamedList<?> systemInfo =
-        solrClient.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-
-    // convert raw JSON into user-friendly output
-    coreRootDirectory = (String) systemInfo.get("core_root");
+    SystemInfoResponse sysResponse = (new SystemInfoRequest()).process(solrClient);
+    // usually same as solr home, but not always
+    String coreRootDirectory = sysResponse.getCoreRoot();
 
     if (CLIUtils.safeCheckCoreExists(
         solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
@@ -190,14 +177,13 @@ public class CreateTool extends ToolBase {
               + coreInstanceDir.toAbsolutePath());
     }
 
-    echoIfVerbose("\nCreating new core '" + coreName + "' using CoreAdminRequest");
+    echoIfVerbose("\nCreating new core '" + coreName + "' using V2 Cores API");
 
     try {
-      CoreAdminResponse res = CoreAdminRequest.createCore(coreName, coreName, solrClient);
-      if (isVerbose()) {
-        echo(res.jsonStr());
-        echo("\n");
-      }
+      var req = new CoresApi.CreateCore();
+      req.setName(coreName);
+      req.setInstanceDir(coreName);
+      req.process(solrClient);
       echo(String.format(Locale.ROOT, "\nCreated new core '%s'", coreName));
 
     } catch (Exception e) {
@@ -208,8 +194,8 @@ public class CreateTool extends ToolBase {
   }
 
   protected void createCollection(CommandLine cli) throws Exception {
-    Http2SolrClient.Builder builder =
-        new Http2SolrClient.Builder()
+    var builder =
+        new HttpJettySolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
@@ -217,8 +203,13 @@ public class CreateTool extends ToolBase {
                 cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     String zkHost = CLIUtils.getZkHost(cli);
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost, builder)) {
-      cloudSolrClient.connect();
+    var zkSolrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    if (!zkSolrConnection.isZookeeper()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
+    }
+    try (var cloudSolrClient = CLIUtils.getCloudSolrClient(zkSolrConnection, builder)) {
       createCollection(cloudSolrClient, cli);
     }
   }
@@ -227,7 +218,7 @@ public class CreateTool extends ToolBase {
       throws Exception {
 
     String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    final String solrInstallDir = System.getProperty("solr.install.dir");
+    final String solrInstallDir = EnvUtils.getProperty("solr.install.dir");
     String confName = cli.getOptionValue(CONF_NAME_OPTION);
     String confDir = cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
     Path solrInstallDirPath = Path.of(solrInstallDir);
@@ -241,8 +232,10 @@ public class CreateTool extends ToolBase {
           "No live nodes found! Cannot create a collection until "
               + "there is at least 1 live node in the cluster.");
 
-    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
-    if (solrUrl == null) {
+    String solrUrl;
+    if (CLIUtils.hasConnectionOption(cli)) {
+      solrUrl = CLIUtils.normalizeSolrUrl(cli);
+    } else {
       String firstLiveNode = liveNodes.iterator().next();
       solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
     }
@@ -254,9 +247,7 @@ public class CreateTool extends ToolBase {
     boolean configExistsInZk =
         confName != null
             && !confName.trim().isEmpty()
-            && ZkStateReader.from(cloudSolrClient)
-                .getZkClient()
-                .exists("/configs/" + confName, true);
+            && ZkStateReader.from(cloudSolrClient).getZkClient().exists("/configs/" + confName);
 
     if (configExistsInZk) {
       echo("Re-using existing configuration directory " + confName);
@@ -265,7 +256,9 @@ public class CreateTool extends ToolBase {
         confName = collectionName;
       }
 
-      // TODO: This should be done using the configSet API
+      // TODO: This should be done using the configSet API.  This would let us remove
+      // the direct dependency on ZooKeeper APIs.  Unlike the bin/solr zk comamnds that
+      // work directly with ZooKeeper.
       final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
       ConfigSetService configSetService =
           new ZkConfigSetService(ZkStateReader.from(cloudSolrClient).getZkClient());
@@ -288,31 +281,25 @@ public class CreateTool extends ToolBase {
       throw new IllegalStateException(
           "\nCollection '"
               + collectionName
-              + "' already exists!\nChecked collection existence using CollectionAdminRequest");
+              + "' already exists!\nChecked collection existence using V2 Collections API");
     }
 
     // doesn't seem to exist ... try to create
-    echoIfVerbose(
-        "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest");
+    echoIfVerbose("\nCreating new collection '" + collectionName + "' using V2 Collections API");
 
-    NamedList<Object> response;
     try {
-      var req =
-          CollectionAdminRequest.createCollection(
-              collectionName, confName, numShards, replicationFactor);
-      req.setResponseParser(new JsonMapResponseParser());
-      response = cloudSolrClient.request(req);
+      var req = new CollectionsApi.CreateCollection();
+      req.setName(collectionName);
+      req.setConfig(confName);
+      req.setNumShards(numShards);
+      req.setReplicationFactor(replicationFactor);
+      var response = req.process(cloudSolrClient);
+      echoIfVerbose(response);
     } catch (SolrServerException sse) {
       throw new Exception(
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
-    if (isVerbose()) {
-      // pretty-print the response to stdout
-      CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap(10));
-      echo(arr.toString());
-    }
     String endMessage =
         String.format(
             Locale.ROOT,
@@ -342,16 +329,15 @@ public class CreateTool extends ToolBase {
     }
   }
 
-  private void printDefaultConfigsetWarningIfNecessary(CommandLine cli) {
+  private void printDefaultConfigsetWarningIfNecessary(CommandLine cli) throws Exception {
     final String confDirectoryName =
         cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
     final String confName = cli.getOptionValue(CONF_NAME_OPTION, "");
 
     if (confDirectoryName.equals("_default")
-        && (confName.equals("") || confName.equals("_default"))) {
+        && (confName.isEmpty() || confName.equals("_default"))) {
       final String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-      final String solrUrl =
-          cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION, CLIUtils.getDefaultSolrUrl());
+      final String solrUrl = CLIUtils.normalizeSolrUrl(cli);
       final String curlCommand =
           String.format(
               Locale.ROOT,

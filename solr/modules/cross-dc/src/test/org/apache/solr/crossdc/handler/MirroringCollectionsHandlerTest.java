@@ -35,11 +35,10 @@ import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -60,7 +59,6 @@ public class MirroringCollectionsHandlerTest extends SolrTestCaseJ4 {
   private final ZkController zkController = Mockito.mock(ZkController.class);
   private final SolrZkClient solrZkClient = Mockito.mock(SolrZkClient.class);
 
-  @SuppressWarnings("unchecked")
   private ArgumentCaptor<MirroredSolrRequest<?>> captor;
 
   @BeforeClass
@@ -77,20 +75,12 @@ public class MirroringCollectionsHandlerTest extends SolrTestCaseJ4 {
     Mockito.when(zkController.getZkClient()).thenReturn(solrZkClient);
     Mockito.doAnswer(inv -> null)
         .when(solrZkClient)
-        .getData(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
+        .getData(Mockito.anyString(), Mockito.any(), Mockito.any());
     captor = ArgumentCaptor.forClass(MirroredSolrRequest.class);
     Mockito.doNothing().when(sink).submit(captor.capture());
     // make ConfUtil happy
     System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "foo");
     System.setProperty(KafkaCrossDcConf.TOPIC_NAME, "foo");
-  }
-
-  @After
-  public void teardown() throws Exception {
-    System.clearProperty(KafkaCrossDcConf.MIRROR_COLLECTIONS);
-    System.clearProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS);
-    System.clearProperty(KafkaCrossDcConf.TOPIC_NAME);
-    super.tearDown();
   }
 
   @Test
@@ -136,7 +126,7 @@ public class MirroringCollectionsHandlerTest extends SolrTestCaseJ4 {
     MirroringCollectionsHandler handler =
         Mockito.spy(new MirroringCollectionsHandler(coreContainer, sink));
     Mockito.doNothing().when(handler).baseHandleRequestBody(Mockito.any(), Mockito.any());
-    SolrQueryRequest req = new LocalSolrQueryRequest(null, params);
+    SolrQueryRequest req = new SolrQueryRequestBase(null, params);
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
     if (expectResult) {

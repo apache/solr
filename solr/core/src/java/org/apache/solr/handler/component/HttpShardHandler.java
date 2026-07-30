@@ -33,8 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.LBAsyncSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.NoOpReplicaListTransformer;
@@ -97,8 +96,25 @@ public class HttpShardHandler extends ShardHandler {
   protected final BlockingQueue<ShardResponse> responses;
   private final AtomicBoolean canceled = new AtomicBoolean(false);
 
+  // One monitor guards every cancellation-related state transition: the canceled flag, the
+  // responseFutureMap, and queueing the responses queue's CANCELLATION_NOTIFICATION. Holding it
+  // makes "has everything been canceled / is anything still outstanding?" a single atomic question
+  // rather than a set of separately-observed flags. It is a dedicated object (not the canceled
+  // flag itself) so the lock's identity does not depend on how cancellation state happens to be
+  // stored. Subclasses with extra cancellable bookkeeping must read and mutate it under this same
+  // monitor; see ParallelHttpShardHandler.
+  private final Object cancellationLock = new Object();
+
+  protected final Object cancellationLock() {
+    return cancellationLock;
+  }
+
+  protected final boolean isCanceled() {
+    return canceled.get();
+  }
+
   private final Map<String, List<String>> shardToURLs;
-  protected LBHttp2SolrClient<Http2SolrClient> lbClient;
+  protected LBAsyncSolrClient lbClient;
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
     this.httpShardHandlerFactory = httpShardHandlerFactory;
@@ -189,6 +205,9 @@ public class HttpShardHandler extends ShardHandler {
     params.remove(CommonParams.WT); // use default (currently javabin)
     QueryRequest req = createQueryRequest(sreq, params, shard);
     req.setMethod(SolrRequest.METHOD.POST);
+    if (sreq.headers != null) {
+      req.addHeaders(sreq.headers);
+    }
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
     if (requestInfo != null) {
       req.setUserPrincipal(requestInfo.getUserPrincipal());
@@ -212,7 +231,7 @@ public class HttpShardHandler extends ShardHandler {
     srsp.setException(exception);
     srsp.setResponseCode(exception.code());
 
-    synchronized (canceled) {
+    synchronized (cancellationLock) {
       if (!canceled.get()) {
         responses.add(srsp);
       }
@@ -247,7 +266,7 @@ public class HttpShardHandler extends ShardHandler {
    * @param sreq the request to make
    * @param shard the shard to address
    * @param params request parameters
-   * @param lbReq the load balanced request suitable for LBHttp2SolrClient
+   * @param lbReq the load balanced request
    * @param ssr the response collector part 1
    * @param srsp the shard response collector
    * @param startTimeNS the time at which the request was initiated, likely just prior to calling
@@ -264,9 +283,10 @@ public class HttpShardHandler extends ShardHandler {
       ShardResponse srsp,
       long startTimeNS) {
     CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
-    // Synchronize on canceled, so that we know precisely whether to add it to the responseFutureMap
-    // or not.
-    synchronized (canceled) {
+    // Hold the cancellation lock so the canceled check and the responseFutureMap put happen as one
+    // step: either we register this future for later cancellation, or (if cancelAll already ran) we
+    // cancel it now and never track it.
+    synchronized (cancellationLock) {
       if (canceled.get() && !future.isDone()) {
         future.cancel(true);
         return;
@@ -278,25 +298,47 @@ public class HttpShardHandler extends ShardHandler {
     // on the map already having the future.
     future.whenComplete(
         (LBSolrClient.Rsp rsp, Throwable throwable) -> {
-          if (rsp != null) {
-            ssr.nl = rsp.getResponse();
-            srsp.setShardAddress(rsp.getServer());
-          } else if (throwable != null) {
-            srsp.setException(throwable);
-            if (throwable instanceof SolrException) {
-              srsp.setResponseCode(((SolrException) throwable).code());
+          try {
+            if (rsp != null) {
+              ssr.nl = rsp.getResponse();
+              srsp.setShardAddress(rsp.getServer());
+            } else if (throwable != null) {
+              srsp.setException(throwable);
+              if (throwable instanceof SolrException) {
+                srsp.setResponseCode(((SolrException) throwable).code());
+              }
             }
-          }
-          ssr.elapsedTime =
-              TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
-          // Synchronize on cancelled so this code and cancelAll() cannot happen at the same time
-          synchronized (canceled) {
-            // We don't want to add responses after the requests have been canceled
-            if (responseFutureMap.containsKey(srsp)) {
-              responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
+            ssr.elapsedTime =
+                TimeUnit.MILLISECONDS.convert(
+                    System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
+            enqueueIfTracked(srsp, HttpShardHandler.this.transformResponse(sreq, srsp, shard));
+          } catch (Exception e) {
+            // If response processing throws (a subclass transformResponse, a malformed Rsp, etc.)
+            // the response would never be enqueued — yet responseFutureMap still tracks srsp, so a
+            // consumer in take() would park forever. Turn the failure into the shard's response and
+            // enqueue it raw, bypassing transformResponse (which may itself be the thrower). We
+            // deliberately catch Exception, not Throwable, so a JVM Error (e.g. OutOfMemoryError)
+            // propagates instead of being silently downgraded to a shard error.
+            srsp.setException(e);
+            if (e instanceof SolrException) {
+              srsp.setResponseCode(((SolrException) e).code());
             }
+            enqueueIfTracked(srsp, srsp);
           }
         });
+  }
+
+  /**
+   * Enqueue {@code value} into the {@link #responses} queue iff {@code key} is still tracked in
+   * {@link #responseFutureMap}, holding the cancellation monitor so this stays atomic with {@link
+   * #cancelAll()}'s clear.
+   */
+  private void enqueueIfTracked(ShardResponse key, ShardResponse value) {
+    synchronized (cancellationLock) {
+      if (responseFutureMap.containsKey(key)) {
+        responses.add(value);
+      }
+    }
   }
 
   /** Subclasses could modify the request based on the shard */
@@ -328,7 +370,12 @@ public class HttpShardHandler extends ShardHandler {
     ShardResponse previousResponse = null;
     try {
       while (responsesPending()) {
-        ShardResponse rsp = responses.take();
+        ShardResponse rsp = awaitNextResponse();
+        if (rsp == null) {
+          // awaitNextResponse() returned without a response — only happens for subclasses that
+          // override with a timed poll. Re-evaluate responsesPending() and either re-wait or exit.
+          continue;
+        }
         if (rsp == CANCELLATION_NOTIFICATION) {
           // This is only queued in cancelAll(), so all outstanding futures have already been
           // canceled.
@@ -376,6 +423,23 @@ public class HttpShardHandler extends ShardHandler {
     return !responseFutureMap.isEmpty() || !responses.isEmpty();
   }
 
+  /**
+   * Wait for the next response from the {@link #responses} queue. Defaults to a blocking {@link
+   * BlockingQueue#take()}.
+   *
+   * <p>Subclasses that gate {@link #responsesPending()} on an async tracker outside the {@link
+   * #responses} queue's lifecycle (e.g. {@link ParallelHttpShardHandler#submitFutures}) MUST
+   * override this with a timed poll. The cancellation lock can serialize {@link
+   * #responsesPending()} reads with state mutations, but it cannot signal the queue's internal
+   * {@code Condition}: if the tracker drains without anything being enqueued to {@link #responses},
+   * a thread parked in {@link BlockingQueue#take()} would never wake up. Returning {@code null}
+   * from this method instructs {@link #take(boolean)} to re-check {@link #responsesPending()} and
+   * either re-wait or exit cleanly.
+   */
+  protected ShardResponse awaitNextResponse() throws InterruptedException {
+    return responses.take();
+  }
+
   @Override
   public void cancelAll() {
     // Canceled must be set to true before calling the cancellation code, to ensure that new tasks
@@ -386,7 +450,7 @@ public class HttpShardHandler extends ShardHandler {
     // responses will not be recorded.
     // Queue a fake response to notify take() that it should no longer wait on responses as the
     // outstanding requests have been canceled
-    synchronized (canceled) {
+    synchronized (cancellationLock) {
       boolean alreadyCanceled = canceled.getAndSet(true);
       if (!alreadyCanceled) {
         // We don't want to queue this multiple times if we are already canceled
@@ -406,7 +470,7 @@ public class HttpShardHandler extends ShardHandler {
   public void prepDistributed(ResponseBuilder rb) {
     final SolrQueryRequest req = rb.req;
     final SolrParams params = req.getParams();
-    final String shards = params.get(ShardParams.SHARDS);
+    String shards = params.get(ShardParams.SHARDS);
 
     CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
     CloudDescriptor cloudDescriptor = req.getCloudDescriptor();
@@ -432,7 +496,7 @@ public class HttpShardHandler extends ShardHandler {
 
     ReplicaSource replicaSource;
     if (zkController != null) {
-      boolean onlyNrt = Boolean.TRUE == req.getContext().get(ONLY_NRT_REPLICAS);
+      boolean onlyNrt = Boolean.TRUE.equals(req.getContext().get(ONLY_NRT_REPLICAS));
 
       replicaSource =
           new CloudReplicaSource.Builder()
@@ -445,7 +509,7 @@ public class HttpShardHandler extends ShardHandler {
               .build();
       rb.slices = replicaSource.getSliceNames().toArray(new String[replicaSource.getSliceCount()]);
 
-      if (canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
+      if (!rb.isForcedDistrib() && canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
         rb.isDistrib = false;
         rb.shortCircuitedURL =
             ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
@@ -477,6 +541,9 @@ public class HttpShardHandler extends ShardHandler {
         }
       }
     } else {
+      if (shards == null) {
+        shards = req.getHttpSolrCall().getThisNodeUrl() + "/" + req.getCore().getName();
+      }
       replicaSource =
           new StandaloneReplicaSource.Builder()
               .allowListUrlChecker(urlChecker)
@@ -504,6 +571,7 @@ public class HttpShardHandler extends ShardHandler {
     return String.join("|", shardUrls);
   }
 
+  /** Can we avoid distributed search / coordinator? */
   private boolean canShortCircuit(
       String[] slices,
       boolean onlyNrtReplicas,

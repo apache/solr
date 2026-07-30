@@ -30,13 +30,11 @@ ext {
 dependencies {
   implementation platform(project(':platform'))
   api project(':solr:core')
-  implementation project(':solr:solrj')
-  implementation project(':solr:solrj-zookeeper')
 
   implementation libs.slf4j.api
   implementation libs.apache.kafka.clients
   implementation libs.google.guava
-  implementation libs.dropwizard.metrics.core
+  implementation libs.opentelemetry.api
   implementation libs.apache.zookeeper.zookeeper
   implementation libs.apache.zookeeper.jute
 
@@ -55,12 +53,6 @@ dependencies {
   })
   testRuntimeOnly libs.bytebuddy
   testRuntimeOnly libs.bytebuddy.agent
-
-  testImplementation(libs.apache.kafka.clients) {
-    artifact {
-      classifier = "test"
-    }
-  }
 }
 
 // Make sure that the cloud-minimal.zip artifact is up-to-date with cloud-minimal/conf

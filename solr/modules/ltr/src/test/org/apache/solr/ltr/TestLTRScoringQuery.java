@@ -219,7 +219,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
     }
     int[] posVals = new int[] {0, 1, 2};
     int pos = 0;
-    for (LTRScoringQuery.FeatureInfo fInfo : modelWeight.getFeaturesInfo()) {
+    for (LTRScoringQuery.FeatureInfo fInfo : modelWeight.getAllFeaturesInStore()) {
       if (fInfo == null) {
         continue;
       }

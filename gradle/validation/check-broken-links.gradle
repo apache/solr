@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
+
 configure(rootProject) {
   task checkBrokenLinks {
     group 'Verification'
@@ -30,40 +33,48 @@ configure(project(':solr:documentation')) {
 }
 
 @CacheableTask
-class CheckBrokenLinksTask extends DefaultTask {
+abstract class CheckBrokenLinksTask extends DefaultTask {
+
+  @Inject
+  abstract ExecOperations getExecOperations()
 
   // wraps input directory location in DirectoryProperty so as to lazily evaluate 'docroot' property
   // (see gradle/documentation/documentation.gradle)
   @InputDirectory
   @PathSensitive(PathSensitivity.RELATIVE)
   final DirectoryProperty docsDir = project.objects.directoryProperty()
-    .fileProvider(project.providers.provider { project.docroot })
+      .fileProvider(project.providers.provider {project.docroot})
 
   @InputFile
   @PathSensitive(PathSensitivity.RELATIVE)
   File script = project.rootProject.file("dev-tools/scripts/checkJavadocLinks.py")
 
   @OutputFile
-  Provider<RegularFile> outputFile = project.layout.buildDirectory.file('check-broken-links-output.txt')
+  Provider<RegularFile> outputFile = project.layout.buildDirectory.file(
+      'check-broken-links-output.txt')
 
   @TaskAction
   def check() {
     def result
-    outputFile.get().asFile.withOutputStream { output ->
-      result = project.exec {
+    outputFile.get().asFile.withOutputStream {output ->
+      result = execOperations.exec {
         executable project.externalTool("python3")
         ignoreExitValue = true
         standardOutput = output
         errorOutput = output
         args = [
-          "-B",
-          script.absolutePath,
-          docsDir.get().getAsFile()
+            "-B",
+            script.absolutePath,
+            docsDir.get().getAsFile()
         ]
       }
     }
 
     if (result.getExitValue() != 0) {
+      println "Broken links check failed. First lines of the output:"
+      outputFile.get().asFile.readLines().take(20).each {line ->
+        println line
+      }
       throw new GradleException("Broken links check failed. Command output at: ${outputFile.get()}")
     }
   }

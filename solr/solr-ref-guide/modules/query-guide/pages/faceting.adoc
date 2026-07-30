@@ -360,7 +360,7 @@ f.lastModified_dt.facet.range.gap=+1DAY
 How to handle cases where the `facet.range.gap` does not divide evenly between `facet.range.start` and `facet.range.end`.
 +
 If `true`, the last range constraint will have the `facet.range.end` value as an upper bound.
-If `false`, the last range will have the smallest possible upper bound greater then `facet.range.end` so the range is the exact width of the specified range gap.
+If `false`, the last range will have the smallest possible upper bound greater than `facet.range.end` so the range is the exact width of the specified range gap.
 +
 This parameter can be specified on a per field basis with the syntax `f.<fieldname>.facet.range.hardend`.
 

@@ -86,6 +86,7 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
 
   @Test
   public void testEstimateObjectSize() {
+    assertEquals(estimate(null), 0);
     assertEquals(estimate("abc"), 6);
     assertEquals(estimate("abcdefgh"), 16);
     List<String> keys = List.of("int", "long", "double", "float", "str");
@@ -99,7 +100,8 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     map.put("double", 12.0);
     map.put("float", 5.0f);
     map.put("str", "duck");
-    assertEquals(estimate(map), 50);
+    map.put("short", null);
+    assertEquals(estimate(map), 60);
 
     SolrInputDocument document = new SolrInputDocument();
     for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -134,7 +136,8 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     mapWChild.put("double", 12.0);
     mapWChild.put("float", 5.0f);
     mapWChild.put("str", "duck");
-    assertEquals(estimate(mapWChild), 50);
+    mapWChild.put("short", null);
+    assertEquals(estimate(mapWChild), 60);
     Map<String, Object> childMap = new HashMap<>(mapWChild);
 
     SolrInputDocument document = new SolrInputDocument();
@@ -175,7 +178,8 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     mapWChild.put("double", 12.0);
     mapWChild.put("float", 5.0f);
     mapWChild.put("str", "duck");
-    assertEquals(estimate(mapWChild), 50);
+    mapWChild.put("short", null);
+    assertEquals(estimate(mapWChild), 60);
     Map<String, Object> childMap = new HashMap<>(mapWChild);
 
     SolrInputDocument document = new SolrInputDocument();

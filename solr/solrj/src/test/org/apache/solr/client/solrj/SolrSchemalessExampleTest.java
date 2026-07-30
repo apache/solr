@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import java.io.ByteArrayInputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,21 +25,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import org.apache.commons.io.file.PathUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.InputStreamEntity;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.util.ExternalPaths;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
+
+  protected HttpClient getHttpClient() {
+    return solrTestRule.getJetty().getSolrClient().getHttpClient();
+  }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -56,22 +57,13 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     PathUtils.copyDirectory(ExternalPaths.DEFAULT_CONFIGSET, collection1Dir);
     Properties props = new Properties();
     props.setProperty("name", "collection1");
-    OutputStreamWriter writer = null;
-    try {
-      writer =
-          new OutputStreamWriter(
-              PathUtils.newOutputStream(collection1Dir.resolve("core.properties"), false),
-              StandardCharsets.UTF_8);
+    try (OutputStreamWriter writer =
+        new OutputStreamWriter(
+            PathUtils.newOutputStream(collection1Dir.resolve("core.properties"), false),
+            StandardCharsets.UTF_8)) {
       props.store(writer, null);
-    } finally {
-      if (writer != null) {
-        try {
-          writer.close();
-        } catch (Exception ignore) {
-        }
-      }
     }
-    createAndStartJetty(tempSolrHome);
+    solrTestRule.startSolr(tempSolrHome);
   }
 
   @Test
@@ -84,14 +76,12 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
     HttpClient httpClient = getHttpClient();
-    HttpPost post = new HttpPost(getCoreUrl() + "/update/json/docs");
-    post.setHeader("Content-Type", "application/json");
-    post.setEntity(
-        new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
-    HttpResponse response =
-        httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
-    HttpClientUtil.consumeFully(response.getEntity());
-    assertEquals(200, response.getStatusLine().getStatusCode());
+    ContentResponse response =
+        httpClient
+            .POST(solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/update/json/docs")
+            .body(new StringRequestContent("application/json", json))
+            .send();
+    assertEquals(200, response.getStatus());
     client.commit();
     assertNumFound("*:*", 2);
   }
@@ -112,12 +102,12 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
             + "{\"p.q\" : \"name\"}"
             + "{\"a&b\" : \"name\"}";
     HttpClient httpClient = getHttpClient();
-    HttpPost post = new HttpPost(getCoreUrl() + "/update/json/docs");
-    post.setHeader("Content-Type", "application/json");
-    post.setEntity(
-        new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
-    HttpResponse response = httpClient.execute(post);
-    assertEquals(200, response.getStatusLine().getStatusCode());
+    ContentResponse response =
+        httpClient
+            .POST(solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/update/json/docs")
+            .body(new StringRequestContent("application/json", json))
+            .send();
+    assertEquals(200, response.getStatus());
     client.commit();
     List<String> expected =
         Arrays.asList("name_one", "name__two", "first-second", "a_b", "p_q", "p.q", "x_y");
@@ -131,10 +121,9 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Override
   public SolrClient createNewSolrClient() {
-    HttpSolrClient.Builder httpSolrClientBuilder =
-        new HttpSolrClient.Builder(getBaseUrl())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .allowMultiPartPost(random().nextBoolean());
+    var httpSolrClientBuilder =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME);
     if (random().nextBoolean()) {
       httpSolrClientBuilder
           .withRequestWriter(new JavaBinRequestWriter())

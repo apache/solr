@@ -27,13 +27,13 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -242,9 +242,9 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
   private SolrClient getTechProductSolrClient() {
     // tag::solrj-solrclient-timeouts[]
     final String solrUrl = "http://localhost:8983/solr";
-    return new HttpSolrClient.Builder(solrUrl)
+    return new HttpJettySolrClient.Builder(solrUrl)
         .withConnectionTimeout(10000, TimeUnit.MILLISECONDS)
-        .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+        .withIdleTimeout(60000, TimeUnit.MILLISECONDS)
         .build();
     // end::solrj-solrclient-timeouts[]
   }
@@ -318,7 +318,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     final StringBuilder builder = new StringBuilder();
     builder.append("Leftover output was expected but not printed:");
     for (String expectedLine : expectedLines) {
-      builder.append("\n\t" + expectedLine);
+      builder.append("\n\t").append(expectedLine);
     }
     fail(builder.toString());
   }

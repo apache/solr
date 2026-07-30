@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Sync up various system properties related to Solr's Jetty process for hosts and ports
+type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-15442
+    url: https://issues.apache.org/jira/browse/SOLR-15442
+issues:
+  - 15442

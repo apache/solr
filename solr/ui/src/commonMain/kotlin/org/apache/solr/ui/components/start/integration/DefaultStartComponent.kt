@@ -66,6 +66,7 @@ class DefaultStartComponent(
                         methods = label.methods,
                     ),
                 )
+
                 is StartStore.Label.Connected ->
                     output(StartComponent.Output.OnConnected(url = label.url))
             }

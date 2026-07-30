@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj.response;
 
-import java.util.Collections;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.common.util.NamedList;
@@ -69,7 +69,7 @@ public class NestableJsonFacetTest extends SolrTestCaseJ4 {
                 });
           }
         };
-    vals.add("buckets", Collections.singletonList(buckets));
+    vals.add("buckets", List.of(buckets));
     list.add("test", vals);
     NestableJsonFacet facet = new NestableJsonFacet(list);
 
@@ -118,7 +118,7 @@ public class NestableJsonFacetTest extends SolrTestCaseJ4 {
                 });
           }
         };
-    vals.add("buckets", Collections.singletonList(buckets));
+    vals.add("buckets", List.of(buckets));
     list.add("test", vals);
     facet = new NestableJsonFacet(list);
     assertEquals(12L, facet.getCount());

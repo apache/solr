@@ -24,7 +24,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.index.LogDocMergePolicyFactory;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestNRTOpen extends SolrTestCaseJ4 {
@@ -41,14 +40,6 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     // reload the core again over the same index
     h.reload();
     assertNRT(1);
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    // ensure we clean up after ourselves, this will fire before superclass...
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.tests.maxBufferedDocs");
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Override

@@ -18,7 +18,7 @@
 package org.apache.solr.security;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
@@ -37,7 +37,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
         .withSecurityJson(STD_CONF)
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 4, 1)
-        .setBasicAuthCredentials("solr", "solr")
+        .setBasicAuthCredentials("solr", "SolrRocks")
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 4, 4);
   }
@@ -52,7 +52,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   @Test
   public void basicTest() throws Exception {
     try (SolrClient client =
-        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
 
       // SOLR-13510, this will be failed if the listener (handling inject credential in header) is
@@ -60,7 +60,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
       for (int i = 0; i < 30; i++) {
         assertNotNull(
             new QueryRequest(params("q", "*:*"))
-                .setBasicAuthCredentials("solr", "solr")
+                .setBasicAuthCredentials("solr", "SolrRocks")
                 .process(client, COLLECTION));
       }
     }
@@ -69,7 +69,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   @Test
   public void testDeleteSecurityJsonZnode() throws Exception {
     try (SolrClient client =
-        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
       try {
         new QueryRequest(params("q", "*:*")).process(client, COLLECTION);
@@ -80,7 +80,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
 
       // Deleting security.json will disable security - before SOLR-9679 it would instead cause an
       // exception
-      cluster.getZkClient().delete("/security.json", -1, false);
+      cluster.getZkClient().delete("/security.json", -1);
 
       int count = 0;
       boolean done = false;
@@ -106,7 +106,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
           + "  \"authentication\":{\n"
           + "   \"blockUnknown\": true,\n"
           + "   \"class\":\"solr.BasicAuthPlugin\",\n"
-          + "   \"credentials\":{\"solr\":\"EEKn7ywYk5jY8vG9TyqlG2jvYuvh1Q7kCCor6Hqm320= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
+          + "   \"credentials\":{\"solr\":\"JeRyxP8A3dVWhFgFbf/Eg2RXmuoU8BE5gbNQyxmGAJQ= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
           + "  },\n"
           + "  \"authorization\":{\n"
           + "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n"

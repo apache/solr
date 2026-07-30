@@ -23,7 +23,8 @@
 //       runner duplicated suite names (much like https://github.com/gradle/test-retry-gradle-plugin)
 // TODO: this is a somewhat related issue: https://github.com/gradle/test-retry-gradle-plugin/issues/29
 
-def beastingMode = gradle.startParameter.taskNames.any{ name -> name == 'beast' || name.endsWith(':beast') }
+def beastingMode = gradle
+    .startParameter.taskNames.any {name -> name == 'beast' || name.endsWith(':beast')}
 
 allprojects {
   plugins.withType(JavaPlugin) {
@@ -37,7 +38,8 @@ allprojects {
 
 if (beastingMode) {
   if (rootProject.rootSeedUserProvided) {
-    logger.warn("Root randomization seed is externally provided, all duplicated runs will use the same starting seed.")
+    logger.warn(
+        "Root randomization seed is externally provided, all duplicated runs will use the same starting seed.")
   }
 
   allprojects {
@@ -55,7 +57,7 @@ if (beastingMode) {
       // generate N test tasks and attach them to the beasting task for this project;
       // the test filter will be applied by the beast task once it is received from
       // command line.
-      def subtasks = (1..dups).collect { value ->
+      def subtasks = (1..dups).collect {value ->
         return tasks.create(name: "test_${value}", type: Test, {
           failFast = true
           doFirst {
@@ -81,7 +83,7 @@ if (beastingMode) {
 class BeastTask extends DefaultTask {
   @Option(option = "tests", description = "Sets test class or method name to be included, '*' is supported.")
   public void setTestNamePatterns(List<String> patterns) {
-    taskDependencies.getDependencies(this).each { subtask ->
+    taskDependencies.getDependencies(this).each {subtask ->
       subtask.filter.setCommandLineIncludePatterns(patterns)
     }
   }

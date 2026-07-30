@@ -24,17 +24,17 @@ package org.apache.solr.handler.tagger;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import org.apache.lucene.document.Field;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -44,7 +44,6 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /** Tests that we can skip serialization of the documents when embedding Solr. */
@@ -100,7 +99,7 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
     @SuppressWarnings("deprecation")
     @Override
     public Collection<ContentStream> getContentStreams() {
-      return Collections.singleton(new ContentStreamBase.StringStream(input));
+      return Set.of(new ContentStreamBase.StringStream(input));
     }
 
     //     As of 7.2.  But won't work until: https://issues.apache.org/jira/browse/SOLR-12142
@@ -119,17 +118,6 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
   @Test
   public void testAssertTagStreamingWithSolrTaggerRequest() throws Exception {
     doTestAssertTagStreaming(SolrTaggerRequest::new);
-  }
-
-  @Test
-  @Ignore("As of Solr 7, stream.body is disabled by default for security ") // DWS: dubious, IMO
-  // and it can't be enabled with EmbeddedSolrServer until SOLR-12126
-  public void testAssertTagStreamingWithStreamBodyParam() throws Exception {
-    doTestAssertTagStreaming(
-        (params, input) -> {
-          params.set("stream.body", input);
-          return new QueryRequest(params);
-        });
   }
 
   public void doTestAssertTagStreaming(

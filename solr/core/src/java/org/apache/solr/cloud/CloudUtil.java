@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,14 +128,14 @@ public class CloudUtil {
   public static Map<String, byte[]> getTrustedKeys(SolrZkClient zk, String dir) {
     Map<String, byte[]> result = new HashMap<>();
     try {
-      List<String> children = zk.getChildren("/keys/" + dir, null, true);
+      List<String> children = zk.getChildren("/keys/" + dir, null);
       for (String key : children) {
         if (key.endsWith(".der"))
-          result.put(key, zk.getData("/keys/" + dir + "/" + key, null, null, true));
+          result.put(key, zk.getData("/keys/" + dir + "/" + key, null, null));
       }
     } catch (KeeperException.NoNodeException e) {
       log.info("Error fetching key names");
-      return Collections.emptyMap();
+      return Map.of();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to read crypto keys", e);

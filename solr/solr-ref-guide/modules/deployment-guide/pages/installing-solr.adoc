@@ -30,8 +30,8 @@ Download the latest release https://solr.apache.org/downloads.html.
 
 There are three separate packages:
 
-* `solr-{solr-full-version}.tgz` the full binary package, for all operating systems. This package includes all first-party Solr modules and accessories (e.g. the `prometheus-exporter`).
-* `solr-{solr-full-version}-slim.tgz` the slim binary package, for all operating systems. This package only includes what is necessary to run Solr. Modules and accessories (e.g. the `prometheus-exporter`) are not included.
+* `solr-{solr-full-version}.tgz` the full binary package, for all operating systems. This package includes all first-party Solr modules and accessories.
+* `solr-{solr-full-version}-slim.tgz` the slim binary package, for all operating systems. This package only includes what is necessary to run Solr. Modules and accessories are not included.
 * `solr-{solr-full-version}-src.tgz` the package Solr source code.
 This is useful if you want to develop on Solr without using the official Git repository.
 
@@ -59,7 +59,7 @@ A very good blog post that discusses the issues to consider is https://lucidwork
 
 One thing to note when planning your installation is that a hard limit exists in Lucene for the number of documents in a single index: approximately 2.14 billion documents (2,147,483,647 to be exact).
 In practice, it is highly unlikely that such a large number of documents would fit and perform well in a single index, and you will likely need to distribute your index across a cluster before you ever approach this number.
-If you know you will exceed this number of documents in total before you've even started indexing, it's best to plan your installation with xref:cluster-types.adoc#solrcloud-mode[SolrCloud] as part of your design from the start.
+If you know you will exceed this number of documents in total before you've even started indexing, it's best to plan your installation with xref:getting-started:cluster-types.adoc#solrcloud-clusters[SolrCloud] as part of your design from the start.
 
 == Package Installation
 
@@ -100,11 +100,6 @@ It is described in more detail in the section xref:taking-solr-to-production.ado
 modules/::
 Solr's `modules` directory includes 1st-party add-ons for specialized features that enhance Solr.
 See the section xref:configuration-guide:solr-modules.adoc[] for more information.
-*This is not included in the `slim` distribution.*
-
-prometheus-exporter/::
-A standalone application, included under `bin/`, that monitors Solr instances and produces Prometheus metrics.
-See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc[] for more information.
 *This is not included in the `slim` distribution.*
 
 cross-dc-manager/::
@@ -202,7 +197,7 @@ Currently, the available examples you can run are: techproducts, schemaless, and
 See the section xref:solr-control-script-reference.adoc#running-with-example-configurations[Running with Example Configurations] for details on each example.
 
 .Going deeper with SolrCloud
-NOTE: Running the `cloud` example demonstrates running multiple nodes of Solr using xref:cluster-types.adoc#solrcloud-mode[SolrCloud] mode.
+NOTE: Running the `cloud` example demonstrates running multiple nodes of Solr using xref:getting-started:cluster-types.adoc#solrcloud-clusters[SolrCloud] mode.
 For more information on starting Solr in SolrCloud mode, see the section xref:getting-started:tutorial-solrcloud.adoc[].
 
 === Check if Solr is Running

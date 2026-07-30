@@ -24,7 +24,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
+import org.apache.solr.util.SocketProxy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -38,7 +38,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
   @ClassRule
   @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).build();
+      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
 
   S3StorageClient client;
   private SocketProxy proxy;

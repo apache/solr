@@ -24,9 +24,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.client.api.util.ReflectWritable;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 
@@ -88,11 +87,10 @@ public interface TextWriter extends PushWriter {
       writeMap(name, (MapWriter) val);
     } else if (val instanceof ReflectWritable) {
       writeVal(name, Utils.getReflectWriter(val));
-    } else if (val instanceof MapSerializable) {
-      // todo find a better way to reuse the map more efficiently
-      writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);
     } else if (val instanceof Map) {
       writeMap(name, (Map) val, false, true);
+    } else if (val instanceof Collection<?> cval) { // very generic; keep towards the end
+      writeArray(name, cval.iterator(), cval.size(), raw);
     } else if (val instanceof Iterator) { // very generic; keep towards the end
       writeArray(name, (Iterator) val, raw);
     } else if (val instanceof Iterable) { // very generic; keep towards the end
@@ -128,6 +126,8 @@ public interface TextWriter extends PushWriter {
       throws IOException;
 
   void writeArray(String name, Iterator<?> val, boolean raw) throws IOException;
+
+  void writeArray(String name, Iterator<?> val, int size, boolean raw) throws IOException;
 
   void writeNull(String name) throws IOException;
 

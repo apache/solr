@@ -20,7 +20,7 @@ import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.lang.invoke.VarHandle;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
@@ -31,9 +31,11 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.ConfigNode;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -52,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * This config object encapsulates IndexWriter config params, defined in the &lt;indexConfig&gt;
  * section of solrconfig.xml
  */
-public class SolrIndexConfig implements MapSerializable {
+public class SolrIndexConfig implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String NO_SUB_PACKAGES[] = new String[0];
@@ -107,7 +109,7 @@ public class SolrIndexConfig implements MapSerializable {
     mergeSchedulerInfo = null;
     mergedSegmentWarmerInfo = null;
     // enable coarse-grained metrics by default
-    metricsInfo = new PluginInfo("metrics", Collections.emptyMap(), null, null);
+    metricsInfo = new PluginInfo("metrics", Map.of(), null, null);
   }
 
   private ConfigNode get(String s) {
@@ -181,13 +183,8 @@ public class SolrIndexConfig implements MapSerializable {
     }
 
     if (get("infoStream").boolVal(false)) {
-      if (get("infoStream").attr("file") == null) {
-        log.info("IndexWriter infoStream solr logging is enabled");
-        infoStream = new LoggingInfoStream();
-      } else {
-        throw new IllegalArgumentException(
-            "Remove @file from <infoStream> to output messages to solr's logfile");
-      }
+      log.info("IndexWriter infoStream solr logging is enabled");
+      infoStream = new LoggingInfoStream();
     }
     mergedSegmentWarmerInfo =
         getPluginInfo(get("mergedSegmentWarmer"), def.mergedSegmentWarmerInfo);
@@ -199,28 +196,19 @@ public class SolrIndexConfig implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    map.put("useCompoundFile", useCompoundFile);
-    map.put("maxBufferedDocs", maxBufferedDocs);
-    map.put("ramBufferSizeMB", ramBufferSizeMB);
-    map.put("ramPerThreadHardLimitMB", ramPerThreadHardLimitMB);
-    map.put("maxCommitMergeWaitTime", maxCommitMergeWaitMillis);
-    map.put("writeLockTimeout", writeLockTimeout);
-    map.put("lockType", lockType);
-    map.put("infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
-    if (mergeSchedulerInfo != null) {
-      map.put("mergeScheduler", mergeSchedulerInfo);
-    }
-    if (metricsInfo != null) {
-      map.put("metrics", metricsInfo);
-    }
-    if (mergePolicyFactoryInfo != null) {
-      map.put("mergePolicyFactory", mergePolicyFactoryInfo);
-    }
-    if (mergedSegmentWarmerInfo != null) {
-      map.put("mergedSegmentWarmer", mergedSegmentWarmerInfo);
-    }
-    return map;
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("useCompoundFile", useCompoundFile)
+        .put("maxBufferedDocs", maxBufferedDocs)
+        .put("ramBufferSizeMB", ramBufferSizeMB)
+        .put("ramPerThreadHardLimitMB", ramPerThreadHardLimitMB)
+        .put("maxCommitMergeWaitTime", maxCommitMergeWaitMillis)
+        .put("writeLockTimeout", writeLockTimeout)
+        .put("lockType", lockType)
+        .put("infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT)
+        .putIfNotNull("mergeScheduler", mergeSchedulerInfo)
+        .putIfNotNull("metrics", metricsInfo)
+        .putIfNotNull("mergePolicyFactory", mergePolicyFactoryInfo)
+        .putIfNotNull("mergedSegmentWarmer", mergedSegmentWarmerInfo);
   }
 
   private PluginInfo getPluginInfo(ConfigNode node, PluginInfo def) {
@@ -251,7 +239,11 @@ public class SolrIndexConfig implements MapSerializable {
     if (ramBufferSizeMB != -1) iwc.setRAMBufferSizeMB(ramBufferSizeMB);
 
     if (ramPerThreadHardLimitMB != -1) {
-      iwc.setRAMPerThreadHardLimitMB(ramPerThreadHardLimitMB);
+      if (ramPerThreadHardLimitMB > 2048) {
+        setPerThreadRAMLimitViaVarHandle(iwc, ramPerThreadHardLimitMB);
+      } else {
+        iwc.setRAMPerThreadHardLimitMB(ramPerThreadHardLimitMB);
+      }
     }
 
     if (maxCommitMergeWaitMillis > 0) {
@@ -268,6 +260,14 @@ public class SolrIndexConfig implements MapSerializable {
     if (mergePolicy instanceof SortingMergePolicy) {
       Sort indexSort = ((SortingMergePolicy) mergePolicy).getSort();
       iwc.setIndexSort(indexSort);
+    }
+
+    if (iwc.getIndexSort() != null
+        && schema.isUsableForChildDocs()
+        && core.getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_10_4_0)) {
+      // Solr 10 shipped with Lucene 10.3.x, and Solr <=10 didn't set the parent field.
+      // This version check allows an upgrading user to continue to do index sorting.
+      iwc.setParentField(IndexSchema.IS_ROOT_FIELD_NAME);
     }
 
     iwc.setUseCompoundFile(useCompoundFile);
@@ -350,5 +350,34 @@ public class SolrIndexConfig implements MapSerializable {
     }
 
     return scheduler;
+  }
+
+  @SuppressForbidden(reason = "Need to override Lucene's 2GB per-thread limit for large datasets")
+  private static void setPerThreadRAMLimitViaVarHandle(IndexWriterConfig config, int limitMB) {
+    MethodHandles.Lookup lookup = MethodHandles.lookup();
+    VarHandle fieldHandle = null;
+    Class<?> currentClass = config.getClass();
+
+    // Traverse the hierarchy to find the field
+    while (currentClass != null && fieldHandle == null) {
+      try {
+        MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(currentClass, lookup);
+        fieldHandle = privateLookup.findVarHandle(currentClass, "perThreadHardLimitMB", int.class);
+      } catch (IllegalAccessException | NoSuchFieldException e) {
+        currentClass = currentClass.getSuperclass();
+      }
+    }
+
+    if (fieldHandle == null) {
+      log.error("Could not find VarHandle for perThreadHardLimitMB field");
+      return;
+    }
+
+    try {
+      fieldHandle.set(config, limitMB);
+      log.info("Set perThreadHardLimitMB to {} MB via VarHandle", limitMB);
+    } catch (RuntimeException | Error e) {
+      log.error("Failed to set per-thread RAM limit via VarHandle", e);
+    }
   }
 }

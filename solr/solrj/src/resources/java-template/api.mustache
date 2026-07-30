@@ -28,17 +28,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.client.solrj.JacksonDataBindResponseParser;
+import org.apache.solr.client.solrj.response.json.JacksonDataBindResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.client.solrj.JacksonContentWriter;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.InputStreamResponse;
-import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.InputStreamResponse;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.util.NamedList;
 
 {{! Covers all top-level request/response model classes, but not necessarily any types nested in those classes }}

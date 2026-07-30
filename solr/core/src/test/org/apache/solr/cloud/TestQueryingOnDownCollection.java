@@ -19,11 +19,11 @@ package org.apache.solr.cloud;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -37,7 +37,8 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
   private static final String COLLECTION_NAME = "infected";
 
   private static final String USERNAME = "solr";
-  private static final String PASSWORD = "solr";
+  // Password must differ from the username (Basic Auth policy rejects username==password)
+  private static final String PASSWORD = "SolrRocks";
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -103,7 +104,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     // run same set of tests on v2 client which uses V2HttpCall
     try (SolrClient v2Client =
-        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
 
       SolrException error =
@@ -125,7 +126,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     byte[] collectionState =
         cluster
             .getZkClient()
-            .getData("/collections/" + COLLECTION_NAME + "/state.json", null, null, true);
+            .getData("/collections/" + COLLECTION_NAME + "/state.json", null, null);
 
     Map<String, Map<String, ?>> infectedState =
         (Map<String, Map<String, ?>>) Utils.fromJSON(collectionState);
@@ -141,8 +142,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     cluster
         .getZkClient()
-        .setData(
-            "/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState), true);
+        .setData("/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState));
 
     cluster
         .getJettySolrRunner(0)
@@ -156,7 +156,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
           + "  \"authentication\":{\n"
           + "   \"blockUnknown\": true,\n"
           + "   \"class\":\"solr.BasicAuthPlugin\",\n"
-          + "   \"credentials\":{\"solr\":\"EEKn7ywYk5jY8vG9TyqlG2jvYuvh1Q7kCCor6Hqm320= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
+          + "   \"credentials\":{\"solr\":\"JeRyxP8A3dVWhFgFbf/Eg2RXmuoU8BE5gbNQyxmGAJQ= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
           + "  },\n"
           + "  \"authorization\":{\n"
           + "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n"

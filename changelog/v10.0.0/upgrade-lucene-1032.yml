@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Upgrade Apache Lucene to 10.3.2
+type: dependency_update
+authors:
+  - name: Anshum Gupta
+links:
+  - name: SOLR-17997
+    url: https://issues.apache.org/jira/browse/SOLR-17997

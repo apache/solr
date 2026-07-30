@@ -23,11 +23,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.ResponseParser;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
@@ -57,9 +62,23 @@ public abstract class SolrRequest<T> implements Serializable {
 
   public enum METHOD {
     GET,
+    HEAD,
     POST,
     PUT,
-    DELETE
+    DELETE;
+
+    /**
+     * Returns the METHOD enum value matching the provided string, or 'null' if no match is found.
+     */
+    public static METHOD fromString(String methodStr) {
+      try {
+        return METHOD.valueOf(methodStr.toUpperCase(Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Request contained unexpected HTTP method: " + methodStr);
+      }
+    }
   };
 
   public enum ApiVersion {
@@ -119,8 +138,6 @@ public abstract class SolrRequest<T> implements Serializable {
 
   private String basicAuthUser, basicAuthPwd;
 
-  private String basePath;
-
   public SolrRequest<T> setBasicAuthCredentials(String user, String password) {
     this.basicAuthUser = user;
     this.basicAuthPwd = password;
@@ -155,16 +172,25 @@ public abstract class SolrRequest<T> implements Serializable {
     this.method = method;
   }
 
+  /**
+   * The URI path to a "request handler", such as "/select". Must start with a "/". For
+   * collection/core requests, this is appended to the core/collection path; otherwise it's a node
+   * level request and thus is relative to the solr root.
+   */
   public String getPath() {
     return path;
   }
 
   public void setPath(String path) {
+    if (path == null || !path.startsWith("/")) {
+      throw new IllegalArgumentException("Must start with a '/': " + path);
+    }
+
     this.path = path;
   }
 
   /**
-   * @return The {@link org.apache.solr.client.solrj.ResponseParser}
+   * @return The {@link ResponseParser}
    */
   public ResponseParser getResponseParser() {
     return responseParser;
@@ -174,7 +200,7 @@ public abstract class SolrRequest<T> implements Serializable {
    * Optionally specify how the Response should be parsed. Not all server implementations require a
    * ResponseParser to be specified.
    *
-   * @param responseParser The {@link org.apache.solr.client.solrj.ResponseParser}
+   * @param responseParser The {@link ResponseParser}
    */
   public void setResponseParser(ResponseParser responseParser) {
     this.responseParser = responseParser;
@@ -285,6 +311,32 @@ public abstract class SolrRequest<T> implements Serializable {
     var namedList = client.request(this, collection);
     long endNanos = System.nanoTime();
     final T typedResponse = createResponse(namedList);
+    // SolrResponse is pre-V2 API
+    if (typedResponse instanceof SolrResponse res) {
+      res.setResponse(namedList); // TODO insist createResponse does this ?
+      res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
+    }
+    return typedResponse;
+  }
+
+  /**
+   * Send this request to a {@link SolrClient} and return the response
+   *
+   * @param client the SolrClient to communicate with
+   * @param baseUrl the base URL, e.g. {@code Http://localhost:8983/solr}
+   * @param collection the collection to execute the request against
+   * @return the response
+   * @throws SolrServerException if there is an error on the Solr server
+   * @throws IOException if there is a communication error
+   * @lucene.experimental
+   */
+  public final T processWithBaseUrl(HttpSolrClient client, String baseUrl, String collection)
+      throws SolrServerException, IOException {
+    // duplicative with process(), except for requestWithBaseUrl
+    long startNanos = System.nanoTime();
+    var namedList = client.requestWithBaseUrl(baseUrl, this, collection);
+    long endNanos = System.nanoTime();
+    T typedResponse = createResponse(namedList);
     // SolrResponse is pre-V2 API
     if (typedResponse instanceof SolrResponse res) {
       res.setResponse(namedList); // TODO insist createResponse does this ?

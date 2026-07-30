@@ -29,7 +29,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -72,27 +71,24 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     DocCollection docColl = state.getCollection(coll);
     log.info("#### DocCollection: {}", docColl);
     List<Replica> replicas = docColl.getReplicasOnNode(nodeToBeDecommissioned);
-    if (replicas != null) {
-      for (Replica replica : replicas) {
-        String shard =
-            docColl.getShardId(
-                nodeToBeDecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
-        Slice slice = docColl.getSlice(shard);
-        boolean hasOtherNonPullReplicas = false;
-        for (Replica r : slice.getReplicas()) {
-          if (!r.getName().equals(replica.getName())
-              && !r.getNodeName().equals(nodeToBeDecommissioned)
-              && r.getType() != Replica.Type.PULL) {
-            hasOtherNonPullReplicas = true;
-            break;
-          }
-        }
-        if (!hasOtherNonPullReplicas) {
-          shouldFail = true;
+    for (Replica replica : replicas) {
+      String shard = replica.getShard();
+      Slice slice = docColl.getSlice(shard);
+      boolean hasOtherNonPullReplicas = false;
+      for (Replica r : slice.getReplicas()) {
+        if (!r.getName().equals(replica.getName())
+            && !r.getNodeName().equals(nodeToBeDecommissioned)
+            && r.getType() != Replica.Type.PULL) {
+          hasOtherNonPullReplicas = true;
           break;
         }
       }
+      if (!hasOtherNonPullReplicas) {
+        shouldFail = true;
+        break;
+      }
     }
+
     new CollectionAdminRequest.DeleteNode(nodeToBeDecommissioned).processAsync("003", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus =
         CollectionAdminRequest.requestStatus("003");

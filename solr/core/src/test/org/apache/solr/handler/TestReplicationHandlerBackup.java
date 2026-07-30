@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -38,10 +37,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
@@ -53,7 +50,7 @@ import org.slf4j.LoggerFactory;
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 @SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
-public class TestReplicationHandlerBackup extends SolrJettyTestBase {
+public class TestReplicationHandlerBackup extends SolrTestCaseJ4 {
 
   JettySolrRunner leaderJetty;
   ReplicationTestHelper.SolrInstance leader = null;
@@ -68,22 +65,11 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   private static JettySolrRunner createAndStartJetty(ReplicationTestHelper.SolrInstance instance)
       throws Exception {
-    Files.copy(
-        SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), Path.of(instance.getHomeDir(), "solr.xml"));
-    Properties nodeProperties = new Properties();
-    nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
+    JettySolrRunner jetty =
+        new JettySolrRunner(instance.getHomeDir(), new Properties(), jettyConfig);
     jetty.start();
     return jetty;
-  }
-
-  private static SolrClient createNewSolrClient(int port) {
-    final String baseUrl = buildUrl(port);
-    return new HttpSolrClient.Builder(baseUrl)
-        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-        .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
-        .build();
   }
 
   @Override
@@ -102,7 +88,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     leader.copyConfigFile(CONF_DIR.resolve(configFile).toString(), "solrconfig.xml");
 
     leaderJetty = createAndStartJetty(leader);
-    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
+    leaderClient = leaderJetty.getSolrClient();
     docsSeed = random().nextLong();
   }
 
@@ -247,7 +233,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   public static void runBackupCommand(JettySolrRunner leaderJetty, String cmd, String params)
       throws IOException {
     String leaderUrl =
-        buildUrl(leaderJetty.getLocalPort())
+        leaderJetty.getBaseUrl().toString()
             + "/"
             + DEFAULT_TEST_CORENAME
             + ReplicationHandler.PATH

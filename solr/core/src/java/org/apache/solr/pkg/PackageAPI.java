@@ -36,9 +36,9 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -113,18 +113,14 @@ public class PackageAPI {
               refreshPackages(thisWatch);
             }
           }
-        },
-        true);
+        });
   }
 
   public void refreshPackages(Watcher watcher) {
     final Stat stat = new Stat();
     try {
       final byte[] data =
-          coreContainer
-              .getZkController()
-              .getZkClient()
-              .getData(SOLR_PKGS_PATH, watcher, stat, true);
+          coreContainer.getZkController().getZkClient().getData(SOLR_PKGS_PATH, watcher, stat);
       pkgs = readPkgsFromZk(data, stat);
       packageLoader.refreshPackageConf();
     } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
@@ -144,8 +140,7 @@ public class PackageAPI {
 
     if (data == null || stat == null) {
       stat = new Stat();
-      data =
-          coreContainer.getZkController().getZkClient().getData(SOLR_PKGS_PATH, null, stat, true);
+      data = coreContainer.getZkController().getZkClient().getData(SOLR_PKGS_PATH, null, stat);
     }
     Packages packages = null;
     if (data == null || data.length == 0) {
@@ -267,7 +262,7 @@ public class PackageAPI {
             coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
         try {
           var solrClient = coreContainer.getDefaultHttpSolrClient();
-          solrClient.requestWithBaseUrl(baseUrl, request::process);
+          request.processWithBaseUrl(solrClient, baseUrl, null);
         } catch (SolrServerException | IOException e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
@@ -407,7 +402,7 @@ public class PackageAPI {
       if (name == null) {
         rsp.add("result", pkgs);
       } else {
-        rsp.add("result", Collections.singletonMap(name, pkgs.packages.get(name)));
+        rsp.add("result", Map.of(name, pkgs.packages.get(name)));
       }
     }
 
@@ -448,7 +443,7 @@ public class PackageAPI {
       var baseUrl = coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
       try {
         var solrClient = coreContainer.getDefaultHttpSolrClient();
-        solrClient.requestWithBaseUrl(baseUrl, request::process);
+        request.processWithBaseUrl(solrClient, baseUrl, null);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

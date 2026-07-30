@@ -28,7 +28,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -140,7 +139,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       if (generation == -1) {
         commit = delPol.getAndSaveLatestCommit();
         if (null == commit) {
-          filesResponse.fileList = Collections.emptyList();
+          filesResponse.fileList = List.of();
           return filesResponse;
         }
       } else {
@@ -392,6 +391,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         while (true) {
           offset = offset == -1 ? 0 : offset;
           int read = (int) Math.min(buf.length, filelen - offset);
+
+          if (read <= 0) {
+            writeNothingAndFlush();
+            fos.close();
+            break;
+          }
+
           in.readBytes(buf, 0, read);
 
           fos.writeInt(read);

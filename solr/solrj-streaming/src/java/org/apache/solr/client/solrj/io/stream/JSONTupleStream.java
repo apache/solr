@@ -26,8 +26,8 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -141,6 +141,7 @@ public class JSONTupleStream implements TupleStreamParser {
   }
 
   private void handleError() throws IOException {
+    int objectLevel = 0;
     for (; ; ) {
       int event = parser.nextEvent();
       if (event == JSONParser.STRING) {
@@ -154,8 +155,12 @@ public class JSONTupleStream implements TupleStreamParser {
             }
           }
         }
+      } else if (event == JSONParser.OBJECT_START) {
+        objectLevel++;
       } else if (event == JSONParser.OBJECT_END) {
-        throw new IOException("");
+        if (--objectLevel == 0) {
+          throw new IOException("");
+        }
       }
     }
   }

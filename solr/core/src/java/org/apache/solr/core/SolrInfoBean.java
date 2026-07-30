@@ -32,9 +32,6 @@ public interface SolrInfoBean extends SolrMetricProducer {
     QUERY,
     UPDATE,
     CACHE,
-    HIGHLIGHTER,
-    QUERYPARSER,
-    SPELLCHECKER,
     SEARCHER,
     REPLICATION,
     TLOG,
@@ -42,6 +39,7 @@ public interface SolrInfoBean extends SolrMetricProducer {
     DIRECTORY,
     HTTP,
     SECURITY,
+    OVERSEER,
     OTHER
   }
 

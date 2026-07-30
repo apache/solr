@@ -18,15 +18,14 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
@@ -42,7 +41,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
     System.setProperty("solr.requests.streaming.body.enabled", "true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
@@ -61,7 +60,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @Test
@@ -106,9 +105,12 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
       return new NamedList(m);
     }
 
+    private static final Set<String> CONTENT_TYPES =
+        Set.of("application/x-jackson-smile", "application/octet-stream");
+
     @Override
-    public Collection<String> getContentTypes() {
-      return Set.of("application/x-jackson-smile", "application/octet-stream");
+    public Set<String> getContentTypes() {
+      return CONTENT_TYPES;
     }
   }
 }

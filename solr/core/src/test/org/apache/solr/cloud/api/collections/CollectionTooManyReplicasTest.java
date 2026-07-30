@@ -187,7 +187,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
         "Expected shards shardstart, 1, 2, each with two active replicas",
         collectionName,
         (n, c) -> {
-          return DocCollection.isFullyActive(n, c, 3, 2);
+          return SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 3, 2);
         });
     Map<String, Slice> slices = getCollectionState(collectionName).getSlicesMap();
     assertEquals("There should be exaclty three slices", slices.size(), 3);

@@ -17,9 +17,11 @@
 
 package org.apache.solr.cli;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.util.StartupLoggingUtils;
 
 public abstract class ToolBase implements Tool {
@@ -43,6 +45,15 @@ public abstract class ToolBase implements Tool {
     }
   }
 
+  protected void echoIfVerbose(Object response) throws JsonProcessingException {
+    if (verbose && response != null) {
+      echo(
+          JacksonContentWriter.DEFAULT_MAPPER
+              .writerWithDefaultPrettyPrinter()
+              .writeValueAsString(response));
+    }
+  }
+
   protected void echo(final String msg) {
     runtime.println(msg);
   }
@@ -60,14 +71,16 @@ public abstract class ToolBase implements Tool {
   }
 
   /**
-   * Provides the two ways of connecting to Solr for CLI Tools
+   * Provides the connection options for CLI Tools: {@code --solr-url}, {@code --zk-host}, and the
+   * unified {@code --solr-connection} (which accepts either form).
    *
-   * @return OptionGroup validates that only one option is supplied by the caller.
+   * @return OptionGroup that enforces only one of the connection options is supplied.
    */
   public OptionGroup getConnectionOptions() {
     OptionGroup optionGroup = new OptionGroup();
     optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
     optionGroup.addOption(CommonCLIOptions.ZK_HOST_OPTION);
+    optionGroup.addOption(CommonCLIOptions.SOLR_CONNECTION_OPTION);
     return optionGroup;
   }
 

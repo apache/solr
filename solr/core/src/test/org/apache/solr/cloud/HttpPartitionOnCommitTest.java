@@ -16,17 +16,17 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.List;
-import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.SocketProxy;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -199,7 +199,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
         }
       } catch (Exception exc) {
         Throwable rootCause = SolrException.getRootCause(exc);
-        if (rootCause instanceof NoHttpResponseException) {
+        if (rootCause instanceof IOException) {
           log.warn(
               "No HTTP response from sending commit request to {}; will re-try after waiting 3 seconds",
               replicaCoreUrl);

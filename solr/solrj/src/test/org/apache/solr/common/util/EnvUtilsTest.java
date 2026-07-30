@@ -29,8 +29,8 @@ public class EnvUtilsTest extends SolrTestCase {
   private static final Map<String, String> ENV =
       Map.of(
           "SOLR_HOME", "/home/solr",
-          "SOLR_PORT", "8983",
-          "SOLR_HOST", "localhost",
+          "SOLR_PORT_LISTEN", "8983",
+          "SOLR_HOST_ADVERTISE", "localhost",
           "SOLR_LOG_LEVEL", "INFO",
           "SOLR_BOOLEAN", "true",
           "SOLR_LONG", "1234567890",
@@ -79,8 +79,7 @@ public class EnvUtilsTest extends SolrTestCase {
   public void testEnvsWithCustomKeyNameMappings() {
     // These have different names than the environment variables
     assertEquals(ENV.get("SOLR_HOME"), EnvUtils.getProperty("solr.solr.home"));
-    assertEquals(ENV.get("SOLR_PORT"), EnvUtils.getProperty("jetty.port"));
-    assertEquals(ENV.get("SOLR_HOST"), EnvUtils.getProperty("host"));
+    assertEquals(ENV.get("SOLR_HOST_ADVERTISE"), EnvUtils.getProperty("host"));
     assertEquals(ENV.get("SOLR_LOGS_DIR"), EnvUtils.getProperty("solr.logs.dir"));
   }
 
@@ -104,11 +103,34 @@ public class EnvUtilsTest extends SolrTestCase {
   public void testDeprecated() {
     var env = Map.of("SOLR_OVERWRITE", "overwritten");
     Properties defaultProps = new Properties();
-    // Use the already converted version, not the original camelCase.
     defaultProps.setProperty("solr.config.set.forbidden.file.types", "xml,json,jar");
 
     EnvUtils.init(false, env, defaultProps);
     assertEquals("xml,json,jar", EnvUtils.getProperty("solr.configset.forbidden.file.types"));
+  }
+
+  @Test
+  public void deprecatedCamelCaseSystemPropertyIsMigratedToCurrentName() {
+    Properties sysprops = new Properties();
+    sysprops.setProperty("solr.auth.jwt.allowOutboundHttp", "true");
+    EnvUtils.init(false, Map.of(), sysprops);
+    assertTrue(EnvUtils.getPropertyAsBool("solr.auth.jwt.outbound.http.enabled"));
+  }
+
+  @Test
+  public void deprecatedCamelCaseOldNameInMappingsFileIsTranslated() {
+    Properties sysprops = new Properties();
+    sysprops.setProperty("collection.configName", "techproducts");
+    EnvUtils.init(false, Map.of(), sysprops);
+    assertEquals("techproducts", EnvUtils.getProperty("solr.configset.bootstrap.config.name"));
+  }
+
+  @Test
+  public void deprecatedCamelCaseInvertedPropertyIsTranslatedAndValueIsFlipped() {
+    Properties sysprops = new Properties();
+    sysprops.setProperty("solr.disableFingerprint", "true");
+    EnvUtils.init(true, Map.of(), sysprops);
+    assertFalse(EnvUtils.getPropertyAsBool("solr.index.replication.fingerprint.enabled"));
   }
 
   @Test

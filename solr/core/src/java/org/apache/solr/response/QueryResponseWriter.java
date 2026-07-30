@@ -45,6 +45,9 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 public interface QueryResponseWriter extends NamedListInitializedPlugin {
   public static String CONTENT_TYPE_XML_UTF8 = "application/xml; charset=UTF-8";
   public static String CONTENT_TYPE_TEXT_UTF8 = "text/plain; charset=UTF-8";
+  public static final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
+  public static final String CONTENT_TYPE_OPEN_METRICS =
+      "application/openmetrics-text; version=1.0.0; charset=utf-8";
 
   /**
    * Writes the response to the {@link OutputStream}. {@code contentType} is from {@link

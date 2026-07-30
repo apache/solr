@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
@@ -93,7 +92,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       }
 
       List<WeightedNode> nodesForRequest =
-          weightedNodes.stream().filter(request::isTargetingNode).collect(Collectors.toList());
+          weightedNodes.stream().filter(request::isTargetingNode).toList();
 
       SolrCollection solrCollection = request.getCollection();
       // Now place all replicas of all shards on available nodes
@@ -241,7 +240,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         List<Replica> availableReplicasToMove =
             highestWeight.getAllReplicasOnNode().stream()
                 .sorted(Comparator.comparing(Replica::getReplicaName))
-                .collect(Collectors.toList());
+                .toList();
         int combinedNodeWeights = highestWeight.calcWeight() + lowestWeight.calcWeight();
         for (Replica r : availableReplicasToMove) {
           // Only continue if the replica can be removed from the old node and moved to the new node
@@ -284,7 +283,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           break;
         }
       }
-      // For now we do not have any way to see if there are out-of-date notes in the middle of the
+      // For now, we do not have any way to see if there are out-of-date nodes in the middle of the
       // TreeSet. Therefore, we need to re-sort this list after every selection. In the future, we
       // should find a way to re-sort the out-of-date nodes without having to sort all nodes.
       traversedHighNodes.addAll(orderedNodes);
@@ -439,19 +438,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     public Set<String> getShardsOnNode(String collection) {
-      return replicas.getOrDefault(collection, Collections.emptyMap()).keySet();
-    }
-
-    public boolean hasShardOnNode(Shard shard) {
-      return replicas
-          .getOrDefault(shard.getCollection().getName(), Collections.emptyMap())
-          .containsKey(shard.getShardName());
+      return replicas.getOrDefault(collection, Map.of()).keySet();
     }
 
     public Set<Replica> getReplicasForShardOnNode(Shard shard) {
       return Optional.ofNullable(replicas.get(shard.getCollection().getName()))
           .map(m -> m.get(shard.getShardName()))
-          .orElseGet(Collections::emptySet);
+          .orElseGet(Set::of);
     }
 
     public abstract int calcWeight();
@@ -505,7 +498,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
      *     removed.
      */
     public Map<Replica, String> canRemoveReplicas(Collection<Replica> replicas) {
-      return Collections.emptyMap();
+      return Map.of();
     }
 
     public final void removeReplica(Replica replica) {
@@ -776,15 +769,6 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     /**
-     * Get the number of nodes in the heap.
-     *
-     * @return number of nodes
-     */
-    public int size() {
-      return size;
-    }
-
-    /**
      * Check if the heap is empty.
      *
      * @return if the heap has no nodes
@@ -899,7 +883,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           .map(Map::keySet)
           // Use a sorted TreeSet to make sure that tests are repeatable
           .<Collection<Replica.ReplicaType>>map(TreeSet::new)
-          .orElseGet(Collections::emptyList);
+          .orElseGet(List::of);
     }
 
     /**

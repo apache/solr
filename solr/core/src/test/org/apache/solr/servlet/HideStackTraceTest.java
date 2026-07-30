@@ -16,20 +16,17 @@
  */
 package org.apache.solr.servlet;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.util.SolrJettyTestRule;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -38,7 +35,7 @@ import org.junit.Test;
 @SuppressSSL
 public class HideStackTraceTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();
+  @ClassRule public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void setupSolrHome() throws Exception {
@@ -47,6 +44,8 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
 
     Path configSet = createTempDir("configSet");
     copyMinConf(configSet);
+    EnvUtils.setProperty(ALLOW_PATHS_SYSPROP, configSet.toAbsolutePath().toString());
+
     // insert a special filterCache configuration
     Path solrConfig = configSet.resolve("conf/solrconfig.xml");
     Files.writeString(
@@ -62,13 +61,8 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
                     + "  </requestHandler>\n"
                     + "</config>"));
 
-    solrRule.startSolr(LuceneTestCase.createTempDir());
-    solrRule.newCollection().withConfigSet(configSet.toString()).create();
-  }
-
-  @AfterClass
-  public static void cleanup() throws Exception {
-    System.clearProperty("solr.hideStackTrace");
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(configSet).create();
   }
 
   @Test
@@ -143,19 +137,14 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
     // }
     // }
 
-    final String url = solrRule.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=json";
-    final HttpGet get = new HttpGet(url);
-    var client = HttpClientUtil.createClient(null);
-    try (CloseableHttpResponse response = client.execute(get)) {
+    final String url = solrTestRule.getBaseUrl() + "/collection1/withError?q=*:*&wt=json";
+    var httpClient = solrTestRule.getJetty().getSolrClient().getHttpClient();
+    var response = httpClient.GET(url);
 
-      assertEquals(500, response.getStatusLine().getStatusCode());
-      String responseJson = EntityUtils.toString(response.getEntity());
-      assertFalse(responseJson.contains("\"trace\""));
-      assertFalse(
-          responseJson.contains("org.apache.solr.servlet.HideStackTraceTest$ErrorComponent"));
-    } finally {
-      HttpClientUtil.close(client);
-    }
+    assertEquals(500, response.getStatus());
+    String responseJson = response.getContentAsString();
+    assertFalse(responseJson.contains("\"trace\""));
+    assertFalse(responseJson.contains("org.apache.solr.servlet.HideStackTraceTest$ErrorComponent"));
   }
 
   public static class ErrorComponent extends SearchComponent {

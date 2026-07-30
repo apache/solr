@@ -29,8 +29,6 @@ public class CloudConfig {
 
   private final String hostName;
 
-  private final boolean useGenericCoreNames;
-
   private final int leaderVoteWait;
 
   private final int leaderConflictResolveWait;
@@ -58,7 +56,6 @@ public class CloudConfig {
       int zkClientTimeout,
       int hostPort,
       String hostName,
-      boolean useGenericCoreNames,
       int leaderVoteWait,
       int leaderConflictResolveWait,
       String zkCredentialsProviderClass,
@@ -74,7 +71,6 @@ public class CloudConfig {
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
     this.hostName = hostName;
-    this.useGenericCoreNames = useGenericCoreNames;
     this.leaderVoteWait = leaderVoteWait;
     this.leaderConflictResolveWait = leaderConflictResolveWait;
     this.zkCredentialsProviderClass = zkCredentialsProviderClass;
@@ -128,10 +124,6 @@ public class CloudConfig {
     return leaderConflictResolveWait;
   }
 
-  public boolean getGenericCoreNodeNames() {
-    return useGenericCoreNames;
-  }
-
   public int getCreateCollectionWaitTimeTillActive() {
     return createCollectionWaitTimeTillActive;
   }
@@ -169,7 +161,6 @@ public class CloudConfig {
     private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
     private final int hostPort;
     private final String hostName;
-    private boolean useGenericCoreNames;
     private int leaderVoteWait = DEFAULT_LEADER_VOTE_WAIT;
     private int leaderConflictResolveWait = DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT;
     private String zkCredentialsProviderClass;
@@ -196,11 +187,6 @@ public class CloudConfig {
 
     public CloudConfigBuilder setZkClientTimeout(int zkClientTimeout) {
       this.zkClientTimeout = zkClientTimeout;
-      return this;
-    }
-
-    public CloudConfigBuilder setUseGenericCoreNames(boolean useGenericCoreNames) {
-      this.useGenericCoreNames = useGenericCoreNames;
       return this;
     }
 
@@ -269,7 +255,6 @@ public class CloudConfig {
           zkClientTimeout,
           hostPort,
           hostName,
-          useGenericCoreNames,
           leaderVoteWait,
           leaderConflictResolveWait,
           zkCredentialsProviderClass,

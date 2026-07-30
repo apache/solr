@@ -28,15 +28,23 @@
 <schema name="test" version="1.7">
 
   <fieldType name="binary" class="solr.BinaryField"/>
+  <fieldType name="binary_rev" class="solr.SwapBytesBinaryField" />
+  <fieldType name="binary_str" class="solr.StrBinaryField" />
+  
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
+  
   <field name="data" type="binary" stored="true"/>
   <field name="data_dv" type="binary" stored="false" docValues="true" />
 
+  <field name="rev_data" type="binary_rev" stored="true"/>
+  <field name="rev_data_dv" type="binary_rev" stored="false" docValues="true" />
+  
+  <field name="str_data" type="binary_str" stored="true"/>
+  <field name="str_data_dv" type="binary_str" stored="false" docValues="true" />
 
   <uniqueKey>id</uniqueKey>
-
 
 </schema>

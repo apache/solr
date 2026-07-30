@@ -42,7 +42,7 @@ Examples of these are query parsers, request handlers, update request processors
 
 * Cluster level (or Core Container level) plugins.
 These are plugins that are installed at a cluster level and every Solr node has one instance each of these plugins.
-Examples of these are xref:deployment-guide:authentication-and-authorization-plugins.adoc[], xref:deployment-guide:metrics-reporting.adoc#reporters[metrics reporters], https://issues.apache.org/jira/browse/SOLR-14404[cluster level request handlers], etc.
+Examples of these are xref:deployment-guide:authentication-and-authorization-plugins.adoc[], https://issues.apache.org/jira/browse/SOLR-14404[cluster level request handlers], etc.
 
 == Installing Plugins ==
 

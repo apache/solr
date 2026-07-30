@@ -72,7 +72,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
-    // replication factor will impact wether we expect a list of urls from the '[shard]'
+    // replication factor will impact whether we expect a list of urls from the '[shard]'
     // augmenter...
     repFactor = usually() ? 1 : 2;
     // ... and we definitely want to ensure forwarded requests to other shards work ...
@@ -218,7 +218,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     // that way we can first sanity check a single value in a multivalued field is returned
     // correctly as a "List" of one element, *AND* then we could be testing that a (single valued)
     // pseudo-field correctly overrides that actual (real) value in a multivalued field (ie: not
-    // returning a an List)
+    // returning a List)
     //
     // (NOTE: not doing this yet due to how it will impact most other tests, many of which are
     // currently @AwaitsFix status)
@@ -1130,7 +1130,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assertNotNull(client.getDefaultCollection());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
 }

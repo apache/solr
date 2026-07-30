@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -42,24 +43,37 @@ import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 /** Used to convert strings into stream expressions */
 public class StreamFactory implements Serializable {
 
-  private transient HashMap<String, String> collectionZkHosts;
+  private transient HashMap<String, CloudSolrClient.CloudSolrClientConnection>
+      collectionSolrConnection;
   private transient HashMap<String, Supplier<Class<? extends Expressible>>> functionNames;
-  private transient String defaultZkHost;
+  private transient CloudSolrClient.CloudSolrClientConnection defaultSolrConnection;
   private transient String defaultCollection;
   private transient String defaultSort;
 
   public StreamFactory() {
-    collectionZkHosts = new HashMap<>();
+    collectionSolrConnection = new HashMap<>();
     functionNames = new HashMap<>();
   }
 
   public StreamFactory(HashMap<String, Supplier<Class<? extends Expressible>>> functionNames) {
     this.functionNames = functionNames;
-    collectionZkHosts = new HashMap<>();
+    collectionSolrConnection = new HashMap<>();
   }
 
+  /**
+   * @deprecated use {@link #withCollectionUseThisConnection(String,
+   *     CloudSolrClient.CloudSolrClientConnection)}
+   */
+  @Deprecated
   public StreamFactory withCollectionZkHost(String collectionName, String zkHost) {
-    this.collectionZkHosts.put(collectionName, zkHost);
+    var solrConnection = zkHostToSolrConnection(zkHost);
+    return withCollectionUseThisConnection(collectionName, solrConnection);
+  }
+
+  /** If an expressions references this collection, then use the specified Solr connection. */
+  public StreamFactory withCollectionUseThisConnection(
+      String collectionName, CloudSolrClient.CloudSolrClientConnection solrConnection) {
+    this.collectionSolrConnection.put(collectionName, solrConnection);
     this.defaultCollection = collectionName;
     return this;
   }
@@ -68,9 +82,67 @@ public class StreamFactory implements Serializable {
     return defaultCollection;
   }
 
+  /**
+   * @deprecated use {@link #withDefaultSolrConnection(CloudSolrClient.CloudSolrClientConnection)}
+   */
+  @Deprecated
   public StreamFactory withDefaultZkHost(String zkHost) {
-    this.defaultZkHost = zkHost;
+    var solrConnection = zkHostToSolrConnection(zkHost);
+    return withDefaultSolrConnection(solrConnection);
+  }
+
+  public StreamFactory withDefaultSolrConnection(
+      CloudSolrClient.CloudSolrClientConnection solrConnection) {
+    this.defaultSolrConnection = solrConnection;
     return this;
+  }
+
+  public CloudSolrClient.CloudSolrClientConnection buildSolrConnection(
+      StreamExpression streamExpression, String collectionName) throws IOException {
+
+    var solrConnectionExpression = getNamedOperand(streamExpression, "solrConnection");
+    var zkHostExpression = getNamedOperand(streamExpression, "zkHost");
+
+    CloudSolrClient.CloudSolrClientConnection solrConnection = null;
+
+    if (zkHostExpression == null && solrConnectionExpression == null) {
+      solrConnection = getConnectionForCollection(collectionName);
+    } else if (solrConnectionExpression != null
+        && solrConnectionExpression.getParameter() instanceof StreamExpressionValue exprValue) {
+      solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(exprValue.getValue());
+    } else if (zkHostExpression != null
+        && zkHostExpression.getParameter() instanceof StreamExpressionValue exprValue) {
+      solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(exprValue.getValue());
+      if (!solrConnection.isZookeeper()) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Expected ZooKeeper connection string, but got: '%s'. "
+                    + "Use 'solrConnection' for pass HTTP(s) quorum",
+                solrConnection));
+      }
+    }
+
+    if (solrConnection == null) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - solrConnection or zkHost not found for collection '%s'",
+              streamExpression,
+              collectionName));
+    }
+
+    return solrConnection;
+  }
+
+  private static CloudSolrClient.CloudSolrClientConnection zkHostToSolrConnection(String zkHost) {
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    if (!solrConnection.isZookeeper()) {
+      throw new IllegalArgumentException(
+          String.format(
+              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
+    }
+    return solrConnection;
   }
 
   @Override
@@ -78,7 +150,7 @@ public class StreamFactory implements Serializable {
     // Shallow copy
     StreamFactory clone = new StreamFactory(functionNames);
     return clone
-        .withCollectionZkHost(defaultCollection, defaultZkHost)
+        .withCollectionUseThisConnection(defaultCollection, defaultSolrConnection)
         .withDefaultSort(defaultSort);
   }
 
@@ -91,15 +163,33 @@ public class StreamFactory implements Serializable {
     return this.defaultSort;
   }
 
+  /**
+   * @deprecated use {@link #buildSolrConnection(StreamExpression, String)} ()}
+   */
+  @Deprecated
   public String getDefaultZkHost() {
-    return this.defaultZkHost;
+    return getDefaultSolrConnection().toString();
   }
 
+  public CloudSolrClient.CloudSolrClientConnection getDefaultSolrConnection() {
+    return this.defaultSolrConnection;
+  }
+
+  /**
+   * @deprecated use {@link #buildSolrConnection(StreamExpression, String)}
+   */
+  @Deprecated
   public String getCollectionZkHost(String collectionName) {
-    if (this.collectionZkHosts.containsKey(collectionName)) {
-      return this.collectionZkHosts.get(collectionName);
-    }
-    return null;
+    return getConnectionForCollection(collectionName).toString();
+  }
+
+  /**
+   * Gets a SolrConnection using collection-to-connection configuration. Defaults to {@link
+   * #getDefaultSolrConnection()}
+   */
+  private CloudSolrClient.CloudSolrClientConnection getConnectionForCollection(
+      String collectionName) {
+    return this.collectionSolrConnection.getOrDefault(collectionName, defaultSolrConnection);
   }
 
   public Map<String, Supplier<Class<? extends Expressible>>> getFunctionNames() {

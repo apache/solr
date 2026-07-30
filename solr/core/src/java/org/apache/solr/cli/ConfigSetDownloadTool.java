@@ -37,7 +37,7 @@ public class ConfigSetDownloadTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Configset name in ZooKeeper.")
-          .build();
+          .get();
 
   private static final Option CONF_DIR_OPTION =
       Option.builder("d")
@@ -46,7 +46,7 @@ public class ConfigSetDownloadTool extends ToolBase {
           .argName("DIR")
           .required()
           .desc("Local directory with configs.")
-          .build();
+          .get();
 
   public ConfigSetDownloadTool(ToolRuntime runtime) {
     super(runtime);

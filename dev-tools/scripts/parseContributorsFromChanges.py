@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #  Licensed to the Apache Software Foundation (ASF) under one or more
 #  contributor license agreements.  See the NOTICE file distributed with
 #  this work for additional information regarding copyright ownership.
@@ -14,51 +16,59 @@
 #  limitations under the License.
 
 import sys
-import re
-from collections import defaultdict
+import yaml
+from pathlib import Path
 
-# Read data from standard input
-data = sys.stdin.read()
+def print_usage():
+    print("Usage: parseContributorsFromChanges.py <version>")
+    print("  <version>: Version number (e.g., 9.10.0)")
+    print("\nThis script parses all YAML files in changelog/v<version>/ and extracts unique authors.")
+    print("Output is a comma-separated list of authors sorted by name.")
+    sys.exit(1)
 
-# Replace all carriage return line feed (Windows) with line feed
-data = data.replace('\r\n', '\n')
+if len(sys.argv) < 2:
+    print("Error: Missing required argument <version>")
+    print_usage()
 
-# Replace all carriage return (Mac OS before X) with line feed
-data = data.replace('\r', '\n')
+version = sys.argv[1]
+changelog_dir = Path(f"changelog/v{version}")
 
-# Split data at blank lines
-paras = data.split('\n\n')
+if not changelog_dir.exists():
+    print(f"Error: Directory '{changelog_dir}' does not exist")
+    sys.exit(1)
 
-# Initialize a default dictionary to store contributors and their counts
-contributors = defaultdict(int)
+# Collect all unique authors
+authors = set()
 
-# Regular expression to find the attribution in parentheses at the end of a line
-pattern = re.compile(r"\(([^()]*)\)$")
+# Process all .yml and .yaml files in the changelog directory
+yaml_files = list(changelog_dir.glob("*.yml")) + list(changelog_dir.glob("*.yaml"))
 
-for para in paras:
-  # Normalize whitespace (replace all whitespace with a single space)
-  para = re.sub(r"\s+", ' ', para).strip()
-  #print(f'> {para}')
+if not yaml_files:
+    print(f"Warning: No YAML files found in {changelog_dir}")
+    sys.exit(0)
 
-  # Find all contributors in the line
-  match = pattern.search(para.strip())
-  if match:
-    attribution = match.group(1)
-    # might have a "via" committer; we only want the author here
-    attribution = attribution.split(" via ")[0] # keep left side
-    # Split the contributors by comma and strip whitespace
-    for contributor in attribution.split(','):
-      contributor = contributor.strip()
-      contributors[contributor] += 1
+for yaml_file in sorted(yaml_files):
+    try:
+        with open(yaml_file, 'r') as f:
+            data = yaml.safe_load(f)
+            if data and 'authors' in data:
+                author_list = data['authors']
+                if isinstance(author_list, list):
+                    for author_entry in author_list:
+                        if isinstance(author_entry, dict) and 'name' in author_entry:
+                            author_name = author_entry['name'].strip()
+                            # Filter out solrbot
+                            if author_name.lower() != 'solrbot':
+                                authors.add(author_name)
+    except Exception as e:
+        print(f"Warning: Error parsing {yaml_file}: {e}", file=sys.stderr)
 
-if 'solrbot' in contributors:
-  del contributors['solrbot']
+# Sort authors by name
+sorted_authors = sorted(list(authors))
 
-sorted_contributors = sorted(contributors.items(), key=lambda item: item[1], reverse=True)
+# Print contributors
+for author in sorted_authors:
+    print(author)
 
-# Print the contributors and their counts
-for contributor, count in sorted_contributors:
-  print(f'{contributor}: {count}')
-
-print('\n\nThanks to all contributors!: ')
-print(', '.join([contributor for contributor, count in sorted_contributors]))
+print('\nThanks to all contributors!: ')
+print(', '.join(sorted_authors))

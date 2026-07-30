@@ -25,9 +25,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -74,7 +73,6 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
 
   @AfterClass
   public static void afterSuperClass() {
-    System.clearProperty("solr.autoCommit.maxTime");
     clearErrorHook();
     TestInjection.reset();
   }
@@ -145,7 +143,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   }
 
   protected CloudSolrClient createCloudClient(String defaultCollection, int socketTimeout) {
-    return getCloudSolrClient(
+    return createNewCloudSolrClient(
         zkServer.getZkAddress(), defaultCollection, random().nextBoolean(), 30000, socketTimeout);
   }
 
@@ -218,13 +216,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       if (runFullThrottle) {
         ftIndexThread =
             new FullThrottleStoppableIndexingThread(
-                ((CloudLegacySolrClient) cloudClient).getHttpClient(),
-                controlClient,
-                cloudClient,
-                clients,
-                "ft1",
-                true,
-                this.clientSoTimeout);
+                controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
         ftIndexThread.start();
       }
 
@@ -280,7 +272,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
 
       commit();
 
-      // TODO: assert we didnt kill everyone
+      // TODO: assert we didn't kill everyone
 
       zkStateReader.updateLiveNodes();
       assertTrue(zkStateReader.getClusterState().getLiveNodes().size() > 0);

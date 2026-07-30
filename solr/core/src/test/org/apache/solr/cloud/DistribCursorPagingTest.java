@@ -766,9 +766,9 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   /**
    * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as
-   * long as a non-0 number of docs ar returned. This method records the the set of all id's (must
-   * be positive ints) encountered and throws an assertion failure if any id is encountered more
-   * than once, or if an id is encountered which is not expected, or if an id is <code>[elevated]
+   * long as a non-0 number of docs ar returned. This method records the set of all id's (must be
+   * positive ints) encountered and throws an assertion failure if any id is encountered more than
+   * once, or if an id is encountered which is not expected, or if an id is <code>[elevated]
    * </code> and comes "after" any ids which were not <code>[elevated]</code>
    *
    * @return set of all elevated ids encountered in the walk
@@ -822,9 +822,9 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   /**
    * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as
-   * long as a non-0 number of docs ar returned. This method records the the set of all id's (must
-   * be positive ints) encountered and throws an assertion failure if any id is encountered more
-   * then once, or if the set grows above maxSize
+   * long as a non-0 number of docs ar returned. This method records the set of all id's (must be
+   * positive ints) encountered and throws an assertion failure if any id is encountered more then
+   * once, or if the set grows above maxSize
    *
    * <p>Note that this method explicitly uses the "cloudClient" for executing the queries, instead
    * of relying on the test infrastructure to execute the queries redundently against both the cloud

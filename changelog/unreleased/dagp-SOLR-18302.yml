@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Add dependency-analysis (build-health) reporting to the Gradle build in report-not-fail mode,
+  and apply its safe advice (unused-dependency removals and test-scope corrections)
+type: other
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18302
+    url: https://issues.apache.org/jira/browse/SOLR-18302

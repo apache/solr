@@ -40,7 +40,7 @@ teardown() {
   backup_dir="$(cd -P "${backup_dir}" && pwd)"
 
   export SOLR_SECURITY_MANAGER_ENABLED=true
-  export SOLR_OPTS="-Dsolr.allowPaths=${backup_dir} -Djava.io.tmpdir=${test_tmp_dir}"
+  export SOLR_OPTS="-Dsolr.security.allow.paths=${backup_dir} -Djava.io.tmpdir=${test_tmp_dir}"
   run solr start
   run solr create -c COLL_NAME
   run solr api --solr-url "http://localhost:${SOLR_PORT}/solr/admin/collections?action=BACKUP&name=test&collection=COLL_NAME&location=file://${backup_dir}"
