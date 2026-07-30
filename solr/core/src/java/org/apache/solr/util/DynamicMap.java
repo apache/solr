@@ -51,4 +51,7 @@ public interface DynamicMap {
     // +2 let's us not to worry about which comparison operator to choose
     return threshold(expectedKeyMax) + 2;
   }
+
+  /** The number of entries in this map. */
+  int size();
 }
