@@ -16,26 +16,21 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -393,66 +388,104 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
+  private class MockFakeServer implements AutoCloseable {
+    // Server connection preface (Empty SETTINGS frame)
+    static final byte[] SERVER_SETTINGS =
+        new byte[] {
+          0x00,
+          0x00,
+          0x00, // Payload Length: 0
+          0x04, // Frame Type: SETTINGS
+          0x00, // Flags: 0
+          0x00,
+          0x00,
+          0x00,
+          0x00 // Stream ID: 0
+        };
+
+    // ACK frame for client's SETTINGS
+    static final byte[] SETTINGS_ACK =
+        new byte[] {
+          0x00,
+          0x00,
+          0x00, // Payload Length: 0
+          0x04, // Frame Type: SETTINGS
+          0x01, // Flags: ACK (0x01)
+          0x00,
+          0x00,
+          0x00,
+          0x00 // Stream ID: 0
+        };
+    final ServerSocket serverSocket;
+    volatile Socket activeSocket;
+
+    MockFakeServer() throws Exception {
+      serverSocket = new ServerSocket(0);
+    }
+
+    int getPort() {
+      return this.serverSocket.getLocalPort();
+    }
+
+    /**
+     * The server just acknowledges client preface & settings however it never responds to client
+     * requests. By doing so, it causes client to hang until idle timeout configured in the request.
+     */
+    void process() {
+      try (Socket clientSocket = serverSocket.accept();
+          InputStream in = clientSocket.getInputStream();
+          OutputStream out = clientSocket.getOutputStream()) {
+        this.activeSocket = clientSocket;
+        byte[] clientPreface = new byte[24];
+        int bytesRead = in.readNBytes(clientPreface, 0, 24);
+
+        if (bytesRead == 24) {
+          out.write(SERVER_SETTINGS);
+          out.write(SETTINGS_ACK);
+          out.flush();
+        }
+        Thread.sleep(5000);
+      } catch (IOException | InterruptedException ignored) {
+      } finally {
+        this.activeSocket = null;
+      }
+    }
+
+    @Override
+    public void close() {
+      try {
+        if (!serverSocket.isClosed()) {
+          serverSocket.close();
+        }
+        if (activeSocket != null && !activeSocket.isClosed()) {
+          activeSocket.close();
+        }
+      } catch (IOException ignored) {
+      }
+    }
+  }
+
   private class TimeoutZombieTestContext implements AutoCloseable {
-    final ServerSocket blackhole;
     final LBSolrClient.Endpoint nonRoutableEndpoint;
     final HttpJettySolrClient delegateClient;
     final LBAsyncSolrClient lbClient;
     final Thread serverThread;
-    final Queue<Socket> sockets;
+    final MockFakeServer mockFakeServer;
 
     TimeoutZombieTestContext() throws Exception {
-      // create a socket that allows a client to connect but causes them to hang until idleTimeout
-      // is triggered
-      blackhole = new ServerSocket(0);
-      int blackholePort = blackhole.getLocalPort();
+      mockFakeServer = new MockFakeServer();
       nonRoutableEndpoint =
-          new LBSolrClient.Endpoint("http://localhost:" + blackholePort + "/solr");
+          new LBSolrClient.Endpoint("http://localhost:" + mockFakeServer.getPort() + "/solr");
 
       delegateClient =
           new HttpJettySolrClient.Builder()
               .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
               .withIdleTimeout(1, TimeUnit.MILLISECONDS)
               .build();
-      sockets = new ConcurrentLinkedQueue<>();
       lbClient = new LBJettySolrClient.Builder(delegateClient, nonRoutableEndpoint).build();
-      serverThread = new Thread(this::process);
+      serverThread = new Thread(mockFakeServer::process);
       serverThread.setDaemon(true);
       serverThread.start();
-    }
-
-    private void process() {
-      while (!Thread.currentThread().isInterrupted() && !blackhole.isClosed()) {
-        try (Socket clientSocket = blackhole.accept()) {
-          sockets.add(clientSocket);
-          processRequest(clientSocket.getInputStream());
-          // Send HTTP headers only: Jetty's request-level idle timeout takes effect only after response headers are
-          // parsed by the client.
-          sendHeaderResponse(clientSocket.getOutputStream());
-        } catch (IOException ignored) {
-
-        }
-      }
-    }
-
-    private void processRequest(final InputStream in) throws IOException {
-      final BufferedReader reader =
-          new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-      String line;
-      while ((line = reader.readLine()) != null && !line.isEmpty()) {
-        // Drain HTTP request headers
-      }
-    }
-
-    private void sendHeaderResponse(final OutputStream out) throws IOException {
-      final String HTTP_HEADERS =
-          "HTTP/1.1 200 OK\r\n"
-              + "Server: Custom Java ServerSocket\r\n"
-              + "Content-Type: text/plain\r\n"
-              + "Transfer-Encoding: chunked\r\n"
-              + "\r\n";
-      out.write(HTTP_HEADERS.getBytes(StandardCharsets.UTF_8));
-      out.flush();
     }
 
     LBSolrClient.Req createQueryRequest() {
@@ -475,19 +508,13 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
     @Override
     public void close() {
       try {
-        if (!serverThread.isInterrupted()) {
+        if (serverThread != null) {
           serverThread.interrupt();
         }
-        // close the socket
-        for (Socket s : sockets) {
-          if(!s.isClosed()) {
-            s.close();
-            }
-        }
-        blackhole.close();
+        mockFakeServer.close();
         lbClient.close();
         delegateClient.close();
-      } catch (IOException ignored) {
+      } catch (Exception ignored) {
 
       }
     }
