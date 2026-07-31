@@ -19,6 +19,7 @@
 
 // CLI-DOCS-START
 * xref:solr-control-script-reference.adoc[]
+** xref:cli/solr-auth.adoc[auth]
 ** xref:cli/solr-create.adoc[create]
 ** xref:cli/solr-delete.adoc[delete]
 ** xref:cli/solr-start.adoc[start]

@@ -46,6 +46,27 @@ import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.zookeeper.KeeperException;
 
 /** Supports auth command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "auth",
+    description =
+        "Updates or enables/disables authentication. Must be run on the Solr server itself.",
+    exitCodeListHeading = "%nExit Codes:%n",
+    exitCodeList = {
+      "0:Authentication was enabled or disabled successfully.",
+      "1:Failed to enable or disable authentication; check output for details."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Enable basic authentication with the given credentials",
+      "  bin/solr auth enable --type basicAuth --credentials solr:SolrRocks",
+      "",
+      "  # Enable basic authentication, prompting for credentials",
+      "  bin/solr auth enable --type basicAuth --prompt true",
+      "",
+      "  # Disable authentication",
+      "  bin/solr auth disable"
+    })
 public class AuthTool extends ToolBase {
 
   private static final Option TYPE_OPTION =
@@ -120,6 +141,67 @@ public class AuthTool extends ToolBase {
       String authConfDir,
       boolean zkHostSpecified,
       String zkHost) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.Parameters(
+      index = "0",
+      arity = "1",
+      paramLabel = "enable|disable",
+      description = "Whether to enable or disable authentication.")
+  private String authCommand;
+
+  @picocli.CommandLine.Option(
+      names = {"--type"},
+      paramLabel = "TYPE",
+      defaultValue = "basicAuth",
+      description =
+          "The authentication mechanism to enable (currently only basicAuth). Defaults to 'basicAuth'.")
+  private String type;
+
+  @picocli.CommandLine.Option(
+      names = {"--prompt"},
+      paramLabel = "true|false",
+      description =
+          "Prompts the user to provide the credentials. Use either --credentials or --prompt, not both.")
+  private String promptOption;
+
+  @picocli.CommandLine.Option(
+      names = {"--block-unknown"},
+      paramLabel = "true|false",
+      description =
+          "Blocks all access for unknown users (requires authentication for all endpoints).")
+  private String blockUnknown;
+
+  @picocli.CommandLine.Option(
+      names = {"--solr-include-file"},
+      paramLabel = "FILE",
+      required = true,
+      description =
+          "The Solr include file which contains overridable environment variables for configuring Solr configurations. Defaults to solr.in.sh or solr.in.cmd.")
+  private String solrIncludeFile;
+
+  @picocli.CommandLine.Option(
+      names = {"--update-include-file-only"},
+      paramLabel = "true|false",
+      description =
+          "Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
+              + " authentication (i.e. don't update security.json).")
+  private String updateIncludeFileOnly;
+
+  @picocli.CommandLine.Option(
+      names = {"--auth-conf-dir"},
+      paramLabel = "DIR",
+      required = true,
+      description =
+          "This is where any authentication related configuration files, if any, would be placed. Defaults to $SOLR_HOME.")
+  private String authConfDir;
+
+  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+
+  public AuthTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public AuthTool(ToolRuntime runtime) {
     super(runtime);
@@ -500,6 +582,35 @@ public class AuthTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    ensureArgumentIsValidBooleanIfPresent(BLOCK_UNKNOWN_OPTION.getLongOpt(), blockUnknown);
+    ensureArgumentIsValidBooleanIfPresent(
+        UPDATE_INCLUDE_FILE_OPTION.getLongOpt(), updateIncludeFileOnly);
+
+    // switch structure is here to support future auth options like oAuth
+    if (!"basicAuth".equals(type)) {
+      throw new IllegalStateException("Only type=basicAuth supported at the moment.");
+    }
+
+    boolean updateIncludeFileOnlyBool = Boolean.parseBoolean(updateIncludeFileOnly);
+    String zkHost = null;
+    if (!updateIncludeFileOnlyBool) {
+      try {
+        zkHost = zkOpts.resolveZkHost();
+      } catch (Exception e) {
+        echoIfVerbose("Could not resolve ZooKeeper host: " + e.getMessage());
+      }
+    }
+    AuthParams params =
+        new AuthParams(
+            Boolean.parseBoolean(promptOption),
+            zkOpts.credentials,
+            blockUnknown,
+            updateIncludeFileOnlyBool,
+            solrIncludeFile,
+            authConfDir,
+            zkOpts.zkHost != null || zkOpts.solrConnection != null,
+            zkHost);
+    handleCommand(authCommand, params);
+    return 0;
   }
 }

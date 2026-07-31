@@ -80,6 +80,7 @@ import org.slf4j.LoggerFactory;
       StatusTool.class,
       VersionTool.class,
       ZkTool.class,
+      AuthTool.class,
       CreateTool.class,
       DeleteTool.class
     })
