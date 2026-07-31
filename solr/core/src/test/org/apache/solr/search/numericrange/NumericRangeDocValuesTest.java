@@ -163,7 +163,7 @@ public class NumericRangeDocValuesTest extends SolrTestCaseJ4 {
 
   @Test
   public void testAllRelationsMultiValued() {
-    addMvDoc("1", "price_range_multi", "price_range_mv_dv", "[1 TO 10]", "[5 TO 20]");
+    addMvDoc("1", "price_range_multi", "price_range_mv_dv", "[5 TO 20]", "[1 TO 10]");
     addMvDoc("2", "price_range_multi", "price_range_mv_dv", "[0 TO 5]", "[100 TO 200]");
     addMvDoc("3", "price_range_multi", "price_range_mv_dv", "[130 TO 160]");
     assertU(commit());

@@ -239,11 +239,22 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
    * Encodes several ranges into one {@code BinaryDocValues} blob: each range's fixed-width {@code
    * [min... | max...]} bytes concatenated. All ranges of a field share the same width, so the query
    * recovers the count as {@code blob.length / stride}.
+   *
+   * <p><b>Ordering invariant:</b> ranges are packed in ascending unsigned-byte order of their
+   * encoding (min-first, so numeric ascending; 1D = ascending by min). It also makes the encoding
+   * canonical and lets a future query short-circuit a doc's ranges.
    */
   protected BytesRef encodePackedValues(String field, Collection<Object> values) {
-    BytesRefBuilder builder = new BytesRefBuilder();
+    // Encode each range into its own fixed-width chunk so the ranges can be ordered before packing.
+    List<byte[]> encoded = new ArrayList<>(values.size());
     for (Object value : values) {
-      builder.append(encodePackedValue(field, parseRangeValue(value.toString())));
+      BytesRef ref = encodePackedValue(field, parseRangeValue(value.toString()));
+      encoded.add(Arrays.copyOfRange(ref.bytes, ref.offset, ref.offset + ref.length));
+    }
+    encoded.sort(Arrays::compareUnsigned);
+    BytesRefBuilder builder = new BytesRefBuilder();
+    for (byte[] chunk : encoded) {
+      builder.append(chunk, 0, chunk.length);
     }
     return builder.toBytesRef();
   }

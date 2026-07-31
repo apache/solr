@@ -52,6 +52,9 @@ import org.apache.lucene.util.BytesRef;
  * docValues range query would pay, so it stays cheap even for high-cardinality range data. It is a
  * candidate to push down to Lucene, which currently lacks a multi-valued binary range docValues
  * field.
+ *
+ * <p>The packed ranges are stored in ascending unsigned-byte (i.e. min-first, numeric) order. see
+ * the ordering invariant on {@code AbstractNumericRangeField.encodePackedValues}.
  */
 final class MultiBinaryRangeDocValuesQuery extends Query {
 
