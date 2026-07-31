@@ -18,6 +18,7 @@ package org.apache.solr.response;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -26,7 +27,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.ByteUtils;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -57,10 +57,10 @@ public class TestJavaBinResponseWriter extends SolrTestCaseJ4 {
   }
 
   private void compareStringFormat(String input) {
-    byte[] bytes1 = new byte[1024];
-    int len1 = ByteUtils.UTF16toUTF8(input, 0, input.length(), bytes1, 0);
+    byte[] bytes1 = input.getBytes(StandardCharsets.UTF_8);
+    int len1 = bytes1.length;
     BytesRef bytesref = new BytesRef(input);
-    System.out.println();
+
     assertEquals(len1, bytesref.length);
     for (int i = 0; i < len1; i++) {
       assertEquals(input + " not matching char at :" + i, bytesref.bytes[i], bytes1[i]);

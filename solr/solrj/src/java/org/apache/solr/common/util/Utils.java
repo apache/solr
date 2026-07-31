@@ -43,12 +43,12 @@ import java.math.BigInteger;
 import java.net.URL;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -271,9 +271,10 @@ public class Utils {
   }
 
   public static byte[] toUTF8(CharArr out) {
-    byte[] arr = new byte[out.size() * 3];
-    int nBytes = ByteUtils.UTF16toUTF8(out, 0, out.size(), arr, 0);
-    return Arrays.copyOf(arr, nBytes);
+    ByteBuffer bb = UTF_8.encode(CharBuffer.wrap(out.getArray(), out.getStart(), out.size()));
+    byte[] arr = new byte[bb.remaining()];
+    bb.get(arr);
+    return arr;
   }
 
   public static Object fromJSON(byte[] utf8) {

@@ -60,7 +60,7 @@ public class RequestWriters {
   @State(Scope.Benchmark)
   public static class BenchState {
 
-    @Param({"xml", "binary"})
+    @Param({"xml", "javabin"})
     String type;
 
     @Param({"10", "100", "1000", "10000"})

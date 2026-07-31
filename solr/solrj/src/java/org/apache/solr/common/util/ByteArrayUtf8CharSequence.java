@@ -17,13 +17,12 @@
 
 package org.apache.solr.common.util;
 
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import org.noggit.CharArr;
 
 /**
  * A mutable byte[] backed Utf8CharSequence. This is quite similar to the BytesRef of Lucene Do not
@@ -36,18 +35,13 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   protected int offset;
   protected int hashCode = Integer.MIN_VALUE;
   protected int length;
-  protected volatile String utf16;
-  public Function<ByteArrayUtf8CharSequence, String> stringProvider;
+  protected String utf16;
 
   public ByteArrayUtf8CharSequence(String utf16) {
-    buf = new byte[Math.multiplyExact(utf16.length(), 3)];
+    this.utf16 = utf16;
+    buf = utf16.getBytes(StandardCharsets.UTF_8);
     offset = 0;
-    length = ByteUtils.UTF16toUTF8(utf16, 0, utf16.length(), buf, 0);
-    if (buf.length > length) {
-      byte[] copy = new byte[length];
-      System.arraycopy(buf, 0, copy, 0, length);
-      buf = copy;
-    }
+    length = buf.length;
     assert isValid();
   }
 
@@ -154,15 +148,8 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   }
 
   private String _getStr() {
-    String utf16 = this.utf16;
     if (utf16 == null) {
-      if (stringProvider != null) {
-        this.utf16 = utf16 = stringProvider.apply(this);
-      } else {
-        CharArr arr = new CharArr();
-        ByteUtils.UTF8toUTF16(buf, offset, length, arr);
-        this.utf16 = utf16 = arr.toString();
-      }
+      utf16 = new String(buf, offset, length, StandardCharsets.UTF_8);
     }
     return utf16;
   }
