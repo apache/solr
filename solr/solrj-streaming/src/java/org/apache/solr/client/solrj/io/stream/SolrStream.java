@@ -270,34 +270,19 @@ public class SolrStream extends TupleStream {
 
   private TupleStreamParser constructParser(SolrParams requestParams)
       throws IOException, SolrServerException {
-    String p = requestParams.get("qt");
-    if (p != null) {
-      ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
-      modifiableSolrParams.remove("qt");
-      // performance optimization - remove extra whitespace by default when streaming
-      modifiableSolrParams.set("indent", modifiableSolrParams.get("indent", "off"));
-    }
+    // performance optimization - remove extra whitespace when streaming
+    requestParams = SolrParams.wrapDefaults(requestParams, SolrParams.of("indent", "off"));
 
+    QueryRequest query = new QueryRequest(requestParams, SolrRequest.METHOD.POST);
     String wt = requestParams.get(CommonParams.WT, "json");
-    QueryRequest query = new QueryRequest(requestParams);
-
-    // in order to reuse HttpSolrClient objects per node, we need to cache them without the core
-    // name in the URL
-    if (core != null) {
-      query.setPath("/" + core + (p != null ? p : "/select"));
-    } else {
-      query.setPath(p);
-    }
-
     query.setResponseParser(new InputStreamResponseParser(wt));
-    query.setMethod(SolrRequest.METHOD.POST);
 
     if (user != null && password != null) {
       query.setBasicAuthCredentials(user, password);
     }
 
     var client = clientCache.getHttpSolrClient(baseUrl);
-    NamedList<Object> genericResponse = client.request(query);
+    NamedList<Object> genericResponse = client.request(query, core);
     InputStream stream = (InputStream) genericResponse.get(InputStreamResponseParser.STREAM_KEY);
     // since 9.4 the updated format has a dedicated status field
     final Integer statusCode = (Integer) genericResponse.get("responseStatus");
