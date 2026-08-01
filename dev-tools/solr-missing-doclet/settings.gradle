@@ -15,4 +15,8 @@
  * limitations under the License.
  */
 
+pluginManagement {
+  apply from: file("../../buildSrc/declare-repositories.gradle"), to: delegate
+}
+
 rootProject.name = "missing-doclet"

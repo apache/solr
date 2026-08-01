@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-repositories {
-  mavenCentral()
-}
+apply from: file("declare-repositories.gradle")
 
 ext {
   // Minimum Java version required to compile buildSrc.

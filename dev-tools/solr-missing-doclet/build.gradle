@@ -19,6 +19,8 @@ plugins {
   id 'java-library'
 }
 
+apply from: file("../../buildSrc/declare-repositories.gradle")
+
 version = "1.0.0-SNAPSHOT"
 group = "org.apache.solr.tools"
 description = 'Doclet-based javadoc validation'
