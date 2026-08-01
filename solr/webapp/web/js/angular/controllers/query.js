@@ -30,7 +30,14 @@ solrAdminApp.controller('QueryController',
     $scope.val['indent'] = true;
     $scope.useParams = [];
 
-    getParamsets();
+    // isCloudEnabled populates asynchronously via resetMenu(), so calling getParamsets()
+    // synchronously here would race it and fall back to indexType "cores" even in SolrCloud --
+    // wait for isCloudEnabled to settle before the first fetch (see paramsets.js for the same fix).
+    var unwatchCloudEnabled = $scope.$watch('isCloudEnabled', function(value) {
+      if (value === undefined) return;
+      unwatchCloudEnabled();
+      getParamsets();
+    });
 
     function getParamsets() {
 
