@@ -172,7 +172,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public SolrRequest(METHOD m, String path) {
     this.method = m;
-    this.path = path;
+    this.path = validatePath(path);
   }
 
   // ---------------------------------------------------------
@@ -196,11 +196,14 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   public void setPath(String path) {
-    if (path == null || !path.startsWith("/")) {
+    this.path = validatePath(path);
+  }
+
+  private static String validatePath(String path) {
+    if (path != null && !path.startsWith("/")) {
       throw new IllegalArgumentException("Must start with a '/': " + path);
     }
-
-    this.path = path;
+    return path;
   }
 
   /**
