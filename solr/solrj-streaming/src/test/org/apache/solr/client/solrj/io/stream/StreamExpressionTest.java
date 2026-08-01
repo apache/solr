@@ -1334,6 +1334,62 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testRollupStdMetric() throws Exception {
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    String expr =
+        "rollup("
+            + "  search(collection1, q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", qt=\"/export\"),"
+            + "  over=\"a_s\", std(a_i), std(a_f), count(*)"
+            + ")";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url =
+        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assertEquals(3, tuples.size());
+
+    // hello0: a_i = [0, 1, 2, 14], a_f = [1, 2, 5, 10]
+    Tuple tuple = tuples.get(0);
+    assertEquals("hello0", tuple.getString("a_s"));
+    assertEquals(6.5511, tuple.getDouble("std(a_i)"), 0.001);
+    assertEquals(4.0415, tuple.getDouble("std(a_f)"), 0.001);
+    assertEquals(4, tuple.getDouble("count(*)"), 0.0);
+
+    // hello3: a_i = [3, 10, 12, 13], a_f = [3, 6, 8, 9]
+    tuple = tuples.get(1);
+    assertEquals("hello3", tuple.getString("a_s"));
+    assertEquals(4.5092, tuple.getDouble("std(a_i)"), 0.001);
+    assertEquals(2.6458, tuple.getDouble("std(a_f)"), 0.001);
+    assertEquals(4, tuple.getDouble("count(*)"), 0.0);
+
+    // hello4: a_i = [4, 11], a_f = [4, 7]
+    tuple = tuples.get(2);
+    assertEquals("hello4", tuple.getString("a_s"));
+    assertEquals(4.9497, tuple.getDouble("std(a_i)"), 0.001);
+    assertEquals(2.1213, tuple.getDouble("std(a_f)"), 0.001);
+    assertEquals(2, tuple.getDouble("count(*)"), 0.0);
+  }
+
+  @Test
   public void testFacetStream() throws Exception {
 
     new UpdateRequest()
