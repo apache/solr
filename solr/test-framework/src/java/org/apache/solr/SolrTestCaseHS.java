@@ -163,14 +163,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
     ModifiableSolrParams p = new ModifiableSolrParams(params);
     p.set("wt", wt);
-    String path = p.get("qt");
-    p.remove("qt");
     p.set("indent", "true");
 
     QueryRequest query = new QueryRequest(p);
-    if (path != null) {
-      query.setPath(path);
-    }
 
     if ("json".equals(wt)) {
       query.setResponseParser(new JsonMapResponseParser());
