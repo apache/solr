@@ -135,7 +135,7 @@ public class NamedList<T>
 
   /**
    * Method to serialize Map.Entry&lt;String, ?&gt; to a List in which the even indexed elements
-   * (0,2,4, etc.) are Strings and odd elements (1,3,5,) are of the type "T".
+   * (0,2,4, etc.) are Strings and odd elements (1,3,5) are of the type "T".
    *
    * <p>NOTE: This a temporary placeholder method until the guts of the class are actually replaced
    * by List&lt;String, ?&gt;.
