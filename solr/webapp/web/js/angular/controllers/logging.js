@@ -24,13 +24,13 @@ var format_time_content = function( time, timeZone ) {
 }
 
 solrAdminApp.controller('LoggingController',
-  function($scope, $timeout, $cookies, LoggingV2, Constants){
+  function($scope, $timeout, $cookies, LoggingV2, Constants, ApiErrorHandler){
     $scope.resetMenu("logging", Constants.IS_ROOT_PAGE);
     $scope.timezone = $cookies.logging_timezone || "Local";
     $scope.refresh = function() {
       LoggingV2.fetchLocalLogMessages({since: 0}, function(error, data, response) {
         $timeout(function() {
-          if (error) return;
+          if (error) { ApiErrorHandler.handle(response); return; }
           $scope.since = new Date();
           $scope.sinceDisplay = format_time_content($scope.since, "Local");
           var events = data.history;
@@ -101,7 +101,7 @@ solrAdminApp.controller('LoggingController',
 )
 
 .controller('LoggingLevelController',
-  function($scope, $timeout, Logging, LoggingV2) {
+  function($scope, $timeout, Logging, LoggingV2, ApiErrorHandler) {
     $scope.resetMenu("logging-levels");
 
     var packageOf = function(logger) {
@@ -128,7 +128,7 @@ solrAdminApp.controller('LoggingController',
     $scope.refresh = function() {
       LoggingV2.listAllLoggersAndLevels(function(error, data, response) {
         $timeout(function() {
-          if (error) return;
+          if (error) { ApiErrorHandler.handle(response); return; }
           $scope.logging = makeTree(data.loggers, "");
           $scope.watcher = data.watcher;
           $scope.levels = [];

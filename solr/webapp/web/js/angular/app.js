@@ -495,7 +495,7 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, CollectionsV2, AliasesV2, SystemV2, Ping, Constants, SchemaDesigner) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, CollectionsV2, AliasesV2, SystemV2, Ping, Constants, SchemaDesigner, ApiErrorHandler) {
 
   $rootScope.exceptions={};
 
@@ -518,7 +518,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   $scope.resetMenu = function(page, pageType) {
     CoresV2.getAllCoreStatus({indexInfo: false}, function(error, data, response) {
       $timeout(function() {
-        if (error) return;
+        if (error) { ApiErrorHandler.handle(response); return; }
         $scope.cores = [];
         var currentCoreName = $route.current.params.core;
         delete $scope.currentCore;
@@ -539,7 +539,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
     SystemV2.getNodeSystemInfo({}, function(error, data, response) {
       $timeout(function() {
-        if (error) return;
+        if (error) { ApiErrorHandler.handle(response); return; }
         $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
         $scope.usersPermissions = data.security.permissions;
         $scope.isSecurityEnabled = $scope.authenticationPlugin != null;
@@ -556,10 +556,10 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         if ($scope.isCloudEnabled) {
           CollectionsV2.listCollections(function (error, cdata, response) {
             $timeout(function() {
-              if (error) return;
+              if (error) { ApiErrorHandler.handle(response); return; }
               AliasesV2.getAliases(function (error, adata, response) {
                 $timeout(function() {
-                  if (error) return;
+                  if (error) { ApiErrorHandler.handle(response); return; }
                   $scope.aliases = [];
                   for (var key in adata.aliases) {
                     props = {};

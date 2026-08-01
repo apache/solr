@@ -15,7 +15,7 @@
  limitations under the License.
 */
 
-solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cookies, $window, Constants, SystemV2, Security) {
+solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cookies, $window, Constants, SystemV2, Security, ApiErrorHandler) {
   $scope.resetMenu("security", Constants.IS_ROOT_PAGE);
 
   $scope.params = [];
@@ -283,6 +283,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
             $scope.isSecurityAdminEnabled = true;
             $scope.hasSecurityEditPerm = false;
             $scope.hideAll();
+          } else {
+            ApiErrorHandler.handle(response);
           }
           return;
         }

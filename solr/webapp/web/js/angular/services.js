@@ -40,6 +40,52 @@ solrAdminServices.factory('Metrics',
       }
     });
   }])
+.factory('ApiErrorHandler',
+    ['$rootScope', '$location', '$timeout', function($rootScope, $location, $timeout) {
+      // v2 API calls go through the generated OpenAPI client, which uses superagent directly and
+      // so never passes through Angular's $http -- meaning httpInterceptor in app.js (the global
+      // error banner, 401 redirect, 403 handling) never fires for them. This mirrors
+      // httpInterceptor's responseError handling for v2's superagent responses, so a failure looks
+      // the same to the user regardless of which API generation served it. Call from any v2
+      // callback's error branch: `if (error) { ApiErrorHandler.handle(response); return; }`
+      function handle(response) {
+        if (!response) {
+          return;
+        }
+        // superagent callbacks fire outside Angular's digest cycle, so changes here are invisible
+        // until the next digest -- $timeout both defers and triggers one.
+        $timeout(function() {
+          if (response.status === 401) {
+            var headers = response.headers || {};
+            sessionStorage.setItem("auth.wwwAuthHeader", headers['www-authenticate']);
+            sessionStorage.setItem("auth.authDataHeader", headers['x-solr-authdata']);
+            sessionStorage.setItem("auth.statusText", response.statusText);
+            sessionStorage.setItem("http401", "true");
+            sessionStorage.removeItem("auth.scheme");
+            sessionStorage.removeItem("auth.realm");
+            sessionStorage.removeItem("auth.username");
+            sessionStorage.removeItem("auth.header");
+            sessionStorage.removeItem("auth.state");
+            if ($location.path().includes('/login')) {
+              if (!sessionStorage.getItem("auth.location")) {
+                sessionStorage.setItem("auth.location", "/");
+              }
+            } else {
+              sessionStorage.setItem("auth.location", $location.path());
+              $location.path('/login');
+            }
+          } else if (response.status === 403) {
+            $rootScope.showAuthzFailures = true;
+          } else {
+            var url = (response.req && response.req.url) || (response.status + ' ' + $location.url());
+            var body = response.body || {};
+            var msg = (body.error && body.error.msg) || response.statusText || "Unknown error";
+            $rootScope.exceptions[url] = {msg: msg};
+          }
+        });
+      }
+      return {handle: handle};
+    }])
 .factory('CollectionsV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';

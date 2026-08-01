@@ -17,7 +17,7 @@
 
 var MB_FACTOR = 1024*1024;
 
-solrAdminApp.controller('SegmentsController', function($scope, $routeParams, $interval, $timeout, SegmentsV2, Constants) {
+solrAdminApp.controller('SegmentsController', function($scope, $routeParams, $interval, $timeout, SegmentsV2, Constants, ApiErrorHandler) {
     $scope.resetMenu("segments", Constants.IS_CORE_PAGE);
 
     $scope.refresh = function() {
@@ -25,6 +25,7 @@ solrAdminApp.controller('SegmentsController', function($scope, $routeParams, $in
         SegmentsV2.getSegmentData($routeParams.core, {}, function(error, data, response) {
             if (error) {
               console.error('Failed to fetch segment data:', error);
+              ApiErrorHandler.handle(response);
               return;
             }
             $timeout(function() {

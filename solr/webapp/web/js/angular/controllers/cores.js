@@ -16,13 +16,13 @@
 */
 
 solrAdminApp.controller('CoreAdminController',
-    function($scope, $routeParams, $location, $timeout, $route, CoresV2, Update, Constants){
+    function($scope, $routeParams, $location, $timeout, $route, CoresV2, Update, Constants, ApiErrorHandler){
       $scope.resetMenu("cores", Constants.IS_ROOT_PAGE);
       $scope.selectedCore = $routeParams.corename; // use 'corename' not 'core' to distinguish from /solr/:core/
       $scope.refresh = function() {
         CoresV2.getAllCoreStatus({}, function(error, data, response) {
           $timeout(function() {
-            if (error) return;
+            if (error) { ApiErrorHandler.handle(response); return; }
             var coreCount = 0;
             var cores = data.status;
             for (_obj in cores) coreCount++;
@@ -104,7 +104,7 @@ solrAdminApp.controller('CoreAdminController',
         if( !answer ) return;
         CoresV2.unloadCore($scope.selectedCore, {}, function(error, data, response) {
           $timeout(function() {
-            if (error) return;
+            if (error) { ApiErrorHandler.handle(response); return; }
             $location.path("/~cores");
           });
         });

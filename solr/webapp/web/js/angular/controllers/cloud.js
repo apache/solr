@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, $timeout, Zookeeper, Constants, Collections, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus) {
+    function($scope, $location, $timeout, Zookeeper, Constants, Collections, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
 
         $scope.showDebug = false;
 
@@ -37,7 +37,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, Zookeeper, false);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor);
+            nodesSubController($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
         } else if (view === "zkstatus") {
             $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
             zkStatusSubController($scope, ZookeeperStatus, false);
@@ -107,7 +107,7 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-var nodesSubController = function($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor) {
+var nodesSubController = function($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -356,6 +356,7 @@ var nodesSubController = function($scope, $timeout, Collections, SystemV2, Metri
     SystemV2.getNodeSystemInfo({"nodes": liveNodesToShow.join(',')}, function (error, data, response) {
       if (error) {
         console.error('Failed to fetch node system info:', error);
+        ApiErrorHandler.handle(response);
         return;
       }
       $timeout(function() {

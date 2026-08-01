@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CollectionsController',
-    function($scope, $routeParams, $location, $timeout, Collections, CollectionsV2, AliasesV2, ShardsV2, ReplicasV2, ConfigSetsV2, ClusterV2, Constants){
+    function($scope, $routeParams, $location, $timeout, Collections, CollectionsV2, AliasesV2, ShardsV2, ReplicasV2, ConfigSetsV2, ClusterV2, Constants, ApiErrorHandler){
       $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
 
       $scope.refresh = function() {
@@ -25,7 +25,7 @@ solrAdminApp.controller('CollectionsController',
 
           ClusterV2.listClusterNodes(function(error, data, response) {
             $timeout(function() {
-              if (error) return;
+              if (error) { ApiErrorHandler.handle(response); return; }
               $scope.availableNodeSet = data.nodes;
             });
           });
@@ -64,7 +64,7 @@ solrAdminApp.controller('CollectionsController',
               // Fetch aliases using getAliases to get properties
               AliasesV2.getAliases(function (error, adata, response) {
                   $timeout(function() {
-                      if (error) return;
+                      if (error) { ApiErrorHandler.handle(response); return; }
                       // TODO: Population of aliases array duplicated in app.js
                       $scope.aliases = [];
                       for (var key in adata.aliases) {
@@ -90,7 +90,7 @@ solrAdminApp.controller('CollectionsController',
           });
           ConfigSetsV2.listConfigSet(function(error, data, response) {
               $timeout(function() {
-                  if (error) return;
+                  if (error) { ApiErrorHandler.handle(response); return; }
                   $scope.configs = [];
                   var items = data.configSets;
                   for (var i in items) {
@@ -145,7 +145,7 @@ solrAdminApp.controller('CollectionsController',
         }
         AliasesV2.createAlias({createAliasRequestBody: {name: $scope.aliasToCreate, collections: collections}}, function(error, data, response) {
           $timeout(function() {
-            if (error) return;
+            if (error) { ApiErrorHandler.handle(response); return; }
             $scope.cancelCreateAlias();
             $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
             $location.path("/~collections/alias_" + $scope.aliasToCreate);
@@ -155,7 +155,7 @@ solrAdminApp.controller('CollectionsController',
       $scope.deleteAlias = function() {
         AliasesV2.deleteAlias($scope.collection.name, {}, function(error, data, response) {
           $timeout(function() {
-            if (error) return;
+            if (error) { ApiErrorHandler.handle(response); return; }
             $scope.hideAll();
             $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
             $location.path("/~collections/");
@@ -191,7 +191,7 @@ solrAdminApp.controller('CollectionsController',
             }
             CollectionsV2.createCollection({createCollectionRequestBody: createCollectionParams}, function(error, data, response) {
               $timeout(function() {
-                if (error) return;
+                if (error) { ApiErrorHandler.handle(response); return; }
                 $scope.cancelAddCollection();
                 $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
                 $location.path("/~collections/" + $scope.newCollection.name);
@@ -218,7 +218,7 @@ solrAdminApp.controller('CollectionsController',
         if ($scope.collection.name == $scope.collectionDeleteConfirm) {
             CollectionsV2.deleteCollection($scope.collection.name, {}, function (error, data, response) {
                 $timeout(function() {
-                    if (error) return;
+                    if (error) { ApiErrorHandler.handle(response); return; }
                     $location.path("/~collections");
                 });
             });
@@ -253,7 +253,7 @@ solrAdminApp.controller('CollectionsController',
 
           ClusterV2.listClusterNodes(function(error, data, response) {
             $timeout(function() {
-              if (error) return;
+              if (error) { ApiErrorHandler.handle(response); return; }
               $scope.nodes = data.nodes;
             });
           });
@@ -272,7 +272,7 @@ solrAdminApp.controller('CollectionsController',
       $scope.deleteShard = function(shard) {
           ShardsV2.deleteShard(shard.collection, shard.name, {}, function(error, data, response) {
             $timeout(function() {
-              if (error) return;
+              if (error) { ApiErrorHandler.handle(response); return; }
               shard.deleted = true;
               $timeout(function() {
                 $scope.refresh();
@@ -284,7 +284,7 @@ solrAdminApp.controller('CollectionsController',
       $scope.deleteReplica = function(replica) {
         ReplicasV2.deleteReplicaByName(replica.collection, replica.shard, replica.name, {}, function(error, data, response) {
           $timeout(function() {
-            if (error) return;
+            if (error) { ApiErrorHandler.handle(response); return; }
             replica.deleted = true;
             $timeout(function() {
               $scope.refresh();
@@ -301,7 +301,7 @@ solrAdminApp.controller('CollectionsController',
         }
         ReplicasV2.createReplica(shard.collection, shard.name, {createReplicaRequestBody: createReplicaParams}, function(error, data, response) {
           $timeout(function() {
-            if (error) return;
+            if (error) { ApiErrorHandler.handle(response); return; }
             shard.replicaAdded = true;
             $timeout(function () {
               shard.replicaAdded = false;
