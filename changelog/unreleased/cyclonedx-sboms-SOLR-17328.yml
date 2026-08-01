@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Ship a CycloneDX SBOM (bom.json) in the root of the full and slim binary distributions,
+  covering the Java libraries, the Solr artifacts and the UI content of the webapp
+type: added
+authors:
+  - name: Piotr P. Karwasz
+    nick: ppkarwasz
+links:
+  - name: SOLR-17328
+    url: https://issues.apache.org/jira/browse/SOLR-17328

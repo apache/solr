@@ -31,6 +31,7 @@ plugins {
   alias(libs.plugins.diffplug.spotless) apply false
   alias(libs.plugins.nodegradle.node) apply false
   alias(libs.plugins.openapi.generator) apply false
+  alias(libs.plugins.cyclonedx) apply false
   alias(libs.plugins.logchange)
 }
 

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import org.cyclonedx.gradle.CyclonedxDirectTask
+import org.cyclonedx.model.Component
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
@@ -237,5 +239,37 @@ artifacts {
                 ":solr:ui:wasmJsBrowserDistribution"
             },
         )
+    }
+}
+
+// CycloneDX SBOM of the Maven dependencies compiled into the wasmJs UI bundle,
+// merged into the distribution SBOMs by :solr:packaging.
+
+val uiSbomFile = layout.buildDirectory.file("cyclonedx/bom-ui.json").get().asFile
+
+val cyclonedxUi = tasks.register<CyclonedxDirectTask>("cyclonedxUi") {
+    group = "Bill of Materials"
+    description = "Generates a CycloneDX BOM of the dependencies compiled into the wasmJs UI bundle"
+
+    includeConfigs.set(listOf("wasmJsRuntimeClasspath"))
+    projectType.set(Component.Type.LIBRARY)
+
+    // The plugin resolves the configuration leniently and without depending on it,
+    // so the artifacts must be present first or their hashes are missing.
+    inputs.files(configurations.named("wasmJsRuntimeClasspath"))
+        .withPropertyName("wasmJsRuntimeArtifacts")
+        .withNormalizer(ClasspathNormalizer::class)
+
+    jsonOutput.set(uiSbomFile)
+}
+
+val uiSbom = configurations.create("uiSbom") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+}
+
+artifacts {
+    add("uiSbom", uiSbomFile) {
+        builtBy(cyclonedxUi)
     }
 }
