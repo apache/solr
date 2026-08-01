@@ -1,0 +1,7 @@
+title: Reorganize org.apache.solr.cli into domain-based sub-packages
+type: other
+authors:
+  - name: Jalaz Kumar
+links:
+  - name: SOLR-18234
+    url: https://issues.apache.org/jira/browse/SOLR-18234
