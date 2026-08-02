@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -119,6 +120,14 @@ public final class ResponseNormalizer {
     SolrDocument doc = new SolrDocument();
     if (o instanceof Map) {
       for (Map.Entry<String, Object> f : ((Map<String, Object>) o).entrySet()) {
+        if (CommonParams.CHILDDOC.equals(f.getKey()) && f.getValue() instanceof List<?> kids) {
+          // JSON has no document type, so nested documents arrive as a field holding a list of
+          // maps. The other parsers hand them back as child documents, so this one does too.
+          for (Object kid : kids) {
+            doc.addChildDocument(toDoc(kid));
+          }
+          continue;
+        }
         // setField (not addField): addField unwraps a Collection value into a plain list, which
         // would drop the type of a reconstructed SolrDocumentList held as a field value.
         doc.setField(f.getKey(), normalizeValue(f.getValue()));

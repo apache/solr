@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Test;
@@ -208,5 +209,55 @@ public class ResponseNormalizerTest extends SolrTestCase {
 
     Object out = ResponseNormalizer.normalize(in).get("section");
     assertTrue("must stay a SimpleOrderedMap", out instanceof SimpleOrderedMap);
+  }
+
+  /**
+   * JSON conveys nested documents as a {@code _childDocuments_} field holding a list of maps; the
+   * binary and XML parsers hand them back as child documents, so this one must too.
+   */
+  @Test
+  public void testChildDocumentsAreReconstructed() {
+    Map<String, Object> kid = new LinkedHashMap<>();
+    kid.put("id", "kid1");
+    Map<String, Object> parent = new LinkedHashMap<>();
+    parent.put("id", "parent1");
+    parent.put(CommonParams.CHILDDOC, List.of(kid));
+    Map<String, Object> docList = new LinkedHashMap<>();
+    docList.put("numFound", 1);
+    docList.put("docs", List.of(parent));
+    NamedList<Object> in = new SimpleOrderedMap<>();
+    in.add("response", docList);
+
+    SolrDocumentList out = (SolrDocumentList) ResponseNormalizer.normalize(in).get("response");
+    SolrDocument outParent = out.get(0);
+    assertTrue("child documents must be reconstructed", outParent.hasChildDocuments());
+    assertEquals(1, outParent.getChildDocumentCount());
+    assertEquals("kid1", outParent.getChildDocuments().get(0).getFieldValue("id"));
+    assertNull(
+        "the raw field must not remain alongside the children",
+        outParent.getFieldValue(CommonParams.CHILDDOC));
+  }
+
+  /** Children nest, so a grandchild must be reconstructed too. */
+  @Test
+  public void testChildDocumentsNest() {
+    Map<String, Object> grandkid = new LinkedHashMap<>();
+    grandkid.put("id", "grandkid1");
+    Map<String, Object> kid = new LinkedHashMap<>();
+    kid.put("id", "kid1");
+    kid.put(CommonParams.CHILDDOC, List.of(grandkid));
+    Map<String, Object> parent = new LinkedHashMap<>();
+    parent.put("id", "parent1");
+    parent.put(CommonParams.CHILDDOC, List.of(kid));
+    Map<String, Object> docList = new LinkedHashMap<>();
+    docList.put("numFound", 1);
+    docList.put("docs", List.of(parent));
+    NamedList<Object> in = new SimpleOrderedMap<>();
+    in.add("response", docList);
+
+    SolrDocumentList out = (SolrDocumentList) ResponseNormalizer.normalize(in).get("response");
+    SolrDocument outKid = out.get(0).getChildDocuments().get(0);
+    assertTrue("grandchildren must be reconstructed", outKid.hasChildDocuments());
+    assertEquals("grandkid1", outKid.getChildDocuments().get(0).getFieldValue("id"));
   }
 }
