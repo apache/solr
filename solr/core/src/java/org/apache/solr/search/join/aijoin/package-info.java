@@ -18,8 +18,8 @@
 /**
  * Experimental join between two indexes through an auxiliary index that persists per (from-segment,
  * to-segment) doc id mappings, so query-time joining reduces to bitset translation. {@link
- * org.apache.solr.search.join.aijoin.AIJoinIndex} is the entry point: it owns the auxiliary index and
- * builds its pair columns lazily on first search, so queries created with {@link
+ * org.apache.solr.search.join.aijoin.AIJoinIndex} is the entry point: it owns the auxiliary index
+ * and builds its pair columns lazily on first search, so queries created with {@link
  * org.apache.solr.search.join.aijoin.AIJoinIndex#newJoinQuery} run against a bare to-side searcher
  * with no explicit build step.
  */

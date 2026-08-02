@@ -18,6 +18,7 @@ package org.apache.solr.search.join.aijoin;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,10 +42,11 @@ import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherManager;
-import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-
+import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 /**
  * The auxiliary join index: a self-maintaining sidecar persisting per (from-segment, to-segment)
  * doc id mappings, so query-time joining reduces to bitset translation. It owns the sidecar's
@@ -81,6 +83,21 @@ public final class AIJoinIndex implements Closeable {
   final AIJoinMergePolicy mergePolicy;
   private final MergeScheduler mergeScheduler;
   static final AIJoinWriter INSTANCE = new AIJoinDocWriter(); // new AIJoinColumnWriter();
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /** Why a build was triggered; reported as {@code cause=} on the {@code AIJOIN evt=build} line. */
+  enum BuildCause {
+    /** {@link #ensureJoinSegments}, i.e. eagerly at {@link AIJoinQuery#createWeight} time. */
+    EAGER_CREATE_WEIGHT,
+    /** {@link ToLeafJoinContext}, i.e. lazily for a gap the eager pass did not cover. */
+    LAZY_TO_SEGMENT;
+
+    @Override
+    public String toString() {
+      return name().toLowerCase(java.util.Locale.ROOT).replace('_', '-');
+    }
+  }
 
   /** A pair's (from-segment, to-segment) leaf ordinals. */
   record SegmentsTuple(int fromLeafOrd, int toLeafOrd) {}
@@ -189,8 +206,12 @@ public final class AIJoinIndex implements Closeable {
       IndexReader fromReader,
       String fromField,
       IndexReader toReader,
-      String toField)
+      String toField,
+      BuildCause buildCause,
+      String ctxId)
       throws IOException {
+    long startNanos = System.nanoTime();
+    int batchNumDocsLogged = 0;
     Map<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> owned =
         new LinkedHashMap<>();
     List<CompletableFuture<Map.Entry<String, JoinColumnModel>>> awaited = new ArrayList<>();
@@ -211,6 +232,12 @@ public final class AIJoinIndex implements Closeable {
         // so a batch must start at doc 0 of its sidecar segment, which writeBatch guarantees by
         // flushing one batch per commit
         int batchNumDocs = 0;
+        // TODO parallelise this loop. The pairs are independent -- each merges the term
+        // dictionaries of its own (from, to) segments and shares nothing but scratch, which can
+        // become per-thread -- yet they are computed one after another on the calling thread, and
+        // this loop is the whole cost of a first query. The write must stay a single batch though:
+        // see the comment above, the batch boundary is what makes a column's docid the from-side
+        // docid, so parallelise computeDocMapping, not writeBatch.
         for (String pairFieldName : owned.keySet()) {
           SegmentsTuple position = missingPairs.get(pairFieldName);
           LeafReaderContext toContext = toReader.leaves().get(position.toLeafOrd());
@@ -225,6 +252,7 @@ public final class AIJoinIndex implements Closeable {
           loadedMappings.put(pairFieldName, mapping);
         }
         writeBatch(batchNumDocs, loadedMappings);
+        batchNumDocsLogged = batchNumDocs;
         // TODO flush every single field to get single field segments
         for (Map.Entry<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> entry :
             owned.entrySet()) {
@@ -244,6 +272,7 @@ public final class AIJoinIndex implements Closeable {
       }
       throw t;
     }
+    long builtNanos = System.nanoTime() - startNanos;
     Map<String, JoinColumnModel> result = new LinkedHashMap<>(loadedMappings);
     for (CompletableFuture<Map.Entry<String, JoinColumnModel>> future : awaited) {
       try {
@@ -259,6 +288,26 @@ public final class AIJoinIndex implements Closeable {
         }
         throw new IOException(cause);
       }
+    }
+    if (log.isInfoEnabled() && !missingPairs.isEmpty()) {
+      long toCount = 0;
+      for (JoinColumnModel model : loadedMappings.values()) {
+        toCount += model.edges().toCount();
+      }
+      // built/awaited split matters: an awaited pair cost this thread only the wait, so folding
+      // the two together would attribute another thread's build work to this query
+      log.info(
+          "AIJOIN evt=build ctx={} cause={} pairsRequested={} pairsBuilt={} pairsAwaited={}"
+              + " builtMs={} awaitedMs={} toCount={} batchNumDocs={}",
+          ctxId == null ? "-" : ctxId,
+          buildCause,
+          missingPairs.size(),
+          loadedMappings.size(),
+          awaited.size(),
+          builtNanos / 1_000_000L,
+          (System.nanoTime() - startNanos - builtNanos) / 1_000_000L,
+          toCount,
+          batchNumDocsLogged);
     }
     return result;
   }
@@ -304,7 +353,9 @@ public final class AIJoinIndex implements Closeable {
           fromSearcher.getIndexReader(),
           fromField,
           toSearcher.getIndexReader(),
-          toField);
+          toField,
+          BuildCause.EAGER_CREATE_WEIGHT,
+          null); // runs before any ToLeafJoinContext exists, so there is no context to blame
     }
   }
 
