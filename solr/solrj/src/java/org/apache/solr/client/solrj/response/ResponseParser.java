@@ -68,15 +68,17 @@ public abstract class ResponseParser {
   public abstract Set<String> getContentTypes();
 
   /**
-   * Whether this parser already produces the canonical response shape the SolrJ response classes
-   * expect: a {@link NamedList} tree with {@link org.apache.solr.common.SolrDocumentList} for
-   * document sections. The binary and XML parsers do; a parser that yields raw {@code Map}s and
-   * {@code List}s (such as the JSON map parser) does not, and its output is normalized before the
-   * response classes read it.
+   * Parses the response and returns it in the canonical shape the SolrJ response classes expect: a
+   * {@link NamedList} tree with {@link org.apache.solr.common.SolrDocumentList} for document
+   * sections.
    *
-   * @return true unless the parser yields a raw, un-typed structure
+   * <p>Most parsers produce that shape directly and inherit this method unchanged. A parser whose
+   * natural output is a raw structure of {@code Map}s and {@code List}s — such as the JSON map
+   * parser — overrides it to convert, so that the conversion is the parser's own responsibility
+   * rather than something a client has to know to apply.
    */
-  public boolean producesCanonicalForm() {
-    return true;
+  public NamedList<Object> processCanonicalResponse(InputStream body, String encoding)
+      throws IOException {
+    return processResponse(body, encoding);
   }
 }

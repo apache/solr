@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.response;
 
 import static org.apache.solr.SolrTestCaseJ4.sdoc;
 
+import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -43,14 +44,13 @@ public class QueryResponseJsonParserIntegrationTest extends SolrTestCase {
     solrTestRule.startSolr();
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
-    try (SolrClient client = solrTestRule.getSolrClient()) {
-      client.add(
-          java.util.List.of(
-              sdoc("id", "1", "cat", "electronics"),
-              sdoc("id", "2", "cat", "electronics"),
-              sdoc("id", "3", "cat", "books")));
-      client.commit();
-    }
+    SolrClient client = solrTestRule.getSolrClient();
+    client.add(
+        List.of(
+            sdoc("id", "1", "cat", "electronics"),
+            sdoc("id", "2", "cat", "electronics"),
+            sdoc("id", "3", "cat", "books")));
+    client.commit();
   }
 
   /** The default (Jetty) transport. */

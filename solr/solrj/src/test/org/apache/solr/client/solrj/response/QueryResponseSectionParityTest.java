@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.ResponseNormalizer;
 import org.junit.Test;
 
 /**
@@ -42,7 +41,9 @@ public class QueryResponseSectionParityTest extends SolrTestCase {
     return r;
   }
 
-  private static final String HEADER = "\"responseHeader\":{\"status\":0,\"QTime\":1},";
+  private static final String HEADER =
+      """
+      "responseHeader":{"status":0,"QTime":1},""";
 
   /** pivot facets: count is an Integer cast (QueryResponse readPivots). */
   @Test
@@ -50,8 +51,9 @@ public class QueryResponseSectionParityTest extends SolrTestCase {
     String json =
         "{"
             + HEADER
-            + "\"facet_counts\":{\"facet_queries\":{},\"facet_fields\":{},"
-            + "\"facet_pivot\":{\"cat\":[{\"field\":\"cat\",\"value\":\"electronics\",\"count\":3}]}}}";
+            + """
+            "facet_counts":{"facet_queries":{},"facet_fields":{},
+            "facet_pivot":{"cat":[{"field":"cat","value":"electronics","count":3}]}}}""";
     QueryResponse r = parse(json);
     assertNotNull("facetPivot", r.getFacetPivot());
     assertEquals(3, r.getFacetPivot().get("cat").get(0).getCount());
@@ -63,10 +65,11 @@ public class QueryResponseSectionParityTest extends SolrTestCase {
     String json =
         "{"
             + HEADER
-            + "\"grouped\":{\"cat\":{\"matches\":3,\"ngroups\":2,\"groups\":["
-            + "{\"groupValue\":\"a\",\"doclist\":{\"numFound\":2,\"start\":0,\"docs\":[{\"id\":\"1\"}]}},"
-            + "{\"groupValue\":\"b\",\"doclist\":{\"numFound\":1,\"start\":0,\"docs\":[{\"id\":\"2\"}]}}"
-            + "]}}}";
+            + """
+            "grouped":{"cat":{"matches":3,"ngroups":2,"groups":[
+            {"groupValue":"a","doclist":{"numFound":2,"start":0,"docs":[{"id":"1"}]}},
+            {"groupValue":"b","doclist":{"numFound":1,"start":0,"docs":[{"id":"2"}]}}
+            ]}}}""";
     QueryResponse r = parse(json);
     GroupResponse gr = r.getGroupResponse();
     assertNotNull("groupResponse", gr);
@@ -80,8 +83,9 @@ public class QueryResponseSectionParityTest extends SolrTestCase {
     String json =
         "{"
             + HEADER
-            + "\"facet_counts\":{\"facet_queries\":{},\"facet_fields\":{},"
-            + "\"facet_intervals\":{\"price\":{\"[0,10]\":5,\"[11,100]\":3}}}}";
+            + """
+            "facet_counts":{"facet_queries":{},"facet_fields":{},
+            "facet_intervals":{"price":{"[0,10]":5,"[11,100]":3}}}}""";
     QueryResponse r = parse(json);
     assertNotNull("intervalFacets", r.getIntervalFacets());
     assertEquals(2, r.getIntervalFacets().get(0).getIntervals().size());
@@ -94,9 +98,10 @@ public class QueryResponseSectionParityTest extends SolrTestCase {
     String json =
         "{"
             + HEADER
-            + "\"stats\":{\"stats_fields\":{\"price\":{"
-            + "\"min\":9.0,\"max\":12.0,\"count\":2,\"missing\":0,"
-            + "\"sumOfSquares\":225.0,\"stddev\":1.5,\"countDistinct\":2,\"cardinality\":2}}}}";
+            + """
+            "stats":{"stats_fields":{"price":{
+            "min":9.0,"max":12.0,"count":2,"missing":0,
+            "sumOfSquares":225.0,"stddev":1.5,"countDistinct":2,"cardinality":2}}}}""";
     QueryResponse r = parse(json);
     assertNotNull("fieldStatsInfo", r.getFieldStatsInfo());
     FieldStatsInfo price = r.getFieldStatsInfo().get("price");
@@ -113,9 +118,10 @@ public class QueryResponseSectionParityTest extends SolrTestCase {
     String json =
         "{"
             + HEADER
-            + "\"spellcheck\":{\"suggestions\":{"
-            + "\"helo\":{\"numFound\":1,\"startOffset\":0,\"endOffset\":4,\"origFreq\":0,"
-            + "\"suggestion\":[{\"word\":\"hello\",\"freq\":5}]}}}}";
+            + """
+            "spellcheck":{"suggestions":{
+            "helo":{"numFound":1,"startOffset":0,"endOffset":4,"origFreq":0,
+            "suggestion":[{"word":"hello","freq":5}]}}}}""";
     QueryResponse r = parse(json);
     SpellCheckResponse sc = r.getSpellCheckResponse();
     assertNotNull("spellcheck", sc);
@@ -129,7 +135,11 @@ public class QueryResponseSectionParityTest extends SolrTestCase {
   /** highlighting: no numeric cast, but exercises Map->NamedList reconstruction over JSON. */
   @Test
   public void testHighlighting() throws Exception {
-    String json = "{" + HEADER + "\"highlighting\":{\"1\":{\"name\":[\"<em>foo</em>\"]}}}";
+    String json =
+        "{"
+            + HEADER
+            + """
+            "highlighting":{"1":{"name":["<em>foo</em>"]}}}""";
     QueryResponse r = parse(json);
     assertNotNull("highlighting", r.getHighlighting());
     assertEquals("<em>foo</em>", r.getHighlighting().get("1").get("name").get(0));
@@ -138,7 +148,11 @@ public class QueryResponseSectionParityTest extends SolrTestCase {
   /** terms: df/ttf are read via Number, and the section is a nested NamedList over JSON. */
   @Test
   public void testTerms() throws Exception {
-    String json = "{" + HEADER + "\"terms\":{\"cat\":{\"electronics\":3,\"books\":1}}}";
+    String json =
+        "{"
+            + HEADER
+            + """
+            "terms":{"cat":{"electronics":3,"books":1}}}""";
     QueryResponse r = parse(json);
     assertNotNull("termsResponse", r.getTermsResponse());
     assertEquals(2, r.getTermsResponse().getTerms("cat").size());
@@ -153,7 +167,8 @@ public class QueryResponseSectionParityTest extends SolrTestCase {
     String json =
         "{"
             + HEADER
-            + "\"moreLikeThis\":{\"1\":{\"numFound\":1,\"start\":0,\"docs\":[{\"id\":\"2\"}]}}}";
+            + """
+            "moreLikeThis":{"1":{"numFound":1,"start":0,"docs":[{"id":"2"}]}}}""";
     QueryResponse r = parse(json);
     assertNotNull("moreLikeThis", r.getMoreLikeThis());
     assertEquals(1, r.getMoreLikeThis().get("1").getNumFound());

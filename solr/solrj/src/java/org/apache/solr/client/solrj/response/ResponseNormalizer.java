@@ -14,13 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.util;
+package org.apache.solr.client.solrj.response;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**
  * Converts a parsed response into the canonical shape the SolrJ response classes expect (the shape
@@ -54,28 +56,32 @@ public final class ResponseNormalizer {
       // Already canonical (binary/XML produce these directly); leave untouched. Must precede the
       // List/Map branches since SolrDocumentList is a List and SolrDocument is a Map.
       return val;
-    } else if (val instanceof NamedList) {
-      // Already canonical (binary/XML), but its children may still need normalizing.
-      NamedList<Object> in = (NamedList<Object>) val;
-      SimpleOrderedMap<Object> out = new SimpleOrderedMap<>(in.size());
-      for (Map.Entry<String, Object> e : in) {
+    } else if (val instanceof NamedList<?> in) {
+      // Already canonical (binary/XML), but its children may still need normalizing. Keep the
+      // concrete type: a SimpleOrderedMap asserts unique keys, which a general NamedList does not,
+      // so promoting one to the other would change the contract of the value.
+      NamedList<Object> out =
+          in instanceof SimpleOrderedMap<?>
+              ? new SimpleOrderedMap<>(in.size())
+              : new NamedList<>(in.size());
+      for (Map.Entry<String, ?> e : in) {
         out.add(e.getKey(), normalizeValue(e.getValue()));
       }
       return out;
-    } else if (val instanceof Map) {
-      Map<String, Object> m = (Map<String, Object>) val;
+    } else if (val instanceof Map<?, ?> raw) {
+      Map<String, Object> m = (Map<String, Object>) raw;
       if (isDocList(m)) {
         return toDocList(m);
       }
-      // SimpleOrderedMap (not plain NamedList): it is the canonical map type the binary parser
-      // produces, and some response extractors cast to it specifically.
+      // A JSON object arrives as a Map with unique keys by construction, so SimpleOrderedMap is the
+      // right target: it is what the binary parser produces, and some response extractors cast to
+      // it.
       SimpleOrderedMap<Object> out = new SimpleOrderedMap<>(m.size());
       for (Map.Entry<String, Object> e : m.entrySet()) {
         out.add(e.getKey(), normalizeValue(e.getValue()));
       }
       return out;
-    } else if (val instanceof List) {
-      List<Object> in = (List<Object>) val;
+    } else if (val instanceof List<?> in) {
       List<Object> out = new ArrayList<>(in.size());
       for (Object item : in) {
         out.add(normalizeValue(item));

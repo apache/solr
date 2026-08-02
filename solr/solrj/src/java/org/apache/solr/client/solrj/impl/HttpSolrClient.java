@@ -50,7 +50,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.ResponseNormalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -229,10 +228,7 @@ public abstract class HttpSolrClient extends SolrClient {
 
       NamedList<Object> rsp;
       try {
-        rsp = processor.processResponse(is, encoding);
-        if (!processor.producesCanonicalForm()) {
-          rsp = ResponseNormalizer.normalize(rsp);
-        }
+        rsp = processor.processCanonicalResponse(is, encoding);
       } catch (Exception e) {
         throw new RemoteSolrException(urlExceptionMessage, httpStatus, e.getMessage(), e);
       }

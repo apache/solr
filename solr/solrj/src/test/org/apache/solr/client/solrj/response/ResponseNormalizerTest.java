@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.util;
+package org.apache.solr.client.solrj.response;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +24,8 @@ import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Test;
 
 /** Intensive tests for {@link ResponseNormalizer}. */
@@ -165,5 +167,46 @@ public class ResponseNormalizerTest extends SolrTestCase {
     in.add("x", notDocs);
 
     assertTrue(ResponseNormalizer.normalize(in).get("x") instanceof NamedList);
+  }
+
+  /**
+   * A plain {@link NamedList} must not be promoted to a {@link SimpleOrderedMap}. The two are
+   * written differently — a JSON writer renders a SimpleOrderedMap as {@code {"foo":10}} and a
+   * NamedList as {@code ["foo",10]} — and SimpleOrderedMap also implements {@link java.util.Map},
+   * whose contract assumes unique keys that a general NamedList does not guarantee. Normalizing
+   * must preserve the concrete type rather than widen it.
+   */
+  public void testPlainNamedListIsNotPromotedToMap() {
+    NamedList<Object> plain = new NamedList<>();
+    plain.add("dup", 1);
+    plain.add("dup", 2);
+
+    NamedList<Object> in = new SimpleOrderedMap<>();
+    in.add("section", plain);
+
+    Object out = ResponseNormalizer.normalize(in).get("section");
+    assertTrue("must stay a NamedList", out instanceof NamedList);
+    assertFalse(
+        "a plain NamedList must not become a SimpleOrderedMap", out instanceof SimpleOrderedMap);
+
+    // and the repeated key survives, which is the reason the distinction matters
+    NamedList<?> outList = (NamedList<?>) out;
+    assertEquals(2, outList.size());
+    assertEquals("dup", outList.getName(0));
+    assertEquals("dup", outList.getName(1));
+    assertEquals(1, outList.getVal(0));
+    assertEquals(2, outList.getVal(1));
+  }
+
+  /** A SimpleOrderedMap stays one: it is what the binary parser produces and extractors cast to. */
+  public void testSimpleOrderedMapStaysOne() {
+    NamedList<Object> inner = new SimpleOrderedMap<>();
+    inner.add("a", 1);
+
+    NamedList<Object> in = new SimpleOrderedMap<>();
+    in.add("section", inner);
+
+    Object out = ResponseNormalizer.normalize(in).get("section");
+    assertTrue("must stay a SimpleOrderedMap", out instanceof SimpleOrderedMap);
   }
 }

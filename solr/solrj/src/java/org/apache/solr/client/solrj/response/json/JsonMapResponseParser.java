@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.client.solrj.response.ResponseNormalizer;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.IOUtils;
@@ -65,7 +66,8 @@ public class JsonMapResponseParser extends ResponseParser {
   }
 
   @Override
-  public boolean producesCanonicalForm() {
-    return false;
+  public NamedList<Object> processCanonicalResponse(InputStream body, String encoding)
+      throws IOException {
+    return ResponseNormalizer.normalize(processResponse(body, encoding));
   }
 }

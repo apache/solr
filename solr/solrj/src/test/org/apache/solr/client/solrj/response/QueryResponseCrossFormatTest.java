@@ -25,7 +25,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.ResponseNormalizer;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Test;
 
