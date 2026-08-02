@@ -197,6 +197,11 @@ final class AIJoinUtil {
     Bits fromLiveDocs = fromContext.reader().getLiveDocs();
     Bits toLiveDocs = toContext.reader().getLiveDocs();
     // map from-segment ords to to-segment ords by merging the two sorted term dictionaries
+    // TODO this merge is per pair, so a from segment's term dictionary is walked once for every
+    // to segment it pairs with, and vice versa: N*M merges where 2*(N+M) dictionary reads would
+    // do, if ord maps were derived per segment and reused across pairings. Worth measuring before
+    // parallelising the caller (AIJoinIndex#writeJoinSegments): removing the redundancy may buy
+    // more than spreading it across threads.
     long[] toOrdByFromOrd = scratch;
     Arrays.fill(toOrdByFromOrd, -1L);
     // dead code, kept until M:N support settles: the reverse ord map was filled but never read
