@@ -302,10 +302,10 @@ public class QueryResponse extends SolrResponseBase {
   private void extractFacetInfo(NamedList<Object> info) {
     // Parse the queries
     _facetQuery = new LinkedHashMap<>();
-    NamedList<Integer> fq = (NamedList<Integer>) info.get("facet_queries");
+    NamedList<Number> fq = (NamedList<Number>) info.get("facet_queries");
     if (fq != null) {
-      for (Map.Entry<String, Integer> entry : fq) {
-        _facetQuery.put(entry.getKey(), entry.getValue());
+      for (Map.Entry<String, Number> entry : fq) {
+        _facetQuery.put(entry.getKey(), entry.getValue().intValue());
       }
     }
 
@@ -403,9 +403,9 @@ public class QueryResponse extends SolrResponseBase {
             new RangeFacet.Currency(facet.getKey(), start, end, gap, before, after, between);
       }
 
-      NamedList<Integer> counts = (NamedList<Integer>) values.get("counts");
-      for (Map.Entry<String, Integer> entry : counts) {
-        rangeFacet.addCount(entry.getKey(), entry.getValue());
+      NamedList<Number> counts = (NamedList<Number>) values.get("counts");
+      for (Map.Entry<String, Number> entry : counts) {
+        rangeFacet.addCount(entry.getKey(), entry.getValue().intValue());
       }
 
       facetRanges.add(rangeFacet);
@@ -449,10 +449,10 @@ public class QueryResponse extends SolrResponseBase {
           case "queries" -> {
             // Parse the queries
             queryCounts = new LinkedHashMap<>();
-            NamedList<Integer> fq = (NamedList<Integer>) val;
+            NamedList<Number> fq = (NamedList<Number>) val;
             if (fq != null) {
-              for (Map.Entry<String, Integer> e : fq) {
-                queryCounts.put(e.getKey(), e.getValue());
+              for (Map.Entry<String, Number> e : fq) {
+                queryCounts.put(e.getKey(), e.getValue().intValue());
               }
             }
           }
