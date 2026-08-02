@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -49,6 +50,17 @@ public abstract class ResponseParser {
 
   /** The writer type placed onto the request as the {@code wt} param. */
   public abstract String getWriterType(); // for example: wt=XML, JSON, etc
+
+  /**
+   * Params this parser needs on the request for its own reads, applied alongside {@code wt}.
+   *
+   * <p>A parser that needs the response written a particular way returns those params here rather
+   * than relying on callers to set them. Anything the caller set explicitly wins, so this only
+   * supplies defaults. Returns null when the parser needs nothing beyond {@code wt}.
+   */
+  public SolrParams getRequestParams() {
+    return null;
+  }
 
   public abstract NamedList<Object> processResponse(InputStream body, String encoding)
       throws IOException;

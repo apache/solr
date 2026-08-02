@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -48,6 +49,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -138,6 +140,16 @@ public abstract class HttpSolrClient extends SolrClient {
     // The parser 'wt=' param is used instead of the original params
     ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
     wparams.set(CommonParams.WT, parserToUse.getWriterType());
+    // Params the parser needs for its own reads, without overriding what the request already set.
+    SolrParams parserParams = parserToUse.getRequestParams();
+    if (parserParams != null) {
+      for (Iterator<String> it = parserParams.getParameterNamesIterator(); it.hasNext(); ) {
+        String name = it.next();
+        if (wparams.get(name) == null) {
+          wparams.set(name, parserParams.getParams(name));
+        }
+      }
+    }
     return wparams;
   }
 
