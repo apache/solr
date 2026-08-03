@@ -218,17 +218,19 @@ public class DisMaxQParser extends QParser {
   protected Query getPhraseQuery(String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser pp)
       throws SyntaxError {
     /* * * Add on Phrases for the Query * * */
-    if (userQuery.trim().indexOf(' ') < 0) {
-      // single term - skip phrase boost
-      return null;
-    }
+
     /* build up phrase boosting queries */
+
     /* if the userQuery already has some quotes, strip them out.
      * we've already done the phrases they asked for in the main
      * part of the query, this is to boost docs that may not have
      * matched those phrases but do match looser phrases.
      */
     String userPhraseQuery = userQuery.replace("\"", "");
+    if (userPhraseQuery.trim().indexOf(' ') < 0) {
+      // single term - skip phrase boost
+      return null;
+    }
     return pp.parse("\"" + userPhraseQuery + "\"");
   }
 
