@@ -57,6 +57,13 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - To scaffold a new changelog entry, run `gradlew writeChangelog` (JIRA) or `gradlew writeChangeLogPr` (no JIRA), and then edit the new file located in `changelog/unreleased/`.
 - Do not add a changelog entry before a JIRA issue or a Github PR is assigned, as one is required.
 
+## Issue Tracking (JIRA)
+
+Solr issues are tracked at https://issues.apache.org/jira (project key `SOLR`). The anonymous REST API works; no auth or scraping needed:
+
+- Search: `curl "https://issues.apache.org/jira/rest/api/2/search?jql=<url-encoded JQL>&fields=summary,status,resolution&maxResults=10"` with JQL like `project=SOLR AND text~"some phrase" ORDER BY updated DESC`
+- Single issue (with comments): `curl "https://issues.apache.org/jira/rest/api/2/issue/SOLR-12345?fields=summary,description,comment"`
+
 ## Security
 
 For security findings, follow the project's threat model:
