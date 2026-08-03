@@ -673,9 +673,6 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     paramsLoc.set("rows", "0");
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
-    if (paramsLoc.get("lb.proxy") != null) {
-      request.setPath("/" + collection + "/select");
-    }
 
     try {
       NamedList<?> response = cloudSolrClient.request(request, collection);
