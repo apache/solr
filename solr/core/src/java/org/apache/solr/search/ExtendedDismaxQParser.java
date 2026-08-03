@@ -630,7 +630,10 @@ public class ExtendedDismaxQParser extends QParser {
 
     if (0 == shingleSize) shingleSize = clauses.size();
 
-    if (shingleSize < 2) return;
+    if (shingleSize < 2) {
+      // single term - skip phrase boost
+      return;
+    }
 
     final int lastClauseIndex = shingleSize - 1;
 
