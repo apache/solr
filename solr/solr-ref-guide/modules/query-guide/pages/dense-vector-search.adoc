@@ -128,7 +128,7 @@ Here's how `DenseVectorField` can be configured with the advanced hyperparameter
 +
 Accepted values: `hnsw`, `flat`, `cagra_hnsw` (requires GPU acceleration setup).
 +
-The `flat` algorithm stores vectors without building an HNSW graph. This avoids the indexing overhead of graph construction, but does not support the `{!knn}` query parser. Use `vectorSimilarity()` function queries to score and rank documents by vector similarity. See <<Flat Vector Index>> for details.
+The `flat` algorithm stores vectors without building an HNSW graph, avoiding the indexing overhead of graph construction. Supported query parsers differ by field type. See <<Flat Vector Index>> for details.
 +
 Please note that the `knnAlgorithm` accepted values may change in future releases.
 
@@ -300,8 +300,9 @@ with 8 bits we can store up to 256 discrete values, so a float dimension with va
 
 [0.0, 0.0039) => 0, [0.0039, 0.0078) => 1 ... etc
 
-As a specific type of DenseVectorField, this field type supports all the same configurable properties outlined above as well
-as some additional ones.
+As a specific type of DenseVectorField, this field type supports `knnAlgorithm` (`hnsw` or `flat`) and other configurable properties outlined above, as well as some additional ones.
+
+NOTE: `vectorEncoding="BYTE"` is not supported for `ScalarQuantizedDenseVectorField`. Scalar quantization operates on `FLOAT32` vectors.
 
 Here is how a ScalarQuantizedDenseVectorField can be defined in the schema:
 
@@ -347,6 +348,8 @@ Here is how a BinaryQuantizedDenseVectorField can be defined in the schema:
 BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField` with the only notable exception being
 `similarityFunction`. Bit quantization uses its own distance calculation and so does not require nor use the `similarityFunction`
 param.
+
+NOTE: `knnAlgorithm="flat"` is not supported for `BinaryQuantizedDenseVectorField`.
 
 [[query-hnsw-fields]]
 == Querying Vectors in Navigable Small-world Graphs
@@ -871,11 +874,27 @@ The final ranked list of results will have the first pass score(main query `q`) 
 
 Setting `knnAlgorithm="flat"` stores vectors without building an HNSW graph, avoiding the indexing cost of graph construction.
 
-Flat fields do not support the `{!knn}`, `{!knn_text_to_vector}`, or `{!vectorSimilarity}` query parsers.
+The flat algorithm is supported by both `DenseVectorField` and `ScalarQuantizedDenseVectorField`. When used with `ScalarQuantizedDenseVectorField`, vectors are still quantized at index time.
+
+[source,xml]
+----
+<!-- Flat vector index (no quantization) -->
+<fieldType name="knn_flat" class="solr.DenseVectorField"
+           vectorDimension="4" similarityFunction="cosine" knnAlgorithm="flat"/>
+
+<!-- Flat vector index with scalar quantization -->
+<fieldType name="knn_sq_flat" class="solr.ScalarQuantizedDenseVectorField"
+           vectorDimension="4" similarityFunction="cosine" knnAlgorithm="flat"/>
+----
+
+For `DenseVectorField`, flat fields do not support the `{!knn}`, `{!knn_text_to_vector}`, or `{!vectorSimilarity}` query parsers.
 Use `vectorSimilarity()` function queries to score and rank by similarity:
 
 [source]
 q={!func}vectorSimilarity(vector,[1.0, 2.0, 3.0, 4.0])&fl=id,score
+
+For `ScalarQuantizedDenseVectorField`, flat fields also support the `{!knn}`, `{!knn_text_to_vector}`, and `{!vectorSimilarity}` query parsers, which score against the quantized vectors.
+Note that `vectorSimilarity()` function queries score against the raw (unquantized) float vectors, so the two paths can return slightly different scores for the same field.
 
 
 == Indexing Multi-Vectors for Late Interaction
