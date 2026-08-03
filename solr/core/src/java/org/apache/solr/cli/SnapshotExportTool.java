@@ -71,6 +71,16 @@ public class SnapshotExportTool extends ToolBase {
               "Specifies the async request identifier to be used during snapshot export preparation.")
           .get();
 
+  /** Parameters for the snapshot-export command, independent of the command line parser. */
+  record SnapshotExportParams(
+      String solrUrl,
+      String credentials,
+      String collectionName,
+      String snapshotName,
+      String destDir,
+      String backupRepo,
+      String asyncReqId) {}
+
   public SnapshotExportTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -94,14 +104,27 @@ public class SnapshotExportTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    String destDir = cli.getOptionValue(DEST_DIR_OPTION);
-    String backupRepo = cli.getOptionValue(BACKUP_REPO_NAME_OPTION);
-    String asyncReqId = cli.getOptionValue(ASYNC_ID_OPTION);
+    SnapshotExportParams params =
+        new SnapshotExportParams(
+            CLIUtils.normalizeSolrUrl(cli),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(SNAPSHOT_NAME_OPTION),
+            cli.getOptionValue(DEST_DIR_OPTION),
+            cli.getOptionValue(BACKUP_REPO_NAME_OPTION),
+            cli.getOptionValue(ASYNC_ID_OPTION));
+    exportSnapshot(params);
+  }
 
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      exportSnapshot(solrClient, collectionName, snapshotName, destDir, backupRepo, asyncReqId);
+  void exportSnapshot(SnapshotExportParams params) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(params.solrUrl(), params.credentials())) {
+      exportSnapshot(
+          solrClient,
+          params.collectionName(),
+          params.snapshotName(),
+          params.destDir(),
+          params.backupRepo(),
+          params.asyncReqId());
     }
   }
 
