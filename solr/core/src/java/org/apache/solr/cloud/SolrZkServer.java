@@ -167,20 +167,11 @@ public class SolrZkServer {
             },
             "embeddedZkServer");
 
-    if (zkProps.getServers().size() > 1) {
-      if (log.isInfoEnabled()) {
-        log.info(
-            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
-            zkProps.getClientPortAddress().getPort(),
-            zkProps.getClientPortAddress().getAddress().getHostAddress());
-      }
-    } else {
-      if (log.isInfoEnabled()) {
-        log.info(
-            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
-            zkProps.getClientPortAddress().getPort(),
-            zkProps.getClientPortAddress().getAddress().getHostAddress());
-      }
+    if (log.isInfoEnabled()) {
+      log.info(
+          "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at {}:{}",
+          zkProps.getClientPortAddress().getAddress().getHostAddress(),
+          zkProps.getClientPortAddress().getPort());
     }
 
     zkThread.setDaemon(true);
