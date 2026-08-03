@@ -175,11 +175,22 @@ public class StreamTool extends ToolBase {
 
     var solrConnection = CLIUtils.getSolrConnection(cli);
     String solrUrl = local ? null : CLIUtils.normalizeSolrUrl(cli);
+    if (solrConnection == null) {
+      // No connection option given and none discoverable from a running Solr; fall back to the
+      // resolved base URL so expressions that need a Solr connection get a usable default.
+      solrConnection =
+          CloudSolrClient.CloudSolrClientConnection.parse(
+              solrUrl != null ? solrUrl : CLIUtils.normalizeSolrUrl(cli));
+    }
 
     runStream(params, expr, solrConnection, solrUrl);
   }
 
   static String readExpressionFromArgs(String[] args) throws IOException {
+    if (args.length == 0) {
+      throw new IllegalArgumentException(
+          "A streaming expression, or a file containing one (*.expr), must be passed after the options.");
+    }
     String expressionArgument = args[0];
     try (LineNumberReader bufferedReader =
         new LineNumberReader(
