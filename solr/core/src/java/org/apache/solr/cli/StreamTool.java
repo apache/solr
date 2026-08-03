@@ -112,7 +112,7 @@ public class StreamTool extends ToolBase {
               "Name of the specific collection to execute expression on if the execution is set to 'remote'. Required for 'remote' execution environment.")
           .get();
 
-  private static final Option FIELDS_OPTION =
+  static final Option FIELDS_OPTION =
       Option.builder()
           .longOpt("fields")
           .argName("FIELDS")
