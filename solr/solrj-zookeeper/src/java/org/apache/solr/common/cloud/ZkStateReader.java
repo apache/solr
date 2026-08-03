@@ -1755,8 +1755,6 @@ public class ZkStateReader implements SolrCloseable {
       }
     }
 
-    log.debug("waitForState collection={}: not in cached state; add watcher", collection);
-
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollectionReference = new AtomicReference<>();
