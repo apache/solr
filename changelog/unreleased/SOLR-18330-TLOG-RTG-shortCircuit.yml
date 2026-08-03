@@ -1,0 +1,8 @@
+title: >
+  Optimization: RTG requests to a TLOG leader replica shouldn't use an extra local HTTP hop.
+type: changed
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18330
+    url: https://issues.apache.org/jira/browse/SOLR-18330
