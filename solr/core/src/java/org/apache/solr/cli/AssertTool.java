@@ -40,9 +40,9 @@ import org.slf4j.LoggerFactory;
  */
 public class AssertTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static String message = null;
-  private static boolean useExitCode = false;
-  private static Long timeoutMs = 1000L;
+  private String message = null;
+  private boolean useExitCode = false;
+  private Long timeoutMs = 1000L;
 
   private static final Option IS_NOT_ROOT_OPTION =
       Option.builder().desc("Asserts that we are NOT the root user.").longOpt("not-root").get();
@@ -143,6 +143,25 @@ public class AssertTool extends ToolBase {
           .longOpt("exitcode")
           .get();
 
+  /**
+   * Parameters for the assert command, independent of the command line parser. URL values are the
+   * raw user input; they are normalized when the assertion runs.
+   */
+  record AssertParams(
+      String message,
+      Long timeoutMs,
+      boolean useExitCode,
+      boolean root,
+      boolean notRoot,
+      String existsDir,
+      String notExistsDir,
+      String sameUserDir,
+      String startedUrl,
+      String notStartedUrl,
+      String cloudUrl,
+      String notCloudUrl,
+      String credentials) {}
+
   public AssertTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -210,49 +229,67 @@ public class AssertTool extends ToolBase {
    * @throws Exception if a tool failed, e.g. authentication failure
    */
   protected int runAssert(CommandLine cli) throws Exception {
-    message = cli.getOptionValue(MESSAGE_OPTION);
-    timeoutMs = cli.getParsedOptionValue(TIMEOUT_OPTION, timeoutMs);
-    useExitCode = cli.hasOption(EXIT_CODE_OPTION);
+    AssertParams params =
+        new AssertParams(
+            cli.getOptionValue(MESSAGE_OPTION),
+            cli.getParsedOptionValue(TIMEOUT_OPTION, timeoutMs),
+            cli.hasOption(EXIT_CODE_OPTION),
+            cli.hasOption(IS_ROOT_OPTION),
+            cli.hasOption(IS_NOT_ROOT_OPTION),
+            cli.getOptionValue(DIRECTORY_EXISTS_OPTION),
+            cli.getOptionValue(DIRECTORY_NOT_EXISTS_OPTION),
+            cli.getOptionValue(SAME_USER_OPTION),
+            cli.getOptionValue(IS_RUNNING_ON_OPTION),
+            cli.getOptionValue(IS_NOT_RUNNING_ON_OPTION),
+            cli.getOptionValue(IS_CLOUD_OPTION),
+            cli.getOptionValue(IS_NOT_CLOUD_OPTION),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    return runAssert(params);
+  }
+
+  /**
+   * Runs the requested assertions.
+   *
+   * @return 0 on success, or the number of assertions that failed
+   * @throws Exception if an assertion failed and exit codes are not used, e.g. authentication
+   *     failure
+   */
+  int runAssert(AssertParams params) throws Exception {
+    message = params.message();
+    timeoutMs = params.timeoutMs();
+    useExitCode = params.useExitCode();
 
     int ret = 0;
-    if (cli.hasOption(IS_ROOT_OPTION)) {
+    if (params.root()) {
       ret += assertRootUser();
     }
-    if (cli.hasOption(IS_NOT_ROOT_OPTION)) {
+    if (params.notRoot()) {
       ret += assertNotRootUser();
     }
-    if (cli.hasOption(DIRECTORY_EXISTS_OPTION)) {
-      ret += assertFileExists(cli.getOptionValue(DIRECTORY_EXISTS_OPTION));
+    if (params.existsDir() != null) {
+      ret += assertFileExists(params.existsDir());
     }
-    if (cli.hasOption(DIRECTORY_NOT_EXISTS_OPTION)) {
-      ret += assertFileNotExists(cli.getOptionValue(DIRECTORY_NOT_EXISTS_OPTION));
+    if (params.notExistsDir() != null) {
+      ret += assertFileNotExists(params.notExistsDir());
     }
-    if (cli.hasOption(SAME_USER_OPTION)) {
-      ret += sameUser(cli.getOptionValue(SAME_USER_OPTION));
+    if (params.sameUserDir() != null) {
+      ret += sameUser(params.sameUserDir());
     }
-    if (cli.hasOption(IS_RUNNING_ON_OPTION)) {
-      ret +=
-          assertSolrRunning(
-              cli.getOptionValue(IS_RUNNING_ON_OPTION),
-              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    if (params.startedUrl() != null) {
+      ret += assertSolrRunning(params.startedUrl(), params.credentials());
     }
-    if (cli.hasOption(IS_NOT_RUNNING_ON_OPTION)) {
-      ret +=
-          assertSolrNotRunning(
-              cli.getOptionValue(IS_NOT_RUNNING_ON_OPTION),
-              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    if (params.notStartedUrl() != null) {
+      ret += assertSolrNotRunning(params.notStartedUrl(), params.credentials());
     }
-    if (cli.hasOption(IS_CLOUD_OPTION)) {
+    if (params.cloudUrl() != null) {
       ret +=
           assertSolrRunningInCloudMode(
-              CLIUtils.normalizeSolrUrl(cli.getOptionValue(IS_CLOUD_OPTION)),
-              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+              CLIUtils.normalizeSolrUrl(params.cloudUrl()), params.credentials());
     }
-    if (cli.hasOption(IS_NOT_CLOUD_OPTION)) {
+    if (params.notCloudUrl() != null) {
       ret +=
           assertSolrNotRunningInCloudMode(
-              CLIUtils.normalizeSolrUrl(cli.getOptionValue(IS_NOT_CLOUD_OPTION)),
-              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+              CLIUtils.normalizeSolrUrl(params.notCloudUrl()), params.credentials());
     }
     return ret;
   }
@@ -344,7 +381,7 @@ public class AssertTool extends ToolBase {
     return 0;
   }
 
-  public static int sameUser(String directory) throws Exception {
+  public int sameUser(String directory) throws Exception {
     Path path = Path.of(directory);
     if (Files.exists(path)) {
       String userForDir = userForDir(path);
@@ -357,28 +394,28 @@ public class AssertTool extends ToolBase {
     return 0;
   }
 
-  public static int assertFileExists(String directory) throws Exception {
+  public int assertFileExists(String directory) throws Exception {
     if (!Files.exists(Path.of(directory))) {
       return exitOrException("Directory " + directory + " does not exist.");
     }
     return 0;
   }
 
-  public static int assertFileNotExists(String directory) throws Exception {
+  public int assertFileNotExists(String directory) throws Exception {
     if (Files.exists(Path.of(directory))) {
       return exitOrException("Directory " + directory + " should not exist.");
     }
     return 0;
   }
 
-  public static int assertRootUser() throws Exception {
+  public int assertRootUser() throws Exception {
     if (!currentUser().equals("root")) {
       return exitOrException("Must run as root user");
     }
     return 0;
   }
 
-  public static int assertNotRootUser() throws Exception {
+  public int assertNotRootUser() throws Exception {
     if (currentUser().equals("root")) {
       return exitOrException("Not allowed to run as root user");
     }
@@ -399,7 +436,7 @@ public class AssertTool extends ToolBase {
     }
   }
 
-  private static int exitOrException(String msg) throws AssertionFailureException {
+  private int exitOrException(String msg) throws AssertionFailureException {
     if (useExitCode) {
       return 1;
     } else {
