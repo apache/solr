@@ -120,8 +120,6 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
 
   @Override
   public void init(final NamedList<?> args) {
-    // removeConfigArgs handles both multiple <str name="inputField"> and <arr name="inputField">
-    // and must be called before toSolrParams() since it mutates args in place
     Collection<String> fieldNames = args.removeConfigArgs(INPUT_FIELD_PARAM);
     if (fieldNames.isEmpty()) {
       throw new SolrException(
@@ -130,14 +128,11 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     inputFields = List.copyOf(fieldNames);
 
     Collection<String> outputFields = args.removeConfigArgs(OUTPUT_FIELD_PARAM);
-    if (outputFields.isEmpty()) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Exactly one 'outputField' must be provided");
-    }
-    if (outputFields.size() > 1) {
+    if (outputFields.size() != 1) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "Only one 'outputField' can be provided, but found: " + outputFields);
+          "Exactly one 'outputField' must be provided, but found: "
+              + (outputFields.isEmpty() ? "None" : outputFields));
     }
     outputField = outputFields.iterator().next();
 
@@ -155,7 +150,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     if (inlinePrompt != null && promptFilePath != null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "Only one of 'prompt' or 'promptFile' can be provided, not both");
+          "Only one of 'prompt' or 'promptFile' must be provided, not both");
     }
     if (inlinePrompt != null) {
       validatePromptPlaceholders(inlinePrompt, inputFields);
@@ -230,6 +225,20 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
    * Builds a {@link ResponseFormat} that instructs the model to return a JSON object {@code
    * {"value": ...}} whose value type matches the Solr field type. For multivalued fields the value
    * is wrapped in a {@link JsonArraySchema} nested inside the root {@link JsonObjectSchema}.
+   *
+   * <p>For example, a single-valued {@code string} field (e.g. {@code StrField}) produces a schema
+   * requiring output of the form:
+   *
+   * <pre>{@code
+   * {"value": "some example string"}
+   * }</pre>
+   *
+   * <p>while a multivalued {@code int} field (e.g. {@code IntPointField}) produces a schema
+   * requiring output of the form:
+   *
+   * <pre>{@code
+   * {"value": [1, 2, 3]}
+   * }</pre>
    *
    * <p>Nesting {@link JsonArraySchema} inside a {@link JsonObjectSchema} property is supported by
    * all langchain4j providers that implement structured outputs with {@link JsonObjectSchema}

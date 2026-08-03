@@ -36,8 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This object wraps a {@link dev.langchain4j.model.chat.ChatModel} to some content given a prompt
- * and a {@link ResponseFormat}. It's meant to be used as a managed resource with the {@link
+ * This object wraps a {@link dev.langchain4j.model.chat.ChatModel} given a prompt and a {@link
+ * ResponseFormat}. It's meant to be used as a managed resource with the {@link
  * LargeLanguageModelStore}
  */
 public class SolrLargeLanguageModel extends SolrLanguageModel implements Accountable {

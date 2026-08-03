@@ -107,25 +107,25 @@ public class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
       }
       Object generatedFieldValue =
           map.get(DocumentEnrichmentUpdateProcessorFactory.JSON_FIELD_PROPERTY);
-      JsonSchemaElement valueSchema =
+      JsonSchemaElement structuredOutputType =
           ((JsonObjectSchema) responseFormat.jsonSchema().rootElement())
               .properties()
               .get(DocumentEnrichmentUpdateProcessorFactory.JSON_FIELD_PROPERTY);
       boolean typeOk =
-          switch (valueSchema) {
-            case JsonStringSchema ignored -> generatedFieldValue instanceof String;
-            case JsonIntegerSchema ignored ->
+          switch (structuredOutputType) {
+            case JsonStringSchema outputType -> generatedFieldValue instanceof String;
+            case JsonIntegerSchema outputType ->
                 generatedFieldValue instanceof Integer || generatedFieldValue instanceof Long;
-            case JsonNumberSchema ignored -> generatedFieldValue instanceof Number;
-            case JsonBooleanSchema ignored -> generatedFieldValue instanceof Boolean;
-            case JsonArraySchema ignored -> generatedFieldValue instanceof List;
+            case JsonNumberSchema outputType -> generatedFieldValue instanceof Number;
+            case JsonBooleanSchema outputType -> generatedFieldValue instanceof Boolean;
+            case JsonArraySchema outputType -> generatedFieldValue instanceof List;
             default -> true;
           };
       if (!typeOk) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "LLM returned wrong value type: expected "
-                + valueSchema.getClass().getSimpleName()
+                + structuredOutputType.getClass().getSimpleName()
                 + " but got "
                 + generatedFieldValue.getClass().getSimpleName());
       }

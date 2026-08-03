@@ -25,7 +25,7 @@ import org.apache.solr.languagemodels.model.SolrLargeLanguageModel;
 import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.rest.ManagedResourceStorage;
 
-/** Managed Resource wrapper for the large language model store, exposed via REST */
+/** Managed Resource for the Solr large language model, exposed via REST */
 @ThreadSafe
 public class LargeLanguageModelStore extends ManagedLanguageModelStore<SolrLargeLanguageModel> {
   /** the model store rest endpoint */

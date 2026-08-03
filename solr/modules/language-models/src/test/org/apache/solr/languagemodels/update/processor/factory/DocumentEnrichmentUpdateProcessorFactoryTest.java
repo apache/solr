@@ -120,7 +120,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
         new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
-    assertEquals("Exactly one 'outputField' must be provided", e.getMessage());
+    assertEquals("Exactly one 'outputField' must be provided, but found: None", e.getMessage());
   }
 
   @Test
@@ -128,7 +128,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "string_field");
     args.add("outputField", "enriched_field");
-    args.add("outputField", "body_field");
+    args.add("outputField", "another_enriched_field");
     args.add("prompt", "Summarize: {string_field}");
     args.add("model", "model1");
 
@@ -136,7 +136,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
         new DocumentEnrichmentUpdateProcessorFactory();
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
     assertEquals(
-        "Only one 'outputField' can be provided, but found: [enriched_field, body_field]",
+        "Exactly one 'outputField' must be provided, but found: [enriched_field, another_enriched_field]",
         e.getMessage());
   }
 
@@ -167,7 +167,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
         new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
-    assertEquals("Only one of 'prompt' or 'promptFile' can be provided, not both", e.getMessage());
+    assertEquals("Only one of 'prompt' or 'promptFile' must be provided, not both", e.getMessage());
   }
 
   @Test
