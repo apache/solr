@@ -2337,8 +2337,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     q.set("fl", "id,name,aaa:[value v=aaa]");
 
     // First Try with the BinaryResponseParser
-    QueryRequest req = new QueryRequest(q);
-    req.setPath("/get");
+    QueryRequest req = new QueryRequest("/get", q);
     req.setResponseParser(new JavaBinResponseParser());
     QueryResponse rsp = req.process(client);
     SolrDocument out = (SolrDocument) rsp.getResponse().get("doc");

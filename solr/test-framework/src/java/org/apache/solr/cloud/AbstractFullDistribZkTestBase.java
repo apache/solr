@@ -2837,7 +2837,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       params.set("name", testCollectionName);
       var request =
           new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
-      request.setPath("/admin/collections");
       client.request(request);
       Thread.sleep(2000); // reload can take a short while
 

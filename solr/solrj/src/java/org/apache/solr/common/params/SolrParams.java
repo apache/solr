@@ -193,21 +193,10 @@ public abstract class SolrParams
    * Returns the Boolean value of the field param, or the value for param, or null if neither is
    * set. Use this method only when you want to be explicit about absence of a value (<code>null
    * </code>) vs the default value <code>false</code>.
-   *
-   * @see #getFieldBool(String, String, boolean)
-   * @see #getPrimitiveFieldBool(String, String)
    */
   public Boolean getFieldBool(String field, String param) {
     String val = getFieldParam(field, param);
     return val == null ? null : StrUtils.parseBool(val);
-  }
-
-  /**
-   * Returns the boolean value of the field param, or the value for param or the default value of
-   * boolean - <code>false</code>
-   */
-  public boolean getPrimitiveFieldBool(String field, String param) {
-    return getFieldBool(field, param, false);
   }
 
   /**
@@ -360,7 +349,6 @@ public abstract class SolrParams
    * about absence of a value (<code>null</code>) vs the default value zero (<code>0.0f</code>).
    *
    * @see #getFieldFloat(String, String, float)
-   * @see #getPrimitiveFieldFloat(String, String)
    */
   public Float getFieldFloat(String field, String param) {
     String val = getFieldParam(field, param);
@@ -369,14 +357,6 @@ public abstract class SolrParams
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex);
     }
-  }
-
-  /**
-   * Returns the float value of the field param or the value for param or the default value for
-   * float - zero (<code>0.0f</code>)
-   */
-  public float getPrimitiveFieldFloat(String field, String param) {
-    return getFieldFloat(field, param, 0.0f);
   }
 
   /**
