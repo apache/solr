@@ -190,6 +190,27 @@ public class RunExampleTool extends ToolBase {
   protected String urlScheme;
   private boolean usingPromptInputs = false;
 
+  /**
+   * Parameters for the run_example command, independent of the command line parser.
+   *
+   * @param promptInputs comma-separated prompt answers, or null when prompting interactively
+   * @param zkHost ZooKeeper connection string resolved from option or sysprop, or null
+   * @param extraArgs extra arguments to pass on to the {@code bin/solr start} command
+   */
+  record RunExampleParams(
+      String example,
+      boolean noPrompt,
+      String promptInputs,
+      boolean userManaged,
+      String zkHost,
+      int port,
+      String host,
+      String memory,
+      String jvmOpts,
+      boolean force,
+      String credentials,
+      String extraArgs) {}
+
   /** Default constructor used by the framework when running as a command-line application. */
   public RunExampleTool(ToolRuntime runtime) {
     this(null, System.in, runtime);
@@ -237,14 +258,76 @@ public class RunExampleTool extends ToolBase {
     this.urlScheme = cli.getOptionValue(URL_SCHEME_OPTION, "http");
     String exampleType = cli.getOptionValue(EXAMPLE_OPTION);
 
-    serverDir = Path.of(cli.getOptionValue(SERVER_DIR_OPTION));
+    initDirs(
+        cli.getOptionValue(SERVER_DIR_OPTION),
+        cli.getOptionValue(SCRIPT_OPTION),
+        cli.getOptionValue(EXAMPLE_DIR_OPTION),
+        cli.getOptionValue(SOLR_HOME_OPTION),
+        exampleType);
+
+    echoIfVerbose(
+        "Running with\nserverDir="
+            + serverDir.toAbsolutePath()
+            + ",\nexampleDir="
+            + exampleDir.toAbsolutePath()
+            + ",\nsolrHomeDir="
+            + solrHomeDir.toAbsolutePath()
+            + "\nscript="
+            + script);
+
+    if (!"cloud".equals(exampleType)
+        && !"techproducts".equals(exampleType)
+        && !"schemaless".equals(exampleType)
+        && !"films".equals(exampleType)) {
+      throw new IllegalArgumentException(
+          "Unsupported example "
+              + exampleType
+              + "! Please choose one of: cloud, schemaless, techproducts, or films");
+    }
+
+    RunExampleParams params =
+        new RunExampleParams(
+            exampleType,
+            cli.hasOption(NO_PROMPT_OPTION),
+            cli.getOptionValue(PROMPT_INPUTS_OPTION),
+            cli.hasOption(USER_MANAGED_OPTION),
+            CLIUtils.getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null),
+            Integer.parseInt(
+                cli.getOptionValue(
+                    PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983"))),
+            cli.getOptionValue(HOST_OPTION),
+            cli.getOptionValue(MEMORY_OPTION),
+            cli.getOptionValue(JVM_OPTS_OPTION),
+            cli.hasOption(FORCE_OPTION),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            readExtraArgs(cli.getArgs()));
+
+    if ("cloud".equals(exampleType)) {
+      runCloudExample(params);
+    } else {
+      runExample(params, exampleType);
+    }
+  }
+
+  /**
+   * Resolves and validates the server, example and Solr home directories plus the bin/solr script
+   * from the given raw values, seeding the corresponding tool state.
+   */
+  void initDirs(
+      String serverDirArg,
+      String scriptArg,
+      String exampleDirArg,
+      String solrHomeArg,
+      String exampleType)
+      throws Exception {
+    serverDir = Path.of(serverDirArg);
     if (!Files.isDirectory(serverDir))
       throw new IllegalArgumentException(
           "Value of --server-dir option is invalid! "
               + serverDir.toAbsolutePath()
               + " is not a directory!");
 
-    script = cli.getOptionValue(SCRIPT_OPTION);
+    script = scriptArg;
     if (script != null) {
       if (!Files.isRegularFile(Path.of(script)))
         throw new IllegalArgumentException(
@@ -263,17 +346,15 @@ public class RunExampleTool extends ToolBase {
     }
 
     exampleDir =
-        (cli.hasOption(EXAMPLE_DIR_OPTION))
-            ? Path.of(cli.getOptionValue(EXAMPLE_DIR_OPTION))
-            : serverDir.getParent().resolve("example");
+        (exampleDirArg != null) ? Path.of(exampleDirArg) : serverDir.getParent().resolve("example");
     if (!Files.isDirectory(exampleDir))
       throw new IllegalArgumentException(
           "Value of --example-dir option is invalid! "
               + exampleDir.toAbsolutePath()
               + " is not a directory!");
 
-    if (cli.hasOption(SOLR_HOME_OPTION)) {
-      solrHomeDir = Path.of(cli.getOptionValue(SOLR_HOME_OPTION));
+    if (solrHomeArg != null) {
+      solrHomeDir = Path.of(solrHomeArg);
     } else {
       String solrHomeProp = EnvUtils.getProperty("solr.home");
       if (solrHomeProp != null && !solrHomeProp.isEmpty()) {
@@ -290,44 +371,17 @@ public class RunExampleTool extends ToolBase {
           "Value of --solr-home option is invalid! "
               + solrHomeDir.toAbsolutePath()
               + " is not a directory!");
-
-    echoIfVerbose(
-        "Running with\nserverDir="
-            + serverDir.toAbsolutePath()
-            + ",\nexampleDir="
-            + exampleDir.toAbsolutePath()
-            + ",\nsolrHomeDir="
-            + solrHomeDir.toAbsolutePath()
-            + "\nscript="
-            + script);
-
-    if ("cloud".equals(exampleType)) {
-      runCloudExample(cli);
-    } else if ("techproducts".equals(exampleType)
-        || "schemaless".equals(exampleType)
-        || "films".equals(exampleType)) {
-      runExample(cli, exampleType);
-    } else {
-      throw new IllegalArgumentException(
-          "Unsupported example "
-              + exampleType
-              + "! Please choose one of: cloud, schemaless, techproducts, or films");
-    }
   }
 
-  protected void runExample(CommandLine cli, String exampleName) throws Exception {
+  protected void runExample(RunExampleParams params, String exampleName) throws Exception {
     String collectionName = "schemaless".equals(exampleName) ? "gettingstarted" : exampleName;
     String configSet =
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
-    boolean isCloudMode = !cli.hasOption(USER_MANAGED_OPTION);
-    String zkHost =
-        CLIUtils.getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
-    int port =
-        Integer.parseInt(
-            cli.getOptionValue(
-                PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
-    Map<String, Object> nodeStatus = startSolr(solrHomeDir, isCloudMode, cli, port, zkHost, 30);
+    boolean isCloudMode = !params.userManaged();
+    String zkHost = params.zkHost();
+    int port = params.port();
+    Map<String, Object> nodeStatus = startSolr(solrHomeDir, isCloudMode, params, port, zkHost, 30);
 
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
 
@@ -336,8 +390,7 @@ public class RunExampleTool extends ToolBase {
     boolean alreadyExists = false;
     boolean cloudMode = nodeStatus.get("cloud") != null;
     if (cloudMode) {
-      if (CLIUtils.safeCheckCollectionExists(
-          solrUrl, collectionName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+      if (CLIUtils.safeCheckCollectionExists(solrUrl, collectionName, params.credentials())) {
         alreadyExists = true;
         echo(
             "\nWARNING: Collection '"
@@ -346,8 +399,7 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       String coreName = collectionName;
-      if (CLIUtils.safeCheckCoreExists(
-          solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+      if (CLIUtils.safeCheckCoreExists(solrUrl, coreName, params.credentials())) {
         alreadyExists = true;
         echo(
             "\nWARNING: Core '"
@@ -416,9 +468,7 @@ public class RunExampleTool extends ToolBase {
             "exampledocs directory not found, skipping indexing step for the techproducts example");
       }
     } else if ("films".equals(exampleName) && !alreadyExists) {
-      try (SolrClient solrClient =
-          CLIUtils.getSolrClient(
-              solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+      try (SolrClient solrClient = CLIUtils.getSolrClient(solrUrl, params.credentials())) {
         echo("Adding dense vector field type to films schema");
         SolrCLI.postJsonToSolr(
             solrClient,
@@ -538,16 +588,13 @@ public class RunExampleTool extends ToolBase {
     }
   }
 
-  protected void runCloudExample(CommandLine cli) throws Exception {
+  protected void runCloudExample(RunExampleParams params) throws Exception {
 
-    usingPromptInputs = cli.hasOption(PROMPT_INPUTS_OPTION);
-    boolean prompt = !cli.hasOption(NO_PROMPT_OPTION);
+    usingPromptInputs = params.promptInputs() != null;
+    boolean prompt = !params.noPrompt();
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
-    int defaultPort =
-        Integer.parseInt(
-            cli.getOptionValue(
-                PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
+    int defaultPort = params.port();
     if (defaultPort != 8983) {
       // Override the old default port numbers if user has started the example overriding
       // SOLR_PORT_LISTEN
@@ -559,7 +606,7 @@ public class RunExampleTool extends ToolBase {
     Scanner readInput = null;
     if (usingPromptInputs) {
       // Create a scanner from the provided prompts
-      String promptsValue = cli.getOptionValue(PROMPT_INPUTS_OPTION);
+      String promptsValue = params.promptInputs();
       InputStream promptsStream =
           new ByteArrayInputStream(promptsValue.getBytes(StandardCharsets.UTF_8));
       readInput = new Scanner(promptsStream, StandardCharsets.UTF_8);
@@ -624,12 +671,11 @@ public class RunExampleTool extends ToolBase {
     }
 
     // deal with extra args passed to the script to run the example
-    String zkHost =
-        CLIUtils.getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
+    String zkHost = params.zkHost();
 
     // start the first node (most likely with embedded ZK)
     Map<String, Object> nodeStatus =
-        startSolr(node1Dir.resolve("solr"), true, cli, cloudPorts[0], zkHost, 30);
+        startSolr(node1Dir.resolve("solr"), true, params, cloudPorts[0], zkHost, 30);
 
     if (zkHost == null) {
       @SuppressWarnings("unchecked")
@@ -648,7 +694,7 @@ public class RunExampleTool extends ToolBase {
         startSolr(
             solrHomeDir.resolve("node" + (n + 1)).resolve("solr"),
             true,
-            cli,
+            params,
             cloudPorts[n],
             zkHost,
             30);
@@ -661,12 +707,7 @@ public class RunExampleTool extends ToolBase {
 
     // create the collection
     String collectionName =
-        createCloudExampleCollection(
-            numNodes,
-            readInput,
-            prompt,
-            solrUrl,
-            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+        createCloudExampleCollection(numNodes, readInput, prompt, solrUrl, params.credentials());
 
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
   }
@@ -716,25 +757,25 @@ public class RunExampleTool extends ToolBase {
   protected Map<String, Object> startSolr(
       Path solrHomeDir,
       boolean cloudMode,
-      CommandLine cli,
+      RunExampleParams params,
       int port,
       String zkHost,
       int maxWaitSecs)
       throws Exception {
 
-    String extraArgs = readExtraArgs(cli.getArgs());
+    String extraArgs = params.extraArgs();
 
-    String host = cli.getOptionValue(HOST_OPTION);
-    String memory = cli.getOptionValue(MEMORY_OPTION);
+    String host = params.host();
+    String memory = params.memory();
 
     String hostArg = (host != null && !"localhost".equals(host)) ? " --host " + host : "";
     String zkHostArg = (zkHost != null) ? " -z " + zkHost : "";
     String memArg = (memory != null) ? " -m " + memory : "";
     String cloudModeArg = cloudMode ? "" : "--user-managed";
-    String forceArg = cli.hasOption(FORCE_OPTION) ? " --force" : "";
+    String forceArg = params.force() ? " --force" : "";
     String verboseArg = isVerbose() ? "--verbose" : "";
 
-    String jvmOpts = cli.getOptionValue(JVM_OPTS_OPTION);
+    String jvmOpts = params.jvmOpts();
     String jvmOptsArg =
         (jvmOpts != null && !jvmOpts.isEmpty()) ? " --jvm-opts \"" + jvmOpts + "\"" : "";
 
@@ -752,7 +793,7 @@ public class RunExampleTool extends ToolBase {
       solrHome = solrHome.substring(cwdPath.length() + 1);
 
     final var syspropArg =
-        ("techproducts".equals(cli.getOptionValue(EXAMPLE_OPTION)))
+        ("techproducts".equals(params.example()))
             ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
             : "";
 
@@ -847,8 +888,7 @@ public class RunExampleTool extends ToolBase {
       if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmdStr);
     }
 
-    return getNodeStatus(
-        solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION), maxWaitSecs);
+    return getNodeStatus(solrUrl, params.credentials(), maxWaitSecs);
   }
 
   protected Map<String, Object> checkPortConflict(
