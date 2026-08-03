@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -38,6 +37,7 @@ import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -58,6 +58,23 @@ import org.apache.solr.handler.CatStream;
 
 /** Supports stream command in the bin/solr script. */
 public class StreamTool extends ToolBase {
+
+  /**
+   * Parameters for the stream command, independent of the command line parser.
+   *
+   * @param args positional arguments; the first entry is the streaming expression or a {@code
+   *     .expr} file, the remaining entries substitute {@code $1}, {@code $2}, ... parameters
+   * @param fields raw comma-separated value of the --fields option, or null
+   */
+  record StreamParams(
+      String[] args,
+      String execution,
+      String arrayDelimiter,
+      String delimiter,
+      boolean includeHeaders,
+      String fields,
+      String collection,
+      String credentials) {}
 
   public StreamTool(ToolRuntime runtime) {
     super(runtime);
@@ -137,38 +154,46 @@ public class StreamTool extends ToolBase {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public void runImpl(CommandLine cli) throws Exception {
+    StreamParams params =
+        new StreamParams(
+            cli.getArgs(),
+            cli.getOptionValue(EXECUTION_OPTION, "remote"),
+            cli.getOptionValue(ARRAY_DELIMITER_OPTION, "|"),
+            cli.getOptionValue(DELIMITER_OPTION, "   "),
+            cli.hasOption(HEADER_OPTION),
+            cli.getOptionValue(FIELDS_OPTION),
+            cli.getOptionValue(COLLECTION_OPTION),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
-    String expressionArgument = cli.getArgs()[0];
-    String execution = cli.getOptionValue(EXECUTION_OPTION, "remote");
-    String arrayDelimiter = cli.getOptionValue(ARRAY_DELIMITER_OPTION, "|");
-    String delimiter = cli.getOptionValue(DELIMITER_OPTION, "   ");
-    boolean includeHeaders = cli.hasOption(HEADER_OPTION);
-    String[] outputHeaders = getOutputFields(cli);
-
-    LineNumberReader bufferedReader = null;
-    String expr;
-    try {
-      Reader inputStream =
-          expressionArgument.toLowerCase(Locale.ROOT).endsWith(".expr")
-              ? new InputStreamReader(
-                  new FileInputStream(expressionArgument), Charset.defaultCharset())
-              : new StringReader(expressionArgument);
-
-      bufferedReader = new LineNumberReader(inputStream);
-      expr = StreamTool.readExpression(bufferedReader, cli.getArgs());
-      echoIfVerbose("Running Expression: " + expr);
-    } finally {
-      if (bufferedReader != null) {
-        bufferedReader.close();
-      }
-    }
+    String expr = readExpressionFromArgs(params.args());
+    echoIfVerbose("Running Expression: " + expr);
 
     // Validate inputs before opening any connection to Solr.
-    boolean local = execution.equalsIgnoreCase("local");
+    boolean local = params.execution().equalsIgnoreCase("local");
+    validateExpressionArgs(local, params.collection(), expr);
+
+    var solrConnection = CLIUtils.getSolrConnection(cli);
+    String solrUrl = local ? null : CLIUtils.normalizeSolrUrl(cli);
+
+    runStream(params, expr, solrConnection, solrUrl);
+  }
+
+  static String readExpressionFromArgs(String[] args) throws IOException {
+    String expressionArgument = args[0];
+    try (LineNumberReader bufferedReader =
+        new LineNumberReader(
+            expressionArgument.toLowerCase(Locale.ROOT).endsWith(".expr")
+                ? new InputStreamReader(
+                    new FileInputStream(expressionArgument), Charset.defaultCharset())
+                : new StringReader(expressionArgument))) {
+      return readExpression(bufferedReader, args);
+    }
+  }
+
+  private static void validateExpressionArgs(boolean local, String collection, String expr) {
     if (!local) {
-      if (!cli.hasOption(COLLECTION_OPTION)) {
+      if (collection == null) {
         throw new IllegalStateException(
             "You must provide --name COLLECTION with --execution remote parameter.");
       }
@@ -177,16 +202,30 @@ public class StreamTool extends ToolBase {
             "The stdin() expression is only usable with --execution local.");
       }
     }
+  }
+
+  @SuppressWarnings({"rawtypes"})
+  void runStream(
+      StreamParams params,
+      String expr,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String solrUrl)
+      throws Exception {
+    boolean local = params.execution().equalsIgnoreCase("local");
+    String arrayDelimiter = params.arrayDelimiter();
+    String delimiter = params.delimiter();
+    boolean includeHeaders = params.includeHeaders();
+    String[] outputHeaders = getOutputFields(params.fields());
 
     // a stream needs a context
-    StreamContext streamContext = createStreamContext(cli);
+    StreamContext streamContext = createStreamContext(solrConnection, params.credentials());
     // create the stream
     PushBackStream pushBackStream = null;
     try {
       if (local) {
         pushBackStream = doLocalMode(expr, streamContext.getStreamFactory());
       } else {
-        pushBackStream = doRemoteMode(expr, cli);
+        pushBackStream = doRemoteMode(expr, solrUrl, params.collection());
       }
       pushBackStream.setStreamContext(streamContext);
       pushBackStream.open();
@@ -250,9 +289,9 @@ public class StreamTool extends ToolBase {
     echoIfVerbose("StreamTool -- Done.");
   }
 
-  private StreamContext createStreamContext(CommandLine cli) throws Exception {
+  private StreamContext createStreamContext(
+      CloudSolrClient.CloudSolrClientConnection solrConnection, String credentials) {
     var jettyClientBuilder = new HttpJettySolrClient.Builder();
-    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     jettyClientBuilder.withOptionalBasicAuthCredentials(credentials);
     HttpJettySolrClient client = jettyClientBuilder.build();
 
@@ -267,7 +306,6 @@ public class StreamTool extends ToolBase {
         };
 
     try {
-      var solrConnection = CLIUtils.getSolrConnection(cli);
       echoIfVerbose("Connecting to Solr at " + solrConnection);
 
       StreamContext streamContext = new StreamContext();
@@ -315,15 +353,13 @@ public class StreamTool extends ToolBase {
    * expression is running in a Solr environment.
    *
    * @param expr The streaming expression to be parsed and run remotely
-   * @param cli The CLI invoking the call
+   * @param solrUrl The base URL of the Solr node to send the expression to
+   * @param collection The collection to execute the expression on
    * @return A connection to the streaming expression that receives Tuples as they are emitted from
    *     Solr /stream.
    */
-  private PushBackStream doRemoteMode(String expr, CommandLine cli) throws Exception {
-
-    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
-    String collection = cli.getOptionValue(COLLECTION_OPTION);
-
+  private PushBackStream doRemoteMode(String expr, String solrUrl, String collection)
+      throws Exception {
     return new PushBackStream(
         new SolrStream(solrUrl + "/solr/" + collection, params("qt", "/stream", "expr", expr)));
   }
@@ -403,22 +439,22 @@ public class StreamTool extends ToolBase {
     }
   }
 
-  static String[] getOutputFields(CommandLine cli) {
-    if (cli.hasOption(FIELDS_OPTION)) {
-
-      String fl = cli.getOptionValue(FIELDS_OPTION);
-      String[] flArray = fl.split(",");
-      String[] outputHeaders = new String[flArray.length];
-
-      for (int i = 0; i < outputHeaders.length; i++) {
-        outputHeaders[i] = flArray[i].trim();
-      }
-
-      return outputHeaders;
-
-    } else {
+  /**
+   * @param fl raw comma-separated list of fields, or null
+   * @return the trimmed field names, or null if no fields were given
+   */
+  static String[] getOutputFields(String fl) {
+    if (fl == null) {
       return null;
     }
+    String[] flArray = fl.split(",");
+    String[] outputHeaders = new String[flArray.length];
+
+    for (int i = 0; i < outputHeaders.length; i++) {
+      outputHeaders[i] = flArray[i].trim();
+    }
+
+    return outputHeaders;
   }
 
   public static class LocalCatStream extends CatStream {
