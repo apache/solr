@@ -64,7 +64,8 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
   @Test
   public void init_fullArgs_shouldInitAllParams() {
     DocumentEnrichmentUpdateProcessorFactory factory =
-        initializeUpdateProcessorFactory(List.of("string_field"), processorOutputField, null, "model1");
+        initializeUpdateProcessorFactory(
+            List.of("string_field"), processorOutputField, null, "model1");
 
     assertEquals(List.of("string_field"), factory.getInputFields());
     assertEquals(processorOutputField, factory.getOutputField());
@@ -138,7 +139,9 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
         new DocumentEnrichmentUpdateProcessorFactory();
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
     assertEquals(
-        "Exactly one 'outputField' must be provided, but found: ["+processorOutputField+", another_enriched_field]",
+        "Exactly one 'outputField' must be provided, but found: ["
+            + processorOutputField
+            + ", another_enriched_field]",
         e.getMessage());
   }
 
@@ -299,7 +302,11 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
             SolrException.class,
             () ->
                 createUpdateProcessor(
-                    List.of("notExistentInput"), processorOutputField, null, collection1, "model1"));
+                    List.of("notExistentInput"),
+                    processorOutputField,
+                    null,
+                    collection1,
+                    "model1"));
     assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
     restTestHarness.delete(LargeLanguageModelStore.REST_END_POINT + "/model1");
   }
