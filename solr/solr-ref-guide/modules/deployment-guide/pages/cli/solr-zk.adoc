@@ -1,0 +1,92 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+// DO NOT EDIT -- this page is auto-generated from picocli annotations.
+// To update: modify the @Command/@Option annotations in the Java source, then run:
+//   ./gradlew :solr:solr-ref-guide:generateCliDocs
+
+= bin/solr zk
+:page-toclevels: 2
+
+// tag::picocli-generated-man-section-name[]
+== Name
+
+bin/solr zk - Sub commands for working with ZooKeeper.
+
+// end::picocli-generated-man-section-name[]
+
+// tag::picocli-generated-man-section-synopsis[]
+== Synopsis
+
+....
+bin/solr zk [-h] [COMMAND]
+....
+
+// end::picocli-generated-man-section-synopsis[]
+
+// tag::picocli-generated-man-section-description[]
+== Description
+
+Sub commands for working with ZooKeeper.
+
+// end::picocli-generated-man-section-description[]
+
+// tag::picocli-generated-man-section-options[]
+== Options
+
+*-h*, *--help*::
+  Print this help message and exit.
+
+// end::picocli-generated-man-section-options[]
+
+// tag::picocli-generated-man-section-arguments[]
+// end::picocli-generated-man-section-arguments[]
+
+// tag::picocli-generated-man-section-commands[]
+== Commands
+
+xref:cli/solr-zk-downconfig.adoc[*downconfig*]::
+  Download a configset from ZooKeeper to the local filesystem.
+
+xref:cli/solr-zk-upconfig.adoc[*upconfig*]::
+  Upload a configset from the local filesystem to ZooKeeper.
+
+xref:cli/solr-zk-cp.adoc[*cp*]::
+  Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeeper.
+
+xref:cli/solr-zk-ls.adoc[*ls*]::
+  List the contents of a ZooKeeper node.
+
+xref:cli/solr-zk-mkroot.adoc[*mkroot*]::
+  Make a znode in ZooKeeper with no data. Can be used to make a path of arbitrary depth but primarily intended to create a 'chroot'.
+
+xref:cli/solr-zk-mv.adoc[*mv*]::
+  Move (rename) a znode on ZooKeeper.
+
+xref:cli/solr-zk-rm.adoc[*rm*]::
+  Remove a znode from ZooKeeper.
+
+xref:cli/solr-zk-updateacls.adoc[*updateacls*]::
+  Recursively re-applies ZooKeeper ACLs to a znode and all its descendants. The ACLs are determined by the ZkACLProvider configured via the zkACLProvider system property (pass via SOLR_TOOL_OPTS). Without a custom provider, the default OPEN_ACL_UNSAFE ACLs are applied.
+
+// end::picocli-generated-man-section-commands[]
+
+// tag::picocli-generated-man-section-exit-status[]
+// end::picocli-generated-man-section-exit-status[]
+
+// tag::picocli-generated-man-section-footer[]
+// end::picocli-generated-man-section-footer[]

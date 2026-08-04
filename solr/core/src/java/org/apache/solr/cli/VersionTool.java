@@ -30,7 +30,13 @@ import org.apache.solr.client.solrj.response.SystemInfoResponse;
  * --solr-connection}, {@code --solr-url}, or {@code --zk-host}) is provided, also prints the
  * version of the remote Solr server.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(name = "version", description = "Prints the Solr version.")
 public class VersionTool extends ToolBase {
+
+  public VersionTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public VersionTool(ToolRuntime runtime) {
     super(runtime);
@@ -60,5 +66,11 @@ public class VersionTool extends ToolBase {
         echo("Server version: " + sysResponse.getSolrImplVersion());
       }
     }
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    echo("Client version: " + SolrVersion.LATEST);
+    return 0;
   }
 }

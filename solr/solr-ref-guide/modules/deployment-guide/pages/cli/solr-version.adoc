@@ -1,0 +1,66 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+// DO NOT EDIT -- this page is auto-generated from picocli annotations.
+// To update: modify the @Command/@Option annotations in the Java source, then run:
+//   ./gradlew :solr:solr-ref-guide:generateCliDocs
+
+= bin/solr version
+:page-toclevels: 2
+
+// tag::picocli-generated-man-section-name[]
+== Name
+
+bin/solr version - Prints the Solr version.
+
+// end::picocli-generated-man-section-name[]
+
+// tag::picocli-generated-man-section-synopsis[]
+== Synopsis
+
+....
+bin/solr version [-v]
+....
+
+// end::picocli-generated-man-section-synopsis[]
+
+// tag::picocli-generated-man-section-description[]
+== Description
+
+Prints the Solr version.
+
+// end::picocli-generated-man-section-description[]
+
+// tag::picocli-generated-man-section-options[]
+== Options
+
+*-v*, *--verbose*::
+  Enable verbose mode.
+
+// end::picocli-generated-man-section-options[]
+
+// tag::picocli-generated-man-section-arguments[]
+// end::picocli-generated-man-section-arguments[]
+
+// tag::picocli-generated-man-section-commands[]
+// end::picocli-generated-man-section-commands[]
+
+// tag::picocli-generated-man-section-exit-status[]
+// end::picocli-generated-man-section-exit-status[]
+
+// tag::picocli-generated-man-section-footer[]
+// end::picocli-generated-man-section-footer[]

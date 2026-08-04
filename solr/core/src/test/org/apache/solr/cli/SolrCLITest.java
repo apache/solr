@@ -18,6 +18,7 @@ package org.apache.solr.cli;
 
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
+import picocli.CommandLine;
 
 public class SolrCLITest extends SolrTestCase {
 
@@ -35,5 +36,28 @@ public class SolrCLITest extends SolrTestCase {
     assertEquals("24 days, 20 hours, 31 minutes, 24 seconds", SolrCLI.uptime(Integer.MAX_VALUE));
     assertEquals(
         "106751991167 days, 7 hours, 12 minutes, 56 seconds", SolrCLI.uptime(Long.MAX_VALUE));
+  }
+
+  @Test
+  public void testFirstLineOnlyHelpFactoryTruncatesMultiLineDescription() {
+    CommandLine cmd = new CommandLine(new MultiLineDescriptionCommand());
+
+    String baseline = cmd.getUsageMessage();
+    assertTrue("baseline should include first line", baseline.contains("First line."));
+    assertTrue("baseline should include second line", baseline.contains("Second line."));
+
+    SolrCLI.installFirstLineOnlyHelpFactory(cmd);
+    String truncated = cmd.getUsageMessage();
+    assertTrue("truncated should include first line", truncated.contains("First line."));
+    assertFalse("truncated should NOT include second line", truncated.contains("Second line."));
+    assertFalse("truncated should NOT include third line", truncated.contains("Third line."));
+  }
+
+  @CommandLine.Command(name = "test")
+  private static class MultiLineDescriptionCommand {
+    @CommandLine.Option(
+        names = "--multi",
+        description = {"First line.", "Second line.", "Third line."})
+    String multi;
   }
 }

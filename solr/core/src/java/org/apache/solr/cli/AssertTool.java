@@ -426,6 +426,11 @@ public class AssertTool extends ToolBase {
     }
   }
 
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
+
   public static class AssertionFailureException extends Exception {
     public AssertionFailureException(String message) {
       super(message);
