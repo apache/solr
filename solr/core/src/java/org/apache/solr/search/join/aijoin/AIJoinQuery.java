@@ -16,19 +16,26 @@
  */
 package org.apache.solr.search.join.aijoin;
 
+import static org.apache.solr.search.join.aijoin.AIJoinUtil.cacheImpl;
+
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.function.Predicate;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LRUQueryCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryCachingPolicy;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.search.join.aijoin.AIJoinIndex.JoinSegmentReference;
 
@@ -48,7 +55,9 @@ class AIJoinQuery extends Query {
   final Query fromQuery;
   private final IndexSearcher fromSearcher;
   final String toField;
-  IndexSearcher cachedFromSearcher;
+  final IndexSearcher cachedFromSearcher;
+  private final IndexSearcher bareFromSearcher;
+  private final ExecutorService fromExecutorService;
 
   AIJoinQuery(
       AIJoinIndex joinIndex,
@@ -56,17 +65,32 @@ class AIJoinQuery extends Query {
       Query fromQuery,
       IndexSearcher fromSearcher,
       String toField) {
+    this(joinIndex, fromField, fromQuery, fromSearcher, toField, null);
+  }
+
+  AIJoinQuery(
+      AIJoinIndex joinIndex,
+      String fromField,
+      Query fromQuery,
+      IndexSearcher fromSearcher,
+      String toField,
+      ExecutorService fromExecutorService) {
     this.joinIndex = Objects.requireNonNull(joinIndex, "joinIndex");
     this.fromField = Objects.requireNonNull(fromField, "fromField");
     this.fromQuery = Objects.requireNonNull(fromQuery, "fromQuery");
     this.fromSearcher = Objects.requireNonNull(fromSearcher, "fromSearcher");
     this.toField = Objects.requireNonNull(toField, "toField");
     this.cachedFromSearcher = wrapFromSearcher(fromSearcher);
+    this.bareFromSearcher = fromSearcher;
+    this.fromExecutorService = fromExecutorService;
   }
 
   // presumabily keep it in AIJoinIndex
   private static IndexSearcher wrapFromSearcher(IndexSearcher fromSearcher) {
-    IndexSearcher cachedFromSearcher = new IndexSearcher(fromSearcher.getIndexReader());
+    IndexSearcher cachedFromSearcher =
+        new IndexSearcher(
+            fromSearcher.getIndexReader() // HOW TO do that?, fromSearcher.getTaskExecutor()
+            );
     cachedFromSearcher.setQueryCache(
         new LRUQueryCache(
             fromSearcher.getLeafContexts().size() + 1,
@@ -84,6 +108,17 @@ class AIJoinQuery extends Query {
     return cachedFromSearcher;
   }
 
+  private AIJoinUtil.CacheAndCount computeDocIdSet(Weight fromWeight, LeafReaderContext ctx)
+      throws IOException {
+    ScorerSupplier supplier = fromWeight.scorerSupplier(ctx);
+    if (supplier == null) {
+      return null; // NO matches ???
+    }
+    // TODO handle already cached WeightWrapper
+    BulkScorer scorer = supplier.bulkScorer();
+    return cacheImpl(scorer, ctx.reader().maxDoc(), ctx.reader().getLiveDocs());
+  }
+
   @Override
   public Query rewrite(IndexSearcher indexSearcher) throws IOException {
     // the from-side selection rewrites against the from-side searcher, not against the (to-side)
@@ -98,17 +133,13 @@ class AIJoinQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
-    // narrow the join index lookup to pairs this weight could possibly need: from-segments with
-    // at least one live match for fromQuery (mirrors the per-to-segment filtering in
-    // ToLeafJoinContext#createFromItersTasks, without needing a to-segment to preposition
-    // against), crossed with every to-segment of the searcher this weight is created against --
-    // this hash will be shared across all to-segments' scorers
-    Set<String> matchingFromKeys =
-        AIJoinUtil.matchingFromSideKeys(cachedFromSearcher, fromQuery, fromField);
+    //    Set<String> matchingFromKeys =
+    //        AIJoinUtil.matchingFromSideKeys(cachedFromSearcher, fromQuery, fromField);
     Set<String> neededPairs = new HashSet<>();
     for (LeafReaderContext toContext : searcher.getIndexReader().leaves()) {
       String toKey = AIJoinUtil.getSideKey(toContext, toField);
-      for (String fromKey : matchingFromKeys) {
+      for (LeafReaderContext fromCtx : bareFromSearcher.getLeafContexts()) {
+        String fromKey = AIJoinUtil.getSideKey(fromCtx, fromField);
         neededPairs.add(fromKey + "_" + toKey);
       }
     }
@@ -129,9 +160,25 @@ class AIJoinQuery extends Query {
     } finally {
       this.joinIndex.release(joinSearcher);
     }
-
+    // let's submit to from searcher executor tasks yielding DocIdSets
+    // then, ToLeafContexts will get these DocIdSets and iterate them.
+    final Weight fromWeight =
+        AIJoinQuery.this.fromQuery.createWeight(
+            this.bareFromSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
+    List<Future<AIJoinUtil.CacheAndCount>> fromDocIdSetFutures =
+        fromExecutorService == null
+            ? null
+            : this.bareFromSearcher.getLeafContexts().stream()
+                .map(ctx -> this.fromExecutorService.submit(() -> computeDocIdSet(fromWeight, ctx)))
+                .toList();
     return new AIJoinWeight(
-        this, joinSearcher, existingJoinSegments, searcher.getIndexReader(), scoreMode, boost);
+        this,
+        joinSearcher,
+        existingJoinSegments,
+        searcher.getIndexReader(),
+        scoreMode,
+        boost,
+        fromDocIdSetFutures);
   }
 
   @Override

@@ -20,9 +20,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -31,17 +34,20 @@ import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ParallelCompositeReader;
 import org.apache.lucene.index.ParallelLeafReader;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BulkScorer;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DocIdStream;
 import org.apache.lucene.search.FilteredDocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
@@ -49,9 +55,16 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.RoaringDocIdSet;
 import org.apache.lucene.util.StringHelper;
+import org.slf4j.Logger;
+import org.slf4j.event.Level;
 
 /**
  * Column-building and addressing helpers for the auxiliary join index managed by {@link
@@ -74,6 +87,23 @@ final class AIJoinUtil {
   static final String TO_COUNT_PREFIX = "num_toDoc_";
 
   private AIJoinUtil() {}
+
+  /**
+   * Configurable level for the {@code AIJOIN evt=...} diagnostic logs; defaults to {@code INFO},
+   * override with the {@code solr.aijoin.log.level} system property (or {@code
+   * SOLR_AIJOIN_LOG_LEVEL} env var).
+   */
+  static final Level AIJOIN_LOG_LEVEL = Level.TRACE;
+
+  /** Whether the AIJOIN diagnostic logs would emit at the configured level. */
+  static boolean diagnosticsEnabled(Logger log) {
+    return log.isEnabledForLevel(AIJOIN_LOG_LEVEL);
+  }
+
+  /** Emits an AIJOIN diagnostic line at the configured level. */
+  static void logDiagnostic(Logger log, String message, Object... args) {
+    log.atLevel(AIJOIN_LOG_LEVEL).log(message, args);
+  }
 
   /**
    * A pair's {min, max} from-doc and to-doc bounds and match count, common to both a pair freshly
@@ -301,20 +331,36 @@ final class AIJoinUtil {
 
   /**
    * Resolves {@code fromContext} against {@code cachedFromWeight}, filtering out deleted docs, or
-   * returns {@code null} if the segment has no live match at all. Shared by {@link
+   * returns {@code null} if the segment has no live match at all. Shared by {@code
    * ToLeafJoinContext#createFromItersTasks}, which walks the returned iterator once per to-segment,
    * and by {@link AIJoinQuery#createWeight}, which only needs to know whether the segment matches
    * anything.
    */
-  static MatchingFromDocs matchingFromDocs(Weight cachedFromWeight, LeafReaderContext fromContext)
-      throws IOException {
-    ScorerSupplier fromSupplier = cachedFromWeight.scorerSupplier(fromContext);
-    if (fromSupplier == null) {
-      return null;
+  static MatchingFromDocs matchingFromDocs(
+      Weight cachedFromWeight,
+      LeafReaderContext fromContext,
+      Future<AIJoinUtil.CacheAndCount> fromDocIdSetFuture)
+      throws IOException, ExecutionException, InterruptedException {
+
+    DocIdSetIterator matchedFromDocs;
+    long fromMatchCost;
+    if (fromDocIdSetFuture != null) {
+      AIJoinUtil.CacheAndCount fromDocIdSet = fromDocIdSetFuture.get();
+      if (fromDocIdSet == null) { // mean no matches, skipping child segment
+        return null;
+      }
+      fromMatchCost = fromDocIdSet.count();
+      matchedFromDocs = fromDocIdSet.iterator();
+    } else {
+      ScorerSupplier fromSupplier = cachedFromWeight.scorerSupplier(fromContext);
+      if (fromSupplier == null) {
+        return null;
+      }
+      fromMatchCost = fromSupplier.cost();
+      Scorer fromScorer = fromSupplier.get(Long.MAX_VALUE);
+
+      matchedFromDocs = fromScorer.iterator();
     }
-    long fromMatchCost = fromSupplier.cost();
-    Scorer fromScorer = fromSupplier.get(Long.MAX_VALUE);
-    DocIdSetIterator matchedFromDocs = fromScorer.iterator();
     Bits liveDocs = fromContext.reader().getLiveDocs();
     if (liveDocs != null) {
       // the cached weight's scorer doesn't filter deletions itself, and a from doc deleted
@@ -336,18 +382,19 @@ final class AIJoinUtil {
    * any to-segment. Used at {@link AIJoinQuery#createWeight} time to narrow which pair columns are
    * worth looking up in the join index, without yet knowing the to-side searcher's leaves.
    */
-  static Set<String> matchingFromSideKeys(
-      IndexSearcher cachedFromSearcher, Query fromQuery, String fromField) throws IOException {
-    Weight fromWeight = cachedFromSearcher.createWeight(fromQuery, ScoreMode.COMPLETE_NO_SCORES, 1);
-    Set<String> keys = new HashSet<>();
-    for (LeafReaderContext fromContext : cachedFromSearcher.getLeafContexts()) {
-      MatchingFromDocs matching = matchingFromDocs(fromWeight, fromContext);
-      if (matching != null && matching.iterator().nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-        keys.add(getSideKey(fromContext, fromField));
-      }
-    }
-    return keys;
-  }
+  //  static Set<String> matchingFromSideKeys(
+  //      IndexSearcher cachedFromSearcher, Query fromQuery, String fromField) throws IOException {
+  //    Weight fromWeight = cachedFromSearcher.createWeight(fromQuery, ScoreMode.COMPLETE_NO_SCORES,
+  // 1);
+  //    Set<String> keys = new HashSet<>();
+  //    for (LeafReaderContext fromContext : cachedFromSearcher.getLeafContexts()) {
+  //      MatchingFromDocs matching = matchingFromDocs(fromWeight, fromContext);
+  //      if (matching != null && matching.iterator().nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+  //        keys.add(getSideKey(fromContext, fromField));
+  //      }
+  //    }
+  //    return keys;
+  //  }
 
   /**
    * Reads a pair's persisted {@code {min, max}} edges (or {@code toCount}), all stored on doc 0 of
@@ -437,6 +484,24 @@ final class AIJoinUtil {
   }
 
   /**
+   * The {@link Directory} backing {@code reader}, unwrapped from any composite that lacks a single
+   * directory of its own (e.g. a {@link ParallelCompositeReader}): a {@link DirectoryReader}
+   * exposes its directory directly, anything else contributes the first leaf-reader whose directory
+   * owns it.
+   */
+  static Directory directory(IndexReader reader) {
+    if (reader instanceof DirectoryReader dr) {
+      return dr.directory();
+    }
+    for (LeafReaderContext leaf : reader.leaves()) {
+      if (FilterLeafReader.unwrap(leaf.reader()) instanceof SegmentReader sr) {
+        return sr.getSegmentInfo().info.dir;
+      }
+    }
+    throw new IllegalArgumentException("no directory backing " + reader);
+  }
+
+  /**
    * A hashable key identifying the storage location behind {@code directory}, stable across
    * separate opens of the same path so repeated calls resolve to the same cache entry.
    */
@@ -480,5 +545,129 @@ final class AIJoinUtil {
     } else {
       return fieldInfosFormat.read(info.info.dir, info.info, "", IOContext.READONCE);
     }
+  }
+
+  // copy of org.apache.lucene.search.LRUQueryCache.cacheIntoRoaringDocIdSet
+  protected static class CacheAndCount implements Accountable {
+    protected static final CacheAndCount EMPTY = new CacheAndCount(DocIdSet.EMPTY, 0);
+
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(CacheAndCount.class);
+    private final DocIdSet cache;
+    private final int count;
+
+    public CacheAndCount(DocIdSet cache, int count) {
+      this.cache = cache;
+      this.count = count;
+    }
+
+    public DocIdSetIterator iterator() throws IOException {
+      return cache.iterator();
+    }
+
+    public int count() {
+      return count;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return BASE_RAM_BYTES_USED + cache.ramBytesUsed();
+    }
+  }
+
+  protected static CacheAndCount cacheImpl(BulkScorer scorer, int maxDoc, Bits liveDocs)
+      throws IOException {
+    if (scorer.cost() * 100 >= maxDoc) {
+      // FixedBitSet is faster for dense sets and will enable the random-access
+      // optimization in ConjunctionDISI
+      return cacheIntoBitSet(scorer, maxDoc, liveDocs);
+    } else {
+      return cacheIntoRoaringDocIdSet(scorer, maxDoc, liveDocs);
+    }
+  }
+
+  private static CacheAndCount cacheIntoBitSet(BulkScorer scorer, int maxDoc, Bits liveDocs)
+      throws IOException {
+    final FixedBitSet bitSet = new FixedBitSet(maxDoc);
+    int[] count = new int[1];
+    scorer.score(
+        new LeafCollector() {
+
+          private int[] buffer;
+
+          @Override
+          public void setScorer(Scorable scorer) throws IOException {}
+
+          @Override
+          public void collect(int doc) throws IOException {
+            if (liveDocs == null || liveDocs.get(doc)) {
+              count[0]++;
+              bitSet.set(doc);
+            }
+          }
+
+          @Override
+          public void collect(DocIdStream stream) throws IOException {
+            if (buffer == null) {
+              buffer = new int[128];
+            }
+            for (int c = stream.intoArray(buffer); c != 0; c = stream.intoArray(buffer)) {
+              int skip = 0;
+              for (int i = 0; i < c; ++i) {
+                if (liveDocs != null && !liveDocs.get(buffer[i])) {
+                  skip++;
+                  continue;
+                }
+                bitSet.set(buffer[i]);
+              }
+              count[0] += c - skip;
+            }
+          }
+        },
+        null,
+        0,
+        DocIdSetIterator.NO_MORE_DOCS);
+    return new CacheAndCount(new BitDocIdSet(bitSet, count[0]), count[0]);
+  }
+
+  private static CacheAndCount cacheIntoRoaringDocIdSet(
+      BulkScorer scorer, int maxDoc, Bits liveDocs) throws IOException {
+    RoaringDocIdSet.Builder builder = new RoaringDocIdSet.Builder(maxDoc);
+    scorer.score(
+        new LeafCollector() {
+
+          private int[] buffer = null;
+
+          @Override
+          public void setScorer(Scorable scorer) throws IOException {}
+
+          @Override
+          public void collect(int doc) throws IOException {
+            if (liveDocs != null && !liveDocs.get(doc)) {
+              return;
+            }
+            builder.add(doc);
+          }
+
+          @Override
+          public void collect(DocIdStream stream) throws IOException {
+            if (buffer == null) {
+              buffer = new int[128];
+            }
+            for (int c = stream.intoArray(buffer); c != 0; c = stream.intoArray(buffer)) {
+              for (int i = 0; i < c; ++i) {
+                if (liveDocs != null && !liveDocs.get(buffer[i])) {
+                  continue;
+                }
+                builder.add(buffer[i]);
+              }
+            }
+          }
+        },
+        null,
+        0,
+        DocIdSetIterator.NO_MORE_DOCS);
+    RoaringDocIdSet cache = builder.build();
+    return new CacheAndCount(cache, cache.cardinality());
   }
 }

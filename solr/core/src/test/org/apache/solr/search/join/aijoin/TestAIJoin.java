@@ -50,12 +50,15 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.util.LogLevel;
 
 /**
  * Joins a children index to a parents index with {@link JoinUtil}. Children reference parents via a
  * single valued {@link SortedSetDocValuesField} {@code parent_id_FK} pointing to the parents'
  * single valued {@code parent_id} (M:1).
  */
+@LogLevel("org.apache.solr.search.join.aijoin=WARN")
+@LuceneTestCase.SuppressSysoutChecks(bugUrl = "no.url")
 public class TestAIJoin extends LuceneTestCase {
 
   private static final String ID = "id";

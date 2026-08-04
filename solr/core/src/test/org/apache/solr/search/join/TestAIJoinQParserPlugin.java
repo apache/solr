@@ -35,12 +35,11 @@ import org.junit.Test;
  * org.apache.solr.search.join.aijoin.AIJoinIndex} exists.
  *
  * <p>Every join here goes from the "many" side (an employee, single-valued FK) to the "few" side
- * (that employee's department, a value unique per to-doc): {@link
- * org.apache.solr.search.join.aijoin.AIJoinUtil#computeDocMapping} is, per its own javadoc, "always
- * single-valued until M:N pairs are supported" -- it keeps exactly one to-doc per from-doc. That's
- * exact for this direction (each employee has exactly one department), but would silently drop
- * matches for the reverse, one-department-to-many-employees direction, so this test doesn't
- * exercise that one.
+ * (that employee's department, a value unique per to-doc): {@code AIJoinUtil#computeDocMapping} is,
+ * per its own javadoc, "always single-valued until M:N pairs are supported" -- it keeps exactly one
+ * to-doc per from-doc. That's exact for this direction (each employee has exactly one department),
+ * but would silently drop matches for the reverse, one-department-to-many-employees direction, so
+ * this test doesn't exercise that one.
  *
  * <p>Join fields use the {@code *_s_dv} docValues companions that {@code schema-docValuesJoin.xml}
  * copies {@code *_s} into, rather than the plain fields: {@link
