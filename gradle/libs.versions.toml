@@ -164,7 +164,7 @@ mockito = "5.23.0"
 morethan-jmhreport = "0.9.6"
 mvikotlin = "4.4.0"
 navsecurity = "5.0.1"
-netty = "4.2.15.Final"
+netty = "4.2.16.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.79.Final"
 nimbusds-josejwt = "10.9.1"
