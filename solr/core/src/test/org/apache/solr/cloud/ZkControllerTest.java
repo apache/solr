@@ -34,8 +34,12 @@ import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.CuratorZookeeperClient;
+import org.apache.curator.test.InstanceSpec;
+import org.apache.curator.test.TestingCluster;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -766,6 +770,123 @@ public class ZkControllerTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testZkReconnectionEvents() throws Exception {
+    // Do not use MiniSolrCloudCluster
+
+    // Create a zookeeper cluster with 3 nodes
+    try (TestingCluster zkCluster = new TestingCluster(3)) {
+      zkCluster.start();
+      // Now create a ZkController - it should respect the cluster property and have overseer
+      // enabled
+      CoreContainer cc = getCoreContainer();
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
+        try (ZkController zkController =
+            new ZkController(cc, zkCluster.getConnectString(), TIMEOUT, cloudConfig)) {
+          AtomicBoolean invoked = new AtomicBoolean(Boolean.FALSE);
+          zkController.addExpiredReconnectionListener(() -> invoked.set(true));
+          CuratorZookeeperClient zkClient =
+              zkController.getZkClient().getCuratorFramework().getZookeeperClient();
+          zkClient.getZooKeeper().getTestable().injectSessionExpiration();
+          // Wait 10 seconds to make sure Solr receives the ExpiredReconnection event and invokes
+          // listeners
+          Thread.sleep(10000);
+          assertTrue(
+              "Reconnected to ZK cluster after session expiration should have triggered the invocation of method onExpiredReconnection",
+              invoked.get());
+          invoked.set(false);
+
+          // Kill the connected server to force Solr to reconnected to another solr server
+          InstanceSpec connectedIns = zkCluster.findConnectionInstance(zkClient.getZooKeeper());
+          zkCluster.killServer(connectedIns);
+          // Wait 3 seconds to let solr connectes to another server.
+          Thread.sleep(3000);
+          InstanceSpec newConnectedIns = zkCluster.findConnectionInstance(zkClient.getZooKeeper());
+          assertNotEquals(connectedIns, newConnectedIns);
+          // Wait 10 seconds to make sure the event is received by zkController
+          Thread.sleep(10000);
+          assertFalse(
+              "Reconnected to ZK cluster before session expiration should NOT trigger the invocation of method onExpiredReconnection",
+              invoked.get());
+        }
+      } finally {
+        cc.shutdown();
+      }
+    } finally {
+      // Closing zookeeper cluster is asynchronous, we need some time to let it finish. Otherwise we
+      // may encounter
+      // Thread Leak
+      Thread.sleep(3000);
+    }
+  }
+
+  @Test
+  public void testZkDisconnectionEvents() throws Exception {
+    // Do not use MiniSolrCloudCluster
+
+    // Create a zookeeper cluster with 3 nodes
+    try (TestingCluster zkCluster = new TestingCluster(3)) {
+      zkCluster.start();
+      // Now create a ZkController - it should respect the cluster property and have overseer
+      // enabled
+      CoreContainer cc = getCoreContainer();
+      try {
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
+        MockClusterSingleton mockClusterSingleton = new MockClusterSingleton();
+        cc.getClusterSingletons()
+            .getSingletons()
+            .put(mockClusterSingleton.getName(), mockClusterSingleton);
+        try (ZkController zkController =
+            new ZkController(cc, zkCluster.getConnectString(), TIMEOUT, cloudConfig)) {
+          // During initialization of ZkController, mockClusterSingleton.stop is invoked and thus we
+          // need to reset it here.
+          mockClusterSingleton.reset();
+          assertFalse(mockClusterSingleton.isStopped());
+          CuratorZookeeperClient zkClient =
+              zkController.getZkClient().getCuratorFramework().getZookeeperClient();
+          // Kill the connected server to force Solr to reconnected to another solr server
+          InstanceSpec connectedIns = zkCluster.findConnectionInstance(zkClient.getZooKeeper());
+          zkCluster.killServer(connectedIns);
+          // Wait 3 seconds to let solr connectes to another server.
+          Thread.sleep(3000);
+          InstanceSpec newConnectedIns = zkCluster.findConnectionInstance(zkClient.getZooKeeper());
+          assertNotEquals(connectedIns, newConnectedIns);
+          // Wait 10 seconds to make sure the event is received by zkController
+          Thread.sleep(10000);
+          assertFalse(
+              "Reconnected to ZK cluster before session expiration should NOT trigger the invocation of method onSessionExpiration",
+              mockClusterSingleton.isStopped());
+
+          mockClusterSingleton.reset();
+          assertFalse(mockClusterSingleton.isStopped());
+          AtomicBoolean invoked = new AtomicBoolean(Boolean.FALSE);
+          zkController.addExpiredReconnectionListener(() -> invoked.set(true));
+          // Stop the cluster to prevent invoking zkController.onExpiredReconnection,
+          // which also stops overseer and thus invokes mockClusterSingleton.stop.
+          zkCluster.stop();
+          // Even if the cluster is stopped, the session won't be expired at once. We still need to
+          // manually expire it.
+          zkClient.getZooKeeper().getTestable().injectSessionExpiration();
+          // Wait 10 seconds to make sure Solr receives the ExpiredReconnection event and invokes
+          // listeners
+          Thread.sleep(3000);
+          assertFalse("ExpiredReconnection should not be triggered", invoked.get());
+          assertTrue(
+              "Session expiration should have triggered the invocation of method onSessionExpiration",
+              mockClusterSingleton.isStopped());
+        }
+      } finally {
+        cc.shutdown();
+      }
+    } finally {
+      // Closing zookeeper cluster is asynchronous, we need some time to let it finish. Otherwise we
+      // may encounter
+      // Thread Leak
+      Thread.sleep(3000);
+    }
+  }
+
   private CoreContainer getCoreContainer() {
     return new MockCoreContainer();
   }
@@ -813,6 +934,36 @@ public class ZkControllerTest extends SolrCloudTestCase {
     @Override
     public SolrMetricManager getMetricManager() {
       return metricManager;
+    }
+  }
+
+  private static class MockClusterSingleton implements ClusterSingleton {
+    protected volatile boolean isStopped = false;
+
+    @Override
+    public String getName() {
+      return this.getClass().getName();
+    }
+
+    @Override
+    public void start() throws Exception {}
+
+    @Override
+    public State getState() {
+      return null;
+    }
+
+    @Override
+    public void stop() {
+      this.isStopped = true;
+    }
+
+    public boolean isStopped() {
+      return isStopped;
+    }
+
+    public void reset() {
+      isStopped = false;
     }
   }
 }
