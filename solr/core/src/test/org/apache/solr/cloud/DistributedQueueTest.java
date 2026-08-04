@@ -27,8 +27,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.common.cloud.OnDisconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.SolrZookeeperEvent;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
@@ -295,13 +295,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     zkClient
         .getCuratorFramework()
         .getConnectionStateListenable()
-        .addListener(
-            (OnDisconnect)
-                ((sessionExpired) -> {
-                  if (sessionExpired) {
-                    hasDisconnected.countDown();
-                  }
-                }));
+        .addListener(SolrZookeeperEvent.SESSION_EXPIRATION.of(hasDisconnected::countDown));
     long sessionId = zkClient.getZkSessionId();
     zkServer.expire(sessionId);
     hasDisconnected.await(10, TimeUnit.SECONDS);
