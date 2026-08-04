@@ -113,7 +113,6 @@ public class StatusTool extends ToolBase {
 
       // URL provided, do not consult local processes, as the URL may be remote
       if (maxWaitSecs > 0) {
-        // Used by Windows start script when starting Solr
         try {
           waitForSolrUpAndPrintStatus(solrUrl, cli, maxWaitSecs);
           runtime.exit(0);
@@ -168,6 +167,7 @@ public class StatusTool extends ToolBase {
       CLIO.out(pidUrl);
     } else {
       if (maxWaitSecs > 0) {
+        // Used by Windows start script, which passes the port of the newly started instance
         waitForSolrUpAndPrintStatus(pidUrl, cli, maxWaitSecs);
       } else {
         CLIO.out(
