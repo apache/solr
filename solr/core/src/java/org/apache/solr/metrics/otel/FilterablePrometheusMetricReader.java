@@ -19,12 +19,6 @@ package org.apache.solr.metrics.otel;
 import static java.util.stream.Collectors.toList;
 
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
-import io.opentelemetry.sdk.common.CompletableResultCode;
-import io.opentelemetry.sdk.metrics.InstrumentType;
-import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
-import io.opentelemetry.sdk.metrics.export.CollectionRegistration;
-import io.opentelemetry.sdk.metrics.export.MetricReader;
-import io.prometheus.metrics.model.registry.MultiCollector;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
@@ -43,49 +37,16 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FilterablePrometheusMetricReader implements MetricReader, MultiCollector {
+public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Set<String> PROM_SUFFIXES =
       Set.of("_total", "_sum", "_bucket", "_created", "_info");
 
-  // PrometheusMetricReader has no accessible constructor since 1.64.0, so delegate instead of
-  // subclassing
-  private final PrometheusMetricReader delegate;
-
   public FilterablePrometheusMetricReader(
       boolean otelScopeEnabled, Predicate<String> allowedResourceAttributesFilter) {
-    var builder = PrometheusMetricReader.builder().setOtelScopeLabelsEnabled(otelScopeEnabled);
-    if (allowedResourceAttributesFilter != null) {
-      builder.setAllowedResourceAttributesFilter(allowedResourceAttributesFilter);
-    }
-    this.delegate = builder.build();
-  }
-
-  @Override
-  public AggregationTemporality getAggregationTemporality(InstrumentType instrumentType) {
-    return delegate.getAggregationTemporality(instrumentType);
-  }
-
-  @Override
-  public void register(CollectionRegistration registration) {
-    delegate.register(registration);
-  }
-
-  @Override
-  public CompletableResultCode forceFlush() {
-    return delegate.forceFlush();
-  }
-
-  @Override
-  public CompletableResultCode shutdown() {
-    return delegate.shutdown();
-  }
-
-  @Override
-  public MetricSnapshots collect() {
-    return delegate.collect();
+    super(otelScopeEnabled, allowedResourceAttributesFilter);
   }
 
   /**
@@ -101,7 +62,7 @@ public class FilterablePrometheusMetricReader implements MetricReader, MultiColl
 
     // If no filtering is requested then return all metrics
     if (includedNames.isEmpty() && requiredLabels.isEmpty()) {
-      return delegate.collect();
+      return super.collect();
     }
 
     // Users may filter by Prometheus-format names (e.g. "solr_core_requests") or with a
@@ -122,14 +83,13 @@ public class FilterablePrometheusMetricReader implements MetricReader, MultiColl
 
     MetricSnapshots snapshotsToFilter;
     if (sanitizedNames.isEmpty()) {
-      snapshotsToFilter = delegate.collect();
+      snapshotsToFilter = super.collect();
     } else {
       // We collect all metrics and filter by Prometheus name rather than using
-      // PrometheusMetricReader.collect(Predicate) which matches on OTel internal names. This avoids
-      // a mismatch
+      // super.collect(Predicate) which matches on OTel internal names. This avoids a mismatch
       // when OTel names use dot-separators (e.g. "solr.core.requests") but users filter by the
       // Prometheus underscore-format name they see in the output (e.g. "solr_core_requests").
-      MetricSnapshots all = delegate.collect();
+      MetricSnapshots all = super.collect();
       MetricSnapshots.Builder nameFiltered = MetricSnapshots.builder();
       for (MetricSnapshot snapshot : all) {
         if (sanitizedNames.contains(snapshot.getMetadata().getPrometheusName())) {

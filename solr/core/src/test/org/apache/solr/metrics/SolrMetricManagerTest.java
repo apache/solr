@@ -26,6 +26,7 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
@@ -40,7 +41,6 @@ import java.util.concurrent.atomic.DoubleAdder;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.RetryUtil;
-import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +48,7 @@ import org.junit.Test;
 public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   final String METER_PROVIDER_NAME = "test_provider_name";
   private SolrMetricManager metricManager;
-  private FilterablePrometheusMetricReader reader;
+  private PrometheusMetricReader reader;
 
   @Before
   @Override
@@ -299,8 +299,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
         metricManager.longCounter(METER_PROVIDER_NAME, "my_counter", "desc", null);
     counter.add(5);
 
-    FilterablePrometheusMetricReader reader =
-        metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
+    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
     MetricSnapshots metrics = reader.collect();
     CounterSnapshot data =
         metrics.stream()

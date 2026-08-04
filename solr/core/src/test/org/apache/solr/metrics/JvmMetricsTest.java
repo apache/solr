@@ -17,6 +17,7 @@
 package org.apache.solr.metrics;
 
 import com.sun.management.OperatingSystemMXBean;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +30,6 @@ import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -75,7 +75,7 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSetupJvmMetrics() throws InterruptedException {
-    FilterablePrometheusMetricReader reader =
+    PrometheusMetricReader reader =
         solrTestRule
             .getJetty()
             .getCoreContainer()
@@ -113,7 +113,7 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
   @Test
   @SuppressForbidden(reason = "Testing com.sun.management.OperatingSystemMXBean availability")
   public void testSystemMemoryMetrics() {
-    FilterablePrometheusMetricReader reader =
+    PrometheusMetricReader reader =
         solrTestRule
             .getJetty()
             .getCoreContainer()

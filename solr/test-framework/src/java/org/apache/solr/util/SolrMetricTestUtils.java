@@ -19,6 +19,7 @@ package org.apache.solr.util;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
@@ -36,7 +37,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 
 public final class SolrMetricTestUtils {
 
@@ -81,7 +81,7 @@ public final class SolrMetricTestUtils {
    * typically cast to something useful.
    */
   public static DataPointSnapshot getDataPointSnapshot(
-      FilterablePrometheusMetricReader reader, String metricName, Labels labels) {
+      PrometheusMetricReader reader, String metricName, Labels labels) {
     MetricSnapshots metricSnapshots = reader.collect();
     return metricSnapshots.stream()
         .filter(ms -> ms.getMetadata().getPrometheusName().equals(metricName))
@@ -111,12 +111,12 @@ public final class SolrMetricTestUtils {
     return Labels.builder().label("core", coreName).label("otel_scope_name", "org.apache.solr");
   }
 
-  public static FilterablePrometheusMetricReader getPrometheusMetricReader(SolrCore core) {
+  public static PrometheusMetricReader getPrometheusMetricReader(SolrCore core) {
     return getPrometheusMetricReader(
         core.getCoreContainer(), core.getCoreMetricManager().getRegistryName());
   }
 
-  public static FilterablePrometheusMetricReader getPrometheusMetricReader(
+  public static PrometheusMetricReader getPrometheusMetricReader(
       CoreContainer container, String registryName) {
     return container.getMetricManager().getPrometheusMetricReader(registryName);
   }
@@ -137,10 +137,7 @@ public final class SolrMetricTestUtils {
   }
 
   private static <T> T getDataPoint(
-      FilterablePrometheusMetricReader reader,
-      String metricName,
-      Labels labels,
-      Class<T> snapshotType) {
+      PrometheusMetricReader reader, String metricName, Labels labels, Class<T> snapshotType) {
     return snapshotType.cast(SolrMetricTestUtils.getDataPointSnapshot(reader, metricName, labels));
   }
 
@@ -155,17 +152,17 @@ public final class SolrMetricTestUtils {
   }
 
   public static CounterSnapshot.CounterDataPointSnapshot getCounterDatapoint(
-      FilterablePrometheusMetricReader reader, String metricName, Labels labels) {
+      PrometheusMetricReader reader, String metricName, Labels labels) {
     return getDataPoint(reader, metricName, labels, CounterSnapshot.CounterDataPointSnapshot.class);
   }
 
   public static GaugeSnapshot.GaugeDataPointSnapshot getGaugeDatapoint(
-      FilterablePrometheusMetricReader reader, String metricName, Labels labels) {
+      PrometheusMetricReader reader, String metricName, Labels labels) {
     return getDataPoint(reader, metricName, labels, GaugeSnapshot.GaugeDataPointSnapshot.class);
   }
 
   public static HistogramSnapshot.HistogramDataPointSnapshot getHistogramDatapoint(
-      FilterablePrometheusMetricReader reader, String metricName, Labels labels) {
+      PrometheusMetricReader reader, String metricName, Labels labels) {
     return getDataPoint(
         reader, metricName, labels, HistogramSnapshot.HistogramDataPointSnapshot.class);
   }

@@ -17,6 +17,7 @@
 
 package org.apache.solr.metrics;
 
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.nio.charset.StandardCharsets;
@@ -32,7 +33,6 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestHarness;
 import org.eclipse.jetty.client.HttpClient;
@@ -83,7 +83,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   }
 
   private static GaugeDataPointSnapshot getGaugeOpt(
-      FilterablePrometheusMetricReader reader, String metricName, String type) {
+      PrometheusMetricReader reader, String metricName, String type) {
     return SolrMetricTestUtils.getGaugeDatapoint(
         reader,
         metricName,
