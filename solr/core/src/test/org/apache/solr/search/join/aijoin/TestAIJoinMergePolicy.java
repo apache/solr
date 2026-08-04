@@ -41,6 +41,7 @@ import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.util.LogLevel;
 
 /**
  * Real (non-mocked) integration smoke test for {@link AIJoinMergePolicy}: builds a segmented
@@ -48,6 +49,8 @@ import org.apache.lucene.util.IOUtils;
  * deletes and force-merges both sides so the sidecar's previously-built pair columns go stale, and
  * checks the policy actually notices and reaps them -- not just that it runs without throwing.
  */
+@LogLevel("org.apache.solr.search.join.aijoin=WARN")
+@LuceneTestCase.SuppressSysoutChecks(bugUrl = "no.url")
 public class TestAIJoinMergePolicy extends LuceneTestCase {
 
   private static final String ID = "id";

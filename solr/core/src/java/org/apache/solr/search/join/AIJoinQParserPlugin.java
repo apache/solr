@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -189,6 +190,7 @@ public class AIJoinQParserPlugin extends QParserPlugin
 
         final Query fromQuery;
         final IndexSearcher fromSearcher;
+        ExecutorService fromExecutor;
         if (fromIndex != null && !fromIndex.equals(myCore)) {
           CoreContainer container = req.getCoreContainer();
           String coreName =
@@ -214,11 +216,14 @@ public class AIJoinQParserPlugin extends QParserPlugin
           RefCounted<SolrIndexSearcher> fromRef = fromCore.getSearcher(false, true, null);
           info.addCloseHook(fromRef::decref);
           fromSearcher = fromRef.get();
+          fromExecutor = (ExecutorService) fromCore.getCoreContainer().getIndexSearcherExecutor();
         } else {
           fromQuery = subQuery(v, null).getQuery();
           fromSearcher = req.getSearcher();
+          fromExecutor = (ExecutorService) req.getCoreContainer().getIndexSearcherExecutor();
         }
-        return joinIndex.newJoinQuery(fromField, fromQuery, fromSearcher, toField);
+
+        return joinIndex.newJoinQuery(fromField, fromQuery, fromSearcher, toField, fromExecutor);
       }
     };
   }

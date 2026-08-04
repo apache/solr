@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.IndexReader;
@@ -92,6 +94,7 @@ class ToLeafJoinContext {
   final LeafReaderContext toContext;
   final Query fromQuery;
   final IndexSearcher cachedFromSearcher;
+  private final List<Future<AIJoinUtil.CacheAndCount>> fromDocIdSetFutures;
   private IndexSearcher lastSeenJoinSearcher;
   final String fromField;
   final String toField;
@@ -250,10 +253,11 @@ class ToLeafJoinContext {
      * touched.
      */
     private void logDrain(JoinTask cell, int walked, boolean confirmed) {
-      if (!log.isInfoEnabled()) {
+      if (!AIJoinUtil.diagnosticsEnabled(log)) {
         return;
       }
-      log.info(
+      AIJoinUtil.logDiagnostic(
+          log,
           "AIJOIN evt=drain ctx={} toSeg={} pair={} confirmed={} walked={} colToCount={}"
               + " cellsLeft={} hCard={} confirmCalls={}",
           ctxId,
@@ -434,6 +438,7 @@ class ToLeafJoinContext {
    * @param weightAgeJoinSearcher the join searcher cached at {@link AIJoinQuery#createWeight} time
    * @param scorerSupplierAgeJoinSearcher the join searcher used at {@link
    *     AIJoinWeight#scorerSupplier} time
+   * @param fromDocIdSetFutures
    */
   ToLeafJoinContext(
       LeafReaderContext toContext,
@@ -445,14 +450,16 @@ class ToLeafJoinContext {
       Map<String, JoinSegmentReference> weightAgeJoinSegmentsReadOnly,
       IndexSearcher weightAgeJoinSearcher,
       IndexSearcher scorerSupplierAgeJoinSearcher,
-      AIJoinIndex joinIndex)
-      throws IOException {
+      AIJoinIndex joinIndex,
+      List<Future<AIJoinUtil.CacheAndCount>> fromDocIdSetFutures)
+      throws IOException, ExecutionException, InterruptedException {
     this.toContext = toContext;
     this.fromField = fromField;
     this.fromQuery = fromQuery;
     this.cachedFromSearcher = cachedFromSearcher;
     this.toField = toField;
     this.toReader = toReader;
+    this.fromDocIdSetFutures = fromDocIdSetFutures;
 
     this.joinIndex = joinIndex;
     this.joinCellsByFromSegOrd = new JoinTask[this.cachedFromSearcher.getLeafContexts().size()];
@@ -522,14 +529,15 @@ class ToLeafJoinContext {
    * saving the confirmation phase can make.
    */
   private void logContextSetUp() {
-    if (!log.isInfoEnabled()) {
+    if (!AIJoinUtil.diagnosticsEnabled(log)) {
       return;
     }
     long colToCountSum = 0;
     for (JoinTask cell : joinCells) {
       colToCountSum += cell.toCount();
     }
-    log.info(
+    AIJoinUtil.logDiagnostic(
+        log,
         "AIJOIN evt=ctx ctx={} toSeg={} toMaxDoc={} cellsCreated={} cellsDroppedApriori={}"
             + " cellsLive={} buildMs={} approxCard={} approxSpanSum={} approxFrom={} approxTo={}"
             + " colToCountSum={}",
@@ -553,11 +561,12 @@ class ToLeafJoinContext {
    * never emits this line never had to converge, which is the case the lazy variant exists for.
    */
   private void logConfirmationDone(String reason) {
-    if (reported || !log.isInfoEnabled()) {
+    if (reported || !AIJoinUtil.diagnosticsEnabled(log)) {
       return;
     }
     reported = true;
-    log.info(
+    AIJoinUtil.logDiagnostic(
+        log,
         "AIJOIN evt=done ctx={} toSeg={} reason={} confirmCalls={} freeHits={} cellsDrained={}"
             + " cellsLive={} fromDocsWalked={} buildMs={}",
         ctxId,
@@ -743,7 +752,8 @@ class ToLeafJoinContext {
    *     with the most matches
    * @throws IOException
    */
-  private List<JoinTask> createFromItersTasks() throws IOException {
+  private List<JoinTask> createFromItersTasks()
+      throws IOException, ExecutionException, InterruptedException {
     // TODO peek in underneath searcher cache
     Weight cachedFromWeight =
         this.cachedFromSearcher.createWeight(this.fromQuery, ScoreMode.COMPLETE_NO_SCORES, 1);
@@ -757,7 +767,12 @@ class ToLeafJoinContext {
     Map<JoinTask, Long> fromMatchCostByTask = new IdentityHashMap<>();
     for (LeafReaderContext fromContext : leaves) {
       AIJoinUtil.MatchingFromDocs matching =
-          AIJoinUtil.matchingFromDocs(cachedFromWeight, fromContext);
+          AIJoinUtil.matchingFromDocs(
+              cachedFromWeight,
+              fromContext,
+              this.fromDocIdSetFutures != null
+                  ? this.fromDocIdSetFutures.get(fromContext.ord)
+                  : null);
       if (matching == null) {
         continue; // no from-side matches in this segment
       }

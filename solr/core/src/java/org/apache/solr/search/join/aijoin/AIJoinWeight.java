@@ -1,7 +1,10 @@
 package org.apache.solr.search.join.aijoin;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
@@ -18,6 +21,7 @@ final class AIJoinWeight extends Weight {
   private final ScoreMode scoreMode;
   private final float boost;
   private final IndexReader toReader;
+  private final List<Future<AIJoinUtil.CacheAndCount>> fromDocIdSetFutures;
 
   /**
    * [toSegmentOrd][fromSegmentOrd] -> the pair column resolved at construction time; null where the
@@ -33,8 +37,10 @@ final class AIJoinWeight extends Weight {
       Map<String, JoinSegmentReference> existingJoinSegments,
       IndexReader toReader,
       ScoreMode scoreMode,
-      float boost)
-      throws IOException {
+      float boost,
+      List<Future<AIJoinUtil.CacheAndCount>> fromDocIdSetFutures)
+        //    throws IOException
+      {
     super(aiJoinQuery);
     // this.aiJoinQuery = aiJoinQuery;
     this.maybeStaleJoinSearcher = maybeStaleJoinSearcher;
@@ -42,6 +48,7 @@ final class AIJoinWeight extends Weight {
     this.scoreMode = scoreMode;
     this.boost = boost;
     this.toReader = toReader;
+    this.fromDocIdSetFutures = fromDocIdSetFutures;
   }
 
   private AIJoinQuery aiJQuery() {
@@ -71,18 +78,26 @@ final class AIJoinWeight extends Weight {
   public ScorerSupplier scorerSupplier(LeafReaderContext tolrc) throws IOException {
     IndexSearcher joinSearcher = aiJQuery().joinIndex.acquire();
     try {
-      ToLeafJoinContext ctx =
-          new ToLeafJoinContext(
-              tolrc,
-              aiJQuery().fromField,
-              aiJQuery().fromQuery,
-              aiJQuery().cachedFromSearcher,
-              aiJQuery().toField,
-              this.toReader,
-              this.existingJoinSegments,
-              this.maybeStaleJoinSearcher,
-              joinSearcher,
-              aiJQuery().joinIndex);
+      ToLeafJoinContext ctx = null;
+      try {
+        ctx =
+            new ToLeafJoinContext(
+                tolrc,
+                aiJQuery().fromField,
+                aiJQuery().fromQuery,
+                aiJQuery().cachedFromSearcher,
+                aiJQuery().toField,
+                this.toReader,
+                this.existingJoinSegments,
+                this.maybeStaleJoinSearcher,
+                joinSearcher,
+                aiJQuery().joinIndex,
+                this.fromDocIdSetFutures);
+      } catch (ExecutionException e) { // TODO review exception
+        throw new RuntimeException(e);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
       return ctx.scorerSupplier(scoreMode, boost);
     } finally {
       aiJQuery().joinIndex.release(joinSearcher);

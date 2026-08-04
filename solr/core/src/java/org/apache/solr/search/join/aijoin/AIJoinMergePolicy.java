@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.CodecReader;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FilterCodecReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
@@ -182,10 +181,8 @@ final class AIJoinMergePolicy extends MergePolicy {
     if (!shouldSample()) {
       return;
     }
-    Object fromKey =
-        AIJoinUtil.directoryKey(((DirectoryReader) fromSearcher.getIndexReader()).directory());
-    Object toKey =
-        AIJoinUtil.directoryKey(((DirectoryReader) searcher.getIndexReader()).directory());
+    Object fromKey = AIJoinUtil.directoryKey(AIJoinUtil.directory(fromSearcher.getIndexReader()));
+    Object toKey = AIJoinUtil.directoryKey(AIJoinUtil.directory(searcher.getIndexReader()));
     Map.Entry<Object, Object> searcherKey = Map.entry(fromKey, toKey);
 
     Set<String> currentSnapshot = Set.copyOf(neededPairs);

@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
@@ -47,6 +48,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 /**
  * The auxiliary join index: a self-maintaining sidecar persisting per (from-segment, to-segment)
  * doc id mappings, so query-time joining reduces to bitset translation. It owns the sidecar's
@@ -106,20 +108,18 @@ public final class AIJoinIndex implements Closeable {
    * A pair column's address in the join index: the pair field name and the sidecar segment (name
    * plus current leaf ordinal) carrying it -- enough to locate and open the column's real
    * docvalues, or to check whether a pair already exists before deciding what still needs to be
-   * built. A resolved cell's edges are tracked separately, as a plain {@link
-   * org.apache.lucene.search.aijoin.AIJoinUtil.DocEdges}, since they don't change as this reference
-   * is refreshed.
+   * built. A resolved cell's edges are tracked separately, as a plain {@code DocEdges}, since they
+   * don't change as this reference is refreshed.
    */
   record JoinSegmentReference(
       String pairFieldName, String joinSegmentName, int joinSegmentLeafOrd) {}
 
   /**
    * Scans {@code joinSearcher}'s leaves for every pair column whose field name satisfies {@code
-   * isNeeded}, returning where each one lives. Used both to seed a fresh {@link
-   * org.apache.lucene.search.aijoin.AIJoinWeight}'s view of already-built pairs, and by {@link
-   * ToLeafJoinContext} to relocate a pair whose cached segment reference no longer resolves. TODO
-   * subject for in-heap caching TODO commit's userdata might have a list of pairs with known
-   * segment ords and names
+   * isNeeded}, returning where each one lives. Used both to seed a fresh {@link AIJoinWeight}'s
+   * view of already-built pairs, and by {@link ToLeafJoinContext} to relocate a pair whose cached
+   * segment reference no longer resolves. TODO subject for in-heap caching TODO commit's userdata
+   * might have a list of pairs with known segment ords and names
    */
   static Map<String, JoinSegmentReference> extractExistingJoinColumns(
       IndexSearcher joinSearcher, Predicate<String> isNeeded) {
@@ -183,6 +183,15 @@ public final class AIJoinIndex implements Closeable {
   public Query newJoinQuery(
       String fromField, Query fromQuery, IndexSearcher fromSearcher, String toField) {
     return new AIJoinQuery(this, fromField, fromQuery, fromSearcher, toField);
+  }
+
+  public Query newJoinQuery(
+      String fromField,
+      Query fromQuery,
+      IndexSearcher fromSearcher,
+      String toField,
+      ExecutorService fromExecutor) {
+    return new AIJoinQuery(this, fromField, fromQuery, fromSearcher, toField, fromExecutor);
   }
 
   IndexSearcher acquire() throws IOException {
@@ -289,14 +298,15 @@ public final class AIJoinIndex implements Closeable {
         throw new IOException(cause);
       }
     }
-    if (log.isInfoEnabled() && !missingPairs.isEmpty()) {
+    if (AIJoinUtil.diagnosticsEnabled(log) && !missingPairs.isEmpty()) {
       long toCount = 0;
       for (JoinColumnModel model : loadedMappings.values()) {
         toCount += model.edges().toCount();
       }
       // built/awaited split matters: an awaited pair cost this thread only the wait, so folding
       // the two together would attribute another thread's build work to this query
-      log.info(
+      AIJoinUtil.logDiagnostic(
+          log,
           "AIJOIN evt=build ctx={} cause={} pairsRequested={} pairsBuilt={} pairsAwaited={}"
               + " builtMs={} awaitedMs={} toCount={} batchNumDocs={}",
           ctxId == null ? "-" : ctxId,

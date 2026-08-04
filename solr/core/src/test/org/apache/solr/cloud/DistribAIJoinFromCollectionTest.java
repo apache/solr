@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
+
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,10 +53,10 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *   <li>no scoring -- {@code {!aijoin}} is always a constant-score match, so there's no {@code
  *       score=} local param and no scoring assertions.
- *   <li>M:1 only -- {@link org.apache.solr.search.join.aijoin.AIJoinUtil#computeDocMapping} keeps
- *       exactly one to-doc per from-doc, so the join here always goes from the "from" collection's
- *       docs (each with a single-valued FK) to the "to" collection's docs by their unique key,
- *       never the reverse (one "to" doc resolving to many "from" docs would silently drop matches).
+ *   <li>M:1 only -- {@code AIJoinUtil#computeDocMapping} keeps exactly one to-doc per from-doc, so
+ *       the join here always goes from the "from" collection's docs (each with a single-valued FK)
+ *       to the "to" collection's docs by their unique key, never the reverse (one "to" doc
+ *       resolving to many "from" docs would silently drop matches).
  * </ul>
  */
 public class DistribAIJoinFromCollectionTest extends SolrCloudTestCase {
@@ -70,7 +72,12 @@ public class DistribAIJoinFromCollectionTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     String configName = "aijoinCloudCollectionConfig";
     int nodeCount = 5;
-    configureCluster(nodeCount).addConfig(configName, configset("aijoin")).configure();
+    configureCluster(nodeCount)
+        .withSolrXml(
+            DEFAULT_CLOUD_SOLR_XML.replace(
+                "<solr>", "<solr><int name=\"indexSearcherExecutorThreads\">4</int>"))
+        .addConfig(configName, configset("aijoin"))
+        .configure();
 
     Map<String, String> collectionProperties = new HashMap<>();
 
