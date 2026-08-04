@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -250,10 +251,11 @@ public class DisMaxQParser extends QParser {
    * phrase boost adds nothing over the term boost already applied by the main query. The parser
    * produces a {@link DisjunctionMaxQuery} over per-field {@link BoostQuery}-wrapped term/phrase
    * queries; we inspect the underlying query shape so that analyzers which split a single input
-   * term into multiple tokens keep their phrase boost. Unrecognized shapes conservatively return
-   * false (keep the boost).
+   * term into multiple tokens keep their phrase boost. Unrecognized shapes (and {@code null})
+   * conservatively return false (keep the boost).
    */
-  private static boolean isEffectivelySingleTerm(Query query) {
+  @VisibleForTesting
+  static boolean isEffectivelySingleTerm(Query query) {
     if (query instanceof BoostQuery boostQuery) {
       return isEffectivelySingleTerm(boostQuery.getQuery());
     }
