@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.ArrayList;
@@ -36,6 +35,7 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SpellCheckComponent;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -350,7 +350,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
         () -> {
           while (!created.get()) {
             try {
-              PrometheusMetricReader reader =
+              FilterablePrometheusMetricReader reader =
                   coreContainer
                       .getMetricManager()
                       .getPrometheusMetricReader("solr.core." + coreName);
