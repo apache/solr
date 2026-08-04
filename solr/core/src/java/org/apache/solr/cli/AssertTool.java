@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileOwnerAttributeView;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
@@ -143,24 +144,49 @@ public class AssertTool extends ToolBase {
           .longOpt("exitcode")
           .get();
 
+  /** One requested assertion. Multiple assertions may be requested in a single invocation. */
+  sealed interface Assertion {
+    /** Asserts that we are the root user. */
+    record RootUser() implements Assertion {}
+
+    /** Asserts that we are NOT the root user. */
+    record NotRootUser() implements Assertion {}
+
+    /** Asserts that the directory exists. */
+    record DirExists(String dir) implements Assertion {}
+
+    /** Asserts that the directory does NOT exist. */
+    record DirNotExists(String dir) implements Assertion {}
+
+    /** Asserts that we run as the same user that owns the directory. */
+    record SameUser(String dir) implements Assertion {}
+
+    /** Asserts that Solr is running on the given URL. */
+    record SolrRunning(String url) implements Assertion {}
+
+    /** Asserts that Solr is NOT running on the given URL. */
+    record SolrNotRunning(String url) implements Assertion {}
+
+    /** Asserts that Solr on the given URL is running in cloud mode. */
+    record CloudMode(String url) implements Assertion {}
+
+    /** Asserts that Solr on the given URL is NOT running in cloud mode. */
+    record NotCloudMode(String url) implements Assertion {}
+  }
+
   /**
    * Parameters for the assert command, independent of the command line parser. URL values are the
    * raw user input; they are normalized when the assertion runs.
+   *
+   * @param credentials credentials used by the URL-based assertions, or null
+   * @param assertions assertions to run, in order
    */
   record AssertParams(
       String message,
       Long timeoutMs,
       boolean useExitCode,
-      boolean root,
-      boolean notRoot,
-      String existsDir,
-      String notExistsDir,
-      String sameUserDir,
-      String startedUrl,
-      String notStartedUrl,
-      String cloudUrl,
-      String notCloudUrl,
-      String credentials) {}
+      String credentials,
+      List<Assertion> assertions) {}
 
   public AssertTool(ToolRuntime runtime) {
     super(runtime);
@@ -229,22 +255,41 @@ public class AssertTool extends ToolBase {
    * @throws Exception if a tool failed, e.g. authentication failure
    */
   protected int runAssert(CommandLine cli) throws Exception {
-    AssertParams params =
+    List<Assertion> assertions = new ArrayList<>();
+    if (cli.hasOption(IS_ROOT_OPTION)) {
+      assertions.add(new Assertion.RootUser());
+    }
+    if (cli.hasOption(IS_NOT_ROOT_OPTION)) {
+      assertions.add(new Assertion.NotRootUser());
+    }
+    if (cli.hasOption(DIRECTORY_EXISTS_OPTION)) {
+      assertions.add(new Assertion.DirExists(cli.getOptionValue(DIRECTORY_EXISTS_OPTION)));
+    }
+    if (cli.hasOption(DIRECTORY_NOT_EXISTS_OPTION)) {
+      assertions.add(new Assertion.DirNotExists(cli.getOptionValue(DIRECTORY_NOT_EXISTS_OPTION)));
+    }
+    if (cli.hasOption(SAME_USER_OPTION)) {
+      assertions.add(new Assertion.SameUser(cli.getOptionValue(SAME_USER_OPTION)));
+    }
+    if (cli.hasOption(IS_RUNNING_ON_OPTION)) {
+      assertions.add(new Assertion.SolrRunning(cli.getOptionValue(IS_RUNNING_ON_OPTION)));
+    }
+    if (cli.hasOption(IS_NOT_RUNNING_ON_OPTION)) {
+      assertions.add(new Assertion.SolrNotRunning(cli.getOptionValue(IS_NOT_RUNNING_ON_OPTION)));
+    }
+    if (cli.hasOption(IS_CLOUD_OPTION)) {
+      assertions.add(new Assertion.CloudMode(cli.getOptionValue(IS_CLOUD_OPTION)));
+    }
+    if (cli.hasOption(IS_NOT_CLOUD_OPTION)) {
+      assertions.add(new Assertion.NotCloudMode(cli.getOptionValue(IS_NOT_CLOUD_OPTION)));
+    }
+    return runAssert(
         new AssertParams(
             cli.getOptionValue(MESSAGE_OPTION),
             cli.getParsedOptionValue(TIMEOUT_OPTION, timeoutMs),
             cli.hasOption(EXIT_CODE_OPTION),
-            cli.hasOption(IS_ROOT_OPTION),
-            cli.hasOption(IS_NOT_ROOT_OPTION),
-            cli.getOptionValue(DIRECTORY_EXISTS_OPTION),
-            cli.getOptionValue(DIRECTORY_NOT_EXISTS_OPTION),
-            cli.getOptionValue(SAME_USER_OPTION),
-            cli.getOptionValue(IS_RUNNING_ON_OPTION),
-            cli.getOptionValue(IS_NOT_RUNNING_ON_OPTION),
-            cli.getOptionValue(IS_CLOUD_OPTION),
-            cli.getOptionValue(IS_NOT_CLOUD_OPTION),
-            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
-    return runAssert(params);
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            List.copyOf(assertions)));
   }
 
   /**
@@ -258,38 +303,24 @@ public class AssertTool extends ToolBase {
     message = params.message();
     timeoutMs = params.timeoutMs();
     useExitCode = params.useExitCode();
+    String credentials = params.credentials();
 
     int ret = 0;
-    if (params.root()) {
-      ret += assertRootUser();
-    }
-    if (params.notRoot()) {
-      ret += assertNotRootUser();
-    }
-    if (params.existsDir() != null) {
-      ret += assertFileExists(params.existsDir());
-    }
-    if (params.notExistsDir() != null) {
-      ret += assertFileNotExists(params.notExistsDir());
-    }
-    if (params.sameUserDir() != null) {
-      ret += sameUser(params.sameUserDir());
-    }
-    if (params.startedUrl() != null) {
-      ret += assertSolrRunning(params.startedUrl(), params.credentials());
-    }
-    if (params.notStartedUrl() != null) {
-      ret += assertSolrNotRunning(params.notStartedUrl(), params.credentials());
-    }
-    if (params.cloudUrl() != null) {
+    for (Assertion assertion : params.assertions()) {
       ret +=
-          assertSolrRunningInCloudMode(
-              CLIUtils.normalizeSolrUrl(params.cloudUrl()), params.credentials());
-    }
-    if (params.notCloudUrl() != null) {
-      ret +=
-          assertSolrNotRunningInCloudMode(
-              CLIUtils.normalizeSolrUrl(params.notCloudUrl()), params.credentials());
+          switch (assertion) {
+            case Assertion.RootUser() -> assertRootUser();
+            case Assertion.NotRootUser() -> assertNotRootUser();
+            case Assertion.DirExists(String dir) -> assertFileExists(dir);
+            case Assertion.DirNotExists(String dir) -> assertFileNotExists(dir);
+            case Assertion.SameUser(String dir) -> sameUser(dir);
+            case Assertion.SolrRunning(String url) -> assertSolrRunning(url, credentials);
+            case Assertion.SolrNotRunning(String url) -> assertSolrNotRunning(url, credentials);
+            case Assertion.CloudMode(String url) ->
+                assertSolrRunningInCloudMode(CLIUtils.normalizeSolrUrl(url), credentials);
+            case Assertion.NotCloudMode(String url) ->
+                assertSolrNotRunningInCloudMode(CLIUtils.normalizeSolrUrl(url), credentials);
+          };
     }
     return ret;
   }
