@@ -563,7 +563,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
       SolrInputDocument doc1 = new SolrInputDocument();
       doc1.addField("id", "1");
-      doc1.addField("vector", Arrays.asList(1.0f, 2.0f, 3.0f, 4.0f));
+      doc1.addField("vector", List.of(1.0f, 2.0f, 3.0f, 4.0f));
       assertU(adoc(doc1));
 
       SolrInputDocument doc2 = new SolrInputDocument();

@@ -573,10 +573,6 @@ public class DenseVectorField extends FloatPointField {
     return baseQuery;
   }
 
-  /**
-   * Dense vector fields index neither docValues nor norms usable for existence checks, but Lucene
-   * exposes docs that contain a vector via {@link FieldExistsQuery}.
-   */
   @Override
   public Query getExistenceQuery(QParser parser, SchemaField field) {
     return new FieldExistsQuery(field.getName());
