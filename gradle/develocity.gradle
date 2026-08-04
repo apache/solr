@@ -55,7 +55,9 @@ develocity {
 
 buildCache {
   local {
-    enabled = !isCIBuild
+    enabled =
+        providers.gradleProperty('org.gradle.caching').map(Boolean::parseBoolean)
+            .getOrElse(!isCIBuild)
   }
 
   remote(develocity.buildCache) {

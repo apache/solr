@@ -59,9 +59,6 @@ import org.apache.solr.security.AuthorizationContext;
  * specify the acceptable generation lag follower should be with respect to its leader using the
  * <code>maxGenerationLag=&lt;max_generation_lag&gt;</code> request parameter. If <code>
  * maxGenerationLag</code> is not provided then health check would simply return OK.
- *
- * <p>All health-check logic lives in the v2 {@link NodeHealth}; this handler is a thin v1 bridge
- * that extracts request parameters and delegates.
  */
 public class HealthCheckHandler extends RequestHandlerBase {
 

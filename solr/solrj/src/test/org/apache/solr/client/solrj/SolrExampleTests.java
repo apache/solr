@@ -2337,8 +2337,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     q.set("fl", "id,name,aaa:[value v=aaa]");
 
     // First Try with the BinaryResponseParser
-    QueryRequest req = new QueryRequest(q);
-    req.setPath("/get");
+    QueryRequest req = new QueryRequest("/get", q);
     req.setResponseParser(new JavaBinResponseParser());
     QueryResponse rsp = req.process(client);
     SolrDocument out = (SolrDocument) rsp.getResponse().get("doc");
@@ -2398,8 +2397,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             concurrentClient.lastError.getMessage().contains("version conflict"));
       } else if (client
           instanceof
-          SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient
-          concurrentClient) {
+          SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
         client.commit(); // just to be sure the client has sent the doc
         assertNotNull(
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
