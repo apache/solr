@@ -189,25 +189,37 @@ public class RunExampleTool extends ToolBase {
   private boolean usingPromptInputs = false;
 
   /**
-   * Parameters for the run_example command, independent of the command line parser.
+   * Parameters consumed when starting a single Solr node via the bin/solr script, common to all
+   * example modes.
    *
-   * @param promptInputs comma-separated prompt answers, or null when prompting interactively
-   * @param zkHost ZooKeeper connection string resolved from option or sysprop, or null
    * @param extraArgs extra arguments to pass on to the {@code bin/solr start} command
    */
-  record RunExampleParams(
+  record StartSolrParams(
       String example,
-      boolean noPrompt,
-      String promptInputs,
-      boolean userManaged,
-      String zkHost,
-      int port,
       String host,
       String memory,
       String jvmOpts,
       boolean force,
       String credentials,
       String extraArgs) {}
+
+  /**
+   * Parameters for running a single-node example (techproducts, schemaless or films), independent
+   * of the command line parser.
+   *
+   * @param zkHost ZooKeeper connection string resolved from option or sysprop, or null
+   */
+  record RunExampleParams(boolean userManaged, String zkHost, int port, StartSolrParams start) {}
+
+  /**
+   * Parameters for running the multi-node cloud example, independent of the command line parser.
+   *
+   * @param promptInputs comma-separated prompt answers, or null when prompting interactively
+   * @param zkHost ZooKeeper connection string resolved from option or sysprop, or null
+   * @param basePort first node port; remaining nodes use basePort+1..+3 unless prompted otherwise
+   */
+  record CloudExampleParams(
+      boolean noPrompt, String promptInputs, String zkHost, int basePort, StartSolrParams start) {}
 
   /** Default constructor used by the framework when running as a command-line application. */
   public RunExampleTool(ToolRuntime runtime) {
@@ -283,27 +295,33 @@ public class RunExampleTool extends ToolBase {
               + "! Please choose one of: cloud, schemaless, techproducts, or films");
     }
 
-    RunExampleParams params =
-        new RunExampleParams(
+    StartSolrParams startParams =
+        new StartSolrParams(
             exampleType,
-            cli.hasOption(NO_PROMPT_OPTION),
-            cli.getOptionValue(PROMPT_INPUTS_OPTION),
-            cli.hasOption(USER_MANAGED_OPTION),
-            CLIUtils.getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null),
-            Integer.parseInt(
-                cli.getOptionValue(
-                    PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983"))),
             cli.getOptionValue(HOST_OPTION),
             cli.getOptionValue(MEMORY_OPTION),
             cli.getOptionValue(JVM_OPTS_OPTION),
             cli.hasOption(FORCE_OPTION),
             cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
             readExtraArgs(cli.getArgs()));
+    String zkHost =
+        CLIUtils.getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
+    int port =
+        Integer.parseInt(
+            cli.getOptionValue(
+                PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
 
     if ("cloud".equals(exampleType)) {
-      runCloudExample(params);
+      runCloudExample(
+          new CloudExampleParams(
+              cli.hasOption(NO_PROMPT_OPTION),
+              cli.getOptionValue(PROMPT_INPUTS_OPTION),
+              zkHost,
+              port,
+              startParams));
     } else {
-      runExample(params, exampleType);
+      runExample(
+          new RunExampleParams(cli.hasOption(USER_MANAGED_OPTION), zkHost, port, startParams));
     }
   }
 
@@ -371,7 +389,8 @@ public class RunExampleTool extends ToolBase {
               + " is not a directory!");
   }
 
-  protected void runExample(RunExampleParams params, String exampleName) throws Exception {
+  protected void runExample(RunExampleParams params) throws Exception {
+    String exampleName = params.start().example();
     String collectionName = "schemaless".equals(exampleName) ? "gettingstarted" : exampleName;
     String configSet =
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
@@ -379,7 +398,8 @@ public class RunExampleTool extends ToolBase {
     boolean isCloudMode = !params.userManaged();
     String zkHost = params.zkHost();
     int port = params.port();
-    Map<String, Object> nodeStatus = startSolr(solrHomeDir, isCloudMode, params, port, zkHost, 30);
+    Map<String, Object> nodeStatus =
+        startSolr(solrHomeDir, isCloudMode, params.start(), port, zkHost, 30);
 
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
 
@@ -388,7 +408,8 @@ public class RunExampleTool extends ToolBase {
     boolean alreadyExists = false;
     boolean cloudMode = nodeStatus.get("cloud") != null;
     if (cloudMode) {
-      if (CLIUtils.safeCheckCollectionExists(solrUrl, collectionName, params.credentials())) {
+      if (CLIUtils.safeCheckCollectionExists(
+          solrUrl, collectionName, params.start().credentials())) {
         alreadyExists = true;
         echo(
             "\nWARNING: Collection '"
@@ -397,7 +418,7 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       String coreName = collectionName;
-      if (CLIUtils.safeCheckCoreExists(solrUrl, coreName, params.credentials())) {
+      if (CLIUtils.safeCheckCoreExists(solrUrl, coreName, params.start().credentials())) {
         alreadyExists = true;
         echo(
             "\nWARNING: Core '"
@@ -466,7 +487,7 @@ public class RunExampleTool extends ToolBase {
             "exampledocs directory not found, skipping indexing step for the techproducts example");
       }
     } else if ("films".equals(exampleName) && !alreadyExists) {
-      try (SolrClient solrClient = CLIUtils.getSolrClient(solrUrl, params.credentials())) {
+      try (SolrClient solrClient = CLIUtils.getSolrClient(solrUrl, params.start().credentials())) {
         echo("Adding dense vector field type to films schema");
         SolrCLI.postJsonToSolr(
             solrClient,
@@ -586,13 +607,13 @@ public class RunExampleTool extends ToolBase {
     }
   }
 
-  protected void runCloudExample(RunExampleParams params) throws Exception {
+  protected void runCloudExample(CloudExampleParams params) throws Exception {
 
     usingPromptInputs = params.promptInputs() != null;
     boolean prompt = !params.noPrompt();
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
-    int defaultPort = params.port();
+    int defaultPort = params.basePort();
     if (defaultPort != 8983) {
       // Override the old default port numbers if user has started the example overriding
       // SOLR_PORT_LISTEN
@@ -673,7 +694,7 @@ public class RunExampleTool extends ToolBase {
 
     // start the first node (most likely with embedded ZK)
     Map<String, Object> nodeStatus =
-        startSolr(node1Dir.resolve("solr"), true, params, cloudPorts[0], zkHost, 30);
+        startSolr(node1Dir.resolve("solr"), true, params.start(), cloudPorts[0], zkHost, 30);
 
     if (zkHost == null) {
       @SuppressWarnings("unchecked")
@@ -692,7 +713,7 @@ public class RunExampleTool extends ToolBase {
         startSolr(
             solrHomeDir.resolve("node" + (n + 1)).resolve("solr"),
             true,
-            params,
+            params.start(),
             cloudPorts[n],
             zkHost,
             30);
@@ -705,7 +726,8 @@ public class RunExampleTool extends ToolBase {
 
     // create the collection
     String collectionName =
-        createCloudExampleCollection(numNodes, readInput, prompt, solrUrl, params.credentials());
+        createCloudExampleCollection(
+            numNodes, readInput, prompt, solrUrl, params.start().credentials());
 
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
   }
@@ -755,7 +777,7 @@ public class RunExampleTool extends ToolBase {
   protected Map<String, Object> startSolr(
       Path solrHomeDir,
       boolean cloudMode,
-      RunExampleParams params,
+      StartSolrParams params,
       int port,
       String zkHost,
       int maxWaitSecs)
