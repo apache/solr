@@ -52,7 +52,7 @@
  <updateRequestProcessorChain name="documentEnrichment">
   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
-   <str name="outputField">enriched_field</str>
+   <str name="outputField">processor_output_field</str>
    <str name="prompt">Summarize this content: {string_field}</str>
    <str name="model">dummy-1</str>
   </processor>
@@ -65,7 +65,7 @@
         <str>string_field</str>
         <str>body_field</str>
       </arr>
-      <str name="outputField">enriched_field</str>
+      <str name="outputField">processor_output_field</str>
       <str name="prompt">Title: {string_field}. Body: {body_field}.</str>
       <str name="model">dummy-1</str>
     </processor>
@@ -75,7 +75,7 @@
  <updateRequestProcessorChain name="failingDocumentEnrichment">
    <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
-   <str name="outputField">enriched_field</str>
+   <str name="outputField">processor_output_field</str>
    <str name="prompt">Summarize this content: {string_field}</str>
    <str name="model">exception-throwing-model</str>
   </processor>
@@ -86,7 +86,7 @@
   <processor class="solr.DistributedUpdateProcessorFactory"/>
    <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
-   <str name="outputField">enriched_field</str>
+   <str name="outputField">processor_output_field</str>
    <str name="prompt">Summarize this content: {string_field}</str>
    <str name="model">dummy-1</str>
   </processor>
@@ -97,7 +97,7 @@
    <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="inputField">body_field</str>
-   <str name="outputField">enriched_field</str>
+   <str name="outputField">processor_output_field</str>
    <str name="prompt">Title: {string_field}. Body: {body_field}.</str>
    <str name="model">dummy-1</str>
   </processor>
@@ -107,7 +107,7 @@
  <updateRequestProcessorChain name="documentEnrichmentMultivaluedString">
    <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
-   <str name="outputField">enriched_field_multi</str>
+   <str name="outputField">processor_output_field_multi</str>
    <str name="prompt">Extract tags from: {string_field}</str>
    <str name="model">dummy-multivalued-1</str>
   </processor>
@@ -118,7 +118,7 @@
    <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="inputField">body_field</str>
-   <str name="outputField">enriched_field</str>
+   <str name="outputField">processor_output_field</str>
    <str name="prompt">Title: {string_field}. Body: {body_field}.</str>
    <str name="model">exception-throwing-model</str>
   </processor>
@@ -248,7 +248,7 @@
   <updateRequestProcessorChain name="documentEnrichmentMultivaluedInput">
     <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
       <str name="inputField">tags_field</str>
-      <str name="outputField">enriched_field</str>
+      <str name="outputField">processor_output_field</str>
       <str name="prompt">Classify these tags: {tags_field}</str>
       <str name="model">dummy-1</str>
     </processor>

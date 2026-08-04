@@ -43,8 +43,8 @@
   <field name="output_sortable_text" type="sortable_text_type"   indexed="true" stored="true" multiValued="false"/>
   <field name="body_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="tags_field" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
-  <field name="enriched_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-  <field name="enriched_field_multi" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
+  <field name="processor_output_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="processor_output_field_multi" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
 
   <!-- single-valued output fields for each supported type -->
   <field name="output_long"    type="plong"   indexed="true" stored="true" multiValued="false"/>

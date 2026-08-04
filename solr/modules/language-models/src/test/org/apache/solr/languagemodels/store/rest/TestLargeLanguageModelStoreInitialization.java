@@ -36,8 +36,17 @@ public class TestLargeLanguageModelStoreInitialization extends TestLanguageModel
     assertJQ(LargeLanguageModelStore.REST_END_POINT, "/models==[]");
   }
 
+  /*
+   * This test verifies that the LargeLanguageModelStore REST managed resource is not registered when the Solr core has
+   * no component that needs it.
+   * LargeLanguageModelStore isn't wired up unconditionally — it's registered on demand by
+   * DocumentEnrichmentUpdateProcessorFactory.inform() (DocumentEnrichmentUpdateProcessorFactory.java:165), which
+   * calls LargeLanguageModelStore.registerManagedLargeLanguageModelStore(...).
+   * That factory only gets instantiated if a solrconfig.xml actually declares an updateRequestProcessorChain using it.
+   */
   @Test
-  public void largeLanguageModelStore_whenNoComponents_shouldNotBeInitialized() throws Exception {
+  public void largeLanguageModelStore_whenNoUpdateRequestProcessorChain_shouldNotBeInitialized()
+      throws Exception {
     setupTest(
         "solrconfig-language-models-no-components.xml", "schema-language-models.xml", false, false);
     assertJQ(

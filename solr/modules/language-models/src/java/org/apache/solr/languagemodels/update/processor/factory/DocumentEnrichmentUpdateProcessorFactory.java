@@ -200,8 +200,8 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     boolean multiValued = outputFieldSchema.multiValued();
 
     LargeLanguageModelStore store = LargeLanguageModelStore.getManagedModelStore(req.getCore());
-    SolrLargeLanguageModel fieldGenerationModel = store.getModel(modelName);
-    if (fieldGenerationModel == null) {
+    SolrLargeLanguageModel largeLanguageModel = store.getModel(modelName);
+    if (largeLanguageModel == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "The model configured in the Update Request Processor '"
@@ -214,7 +214,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
         inputFields,
         outputField,
         promptText,
-        fieldGenerationModel,
+        largeLanguageModel,
         multiValued,
         responseFormat,
         req,

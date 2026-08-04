@@ -48,6 +48,9 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   }
 
   private String loadedModelId;
+  private final String processorOutputField = "processor_output_field";
+  private final String processorOutputFieldMulti = "processor_output_field_multi";
+  private final String processorOutputFieldValue = "enriched content";
 
   @After
   public void afterEachTest() throws Exception {
@@ -85,15 +88,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "documentEnrichment");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "/response/docs/[0]/enriched_field=='enriched content'",
+        "/response/docs/[0]/" + processorOutputField + "=='" + processorOutputFieldValue + "'",
         "/response/docs/[1]/id=='98'",
-        "/response/docs/[1]/enriched_field=='enriched content'");
+        "/response/docs/[1]/" + processorOutputField + "=='" + processorOutputFieldValue + "'");
   }
 
   /*
@@ -125,15 +128,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         sdoc("id", "98", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "!/response/docs/[0]/enriched_field==", // no enriched field for doc 99
+        "!/response/docs/[0]/" + processorOutputField + "==", // no enriched field for doc 99
         "/response/docs/[1]/id=='98'",
-        "/response/docs/[1]/enriched_field=='enriched content'");
+        "/response/docs/[1]/" + processorOutputField + "=='" + processorOutputFieldValue + "'");
   }
 
   @Test
@@ -144,15 +147,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     assertU(adoc("id", "98")); // no string_field
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "/response/docs/[0]/enriched_field=='enriched content'",
+        "/response/docs/[0]/" + processorOutputField + "=='" + processorOutputFieldValue + "'",
         "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/enriched_field=="); // no enriched field for doc 98
+        "!/response/docs/[1]/" + processorOutputField + "=="); // no enriched field for doc 98
   }
 
   @Test
@@ -166,15 +169,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "failingDocumentEnrichment");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "!/response/docs/[0]/enriched_field==", // no enriched field for doc 99
+        "!/response/docs/[0]/" + processorOutputField + "==", // no enriched field for doc 99
         "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/enriched_field=="); // no enriched field for doc 98
+        "!/response/docs/[1]/" + processorOutputField + "=="); // no enriched field for doc 98
   }
 
   @Test
@@ -195,21 +198,21 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     addWithChain(atomicDoc, "documentEnrichmentForPartialUpdates");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "/response/docs/[0]/enriched_field=='enriched content'",
+        "/response/docs/[0]/" + processorOutputField + "=='" + processorOutputFieldValue + "'",
         "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/enriched_field==" // no enriched field for document 98
+        "!/response/docs/[1]/" + processorOutputField + "==" // no enriched field for document 98
         );
   }
 
   @Test
   public void processAtomicUpdate_shouldReplaceExistingEnrichedFieldNotAppend() throws Exception {
-    // Verifies that when a document already contains an enriched_field and string_field is
+    // Verifies that when a document already contains an processorOutputField and string_field is
     // modified via atomic update, the enriched content is recomputed and replaces the previous
     // value rather than being appended.
     loadTestLargeLanguageModel("dummy-model.json", "dummy-1");
@@ -219,22 +222,22 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
             "99",
             "string_field",
             "Vegeta is the saiyan prince.",
-            "enriched_field",
+            processorOutputField,
             "old content"));
     addWithChain(
         sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."),
         "documentEnrichment");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "/response/docs/[0]/enriched_field=='old content'",
+        "/response/docs/[0]/" + processorOutputField + "=='old content'",
         "/response/docs/[1]/id=='98'",
-        "/response/docs/[1]/enriched_field=='enriched content'");
+        "/response/docs/[1]/" + processorOutputField + "=='" + processorOutputFieldValue + "'");
 
     SolrInputDocument atomicDoc = new SolrInputDocument();
     atomicDoc.setField("id", "99");
@@ -247,9 +250,9 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "/response/docs/[0]/enriched_field=='enriched content'",
+        "/response/docs/[0]/" + processorOutputField + "=='" + processorOutputFieldValue + "'",
         "/response/docs/[1]/id=='98'",
-        "/response/docs/[1]/enriched_field=='enriched content'");
+        "/response/docs/[1]/" + processorOutputField + "=='" + processorOutputFieldValue + "'");
   }
 
   // --- multi-field tests ---
@@ -282,15 +285,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "documentEnrichmentArrInputField");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "/response/docs/[0]/enriched_field=='enriched content'",
+        "/response/docs/[0]/" + processorOutputField + "=='" + processorOutputFieldValue + "'",
         "/response/docs/[1]/id=='98'",
-        "/response/docs/[1]/enriched_field=='enriched content'");
+        "/response/docs/[1]/" + processorOutputField + "=='" + processorOutputFieldValue + "'");
   }
 
   @Test
@@ -320,15 +323,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "documentEnrichmentMultiField");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "/response/docs/[0]/enriched_field=='enriched content'",
+        "/response/docs/[0]/" + processorOutputField + "=='" + processorOutputFieldValue + "'",
         "/response/docs/[1]/id=='98'",
-        "/response/docs/[1]/enriched_field=='enriched content'");
+        "/response/docs/[1]/" + processorOutputField + "=='" + processorOutputFieldValue + "'");
 
     // Verify both placeholders were substituted
     assertEquals(
@@ -349,15 +352,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "documentEnrichmentMultiField");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "!/response/docs/[0]/enriched_field==",
+        "!/response/docs/[0]/" + processorOutputField + "==",
         "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/enriched_field==");
+        "!/response/docs/[1]/" + processorOutputField + "==");
   }
 
   @Test
@@ -373,15 +376,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "documentEnrichmentMultiField");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "!/response/docs/[0]/enriched_field==",
+        "!/response/docs/[0]/" + processorOutputField + "==",
         "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/enriched_field==");
+        "!/response/docs/[1]/" + processorOutputField + "==");
   }
 
   @Test
@@ -393,15 +396,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     addWithChain(sdoc("id", "98"), "documentEnrichmentMultiField");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "!/response/docs/[0]/enriched_field==",
+        "!/response/docs/[0]/" + processorOutputField + "==",
         "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/enriched_field==");
+        "!/response/docs/[1]/" + processorOutputField + "==");
   }
 
   @Test
@@ -429,15 +432,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "failingDocumentEnrichmentMultiField");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "!/response/docs/[0]/enriched_field==",
+        "!/response/docs/[0]/" + processorOutputField + "==",
         "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/enriched_field==");
+        "!/response/docs/[1]/" + processorOutputField + "==");
   }
 
   @Test
@@ -460,15 +463,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     addWithChain(doc, "documentEnrichmentMultivaluedInput");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "/response/docs/[0]/enriched_field=='enriched content'",
+        "/response/docs/[0]/" + processorOutputField + "=='" + processorOutputFieldValue + "'",
         "/response/docs/[1]/id=='98'",
-        "/response/docs/[1]/enriched_field=='enriched content'");
+        "/response/docs/[1]/" + processorOutputField + "=='" + processorOutputFieldValue + "'");
 
     assertEquals("Classify these tags: [tag1, tag2, tag3]", DummyChatModel.lastReceivedPrompt);
   }
@@ -482,15 +485,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     addWithChain(sdoc("id", "98", "string_field", ""), "documentEnrichmentMultivaluedString");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field_multi");
+    final SolrQuery query = getEnrichmentQuery(processorOutputFieldMulti);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "!/response/docs/[0]/enriched_field_multi==",
+        "!/response/docs/[0]/" + processorOutputFieldMulti + "==",
         "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/enriched_field_multi==");
+        "!/response/docs/[1]/" + processorOutputFieldMulti + "==");
   }
 
   // --- typed single-valued output field tests ---
@@ -566,7 +569,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
                 "dummy-multivalued-1",
                 "{\"value\": [\"tag1\", \"tag2\"]}",
                 "documentEnrichmentMultivaluedString",
-                "enriched_field_multi",
+                processorOutputFieldMulti,
                 List.of("'tag1'", "'tag2'")),
             new TypeCaseMulti(
                 "dummy-long-multi",
@@ -651,15 +654,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "documentEnrichment");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "!/response/docs/[0]/enriched_field==",
+        "!/response/docs/[0]/" + processorOutputField + "==",
         "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/enriched_field==");
+        "!/response/docs/[1]/" + processorOutputField + "==");
   }
 
   @Test
@@ -675,15 +678,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "documentEnrichment");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field");
+    final SolrQuery query = getEnrichmentQuery(processorOutputField);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "!/response/docs/[0]/enriched_field==",
+        "!/response/docs/[0]/" + processorOutputField + "==",
         "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/enriched_field==");
+        "!/response/docs/[1]/" + processorOutputField + "==");
   }
 
   // --- field type incompatibility tests ---
@@ -779,15 +782,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "documentEnrichmentMultivaluedString");
     assertU(commit());
 
-    final SolrQuery query = getEnrichmentQuery("enriched_field_multi");
+    final SolrQuery query = getEnrichmentQuery(processorOutputFieldMulti);
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "!/response/docs/[0]/enriched_field_multi==",
+        "!/response/docs/[0]/" + processorOutputFieldMulti + "==",
         "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/enriched_field_multi==");
+        "!/response/docs/[1]/" + processorOutputFieldMulti + "==");
   }
 
   private SolrQuery getEnrichmentQuery(String enrichedFieldName) {

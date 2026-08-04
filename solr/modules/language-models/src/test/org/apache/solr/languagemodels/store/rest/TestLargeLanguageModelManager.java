@@ -119,7 +119,7 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadFieldGenerationModel_openAi_shouldLoadModelConfig() throws Exception {
+  public void loadLargeLanguageModel_openAi_shouldLoadModelConfig() throws Exception {
     loadLargeLanguageModel("openai-model.json");
 
     final String modelName = "openai-1";
@@ -139,7 +139,7 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadFieldGenerationModel_mistralAi_shouldLoadModelConfig() throws Exception {
+  public void loadLargeLanguageModel_mistralAi_shouldLoadModelConfig() throws Exception {
     loadLargeLanguageModel("mistralai-model.json");
 
     final String modelName = "mistralai-1";
@@ -161,7 +161,7 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadFieldGenerationModel_anthropic_shouldLoadModelConfig() throws Exception {
+  public void loadLargeLanguageModel_anthropic_shouldLoadModelConfig() throws Exception {
     loadLargeLanguageModel("anthropic-model.json");
 
     final String modelName = "anthropic-1";
@@ -183,7 +183,7 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadFieldGenerationModel_ollama_shouldLoadModelConfig() throws Exception {
+  public void loadLargeLanguageModel_ollama_shouldLoadModelConfig() throws Exception {
     loadLargeLanguageModel("ollama-model.json");
 
     final String modelName = "ollama-1";
@@ -200,7 +200,7 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadFieldGenerationModel_gemini_shouldLoadModelConfig() throws Exception {
+  public void loadLargeLanguageModel_gemini_shouldLoadModelConfig() throws Exception {
     loadLargeLanguageModel("gemini-model.json");
 
     final String modelName = "gemini-1";
@@ -217,7 +217,7 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadFieldGenerationModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
+  public void loadLargeLanguageModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
     loadLargeLanguageModel(
         "dummy-model-unsupported.json",
         "400",
@@ -225,7 +225,7 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadFieldGenerationModel_notAChatModel_shouldRaiseError() throws Exception {
+  public void loadLargeLanguageModel_notAChatModel_shouldRaiseError() throws Exception {
     loadLargeLanguageModel(
         "not-a-chat-model.json",
         "400",
@@ -233,8 +233,7 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadFieldGenerationModel_dummyAmbiguousParam_shouldDefaultToString()
-      throws Exception {
+  public void loadLargeLanguageModel_dummyAmbiguousParam_shouldDefaultToString() throws Exception {
     loadLargeLanguageModel("dummy-model-ambiguous.json");
 
     final String modelName = "dummy-1";
