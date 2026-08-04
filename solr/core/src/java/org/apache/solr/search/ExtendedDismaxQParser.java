@@ -629,12 +629,7 @@ public class ExtendedDismaxQParser extends QParser {
       return;
 
     if (0 == shingleSize) shingleSize = clauses.size();
-
-    if (shingleSize < 2) {
-      // single term - skip phrase boost
-      return;
-    }
-
+    
     final int lastClauseIndex = shingleSize - 1;
 
     StringBuilder userPhraseQuery = new StringBuilder();
@@ -681,9 +676,16 @@ public class ExtendedDismaxQParser extends QParser {
     // TODO: perhaps we shouldn't use synonyms either...
 
     Query phrase = pp.parse(userPhraseQuery.toString());
-    if (phrase != null) {
+    // Skip null and *empty* boosts. A clause-less query (e.g. q=*:*) analyzes to an empty
+    // BooleanQuery rather than null; adding it as a SHOULD clause would defeat the single-clause
+    // MatchAllDocsQuery optimization applied to the main query.
+    if (phrase != null && !isEmptyBooleanQuery(phrase)) {
       mainQuery.add(phrase, BooleanClause.Occur.SHOULD);
     }
+  }
+
+  private static boolean isEmptyBooleanQuery(Query query) {
+    return query instanceof BooleanQuery && ((BooleanQuery) query).clauses().isEmpty();
   }
 
   /**
