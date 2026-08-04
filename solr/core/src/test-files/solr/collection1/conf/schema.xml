@@ -632,6 +632,7 @@
   <field name="price" type="float" indexed="true" stored="true" multiValued="false"/>
   <field name="inStock" type="boolean" indexed="true" stored="true"/>
 
+  <field name="text_syn" type="lowerpunctfilt" indexed="true" stored="true"/>
   <field name="subword" type="subword" indexed="true" stored="true"/>
   <field name="subword_offsets" type="subword" indexed="true" stored="true" termVectors="true" termOffsets="true"/>
   <field name="numericsubword" type="numericsubword" indexed="true" stored="true"/>

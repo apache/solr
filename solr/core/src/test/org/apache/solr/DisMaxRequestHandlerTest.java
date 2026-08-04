@@ -258,9 +258,10 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   // SOLR-18314: the pf phrase boost is dropped for single-term queries, decided from the analyzed
-  // query. A single input term whose analysis yields multiple tokens (here, WordDelimiter splitting
-  // "wi-fi" into "wi fi") must keep its phrase boost. Unlike eDisMax, the classic DisMax parser has
-  // no minClauseSize gate, so this is enforced by inspecting the parsed phrase query.
+  // query. A single input term whose analysis yields multiple tokens must keep its phrase boost,
+  // whether from WordDelimiter splitting "wi-fi" into "wi fi" or a multi-word synonym expanding
+  // "usa" into "united states of america". Unlike eDisMax, the classic DisMax parser has no
+  // minClauseSize gate, so this is enforced by inspecting the parsed phrase query.
   //
   // CJK is an important example of a query with no spaces that can still parse to multiple terms.
   // However, we don't add a dedicated CJK test: CJK analysis of a single input term produces the
@@ -304,5 +305,24 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue(
         "multi-token query should retain its phrase boost",
         Pattern.compile("subword:\"wi fi\"").matcher(resp).find());
+
+    // A single input term expanded by a multi-word synonym ("usa" => "united states of america")
+    // likewise analyzes into multiple tokens, so its phrase boost must be retained.
+    resp =
+        h.query(
+            req(
+                "q",
+                "usa",
+                "qt",
+                "/dismax",
+                "qf",
+                "text_syn",
+                "pf",
+                "text_syn^10",
+                CommonParams.DEBUG_QUERY,
+                "true"));
+    assertTrue(
+        "multi-word synonym query should retain its phrase boost",
+        Pattern.compile("text_syn:\"united states of america\"").matcher(resp).find());
   }
 }
