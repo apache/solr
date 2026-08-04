@@ -363,7 +363,6 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.QT, "spellCheckCompRH");
     params.add(CommonParams.Q, "lowerfilt:(+fauth +home +loane)");
     params.add(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true");
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");

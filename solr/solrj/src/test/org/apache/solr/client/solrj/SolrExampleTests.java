@@ -439,9 +439,8 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       String url = solrTestRule.getBaseUrl();
       try (SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
-        q.set("qt", CommonParams.SYSTEM_INFO_PATH);
 
-        QueryResponse rsp = adminClient.query(q);
+        QueryResponse rsp = new QueryRequest(CommonParams.SYSTEM_INFO_PATH, q).process(adminClient);
         assertNotNull(rsp.getResponse().get("mode"));
         assertNotNull(rsp.getResponse().get("lucene"));
       }
@@ -699,10 +698,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     SolrClient client = getSolrClient();
 
     SolrQuery query = new SolrQuery();
-    query.set(CommonParams.QT, "/analysis/field");
     query.set(AnalysisParams.FIELD_TYPE, "pint");
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
-    SolrException ex = expectThrows(SolrException.class, () -> client.query(query));
+    SolrException ex =
+        expectThrows(
+            SolrException.class, () -> new QueryRequest("/analysis/field", query).process(client));
     assertEquals(400, ex.code());
     assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
 

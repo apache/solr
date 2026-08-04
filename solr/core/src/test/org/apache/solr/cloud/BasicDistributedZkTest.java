@@ -761,7 +761,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetField(tsort);
     query.setFacetMissing(false);
-    QueryResponse resp = queryRandomShard(query);
+    QueryResponse resp = queryRandomShard("/select", query);
     List<FacetField> ffs = resp.getFacetFields();
     for (FacetField ff : ffs) {
       if (ff.getName().equals(tsort) == false) continue;
@@ -1665,14 +1665,15 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
+  protected QueryResponse queryRandomShard(String requestHandler, ModifiableSolrParams params)
       throws SolrServerException, IOException {
 
-    if (r.nextBoolean()) return super.queryRandomShard(params);
+    if (r.nextBoolean()) return super.queryRandomShard(requestHandler, params);
 
     if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
 
-    QueryResponse rsp = getCommonCloudSolrClient().query(params);
+    QueryResponse rsp =
+        new QueryRequest(requestHandler, params).process(getCommonCloudSolrClient());
     return rsp;
   }
 
