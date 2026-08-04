@@ -21,6 +21,8 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - Use the project's custom `EnvUtils` to read system properties. It auto converts env.var SOLR_FOO_BAR to system property solr.foo.bar
 - Be careful to not add non-essential logging! If you add slf4j log calls, make sure to wrap debug/trace level calls in `logger.isXxxEnabled()` clause
 - Validate user input. For file paths, always call `myCoreContainer.assertPathAllowed(myPath)` before using
+- Never use fully-qualified-names when an import statement will resolve ambiguity.
+- SolrJ & "api" modules should use the latest Java 17 language features as appropriate.  Other modules can use Java 21.
 
 ## Running Tests
 
