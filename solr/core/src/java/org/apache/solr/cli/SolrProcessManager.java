@@ -73,7 +73,10 @@ public class SolrProcessManager {
                     ProcessHandle::pid,
                     ph ->
                         new SolrProcess(
-                            ph.pid(), parsePortFromProcess(ph).orElseThrow(), isProcessSsl(ph))));
+                            ph.pid(),
+                            parsePortFromProcess(ph).orElseThrow(),
+                            isProcessSsl(ph),
+                            localConnectHost(parseBindHostFromProcess(ph)))));
     portProcessMap =
         pidProcessMap.values().stream().collect(Collectors.toUnmodifiableMap(p -> p.port, p -> p));
     String solrInstallDir = EnvUtils.getProperty(SOLR_INSTALL_DIR);
@@ -150,6 +153,28 @@ public class SolrProcessManager {
             .map(s -> s.split("=")[1])
             .findFirst();
     return portStr.isPresent() ? portStr.map(Integer::parseInt) : Optional.empty();
+  }
+
+  private Optional<String> parseBindHostFromProcess(ProcessHandle ph) {
+    return arguments(ph).stream()
+        .filter(a -> a.contains("-Dsolr.host.bind=") || a.contains("-Dsolr.jetty.host="))
+        .map(s -> s.split("=", 2)[1])
+        .findFirst();
+  }
+
+  /**
+   * Resolves the host to use when connecting locally to a Solr process: the host the process is
+   * bound to if it is a specific non-loopback address, otherwise {@code localhost}. Wildcard and
+   * loopback binds are reachable as {@code localhost}, which also keeps SSL hostname verification
+   * working with certificates issued for {@code localhost}. IPv6 literals are bracketed for use in
+   * URLs.
+   */
+  static String localConnectHost(Optional<String> bindHost) {
+    String host = bindHost.map(String::trim).orElse("");
+    return switch (host) {
+      case "", "0.0.0.0", "::", "[::]", "127.0.0.1", "::1", "[::1]", "localhost" -> "localhost";
+      default -> host.contains(":") && !host.startsWith("[") ? "[" + host + "]" : host;
+    };
   }
 
   private boolean isProcessSsl(ProcessHandle ph) {
@@ -237,11 +262,15 @@ public class SolrProcessManager {
     }
   }
 
-  /** Represents a running Solr process */
-  public record SolrProcess(long pid, int port, boolean isHttps) {
+  /**
+   * Represents a running Solr process. The {@code host} is the host to use when connecting to the
+   * process from the local machine, i.e. the bind host if bound to a specific address, else {@code
+   * localhost}.
+   */
+  public record SolrProcess(long pid, int port, boolean isHttps, String host) {
 
     public String getLocalUrl() {
-      return String.format(Locale.ROOT, "%s://localhost:%s/solr", isHttps ? "https" : "http", port);
+      return String.format(Locale.ROOT, "%s://%s:%s/solr", isHttps ? "https" : "http", host, port);
     }
   }
 }
