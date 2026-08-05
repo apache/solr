@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
@@ -57,6 +58,7 @@ import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -440,7 +442,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       try (SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
 
-        QueryResponse rsp = new QueryRequest(CommonParams.SYSTEM_INFO_PATH, q).process(adminClient);
+        final var rsp = new SystemInfoRequest().process(adminClient);
         assertNotNull(rsp.getResponse().get("mode"));
         assertNotNull(rsp.getResponse().get("lucene"));
       }
@@ -697,12 +699,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   public void testErrorHandling() throws Exception {
     SolrClient client = getSolrClient();
 
-    SolrQuery query = new SolrQuery();
-    query.set(AnalysisParams.FIELD_TYPE, "pint");
-    query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
-    SolrException ex =
-        expectThrows(
-            SolrException.class, () -> new QueryRequest("/analysis/field", query).process(client));
+    final var params =
+        params(AnalysisParams.FIELD_TYPE, "pint", AnalysisParams.FIELD_VALUE, "ignore_exception");
+    final var req = new GenericSolrRequest(GET, "/analysis/field", params);
+    req.setRequiresCollection(true);
+    SolrException ex = expectThrows(SolrException.class, () -> req.process(client));
     assertEquals(400, ex.code());
     assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
 

@@ -735,11 +735,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     params.set("command", "details");
     params.set("follower", "true");
 
-    QueryResponse response = new QueryRequest("/replication", params).process(followerClient);
+    final var getDetails = new GenericSolrRequest(SolrRequest.METHOD.GET, "/replication", params);
+    getDetails.setRequiresCollection(true);
+    final var getDetailsResponse = getDetails.process(followerClient);
 
     // details/follower/timesIndexReplicated
     @SuppressWarnings({"unchecked"})
-    NamedList<Object> details = (NamedList<Object>) response.getResponse().get("details");
+    NamedList<Object> details = (NamedList<Object>) getDetailsResponse.getResponse().get("details");
     @SuppressWarnings({"unchecked"})
     NamedList<Object> follower = (NamedList<Object>) details.get("follower");
     return follower;
@@ -1480,13 +1482,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   @Test
   public void testFileListShouldReportErrorsWhenTheyOccur() throws Exception {
-    SolrQuery q = new SolrQuery();
-    q.add("wt", "json")
-        .add("command", "filelist")
-        .add(
-            "generation",
-            "-2"); // A 'generation' value not matching any commit point should cause error.
-    QueryResponse response = new QueryRequest("/replication", q).process(followerClient);
+    // A 'generation' value not matching any commit point should cause error.
+    final var params = params("wt", "json", "command", "filelist", "generation", "-2");
+    final var filelistReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/replication", params);
+    filelistReq.setRequiresCollection(true);
+    final var response = filelistReq.process(followerClient);
     NamedList<Object> resp = response.getResponse();
     assertNotNull(resp);
     assertEquals("ERROR", resp.get("status"));

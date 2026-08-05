@@ -172,8 +172,6 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "true",
         "spellcheck.build",
         "true",
-        "qt",
-        "spellCheckCompRH",
         "df",
         "subject");
     query(
@@ -564,8 +562,6 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "true",
         "spellcheck.build",
         "true",
-        "qt",
-        "spellCheckCompRH",
         "df",
         "subject");
     query(
