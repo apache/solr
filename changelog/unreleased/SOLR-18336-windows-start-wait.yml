@@ -1,7 +1,7 @@
 title: >
   Fixed bin/solr.cmd start on Windows waiting for all running Solr instances
-  instead of only the one being started. Also fixed the wait to use the
-  configured bind host instead of always localhost.
+  instead of only the one being started. Also fixed the wait to connect using
+  the advertised or bind host instead of always localhost.
 type: fixed
 authors:
   - name: Jan Høydahl

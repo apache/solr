@@ -47,24 +47,30 @@ public class SolrProcessManagerTest extends SolrTestCase {
   private static SolrProcessManager solrProcessManager;
   private static Pair<Integer, Process> processHttp;
   private static Pair<Integer, Process> processHttps;
+  private static Pair<Integer, Process> processBoundHttp;
+  private static Pair<Integer, Process> processAdvertisedHttps;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     boolean isWindows = random().nextBoolean();
     String PID_SUFFIX = isWindows ? ".port" : ".pid";
     log.info("Simulating pid file on {}", isWindows ? "Windows" : "Linux");
-    processHttp = createProcess(findAvailablePort(), false, null);
-    processHttps = createProcess(findAvailablePort(), true, "127.0.0.1");
-    long processHttpValue = isWindows ? processHttp.getKey() : processHttp.getValue().pid();
-    long processHttpsValue = isWindows ? processHttps.getKey() : processHttps.getValue().pid();
+    processHttp = createProcess(findAvailablePort(), false, null, null);
+    processHttps = createProcess(findAvailablePort(), true, "127.0.0.1", null);
+    // The mock process does not actually bind to these hosts, they are only command-line markers
+    processBoundHttp = createProcess(findAvailablePort(), false, "10.99.99.99", null);
+    processAdvertisedHttps =
+        createProcess(findAvailablePort(), true, "10.99.99.99", "myhost.example.com");
     SolrProcessManager.enableTestingMode = true;
     System.setProperty("solr.port.listen", Integer.toString(processHttp.getKey()));
     Path pidDir = createTempDir("solr-pid-dir");
     System.setProperty("solr.pid.dir", pidDir.toString());
-    Files.writeString(
-        pidDir.resolve("solr-" + processHttpValue + PID_SUFFIX), Long.toString(processHttpValue));
-    Files.writeString(
-        pidDir.resolve("solr-" + processHttpsValue + PID_SUFFIX), Long.toString(processHttpsValue));
+    for (Pair<Integer, Process> p :
+        List.of(processHttp, processHttps, processBoundHttp, processAdvertisedHttps)) {
+      long pidFileValue = isWindows ? p.getKey() : p.getValue().pid();
+      Files.writeString(
+          pidDir.resolve("solr-" + pidFileValue + PID_SUFFIX), Long.toString(pidFileValue));
+    }
     Files.writeString(pidDir.resolve("solr-99999" + PID_SUFFIX), "99999"); // Invalid
     solrProcessManager = new SolrProcessManager();
   }
@@ -73,6 +79,8 @@ public class SolrProcessManagerTest extends SolrTestCase {
   public static void afterClass() throws Exception {
     processHttp.getValue().destroyForcibly();
     processHttps.getValue().destroyForcibly();
+    processBoundHttp.getValue().destroyForcibly();
+    processAdvertisedHttps.getValue().destroyForcibly();
     SolrProcessManager.enableTestingMode = false;
   }
 
@@ -83,8 +91,8 @@ public class SolrProcessManagerTest extends SolrTestCase {
   }
 
   @SuppressWarnings("SystemGetProperty")
-  private static Pair<Integer, Process> createProcess(int port, boolean https, String bindHost)
-      throws IOException {
+  private static Pair<Integer, Process> createProcess(
+      int port, boolean https, String bindHost, String advertiseHost) throws IOException {
     // Get the path to the java executable from the current JVM
 
     String pathSeparator = System.getProperty("path.separator");
@@ -100,6 +108,9 @@ public class SolrProcessManagerTest extends SolrTestCase {
     command.add("-DmockSolr=true");
     if (bindHost != null) {
       command.add("-Dsolr.host.bind=" + bindHost);
+    }
+    if (advertiseHost != null) {
+      command.add("-Dsolr.host.advertise=" + advertiseHost);
     }
     command.add("-cp");
     command.add(classPath);
@@ -123,21 +134,40 @@ public class SolrProcessManagerTest extends SolrTestCase {
     assertEquals("http://localhost:" + http.port() + "/solr", http.getLocalUrl());
     SolrProcess https = solrProcessManager.processForPort(processHttps.getKey()).orElseThrow();
     assertEquals("https://localhost:" + https.port() + "/solr", https.getLocalUrl());
+    // Non-loopback bind host is used for the local URL
+    SolrProcess bound = solrProcessManager.processForPort(processBoundHttp.getKey()).orElseThrow();
+    assertEquals("http://10.99.99.99:" + bound.port() + "/solr", bound.getLocalUrl());
+    // Advertised host wins over the bind host
+    SolrProcess advertised =
+        solrProcessManager.processForPort(processAdvertisedHttps.getKey()).orElseThrow();
+    assertEquals(
+        "https://myhost.example.com:" + advertised.port() + "/solr", advertised.getLocalUrl());
   }
 
   public void testLocalConnectHost() {
-    assertEquals("localhost", SolrProcessManager.localConnectHost(Optional.empty()));
-    assertEquals("localhost", SolrProcessManager.localConnectHost(Optional.of("")));
-    assertEquals("localhost", SolrProcessManager.localConnectHost(Optional.of("0.0.0.0")));
-    assertEquals("localhost", SolrProcessManager.localConnectHost(Optional.of("::")));
-    assertEquals("localhost", SolrProcessManager.localConnectHost(Optional.of("127.0.0.1")));
-    assertEquals("localhost", SolrProcessManager.localConnectHost(Optional.of("::1")));
-    assertEquals("localhost", SolrProcessManager.localConnectHost(Optional.of("localhost")));
-    assertEquals("10.0.0.5", SolrProcessManager.localConnectHost(Optional.of("10.0.0.5")));
-    assertEquals(
-        "myhost.example.com",
-        SolrProcessManager.localConnectHost(Optional.of("myhost.example.com")));
-    assertEquals("[fe80::1]", SolrProcessManager.localConnectHost(Optional.of("fe80::1")));
+    // No advertise host: bind host decides, loopback and wildcard binds map to localhost
+    assertEquals("localhost", localConnectHost(null, null));
+    assertEquals("localhost", localConnectHost(null, ""));
+    assertEquals("localhost", localConnectHost(null, "0.0.0.0"));
+    assertEquals("localhost", localConnectHost(null, "::"));
+    assertEquals("localhost", localConnectHost(null, "127.0.0.1"));
+    assertEquals("localhost", localConnectHost(null, "::1"));
+    assertEquals("localhost", localConnectHost(null, "localhost"));
+    assertEquals("10.0.0.5", localConnectHost(null, "10.0.0.5"));
+    assertEquals("myhost.example.com", localConnectHost(null, "myhost.example.com"));
+    assertEquals("[fe80::1]", localConnectHost(null, "fe80::1"));
+    // Advertise host is preferred over the bind host when set
+    assertEquals("myhost.example.com", localConnectHost("myhost.example.com", "10.0.0.5"));
+    assertEquals("myhost.example.com", localConnectHost("myhost.example.com", null));
+    assertEquals("localhost", localConnectHost("localhost", "10.0.0.5"));
+    // Blank advertise host falls back to the bind host
+    assertEquals("10.0.0.5", localConnectHost("", "10.0.0.5"));
+    assertEquals("10.0.0.5", localConnectHost(" ", "10.0.0.5"));
+  }
+
+  private static String localConnectHost(String advertiseHost, String bindHost) {
+    return SolrProcessManager.localConnectHost(
+        Optional.ofNullable(advertiseHost), Optional.ofNullable(bindHost));
   }
 
   public void testIsRunningWithPort() {
@@ -172,12 +202,12 @@ public class SolrProcessManagerTest extends SolrTestCase {
 
   public void testScanSolrPidFiles() throws IOException {
     Collection<SolrProcess> processes = solrProcessManager.scanSolrPidFiles();
-    assertEquals(2, processes.size());
+    assertEquals(4, processes.size());
   }
 
   public void testGetAllRunning() {
     Collection<SolrProcess> processes = solrProcessManager.getAllRunning();
-    assertEquals(2, processes.size());
+    assertEquals(4, processes.size());
   }
 
   public void testSolrProcessMethods() {

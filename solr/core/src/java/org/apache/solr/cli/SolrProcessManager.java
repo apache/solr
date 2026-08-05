@@ -76,7 +76,8 @@ public class SolrProcessManager {
                             ph.pid(),
                             parsePortFromProcess(ph).orElseThrow(),
                             isProcessSsl(ph),
-                            localConnectHost(parseBindHostFromProcess(ph)))));
+                            localConnectHost(
+                                parseAdvertiseHostFromProcess(ph), parseBindHostFromProcess(ph)))));
     portProcessMap =
         pidProcessMap.values().stream().collect(Collectors.toUnmodifiableMap(p -> p.port, p -> p));
     String solrInstallDir = EnvUtils.getProperty(SOLR_INSTALL_DIR);
@@ -162,15 +163,26 @@ public class SolrProcessManager {
         .findFirst();
   }
 
+  private Optional<String> parseAdvertiseHostFromProcess(ProcessHandle ph) {
+    return arguments(ph).stream()
+        .filter(a -> a.contains("-Dsolr.host.advertise="))
+        .map(s -> s.split("=", 2)[1])
+        .findFirst();
+  }
+
   /**
-   * Resolves the host to use when connecting locally to a Solr process: the host the process is
-   * bound to if it is a specific non-loopback address, otherwise {@code localhost}. Wildcard and
-   * loopback binds are reachable as {@code localhost}, which also keeps SSL hostname verification
-   * working with certificates issued for {@code localhost}. IPv6 literals are bracketed for use in
-   * URLs.
+   * Resolves the host to use when connecting locally to a Solr process. The advertised host is
+   * preferred when set, as that is the name the node is reachable by and, with SSL, the name its
+   * certificate is issued for. Otherwise the bind host is used if it is a specific non-loopback
+   * address. Wildcard and loopback binds are reachable as {@code localhost}. IPv6 literals are
+   * bracketed for use in URLs.
    */
-  static String localConnectHost(Optional<String> bindHost) {
-    String host = bindHost.map(String::trim).orElse("");
+  static String localConnectHost(Optional<String> advertiseHost, Optional<String> bindHost) {
+    String host =
+        advertiseHost
+            .map(String::trim)
+            .filter(h -> !h.isEmpty())
+            .orElseGet(() -> bindHost.map(String::trim).orElse(""));
     return switch (host) {
       case "", "0.0.0.0", "::", "[::]", "127.0.0.1", "::1", "[::1]", "localhost" -> "localhost";
       default -> host.contains(":") && !host.startsWith("[") ? "[" + host + "]" : host;
@@ -264,8 +276,8 @@ public class SolrProcessManager {
 
   /**
    * Represents a running Solr process. The {@code host} is the host to use when connecting to the
-   * process from the local machine, i.e. the bind host if bound to a specific address, else {@code
-   * localhost}.
+   * process from the local machine, i.e. the advertised host if set, else the bind host if bound to
+   * a specific address, else {@code localhost}.
    */
   public record SolrProcess(long pid, int port, boolean isHttps, String host) {
 
