@@ -2,6 +2,12 @@
     "angular-chosen.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/angular-chosen-localytics@1.9.2",
+        "manufacturer": {
+            "name": "Localytics",
+            "url": [
+                "https://www.localytics.com/"
+            ]
+        },
         "name": "angular-chosen-localytics",
         "version": "1.9.2",
         "hashes": [
@@ -33,6 +39,12 @@
     "angular-cookies.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/angular-cookies@1.8.0",
+        "manufacturer": {
+            "name": "Google, Inc.",
+            "url": [
+                "https://angularjs.org/"
+            ]
+        },
         "name": "angular-cookies",
         "version": "1.8.0",
         "hashes": [
@@ -70,12 +82,18 @@
                     ]
                 }
             ],
-            "notes": "Apache licence header of 1101 bytes prepended; removing it reproduces the ancestor byte-for-byte."
+            "notes": "MIT licence text, 1101 bytes, prepended; removing it reproduces the ancestor byte-for-byte."
         }
     },
     "angular-resource.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/angular-resource@1.8.0",
+        "manufacturer": {
+            "name": "Google, Inc.",
+            "url": [
+                "https://angularjs.org/"
+            ]
+        },
         "name": "angular-resource",
         "version": "1.8.0",
         "hashes": [
@@ -113,12 +131,18 @@
                     ]
                 }
             ],
-            "notes": "Apache licence header of 1101 bytes prepended; removing it reproduces the ancestor byte-for-byte."
+            "notes": "MIT licence text, 1101 bytes, prepended; removing it reproduces the ancestor byte-for-byte."
         }
     },
     "angular-route.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/angular-route@1.8.0",
+        "manufacturer": {
+            "name": "Google, Inc.",
+            "url": [
+                "https://angularjs.org/"
+            ]
+        },
         "name": "angular-route",
         "version": "1.8.0",
         "hashes": [
@@ -156,12 +180,18 @@
                     ]
                 }
             ],
-            "notes": "Apache licence header of 1101 bytes prepended; removing it reproduces the ancestor byte-for-byte."
+            "notes": "MIT licence text, 1101 bytes, prepended; removing it reproduces the ancestor byte-for-byte."
         }
     },
     "angular-sanitize.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/angular-sanitize@1.8.0",
+        "manufacturer": {
+            "name": "Google, Inc.",
+            "url": [
+                "https://angularjs.org/"
+            ]
+        },
         "name": "angular-sanitize",
         "version": "1.8.0",
         "hashes": [
@@ -199,12 +229,26 @@
                     ]
                 }
             ],
-            "notes": "Apache licence header of 1101 bytes prepended; removing it reproduces the ancestor byte-for-byte."
+            "notes": "MIT licence text, 1101 bytes, prepended; removing it reproduces the ancestor byte-for-byte."
         }
     },
     "angular-utf8-base64.min.js": {
         "type": "library",
         "bom-ref": "pkg:github/stranger82/angular-utf8-base64@v0.0.5",
+        "manufacturer": {
+            "name": "Andrey Bezyazychniy",
+            "url": [
+                "https://github.com/stranger82/angular-utf8-base64"
+            ]
+        },
+        "authors": [
+            {
+                "name": "Andrey Bezyazychniy"
+            },
+            {
+                "name": "Vassilis Petroulias"
+            }
+        ],
         "name": "angular-utf8-base64",
         "version": "0.0.5",
         "hashes": [
@@ -215,9 +259,7 @@
         ],
         "licenses": [
             {
-                "license": {
-                    "id": "MIT"
-                }
+                "expression": "MIT AND Apache-2.0"
             }
         ],
         "purl": "pkg:github/stranger82/angular-utf8-base64@v0.0.5",
@@ -242,12 +284,18 @@
                     ]
                 }
             ],
-            "notes": "Apache licence header of 1786 bytes prepended; removing it reproduces the ancestor byte-for-byte."
+            "notes": "Licence texts of 1786 bytes prepended: the MIT terms, and the Apache-2.0 notice covering the base64.js library that this package encapsulates. Removing them reproduces the ancestor byte-for-byte."
         }
     },
     "angular.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/angular@1.8.0",
+        "manufacturer": {
+            "name": "Google, Inc.",
+            "url": [
+                "https://angularjs.org/"
+            ]
+        },
         "name": "angular",
         "version": "1.8.0",
         "hashes": [
@@ -285,12 +333,23 @@
                     ]
                 }
             ],
-            "notes": "Apache licence header of 1101 bytes prepended; removing it reproduces the ancestor byte-for-byte."
+            "notes": "MIT licence text, 1101 bytes, prepended; removing it reproduces the ancestor byte-for-byte."
         }
     },
     "chosen.jquery.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/chosen-js@1.8.7",
+        "manufacturer": {
+            "name": "Harvest",
+            "url": [
+                "https://www.getharvest.com/"
+            ]
+        },
+        "authors": [
+            {
+                "name": "Patrick Filler"
+            }
+        ],
         "name": "chosen-js",
         "version": "1.8.7",
         "hashes": [
@@ -328,12 +387,23 @@
                     ]
                 }
             ],
-            "notes": "Apache licence header of 1165 bytes prepended and a trailing newline; removing it reproduces the ancestor byte-for-byte."
+            "notes": "MIT licence text, 1165 bytes, prepended, and a trailing newline appended; removing them reproduces the ancestor byte-for-byte."
         }
     },
     "d3.js": {
         "type": "library",
         "bom-ref": "pkg:npm/d3@2.8.1",
+        "manufacturer": {
+            "name": "Michael Bostock",
+            "url": [
+                "https://github.com/d3/d3"
+            ]
+        },
+        "authors": [
+            {
+                "name": "Michael Bostock"
+            }
+        ],
         "name": "d3",
         "version": "2.8.1",
         "hashes": [
@@ -371,13 +441,25 @@
                     ]
                 }
             ],
-            "notes": "Apache licence header of 1433 bytes prepended; removing it reproduces the ancestor (member d3.v2.js of the tarball) byte-for-byte."
+            "notes": "BSD-3-Clause licence text, 1433 bytes, prepended; removing it reproduces the ancestor (member d3.v2.js of the tarball) byte-for-byte."
         }
     },
     "highlight.js": {
         "type": "library",
         "bom-ref": "pkg:npm/highlight.js",
+        "manufacturer": {
+            "name": "Ivan Sagalaev",
+            "url": [
+                "https://github.com/highlightjs/highlight.js"
+            ]
+        },
+        "authors": [
+            {
+                "name": "Ivan Sagalaev"
+            }
+        ],
         "name": "highlight.js",
+        "version": "unknown",
         "hashes": [
             {
                 "alg": "SHA-256",
@@ -400,12 +482,18 @@
                     "purl": "pkg:npm/highlight.js"
                 }
             ],
-            "notes": "Custom subset build vendored in 2012 whose version could not be determined: the file carries no version marker and its 'var hljs=new function()' API predates 8.0. Treat every highlight.js advisory as potentially applying."
+            "notes": "Custom subset build vendored in 2012 whose version is unknown to the SBOM author: the file carries no version marker and its 'var hljs=new function()' API predates 8.0. The version is recorded as \"unknown\" rather than omitted. Treat every highlight.js advisory as potentially applying."
         }
     },
     "jquery-3.5.1.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/jquery@3.5.1",
+        "manufacturer": {
+            "name": "jQuery Foundation",
+            "url": [
+                "https://jquery.com/"
+            ]
+        },
         "name": "jquery",
         "version": "3.5.1",
         "hashes": [
@@ -443,12 +531,18 @@
                     ]
                 }
             ],
-            "notes": "Apache licence header of 1108 bytes prepended; removing it reproduces the ancestor byte-for-byte."
+            "notes": "MIT licence text, 1108 bytes, prepended; removing it reproduces the ancestor byte-for-byte."
         }
     },
     "jquery-ui.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/jquery-ui@1.12.1",
+        "manufacturer": {
+            "name": "jQuery Foundation",
+            "url": [
+                "https://jquery.com/"
+            ]
+        },
         "name": "jquery-ui",
         "version": "1.12.1",
         "hashes": [
@@ -480,6 +574,17 @@
     "jssha-3.3.1-sha256.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/jssha@3.3.1",
+        "manufacturer": {
+            "name": "Brian Turek",
+            "url": [
+                "https://github.com/Caligatio/jsSHA"
+            ]
+        },
+        "authors": [
+            {
+                "name": "Brian Turek"
+            }
+        ],
         "name": "jssha",
         "version": "3.3.1",
         "hashes": [
@@ -511,6 +616,17 @@
     "jstree.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/jstree@3.3.10",
+        "manufacturer": {
+            "name": "Ivan Bozhanov",
+            "url": [
+                "https://github.com/vakata/jstree"
+            ]
+        },
+        "authors": [
+            {
+                "name": "Ivan Bozhanov"
+            }
+        ],
         "name": "jstree",
         "version": "3.3.10",
         "hashes": [
@@ -548,12 +664,23 @@
                     ]
                 }
             ],
-            "notes": "Apache licence header of 1054 bytes prepended and a trailing newline; removing it reproduces the ancestor byte-for-byte."
+            "notes": "MIT licence text, 1054 bytes, prepended, and a trailing newline appended; removing them reproduces the ancestor byte-for-byte."
         }
     },
     "ngtimeago.js": {
         "type": "library",
         "bom-ref": "pkg:github/uttesh/ngtimeago@0b1e72785a6e0e6edd9389d875db6279b0ea36ba",
+        "manufacturer": {
+            "name": "Uttesh Kumar",
+            "url": [
+                "https://github.com/uttesh/ngtimeago"
+            ]
+        },
+        "authors": [
+            {
+                "name": "Uttesh Kumar"
+            }
+        ],
         "name": "ngtimeago",
         "version": "0b1e72785a6e0e6edd9389d875db6279b0ea36ba",
         "hashes": [
@@ -609,12 +736,18 @@
                     "message": "SOLR-13343: Fix minor web UI spacing issue"
                 }
             ],
-            "notes": "Apache licence header of 1062 bytes prepended, and the body carries the Solr patches listed in commits. The base commit is untagged and later than the 0.0.2 tag. Not the npm package ng-timeago, which is the unrelated joyingsoft/ng-timeago project."
+            "notes": "MIT licence text, 1062 bytes, prepended, and the body carries the Solr patches listed in commits. The base commit is untagged and later than the 0.0.2 tag. Not the npm package ng-timeago, which is the unrelated joyingsoft/ng-timeago project."
         }
     },
     "ui-grid.min.js": {
         "type": "library",
         "bom-ref": "pkg:npm/angular-ui-grid@4.10.0",
+        "manufacturer": {
+            "name": "AngularUI Team",
+            "url": [
+                "https://github.com/angular-ui/ui-grid"
+            ]
+        },
         "name": "angular-ui-grid",
         "version": "4.10.0",
         "hashes": [
