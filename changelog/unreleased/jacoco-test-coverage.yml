@@ -7,3 +7,6 @@ title: >
 type: other
 authors:
   - name: Jan Høydahl
+links:
+  - name: SOLR-18338
+    url: https://issues.apache.org/jira/browse/SOLR-18338
