@@ -21,11 +21,9 @@ import static org.apache.solr.SolrTestCaseJ4.sdoc;
 import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.JsonTextWriter;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -72,7 +70,7 @@ public class QueryResponseJsonParserIntegrationTest extends SolrTestCase {
   @Test
   public void testTypedQueryResponseOverJsonJdk() throws Exception {
     try (SolrClient client =
-        new org.apache.solr.client.solrj.impl.HttpJdkSolrClient.Builder(solrTestRule.getBaseUrl())
+        new HttpJdkSolrClient.Builder(solrTestRule.getBaseUrl())
             .withResponseParser(new JsonMapResponseParser())
             .build()) {
       assertTypedResponse(client);
@@ -94,30 +92,5 @@ public class QueryResponseJsonParserIntegrationTest extends SolrTestCase {
     FacetField cat = rsp.getFacetField("cat");
     assertNotNull("facet field cat", cat);
     assertEquals(2, cat.getValueCount());
-  }
-
-  /**
-   * The parser only supplies defaults. A caller that sets the param explicitly keeps it — even to a
-   * value the parser cannot recover, which is the caller's business.
-   */
-  @Test
-  public void testCallerParamWins() throws Exception {
-    try (SolrClient client =
-        solrTestRule
-            .newSolrClientBuilder()
-            .withResponseParser(new JsonMapResponseParser())
-            .build()) {
-      SolrQuery q = new SolrQuery("*:*");
-      q.setParam(CommonParams.HEADER_ECHO_PARAMS, "all");
-      q.setParam(JsonTextWriter.JSON_NL_STYLE, JsonTextWriter.JSON_NL_FLAT);
-
-      QueryResponse rsp = client.query("collection1", q);
-
-      NamedList<?> params = (NamedList<?>) rsp.getResponseHeader().get("params");
-      assertEquals(
-          "an explicit json.nl must not be overwritten",
-          JsonTextWriter.JSON_NL_FLAT,
-          params.get(JsonTextWriter.JSON_NL_STYLE));
-    }
   }
 }

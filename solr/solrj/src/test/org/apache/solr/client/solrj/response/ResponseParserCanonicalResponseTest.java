@@ -24,8 +24,6 @@ import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
@@ -79,25 +77,5 @@ public class ResponseParserCanonicalResponseTest extends SolrTestCase {
         new XMLResponseParser()
             .processCanonicalResponse(new ByteArrayInputStream(xml.getBytes(UTF_8)), null);
     assertTrue("header must be a NamedList", out.get("responseHeader") instanceof NamedList);
-  }
-
-  /**
-   * A parser that needs the response written a particular way supplies that param itself, rather
-   * than relying on every caller to know it. The JSON map parser needs {@code json.nl=map}: under
-   * the default {@code flat} a NamedList arrives as an array of alternating names and values, whose
-   * structure cannot be recovered.
-   */
-  @Test
-  public void testJsonMapParserRequestsNlMap() {
-    SolrParams params = new JsonMapResponseParser().getRequestParams();
-    assertNotNull("the JSON map parser must ask for a recoverable NamedList form", params);
-    assertEquals(JsonTextWriter.JSON_NL_MAP, params.get(JsonTextWriter.JSON_NL_STYLE));
-  }
-
-  /** Parsers that need nothing beyond wt contribute no params. */
-  @Test
-  public void testCanonicalParsersRequestNoParams() {
-    assertNull(new JavaBinResponseParser().getRequestParams());
-    assertNull(new XMLResponseParser().getRequestParams());
   }
 }

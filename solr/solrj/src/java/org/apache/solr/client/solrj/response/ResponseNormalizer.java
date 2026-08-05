@@ -34,6 +34,11 @@ import org.apache.solr.common.util.SimpleOrderedMap;
  * in canonical form (so binary/XML responses pass through unchanged). It does not attempt to
  * interpret the ambiguous flat arrays produced by {@code json.nl=flat}; a typed JSON parser should
  * request {@code json.nl=map} for its own reads.
+ *
+ * <p>Public only so that a {@link ResponseParser} in another package can reach it from {@link
+ * ResponseParser#processCanonicalResponse}; it is not intended for callers.
+ *
+ * @lucene.internal
  */
 public final class ResponseNormalizer {
 
@@ -74,9 +79,10 @@ public final class ResponseNormalizer {
       if (isDocList(m)) {
         return toDocList(m);
       }
-      // A JSON object arrives as a Map with unique keys by construction, so SimpleOrderedMap is the
-      // right target: it is what the binary parser produces, and some response extractors cast to
-      // it.
+      if (isNestedDoc(m)) {
+        return toDoc(m);
+      }
+      // A JSON object has unique keys by construction, so it maps onto SimpleOrderedMap.
       SimpleOrderedMap<Object> out = new SimpleOrderedMap<>(m.size());
       for (Map.Entry<String, Object> e : m.entrySet()) {
         out.add(e.getKey(), normalizeValue(e.getValue()));
@@ -94,6 +100,10 @@ public final class ResponseNormalizer {
 
   private static boolean isDocList(Map<String, Object> m) {
     return m.get("numFound") instanceof Number && m.get("docs") instanceof List;
+  }
+
+  private static boolean isNestedDoc(Map<String, Object> m) {
+    return m.containsKey("_nest_path_") || m.containsKey("_nest_parent_");
   }
 
   @SuppressWarnings("unchecked")
@@ -128,8 +138,7 @@ public final class ResponseNormalizer {
           }
           continue;
         }
-        // setField (not addField): addField unwraps a Collection value into a plain list, which
-        // would drop the type of a reconstructed SolrDocumentList held as a field value.
+        // The value may be a reconstructed SolrDocumentList, which addField would unwrap.
         doc.setField(f.getKey(), normalizeValue(f.getValue()));
       }
     }

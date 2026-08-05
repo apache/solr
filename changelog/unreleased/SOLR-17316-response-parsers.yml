@@ -3,9 +3,7 @@
 title: >
   SolrJ's QueryResponse and other response objects now work when the client is configured with a
   non-binary response parser (such as the JSON parser); previously their accessors could throw a
-  ClassCastException, and nested documents were unreachable. A ResponseParser can now declare the
-  request params it needs via getRequestParams(); JsonMapResponseParser uses this to ask for
-  json.nl=map, so callers no longer have to set it themselves.
+  ClassCastException.
 type: fixed
 authors:
   - name: Serhiy Bzhezytskyy

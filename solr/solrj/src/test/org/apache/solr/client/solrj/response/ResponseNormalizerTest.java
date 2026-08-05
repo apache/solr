@@ -75,6 +75,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     response.put("numFound", 5L);
     response.put("start", 0L);
     response.put("maxScore", 1.5);
+    response.put("numFoundExact", false);
     response.put("docs", new ArrayList<>(List.of(doc1)));
     NamedList<Object> in = new NamedList<>();
     in.add("response", response);
@@ -86,6 +87,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     assertEquals(5L, docs.getNumFound());
     assertEquals(0L, docs.getStart());
     assertEquals(Float.valueOf(1.5f), docs.getMaxScore());
+    assertFalse("numFoundExact must survive the conversion", docs.getNumFoundExact());
     assertEquals(1, docs.size());
     assertEquals("1", docs.get(0).getFirstValue("id"));
   }
@@ -127,6 +129,88 @@ public class ResponseNormalizerTest extends SolrTestCase {
     Object nested = parentDoc.getFieldValue("nested");
     assertTrue("nested docList field reconstructed", nested instanceof SolrDocumentList);
     assertEquals("child-1", ((SolrDocumentList) nested).get(0).getFirstValue("id"));
+  }
+
+  /**
+   * A nested-document schema stamps every child with {@code _nest_path_}, and {@code [child]}
+   * returns it under {@code fl=*}, so a named child says what it is. The shapes here are the ones a
+   * live response carries: a single child under its own field name, an array of children under
+   * theirs, and a grandchild inside the single child. The binary and XML parsers hand all three
+   * back as documents ({@code <doc name="lonely">} in XML), so this one must too.
+   */
+  @Test
+  public void testNamedNestedDocumentsAreReconstructed() {
+    Map<String, Object> grandChild = new LinkedHashMap<>();
+    grandChild.put("id", "3");
+    grandChild.put("test2_s", "secondTest");
+    grandChild.put("_nest_path_", "/lonely#/lonelyGrandChild#");
+
+    Map<String, Object> lonely = new LinkedHashMap<>();
+    lonely.put("id", "2");
+    lonely.put("test_s", "testing");
+    lonely.put("_nest_path_", "/lonely#");
+    lonely.put("lonelyGrandChild", grandChild);
+
+    Map<String, Object> topping = new LinkedHashMap<>();
+    topping.put("id", "4");
+    topping.put("type_s", "Regular");
+    topping.put("_nest_path_", "/toppings#0");
+
+    Map<String, Object> parent = new LinkedHashMap<>();
+    parent.put("id", "1");
+    parent.put("lonely", lonely);
+    parent.put("toppings", new ArrayList<>(List.of(topping)));
+
+    Map<String, Object> response = new LinkedHashMap<>();
+    response.put("numFound", 1L);
+    response.put("docs", new ArrayList<>(List.of(parent)));
+    NamedList<Object> in = new NamedList<>();
+    in.add("response", response);
+
+    SolrDocument parentDoc =
+        ((SolrDocumentList) ResponseNormalizer.normalize(in).get("response")).get(0);
+
+    Object single = parentDoc.getFieldValue("lonely");
+    assertTrue("a named child must be a SolrDocument, not a map", single instanceof SolrDocument);
+    assertEquals("testing", ((SolrDocument) single).getFirstValue("test_s"));
+
+    Object nestedGrandChild = ((SolrDocument) single).getFieldValue("lonelyGrandChild");
+    assertTrue("a grandchild must be reconstructed too", nestedGrandChild instanceof SolrDocument);
+
+    Object array = parentDoc.getFieldValue("toppings");
+    assertTrue("a named child array stays a List", array instanceof List);
+    assertTrue(
+        "its elements must be SolrDocuments", ((List<?>) array).get(0) instanceof SolrDocument);
+
+    // Named children are field values, not child documents -- the same as binary and XML, where
+    // ChildDocTransformer calls setField for a named path and addChildDocuments only for anonymous.
+    assertFalse(
+        "a named child is a field value, so the parent has no child documents",
+        parentDoc.hasChildDocuments());
+  }
+
+  /** An unmarked object stays a map: most map-valued fields in a response are not documents. */
+  @Test
+  public void testUnmarkedObjectIsNotPromotedToDocument() {
+    Map<String, Object> notADoc = new LinkedHashMap<>();
+    notADoc.put("id", "2");
+    notADoc.put("test_s", "testing");
+
+    Map<String, Object> parent = new LinkedHashMap<>();
+    parent.put("id", "1");
+    parent.put("someStruct", notADoc);
+
+    Map<String, Object> response = new LinkedHashMap<>();
+    response.put("numFound", 1L);
+    response.put("docs", new ArrayList<>(List.of(parent)));
+    NamedList<Object> in = new NamedList<>();
+    in.add("response", response);
+
+    SolrDocument parentDoc =
+        ((SolrDocumentList) ResponseNormalizer.normalize(in).get("response")).get(0);
+    assertTrue(
+        "an object with no nest marker must stay a NamedList",
+        parentDoc.getFieldValue("someStruct") instanceof NamedList);
   }
 
   @Test

@@ -16,9 +16,11 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Test;
@@ -88,15 +90,14 @@ public class AdminResponseNumericTypeTest extends SolrTestCase {
   public void testSchemaVersion() {
     Map schema = new LinkedHashMap();
     schema.put("version", 1.6d); // JSON yields Double
-    schema.put("fields", new java.util.ArrayList<>());
-    schema.put("dynamicFields", new java.util.ArrayList<>());
-    schema.put("fieldTypes", new java.util.ArrayList<>());
-    schema.put("copyFields", new java.util.ArrayList<>());
+    schema.put("fields", new ArrayList<>());
+    schema.put("dynamicFields", new ArrayList<>());
+    schema.put("fieldTypes", new ArrayList<>());
+    schema.put("copyFields", new ArrayList<>());
     NamedList<Object> body = new SimpleOrderedMap<>();
     body.add("schema", schema);
 
-    org.apache.solr.client.solrj.response.schema.SchemaResponse r =
-        new org.apache.solr.client.solrj.response.schema.SchemaResponse();
+    SchemaResponse r = new SchemaResponse();
     r.setResponse(body);
     Float version = r.getSchemaRepresentation().getVersion();
     assertEquals(1.6f, version.floatValue(), 0.0001f);

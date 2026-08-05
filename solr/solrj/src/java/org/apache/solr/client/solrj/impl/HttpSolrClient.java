@@ -27,7 +27,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -137,20 +136,11 @@ public abstract class HttpSolrClient extends SolrClient {
 
   protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    // The parser 'wt=' param is used instead of the original params
-    ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
-    wparams.set(CommonParams.WT, parserToUse.getWriterType());
-    // Params the parser needs for its own reads, without overriding what the request already set.
-    SolrParams parserParams = parserToUse.getRequestParams();
-    if (parserParams != null) {
-      for (Iterator<String> it = parserParams.getParameterNamesIterator(); it.hasNext(); ) {
-        String name = it.next();
-        if (wparams.get(name) == null) {
-          wparams.set(name, parserParams.getParams(name));
-        }
-      }
-    }
-    return wparams;
+
+    var addParams = SolrParams.of(CommonParams.WT, parserToUse.getWriterType());
+    addParams = SolrParams.wrapDefaults(addParams, parserToUse.getAdditionalRequestParams());
+
+    return new ModifiableSolrParams(SolrParams.wrapDefaults(addParams, solrRequest.getParams()));
   }
 
   protected boolean isMultipart(Collection<ContentStream> streams) {

@@ -52,13 +52,16 @@ public abstract class ResponseParser {
   public abstract String getWriterType(); // for example: wt=XML, JSON, etc
 
   /**
-   * Params this parser needs on the request for its own reads, applied alongside {@code wt}.
+   * Params this parser requires on the request in order to read the response, applied alongside
+   * {@code wt}.
    *
-   * <p>A parser that needs the response written a particular way returns those params here rather
-   * than relying on callers to set them. Anything the caller set explicitly wins, so this only
-   * supplies defaults. Returns null when the parser needs nothing beyond {@code wt}.
+   * <p>These take precedence over the request's own params, as {@code wt} does: a parser that
+   * cannot read the form the caller asked for would fail rather than honour it. The JSON map parser
+   * requires {@code json.nl=map}, since a NamedList written any other way cannot be reconstructed.
+   *
+   * @return the params to apply, or null if the parser needs nothing beyond {@code wt}
    */
-  public SolrParams getRequestParams() {
+  public SolrParams getAdditionalRequestParams() {
     return null;
   }
 

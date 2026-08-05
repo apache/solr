@@ -26,7 +26,6 @@ import java.util.Set;
 import org.apache.solr.client.solrj.response.ResponseNormalizer;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.JsonTextWriter;
@@ -69,7 +68,7 @@ public class JsonMapResponseParser extends ResponseParser {
   }
 
   private static final SolrParams REQUEST_PARAMS =
-      new MapSolrParams(Map.of(JsonTextWriter.JSON_NL_STYLE, JsonTextWriter.JSON_NL_MAP));
+      SolrParams.of(JsonTextWriter.JSON_NL_STYLE, JsonTextWriter.JSON_NL_MAP);
 
   /**
    * Asks for {@code json.nl=map}, so that a {@link NamedList} written by the server arrives as a
@@ -78,7 +77,7 @@ public class JsonMapResponseParser extends ResponseParser {
    * structure cannot be recovered.
    */
   @Override
-  public SolrParams getRequestParams() {
+  public SolrParams getAdditionalRequestParams() {
     return REQUEST_PARAMS;
   }
 
