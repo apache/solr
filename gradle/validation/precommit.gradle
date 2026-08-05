@@ -40,6 +40,7 @@ configure(rootProject) {
             "ecjLint",
             "validateLogCalls",
             "validateSourcePatterns",
+            "validateVendoredLibs",
             "spotlessCheck"
         ]
       }

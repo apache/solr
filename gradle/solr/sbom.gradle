@@ -40,6 +40,10 @@ configure(project(':solr:packaging')) {
     cyclonedxDir = layout.buildDirectory.dir("cyclonedx")
   }
 
+  // Hand-maintained CycloneDX components for the third-party JavaScript checked into
+  // solr/webapp/web/libs, merged in by step 5 of the post-processing below.
+  def vendoredLibsManifest = rootProject.file('solr/webapp/vendored-libs.json')
+
   // For the CycloneDX BOM generation
   configurations {
     bomSlim {
@@ -133,8 +137,8 @@ configure(project(':solr:packaging')) {
   //    The project description and the Apache-2.0 license are also added.
   // 5. Vendored JavaScript libraries:
   //    The AngularJS admin UI ships third-party JavaScript files checked into solr/webapp/web/libs.
-  //    Components for them are added from a curated list (version and license read from the file
-  //    headers); the hash matching of step 8 proves that each file still ships unmodified.
+  //    Their components are maintained by hand in solr/webapp/vendored-libs.json: each identifies
+  //    the upstream package by purl, with any deviation of the shipped bytes under "pedigree".
   // 6. JavaScript client bundle:
   //    The npm packages bundled by browserify into the OpenAPI JS client
   //    (server/solr-webapp/webapp/libs/solr/index.js) are nested as subassemblies of a first-party
@@ -271,41 +275,8 @@ configure(project(':solr:packaging')) {
       def webappDependsOn = json.dependencies.find { it.ref == webappRef }.dependsOn
 
       // 5. Vendored JavaScript libraries
-      // Entries without a version marker in the file get no version and no purl
-      def vendoredJsLibs = [
-          [file: 'angular.min.js', name: 'angular', version: '1.8.0', license: 'MIT'],
-          [file: 'angular-chosen.min.js', name: 'angular-chosen-localytics', version: '1.9.2', license: 'MIT'],
-          [file: 'angular-cookies.min.js', name: 'angular-cookies', version: '1.8.0', license: 'MIT'],
-          [file: 'angular-resource.min.js', name: 'angular-resource', version: '1.8.0', license: 'MIT'],
-          [file: 'angular-route.min.js', name: 'angular-route', version: '1.8.0', license: 'MIT'],
-          [file: 'angular-sanitize.min.js', name: 'angular-sanitize', version: '1.8.0', license: 'MIT'],
-          [file: 'angular-utf8-base64.min.js', name: 'angular-utf8-base64', license: 'MIT'],
-          [file: 'chosen.jquery.min.js', name: 'chosen-js', version: '1.8.7', license: 'MIT'],
-          [file: 'd3.js', name: 'd3', version: '2.8.1', license: 'BSD-3-Clause'],
-          [file: 'highlight.js', name: 'highlight.js', license: 'BSD-3-Clause'],
-          [file: 'jquery-3.5.1.min.js', name: 'jquery', version: '3.5.1', license: 'MIT'],
-          [file: 'jquery-ui.min.js', name: 'jquery-ui', version: '1.12.1', license: 'MIT'],
-          [file: 'jssha-3.3.1-sha256.min.js', name: 'jssha', version: '3.3.1', license: 'BSD-3-Clause'],
-          [file: 'jstree.min.js', name: 'jstree', version: '3.3.10', license: 'MIT'],
-          [file: 'ngtimeago.js', name: 'ngtimeago', license: 'MIT'],
-          [file: 'ui-grid.min.js', name: 'angular-ui-grid', version: '4.10.0', license: 'MIT'],
-      ]
-      def webLibsDir = rootProject.file('solr/webapp/web/libs')
-      vendoredJsLibs.each { lib ->
-          def purl = lib.version != null ? "pkg:npm/${lib.name}@${lib.version}".toString() : null
-          def component = [
-              type: 'library',
-              'bom-ref': purl ?: "vendored-js:${lib.name}".toString(),
-              name: lib.name,
-          ]
-          if (lib.version != null) {
-              component.version = lib.version
-          }
-          component.hashes = [[alg: 'SHA-256', content: sha256Of(new File(webLibsDir, lib.file))]]
-          component.licenses = [[license: [id: lib.license]]]
-          if (purl != null) {
-              component.purl = purl
-          }
+      // Ready-made components; validateVendoredLibs guarantees the hashes match the files.
+      new JsonSlurper().parse(vendoredLibsManifest).each { fileName, component ->
           json.components << component
           json.dependencies << [ref: component.'bom-ref', dependsOn: []]
           webappDependsOn << component.'bom-ref'
@@ -452,7 +423,11 @@ configure(project(':solr:packaging')) {
           .withPropertyName('childSboms')
           .withPathSensitivity(PathSensitivity.NONE)
 
-      // Sources of the statically listed JavaScript components
+      // The vendored JavaScript components and the files they describe
+      dependsOn ':solr:webapp:validateVendoredLibs'
+      inputs.file(vendoredLibsManifest)
+          .withPropertyName('vendoredLibsManifest')
+          .withPathSensitivity(PathSensitivity.NONE)
       inputs.dir(rootProject.file('solr/webapp/web/libs'))
           .withPropertyName('vendoredJsLibs')
           .withPathSensitivity(PathSensitivity.RELATIVE)
@@ -494,7 +469,11 @@ configure(project(':solr:packaging')) {
           .withPropertyName('childSboms')
           .withPathSensitivity(PathSensitivity.NONE)
 
-      // Sources of the statically listed JavaScript components
+      // The vendored JavaScript components and the files they describe
+      dependsOn ':solr:webapp:validateVendoredLibs'
+      inputs.file(vendoredLibsManifest)
+          .withPropertyName('vendoredLibsManifest')
+          .withPathSensitivity(PathSensitivity.NONE)
       inputs.dir(rootProject.file('solr/webapp/web/libs'))
           .withPropertyName('vendoredJsLibs')
           .withPathSensitivity(PathSensitivity.RELATIVE)
