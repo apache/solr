@@ -221,6 +221,7 @@ apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
 apply from: file('gradle/hacks/dummy-outputs.gradle')
 
 apply from: file('gradle/solr/packaging.gradle')
+apply from: file('gradle/solr/sbom.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/node.gradle')
