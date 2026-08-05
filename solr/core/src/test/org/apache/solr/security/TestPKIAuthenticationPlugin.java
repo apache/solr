@@ -36,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.auth.BasicUserPrincipal;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -196,6 +197,23 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     // This will fail in the same way that a missing header would fail
     assertFalse(
         "Should have failed authentication", mock.authenticate(mockReq, response, filterChain));
+
+    verify(response).setHeader(HttpHeaders.WWW_AUTHENTICATE, PKIAuthenticationPlugin.HEADER_V2);
+    verify(response).sendError(ArgumentMatchers.eq(401), anyString());
+
+    assertNull(
+        "Should not have proceeded after authentication failure", wrappedRequestByFilter.get());
+  }
+
+  @Test
+  public void testMalformedV2HeaderSignatureRejected() throws Exception {
+    headerKey = PKIAuthenticationPlugin.HEADER_V2;
+    header.set(new BasicHeader(headerKey, nodeName + " someuser 1234567890 not_base64!!!"));
+
+    HttpServletResponse response = mock(HttpServletResponse.class);
+    assertFalse(
+        "Should have rejected request with a non-base64 signature",
+        mock.authenticate(mockReq, response, filterChain));
 
     verify(response).setHeader(HttpHeaders.WWW_AUTHENTICATE, PKIAuthenticationPlugin.HEADER_V2);
     verify(response).sendError(ArgumentMatchers.eq(401), anyString());
