@@ -45,9 +45,8 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
   private static final Set<String> PROM_SUFFIXES =
       Set.of("_total", "_sum", "_bucket", "_created", "_info");
 
-  // The OTel Prometheus exporter no longer (since 1.57) maps the OTel unit "1" to a "_ratio"
-  // name suffix, which renamed these JVM metrics. Also expose them under the old names so
-  // existing dashboards, alerts and API clients keep working.
+  // The OTel Prometheus exporter (1.57+) no longer maps unit "1" to a "_ratio" name suffix,
+  // renaming these JVM metrics. Keep exposing the old names as deprecated aliases.
   static final Map<String, String> LEGACY_NAME_ALIASES =
       Map.of(
           "jvm_system_cpu_utilization", "jvm_system_cpu_utilization_ratio",

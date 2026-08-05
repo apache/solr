@@ -124,12 +124,11 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
             .map(metric -> metric.getMetadata().getPrometheusName())
             .collect(Collectors.toSet());
 
-    // The JFR-based CPU metrics may be unavailable in exotic environments; skip if so
+    // JFR-based metric; may be unavailable in some environments
     Assume.assumeTrue(
         "Skipping: jvm_system_cpu_utilization not available",
         names.contains("jvm_system_cpu_utilization"));
 
-    // Legacy names from before the OTel exporter dropped the "_ratio" unit suffix
     assertTrue(
         "Should expose legacy alias jvm_system_cpu_utilization_ratio",
         names.contains("jvm_system_cpu_utilization_ratio"));
