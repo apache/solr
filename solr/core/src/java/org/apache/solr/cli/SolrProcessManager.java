@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,6 +42,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,10 +77,13 @@ public class SolrProcessManager {
                     ph ->
                         new SolrProcess(
                             ph.pid(),
-                            parsePortFromProcess(ph).orElseThrow(),
+                            parseSyspropFromProcess(ph, "solr.port.listen")
+                                .map(Integer::parseInt)
+                                .orElseThrow(),
                             isProcessSsl(ph),
                             localConnectHost(
-                                parseAdvertiseHostFromProcess(ph), parseBindHostFromProcess(ph)))));
+                                parseSyspropFromProcess(ph, "solr.host.advertise"),
+                                parseSyspropFromProcess(ph, "solr.host.bind")))));
     portProcessMap =
         pidProcessMap.values().stream().collect(Collectors.toUnmodifiableMap(p -> p.port, p -> p));
     String solrInstallDir = EnvUtils.getProperty(SOLR_INSTALL_DIR);
@@ -147,27 +153,28 @@ public class SolrProcessManager {
     return pidProcessMap.values();
   }
 
-  private Optional<Integer> parsePortFromProcess(ProcessHandle ph) {
-    Optional<String> portStr =
-        arguments(ph).stream()
-            .filter(a -> a.contains("-Dsolr.port.listen="))
-            .map(s -> s.split("=")[1])
-            .findFirst();
-    return portStr.isPresent() ? portStr.map(Integer::parseInt) : Optional.empty();
-  }
-
-  private Optional<String> parseBindHostFromProcess(ProcessHandle ph) {
+  /** Parses the value of the given system property from the process' command line arguments */
+  private static Optional<String> parseSyspropFromProcess(ProcessHandle ph, String sysprop) {
     return arguments(ph).stream()
-        .filter(a -> a.contains("-Dsolr.host.bind=") || a.contains("-Dsolr.jetty.host="))
+        .filter(a -> a.contains("-D" + sysprop + "="))
         .map(s -> s.split("=", 2)[1])
         .findFirst();
   }
 
-  private Optional<String> parseAdvertiseHostFromProcess(ProcessHandle ph) {
-    return arguments(ph).stream()
-        .filter(a -> a.contains("-Dsolr.host.advertise="))
-        .map(s -> s.split("=", 2)[1])
-        .findFirst();
+  /**
+   * Returns the process listening on the given port, if found, waiting up to {@code maxWaitSecs}
+   * for it to appear. A newly started process may not be visible in the process table right away,
+   * so the table is re-scanned once a second until the deadline.
+   */
+  public Optional<SolrProcess> waitForProcessOnPort(int port, int maxWaitSecs)
+      throws InterruptedException {
+    Optional<SolrProcess> proc = processForPort(port);
+    TimeOut timeOut = new TimeOut(maxWaitSecs, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (proc.isEmpty() && !timeOut.hasTimedOut()) {
+      timeOut.sleep(1000);
+      proc = new SolrProcessManager().processForPort(port);
+    }
+    return proc;
   }
 
   /**

@@ -62,7 +62,7 @@ public class StatusTool extends ToolBase {
           .hasArg()
           .argName("PORT")
           .type(Integer.class)
-          .desc("Port on localhost to check status for")
+          .desc("Port of a local Solr process to check status for")
           .get();
 
   public static final Option SHORT_OPTION =
@@ -99,7 +99,6 @@ public class StatusTool extends ToolBase {
   }
 
   @Override
-  @SuppressWarnings("BusyWait")
   public void runImpl(CommandLine cli) throws Exception {
     String solrUrl = CLIUtils.hasConnectionOption(cli) ? CLIUtils.normalizeSolrUrl(cli) : null;
     Integer port = cli.hasOption(PORT_OPTION) ? cli.getParsedOptionValue(PORT_OPTION) : null;
@@ -128,14 +127,8 @@ public class StatusTool extends ToolBase {
     }
 
     if (port != null) {
-      Optional<SolrProcess> proc = processMgr.processForPort(port);
-      // A newly started process may not be visible in the process table yet, so when asked to
-      // wait, keep re-scanning until the deadline rather than failing on the first miss
-      long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(maxWaitSecs);
-      while (proc.isEmpty() && System.nanoTime() < deadline) {
-        Thread.sleep(1000L);
-        proc = new SolrProcessManager().processForPort(port);
-      }
+      // When asked to wait, this also waits for a newly started process to become visible
+      Optional<SolrProcess> proc = processMgr.waitForProcessOnPort(port, maxWaitSecs);
       if (proc.isEmpty()) {
         CLIO.err("Could not find a running Solr on port " + port);
         runtime.exit(1);

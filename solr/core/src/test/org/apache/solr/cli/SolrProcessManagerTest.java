@@ -61,6 +61,10 @@ public class SolrProcessManagerTest extends SolrTestCase {
     processBoundHttp = createProcess(findAvailablePort(), false, "10.99.99.99", null);
     processAdvertisedHttps =
         createProcess(findAvailablePort(), true, "10.99.99.99", "myhost.example.com");
+    for (Pair<Integer, Process> p :
+        List.of(processHttp, processHttps, processBoundHttp, processAdvertisedHttps)) {
+      awaitReady(p.getValue());
+    }
     SolrProcessManager.enableTestingMode = true;
     System.setProperty("solr.port.listen", Integer.toString(processHttp.getKey()));
     Path pidDir = createTempDir("solr-pid-dir");
@@ -116,16 +120,16 @@ public class SolrProcessManagerTest extends SolrTestCase {
     command.add(classPath);
     command.add("org.apache.solr.cli.SolrProcessManagerTest$MockSolrProcess");
     command.add(https ? "--module=https" : "--module=http");
-    ProcessBuilder processBuilder = new ProcessBuilder(command);
+    return new Pair<>(port, new ProcessBuilder(command).start());
+  }
 
-    // Start the process and read first line of output
-    Process process = processBuilder.start();
+  /** Waits for the mock process to print its ready line, so the processes can start in parallel */
+  private static void awaitReady(Process process) throws IOException {
     try (InputStream is = process.getInputStream();
         InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
         BufferedReader br = new BufferedReader(isr)) {
       System.out.println(br.readLine());
     }
-    return new Pair<>(port, process);
   }
 
   public void testGetLocalUrl() {
@@ -168,6 +172,11 @@ public class SolrProcessManagerTest extends SolrTestCase {
   private static String localConnectHost(String advertiseHost, String bindHost) {
     return SolrProcessManager.localConnectHost(
         Optional.ofNullable(advertiseHost), Optional.ofNullable(bindHost));
+  }
+
+  public void testWaitForProcessOnPort() throws Exception {
+    assertTrue(solrProcessManager.waitForProcessOnPort(processHttp.getKey(), 0).isPresent());
+    assertTrue(solrProcessManager.waitForProcessOnPort(0, 0).isEmpty());
   }
 
   public void testIsRunningWithPort() {
