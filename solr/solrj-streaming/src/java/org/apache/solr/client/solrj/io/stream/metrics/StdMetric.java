@@ -23,6 +23,10 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
+/**
+ * Metric that computes the sample standard deviation of a numeric column over a stream. Consistent
+ * with the {@code std} streaming evaluator.
+ */
 public class StdMetric extends Metric {
 
   private String columnName;
@@ -99,6 +103,7 @@ public class StdMetric extends Metric {
     return new String[] {columnName};
   }
 
+  /** Returns the sample standard deviation of the values seen so far. */
   @Override
   public Number getValue() {
     double std =
