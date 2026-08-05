@@ -17,7 +17,6 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.OK;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
