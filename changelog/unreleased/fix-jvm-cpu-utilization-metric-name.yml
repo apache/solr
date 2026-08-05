@@ -5,3 +5,6 @@ title: >
 type: changed
 authors:
   - name: Jan Høydahl
+links:
+  - name: PR#4711
+    url: https://github.com/apache/solr/pull/4711
