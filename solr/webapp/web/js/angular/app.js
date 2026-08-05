@@ -522,7 +522,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         $scope.cores = [];
         var currentCoreName = $route.current.params.core;
         delete $scope.currentCore;
-        for (key in data.status) {
+        for (var key in data.status) {
           var core = data.status[key];
           if (core.name.startsWith("._designer_")) {
             continue;
@@ -542,7 +542,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         if (error) { ApiErrorHandler.handle(response); return; }
         $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
         $scope.usersPermissions = data.security.permissions;
-        $scope.isSecurityEnabled = $scope.authenticationPlugin != null;
+        $scope.isSecurityEnabled = data.security.authenticationPlugin != null;
 
         $scope.isSchemaDesignerEnabled = $scope.isPermitted([
           permissions.CONFIG_EDIT_PERM,
@@ -562,7 +562,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
                   if (error) { ApiErrorHandler.handle(response); return; }
                   $scope.aliases = [];
                   for (var key in adata.aliases) {
-                    props = {};
+                    var props = {};
                     if (key in adata.properties) {
                       props = adata.properties[key];
                     }
@@ -573,7 +573,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
                     }
                   }
                   $scope.collections = [];
-                  for (key in cdata.collections) {
+                  for (var key in cdata.collections) {
                     if (cdata.collections[key].startsWith("._designer_")) {
                       continue; // ignore temp designer collections
                     }

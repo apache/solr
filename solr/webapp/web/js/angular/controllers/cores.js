@@ -25,12 +25,13 @@ solrAdminApp.controller('CoreAdminController',
             if (error) { ApiErrorHandler.handle(response); return; }
             var coreCount = 0;
             var cores = data.status;
-            for (_obj in cores) coreCount++;
+            for (var _obj in cores) coreCount++;
             $scope.hasCores = coreCount >0;
             if (!$scope.selectedCore && coreCount==0) {
               $scope.showAddCore();
               return;
             } else if (!$scope.selectedCore) {
+              var firstCore;
               for (firstCore in cores) break;
               $scope.selectedCore = firstCore;
               $location.path("/~cores/" + $scope.selectedCore).replace();
@@ -68,7 +69,7 @@ solrAdminApp.controller('CoreAdminController',
         if (!$scope.newCore.name) {
           $scope.addMessage = "Please provide a core name";
         } else if (false) { //@todo detect whether core exists
-          $scope.AddMessage = "A core with that name already exists";
+          $scope.addMessage = "A core with that name already exists";
         } else {
           var createCoreParams = {
             name: $scope.newCore.name,
@@ -84,6 +85,7 @@ solrAdminApp.controller('CoreAdminController',
           CoresV2.createCore({createCoreParams: createCoreParams}, function(error, data, response) {
             $timeout(function() {
               if (error) {
+                ApiErrorHandler.handle(response);
                 $scope.addMessage = "Error creating core: " + error;
                 return;
               }
@@ -124,6 +126,7 @@ solrAdminApp.controller('CoreAdminController',
           CoresV2.renameCore($scope.selectedCore, {renameCoreRequestBody: {to: $scope.other}}, function(error, data, response) {
             $timeout(function() {
               if (error) {
+                ApiErrorHandler.handle(response);
                 $scope.renameMessage = "Error renaming core: " + error;
                 return;
               }
@@ -154,6 +157,7 @@ solrAdminApp.controller('CoreAdminController',
           CoresV2.swapCores($scope.selectedCore, {swapCoresRequestBody: {with: $scope.swapOther}}, function(error, data, response) {
             $timeout(function() {
               if (error) {
+                ApiErrorHandler.handle(response);
                 $scope.swapMessage = "Error swapping cores: " + error;
                 return;
               }

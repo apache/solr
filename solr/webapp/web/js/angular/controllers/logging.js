@@ -132,7 +132,7 @@ solrAdminApp.controller('LoggingController',
           $scope.logging = makeTree(data.loggers, "");
           $scope.watcher = data.watcher;
           $scope.levels = [];
-          for (level in data.levels) {
+          for (var level in data.levels) {
             $scope.levels.push({name:data.levels[level], pos:level});
           }
         });
