@@ -203,7 +203,7 @@ public class DisMaxQParser extends QParser {
       query.add(parsedUserQuery, BooleanClause.Occur.MUST);
 
       Query phrase = getPhraseQuery(userQuery, pp);
-      if (null != phrase) {
+      if (phrase != null) {
         query.add(phrase, BooleanClause.Occur.SHOULD);
       }
     }
@@ -220,6 +220,12 @@ public class DisMaxQParser extends QParser {
     }
   }
 
+  /**
+   * Builds the phrase-boost ("pf") query: the user's terms as a contiguous phrase over the pf
+   * fields, at the pf boosts. Returns {@code null} when the phrase boils down to a single analyzed
+   * term, because a one-term phrase boost is a no-op adjacency constraint that adds nothing over
+   * the term boost already applied by the main query (see {@link #isEffectivelySingleTerm(Query)})
+   */
   protected Query getPhraseQuery(String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser pp)
       throws SyntaxError {
     /* * * Add on Phrases for the Query * * */
@@ -236,10 +242,7 @@ public class DisMaxQParser extends QParser {
     // A single-term phrase boost is a no-op adjacency constraint (effectively a redundant term
     // boost), so skip it. This is decided from the analyzed query, because analyzers such as CJK,
     // ngram, WordDelimiterGraph, and multi-word synonyms can split a single input term into several
-    // tokens that DO warrant a phrase boost. This is the DisMax-native analog of eDisMax's
-    // minClauseSize (which this parser lacks); note that DisMax counts terms after stopword
-    // removal, whereas eDisMax retains stopwords in its pf parse, so the two can differ for
-    // queries padded with stopwords.
+    // tokens that DO warrant a phrase boost
     if (isEffectivelySingleTerm(phrase)) {
       return null;
     }
