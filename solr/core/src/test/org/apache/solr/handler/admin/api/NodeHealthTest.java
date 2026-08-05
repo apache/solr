@@ -54,6 +54,7 @@ public class NodeHealthTest extends SolrTestCase {
   private static final String NODE_NAME = "baseUrl1:8983_";
 
   private CoreContainer mockCoreContainer;
+  private ZkController mockZkController;
   private ZkStateReader mockZkStateReader;
   private SolrZkClient mockZkClient;
   private NodeHealth nodeHealth;
@@ -66,7 +67,7 @@ public class NodeHealthTest extends SolrTestCase {
   @Before
   public void setupMocks() {
     mockCoreContainer = mock(CoreContainer.class);
-    ZkController mockZkController = mock(ZkController.class);
+    mockZkController = mock(ZkController.class);
     mockZkStateReader = mock(ZkStateReader.class);
     mockZkClient = mock(SolrZkClient.class);
 
@@ -170,16 +171,19 @@ public class NodeHealthTest extends SolrTestCase {
    * mocked cluster state at a matching collection.
    */
   private CoreDescriptor mockCoreDescriptor(Replica.State state) {
-    Properties props = new Properties();
-    props.put(CoreDescriptor.CORE_SHARD, "slice1");
-    props.put(CoreDescriptor.CORE_COLLECTION, "collection1");
-    props.put(CoreDescriptor.CORE_NODE_NAME, "slice1_replica1");
-    CloudDescriptor cloudDescriptor = new CloudDescriptor(null, "slice1_replica1", props);
+    CoreDescriptor coreDescriptor =
+        new CoreDescriptor(
+            "slice1_replica1",
+            createTempDir(),
+            Map.of(
+                CoreDescriptor.CORE_SHARD, "slice1",
+                CoreDescriptor.CORE_COLLECTION, "collection1",
+                CoreDescriptor.CORE_NODE_NAME, "slice1_replica1"),
+            new Properties(),
+            mockZkController);
+    CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
     cloudDescriptor.setHasRegistered(true);
     cloudDescriptor.setLastPublished(state);
-
-    CoreDescriptor coreDescriptor = mock(CoreDescriptor.class);
-    when(coreDescriptor.getCloudDescriptor()).thenReturn(cloudDescriptor);
 
     // collection1 with slice1 holding one active replica, on our (live) node
     try (ZkStateReader stateReader = ClusterStateMockUtil.buildClusterState("csr", NODE_NAME)) {
