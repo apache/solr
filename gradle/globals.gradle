@@ -16,7 +16,6 @@
  */
 
 import javax.inject.Inject
-import org.gradle.process.ExecOperations
 
 interface ExecOperationsHolder {
   @Inject
@@ -28,18 +27,8 @@ allprojects {
 
   group "org.apache"
 
-  // def lucenePrereleaseBuild = '9'
-
   // Repositories to fetch dependencies from.
-  repositories {
-    mavenCentral()
-    /* Reenable this if we need it again in future
-    maven {
-      name "LucenePrerelease${lucenePrereleaseBuild}"
-      url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
-    }
-    */
-  }
+  apply from: rootProject.file('build-tools/build-infra/declare-repositories.gradle'), to: delegate
 
   // Artifacts will have names after full gradle project path
   // so :solr:core will have solr-core.jar, etc.

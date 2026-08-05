@@ -29,8 +29,9 @@ repositories {
             includeGroupAndSubgroups("com.google")
         }
     }
-    mavenCentral()
 }
+// mavenCentral / enterprise mirror, shared with the rest of the build.
+apply(from = rootProject.file("build-tools/build-infra/declare-repositories.gradle"))
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
