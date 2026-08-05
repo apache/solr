@@ -1,7 +1,10 @@
 title: >
   Fixed replica placement attribute fetching (sysLoadAvg) and the CPU circuit breaker,
   which stopped working after the OpenTelemetry update renamed the Prometheus metric
-  `jvm_system_cpu_utilization_ratio` to `jvm_system_cpu_utilization`.
+  `jvm_system_cpu_utilization_ratio` to `jvm_system_cpu_utilization` (and
+  `jvm_cpu_recent_utilization_ratio` to `jvm_cpu_recent_utilization`). The old
+  `_ratio` names are still exposed as deprecated aliases so existing dashboards
+  and alerts keep working.
 type: fixed
 authors:
   - name: Jan Høydahl

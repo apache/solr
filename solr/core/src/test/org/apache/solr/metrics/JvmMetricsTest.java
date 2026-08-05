@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCaseJ4;
@@ -108,6 +109,42 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
     assertTrue(
         "Should have JVM buffer metrics",
         metricNames.stream().anyMatch(name -> name.startsWith("jvm_buffer")));
+  }
+
+  @Test
+  public void testLegacyCpuUtilizationAliases() {
+    var reader =
+        solrTestRule
+            .getJetty()
+            .getCoreContainer()
+            .getMetricManager()
+            .getPrometheusMetricReader("solr.jvm");
+    Set<String> names =
+        reader.collect().stream()
+            .map(metric -> metric.getMetadata().getPrometheusName())
+            .collect(Collectors.toSet());
+
+    // The JFR-based CPU metrics may be unavailable in exotic environments; skip if so
+    Assume.assumeTrue(
+        "Skipping: jvm_system_cpu_utilization not available",
+        names.contains("jvm_system_cpu_utilization"));
+
+    // Legacy names from before the OTel exporter dropped the "_ratio" unit suffix
+    assertTrue(
+        "Should expose legacy alias jvm_system_cpu_utilization_ratio",
+        names.contains("jvm_system_cpu_utilization_ratio"));
+    assertTrue(
+        "Should expose legacy alias jvm_cpu_recent_utilization_ratio",
+        names.contains("jvm_cpu_recent_utilization_ratio"));
+
+    // The legacy name also works with the name filter used by /admin/metrics
+    MetricSnapshots filtered =
+        reader.collect(Set.of("jvm_system_cpu_utilization_ratio"), new TreeMap<>());
+    assertEquals(
+        Set.of("jvm_system_cpu_utilization_ratio"),
+        filtered.stream()
+            .map(metric -> metric.getMetadata().getPrometheusName())
+            .collect(Collectors.toSet()));
   }
 
   @Test
