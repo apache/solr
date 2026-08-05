@@ -30,7 +30,7 @@ import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -109,7 +109,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
 
     // we only set the connect timeout, not so timeout
     try (SolrClient baseClient =
-        new HttpSolrClient.Builder(baseUrl)
+        new HttpJettySolrClient.Builder(baseUrl)
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .build()) {
       baseClient.request(request);

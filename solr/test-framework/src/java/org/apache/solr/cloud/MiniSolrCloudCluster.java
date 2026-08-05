@@ -54,8 +54,10 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -664,12 +666,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
     return solrClientByCollection.computeIfAbsent(
         collectionName,
         k -> {
-          CloudSolrClient solrClient =
-              new CloudLegacySolrClient.Builder(List.of(zkServer.getZkAddress()), Optional.empty())
-                  .withDefaultCollection(collectionName)
-                  .withSocketTimeout(90000)
-                  .withConnectionTimeout(15000)
-                  .build();
+          CloudSolrClient solrClient = newSolrClient(collectionName);
 
           solrClient.connect();
           if (log.isInfoEnabled()) {
@@ -685,11 +682,13 @@ public class MiniSolrCloudCluster implements SolrBackend {
 
   @Override // SolrBackend
   public CloudSolrClient newSolrClient(String collection) {
-    return new CloudLegacySolrClient.Builder(
-            List.of(getZkServer().getZkAddress()), Optional.empty())
-        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
-        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+    return new CloudJettySolrClient.Builder(
+            new ZkClientClusterStateProvider(getZkServer().getZkAddress()))
         .withDefaultCollection(collection)
+        .withHttpClientBuilder(
+            new HttpJettySolrClient.Builder()
+                .withConnectionTimeout(15, TimeUnit.SECONDS)
+                .withIdleTimeout(90, TimeUnit.SECONDS))
         .build(); // we choose 90 because we run in some harsh envs
   }
 

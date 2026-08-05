@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.languagemodels.store.rest.LargeLanguageModelStore;
 import org.apache.solr.languagemodels.store.rest.TextToVectorModelStore;
 import org.apache.solr.util.RestTestBase;
 import org.slf4j.Logger;
@@ -40,10 +41,13 @@ public class TestLanguageModelBase extends RestTestBase {
 
   public static final String TEXT_TO_VECTOR_MODEL_FILE_NAME =
       "_schema_text-to-vector-model-store.json";
+  public static final String LARGE_LANGUAGE_MODEL_FILE_NAME =
+      "_schema_large-language-model-store.json";
   protected static final String COLLECTION = "collection1";
   protected static final String CONF_DIR = COLLECTION + "/conf";
 
   protected static Path textToVectorModelStoreFile = null;
+  protected static Path largeLanguageModelStoreFile = null;
 
   protected static String IDField = "id";
   protected static String vectorField = "vector";
@@ -62,10 +66,12 @@ public class TestLanguageModelBase extends RestTestBase {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
+    final Path largeLanguageModelStore = tmpConfDir.resolve(LARGE_LANGUAGE_MODEL_FILE_NAME);
     final Path textToVectorModelStore = tmpConfDir.resolve(TEXT_TO_VECTOR_MODEL_FILE_NAME);
 
     if (isPersistent) {
       textToVectorModelStoreFile = textToVectorModelStore;
+      largeLanguageModelStoreFile = largeLanguageModelStore;
     }
 
     if (Files.exists(textToVectorModelStore)) {
@@ -73,6 +79,17 @@ public class TestLanguageModelBase extends RestTestBase {
         log.info("remove model store config file in {}", textToVectorModelStore.toAbsolutePath());
       }
       Files.delete(textToVectorModelStore);
+    }
+
+    if (Files.exists(largeLanguageModelStore)) {
+
+      if (log.isInfoEnabled()) {
+        log.info(
+            "remove large language model store config file in {}",
+            largeLanguageModelStore.toAbsolutePath());
+      }
+
+      Files.delete(largeLanguageModelStore);
     }
 
     System.setProperty("managed.schema.mutable", "true");
@@ -102,6 +119,35 @@ public class TestLanguageModelBase extends RestTestBase {
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
+  }
+
+  public static void loadLargeLanguageModel(String fileName, String status) throws Exception {
+    final URL url =
+        TestLanguageModelBase.class.getResource("/largeLanguageModelExamples/" + fileName);
+    final String model = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
+
+    assertJPut(LargeLanguageModelStore.REST_END_POINT, model, "/responseHeader/status==" + status);
+  }
+
+  public static void loadLargeLanguageModel(String fileName, String status, String message)
+      throws Exception {
+    final URL url =
+        TestLanguageModelBase.class.getResource("/largeLanguageModelExamples/" + fileName);
+    final String model = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
+
+    assertJPut(
+        LargeLanguageModelStore.REST_END_POINT,
+        model,
+        "/responseHeader/status==" + status,
+        message);
+  }
+
+  public static void loadLargeLanguageModel(String fileName) throws Exception {
+    final URL url =
+        TestLanguageModelBase.class.getResource("/largeLanguageModelExamples/" + fileName);
+    final String model = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
+
+    assertJPut(LargeLanguageModelStore.REST_END_POINT, model, "/responseHeader/status==0");
   }
 
   protected static void prepareIndex() throws Exception {

@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -1062,7 +1063,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             .sendDirectUpdatesToAnyShardReplica()
             .withDefaultCollection(COL)
             // don't let collection cache entries get expired, even on a slow machine...
-            .withCollectionCacheTtl(Integer.MAX_VALUE)
+            .withCollectionCacheTtl(1, TimeUnit.DAYS)
             .build()) {
 
       // do a query to populate stale_client's cache...

@@ -55,7 +55,8 @@ public class TestGracefulJettyShutdown extends SolrTestCaseJ4 {
 
     final ExecutorService exec = ExecutorUtil.newMDCAwareCachedThreadPool("client-requests");
     final MiniSolrCloudCluster cluster =
-        new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
+        new MiniSolrCloudCluster(
+            1, createTempDir(), JettyConfig.builder().enableGracefulShutdown(true).build());
     try {
       assertTrue(
           CollectionAdminRequest.createCollection(collection, "_default", 1, 1)
@@ -84,8 +85,7 @@ public class TestGracefulJettyShutdown extends SolrTestCaseJ4 {
       final List<Future<QueryResponse>> results = new ArrayList<>(13);
 
       try (SolrClient jettyClient = nodeToStop.newClient()) {
-        final QueryRequest req = new QueryRequest(params("q", "foo_s:aaa"));
-        req.setPath(handler);
+        final QueryRequest req = new QueryRequest(handler, params("q", "foo_s:aaa"));
 
         // check inflight requests using both clients...
         for (SolrClient client : Arrays.asList(cloudClient, jettyClient)) {

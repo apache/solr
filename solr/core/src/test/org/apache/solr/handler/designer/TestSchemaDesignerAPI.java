@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -845,7 +844,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
         idFieldMapUpdated.indexOf("omitTermFreqAndPositions", 0), Boolean.FALSE);
 
     SolrParams solrParams = idFieldMapUpdated.toSolrParams();
-    Map<String, Object> mapParams = solrParams.toMap(new HashMap<>());
+    Map<String, Object> mapParams = new SimpleOrderedMap<>(solrParams);
     mapParams.put("termVectors", Boolean.FALSE);
     reqParams.set(
         SCHEMA_VERSION_PARAM, rsp.getValues().toSolrParams().getInt(SCHEMA_VERSION_PARAM));

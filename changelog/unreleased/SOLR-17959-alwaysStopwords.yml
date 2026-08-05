@@ -1,5 +1,5 @@
 title: Add alwaysStopwords option to edismax so its "all stopwords" behaviour can be controlled
-type: changed
+type: added
 authors:
   - name: Andy Webb
 links:

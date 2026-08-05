@@ -703,7 +703,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   private void printTrackingMaps() {
     if (log.isDebugEnabled()) {
       log.debug("RunningTasks: {}", runningTasks.keySet());
-      log.debug("BlockedTasks: {}", blockedTasks.keySet()); // nowarn
+      log.debug("BlockedTasks: {}", blockedTasks.keySet());
     }
   }
 

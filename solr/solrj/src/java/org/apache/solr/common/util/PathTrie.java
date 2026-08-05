@@ -32,8 +32,6 @@ public class PathTrie<T> {
   private final Set<String> reserved = new HashSet<>();
   Node root = new Node(List.of(), null, null);
 
-  public PathTrie() {}
-
   public PathTrie(Set<String> reserved) {
     this.reserved.addAll(reserved);
   }

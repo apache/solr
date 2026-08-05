@@ -112,6 +112,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   @VisibleForTesting static final String FIELD_TYPE = "queryFieldType";
   @VisibleForTesting static final String CONFIG_FILE = "config-file";
   private static final String EXCLUDE = "exclude";
+  private static final String DEBUG_QUERY_BOOSTING = "queryBoosting";
 
   /**
    * @see #getBoostDocs(SolrIndexSearcher, Set, Map)
@@ -488,6 +489,45 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return;
     }
 
+    if (rb instanceof CombinedQueryResponseBuilder crb) {
+      prepareCombined(crb);
+    } else {
+      prepareElevationComponent(rb);
+    }
+  }
+
+  /**
+   * Elevates each subquery and mirrors the resulting SortSpec/filters onto the parent crb so {@link
+   * CombinedQueryComponent#mergeIds} can read {@code _elevate_} from each shard's {@code
+   * sort_values_i} during distributed merge.
+   */
+  private void prepareCombined(CombinedQueryResponseBuilder crb) throws IOException {
+    if (crb.responseBuilders.isEmpty()) {
+      return;
+    }
+    for (ResponseBuilder thisRb : crb.responseBuilders) {
+      prepareElevationComponent(thisRb);
+    }
+    // Subqueries get identical elevation treatment, so any one is representative.
+    ResponseBuilder representative = crb.responseBuilders.getFirst();
+    crb.setSortSpec(representative.getSortSpec());
+    crb.setFilters(representative.getFilters());
+
+    if (crb.isDebug() && crb.isDebugQuery()) {
+      List<Object> debugPerSubquery = new ArrayList<>(crb.responseBuilders.size());
+      for (ResponseBuilder thisRb : crb.responseBuilders) {
+        Object queryBoosting = thisRb.getDebugInfo().get(DEBUG_QUERY_BOOSTING);
+        if (queryBoosting != null) {
+          debugPerSubquery.add(queryBoosting);
+        }
+      }
+      if (!debugPerSubquery.isEmpty()) {
+        crb.addDebugInfo(DEBUG_QUERY_BOOSTING, debugPerSubquery);
+      }
+    }
+  }
+
+  private void prepareElevationComponent(ResponseBuilder rb) throws IOException {
     Elevation elevation = getElevation(rb);
     if (elevation != null) {
       setQuery(rb, elevation);
@@ -767,7 +807,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<>();
     dbg.add("q", rb.getQueryString());
     dbg.add("match", match);
-    rb.addDebugInfo("queryBoosting", dbg);
+    rb.addDebugInfo(DEBUG_QUERY_BOOSTING, dbg);
   }
 
   // ---------------------------------------------------------------------------------

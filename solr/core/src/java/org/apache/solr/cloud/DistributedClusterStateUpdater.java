@@ -807,14 +807,11 @@ public class DistributedClusterStateUpdater {
         throws KeeperException, InterruptedException {
       if (log.isDebugEnabled()) {
         log.debug(
-            "Executing updates for collection "
-                + collectionName
-                + ", is creation="
-                + isCollectionCreation
-                + ", "
-                + mutations.size()
-                + " recorded mutations.",
-            new Exception("StackTraceOnly")); // nowarn
+            "Executing updates for collection {}, is creation={}, {} recorded mutations.",
+            collectionName,
+            isCollectionCreation,
+            mutations.size(),
+            new Exception("StackTraceOnly"));
       }
       if (mutations.isEmpty()) {
         final String err =
@@ -925,10 +922,7 @@ public class DistributedClusterStateUpdater {
       if (docCollection == null) {
         // This is possible but should be rare. Logging warn in case it is seen often and likely a
         // sign of another issue
-        log.warn(
-            "Processing DOWNNODE, collection "
-                + collectionName
-                + " disappeared during iteration"); // nowarn
+        log.warn("Processing DOWNNODE, collection {} disappeared during iteration", collectionName);
       }
 
       if (result.isPresent()) {
