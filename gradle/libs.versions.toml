@@ -175,16 +175,16 @@ nodejs = "22.18.0"
 onnx = "1.26.0"
 openapi = "7.23.0"
 openjdk-jmh = "1.37"
-opentelemetry = "1.56.0"
-opentelemetry-prometheus = "1.56.0-alpha"
-opentelemetry-runtime-telemetry = "2.22.0-alpha"
+opentelemetry = "1.63.0"
+opentelemetry-prometheus = "1.63.0-alpha"
+opentelemetry-runtime-telemetry = "2.27.0-alpha"
 oshai-logging = "8.0.4"
 # @keep for version alignment
 ow2-asm = "9.10.1"
 owasp-dependencycheck = "12.2.2"
 # @keep for version alignment
 perfmark = "0.27.0"
-prometheus-metrics = "1.1.0"
+prometheus-metrics = "1.8.0"
 quicktheories = "0.26"
 semver4j = "6.0.0"
 slf4j = "2.0.17"
@@ -451,11 +451,14 @@ ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-
 ktor-server-cio = { module = "io.ktor:ktor-server-cio" }
 ktor-server-core = { module = "io.ktor:ktor-server-core" }
 ktor-server-htmlBuilder = { module = "io.ktor:ktor-server-html-builder" }
+langchain4j-anthropic = { module = "dev.langchain4j:langchain4j-anthropic" }
 langchain4j-bom = { module = "dev.langchain4j:langchain4j-bom", version.ref = "langchain4j-bom" }
 langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j-core" }
+langchain4j-google-ai-gemini = { module = "dev.langchain4j:langchain4j-google-ai-gemini" }
 langchain4j-hugging-face = { module = "dev.langchain4j:langchain4j-hugging-face" }
 langchain4j-mistral-ai = { module = "dev.langchain4j:langchain4j-mistral-ai" }
+langchain4j-ollama = { module = "dev.langchain4j:langchain4j-ollama" }
 langchain4j-open-ai = { module = "dev.langchain4j:langchain4j-open-ai" }
 lmax-disruptor = { module = "com.lmax:disruptor", version.ref = "lmax-disruptor" }
 locationtech-spatial4j = { module = "org.locationtech.spatial4j:spatial4j", version.ref = "spatial4j" }

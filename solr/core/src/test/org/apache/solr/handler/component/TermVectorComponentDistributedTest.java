@@ -131,7 +131,7 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
 
     commit();
 
-    final String tv = "tvrh";
+    final String tv = "/tvrh";
 
     for (String q : new String[] {"id:0", "id:7", "id:[3 TO 6]", "*:*"}) {
       query(
