@@ -64,6 +64,7 @@ import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -2076,12 +2077,12 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   }
 
   @Override
-  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
+  protected QueryResponse queryRandomShard(String requestHandler, ModifiableSolrParams params)
       throws SolrServerException, IOException {
 
     if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
 
-    return cloudClient.query(params);
+    return new QueryRequest(requestHandler, params).process(cloudClient);
   }
 
   abstract static class StoppableThread extends Thread {
