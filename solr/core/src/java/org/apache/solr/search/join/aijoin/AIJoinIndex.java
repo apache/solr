@@ -179,10 +179,13 @@ public final class AIJoinIndex implements Closeable {
    * Creates a query joining the docs matching {@code fromQuery} in {@code fromSearcher}'s index to
    * the index the returned query is executed against, through {@code fromField} = {@code toField}
    * term equality. Missing pair columns are built into this join index on first execution.
+   *
+   * @deprecated use another constructor passing executor service
    */
+  @Deprecated
   public Query newJoinQuery(
       String fromField, Query fromQuery, IndexSearcher fromSearcher, String toField) {
-    return new AIJoinQuery(this, fromField, fromQuery, fromSearcher, toField);
+    return newJoinQuery(fromField, fromQuery, fromSearcher, toField, new DirectExecutorService());
   }
 
   public Query newJoinQuery(
@@ -191,7 +194,13 @@ public final class AIJoinIndex implements Closeable {
       IndexSearcher fromSearcher,
       String toField,
       ExecutorService fromExecutor) {
-    return new AIJoinQuery(this, fromField, fromQuery, fromSearcher, toField, fromExecutor);
+    return new AIJoinQuery(
+        this,
+        fromField,
+        fromQuery,
+        fromSearcher,
+        toField,
+        fromExecutor == null ? new DirectExecutorService() : fromExecutor);
   }
 
   IndexSearcher acquire() throws IOException {
