@@ -68,7 +68,7 @@ solrAdminApp.controller('CollectionsController',
                       // TODO: Population of aliases array duplicated in app.js
                       $scope.aliases = [];
                       for (var key in adata.aliases) {
-                          props = {};
+                          var props = {};
                           if (key in adata.properties) {
                               props = adata.properties[key];
                           }

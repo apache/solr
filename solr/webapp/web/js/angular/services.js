@@ -80,6 +80,8 @@ solrAdminServices.factory('Metrics',
             var url = (response.req && response.req.url) || (response.status + ' ' + $location.url());
             var body = response.body || {};
             var msg = (body.error && body.error.msg) || response.statusText || "Unknown error";
+            // MainController normally sets this up first, but don't assume that ordering here.
+            $rootScope.exceptions = $rootScope.exceptions || {};
             $rootScope.exceptions[url] = {msg: msg};
           }
         });
