@@ -201,9 +201,11 @@ public class AIJoinBenchmark {
         PARENT_ID_FK, false, PARENT_ID, childFilter, childrenSearcher, ScoreMode.None);
   }
 
+  private static final ExecutorService executor = Executors.newFixedThreadPool(4);
+
   private static Query aiJoinChildrenToParents(
       AIJoinIndex joinIndex, Query childFilter, IndexSearcher childrenSearcher) {
-    return joinIndex.newJoinQuery(PARENT_ID_FK, childFilter, childrenSearcher, PARENT_ID);
+    return joinIndex.newJoinQuery(PARENT_ID_FK, childFilter, childrenSearcher, PARENT_ID, executor);
   }
 
   private static String color(int index) {

@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -31,7 +30,6 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.search.join.aijoin.AIJoinIndex.JoinSegmentReference;
@@ -93,7 +91,7 @@ class ToLeafJoinContext {
 
   final LeafReaderContext toContext;
   final Query fromQuery;
-  final IndexSearcher cachedFromSearcher;
+  final IndexSearcher fromSearcher;
   private final List<Future<AIJoinUtil.CacheAndCount>> fromDocIdSetFutures;
   private IndexSearcher lastSeenJoinSearcher;
   final String fromField;
@@ -288,6 +286,7 @@ class ToLeafJoinContext {
   class JoinTask implements DocEdges {
     final String pairFieldName;
     final DocIdSetIterator fromSegmentDocIdIter;
+    final long fromMatchCount;
     JoinSegmentReference joinSegmentRef;
     final SegmentsTuple segmentsFromTo;
     private DocEdges edges;
@@ -296,10 +295,14 @@ class ToLeafJoinContext {
     private JoinColumnModel docMapping;
 
     JoinTask(
-        String pairFieldName, SegmentsTuple segmentsFromTo, DocIdSetIterator fromSegmentDocIdIter) {
+        String pairFieldName,
+        SegmentsTuple segmentsFromTo,
+        DocIdSetIterator fromSegmentDocIdIter,
+        long fromMatchCount) {
       this.pairFieldName = pairFieldName;
       this.segmentsFromTo = segmentsFromTo;
       this.fromSegmentDocIdIter = fromSegmentDocIdIter;
+      this.fromMatchCount = fromMatchCount;
       assert fromSegmentDocIdIter.docID() != DocIdSetIterator.NO_MORE_DOCS;
       assert fromSegmentDocIdIter.docID() >= 0;
     }
@@ -444,7 +447,7 @@ class ToLeafJoinContext {
       LeafReaderContext toContext,
       String fromField,
       Query fromQuery,
-      IndexSearcher cachedFromSearcher,
+      IndexSearcher fromSearcher,
       String toField,
       IndexReader toReader,
       Map<String, JoinSegmentReference> weightAgeJoinSegmentsReadOnly,
@@ -456,13 +459,13 @@ class ToLeafJoinContext {
     this.toContext = toContext;
     this.fromField = fromField;
     this.fromQuery = fromQuery;
-    this.cachedFromSearcher = cachedFromSearcher;
+    this.fromSearcher = fromSearcher;
     this.toField = toField;
     this.toReader = toReader;
     this.fromDocIdSetFutures = fromDocIdSetFutures;
 
     this.joinIndex = joinIndex;
-    this.joinCellsByFromSegOrd = new JoinTask[this.cachedFromSearcher.getLeafContexts().size()];
+    this.joinCellsByFromSegOrd = new JoinTask[fromSearcher.getLeafContexts().size()];
 
     // 1. check from scorers
     for (JoinTask newJoinTask : createFromItersTasks()) {
@@ -488,7 +491,7 @@ class ToLeafJoinContext {
           new AIJoinUtil.Edges(
               AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.FROM_EDGES_PREFIX + cell.pairFieldName),
               AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.TO_EDGES_PREFIX + cell.pairFieldName),
-              // TODO use it for ordefing join segment iteration, desc
+              // TODO use it for ordering join segment iteration, desc
               AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.TO_COUNT_PREFIX + cell.pairFieldName)[0]));
     }
     for (Entry<JoinTask, JoinColumnModel> entry : refreshedAndNew.justWritten) {
@@ -518,6 +521,7 @@ class ToLeafJoinContext {
       }
       falsePositiveToDocsBits.set(docEdges.toDocEdges()[0], docEdges.toDocEdges()[1] + 1);
     }
+    // TODO and only here is worth to order cells by count in join column
     logContextSetUp();
   }
 
@@ -683,7 +687,7 @@ class ToLeafJoinContext {
       Map<String, JoinColumnModel> written =
           this.joinIndex.writeJoinSegments(
               Collections.unmodifiableMap(missingPairs),
-              cachedFromSearcher.getIndexReader(),
+              this.fromSearcher.getIndexReader(),
               this.fromField,
               this.toReader,
               this.toField,
@@ -754,42 +758,31 @@ class ToLeafJoinContext {
    */
   private List<JoinTask> createFromItersTasks()
       throws IOException, ExecutionException, InterruptedException {
-    // TODO peek in underneath searcher cache
-    Weight cachedFromWeight =
-        this.cachedFromSearcher.createWeight(this.fromQuery, ScoreMode.COMPLETE_NO_SCORES, 1);
-
-    List<LeafReaderContext> leaves = new ArrayList<>(this.cachedFromSearcher.getLeafContexts());
+    List<LeafReaderContext> leaves = new ArrayList<>(this.fromSearcher.getLeafContexts());
     Collections.shuffle(leaves, ThreadLocalRandom.current());
 
     List<JoinTask> tasks = new ArrayList<>();
-    // the from-side scorer's cost() at task-build time, i.e. before it was drained looking for the
-    // first match; auxiliary to this method only, just to sort tasks by descending match volume
-    Map<JoinTask, Long> fromMatchCostByTask = new IdentityHashMap<>();
     for (LeafReaderContext fromContext : leaves) {
-      AIJoinUtil.MatchingFromDocs matching =
-          AIJoinUtil.matchingFromDocs(
-              cachedFromWeight,
-              fromContext,
-              this.fromDocIdSetFutures != null
-                  ? this.fromDocIdSetFutures.get(fromContext.ord)
-                  : null);
-      if (matching == null) {
-        continue; // no from-side matches in this segment
+      AIJoinUtil.CacheAndCount matchAndCount = this.fromDocIdSetFutures.get(fromContext.ord).get();
+      if (matchAndCount == null) {
+        continue;
       }
-      DocIdSetIterator matchedFromDocs = matching.iterator();
-      if (matchedFromDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+      DocIdSetIterator matchedFromDocs = matchAndCount.iterator();
+      if (matchedFromDocs != null && matchedFromDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         // name every contributing (from, to) pair column; pair field names are unique across pairs
         String pairFieldName =
             AIJoinUtil.pairFieldName(fromContext, this.fromField, toContext, this.toField);
-        JoinTask task =
+        tasks.add(
             new JoinTask(
-                pairFieldName, new SegmentsTuple(fromContext.ord, toContext.ord), matchedFromDocs);
-        tasks.add(task);
-        fromMatchCostByTask.put(task, matching.cost());
+                pairFieldName,
+                new SegmentsTuple(fromContext.ord, toContext.ord),
+                matchedFromDocs,
+                matchAndCount.count()));
       }
     }
     // process the from segments with the most matches first
-    tasks.sort(Comparator.comparingLong(fromMatchCostByTask::get).reversed());
+    // TODO won't we reorder them again then? why do we do it here though?
+    tasks.sort(Comparator.<JoinTask>comparingLong(t -> t.fromMatchCount).reversed());
     return tasks;
   }
 

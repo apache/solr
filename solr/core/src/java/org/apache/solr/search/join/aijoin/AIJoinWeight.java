@@ -85,7 +85,7 @@ final class AIJoinWeight extends Weight {
                 tolrc,
                 aiJQuery().fromField,
                 aiJQuery().fromQuery,
-                aiJQuery().cachedFromSearcher,
+                aiJQuery().fromSearcher,
                 aiJQuery().toField,
                 this.toReader,
                 this.existingJoinSegments,

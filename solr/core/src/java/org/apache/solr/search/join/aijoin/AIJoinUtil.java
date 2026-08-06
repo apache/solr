@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosFormat;
@@ -45,12 +43,8 @@ import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocIdStream;
-import org.apache.lucene.search.FilteredDocIdSetIterator;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorable;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.ScorerSupplier;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
@@ -323,80 +317,6 @@ final class AIJoinUtil {
   }
 
   /**
-   * A from-segment's matches against the cached from-side weight: {@link #iterator()} is a fresh,
-   * live-doc-filtered {@link DocIdSetIterator} positioned before doc 0, and {@link #cost()} is the
-   * underlying {@link ScorerSupplier}'s cost, captured before the iterator was created.
-   */
-  record MatchingFromDocs(DocIdSetIterator iterator, long cost) {}
-
-  /**
-   * Resolves {@code fromContext} against {@code cachedFromWeight}, filtering out deleted docs, or
-   * returns {@code null} if the segment has no live match at all. Shared by {@code
-   * ToLeafJoinContext#createFromItersTasks}, which walks the returned iterator once per to-segment,
-   * and by {@link AIJoinQuery#createWeight}, which only needs to know whether the segment matches
-   * anything.
-   */
-  static MatchingFromDocs matchingFromDocs(
-      Weight cachedFromWeight,
-      LeafReaderContext fromContext,
-      Future<AIJoinUtil.CacheAndCount> fromDocIdSetFuture)
-      throws IOException, ExecutionException, InterruptedException {
-
-    DocIdSetIterator matchedFromDocs;
-    long fromMatchCost;
-    if (fromDocIdSetFuture != null) {
-      AIJoinUtil.CacheAndCount fromDocIdSet = fromDocIdSetFuture.get();
-      if (fromDocIdSet == null) { // mean no matches, skipping child segment
-        return null;
-      }
-      fromMatchCost = fromDocIdSet.count();
-      matchedFromDocs = fromDocIdSet.iterator();
-    } else {
-      ScorerSupplier fromSupplier = cachedFromWeight.scorerSupplier(fromContext);
-      if (fromSupplier == null) {
-        return null;
-      }
-      fromMatchCost = fromSupplier.cost();
-      Scorer fromScorer = fromSupplier.get(Long.MAX_VALUE);
-
-      matchedFromDocs = fromScorer.iterator();
-    }
-    Bits liveDocs = fromContext.reader().getLiveDocs();
-    if (liveDocs != null) {
-      // the cached weight's scorer doesn't filter deletions itself, and a from doc deleted
-      // since the pair columns were built (e.g. by an update) must not resolve to a match
-      matchedFromDocs =
-          new FilteredDocIdSetIterator(matchedFromDocs) {
-            @Override
-            protected boolean match(int doc) {
-              return liveDocs.get(doc);
-            }
-          };
-    }
-    return new MatchingFromDocs(matchedFromDocs, fromMatchCost);
-  }
-
-  /**
-   * The from-side keys ({@link #getSideKey}) of every from-segment with at least one live doc
-   * matching {@code fromQuery} -- i.e. every from-segment that could possibly contribute a pair to
-   * any to-segment. Used at {@link AIJoinQuery#createWeight} time to narrow which pair columns are
-   * worth looking up in the join index, without yet knowing the to-side searcher's leaves.
-   */
-  //  static Set<String> matchingFromSideKeys(
-  //      IndexSearcher cachedFromSearcher, Query fromQuery, String fromField) throws IOException {
-  //    Weight fromWeight = cachedFromSearcher.createWeight(fromQuery, ScoreMode.COMPLETE_NO_SCORES,
-  // 1);
-  //    Set<String> keys = new HashSet<>();
-  //    for (LeafReaderContext fromContext : cachedFromSearcher.getLeafContexts()) {
-  //      MatchingFromDocs matching = matchingFromDocs(fromWeight, fromContext);
-  //      if (matching != null && matching.iterator().nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-  //        keys.add(getSideKey(fromContext, fromField));
-  //      }
-  //    }
-  //    return keys;
-  //  }
-
-  /**
    * Reads a pair's persisted {@code {min, max}} edges (or {@code toCount}), all stored on doc 0 of
    * the column -- the read-side counterpart of {@link AIJoinWriter}'s edges columns.
    */
@@ -487,16 +407,14 @@ final class AIJoinUtil {
    * The {@link Directory} backing {@code reader}, unwrapped from any composite that lacks a single
    * directory of its own (e.g. a {@link ParallelCompositeReader}): a {@link DirectoryReader}
    * exposes its directory directly, anything else contributes the first leaf-reader whose directory
-   * owns it.
+   * owns it (descending through {@link ParallelLeafReader} and codec/filter wrappers).
    */
   static Directory directory(IndexReader reader) {
     if (reader instanceof DirectoryReader dr) {
       return dr.directory();
     }
     for (LeafReaderContext leaf : reader.leaves()) {
-      if (FilterLeafReader.unwrap(leaf.reader()) instanceof SegmentReader sr) {
-        return sr.getSegmentInfo().info.dir;
-      }
+      return segmentReader(leaf.reader()).getSegmentInfo().info.dir;
     }
     throw new IllegalArgumentException("no directory backing " + reader);
   }

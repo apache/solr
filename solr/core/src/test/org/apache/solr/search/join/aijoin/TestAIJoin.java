@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 import org.apache.lucene.document.Document;
@@ -37,7 +39,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LRUQueryCache;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryCachingPolicy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -51,6 +55,9 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.util.LogLevel;
+import org.jspecify.annotations.NonNull;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * Joins a children index to a parents index with {@link JoinUtil}. Children reference parents via a
@@ -68,6 +75,21 @@ public class TestAIJoin extends LuceneTestCase {
 
   private static final String[] COLORS = {"red", "green", "blue"};
   private static final int CHILDREN_PER_PARENT = 5;
+
+  private static ExecutorService executor;
+
+  @BeforeClass
+  public static void beforeClass() {
+    executor = Executors.newFixedThreadPool(random().nextInt(1, 3));
+  }
+
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    executor.shutdown();
+    assertTrue(
+        "suite-wide executor did not shut down in time",
+        executor.awaitTermination(60, TimeUnit.SECONDS));
+  }
 
   /** Shared per-test auxiliary join index: pair columns are built lazily by the first search. */
   private AIJoinIndex joinIndex;
@@ -201,13 +223,22 @@ public class TestAIJoin extends LuceneTestCase {
     Query joinUtilQuery = joinChildrenToParents(fromQuery, childrenSearcher);
     Set<String> joinUtilParents =
         searchParentIds(parentsSearcher, joinDecorator.apply(joinUtilQuery));
-    Query aiJoinQuery =
-        joinIndex.newJoinQuery(PARENT_ID_FK, fromQuery, childrenSearcher, PARENT_ID);
+    Query aiJoinQuery = createAiJoinQuery(joinIndex, fromQuery, childrenSearcher);
     assertEquals(
         "AIJoinQuery disagrees with JoinUtil",
         joinUtilParents,
         searchParentIds(parentsSearcher, joinDecorator.apply(aiJoinQuery)));
     return joinUtilParents;
+  }
+
+  private @NonNull Query createAiJoinQuery(
+      AIJoinIndex joinIndexParam, Query fromQuery, IndexSearcher childrenSearcher) {
+    return joinIndexParam.newJoinQuery(
+        PARENT_ID_FK,
+        fromQuery,
+        random().nextBoolean() ? cachedSearcher(childrenSearcher) : childrenSearcher,
+        PARENT_ID,
+        rarely() ? null : executor);
   }
 
   private Set<String> searchParentIdsBothJoins(
@@ -393,11 +424,8 @@ public class TestAIJoin extends LuceneTestCase {
         String color = RandomPicks.randomFrom(random(), COLORS);
 
         Query aiJoinQuery =
-            joinIndex.newJoinQuery(
-                PARENT_ID_FK,
-                anyOfChildren(selectedChildren),
-                newSearcher(childrenReader),
-                PARENT_ID);
+            createAiJoinQuery(
+                joinIndex, anyOfChildren(selectedChildren), newSearcher(childrenReader));
 
         Query filteredJoin =
             new BooleanQuery.Builder()
@@ -442,5 +470,28 @@ public class TestAIJoin extends LuceneTestCase {
                         .build()));
       }
     }
+  }
+
+  // presumably keep it in AIJoinIndex
+  private static IndexSearcher cachedSearcher(IndexSearcher fromSearcher) {
+    IndexSearcher cachedFromSearcher =
+        new IndexSearcher(
+            fromSearcher.getIndexReader() // , executor // pointless
+            );
+    cachedFromSearcher.setQueryCache(
+        new LRUQueryCache(
+            fromSearcher.getLeafContexts().size() + 1,
+            fromSearcher.getIndexReader().maxDoc() / 8 * 2));
+    cachedFromSearcher.setQueryCachingPolicy(
+        new QueryCachingPolicy() {
+          @Override
+          public boolean shouldCache(Query query) {
+            return true;
+          }
+
+          @Override
+          public void onUse(Query query) {}
+        });
+    return cachedFromSearcher;
   }
 }
