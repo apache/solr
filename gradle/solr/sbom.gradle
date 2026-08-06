@@ -38,6 +38,9 @@ configure(project(':solr:packaging')) {
 
   ext {
     cyclonedxDir = layout.buildDirectory.dir("cyclonedx")
+    // The same BOMs under the name of the archive each describes, for publishing next to the
+    // archives in the release folder. See the "cyclonedxReleaseArtifacts" task below.
+    cyclonedxReleaseDir = layout.buildDirectory.dir("cyclonedx-release")
   }
 
   // Hand-maintained CycloneDX components for the third-party JavaScript checked into
@@ -63,6 +66,11 @@ configure(project(':solr:packaging')) {
     uiSbom {
         canBeResolved = true
         canBeConsumed = false
+    }
+    // The distribution SBOMs as separate release artifacts, consumed by ':solr:distribution'
+    sbom {
+        canBeResolved = false
+        canBeConsumed = true
     }
   }
 
@@ -511,5 +519,39 @@ configure(project(':solr:packaging')) {
 
       dependsOn 'cyclonedxFull'
       dependsOn 'cyclonedxSlim'
+  }
+
+  // Each distribution carries its BOM as "bom.json" in the archive root, so that it travels with
+  // the artifact it describes. The same file is also published next to the archive in the release
+  // folder, named after it, so that it can be fetched without downloading the whole distribution.
+  // The archive names are spelled out here as they are for the signatures in build.gradle.
+  def fullBomFileName = "solr-${version}.tgz.cdx.json".toString()
+  def slimBomFileName = "solr-${version}-slim.tgz.cdx.json".toString()
+
+  tasks.register('cyclonedxReleaseArtifacts', Sync) {
+      group = 'Bill of Materials'
+      description = 'Copies the CycloneDX BOMs to the file names they are published under'
+
+      dependsOn 'cyclonedx'
+
+      from(cyclonedxDir) {
+          include 'bom-full.json'
+          rename 'bom-full.json', fullBomFileName
+      }
+      from(cyclonedxDir) {
+          include 'bom-slim.json'
+          rename 'bom-slim.json', slimBomFileName
+      }
+      into cyclonedxReleaseDir
+  }
+
+  // Published as separate artifacts rather than as the directory, so that ':solr:distribution'
+  // computes a checksum and a signature for each BOM.
+  artifacts {
+      [fullBomFileName, slimBomFileName].each { fileName ->
+          sbom(cyclonedxReleaseDir.map {it.file(fileName)}) {
+              builtBy tasks.named('cyclonedxReleaseArtifacts')
+          }
+      }
   }
 }

@@ -1,8 +1,8 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 
 title: >
-  Ship a CycloneDX SBOM (bom.json) in the root of the full and slim binary distributions,
-  covering the Java libraries, the Solr artifacts and the UI content of the webapp
+  Ship a CycloneDX SBOM for the binary distributions, as bom.json in the archive root and as
+  solr-<version>.tgz.cdx.json next to the archive
 type: added
 authors:
   - name: Piotr P. Karwasz
