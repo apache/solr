@@ -155,7 +155,10 @@ apply from: file('gradle/testing/fail-on-no-tests.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
 apply from: file('gradle/testing/retry-test.gradle')
-apply from: file('gradle/testing/coverage.gradle')
+if (gradle.ext.withCoverage) {
+  // Opt-in jacoco test coverage (enablement decided in settings.gradle).
+  apply from: file('gradle/testing/coverage.gradle.kts')
+}
 
 // Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')
