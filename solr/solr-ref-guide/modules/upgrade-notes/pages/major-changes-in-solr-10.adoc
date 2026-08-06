@@ -420,6 +420,9 @@ Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format n
   (e.g., `crossdc.consumer.output.total` → `solr.crossdc.consumer.output.total`)
 * All CrossDC producer metrics have been renamed: `solr.core.crossdc.producer.*` → `solr.crossdc.producer.*`
   (e.g., `solr.core.crossdc.producer.submitted` → `solr.crossdc.producer.submitted`)
+* The Prometheus JVM CPU utilization metrics lost their `_ratio` suffix, as the updated OpenTelemetry
+  exporter no longer maps the OTel unit `1` to a `_ratio` suffix: `jvm_system_cpu_utilization_ratio` →
+  `jvm_system_cpu_utilization` and `jvm_cpu_recent_utilization_ratio` → `jvm_cpu_recent_utilization`.
 
 Update your dashboards or other metrics consumers accordingly.
 

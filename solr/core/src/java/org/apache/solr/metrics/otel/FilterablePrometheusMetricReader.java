@@ -25,7 +25,6 @@ import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.InfoSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
-import io.prometheus.metrics.model.snapshots.MetricMetadata;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.lang.invoke.MethodHandles;
@@ -45,42 +44,9 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
   private static final Set<String> PROM_SUFFIXES =
       Set.of("_total", "_sum", "_bucket", "_created", "_info");
 
-  // The OTel Prometheus exporter (1.57+) no longer maps unit "1" to a "_ratio" name suffix,
-  // renaming these JVM metrics. Keep exposing the old names as deprecated aliases.
-  static final Map<String, String> LEGACY_NAME_ALIASES =
-      Map.of(
-          "jvm_system_cpu_utilization", "jvm_system_cpu_utilization_ratio",
-          "jvm_cpu_recent_utilization", "jvm_cpu_recent_utilization_ratio");
-
   public FilterablePrometheusMetricReader(
       boolean otelScopeEnabled, Predicate<String> allowedResourceAttributesFilter) {
     super(otelScopeEnabled, allowedResourceAttributesFilter);
-  }
-
-  @Override
-  public MetricSnapshots collect() {
-    return withLegacyAliases(super.collect());
-  }
-
-  /** Duplicates snapshots named in {@link #LEGACY_NAME_ALIASES} under their legacy name. */
-  static MetricSnapshots withLegacyAliases(MetricSnapshots snapshots) {
-    MetricSnapshots.Builder builder = MetricSnapshots.builder();
-    for (MetricSnapshot snapshot : snapshots) {
-      builder.metricSnapshot(snapshot);
-    }
-    for (MetricSnapshot snapshot : snapshots) {
-      String legacyName = LEGACY_NAME_ALIASES.get(snapshot.getMetadata().getPrometheusName());
-      if (legacyName != null
-          && snapshot instanceof GaugeSnapshot gauge
-          && !builder.containsMetricName(legacyName)) {
-        MetricMetadata metadata = gauge.getMetadata();
-        builder.metricSnapshot(
-            new GaugeSnapshot(
-                new MetricMetadata(legacyName, metadata.getHelp(), metadata.getUnit()),
-                gauge.getDataPoints()));
-      }
-    }
-    return builder.build();
   }
 
   /**
@@ -96,7 +62,7 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
 
     // If no filtering is requested then return all metrics
     if (includedNames.isEmpty() && requiredLabels.isEmpty()) {
-      return collect();
+      return super.collect();
     }
 
     // Users may filter by Prometheus-format names (e.g. "solr_core_requests") or with a
@@ -117,13 +83,13 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
 
     MetricSnapshots snapshotsToFilter;
     if (sanitizedNames.isEmpty()) {
-      snapshotsToFilter = collect();
+      snapshotsToFilter = super.collect();
     } else {
       // We collect all metrics and filter by Prometheus name rather than using
       // super.collect(Predicate) which matches on OTel internal names. This avoids a mismatch
       // when OTel names use dot-separators (e.g. "solr.core.requests") but users filter by the
       // Prometheus underscore-format name they see in the output (e.g. "solr_core_requests").
-      MetricSnapshots all = collect();
+      MetricSnapshots all = super.collect();
       MetricSnapshots.Builder nameFiltered = MetricSnapshots.builder();
       for (MetricSnapshot snapshot : all) {
         if (sanitizedNames.contains(snapshot.getMetadata().getPrometheusName())) {

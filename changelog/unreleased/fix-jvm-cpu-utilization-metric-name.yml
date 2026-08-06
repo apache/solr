@@ -1,7 +1,7 @@
 title: >
-  JVM CPU metrics are named `jvm_system_cpu_utilization` and `jvm_cpu_recent_utilization`
-  after the OpenTelemetry Prometheus exporter update. The former `_ratio` suffixed names
-  are still exposed as deprecated aliases.
+  The Prometheus JVM CPU metrics are now named `jvm_system_cpu_utilization` and
+  `jvm_cpu_recent_utilization` (the `_ratio` suffix was dropped) following the
+  OpenTelemetry Prometheus exporter update.
 type: changed
 authors:
   - name: Jan Høydahl

@@ -16,16 +16,11 @@
  */
 package org.apache.solr.metrics.otel;
 
-import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
-import io.prometheus.metrics.model.snapshots.MetricMetadata;
-import io.prometheus.metrics.model.snapshots.MetricSnapshots;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
@@ -96,43 +91,5 @@ public class FilterablePrometheusMetricReaderTest extends SolrTestCaseJ4 {
     SortedMap<String, Set<String>> requiredLabels = new TreeMap<>(Map.of("key1", Set.of()));
     assertFalse(
         FilterablePrometheusMetricReader.requiredLabelsFilter(actualLabels, requiredLabels));
-  }
-
-  @Test
-  public void testWithLegacyAliases() {
-    GaugeSnapshot renamed =
-        new GaugeSnapshot(
-            new MetricMetadata("jvm_system_cpu_utilization", "help", null),
-            List.of(GaugeSnapshot.GaugeDataPointSnapshot.builder().value(0.42).build()));
-    GaugeSnapshot unrelated =
-        new GaugeSnapshot(
-            new MetricMetadata("jvm_memory_used_bytes", "help", null),
-            List.of(GaugeSnapshot.GaugeDataPointSnapshot.builder().value(1.0).build()));
-
-    MetricSnapshots result =
-        FilterablePrometheusMetricReader.withLegacyAliases(
-            new MetricSnapshots(List.of(renamed, unrelated)));
-
-    assertEquals(
-        Set.of(
-            "jvm_system_cpu_utilization",
-            "jvm_system_cpu_utilization_ratio",
-            "jvm_memory_used_bytes"),
-        result.stream()
-            .map(snapshot -> snapshot.getMetadata().getPrometheusName())
-            .collect(Collectors.toSet()));
-
-    GaugeSnapshot alias =
-        result.stream()
-            .filter(
-                snapshot ->
-                    snapshot
-                        .getMetadata()
-                        .getPrometheusName()
-                        .equals("jvm_system_cpu_utilization_ratio"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow();
-    assertEquals(0.42, alias.getDataPoints().get(0).getValue(), 0.0);
   }
 }
