@@ -1,4 +1,4 @@
-title: Update looked up attribute for SSL authentication
+title: CertAuthPlugin now uses correct Jetty attribute for certificate lookup for SSL authentication
 type: fixed
 authors:
   - name: Jean-Marie HEITZ

@@ -39,10 +39,6 @@ public class CertAuthPlugin extends AuthenticationPlugin {
   private static final String PARAM_CLASS = "class";
   private static final String PARAM_PARAMS = "params";
 
-  // TODO once on/after Solr 11, discuss whether to remove the javax name or not
-
-  private static final String JAVAX_REQUEST_ATTRIBUTE_NAME =
-      "javax.servlet.request.X509Certificate";
   private static final String JAKARTA_REQUEST_ATTRIBUTE_NAME =
       "jakarta.servlet.request.X509Certificate";
 
@@ -110,9 +106,7 @@ public class CertAuthPlugin extends AuthenticationPlugin {
       throws Exception {
     X509Certificate[] certs =
         (X509Certificate[]) request.getAttribute(JAKARTA_REQUEST_ATTRIBUTE_NAME);
-    if (certs == null || certs.length == 0) {
-      certs = (X509Certificate[]) request.getAttribute(JAVAX_REQUEST_ATTRIBUTE_NAME);
-    }
+
     if (certs == null || certs.length == 0) {
       return sendError(response, "require certificate");
     }
