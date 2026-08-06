@@ -1,0 +1,7 @@
+Project Reactor
+Copyright (c) 2011-2024 VMware Inc. or its affiliates, All Rights Reserved.
+
+This product includes software developed at
+VMware Inc. (https://github.com/reactor)
+
+Licensed under the Apache License 2.0
