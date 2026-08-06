@@ -46,7 +46,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
 
   @Override
   public void distribSetUp() throws Exception {
-    requestHandlerName = "mltrh";
+    requestHandlerName = "/mltrh";
     super.distribSetUp();
   }
 

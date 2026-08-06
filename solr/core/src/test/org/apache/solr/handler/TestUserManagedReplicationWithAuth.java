@@ -231,8 +231,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     ModifiableSolrParams disablePollParams = new ModifiableSolrParams();
     disablePollParams.set(COMMAND, CMD_DISABLE_POLL);
     disablePollParams.set(CommonParams.WT, JAVABIN);
-    disablePollParams.set(CommonParams.QT, ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(disablePollParams);
+    QueryRequest req = new QueryRequest(ReplicationHandler.PATH, disablePollParams);
     withBasicAuth(req);
 
     final var baseUrl = buildUrl(Jetty.getLocalPort());
@@ -252,14 +251,13 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.set(COMMAND, CMD_FETCH_INDEX);
     solrParams.set(CommonParams.WT, JAVABIN);
-    solrParams.set(CommonParams.QT, ReplicationHandler.PATH);
     solrParams.set("leaderUrl", srcUrl);
     solrParams.set("wait", "true");
     if (authEnabled) {
       solrParams.set("httpBasicAuthUser", user);
       solrParams.set("httpBasicAuthPassword", pass);
     }
-    QueryRequest req = new QueryRequest(solrParams);
+    QueryRequest req = new QueryRequest(ReplicationHandler.PATH, solrParams);
     return req;
   }
 }
