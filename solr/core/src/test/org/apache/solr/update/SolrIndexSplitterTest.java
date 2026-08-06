@@ -413,6 +413,16 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     doTestSplitByRouteKey(SolrIndexSplitter.SplitMethod.LINK);
   }
 
+  @Test
+  public void testSplitByNumericRouteField() throws Exception {
+    doTestSplitByNumericRouteField(SolrIndexSplitter.SplitMethod.REWRITE);
+  }
+
+  @Test
+  public void testSplitByNumericRouteFieldLink() throws Exception {
+    doTestSplitByNumericRouteField(SolrIndexSplitter.SplitMethod.LINK);
+  }
+
   private void doTestSplitByRouteKey(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
     Path indexDir = createTempDir();
 
@@ -467,6 +477,83 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
                   h.getCore().getSolrConfig().indexConfig.lockType);
       DirectoryReader reader = DirectoryReader.open(directory);
       assertEquals("split index has wrong number of documents", 10, reader.numDocs());
+      reader.close();
+      h.getCore().getDirectoryFactory().release(directory);
+      directory = null;
+    } finally {
+      if (request != null) {
+        request.close();
+      }
+      if (directory != null) {
+        h.getCore().getDirectoryFactory().release(directory);
+      }
+    }
+  }
+
+  private void doTestSplitByNumericRouteField(SolrIndexSplitter.SplitMethod splitMethod)
+      throws Exception {
+    CompositeIdRouter router = new CompositeIdRouter();
+    List<DocRouter.Range> ranges = router.partitionRange(2, router.fullRange());
+    int[] expectedDocCounts = new int[ranges.size()];
+
+    for (int i = 100; i < 140; i++) {
+      String routeValue = Integer.toString(i);
+      assertU(adoc("id", "doc-" + i, "route_pl", routeValue));
+
+      int hash = router.sliceHash(routeValue, null, null, null);
+      for (int rangeIndex = 0; rangeIndex < ranges.size(); rangeIndex++) {
+        if (ranges.get(rangeIndex).includes(hash)) {
+          expectedDocCounts[rangeIndex]++;
+          break;
+        }
+      }
+    }
+
+    assertU(commit());
+    assertJQ(req("q", "*:*"), "/response/numFound==40");
+
+    SolrQueryRequestBase request = null;
+    Directory directory = null;
+    try {
+      request = lrf.makeRequest("q", "dummy");
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SplitIndexCommand command =
+          new SplitIndexCommand(
+              request,
+              rsp,
+              List.of(indexDir1.toString(), indexDir2.toString()),
+              null,
+              ranges,
+              router,
+              "route_pl",
+              null,
+              splitMethod);
+      doSplit(command);
+
+      directory =
+          h.getCore()
+              .getDirectoryFactory()
+              .get(
+                  indexDir1.toString(),
+                  DirectoryFactory.DirContext.DEFAULT,
+                  h.getCore().getSolrConfig().indexConfig.lockType);
+      DirectoryReader reader = DirectoryReader.open(directory);
+      assertEquals(
+          "split index1 has wrong number of documents", expectedDocCounts[0], reader.numDocs());
+      reader.close();
+      h.getCore().getDirectoryFactory().release(directory);
+      directory = null;
+
+      directory =
+          h.getCore()
+              .getDirectoryFactory()
+              .get(
+                  indexDir2.toString(),
+                  DirectoryFactory.DirContext.DEFAULT,
+                  h.getCore().getSolrConfig().indexConfig.lockType);
+      reader = DirectoryReader.open(directory);
+      assertEquals(
+          "split index2 has wrong number of documents", expectedDocCounts[1], reader.numDocs());
       reader.close();
       h.getCore().getDirectoryFactory().release(directory);
       directory = null;
