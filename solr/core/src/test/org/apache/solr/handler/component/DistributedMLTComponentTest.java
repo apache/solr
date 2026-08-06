@@ -191,26 +191,18 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     query(
         requestHandlerName,
         params(
-            "q",
-            "match_none",
-            "mlt",
-            "true",
-            "mlt.fl",
-            "lowerfilt",
-            "shards.qt",
-            requestHandlerName));
+            "q", "match_none",
+            "mlt", "true",
+            "mlt.fl", "lowerfilt",
+            "shards.qt", requestHandlerName));
 
     query(
         requestHandlerName,
         params(
-            "q",
-            "lowerfilt:sonata",
-            "mlt",
-            "true",
-            "mlt.fl",
-            "lowerfilt",
-            "shards.qt",
-            requestHandlerName));
+            "q", "lowerfilt:sonata",
+            "mlt", "true",
+            "mlt.fl", "lowerfilt",
+            "shards.qt", requestHandlerName));
 
     handle.put("24", UNORDERED);
     handle.put("23", UNORDERED);

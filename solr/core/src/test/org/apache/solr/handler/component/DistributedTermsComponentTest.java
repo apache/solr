@@ -107,45 +107,29 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     query(
         "/terms",
         params(
-            "terms.limit",
-            "5",
-            "terms.fl",
-            "b_t",
-            "terms.prefix",
-            "s",
-            "terms.lower",
-            "s",
-            "terms.upper",
-            "sn"));
+            "terms.limit", "5",
+            "terms.fl", "b_t",
+            "terms.prefix", "s",
+            "terms.lower", "s",
+            "terms.upper", "sn"));
     // terms.sort
     query(
         "/terms",
         params(
-            "terms.limit",
-            "5",
-            "terms.fl",
-            "b_t",
-            "terms.prefix",
-            "s",
-            "terms.lower",
-            "s",
-            "terms.sort",
-            "index"));
+            "terms.limit", "5",
+            "terms.fl", "b_t",
+            "terms.prefix", "s",
+            "terms.lower", "s",
+            "terms.sort", "index"));
     query(
         "/terms",
         params(
-            "terms.limit",
-            "5",
-            "terms.fl",
-            "b_t",
-            "terms.prefix",
-            "s",
-            "terms.lower",
-            "s",
-            "terms.upper",
-            "sn",
-            "terms.sort",
-            "index"));
+            "terms.limit", "5",
+            "terms.fl", "b_t",
+            "terms.prefix", "s",
+            "terms.lower", "s",
+            "terms.upper", "sn",
+            "terms.sort", "index"));
     query("/terms", params("terms.fl", "b_t", "terms.sort", "index"));
     // terms.list
     query("/terms", params("terms.fl", "b_t", "terms.list", "snake,zebra,ant,bad"));
@@ -155,14 +139,10 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     query(
         "/terms",
         params(
-            "terms.fl",
-            "b_t",
-            "terms.fl",
-            "c_t",
-            "terms.list",
-            "snake,ant,zebra",
-            "terms.ttf",
-            "true"));
+            "terms.fl", "b_t",
+            "terms.fl", "c_t",
+            "terms.list", "snake,ant,zebra",
+            "terms.ttf", "true"));
 
     // for date point field
     query("/terms", params("terms.fl", "foo_date_p"));

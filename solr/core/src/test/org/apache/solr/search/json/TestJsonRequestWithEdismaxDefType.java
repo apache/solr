@@ -66,7 +66,7 @@ public class TestJsonRequestWithEdismaxDefType extends SolrTestCaseJ4 {
   private static void doQuery(SolrClient client) throws Exception {
     final var jsonQuery =
         "{\"query\":{\"bool\":{\"should\":[{\"lucene\":{\"query\":\"id:1\"}}, \"id:2\"]}}}";
-    final var req = new QueryRequest(params("json", jsonQuery, "qt", "/query"), METHOD.POST);
+    final var req = new QueryRequest("/query", params("json", jsonQuery), METHOD.POST);
     final var rsp = req.process(client);
     assertEquals(2, rsp.getResults().getNumFound());
   }
