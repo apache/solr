@@ -65,6 +65,7 @@ public abstract class QParser {
       stringIncludingLocalParams; // the original query string including any local params
   protected boolean valFollowedParams; // true if the value "qstr" followed the localParams
   protected int localParamsEnd; // the position one past where the localParams ended
+  protected boolean autoFixPureNegative;
 
   /**
    * Constructor for the QParser
@@ -107,6 +108,16 @@ public abstract class QParser {
 
     this.params = Objects.requireNonNull(params);
     this.req = req;
+
+    if (req != null && req.getCore() != null && req.getCore().getSolrConfig() != null) {
+      this.autoFixPureNegative =
+          req.getCore()
+              .getSolrConfig()
+              .luceneMatchVersion
+              .onOrAfter(org.apache.lucene.util.Version.LUCENE_10_2_0);
+    } else {
+      this.autoFixPureNegative = false;
+    }
   }
 
   /**
@@ -185,6 +196,14 @@ public abstract class QParser {
 
   public void setString(String s) {
     this.qstr = s;
+  }
+
+  public boolean isAutoFixPureNegative() {
+    return autoFixPureNegative;
+  }
+
+  public void setAutoFixPureNegative(boolean autoFixPureNegative) {
+    this.autoFixPureNegative = autoFixPureNegative;
   }
 
   /**
@@ -267,6 +286,7 @@ public abstract class QParser {
     // TODO: this would be better passed in to the constructor... change to a ParserContext object?
     nestedParser.flags = this.flags;
     nestedParser.recurseCount = recurseCount;
+    nestedParser.autoFixPureNegative = this.autoFixPureNegative;
     recurseCount--;
     return nestedParser;
   }
