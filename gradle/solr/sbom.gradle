@@ -151,6 +151,9 @@ configure(project(':solr:packaging')) {
   //    The location of each JAR and JavaScript file within the distribution is recorded as
   //    "evidence.occurrences": the directories assembled for the distribution are scanned and
   //    their files are matched to the components by SHA-256 hash.
+  //    A JAR that matches no component is a build error: the distribution then ships a version
+  //    that the BOM configurations do not resolve, so it is described by neither the SBOM nor
+  //    the license checks.
   // 9. Hashes:
   //    Only the SHA-256 hash of each component is kept: the plugin emits eight algorithms
   //    per artifact, which only adds bulk.
@@ -370,11 +373,23 @@ configure(project(':solr:packaging')) {
               }
           }
       }
+      def describedHashes = [] as Set
       json.components.each { component ->
           def sha256 = component.hashes?.find { it.alg == 'SHA-256' }?.content
           if (sha256 != null && locationsByHash.containsKey(sha256)) {
               component.evidence = [occurrences: locationsByHash[sha256].sort().collect { [location: it] }]
+              describedHashes << sha256
           }
+      }
+      // Only JARs are checked: the JavaScript bundles are single files assembled from many
+      // components, so their occurrences are recorded by hand in steps 6 and 7 instead.
+      def undescribedJars = locationsByHash.findAll { hash, locations -> !(hash in describedHashes) }
+              .values().flatten().findAll { it.endsWith('.jar') }.sort()
+      if (undescribedJars) {
+          throw new GradleException("The ${edition} distribution ships JARs that no component of " +
+              "${bomFile.name} describes:\n  " + undescribedJars.join("\n  ") + "\n" +
+              "The packaged versions have drifted from the ones the 'bom${edition.capitalize()}' " +
+              "configuration resolves, which also means they are not covered by solr/licenses.")
       }
       if (uiBundle != null) {
           uiBundle.evidence = [occurrences: uiLocations.sort().collect { [location: it] }]
