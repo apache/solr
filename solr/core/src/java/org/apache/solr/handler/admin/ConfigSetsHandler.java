@@ -88,7 +88,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       case DELETE:
         final DeleteConfigSet deleteConfigSetAPI = new DeleteConfigSet(coreContainer, req, rsp);
         final var deleteResponse =
-            deleteConfigSetAPI.deleteConfigSet(req.getParams().required().get(NAME));
+            deleteConfigSetAPI.deleteConfigSet(req.getParams().required().get(NAME), null);
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteResponse);
         break;
       case UPLOAD:
