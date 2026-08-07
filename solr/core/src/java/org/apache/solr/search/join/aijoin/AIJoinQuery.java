@@ -20,7 +20,6 @@ import static org.apache.solr.search.join.aijoin.AIJoinUtil.cacheImpl;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -131,12 +130,14 @@ class AIJoinQuery extends Query {
     // then, ToLeafContexts will get these DocIdSets and iterate them.
     final Weight fromWeight =
         this.fromSearcher.createWeight(this.fromQuery, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
-    List<Future<AIJoinUtil.CacheAndCount>> fromDocIdSetFutures =
-        // fromExecutorService == null
-        //       ? null :
-        this.fromSearcher.getLeafContexts().stream()
-            .map(ctx -> this.fromExecutorService.submit(() -> computeDocIdSet(fromWeight, ctx)))
-            .toList();
+    @SuppressWarnings("unchecked")
+    Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures =
+        (Future<AIJoinUtil.CacheAndCount>[])
+            new Future<?>[this.fromSearcher.getLeafContexts().size()];
+    for (LeafReaderContext ctx : this.fromSearcher.getLeafContexts()) {
+      fromDocIdSetFutures[ctx.ord] =
+          this.fromExecutorService.submit(() -> computeDocIdSet(fromWeight, ctx));
+    }
     return new AIJoinWeight(
         this,
         joinSearcher,
