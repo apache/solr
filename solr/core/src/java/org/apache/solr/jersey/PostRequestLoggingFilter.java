@@ -85,7 +85,9 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
     final var solrConfig =
-        (solrQueryRequest.getCore() != null) ? solrQueryRequest.getCore().getSolrConfig() : null;
+        (solrQueryRequest != null && solrQueryRequest.getCore() != null)
+            ? solrQueryRequest.getCore().getSolrConfig()
+            : null;
 
     final Logger requestLogger = (solrConfig != null) ? coreRequestLogger : nonCoreRequestLogger;
     final String templatedPath =
