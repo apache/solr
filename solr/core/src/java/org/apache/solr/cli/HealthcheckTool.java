@@ -73,6 +73,9 @@ public class HealthcheckTool extends ToolBase {
     no_leader
   }
 
+  /** Parameters for the healthcheck command, independent of the command line parser. */
+  record HealthcheckParams(String collection, String credentials) {}
+
   /** Requests health information about a specific collection in SolrCloud. */
   public HealthcheckTool(ToolRuntime runtime) {
     super(runtime);
@@ -85,13 +88,15 @@ public class HealthcheckTool extends ToolBase {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
       runtime.exit(1);
     }
+    HealthcheckParams params =
+        new HealthcheckParams(
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     var builder =
-        new HttpJettySolrClient.Builder()
-            .withOptionalBasicAuthCredentials(
-                cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+        new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(params.credentials());
     try (var cloudSolrClient = CLIUtils.getCloudSolrClient(solrConnection, builder)) {
       echoIfVerbose("Connecting to Solr at " + solrConnection.toString());
-      runCloudTool(cloudSolrClient, cli);
+      runCloudTool(cloudSolrClient, params);
     }
   }
 
@@ -100,8 +105,9 @@ public class HealthcheckTool extends ToolBase {
     return "healthcheck";
   }
 
-  protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
-    String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
+  protected void runCloudTool(CloudSolrClient cloudSolrClient, HealthcheckParams params)
+      throws Exception {
+    String collection = params.collection();
 
     log.debug("Running healthcheck for {}", collection);
 
@@ -152,13 +158,10 @@ public class HealthcheckTool extends ToolBase {
           q.setRows(0);
           q.set(DISTRIB, "false");
           try (var solrClientForCollection =
-              CLIUtils.getSolrClient(
-                  coreUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+              CLIUtils.getSolrClient(coreUrl, params.credentials())) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
-            try (var solrClient =
-                CLIUtils.getSolrClient(
-                    r.getBaseUrl(), cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+            try (var solrClient = CLIUtils.getSolrClient(r.getBaseUrl(), params.credentials())) {
               SystemInfoResponse sysResponse = (new SystemInfoRequest()).process(solrClient);
               uptime = SolrCLI.uptime(sysResponse.getJVMUpTimeMillis());
               memory =

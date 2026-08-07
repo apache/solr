@@ -138,6 +138,17 @@ public class ExportTool extends ToolBase {
           .desc("Comma separated list of fields to export. By default all fields are fetched.")
           .get();
 
+  /** Parameters for the export command, independent of the command line parser. */
+  record ExportParams(
+      String url,
+      String credentials,
+      String query,
+      String output,
+      String format,
+      boolean compress,
+      String fields,
+      String limit) {}
+
   public ExportTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -292,16 +303,25 @@ public class ExportTool extends ToolBase {
       throw new IllegalArgumentException(
           "Must specify a connection target via -s/--solr-connection, --solr-url, or --zk-host.");
     }
-    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
-    Info info = new MultiThreadedRunner(runtime, url, credentials);
-    info.query = cli.getOptionValue(QUERY_OPTION, "*:*");
+    ExportParams params =
+        new ExportParams(
+            url,
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(QUERY_OPTION, "*:*"),
+            cli.getOptionValue(OUTPUT_OPTION),
+            cli.getOptionValue(FORMAT_OPTION),
+            cli.hasOption(COMPRESS_OPTION),
+            cli.getOptionValue(FIELDS_OPTION),
+            cli.getOptionValue(LIMIT_OPTION, "100"));
+    export(params);
+  }
 
-    info.setOutFormat(
-        cli.getOptionValue(OUTPUT_OPTION),
-        cli.getOptionValue(FORMAT_OPTION),
-        cli.hasOption(COMPRESS_OPTION));
-    info.fields = cli.getOptionValue(FIELDS_OPTION);
-    info.setLimit(cli.getOptionValue(LIMIT_OPTION, "100"));
+  void export(ExportParams params) throws Exception {
+    Info info = new MultiThreadedRunner(runtime, params.url(), params.credentials());
+    info.query = params.query();
+    info.setOutFormat(params.output(), params.format(), params.compress());
+    info.fields = params.fields();
+    info.setLimit(params.limit());
     info.exportDocs();
   }
 
