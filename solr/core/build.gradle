@@ -153,6 +153,9 @@ dependencies {
 
   implementation libs.apache.commons.exec
 
+  // Used by SolrProcessManager to query running processes via WMI on Windows
+  implementation libs.jna.platform
+
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
   runtimeOnly libs.apache.log4j.slf4j2impl
