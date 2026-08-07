@@ -33,7 +33,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -226,7 +225,9 @@ public final class AIJoinIndex implements Closeable {
       IndexReader toReader,
       String toField,
       BuildCause buildCause,
-      String ctxId)
+      String ctxId
+      //TODO pass here array of FromSideData futures
+  )
       throws IOException {
     long startNanos = System.nanoTime();
     int batchNumDocsLogged = 0;
@@ -260,12 +261,8 @@ public final class AIJoinIndex implements Closeable {
           SegmentsTuple position = missingPairs.get(pairFieldName);
           LeafReaderContext toContext = toReader.leaves().get(position.toLeafOrd());
           LeafReaderContext fromContext = fromReader.leaves().get(position.fromLeafOrd());
-          long[] scratch =
-              new long
-                  [Math.toIntExact(
-                      DocValues.getSortedSet(fromContext.reader(), fromField).getValueCount())];
           AIJoinUtil.JoinColumnModel mapping =
-              AIJoinUtil.computeDocMapping(fromContext, fromField, toContext, toField, scratch);
+              AIJoinUtil.computeDocMapping(toContext, toField, new FromSideData(fromContext, fromField));
           batchNumDocs = Math.max(batchNumDocs, fromContext.reader().maxDoc());
           loadedMappings.put(pairFieldName, mapping);
         }
