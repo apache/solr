@@ -226,9 +226,8 @@ public final class AIJoinIndex implements Closeable {
       String toField,
       BuildCause buildCause,
       String ctxId
-      //TODO pass here array of FromSideData futures
-  )
-      throws IOException {
+      // TODO pass here array of FromSideData futures
+      ) throws IOException {
     long startNanos = System.nanoTime();
     int batchNumDocsLogged = 0;
     Map<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> owned =
@@ -262,7 +261,8 @@ public final class AIJoinIndex implements Closeable {
           LeafReaderContext toContext = toReader.leaves().get(position.toLeafOrd());
           LeafReaderContext fromContext = fromReader.leaves().get(position.fromLeafOrd());
           AIJoinUtil.JoinColumnModel mapping =
-              AIJoinUtil.computeDocMapping(toContext, toField, new FromSideData(fromContext, fromField));
+              AIJoinUtil.computeDocMapping(
+                  toContext, toField, new FromSideData(fromContext, fromField));
           batchNumDocs = Math.max(batchNumDocs, fromContext.reader().maxDoc());
           loadedMappings.put(pairFieldName, mapping);
         }

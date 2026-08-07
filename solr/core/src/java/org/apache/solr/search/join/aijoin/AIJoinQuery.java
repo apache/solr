@@ -137,7 +137,8 @@ class AIJoinQuery extends Query {
     // TODO mostly copying  org.apache.solr.search.join.aijoin.AIJoinIndex.ensureJoinSegments
     // we need to find missing pairs, then project them onto from-side segments
     // and submit FromSideData creation onto executor service
-    // and put futures into from-addressed array, and pass downstream to ToLeafContext through Weight
+    // and put futures into from-addressed array, and pass downstream to ToLeafContext through
+    // Weight
 
     // let's submit to from searcher executor tasks yielding DocIdSets
     // then, ToLeafContexts will get these DocIdSets and iterate them.

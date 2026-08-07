@@ -2,7 +2,6 @@ package org.apache.solr.search.join.aijoin;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -13,11 +12,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
 /**
- * From-side state of one (from-segment, to-segment) pair: the from doc values, its live-docs mask, and the hashed from-side term
- * dictionary. The hash maps each from-side term to its from-ord via {@link #fromOrdByHashOrd}, so the to-side stage of
- * {@link AIJoinUtil#computeDocMapping} can resolve a to-side term to the from-ord it shares. {@link #toDocByFromDoc} is zero-filled to
- * {@code -1} and indexed by each live from-doc's from-ord by ; the to-side stage rewrites it in place from
- * from-ords to to-docs.
+ * From-side state of one (from-segment, to-segment) pair: the from doc values, its live-docs mask,
+ * and the hashed from-side term dictionary. The hash maps each from-side term to its from-ord via
+ * {@link #fromOrdByHashOrd}, so the to-side stage of {@link AIJoinUtil#computeDocMapping} can
+ * resolve a to-side term to the from-ord it shares. {@link #toDocByFromDoc} is zero-filled to
+ * {@code -1} and indexed by each live from-doc's from-ord by ; the to-side stage rewrites it in
+ * place from from-ords to to-docs.
  */
 final class FromSideData {
   private final BytesRefHash fromTermsHash;
@@ -25,8 +25,7 @@ final class FromSideData {
   private final int[] toDocByFromDoc;
   private final int fromValuesCount;
 
-  public FromSideData(LeafReaderContext fromContext, String fromField
-  ) throws IOException {
+  public FromSideData(LeafReaderContext fromContext, String fromField) throws IOException {
 
     SortedSetDocValues fromDV = DocValues.getSortedSet(fromContext.reader(), fromField);
     Bits fromLiveDocs = fromContext.reader().getLiveDocs();
@@ -66,10 +65,7 @@ final class FromSideData {
     }
   }
 
-  /**
-   * per thread to-segment tasks uses these copies as a scratch, to turn values to "toDoc#"
-   *
-   */
+  /** per thread to-segment tasks uses these copies as a scratch, to turn values to "toDoc#" */
   public int[] cloneFromOrdByFromDoc() {
     return toDocByFromDoc.clone();
   }
