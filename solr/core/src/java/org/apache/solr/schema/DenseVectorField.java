@@ -36,6 +36,7 @@ import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteKnnVectorFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
@@ -379,6 +380,11 @@ public class DenseVectorField extends FloatPointField {
     }
   }
 
+  @Override
+  public Query getExistenceQuery(QParser parser, SchemaField field) {
+    return new FieldExistsQuery(field.getName());
+  }
+
   /**
    * Not Supported. Please use the {!knn} query parser to run K nearest neighbors search queries.
    */
@@ -389,7 +395,10 @@ public class DenseVectorField extends FloatPointField {
         "Field Queries are not supported for Dense Vector fields. Please use the {!knn} query parser to run K nearest neighbors search queries.");
   }
 
-  /** Not Supported */
+  /**
+   * Unbounded ranges ({@code [* TO *]}) are treated as existence queries. Bounded range queries are
+   * not supported.
+   */
   @Override
   public Query getRangeQuery(
       QParser parser,
@@ -398,6 +407,9 @@ public class DenseVectorField extends FloatPointField {
       String part2,
       boolean minInclusive,
       boolean maxInclusive) {
+    if (part1 == null && part2 == null) {
+      return getExistenceQuery(parser, field);
+    }
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
         "Range Queries are not supported for Dense Vector fields. Please use the {!knn} query parser to run K nearest neighbors search queries.");
