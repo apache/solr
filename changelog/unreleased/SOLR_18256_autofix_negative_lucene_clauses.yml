@@ -1,5 +1,5 @@
+title: Pure negative (NOT) expressions in the "lucene" (default) QParser no longer need an explicit *:* to work.
 type: fixed
-title: Fix pure negative (NOT) sub-expression queries in lucene QParser
 authors:
   - name: Abhishek Umarjikar
     nick: abumarjikar

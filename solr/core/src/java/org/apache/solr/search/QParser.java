@@ -116,7 +116,7 @@ public abstract class QParser {
               .luceneMatchVersion
               .onOrAfter(org.apache.lucene.util.Version.LUCENE_10_2_0);
     } else {
-      this.autoFixPureNegative = false;
+      this.autoFixPureNegative = true;
     }
   }
 

@@ -31,9 +31,6 @@ public class SolrQueryParser extends QueryParser {
   @Override
   protected Query getBooleanQuery(List<BooleanClause> clauses) throws SyntaxError {
     Query q = super.getBooleanQuery(clauses);
-    if (parser != null && parser.isAutoFixPureNegative()) {
-      return QueryUtils.makeQueryable(q);
-    }
-    return q;
+    return (parser.isAutoFixPureNegative()) ? QueryUtils.makeQueryable(q) : q;
   }
 }
