@@ -16,14 +16,16 @@
  limitations under the License.
 -->
 
-<!-- Test schema file for DenseVectorField -->
+<!-- Test schema file for ScalarQuantizedDenseVectorField with flat algorithm -->
 
-<schema name="bad-schema-densevector-flat-quantized" version="1.7">
+<schema name="schema-densevector-flat-scalarQuantized" version="1.7">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
   <fieldType name="knn_vector_flat_sq" class="solr.ScalarQuantizedDenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="flat"/>
+  <fieldType name="knn_vector_flat_sq_4bit" class="solr.ScalarQuantizedDenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="flat" bits="4"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-  <field name="vector" type="knn_vector_flat_sq" indexed="true" stored="true"/>
+  <field name="vector_sq_flat" type="knn_vector_flat_sq" indexed="true" stored="true"/>
+  <field name="vector_sq_flat_4bit" type="knn_vector_flat_sq_4bit" indexed="true" stored="true"/>
 
   <uniqueKey>id</uniqueKey>
 </schema>

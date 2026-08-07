@@ -1,0 +1,8 @@
+title: Support knnAlgorithm="flat" for ScalarQuantizedDenseVectorField to store scalar-quantized vectors
+  without building an HNSW graph.
+type: added
+authors:
+- name: Adam Quigley
+links:
+- name: SOLR-18267
+  url: https://issues.apache.org/jira/browse/SOLR-18267

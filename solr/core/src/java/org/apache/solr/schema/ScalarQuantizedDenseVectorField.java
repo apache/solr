@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.Map;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene104.Lucene104HnswScalarQuantizedVectorsFormat;
+import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat;
 import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat.ScalarEncoding;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -123,18 +124,28 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
 
     super.init(schema, args);
 
-    if (FLAT_ALGORITHM.equals(getKnnAlgorithm())) {
+    if (VectorEncoding.BYTE.equals(getVectorEncoding())
+        && FLAT_ALGORITHM.equals(getKnnAlgorithm())) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "knnAlgorithm 'flat' is not supported for ScalarQuantizedDenseVectorField");
+          "vectorEncoding 'BYTE' is not supported for ScalarQuantizedDenseVectorField"
+              + " with knnAlgorithm 'flat'");
     }
   }
+
+  // Unlike DenseVectorField, the scalar-quantized flat format supports KNN queries.
+  @Override
+  public void checkKnnQuerySupported() {}
 
   @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {
     ScalarEncoding encoding = ScalarEncoding.fromNumBits(getBits());
-    return new Lucene104HnswScalarQuantizedVectorsFormat(
-        encoding, getHnswM(), getHnswEfConstruction());
+    if (FLAT_ALGORITHM.equals(getKnnAlgorithm())) {
+      return new Lucene104ScalarQuantizedVectorsFormat(encoding);
+    } else {
+      return new Lucene104HnswScalarQuantizedVectorsFormat(
+          encoding, getHnswM(), getHnswEfConstruction());
+    }
   }
 
   @Override
