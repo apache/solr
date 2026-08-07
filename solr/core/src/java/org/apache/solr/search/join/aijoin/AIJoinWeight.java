@@ -1,7 +1,6 @@
 package org.apache.solr.search.join.aijoin;
 
 import java.io.IOException;
-
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -38,11 +37,8 @@ final class AIJoinWeight extends Weight {
       IndexReader toReader,
       ScoreMode scoreMode,
       float boost,
-      Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures)
-        //    throws IOException
-      {
+      Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures) {
     super(aiJoinQuery);
-    // this.aiJoinQuery = aiJoinQuery;
     this.maybeStaleJoinSearcher = maybeStaleJoinSearcher;
     this.existingJoinSegments = existingJoinSegments;
     this.scoreMode = scoreMode;

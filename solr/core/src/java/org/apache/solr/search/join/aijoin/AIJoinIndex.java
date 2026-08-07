@@ -332,14 +332,16 @@ public final class AIJoinIndex implements Closeable {
   }
 
   /**
-   * Eagerly builds and persists every pair column in {@code neededPairs} not yet present in this
-   * join index, so an {@link AIJoinWeight} being constructed at {@link AIJoinQuery#createWeight}
-   * already sees a complete view of the pairs it needs, instead of discovering gaps lazily -- one
-   * to-segment at a time -- in {@link ToLeafJoinContext}. Missing pairs are resolved to their
-   * (from-segment, to-segment) leaf ordinals by crossing {@code fromSearcher}'s leaves against
-   * {@code toSearcher}'s leaves; pairs concurrently built by another thread are awaited, not
-   * rebuilt (see {@link #writeJoinSegments}).
+   * @deprecated don't write all of them upfront
+   *     <p>Eagerly builds and persists every pair column in {@code neededPairs} not yet present in
+   *     this join index, so an {@link AIJoinWeight} being constructed at {@link
+   *     AIJoinQuery#createWeight} already sees a complete view of the pairs it needs, instead of
+   *     discovering gaps lazily -- one to-segment at a time -- in {@link ToLeafJoinContext}.
+   *     Missing pairs are resolved to their (from-segment, to-segment) leaf ordinals by crossing
+   *     {@code fromSearcher}'s leaves against {@code toSearcher}'s leaves; pairs concurrently built
+   *     by another thread are awaited, not rebuilt (see {@link #writeJoinSegments}).
    */
+  @Deprecated
   void ensureJoinSegments(
       Set<String> neededPairs,
       IndexSearcher fromSearcher,
