@@ -196,13 +196,13 @@ public class NumericRangeQParserPlugin extends QParserPlugin {
           }
           switch (criteria) {
             case INTERSECTS:
-              return rangeField.newIntersectsQuery(fieldName, range);
+              return rangeField.newIntersectsQuery(schemaField, range);
             case WITHIN:
-              return rangeField.newWithinQuery(fieldName, range);
+              return rangeField.newWithinQuery(schemaField, range);
             case CONTAINS:
-              return rangeField.newContainsQuery(fieldName, range);
+              return rangeField.newContainsQuery(schemaField, range);
             case CROSSES:
-              return rangeField.newCrossesQuery(fieldName, range);
+              return rangeField.newCrossesQuery(schemaField, range);
             default:
               throw new AssertionError("Unhandled QueryCriteria: " + criteria);
           }
