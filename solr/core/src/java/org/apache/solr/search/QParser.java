@@ -28,6 +28,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -111,10 +112,7 @@ public abstract class QParser {
 
     if (req != null && req.getCore() != null && req.getCore().getSolrConfig() != null) {
       this.autoFixPureNegative =
-          req.getCore()
-              .getSolrConfig()
-              .luceneMatchVersion
-              .onOrAfter(org.apache.lucene.util.Version.LUCENE_10_2_0);
+          req.getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_10_2_0);
     } else {
       this.autoFixPureNegative = true;
     }
