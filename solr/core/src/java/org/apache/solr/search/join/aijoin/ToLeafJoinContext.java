@@ -313,19 +313,7 @@ class ToLeafJoinContext {
       this.edges = edges;
     }
 
-    /**
-     * Resolves this cell, once, to an in-memory doc mapping built on demand.
-     *
-     * <p>TODO decide whether this path still earns its keep. It is reached only when {@link
-     * #refreshJoinTasksReferences} found a pair with no column, and {@link
-     * AIJoinIndex#ensureJoinSegments} has already built every pair the query needs at {@link
-     * AIJoinQuery#createWeight} time -- so in a steady run it never fires. Instrumenting a 3000
-     * to-segment run produced no lazy build at all (see the class javadoc: {@code evt=build
-     * cause=lazy-to-segment}), i.e. {@code docMapping} was null throughout and every column was
-     * read from disk through {@link #joinSegmentRef}. It is not dead, though: it covers a pair that
-     * disappeared between weight creation and scoring, which the reaper in {@link
-     * AIJoinMergePolicy} can do. Before deleting it, confirm that case is handled elsewhere.
-     */
+    /** Resolves this cell, once, to an in-memory doc mapping built on demand. */
     void resolveFromIndexer(JoinColumnModel docMapping) {
       assert this.edges == null : "already resolved: " + this.edges;
       this.edges = docMapping.edges();
@@ -661,7 +649,7 @@ class ToLeafJoinContext {
         }
       }
     }
-    if (!refeshReference.isEmpty()) { // TODO presumabily we can go to index it
+    if (!refeshReference.isEmpty()) { // TODO presumably we can go to index it
       throw new IllegalStateException(
           "unable to refresh segment refs " + refeshReference + " at " + lastSeenJoinSearcher);
     }
@@ -810,8 +798,10 @@ class ToLeafJoinContext {
   /**
    * TODO this refines false positeve approximation , but it can iteratively refine false-negative
    * docset, this let us giveup looping join tasks
+   *
    * @deprecated called from EagerRefineTwoPhIter which is out of use now
    */
+  @Deprecated
   private FixedBitSet refineToMatches(int shift) throws IOException {
     FixedBitSet matchedToDocs = new FixedBitSet(lastToDoc - shift + 1);
     IndexSearcher freshSearcher = this.joinIndex.acquire();

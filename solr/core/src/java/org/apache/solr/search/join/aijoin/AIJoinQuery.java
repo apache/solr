@@ -115,8 +115,16 @@ class AIJoinQuery extends Query {
     // build any pair among neededPairs that isn't in the join index yet, up front, so this
     // weight's existingJoinSegments below is already complete instead of leaving the gaps to be
     // discovered lazily, one to-segment at a time, once scoring starts
-    joinIndex.ensureJoinSegments(neededPairs, fromSearcher, fromField, searcher, toField);
-
+    //
+    // DON'T write'em upfront
+    //
+    // WAS:
+    // joinIndex.ensureJoinSegments(neededPairs, fromSearcher, fromField, searcher, toField);
+    //
+    // TODO instead, look for needed pairs, grab from segments fields,
+    // submit tasks loading from side components
+    // fromOrd[fromDoc#] and term dict fromOrd[fromVal],
+    // pass this futures array downstream
     Predicate<String> isNeeded = neededPairs::contains;
 
     Map<String, JoinSegmentReference> existingJoinSegments;
