@@ -810,6 +810,7 @@ class ToLeafJoinContext {
   /**
    * TODO this refines false positeve approximation , but it can iteratively refine false-negative
    * docset, this let us giveup looping join tasks
+   * @deprecated called from EagerRefineTwoPhIter which is out of use now
    */
   private FixedBitSet refineToMatches(int shift) throws IOException {
     FixedBitSet matchedToDocs = new FixedBitSet(lastToDoc - shift + 1);
