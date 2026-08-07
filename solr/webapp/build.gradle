@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+
 plugins {
   id 'java'
   id 'war'
@@ -62,4 +66,116 @@ war {
 // Expose 'war' archive as an artifact so that it can be packaged in the distribution.
 artifacts {
   war tasks.war
+}
+
+// web/libs holds checked-in third-party JavaScript, described for the distribution SBOM by
+// vendored-libs.json. These tasks keep the two in sync: validateVendoredLibs fails on any drift,
+// updateVendoredLibs refreshes the hashes. The manifest sits outside web/, which goes into the war.
+def vendoredLibsManifest = file('vendored-libs.json')
+def vendoredLibsDir = file('web/libs')
+
+def sha256Of = { File f ->
+  def digest = MessageDigest.getInstance('SHA-256')
+  f.eachByte(8192) { buffer, length -> digest.update(buffer, 0, length) }
+  digest.digest().encodeHex().toString()
+}
+
+tasks.register('validateVendoredLibs') {
+  group = 'Verification'
+  description = 'Checks that web/libs matches the components declared in vendored-libs.json'
+
+  inputs.file(vendoredLibsManifest).withPropertyName('manifest')
+      .withPathSensitivity(PathSensitivity.NONE)
+  inputs.dir(vendoredLibsDir).withPropertyName('vendoredLibs')
+      .withPathSensitivity(PathSensitivity.RELATIVE)
+  def marker = layout.buildDirectory.file('vendored-libs-validated.txt')
+  outputs.file(marker)
+
+  doLast {
+    def manifest = new JsonSlurper().parse(vendoredLibsManifest)
+    def onDisk = vendoredLibsDir.listFiles().findAll { it.file }.collectEntries { [(it.name): it] }
+    def errors = []
+
+    (onDisk.keySet() - manifest.keySet()).sort().each {
+      errors << "${it}: present in ${vendoredLibsDir} but absent from ${vendoredLibsManifest.name}."
+    }
+    (manifest.keySet() - onDisk.keySet()).sort().each {
+      errors << "${it}: declared in ${vendoredLibsManifest.name} but no such file in ${vendoredLibsDir}."
+    }
+
+    manifest.each { fileName, component ->
+      def file = onDisk[fileName]
+      if (file == null) {
+        return
+      }
+      ['type', 'bom-ref', 'name', 'purl', 'licenses', 'hashes'].each { field ->
+        if (!component[field]) {
+          errors << "${fileName}: component is missing the required '${field}' field."
+        }
+      }
+      def declared = component.hashes?.find { it.alg == 'SHA-256' }?.content
+      if (declared == null) {
+        errors << "${fileName}: component declares no SHA-256 hash."
+      } else {
+        def actual = sha256Of(file)
+        if (declared != actual) {
+          errors << "${fileName}: content changed, SHA-256 is ${actual} but the component declares " +
+              "${declared}. Review the component (version, licence, pedigree) and run 'gradlew " +
+              ":solr:webapp:updateVendoredLibs' to refresh the hash."
+        }
+      }
+    }
+
+    if (errors) {
+      throw new GradleException("Vendored JavaScript does not match ${vendoredLibsManifest}:\n  " +
+          errors.join("\n  "))
+    }
+    marker.get().asFile.text = "${manifest.size()} vendored components validated\n"
+  }
+}
+
+tasks.matching { it.name == 'check' }.configureEach {
+  it.dependsOn 'validateVendoredLibs'
+}
+
+tasks.register('updateVendoredLibs') {
+  group = 'Build Dependencies'
+  description = 'Refreshes the SHA-256 hashes in vendored-libs.json'
+
+  doLast {
+    // JsonSlurper hands back a LinkedHashMap, so the declaration order survives the round trip.
+    def manifest = new JsonSlurper().parse(vendoredLibsManifest)
+    def onDisk = vendoredLibsDir.listFiles().findAll { it.file }.sort { it.name }
+
+    onDisk.each { file ->
+      def component = manifest[file.name]
+      if (component == null) {
+        // A stub only: identity, licence and pedigree cannot be inferred from the file, so
+        // validateVendoredLibs keeps failing until they are filled in by hand.
+        logger.lifecycle("${file.name}: new file, added a stub component that must be completed by hand")
+        manifest[file.name] = [
+            type: 'library',
+            'bom-ref': null,
+            name: null,
+            hashes: [[alg: 'SHA-256', content: sha256Of(file)]],
+            licenses: null,
+            purl: null,
+        ]
+      } else {
+        def actual = sha256Of(file)
+        if (component.hashes?.find { it.alg == 'SHA-256' }?.content != actual) {
+          logger.lifecycle("${file.name}: refreshed SHA-256")
+          component.hashes = [[alg: 'SHA-256', content: actual]]
+        }
+      }
+    }
+
+    def removed = manifest.keySet() - onDisk.collect { it.name } as Set
+    removed.each {
+      logger.lifecycle("${it}: file is gone, dropping the component")
+      manifest.remove(it)
+    }
+
+    vendoredLibsManifest.text = JsonOutput.prettyPrint(JsonOutput.toJson(manifest.sort { it.key })) + "\n"
+  }
 }

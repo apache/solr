@@ -91,6 +91,10 @@ configure(allprojects
             return true
           }
         }
+        // A copied configuration inherits neither the consistent resolution nor the lock state of
+        // its source, so realign it: without this the module ships whichever versions it resolves
+        // on its own, which are not the ones that were tested (and not the ones the SBOM lists).
+        alignWithRuntimeClasspath(externalLibs)
         return externalLibs - configurations.solrPlatformLibs
       }, {
         into "lib"
