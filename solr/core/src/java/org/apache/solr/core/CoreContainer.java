@@ -425,10 +425,10 @@ public class CoreContainer {
     this.replayUpdatesExecutor =
         new OrderedExecutor<>(
             cfg.getReplayUpdatesThreads(),
-            ExecutorUtil.newMDCAwareCachedThreadPool(
+            ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getReplayUpdatesThreads(), // thread count
                 cfg.getReplayUpdatesThreads(), // queue size
-                new SolrNamedThreadFactory("replayUpdatesExecutor")));
+                "replayUpdatesExecutor"));
     this.appHandlersByConfigSetId = new JerseyAppHandlerCache();
 
     SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
@@ -451,10 +451,8 @@ public class CoreContainer {
     this.indexSearcherExecutor = SolrIndexSearcher.initCollectorExecutor(cfg);
 
     this.indexFingerprintExecutor =
-        ExecutorUtil.newMDCAwareCachedThreadPool(
-            EXECUTOR_MAX_CPU_THREADS,
-            Integer.MAX_VALUE,
-            new SolrNamedThreadFactory("IndexFingerprintPool"));
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            EXECUTOR_MAX_CPU_THREADS, Integer.MAX_VALUE, "IndexFingerprintPool");
   }
 
   @SuppressWarnings({"unchecked"})
