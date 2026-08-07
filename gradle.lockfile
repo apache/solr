@@ -27,4 +27,4 @@ org.apache.velocity:velocity-engine-core:2.4.1=ratDeps
 org.eclipse.jdt:ecj:3.46.0=ecjDeps
 org.slf4j:slf4j-api:2.0.17=ratDeps
 org.slf4j:slf4j-simple:2.0.17=ratDeps
-empty=
+empty=combinedGraphClasspath,projectHealthClasspath,projectMetadataClasspath,publicClassesClasspath,resolvedDepsClasspath,typeUsageClasspath
