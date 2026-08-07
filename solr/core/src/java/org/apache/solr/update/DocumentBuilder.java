@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,9 +35,13 @@ import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Builds a Lucene {@link Document} from a {@link SolrInputDocument}. */
 public class DocumentBuilder {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // accessible only for tests
   static int MIN_LENGTH_TO_MOVE_LAST =
@@ -163,11 +168,12 @@ public class DocumentBuilder {
           && field.getValueCount() > 1
           && !(sfield.getType() instanceof DenseVectorField)) {
 
-        // Ensure we do not flood the logs with extremely long values
-        String fieldValue = field.getValue().toString();
-        if (fieldValue.length() > MAX_VALUES_AS_STRING_LENGTH) {
-          assert fieldValue.endsWith("]");
-          fieldValue = fieldValue.substring(0, MAX_VALUES_AS_STRING_LENGTH - 4) + "...]";
+        if (log.isTraceEnabled()) {
+          log.trace(
+              "{}multiple values encountered for non multiValued field {}: {}",
+              getID(doc, schema),
+              sfield.getName(),
+              truncatedValue(field.getValue()));
         }
 
         throw new SolrException(
@@ -175,9 +181,7 @@ public class DocumentBuilder {
             "ERROR: "
                 + getID(doc, schema)
                 + "multiple values encountered for non multiValued field "
-                + sfield.getName()
-                + ": "
-                + fieldValue);
+                + sfield.getName());
       }
 
       List<CopyField> copyFields = schema.getCopyFieldsList(name);
@@ -236,26 +240,24 @@ public class DocumentBuilder {
           }
         }
       } catch (SolrException ex) {
+        traceFieldError(doc, schema, field, ex);
         throw new SolrException(
             SolrException.ErrorCode.getErrorCode(ex.code()),
             "ERROR: "
                 + getID(doc, schema)
                 + "Error adding field '"
                 + field.getName()
-                + "'='"
-                + field.getValue()
                 + "' msg="
                 + ex.getMessage(),
             ex);
       } catch (Exception ex) {
+        traceFieldError(doc, schema, field, ex);
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "ERROR: "
                 + getID(doc, schema)
                 + "Error adding field '"
                 + field.getName()
-                + "'='"
-                + field.getValue()
                 + "' msg="
                 + ex.getMessage(),
             ex);
@@ -337,12 +339,16 @@ public class DocumentBuilder {
 
       // check if the copy field is a multivalued or not
       if (!destinationField.multiValued() && destHasValues) {
+        if (log.isTraceEnabled()) {
+          log.trace(
+              "Multiple values encountered for non multiValued copy field {}: {}",
+              destinationField.getName(),
+              truncatedValue(originalFieldValue));
+        }
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Multiple values encountered for non multiValued copy field "
-                + destinationField.getName()
-                + ": "
-                + originalFieldValue);
+                + destinationField.getName());
       }
       Object fieldValue = originalFieldValue;
       // Perhaps trim the length of a copy field
@@ -361,6 +367,27 @@ public class DocumentBuilder {
       used = true;
     }
     return used;
+  }
+
+  private static void traceFieldError(
+      SolrInputDocument doc, IndexSchema schema, SolrInputField field, Exception ex) {
+    if (log.isTraceEnabled()) {
+      log.trace(
+          "{}Error adding field '{}'='{}'",
+          getID(doc, schema),
+          field.getName(),
+          truncatedValue(field.getValue()),
+          ex);
+    }
+  }
+
+  /** Renders a field value as a string, truncated to avoid flooding the logs */
+  private static String truncatedValue(Object value) {
+    String str = String.valueOf(value);
+    if (str.length() > MAX_VALUES_AS_STRING_LENGTH) {
+      str = str.substring(0, MAX_VALUES_AS_STRING_LENGTH - 3) + "...";
+    }
+    return str;
   }
 
   private static SolrException unexpectedNestedDocException(
