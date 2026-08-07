@@ -92,11 +92,5 @@ if (gradle.ext.withJsClient) {
   include(":solr:webapp:js-client")
 }
 
-// Opt-in jacoco test coverage: decided here so that build.gradle only loads
-// gradle/testing/coverage.gradle.kts when coverage is actually enabled.
-gradle.ext.withCoverage = gradle.startParameter.taskNames.any {
-  it == 'coverage' || it.endsWith(':coverage')
-} || Boolean.parseBoolean(providers.gradleProperty('tests.coverage').getOrElse('false'))
-
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')

@@ -155,8 +155,11 @@ apply from: file('gradle/testing/fail-on-no-tests.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
 apply from: file('gradle/testing/retry-test.gradle')
-if (gradle.ext.withCoverage) {
-  // Opt-in jacoco test coverage (enablement decided in settings.gradle).
+
+def withCoverage = gradle.startParameter.taskNames.any {
+  it == 'coverage' || it.endsWith(':coverage')
+} || providers.gradleProperty('tests.coverage').getOrElse('false').toBoolean()
+if (withCoverage) {
   apply from: file('gradle/testing/coverage.gradle.kts')
 }
 
