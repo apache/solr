@@ -92,7 +92,7 @@ class ToLeafJoinContext {
   final LeafReaderContext toContext;
   final Query fromQuery;
   final IndexSearcher fromSearcher;
-  private final List<Future<AIJoinUtil.CacheAndCount>> fromDocIdSetFutures;
+  private final Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures;
   private IndexSearcher lastSeenJoinSearcher;
   final String fromField;
   final String toField;
@@ -454,7 +454,7 @@ class ToLeafJoinContext {
       IndexSearcher weightAgeJoinSearcher,
       IndexSearcher scorerSupplierAgeJoinSearcher,
       AIJoinIndex joinIndex,
-      List<Future<AIJoinUtil.CacheAndCount>> fromDocIdSetFutures)
+      Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures)
       throws IOException, ExecutionException, InterruptedException {
     this.toContext = toContext;
     this.fromField = fromField;
@@ -763,7 +763,7 @@ class ToLeafJoinContext {
 
     List<JoinTask> tasks = new ArrayList<>();
     for (LeafReaderContext fromContext : leaves) {
-      AIJoinUtil.CacheAndCount matchAndCount = this.fromDocIdSetFutures.get(fromContext.ord).get();
+      AIJoinUtil.CacheAndCount matchAndCount = this.fromDocIdSetFutures[fromContext.ord].get();
       if (matchAndCount == null) {
         continue;
       }
