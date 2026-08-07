@@ -900,6 +900,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /** Makes a query request and returns the JSON string response */
   public static String JQ(SolrQueryRequest req) throws Exception {
+    return JQ(req.getParams().get(CommonParams.QT), req);
+  }
+
+  /** Makes a query request against the named handler and returns the JSON string response */
+  public static String JQ(String handler, SolrQueryRequest req) throws Exception {
     SolrParams params = req.getParams();
     if (!"json".equals(params.get("wt", "xml")) || params.get("indent") == null) {
       ModifiableSolrParams newParams = new ModifiableSolrParams(params);
@@ -911,7 +916,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     String response;
     boolean failed = true;
     try {
-      response = h.query(req);
+      response = h.query(handler, req);
       failed = false;
     } finally {
       if (failed) {
@@ -949,6 +954,19 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
+   * Validates a query against the named handler matches some JSON test expressions using the
+   * default double delta tolerance.
+   *
+   * @see JSONTestUtil#DEFAULT_DELTA
+   * @see #assertJQ(String,SolrQueryRequest,double,String...)
+   * @return The request response as a JSON String if all test patterns pass
+   */
+  public static String assertJQ(String handler, SolrQueryRequest req, String... tests)
+      throws Exception {
+    return assertJQ(handler, req, JSONTestUtil.DEFAULT_DELTA, tests);
+  }
+
+  /**
    * Validates a query matches some JSON test expressions and closes the query. The text expression
    * is of the form path:JSON. The Noggit JSON parser used accepts single quoted strings and bare
    * strings to allow easy embedding in Java Strings.
@@ -963,6 +981,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   public static String assertJQ(SolrQueryRequest req, double delta, String... tests)
       throws Exception {
+    return assertJQ(req.getParams().get(CommonParams.QT), req, delta, tests);
+  }
+
+  /**
+   * Validates a query against the named handler matches some JSON test expressions and closes the
+   * query.
+   *
+   * @param handler the name of the request handler to process the request
+   * @param req Solr request to execute
+   * @param delta tolerance allowed in comparing float/double values
+   * @param tests JSON path expression + '==' + expected value
+   * @return The request response as a JSON String if all test patterns pass
+   */
+  public static String assertJQ(String handler, SolrQueryRequest req, double delta, String... tests)
+      throws Exception {
     SolrParams params = null;
     try {
       params = req.getParams();
@@ -976,7 +1009,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       String response;
       boolean failed = true;
       try {
-        response = h.query(req);
+        response = h.query(handler, req);
         failed = false;
       } finally {
         if (failed) {
@@ -1021,6 +1054,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return assertThatJQ(req, "", test);
   }
 
+  public static <T> String assertThatJQ(String handler, SolrQueryRequest req, Matcher<T> test)
+      throws Exception {
+    return assertThatJQ(handler, req, "", test);
+  }
+
   /**
    * Validates a query completes and, using JSON deserialization, returns an object that passes the
    * given Matcher test.
@@ -1033,9 +1071,24 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param test Matcher for the given object returned from deserializing the response
    * @return The request response as a JSON String if the test matcher passes
    */
-  @SuppressWarnings("unchecked")
   public static <T> String assertThatJQ(SolrQueryRequest req, String message, Matcher<T> test)
       throws Exception {
+    return assertThatJQ(req.getParams().get(CommonParams.QT), req, message, test);
+  }
+
+  /**
+   * Validates a query against the named handler completes and, using JSON deserialization, returns
+   * an object that passes the given Matcher test.
+   *
+   * @param handler the name of the request handler to process the request
+   * @param req Solr request to execute
+   * @param message Failure message for test
+   * @param test Matcher for the given object returned from deserializing the response
+   * @return The request response as a JSON String if the test matcher passes
+   */
+  @SuppressWarnings("unchecked")
+  public static <T> String assertThatJQ(
+      String handler, SolrQueryRequest req, String message, Matcher<T> test) throws Exception {
     final SolrParams params = req.getParams();
     try {
       if (!"json".equals(params.get("wt", "xml")) || params.get("indent") == null) {
@@ -1048,7 +1101,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       String response;
       boolean failed = true;
       try {
-        response = h.query(req);
+        response = h.query(handler, req);
         failed = false;
       } finally {
         if (failed) {
@@ -1076,9 +1129,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /** Makes sure a query throws a SolrException with the listed response code */
   public static void assertQEx(String message, SolrQueryRequest req, int code) {
+    assertQEx(message, req, code, req.getParams().get(CommonParams.QT));
+  }
+
+  /** Makes sure a query against the named handler throws a SolrException with the given code */
+  public static void assertQEx(String message, SolrQueryRequest req, int code, String handler) {
     try {
       ignoreException(".");
-      h.query(req);
+      h.query(handler, req);
       fail(message);
     } catch (SolrException sex) {
       assertEquals(code, sex.code());
@@ -1090,9 +1148,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static void assertQEx(String message, SolrQueryRequest req, SolrException.ErrorCode code) {
+    assertQEx(message, req, code, req.getParams().get(CommonParams.QT));
+  }
+
+  /** Makes sure a query against the named handler throws a SolrException with the given code */
+  public static void assertQEx(
+      String message, SolrQueryRequest req, SolrException.ErrorCode code, String handler) {
     try {
       ignoreException(".");
-      h.query(req);
+      h.query(handler, req);
       fail(message);
     } catch (SolrException e) {
       assertEquals(code.code, e.code());
@@ -1117,9 +1181,29 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       String exceptionMessage,
       SolrQueryRequest req,
       SolrException.ErrorCode code) {
+    assertQEx(failMessage, exceptionMessage, req, code, req.getParams().get(CommonParams.QT));
+  }
+
+  /**
+   * Makes sure a query against the named handler throws a SolrException with the listed response
+   * code and expected message
+   *
+   * @param failMessage The assert message to show when the query doesn't throw the expected
+   *     exception
+   * @param exceptionMessage A substring of the message expected in the exception
+   * @param req Solr request
+   * @param code expected error code for the query
+   * @param handler the name of the request handler to process the request
+   */
+  public static void assertQEx(
+      String failMessage,
+      String exceptionMessage,
+      SolrQueryRequest req,
+      SolrException.ErrorCode code,
+      String handler) {
     try {
       ignoreException(".");
-      h.query(req);
+      h.query(handler, req);
       fail(failMessage);
     } catch (SolrException e) {
       assertEquals(code.code, e.code());
