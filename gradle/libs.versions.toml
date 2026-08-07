@@ -52,6 +52,7 @@ asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
 asciidoctor-tabs = "1.0.0-beta.6"
 azagniotov-langdetect = "12.5.2"
+barfuin-jacocolog = "4.0.2"
 # @keep bats-assert version used in packaging
 bats-assert = "2.0.0"
 # @keep bats-core version used in packaging
@@ -201,6 +202,7 @@ threeten-bp = "1.7.3"
 xerial-snappy = "1.1.10.8"
 
 [plugins]
+barfuin-jacocolog = { id = "org.barfuin.gradle.jacocolog", version.ref = "barfuin-jacocolog" }
 benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benmanes-versions" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 diffplug-spotless = { id = "com.diffplug.spotless", version.ref = "diffplug-spotless" }

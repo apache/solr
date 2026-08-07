@@ -23,6 +23,7 @@ plugins {
   id 'solr.build-infra'
 
   alias(libs.plugins.owasp.dependencycheck)
+  alias(libs.plugins.barfuin.jacocolog) apply false
   alias(libs.plugins.benmanes.versions)
   alias(libs.plugins.kotlin.multiplatform) apply false
   alias(libs.plugins.littlerobots.versioncatalogupdate) apply false
@@ -154,6 +155,13 @@ apply from: file('gradle/testing/fail-on-no-tests.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
 apply from: file('gradle/testing/retry-test.gradle')
+
+def withCoverage = gradle.startParameter.taskNames.any {
+  it == 'coverage' || it.endsWith(':coverage')
+} || providers.gradleProperty('tests.coverage').getOrElse('false').toBoolean()
+if (withCoverage) {
+  apply from: file('gradle/testing/coverage.gradle.kts')
+}
 
 // Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')
