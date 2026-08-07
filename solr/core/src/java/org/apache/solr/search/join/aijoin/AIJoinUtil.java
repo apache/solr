@@ -200,9 +200,10 @@ final class AIJoinUtil {
   }
 
   /**
-   * Merges the sorted term dictionaries of one (from-segment, to-segment) pair and resolves every
-   * from-side doc to its matching to-side doc id, along with the pair's from-doc and to-doc bounds.
-   * {@code scratch} is a shared from-ord indexed merge buffer, safe to reuse for the next pair.
+   * Builds the join column for one (from-segment, to-segment) pair: resolves every from-side doc to
+   * its matching to-side doc id, along with the pair's from-doc and to-doc bounds. From-side terms
+   * are hashed by {@link FromSideData}; each to-side term is looked up in that hash to map
+   * from-side ords to to-side ords.
    *
    * <p>Docs already deleted at build time are skipped, purely to avoid persisting entries nobody
    * can ever match -- deletes are otherwise re-checked live at query time (from-side in {@code
@@ -210,50 +211,29 @@ final class AIJoinUtil {
    * mapping outlives whatever gets deleted after it was built.
    */
   static JoinColumnModel computeDocMapping(
-      LeafReaderContext fromContext,
-      String fromField,
-      LeafReaderContext toContext,
-      String toField,
-      long[] scratch)
-      throws IOException {
-    SortedSetDocValues fromDV = DocValues.getSortedSet(fromContext.reader(), fromField);
-    SortedSetDocValues toDV = DocValues.getSortedSet(toContext.reader(), toField);
-    Bits fromLiveDocs = fromContext.reader().getLiveDocs();
-    Bits toLiveDocs = toContext.reader().getLiveDocs();
-    // map from-segment ords to to-segment ords by merging the two sorted term dictionaries
-    // TODO this merge is per pair, so a from segment's term dictionary is walked once for every
-    // to segment it pairs with, and vice versa: N*M merges where 2*(N+M) dictionary reads would
-    // do, if ord maps were derived per segment and reused across pairings. Worth measuring before
-    // parallelising the caller (AIJoinIndex#writeJoinSegments): removing the redundancy may buy
-    // more than spreading it across threads.
-    long[] toOrdByFromOrd = scratch;
+      LeafReaderContext toContext, String toField, FromSideData fromSideData
+      //    , long[] scratch
+      ) throws IOException {
+
+    long[] toOrdByFromOrd = new long[fromSideData.getFromValuesCount()];
     Arrays.fill(toOrdByFromOrd, -1L);
-    // dead code, kept until M:N support settles: the reverse ord map was filled but never read
-    // long[] fromOrdByToOrd = new long[Math.toIntExact(toDV.getValueCount())];
-    // Arrays.fill(fromOrdByToOrd, -1L);
-    TermsEnum fromTerms = fromDV.termsEnum();
+    SortedSetDocValues toDV = DocValues.getSortedSet(toContext.reader(), toField);
+    Bits toLiveDocs = toContext.reader().getLiveDocs();
     TermsEnum toTerms = toDV.termsEnum();
-    BytesRef fromTerm = fromTerms.next();
-    BytesRef toTerm = toTerms.next();
-    while (fromTerm != null && toTerm != null) {
-      int cmp = fromTerm.compareTo(toTerm);
-      if (cmp == 0) {
-        toOrdByFromOrd[(int) fromTerms.ord()] = toTerms.ord();
-        // fromOrdByToOrd[(int) toTerms.ord()] = fromTerms.ord();
-        fromTerm = fromTerms.next();
-        toTerm = toTerms.next();
-      } else if (cmp < 0) {
-        fromTerm = fromTerms.next();
-      } else {
-        toTerm = toTerms.next();
+    // resolve from-side ords to to-side ords: look each to-side term up in the from-side hash.
+    for (BytesRef term = toTerms.next(); term != null; term = toTerms.next()) {
+      int fromOrd = fromSideData.getFromTermOrdOrDashOne(term);
+      if (fromOrd != -1) {
+        toOrdByFromOrd[fromOrd] = (int) toTerms.ord();
       }
     }
     // TODO: this degrades M:N joins to M:1. Both toDocByToOrd and toDocByFromDoc keep a single
-    // to-side doc per slot, so when several to docs share a term (non-unique toField) or a from
+    // to-side doc per slot, so when several to docs share a term (non-unique toField) or a
+    // fromSideData
     // doc is multi-valued with several matching terms, later assignments overwrite earlier ones
     // and only the last match survives. The read side (AIJoinQuery) already consumes all
     // docValueCount() values per doc, so only this writer needs to learn to emit multiple
-    // to docs per from doc.
+    // to docs per fromSideData doc.
     int[] toDocByToOrd = new int[Math.toIntExact(toDV.getValueCount())];
     Arrays.fill(toDocByToOrd, -1);
     for (int toDoc = toDV.nextDoc();
@@ -265,44 +245,40 @@ final class AIJoinUtil {
       for (int i = 0; i < toDV.docValueCount(); i++) {
         long toOrd = toDV.nextOrd();
         toDocByToOrd[(int) toOrd] = toDoc;
+        // TODO we can apply toOrdByFromOrd right here
+        // and get toDocByFromOrd[]
       }
     }
 
-    // resolve every from doc to its to-side ordinal: the doc's fromField ord looked up in the
-    // dictionary merge result. Docs without the field, or whose term has no to-side match, keep -1
-    int[] toDocByFromDoc = new int[fromContext.reader().maxDoc()];
-    Arrays.fill(toDocByFromDoc, -1);
+    // resolve every fromSideData doc to its to-side doc. Docs without the field, or whose term has
+    // no to-side match, keep -1.
+    int[] toDocByFromDoc = fromSideData.cloneFromOrdByFromDoc();
     int minFromDoc = DocIdSetIterator.NO_MORE_DOCS;
     int maxFromDoc = -1;
     int minToDoc = DocIdSetIterator.NO_MORE_DOCS;
     int maxToDoc = -1;
     int toCount = 0;
-    for (int fromDoc = fromDV.nextDoc();
-        fromDoc != DocIdSetIterator.NO_MORE_DOCS;
-        fromDoc = fromDV.nextDoc()) {
-      if (fromLiveDocs != null && !fromLiveDocs.get(fromDoc)) {
+    // walk the array, mapping each fromSideData ord to its to-side doc in place.
+    for (int fromDoc = 0; fromDoc < toDocByFromDoc.length; fromDoc++) {
+      int fromOrd = toDocByFromDoc[fromDoc];
+      if (fromOrd == -1) {
         continue;
       }
-      for (int i = 0; i < fromDV.docValueCount(); i++) {
-        long fromOrd = fromDV.nextOrd();
-        int toOrd = (int) toOrdByFromOrd[(int) fromOrd];
-        if (toOrd == -1) {
-          continue;
-        }
-        int toDoc = toDocByToOrd[toOrd];
-        if (toDoc == -1) {
-          continue;
-        }
-        toDocByFromDoc[fromDoc] = toDoc;
-        minFromDoc = Math.min(minFromDoc, fromDoc);
-        maxFromDoc = Math.max(maxFromDoc, fromDoc);
-        minToDoc = Math.min(minToDoc, toDoc);
-        maxToDoc = Math.max(maxToDoc, toDoc);
-        toCount++;
+      int toOrd = (int) toOrdByFromOrd[fromOrd];
+      int toDoc = toOrd == -1 ? -1 : toDocByToOrd[toOrd];
+      if (toDoc == -1) {
+        toDocByFromDoc[fromDoc] = -1; // wiping is crucial
+        continue;
       }
+      toDocByFromDoc[fromDoc] = toDoc;
+      minFromDoc = Math.min(minFromDoc, fromDoc);
+      maxFromDoc = Math.max(maxFromDoc, fromDoc);
+      minToDoc = Math.min(minToDoc, toDoc);
+      maxToDoc = Math.max(maxToDoc, toDoc);
+      toCount++;
     }
     if (maxFromDoc < 0) {
-      // no from doc in this pair maps to any to doc: normalize both edges to the symmetric
+      // no fromSideData doc in this pair maps to any to doc: normalize both edges to the symmetric
       // {-1, -1} sentinel. An asymmetric one (e.g. {NO_MORE_DOCS, -1}) doesn't round-trip
       // through the join index's SORTED_NUMERIC edges column, which always returns its two
       // values in ascending numeric order regardless of which was written as "min" -- so
