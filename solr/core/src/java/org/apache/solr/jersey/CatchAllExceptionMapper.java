@@ -24,6 +24,7 @@ import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ResourceContext;
@@ -74,6 +75,14 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
       solrQueryResponse.setException(solrException);
     } else {
       solrQueryResponse.setException(exception);
+    }
+
+    // JSON deserialization errors indicate a malformed request body and should be 400s.
+    if (exception instanceof JsonMappingException jme) {
+      return processAndRespondToException(
+          new SolrException(SolrException.ErrorCode.BAD_REQUEST, jme.getOriginalMessage()),
+          solrQueryRequest,
+          containerRequestContext);
     }
 
     // Exceptions coming from the JAX-RS framework itself should be handled separately.
