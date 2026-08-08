@@ -72,6 +72,7 @@ import org.apache.solr.schema.EnumFieldType;
 import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.SemVerField;
 import org.apache.solr.schema.StrField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -698,6 +699,9 @@ public class SolrDocumentFetcher {
     // should have this method so that specific field types can customize it.
     if (schemaField.getType() instanceof LatLonPointSpatialField) {
       return LatLonPointSpatialField.decodeDocValueToString(value);
+    }
+    if (schemaField.getType() instanceof SemVerField) {
+      return SemVerField.decodeDocValue(value);
     }
 
     if (schemaField.getType().getNumberType() == null) {
