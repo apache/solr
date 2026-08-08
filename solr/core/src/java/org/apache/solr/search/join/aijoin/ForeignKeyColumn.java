@@ -19,13 +19,13 @@ import org.apache.lucene.util.BytesRefHash;
  * {@code -1} and indexed by each live from-doc's from-ord by ; the to-side stage rewrites it in
  * place from from-ords to to-docs.
  */
-final class FromSideData {
+final class ForeignKeyColumn {
   private final BytesRefHash fromTermsHash;
   private final int[] fromOrdByHashOrd;
   private final int[] toDocByFromDoc;
   private final int fromValuesCount;
 
-  public FromSideData(LeafReaderContext fromContext, String fromField) throws IOException {
+  public ForeignKeyColumn(LeafReaderContext fromContext, String fromField) throws IOException {
 
     SortedSetDocValues fromDV = DocValues.getSortedSet(fromContext.reader(), fromField);
     Bits fromLiveDocs = fromContext.reader().getLiveDocs();
@@ -65,7 +65,11 @@ final class FromSideData {
     }
   }
 
-  /** per thread to-segment tasks uses these copies as a scratch, to turn values to "toDoc#" */
+  /**
+   * per thread to-segment tasks uses these copies as a scratch, to turn values to "toDoc#" TODO
+   * presumably, we know how many copies we need, and the last call might return the original array
+   * which will be overridden by transformation.
+   */
   public int[] cloneFromOrdByFromDoc() {
     return toDocByFromDoc.clone();
   }

@@ -93,6 +93,7 @@ class ToLeafJoinContext {
   final Query fromQuery;
   final IndexSearcher fromSearcher;
   private final Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures;
+  private final Future<ForeignKeyColumn>[] fromColumnFutures;
   private IndexSearcher lastSeenJoinSearcher;
   final String fromField;
   final String toField;
@@ -229,6 +230,10 @@ class ToLeafJoinContext {
           }
           logDrain(cell, walked, false);
         }
+      } catch (ExecutionException e) {
+        throw new RuntimeException(e);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
       } finally {
         ToLeafJoinContext.this.joinIndex.release(freshSearcher);
       }
@@ -430,6 +435,7 @@ class ToLeafJoinContext {
    * @param scorerSupplierAgeJoinSearcher the join searcher used at {@link
    *     AIJoinWeight#scorerSupplier} time
    * @param fromDocIdSetFutures
+   * @param fromColumnFutures
    */
   ToLeafJoinContext(
       LeafReaderContext toContext,
@@ -442,7 +448,8 @@ class ToLeafJoinContext {
       IndexSearcher weightAgeJoinSearcher,
       IndexSearcher scorerSupplierAgeJoinSearcher,
       AIJoinIndex joinIndex,
-      Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures)
+      Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures,
+      Future<ForeignKeyColumn>[] fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
     this.toContext = toContext;
     this.fromField = fromField;
@@ -451,7 +458,7 @@ class ToLeafJoinContext {
     this.toField = toField;
     this.toReader = toReader;
     this.fromDocIdSetFutures = fromDocIdSetFutures;
-
+    this.fromColumnFutures = fromColumnFutures;
     this.joinIndex = joinIndex;
     this.joinCellsByFromSegOrd = new JoinTask[fromSearcher.getLeafContexts().size()];
 
@@ -573,7 +580,7 @@ class ToLeafJoinContext {
   }
 
   private TaskRefreshResult refreshJoinTasksReferences(IndexSearcher newJoinIndexSearcher)
-      throws IOException {
+      throws IOException, ExecutionException, InterruptedException {
     Set<Map.Entry<JoinTask, LeafReaderContext>> joinSegements = new LinkedHashSet<>();
     Set<Map.Entry<JoinTask, JoinColumnModel>> justWritten = new LinkedHashSet<>();
 
@@ -680,7 +687,8 @@ class ToLeafJoinContext {
               this.toReader,
               this.toField,
               AIJoinIndex.BuildCause.LAZY_TO_SEGMENT,
-              this.ctxId);
+              this.ctxId,
+              fromColumnFutures);
       this.joinIndexBuildNanos += System.nanoTime() - buildStartNanos;
       assert written.keySet().containsAll(missingPairs.keySet());
       assert missingPairs.keySet().containsAll(written.keySet());
@@ -812,6 +820,10 @@ class ToLeafJoinContext {
       for (JoinTask cell : joinCells) {
         cell.dumpMatchesInto(matchedToDocs, shift);
       }
+    } catch (ExecutionException e) {
+      throw new RuntimeException(e);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     } finally { // TODO release before looping remaining cells separately
       this.joinIndex.release(freshSearcher);
     }

@@ -202,7 +202,7 @@ final class AIJoinUtil {
   /**
    * Builds the join column for one (from-segment, to-segment) pair: resolves every from-side doc to
    * its matching to-side doc id, along with the pair's from-doc and to-doc bounds. From-side terms
-   * are hashed by {@link FromSideData}; each to-side term is looked up in that hash to map
+   * are hashed by {@link ForeignKeyColumn}; each to-side term is looked up in that hash to map
    * from-side ords to to-side ords.
    *
    * <p>Docs already deleted at build time are skipped, purely to avoid persisting entries nobody
@@ -211,9 +211,9 @@ final class AIJoinUtil {
    * mapping outlives whatever gets deleted after it was built.
    */
   static JoinColumnModel computeDocMapping(
-      LeafReaderContext toContext, String toField, FromSideData fromSideData
-      //    , long[] scratch
-      ) throws IOException {
+      LeafReaderContext toContext, String toField, ForeignKeyColumn fromSideData)
+      throws IOException {
+    assert fromSideData != null;
 
     long[] toOrdByFromOrd = new long[fromSideData.getFromValuesCount()];
     Arrays.fill(toOrdByFromOrd, -1L);
@@ -459,6 +459,7 @@ final class AIJoinUtil {
       return cache.iterator();
     }
 
+    // TODO is it really a cost or a count???
     public int count() {
       return count;
     }

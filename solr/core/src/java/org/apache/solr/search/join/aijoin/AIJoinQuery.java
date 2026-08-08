@@ -35,6 +35,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.search.join.aijoin.AIJoinIndex.JoinSegmentReference;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Joins the from-side index to the to-side index this query is executed against, resolving
@@ -97,20 +98,13 @@ class AIJoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+  public Weight createWeight(IndexSearcher toSideSearcher, ScoreMode scoreMode, float boost)
       throws IOException {
     //    Set<String> matchingFromKeys =
     //        AIJoinUtil.matchingFromSideKeys(cachedFromSearcher, fromQuery, fromField);
-    Set<String> neededPairs = new HashSet<>();
-    for (LeafReaderContext toContext : searcher.getIndexReader().leaves()) {
-      String toKey = AIJoinUtil.getSideKey(toContext, toField);
-      for (LeafReaderContext fromCtx : fromSearcher.getLeafContexts()) {
-        String fromKey = AIJoinUtil.getSideKey(fromCtx, fromField);
-        neededPairs.add(fromKey + "_" + toKey);
-      }
-    }
+    Set<String> neededPairs = getRequiredColumNames(toSideSearcher);
 
-    joinIndex.onCreateWeight(neededPairs, fromSearcher, searcher); // ignoring fields
+    joinIndex.onCreateWeight(neededPairs, fromSearcher, toSideSearcher); // ignoring fields
 
     // build any pair among neededPairs that isn't in the join index yet, up front, so this
     // weight's existingJoinSegments below is already complete instead of leaving the gaps to be
@@ -119,7 +113,7 @@ class AIJoinQuery extends Query {
     // DON'T write'em upfront
     //
     // WAS:
-    // joinIndex.ensureJoinSegments(neededPairs, fromSearcher, fromField, searcher, toField);
+    // joinIndex.ensureJoinSegments(neededPairs, fromSearcher, fromField, toSideSearcher, toField);
     //
     // TODO instead, look for needed pairs, grab from segments fields,
     // submit tasks loading from side components
@@ -134,32 +128,81 @@ class AIJoinQuery extends Query {
     } finally {
       this.joinIndex.release(joinSearcher);
     }
-    // TODO mostly copying  org.apache.solr.search.join.aijoin.AIJoinIndex.ensureJoinSegments
-    // we need to find missing pairs, then project them onto from-side segments
-    // and submit FromSideData creation onto executor service
-    // and put futures into from-addressed array, and pass downstream to ToLeafContext through
-    // Weight
-
-    // let's submit to from searcher executor tasks yielding DocIdSets
+    // let's submit to from toSideSearcher executor tasks yielding DocIdSets
     // then, ToLeafContexts will get these DocIdSets and iterate them.
+    Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures = submitFromSideSearch();
+    Future<ForeignKeyColumn>[] fromSideIngredients =
+        submitLoadFkColumns(toSideSearcher, existingJoinSegments, neededPairs);
+    // TODO this might produce too many small tasks
+    // TODO anyway, it's worth to join'em, if search gives, zero results - there's no sense to load
+    // a column at all
+    return new AIJoinWeight(
+        this,
+        joinSearcher,
+        existingJoinSegments,
+        toSideSearcher.getIndexReader(),
+        scoreMode,
+        boost,
+        fromDocIdSetFutures,
+        fromSideIngredients);
+  }
+
+  /** background preload foreign key columns we'll need */
+  @SuppressWarnings("unchecked")
+  private Future<ForeignKeyColumn>[] submitLoadFkColumns(
+      IndexSearcher toSearcher,
+      Map<String, JoinSegmentReference> existingJoinSegments,
+      Set<String> neededPairs) {
+    final Future<ForeignKeyColumn>[] futures =
+        (Future<ForeignKeyColumn>[]) (new Future<?>[this.fromSearcher.getLeafContexts().size()]);
+    if (existingJoinSegments.keySet().containsAll(neededPairs)) {
+      return futures; // array with nulls, that's what we need
+    }
+    // Map<String, AIJoinIndex.SegmentsTuple> missingPairs = new LinkedHashMap<>();
+    // overall, it might be made more efficient
+    for (LeafReaderContext fromContext : fromSearcher.getLeafContexts()) {
+      for (LeafReaderContext toContext : toSearcher.getLeafContexts()) {
+        String pairFieldName = AIJoinUtil.pairFieldName(fromContext, fromField, toContext, toField);
+        if (neededPairs.contains(pairFieldName)
+            && !existingJoinSegments.containsKey(pairFieldName)) {
+          // missingPairs.put(pairFieldName, new AIJoinIndex.SegmentsTuple(fromContext.ord,
+          // toContext.ord));
+          if (futures[fromContext.ord] == null) {
+            futures[fromContext.ord] =
+                this.fromExecutorService.submit(() -> new ForeignKeyColumn(fromContext, fromField));
+            break; // no need to loop to-s anymore, move to the next from
+          } // else - already submitted, continue, I'm not sure if it ever happened
+        }
+      }
+    }
+    return futures;
+  }
+
+  private @NonNull Set<String> getRequiredColumNames(IndexSearcher searcher) {
+    Set<String> neededPairs = new HashSet<>();
+    for (LeafReaderContext toContext : searcher.getIndexReader().leaves()) {
+      String toKey = AIJoinUtil.getSideKey(toContext, toField);
+      for (LeafReaderContext fromCtx : fromSearcher.getLeafContexts()) {
+        String fromKey = AIJoinUtil.getSideKey(fromCtx, fromField);
+        neededPairs.add(fromKey + "_" + toKey);
+      }
+    }
+    return neededPairs;
+  }
+
+  @SuppressWarnings("unchecked")
+  private Future<AIJoinUtil.CacheAndCount>[] submitFromSideSearch() throws IOException {
     final Weight fromWeight =
         this.fromSearcher.createWeight(this.fromQuery, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
-    @SuppressWarnings("unchecked")
-    Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures =
+
+    final Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures =
         (Future<AIJoinUtil.CacheAndCount>[])
             new Future<?>[this.fromSearcher.getLeafContexts().size()];
     for (LeafReaderContext ctx : this.fromSearcher.getLeafContexts()) {
       fromDocIdSetFutures[ctx.ord] =
           this.fromExecutorService.submit(() -> computeDocIdSet(fromWeight, ctx));
     }
-    return new AIJoinWeight(
-        this,
-        joinSearcher,
-        existingJoinSegments,
-        searcher.getIndexReader(),
-        scoreMode,
-        boost,
-        fromDocIdSetFutures);
+    return fromDocIdSetFutures;
   }
 
   @Override

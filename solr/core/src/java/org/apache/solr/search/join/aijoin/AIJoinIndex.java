@@ -29,7 +29,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
@@ -89,7 +91,7 @@ public final class AIJoinIndex implements Closeable {
 
   /** Why a build was triggered; reported as {@code cause=} on the {@code AIJOIN evt=build} line. */
   enum BuildCause {
-    /** {@link #ensureJoinSegments}, i.e. eagerly at {@link AIJoinQuery#createWeight} time. */
+    /** {nolink #ensureJoinSegments}, i.e. eagerly at {@link AIJoinQuery#createWeight} time. */
     EAGER_CREATE_WEIGHT,
     /** {@link ToLeafJoinContext}, i.e. lazily for a gap the eager pass did not cover. */
     LAZY_TO_SEGMENT;
@@ -225,9 +227,10 @@ public final class AIJoinIndex implements Closeable {
       IndexReader toReader,
       String toField,
       BuildCause buildCause,
-      String ctxId
+      String ctxId,
       // TODO pass here array of FromSideData futures
-      ) throws IOException {
+      Future<ForeignKeyColumn>[] fromColumnFutures)
+      throws IOException, ExecutionException, InterruptedException {
     long startNanos = System.nanoTime();
     int batchNumDocsLogged = 0;
     Map<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> owned =
@@ -260,9 +263,12 @@ public final class AIJoinIndex implements Closeable {
           SegmentsTuple position = missingPairs.get(pairFieldName);
           LeafReaderContext toContext = toReader.leaves().get(position.toLeafOrd());
           LeafReaderContext fromContext = fromReader.leaves().get(position.fromLeafOrd());
+          assert fromColumnFutures[fromContext.ord] != null;
           AIJoinUtil.JoinColumnModel mapping =
               AIJoinUtil.computeDocMapping(
-                  toContext, toField, new FromSideData(fromContext, fromField));
+                  toContext,
+                  toField, // new ForeignKeyColumn(fromContext, fromField)
+                  fromColumnFutures[fromContext.ord].get());
           batchNumDocs = Math.max(batchNumDocs, fromContext.reader().maxDoc());
           loadedMappings.put(pairFieldName, mapping);
         }
@@ -338,50 +344,53 @@ public final class AIJoinIndex implements Closeable {
    *     {@code fromSearcher}'s leaves against {@code toSearcher}'s leaves; pairs concurrently built
    *     by another thread are awaited, not rebuilt (see {@link #writeJoinSegments}).
    */
-  @Deprecated
-  void ensureJoinSegments(
-      Set<String> neededPairs,
-      IndexSearcher fromSearcher,
-      String fromField,
-      IndexSearcher toSearcher,
-      String toField)
-      throws IOException {
-    Map<String, JoinSegmentReference> existing;
-    IndexSearcher joinSearcher = acquire();
-    try {
-      existing = extractExistingJoinColumns(joinSearcher, neededPairs::contains);
-    } finally {
-      release(joinSearcher);
-    }
-    if (existing.keySet().containsAll(neededPairs)) {
-      return;
-    }
-    Map<String, SegmentsTuple> missingPairs = new LinkedHashMap<>();
-    for (LeafReaderContext fromContext : fromSearcher.getLeafContexts()) {
-      for (LeafReaderContext toContext : toSearcher.getLeafContexts()) {
-        String pairFieldName = AIJoinUtil.pairFieldName(fromContext, fromField, toContext, toField);
-        if (neededPairs.contains(pairFieldName) && !existing.containsKey(pairFieldName)) {
-          missingPairs.put(pairFieldName, new SegmentsTuple(fromContext.ord, toContext.ord));
-        }
-      }
-    }
-    if (!missingPairs.isEmpty()) {
-      writeJoinSegments(
-          missingPairs,
-          fromSearcher.getIndexReader(),
-          fromField,
-          toSearcher.getIndexReader(),
-          toField,
-          BuildCause.EAGER_CREATE_WEIGHT,
-          null); // runs before any ToLeafJoinContext exists, so there is no context to blame
-    }
-  }
+  //  @Deprecated
+  //  void ensureJoinSegments(
+  //      Set<String> neededPairs,
+  //      IndexSearcher fromSearcher,
+  //      String fromField,
+  //      IndexSearcher toSearcher,
+  //      String toField)
+  //      throws IOException {
+  //    Map<String, JoinSegmentReference> existing;
+  //    IndexSearcher joinSearcher = acquire();
+  //    try {
+  //      existing = extractExistingJoinColumns(joinSearcher, neededPairs::contains);
+  //    } finally {
+  //      release(joinSearcher);
+  //    }
+  //    if (existing.keySet().containsAll(neededPairs)) {
+  //      return;
+  //    }
+  //    Map<String, SegmentsTuple> missingPairs = new LinkedHashMap<>();
+  //    for (LeafReaderContext fromContext : fromSearcher.getLeafContexts()) {
+  //      for (LeafReaderContext toContext : toSearcher.getLeafContexts()) {
+  //        String pairFieldName = AIJoinUtil.pairFieldName(fromContext, fromField, toContext,
+  // toField);
+  //        if (neededPairs.contains(pairFieldName) && !existing.containsKey(pairFieldName)) {
+  //          missingPairs.put(pairFieldName, new SegmentsTuple(fromContext.ord, toContext.ord));
+  //        }
+  //      }
+  //    }
+  //    if (!missingPairs.isEmpty()) {
+  //      writeJoinSegments(
+  //          missingPairs,
+  //          fromSearcher.getIndexReader(),
+  //          fromField,
+  //          toSearcher.getIndexReader(),
+  //          toField,
+  //          BuildCause.EAGER_CREATE_WEIGHT,
+  //          null, fromColumnFutures); // runs before any ToLeafJoinContext exists, so there is no
+  // context to blame
+  //    }
+  //  }
 
   /**
    * Serializes sidecar writes: one batch per commit keeps every batch at doc 0 of its own segment,
    * preserving pair-column doc number == from-side doc id. Completing builders' futures after this
    * returns guarantees waiters observe the refreshed reader.
    */
+  @Deprecated // why??
   private synchronized void writeBatch(int batchNumDocs, Map<String, JoinColumnModel> mappings)
       throws IOException {
     AIJoinIndex.INSTANCE.writeJoinColumns(writer, batchNumDocs, mappings);
