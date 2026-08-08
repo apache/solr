@@ -17,6 +17,9 @@
 
 package org.apache.solr.common.util;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -194,5 +197,42 @@ public class EnvUtilsTest extends SolrTestCase {
           0,
           warnLog.getCount());
     }
+  }
+
+  @Test
+  public void envToSyspropMappingsDoNotMapToDeprecatedSystemProperties() throws IOException {
+    Properties envMappings = loadProperties("EnvToSyspropMappings.properties");
+    Properties deprecatedMappings = loadProperties("DeprecatedSystemPropertyMappings.properties");
+    Map<String, String> reverseDeprecatedMappings =
+        deprecatedMappings.entrySet().stream()
+            .collect(Collectors.toMap(e -> (String) e.getValue(), e -> (String) e.getKey()));
+
+    for (String envVar : envMappings.stringPropertyNames()) {
+      String sysProp = envMappings.getProperty(envVar);
+      String newSysProp = reverseDeprecatedMappings.get(sysProp);
+      if (newSysProp != null) {
+        fail(
+            "expected <"
+                + sysProp
+                + "> "
+                + "mapped from <"
+                + envVar
+                + "> to not be deprecated, "
+                + "but it was replaced by <"
+                + newSysProp
+                + ">");
+      }
+    }
+  }
+
+  private static Properties loadProperties(String resourceName) throws IOException {
+    Properties properties = new Properties();
+    try (var resource =
+        new InputStreamReader(
+            EnvUtils.class.getClassLoader().getResourceAsStream(resourceName),
+            StandardCharsets.UTF_8)) {
+      properties.load(resource);
+    }
+    return properties;
   }
 }
