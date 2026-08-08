@@ -1250,7 +1250,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       expected.add(val);
     }
 
-    QueryRequest qr = new QueryRequest(params("qt", "/get", "id", "1000"));
+    QueryRequest qr = new QueryRequest("/get", params("id", "1000"));
     for (SolrClient client : clients) {
       val += 10;
       NamedList<?> rsp = client.request(qr);
