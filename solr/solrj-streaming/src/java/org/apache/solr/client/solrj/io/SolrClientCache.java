@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 
 /** The SolrClientCache caches SolrClients, so they can be reused by different TupleStreams. */
 public class SolrClientCache implements Closeable {
@@ -136,7 +137,22 @@ public class SolrClientCache implements Closeable {
     ensureOpen();
     Objects.requireNonNull(baseUrl, "Url cannot be null!");
     return httpSolrClients.computeIfAbsent(
-        baseUrl, url -> newHttpSolrClientBuilder(url, httpSolrClient).build());
+        baseUrl,
+        url -> {
+          // Find an existing Cloud Client connection
+          HttpSolrClient sharedEngine = this.httpSolrClient;
+
+          if (sharedEngine == null && !cloudSolClients.isEmpty()) {
+            // Get first available active Cloud client connection
+            CloudSolrClient firstCloudClient = cloudSolClients.values().iterator().next();
+            if (firstCloudClient instanceof CloudHttp2SolrClient) {
+              sharedEngine = ((CloudHttp2SolrClient) firstCloudClient).getHttpClient();
+            }
+          }
+
+          // Build the client using the shared engine if found one
+          return newHttpSolrClientBuilder(url, sharedEngine).build();
+        });
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
