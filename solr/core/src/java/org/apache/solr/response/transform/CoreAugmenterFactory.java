@@ -17,9 +17,11 @@
 
 package org.apache.solr.response.transform;
 
+import jakarta.inject.Named;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
+@Named("core")
 public class CoreAugmenterFactory extends TransformerFactory {
 
   @Override
