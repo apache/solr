@@ -1,0 +1,9 @@
+title: >
+  CloudSolrClient now retries requests that fail with ClosedChannelException, treating a connection
+  dropped mid-request the same as other communication errors.
+type: fixed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-17764
+    url: https://issues.apache.org/jira/browse/SOLR-17764
