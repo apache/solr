@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *   <li>{@code evt=build} -- a join-index write happened; carries the wall time it cost. Emitted by
  *       {@link AIJoinIndex#writeJoinSegments}, the chokepoint both build paths share: {@code
- *       cause=eager-create-weight} for the bulk build {@link AIJoinIndex#ensureJoinSegments} does
+ *       cause=eager-create-weight} for the bulk build {nolink AIJoinIndex#ensureJoinSegments} does
  *       at {@link AIJoinQuery#createWeight} time, and {@code cause=lazy-to-segment} for the
  *       per-context fallback below. In a steady run the eager path does all the work and the lazy
  *       one never fires, so a log with no {@code cause=lazy-to-segment} line is the expected shape.
@@ -92,8 +92,7 @@ class ToLeafJoinContext {
   final LeafReaderContext toContext;
   final Query fromQuery;
   final IndexSearcher fromSearcher;
-  private final Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures;
-  private final Future<ForeignKeyColumn>[] fromColumnFutures;
+  private final Future<FromLeafJoinContext>[] fromColumnFutures;
   private IndexSearcher lastSeenJoinSearcher;
   final String fromField;
   final String toField;
@@ -434,7 +433,6 @@ class ToLeafJoinContext {
    * @param weightAgeJoinSearcher the join searcher cached at {@link AIJoinQuery#createWeight} time
    * @param scorerSupplierAgeJoinSearcher the join searcher used at {@link
    *     AIJoinWeight#scorerSupplier} time
-   * @param fromDocIdSetFutures
    * @param fromColumnFutures
    */
   ToLeafJoinContext(
@@ -448,8 +446,7 @@ class ToLeafJoinContext {
       IndexSearcher weightAgeJoinSearcher,
       IndexSearcher scorerSupplierAgeJoinSearcher,
       AIJoinIndex joinIndex,
-      Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures,
-      Future<ForeignKeyColumn>[] fromColumnFutures)
+      Future<FromLeafJoinContext>[] fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
     this.toContext = toContext;
     this.fromField = fromField;
@@ -457,7 +454,6 @@ class ToLeafJoinContext {
     this.fromSearcher = fromSearcher;
     this.toField = toField;
     this.toReader = toReader;
-    this.fromDocIdSetFutures = fromDocIdSetFutures;
     this.fromColumnFutures = fromColumnFutures;
     this.joinIndex = joinIndex;
     this.joinCellsByFromSegOrd = new JoinTask[fromSearcher.getLeafContexts().size()];
@@ -759,12 +755,14 @@ class ToLeafJoinContext {
 
     List<JoinTask> tasks = new ArrayList<>();
     for (LeafReaderContext fromContext : leaves) {
-      AIJoinUtil.CacheAndCount matchAndCount = this.fromDocIdSetFutures[fromContext.ord].get();
+      FromLeafJoinContext matchAndCount = this.fromColumnFutures[fromContext.ord].get();
       if (matchAndCount == null) {
         continue;
       }
-      DocIdSetIterator matchedFromDocs = matchAndCount.iterator();
-      if (matchedFromDocs != null && matchedFromDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+      DocIdSetIterator matchedFromDocs;
+      if (matchAndCount.matches != null
+          && (matchedFromDocs = matchAndCount.matches.iterator()) != null
+          && matchedFromDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         // name every contributing (from, to) pair column; pair field names are unique across pairs
         String pairFieldName =
             AIJoinUtil.pairFieldName(fromContext, this.fromField, toContext, this.toField);
@@ -773,7 +771,7 @@ class ToLeafJoinContext {
                 pairFieldName,
                 new SegmentsTuple(fromContext.ord, toContext.ord),
                 matchedFromDocs,
-                matchAndCount.count()));
+                matchAndCount.matches.count()));
       }
     }
     // process the from segments with the most matches first

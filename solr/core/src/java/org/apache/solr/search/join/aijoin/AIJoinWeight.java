@@ -20,8 +20,7 @@ final class AIJoinWeight extends Weight {
   private final ScoreMode scoreMode;
   private final float boost;
   private final IndexReader toReader;
-  private final Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures;
-  private final Future<ForeignKeyColumn>[] fromColumnFutures;
+  private final Future<FromLeafJoinContext>[] fromColumnFutures;
 
   /**
    * [toSegmentOrd][fromSegmentOrd] -> the pair column resolved at construction time; null where the
@@ -38,15 +37,13 @@ final class AIJoinWeight extends Weight {
       IndexReader toReader,
       ScoreMode scoreMode,
       float boost,
-      Future<AIJoinUtil.CacheAndCount>[] fromDocIdSetFutures,
-      Future<ForeignKeyColumn>[] foreignColsFutures) {
+      Future<FromLeafJoinContext>[] foreignColsFutures) {
     super(aiJoinQuery);
     this.maybeStaleJoinSearcher = maybeStaleJoinSearcher;
     this.existingJoinSegments = existingJoinSegments;
     this.scoreMode = scoreMode;
     this.boost = boost;
     this.toReader = toReader;
-    this.fromDocIdSetFutures = fromDocIdSetFutures;
     this.fromColumnFutures = foreignColsFutures;
   }
 
@@ -91,7 +88,6 @@ final class AIJoinWeight extends Weight {
                 this.maybeStaleJoinSearcher,
                 joinSearcher,
                 aiJQuery().joinIndex,
-                this.fromDocIdSetFutures,
                 this.fromColumnFutures);
       } catch (ExecutionException e) { // TODO review exception
         throw new RuntimeException(e);
