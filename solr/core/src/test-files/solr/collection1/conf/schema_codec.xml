@@ -25,6 +25,8 @@
   <fieldType name="string_disk" class="solr.StrField" />
 
   <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
 
   <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">
     <analyzer type="index">
@@ -41,6 +43,8 @@
   <field name="string_standard_f" type="string_standard" indexed="true" stored="true"/>
 
   <field name="string_disk_f" type="string_disk" indexed="false" stored="false" default=""/>
+  <field name="int_skip_f" type="pint" indexed="false" stored="false" docValues="true" skipList="true"/>
+  <field name="long_skip_mv_f" type="plong" indexed="false" stored="false" docValues="true" multiValued="true" skipList="true"/>
 
   <field name="string_f" type="string" indexed="true" stored="true" required="true"/>
   <field name="text" type="text_general" indexed="true" stored="true"/>
@@ -49,6 +53,8 @@
   <dynamicField name="*_standard" type="string_standard" indexed="true" stored="true"/>
 
   <dynamicField name="*_disk" type="string_disk" indexed="false" stored="false"/>
+  <dynamicField name="*_skip_i" type="pint" indexed="false" stored="false" docValues="true" skipList="true"/>
+  <dynamicField name="*_skip_l" type="plong" indexed="false" stored="false" docValues="true" multiValued="true" skipList="true"/>
 
   <uniqueKey>string_f</uniqueKey>
 </schema>
