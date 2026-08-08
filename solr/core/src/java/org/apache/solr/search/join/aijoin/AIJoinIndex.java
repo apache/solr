@@ -229,7 +229,7 @@ public final class AIJoinIndex implements Closeable {
       BuildCause buildCause,
       String ctxId,
       // TODO pass here array of FromSideData futures
-      Future<ForeignKeyColumn>[] fromColumnFutures)
+      Future<FromLeafJoinContext>[] fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
     long startNanos = System.nanoTime();
     int batchNumDocsLogged = 0;
@@ -268,7 +268,7 @@ public final class AIJoinIndex implements Closeable {
               AIJoinUtil.computeDocMapping(
                   toContext,
                   toField, // new ForeignKeyColumn(fromContext, fromField)
-                  fromColumnFutures[fromContext.ord].get());
+                  fromColumnFutures[fromContext.ord].get().fkColumn);
           batchNumDocs = Math.max(batchNumDocs, fromContext.reader().maxDoc());
           loadedMappings.put(pairFieldName, mapping);
         }
