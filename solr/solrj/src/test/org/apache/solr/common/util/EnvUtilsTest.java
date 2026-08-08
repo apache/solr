@@ -20,7 +20,10 @@ package org.apache.solr.common.util;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.util.LogListener;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -71,15 +74,14 @@ public class EnvUtilsTest extends SolrTestCase {
     assertEquals("INFO", EnvUtils.getProperty("solr.logLevel"));
     assertEquals("INFO", EnvUtils.getProperty("solr.LogLevel"));
     assertEquals(Long.valueOf(1234567890L), EnvUtils.getPropertyAsLong("solrLong"));
-    assertEquals(Boolean.TRUE, EnvUtils.getPropertyAsBool("solr.alwaysOnTraceId"));
-    assertEquals(Boolean.TRUE, EnvUtils.getPropertyAsBool("solr.always.on.trace.id"));
+    assertEquals(Boolean.TRUE, EnvUtils.getPropertyAsBool("solr.tracing.always.on.enabled"));
   }
 
   @Test
   public void testEnvsWithCustomKeyNameMappings() {
     // These have different names than the environment variables
     assertEquals(ENV.get("SOLR_HOME"), EnvUtils.getProperty("solr.solr.home"));
-    assertEquals(ENV.get("SOLR_HOST_ADVERTISE"), EnvUtils.getProperty("host"));
+    assertEquals(ENV.get("SOLR_HOST_ADVERTISE"), EnvUtils.getProperty("solr.host.advertise"));
     assertEquals(ENV.get("SOLR_LOGS_DIR"), EnvUtils.getProperty("solr.logs.dir"));
   }
 
@@ -142,5 +144,55 @@ public class EnvUtilsTest extends SolrTestCase {
 
     EnvUtils.init(false, env, defaultProps);
     assertEquals(false, EnvUtils.getPropertyAsBool("solr.ui.enabled"));
+  }
+
+  /**
+   * These env vars must map directly to their current sysprop name, not to a legacy/intermediate
+   * name that DeprecatedSystemPropertyMappings.properties also treats as deprecated -- otherwise
+   * EnvUtils' own deprecation-forwarding logic trips on itself and logs a confusing warning, even
+   * though the value still resolves correctly via that indirection. A value-only assertion wouldn't
+   * catch a regression here, since the value resolves fine either way -- the warning is the actual
+   * symptom, so this asserts on both.
+   *
+   * <p>SOLR_ALWAYS_ON_TRACE_ID is the same pattern (see {@link #getPropWithCamelCase}) but is
+   * deliberately excluded here: it shares a target sysprop with that other test, and this test
+   * would clobber it with a non-boolean value depending on random test execution order.
+   *
+   * <p>The LogListener is scoped to only these six properties' names (rather than listening for
+   * *any* WARN from EnvUtils) because {@code init()} is called here with the real, live {@code
+   * System.getProperties()} -- its deprecated-property-forwarding loop rescans *all* current system
+   * properties every time, so leftover deprecated markers set by unrelated tests earlier in this
+   * same suite/JVM (e.g. {@link #testFlippingDisabledToEnabledPropertyName}) would otherwise be
+   * re-detected and re-warned-about here too, causing flaky, unrelated failures.
+   */
+  @Test
+  public void envToSyspropMappingsDoNotTriggerDeprecationWarnings() {
+    var envVarToExpectedSysprop =
+        Map.of(
+            "ZK_CLIENT_TIMEOUT", "solr.zookeeper.client.timeout",
+            "ZK_CREATE_CHROOT", "solr.zookeeper.chroot.create",
+            "SOLR_AUTH_JWT_ALLOW_OUTBOUND_HTTP", "solr.auth.jwt.outbound.http.enabled",
+            "SOLR_HIDDEN_SYS_PROPS", "solr.responses.hidden.sys.props",
+            "SOLR_ALLOW_PATHS", "solr.security.allow.paths",
+            "SOLR_ALLOW_URLS", "solr.security.allow.urls");
+    var onlyOurTargets =
+        Pattern.compile(
+            envVarToExpectedSysprop.values().stream()
+                .map(Pattern::quote)
+                .collect(Collectors.joining("|")));
+
+    try (LogListener warnLog = LogListener.warn(EnvUtils.class).regex(onlyOurTargets)) {
+      for (var entry : envVarToExpectedSysprop.entrySet()) {
+        EnvUtils.init(true, Map.of(entry.getKey(), entry.getKey()), System.getProperties());
+        assertEquals(
+            "env var " + entry.getKey() + " should map to " + entry.getValue(),
+            entry.getKey(),
+            EnvUtils.getProperty(entry.getValue()));
+      }
+      assertEquals(
+          "No deprecated-property warnings should be logged for these mappings",
+          0,
+          warnLog.getCount());
+    }
   }
 }
