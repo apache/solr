@@ -98,6 +98,7 @@ public class AIJoinBenchmark {
 
   public static void main(String[] args) throws Exception {
     new AIJoinBenchmark().runBenchmark();
+    //executor.shutdown();
   }
 
   public void runBenchmark() throws Exception {
@@ -158,7 +159,7 @@ public class AIJoinBenchmark {
       // passes
       long buildStart = System.nanoTime();
       exactSearch(
-          parentsSearcher, aiJoinChildrenToParents(joinIndex, childFilter, childrenSearcher));
+          parentsSearcher, aiJoinChildrenToParents(joinIndex, childFilter, childrenSearcher, executor));
       System.out.printf(
           Locale.ROOT,
           "AI join first search (lazy pair build): %.2fms%n",
@@ -175,7 +176,7 @@ public class AIJoinBenchmark {
           () ->
               exactSearch(
                   parentsSearcher,
-                  aiJoinChildrenToParents(joinIndex, childFilter, childrenSearcher)));
+                  aiJoinChildrenToParents(joinIndex, childFilter, childrenSearcher, executor)));
       bench(
           "JoinUtil + parent filter",
           () ->
@@ -189,7 +190,7 @@ public class AIJoinBenchmark {
               exactSearch(
                   parentsSearcher,
                   filterParents(
-                      aiJoinChildrenToParents(joinIndex, childFilter, childrenSearcher),
+                      aiJoinChildrenToParents(joinIndex, childFilter, childrenSearcher, executor),
                       parentFilter)));
     }
   }
@@ -201,10 +202,10 @@ public class AIJoinBenchmark {
         PARENT_ID_FK, false, PARENT_ID, childFilter, childrenSearcher, ScoreMode.None);
   }
 
-  private static final ExecutorService executor = Executors.newFixedThreadPool(4);
+  //private static final ExecutorService executor = Executors.newFixedThreadPool(4);
 
   private static Query aiJoinChildrenToParents(
-      AIJoinIndex joinIndex, Query childFilter, IndexSearcher childrenSearcher) {
+      AIJoinIndex joinIndex, Query childFilter, IndexSearcher childrenSearcher, ExecutorService executor) {
     return joinIndex.newJoinQuery(PARENT_ID_FK, childFilter, childrenSearcher, PARENT_ID, executor);
   }
 
