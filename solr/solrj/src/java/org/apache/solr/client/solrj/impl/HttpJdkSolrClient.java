@@ -473,7 +473,10 @@ public class HttpJdkSolrClient extends HttpSolrClient {
   }
 
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
-    reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
+    // JDK does not allow non-positive value for request timeout.
+    if (requestTimeoutMillis > 0) {
+      reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
+    }
 
     reqb.header("User-Agent", USER_AGENT);
     setBasicAuthHeader(solrRequest, reqb);

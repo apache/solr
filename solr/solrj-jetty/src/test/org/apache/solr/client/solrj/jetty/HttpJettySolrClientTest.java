@@ -671,10 +671,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   public void testIdleTimeoutWithHttpClient() throws Exception {
     String url = solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
     try (var oldClient =
-        new HttpJettySolrClient.Builder(url)
-            .withRequestTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
-            .withIdleTimeout(100, TimeUnit.MILLISECONDS)
-            .build()) {
+        new HttpJettySolrClient.Builder(url).withIdleTimeout(100, TimeUnit.MILLISECONDS).build()) {
 
       try (var onlyBaseUrlChangedClient =
           new HttpJettySolrClient.Builder(url).withHttpClient(oldClient).build()) {
