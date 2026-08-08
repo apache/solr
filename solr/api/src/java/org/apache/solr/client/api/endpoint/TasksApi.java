@@ -30,18 +30,23 @@ import org.apache.solr.client.api.util.StoreApiParameters;
 @Path(INDEX_PATH_PREFIX + "/tasks")
 public interface TasksApi {
 
-  @GET
-  @StoreApiParameters
-  @Operation(
-      summary = "Lists all the active tasks",
-      tags = {"tasks"})
-  ListActiveTaskResponse listAllActiveTasks() throws Exception;
+  @Path("")
+  interface List {
+    @GET
+    @StoreApiParameters
+    @Operation(
+        summary = "Lists all the active tasks.",
+        tags = {"tasks"})
+    ListActiveTaskResponse listAllActiveTasks() throws Exception;
+  }
 
-  @GET
-  @Path("/{taskID}")
-  @StoreApiParameters
-  @Operation(
-      summary = "Status of a specific task",
-      tags = {"tasks"})
-  TaskStatusResponse getTaskStatus(@PathParam("taskID") String taskID) throws Exception;
+  @Path("{taskID}")
+  interface Status {
+    @GET
+    @StoreApiParameters
+    @Operation(
+        summary = "Status of a specific task.",
+        tags = {"tasks"})
+    TaskStatusResponse getTaskStatus(@PathParam("taskID") String taskID) throws Exception;
+  }
 }
