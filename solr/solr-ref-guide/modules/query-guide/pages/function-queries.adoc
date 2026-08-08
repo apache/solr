@@ -454,6 +454,21 @@ In these cases, an appropriate `map()` function could be used as a workaround to
 * `scale(x, minTarget, maxTarget)`
 * `scale(x,1,2)`: scales the values of x such that all values will be between 1 and 2 inclusive.
 
+=== matchset_scale Function
+Linearly scales values of the function `x` into `[minTarget, maxTarget]`, using the observed min and max of `x` computed over the *current request's matching DocSet* (the intersection of `q` and all `fq`s), rather than over every document in every segment.
+
+This is semantically similar to `scale`, but differs in two ways:
+
+* *Scope of bounds*: `scale` traverses every document in every segment; `matchset_scale` traverses only documents matching the current request. For narrowly filtered queries (typical for end-user searches) this can be orders of magnitude faster, since the matching set is often a small fraction of the full index.
+* *Clamping*: `matchset_scale` clamps output values to `[minTarget, maxTarget]`. If the denominator is zero (i.e. all matching documents share the same value), the function returns `minTarget` rather than producing `NaN` or `Infinity`.
+
+When no Solr request context is available (for example, during Lucene-level tests), `matchset_scale` falls back to a full-index scan — identical behavior to `scale`.
+
+*Syntax Examples*
+
+* `matchset_scale(x, minTarget, maxTarget)`
+* `matchset_scale(popularity, 0, 1)`: scales `popularity` into `[0, 1]` using the min and max observed among matching documents.
+
 === sqedist Function
 The Square Euclidean distance calculates the 2-norm (Euclidean distance) but does not take the square root, thus saving a fairly expensive operation.
 It is often the case that applications that care about Euclidean distance do not need the actual distance, but instead can use the square of the distance.

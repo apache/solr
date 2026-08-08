@@ -105,6 +105,7 @@ import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.ConcatStringFunction;
 import org.apache.solr.search.function.DualDoubleFunction;
 import org.apache.solr.search.function.EqualFunction;
+import org.apache.solr.search.function.MatchSetScaleFloatFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
 import org.apache.solr.search.function.SolrComparisonBoolFunction;
@@ -260,6 +261,17 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
             float min = fp.parseFloat();
             float max = fp.parseFloat();
             return new ScaleFloatFunction(source, min, max);
+          }
+        });
+    addParser(
+        "matchset_scale",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource source = fp.parseValueSource();
+            float min = fp.parseFloat();
+            float max = fp.parseFloat();
+            return new MatchSetScaleFloatFunction(source, min, max);
           }
         });
     addParser(

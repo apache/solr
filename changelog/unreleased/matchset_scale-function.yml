@@ -1,0 +1,5 @@
+title: Add matchset_scale function — a matching-set-scoped variant of scale that avoids the full-index traversal for narrowly filtered queries
+type: added
+authors:
+  - name: Gaurav Jayswal
+    nick: gauravjayswal
