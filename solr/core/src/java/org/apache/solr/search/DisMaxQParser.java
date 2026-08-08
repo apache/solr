@@ -16,13 +16,18 @@
  */
 package org.apache.solr.search;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
@@ -198,7 +203,7 @@ public class DisMaxQParser extends QParser {
       query.add(parsedUserQuery, BooleanClause.Occur.MUST);
 
       Query phrase = getPhraseQuery(userQuery, pp);
-      if (null != phrase) {
+      if (phrase != null) {
         query.add(phrase, BooleanClause.Occur.SHOULD);
       }
     }
@@ -215,6 +220,12 @@ public class DisMaxQParser extends QParser {
     }
   }
 
+  /**
+   * Builds the phrase-boost ("pf") query: the user's terms as a contiguous phrase over the pf
+   * fields, at the pf boosts. Returns {@code null} when the phrase boils down to a single analyzed
+   * term, because a one-term phrase boost is a no-op adjacency constraint that adds nothing over
+   * the term boost already applied by the main query (see {@link #isEffectivelySingleTerm(Query)})
+   */
   protected Query getPhraseQuery(String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser pp)
       throws SyntaxError {
     /* * * Add on Phrases for the Query * * */
@@ -227,7 +238,44 @@ public class DisMaxQParser extends QParser {
      * matched those phrases but do match looser phrases.
      */
     String userPhraseQuery = userQuery.replace("\"", "");
-    return pp.parse("\"" + userPhraseQuery + "\"");
+    Query phrase = pp.parse("\"" + userPhraseQuery + "\"");
+    // A single-term phrase boost is a no-op adjacency constraint (effectively a redundant term
+    // boost), so skip it. This is decided from the analyzed query, because analyzers such as CJK,
+    // ngram, WordDelimiterGraph, and multi-word synonyms can split a single input term into several
+    // tokens that DO warrant a phrase boost
+    if (isEffectivelySingleTerm(phrase)) {
+      return null;
+    }
+    return phrase;
+  }
+
+  /**
+   * Returns true if the parsed phrase query boils down to a single analyzed term, in which case the
+   * phrase boost adds nothing over the term boost already applied by the main query. The parser
+   * produces a {@link DisjunctionMaxQuery} over per-field {@link BoostQuery}-wrapped term/phrase
+   * queries; we inspect the underlying query shape so that analyzers which split a single input
+   * term into multiple tokens keep their phrase boost. Unrecognized shapes (and {@code null})
+   * conservatively return false (keep the boost).
+   */
+  @VisibleForTesting
+  static boolean isEffectivelySingleTerm(Query query) {
+    if (query instanceof BoostQuery boostQuery) {
+      return isEffectivelySingleTerm(boostQuery.getQuery());
+    }
+    if (query instanceof DisjunctionMaxQuery dmq) {
+      // Every field's clause is a single term, so the phrase across fields is too.
+      return dmq.getDisjuncts().stream().allMatch(DisMaxQParser::isEffectivelySingleTerm);
+    }
+    if (query instanceof TermQuery) {
+      return true;
+    }
+    if (query instanceof PhraseQuery phraseQuery) {
+      return phraseQuery.getTerms().length < 2;
+    }
+    if (query instanceof MultiPhraseQuery multiPhraseQuery) {
+      return multiPhraseQuery.getTermArrays().length < 2;
+    }
+    return false;
   }
 
   protected Query getUserQuery(
