@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -135,10 +136,11 @@ public abstract class HttpSolrClient extends SolrClient {
 
   protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    // The parser 'wt=' param is used instead of the original params
-    ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
-    wparams.set(CommonParams.WT, parserToUse.getWriterType());
-    return wparams;
+
+    var addParams = SolrParams.of(CommonParams.WT, parserToUse.getWriterType());
+    addParams = SolrParams.wrapDefaults(addParams, parserToUse.getAdditionalRequestParams());
+
+    return new ModifiableSolrParams(SolrParams.wrapDefaults(addParams, solrRequest.getParams()));
   }
 
   protected boolean isMultipart(Collection<ContentStream> streams) {
@@ -228,7 +230,7 @@ public abstract class HttpSolrClient extends SolrClient {
 
       NamedList<Object> rsp;
       try {
-        rsp = processor.processResponse(is, encoding);
+        rsp = processor.processCanonicalResponse(is, encoding);
       } catch (Exception e) {
         throw new RemoteSolrException(urlExceptionMessage, httpStatus, e.getMessage(), e);
       }

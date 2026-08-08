@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -50,6 +51,20 @@ public abstract class ResponseParser {
   /** The writer type placed onto the request as the {@code wt} param. */
   public abstract String getWriterType(); // for example: wt=XML, JSON, etc
 
+  /**
+   * Params this parser requires on the request in order to read the response, applied alongside
+   * {@code wt}.
+   *
+   * <p>These take precedence over the request's own params, as {@code wt} does: a parser that
+   * cannot read the form the caller asked for would fail rather than honour it. The JSON map parser
+   * requires {@code json.nl=map}, since a NamedList written any other way cannot be reconstructed.
+   *
+   * @return the params to apply, or null if the parser needs nothing beyond {@code wt}
+   */
+  public SolrParams getAdditionalRequestParams() {
+    return null;
+  }
+
   public abstract NamedList<Object> processResponse(InputStream body, String encoding)
       throws IOException;
 
@@ -66,4 +81,19 @@ public abstract class ResponseParser {
    * @return the MIME types that this parser is capable of parsing. Never null.
    */
   public abstract Set<String> getContentTypes();
+
+  /**
+   * Parses the response and returns it in the canonical shape the SolrJ response classes expect: a
+   * {@link NamedList} tree with {@link org.apache.solr.common.SolrDocumentList} for document
+   * sections.
+   *
+   * <p>Most parsers produce that shape directly and inherit this method unchanged. A parser whose
+   * natural output is a raw structure of {@code Map}s and {@code List}s — such as the JSON map
+   * parser — overrides it to convert, so that the conversion is the parser's own responsibility
+   * rather than something a client has to know to apply.
+   */
+  public NamedList<Object> processCanonicalResponse(InputStream body, String encoding)
+      throws IOException {
+    return processResponse(body, encoding);
+  }
 }

@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  SolrJ's QueryResponse and other response objects now work when the client is configured with a
+  non-binary response parser (such as the JSON parser); previously their accessors could throw a
+  ClassCastException.
+type: fixed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-17316
+    url: https://issues.apache.org/jira/browse/SOLR-17316

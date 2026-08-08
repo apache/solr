@@ -246,6 +246,7 @@ public class EmbeddedSolrServer extends SolrClient {
       responseParser = new JavaBinResponseParser();
     }
     var addParams = SolrParams.of(CommonParams.WT, responseParser.getWriterType());
+    addParams = SolrParams.wrapDefaults(addParams, responseParser.getAdditionalRequestParams());
     return SolrParams.wrapDefaults(addParams, params);
   }
 
@@ -302,7 +303,7 @@ public class EmbeddedSolrServer extends SolrClient {
     }
 
     // note: don't bother using the Reader variant; it often throws UnsupportedOperationException
-    return responseParser.processResponse(byteBuffer.toInputStream(), null);
+    return responseParser.processCanonicalResponse(byteBuffer.toInputStream(), null);
   }
 
   /** A list of streams, non-null. */
