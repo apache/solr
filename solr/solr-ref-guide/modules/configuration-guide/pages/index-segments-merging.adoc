@@ -253,6 +253,45 @@ This is not required for near real-time search, but will reduce search latency o
 <mergedSegmentWarmer class="org.apache.lucene.index.SimpleMergedSegmentWarmer"/>
 ----
 
+=== indexSort
+
+Sorts the documents within each segment by the given fields, at flush and merge time (Lucene index sorting).
+When a query's xref:query-guide:common-query-parameters.adoc#sort-parameter[sort] matches (or is a prefix of) this index sort, Solr can terminate collection on each segment early, which can speed up such queries.
+
+The value is a xref:query-guide:common-query-parameters.adoc#sort-parameter[sort spec] over docValues fields.
+This is the direct replacement for configuring the sort indirectly through a `SortingMergePolicyFactory`; if both are configured, `<indexSort>` takes precedence.
+
+[source,xml]
+----
+<indexSort>timestamp_dt desc</indexSort>
+----
+
+NOTE: Enabling index sorting on a collection that already has unsorted segments requires re-sorting those segments; see the xref:coreadmin-api.adoc#coreadmin-resortindex[`RESORTINDEX`] core admin action. It is not applied to existing segments automatically on reload.
+
+TIP: Do not confuse `<indexSort>` with the similarly named <<segmentSort>>. `<indexSort>` sets the _within-segment_ document order (it changes how documents are physically stored, at flush/merge); `<segmentSort>` only sets the _between-segment_ visitation order at search time and does not affect what is written.
+
+=== segmentSort
+
+Controls the order in which a segment's documents are visited at search time, by sorting the leaf readers of a newly opened reader.
+This is _between-segment_ ordering; it is independent of index sorting (the _within-segment_ order of documents) and does not affect merging.
+
+The main use case is early termination: visiting the most promising segments first, so a query that only needs the first page of results can stop sooner.
+
+By default no ordering is imposed. Two forms are supported:
+
+* A *time preset* -- `TIME_ASC` or `TIME_DESC` -- orders segments by their creation time (a segment property). `TIME_DESC` visits the most recently written segments first, which suits time-based / append-mostly indexes.
+* A *field spec* -- `<field> asc|desc` -- orders segments by the minimum (`asc`) or maximum (`desc`) value of a single-valued numeric docValues field. This is useful when the useful documents cluster by a field value rather than by write time.
+
+[source,xml]
+----
+<segmentSort>TIME_DESC</segmentSort>
+----
+
+[source,xml]
+----
+<segmentSort>price_i desc</segmentSort>
+----
+
 == Compound File Segments
 
 Each Lucene segment is typically comprised of a dozen or so files.

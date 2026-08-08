@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Allow configuring Lucene's index sort directly with an <indexSort> element in <indexConfig>,
+  instead of indirectly through a SortingMergePolicyFactory
+type: added
+authors:
+  - name: Serhiy Bzhezytskyy
+  - name: Christine Poerschke
+links:
+  - name: SOLR-13681
+    url: https://issues.apache.org/jira/browse/SOLR-13681

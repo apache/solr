@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Deprecate SortingMergePolicyFactory in favor of configuring the index sort directly with
+  <indexSort> in <indexConfig>
+type: changed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-12230
+    url: https://issues.apache.org/jira/browse/SOLR-12230

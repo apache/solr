@@ -1,0 +1,10 @@
+title: >
+  New RESORTINDEX core-admin action re-sorts an existing core's index into a configured sort order,
+  so index sorting can be enabled on a collection created without it, without deleting and reindexing
+  from source. Not supported in SolrCloud mode; indexes with child/nested documents are rejected.
+type: added
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-12239
+    url: https://issues.apache.org/jira/browse/SOLR-12239

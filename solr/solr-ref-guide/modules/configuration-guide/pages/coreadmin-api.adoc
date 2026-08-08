@@ -898,6 +898,97 @@ Reusing the same `<highest_version>` value across restarts ensures continuity: D
 http://localhost:8983/solr/_collection_/update?commit=true
 ----
 
+[[coreadmin-resortindex]]
+== RESORTINDEX
+
+The `RESORTINDEX` action re-sorts an existing core's index into a given xref:query-guide:common-query-parameters.adoc#sort-parameter[sort] order.
+This makes it possible to enable xref:index-segments-merging.adoc[index sorting] on a collection that was created without it, without having to delete the index and reindex from source.
+
+Enabling an index sort on an existing (unsorted) index otherwise fails on core reload with an `IndexWriter` `validateIndexSort` error, because Lucene rejects the transition from unsorted segments to a configured sort.
+`RESORTINDEX` produces a freshly sorted copy of the index (by merging each segment through the target sort) and swaps it in.
+
+This action is expensive and can take a while to complete on large indexes.
+Consider running with the `async` option in such cases.
+
+Note:
+
+* Not supported in SolrCloud mode.
+* Indexes containing child/nested documents are not supported (re-sorting would break the parent-child document blocks).
+* The fields used in the sort must have docValues enabled.
+
+A typical workflow is to configure the sort in `solrconfig.xml` with xref:index-segments-merging.adoc#indexsort[`<indexSort>`] (so subsequently added documents keep the index sorted), then run `RESORTINDEX` once to re-sort the pre-existing segments.
+When `<indexSort>` is configured, `RESORTINDEX` may be called without a `sort` parameter and will use the configured sort.
+
+It is recommended to have a backup before running on production data.
+
+[tabs#coreadmin-resortindex-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=RESORTINDEX&core=techproducts&sort=timestamp+desc
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/techproducts/resort -H 'Content-Type: application/json' -d '
+{
+  "sort": "timestamp desc"
+}
+'
+----
+====
+======
+
+=== RESORTINDEX Parameters
+
+`core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the core whose index should be re-sorted.
+
+`sort`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The target index sort, in the usual Solr xref:query-guide:common-query-parameters.adoc#sort-parameter[sort syntax] (for example `timestamp desc`).
+If omitted, the sort configured for the core is used -- the xref:index-segments-merging.adoc#indexsort[`<indexSort>`] element if present, otherwise a (deprecated) `SortingMergePolicy` sort; if the core has no configured sort, the request fails.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be processed asynchronously.
+Use <<coreadmin-requeststatus,REQUESTSTATUS>> with the provided `requestid` to poll for completion.
+
+=== RESORTINDEX Response
+
+On success, the response includes:
+
+`core`::
+The core name.
+
+`indexSort`::
+The index sort that was applied.
+
+On failure, an exception is thrown with error details.
+
 [[coreadmin-requeststatus]]
 == REQUESTSTATUS
 
