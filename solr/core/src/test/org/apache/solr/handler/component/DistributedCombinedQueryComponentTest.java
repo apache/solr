@@ -128,155 +128,155 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     // Single lexical query
     QueryResponse rsp =
         query(
-            CommonParams.JSON,
-            """
-            {
-              "queries": {
-                "lexical1": {"lucene": {"query": "id:2^=10"}}
-              },
-              "limit": 5,
-              "fields": ["id", "score", "title"],
-              "params": {"combiner": true, "combiner.query": ["lexical1"]}
-            }""",
-            CommonParams.QT,
-            "/search");
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:2^=10"}}
+                  },
+                  "limit": 5,
+                  "fields": ["id", "score", "title"],
+                  "params": {"combiner": true, "combiner.query": ["lexical1"]}
+                }"""));
     assertEquals(1, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2");
 
     // Multiple lexical queries
     rsp =
         query(
-            CommonParams.JSON,
-            """
-            {
-              "queries": {
-                "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
-                "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
-              },
-              "limit": 5,
-              "fields": ["id", "score", "title"],
-              "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
-            }""",
-            CommonParams.QT,
-            "/search");
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
+                  },
+                  "limit": 5,
+                  "fields": ["id", "score", "title"],
+                  "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
+                }"""));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6", "3");
 
     // Multiple queries with sort
     rsp =
         query(
-            CommonParams.JSON,
-            """
-            {
-              "queries": {
-                "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
-                "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
-              },
-              "limit": 5,
-              "sort": "mod3_idv desc, score desc",
-              "fields": ["id", "score", "title"],
-              "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
-            }""",
-            CommonParams.QT,
-            "/search");
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
+                  },
+                  "limit": 5,
+                  "sort": "mod3_idv desc, score desc",
+                  "fields": ["id", "score", "title"],
+                  "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
+                }"""));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "2", "7", "10", "4");
 
     // Pagination: no limit (all results), ideal ordering
     rsp =
         query(
-            CommonParams.JSON,
-            """
-            {
-              "queries": {
-                "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
-                "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
-              },
-              "fields": ["id", "score", "title"],
-              "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
-            }""",
-            CommonParams.QT,
-            "/search");
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
+                  },
+                  "fields": ["id", "score", "title"],
+                  "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
+                }"""));
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6", "3", "10", "4");
 
     // Pagination: limit 1 without shards.rows gives non-ideal ordering
     rsp =
         query(
-            CommonParams.JSON,
-            """
-            {
-              "queries": {
-                "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
-                "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
-              },
-              "limit": 1,
-              "fields": ["id", "score", "title"],
-              "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
-            }""",
-            CommonParams.QT,
-            "/search");
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
+                  },
+                  "limit": 1,
+                  "fields": ["id", "score", "title"],
+                  "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
+                }"""));
     assertFieldValues(rsp.getResults(), id, "7");
 
     // Pagination: limit 1 with shards.rows gives ideal ordering
     rsp =
         query(
-            CommonParams.JSON,
-            """
-            {
-              "queries": {
-                "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
-                "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
-              },
-              "limit": 1,
-              "fields": ["id", "score", "title"],
-              "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"], "shards.rows": 10}
-            }""",
-            CommonParams.QT,
-            "/search");
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
+                  },
+                  "limit": 1,
+                  "fields": ["id", "score", "title"],
+                  "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"], "shards.rows": 10}
+                }"""));
     assertFieldValues(rsp.getResults(), id, "5");
 
     // Pagination: limit 4, offset 3
     rsp =
         query(
-            CommonParams.JSON,
-            """
-            {
-              "queries": {
-                "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
-                "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
-              },
-              "limit": 4,
-              "offset": 3,
-              "fields": ["id", "score", "title"],
-              "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
-            }""",
-            CommonParams.QT,
-            "/search");
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
+                  },
+                  "limit": 4,
+                  "offset": 3,
+                  "fields": ["id", "score", "title"],
+                  "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
+                }"""));
     assertEquals(4, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "6", "3", "10", "4");
 
     // Faceting
     rsp =
         query(
-            CommonParams.JSON,
-            """
-            {
-              "queries": {
-                "lexical": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}}
-              },
-              "limit": 3,
-              "offset": 1,
-              "fields": ["id", "score", "title"],
-              "params": {
-                "combiner": true,
-                "facet": true,
-                "facet.field": "mod3_idv",
-                "facet.mincount": 1,
-                "combiner.query": ["lexical"]
-              }
-            }""",
-            CommonParams.QT,
-            "/search");
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}}
+                  },
+                  "limit": 3,
+                  "offset": 1,
+                  "fields": ["id", "score", "title"],
+                  "params": {
+                    "combiner": true,
+                    "facet": true,
+                    "facet.field": "mod3_idv",
+                    "facet.mincount": 1,
+                    "combiner.query": ["lexical"]
+                  }
+                }"""));
     assertEquals(3, rsp.getResults().size());
     assertEquals(4, rsp.getResults().getNumFound());
     assertEquals("[0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
@@ -284,27 +284,27 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     // Faceting + highlighting
     rsp =
         query(
-            CommonParams.JSON,
-            """
-            {
-              "queries": {
-                "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
-                "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
-              },
-              "limit": 4,
-              "fields": ["id", "score", "title"],
-              "params": {
-                "combiner": true,
-                "facet": true,
-                "facet.field": "mod3_idv",
-                "combiner.query": ["lexical1", "lexical2"],
-                "hl": true,
-                "hl.fl": "title",
-                "hl.q": "test doc"
-              }
-            }""",
-            CommonParams.QT,
-            "/search");
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
+                  },
+                  "limit": 4,
+                  "fields": ["id", "score", "title"],
+                  "params": {
+                    "combiner": true,
+                    "facet": true,
+                    "facet.field": "mod3_idv",
+                    "combiner.query": ["lexical1", "lexical2"],
+                    "hl": true,
+                    "hl.fl": "title",
+                    "hl.q": "test doc"
+                  }
+                }"""));
     assertEquals(4, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
@@ -321,29 +321,29 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     handle.put("debug", SKIP);
     rsp =
         query(
-            CommonParams.JSON,
-            """
-            {
-              "queries": {
-                "lexical1": {"lucene": {"query": "id:(2^=2 OR 3^=1 OR 6^=2 OR 1^=3)"}},
-                "lexical2": {"lucene": {"query": "id:(4^=1 OR 1^=2 OR 7^=3 OR 10^=2)"}}
-              },
-              "limit": 4,
-              "fields": ["id", "score", "title"],
-              "params": {
-                "combiner": true,
-                "elevateIds": "10,6",
-                "combiner.query": ["lexical1", "lexical2"],
-                "facet": true,
-                "facet.field": "mod3_idv",
-                "hl": true,
-                "hl.fl": "title",
-                "hl.q": "test doc",
-                "debug": "true"
-              }
-            }""",
-            CommonParams.QT,
-            "/search-elevate");
+            "/search-elevate",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(2^=2 OR 3^=1 OR 6^=2 OR 1^=3)"}},
+                    "lexical2": {"lucene": {"query": "id:(4^=1 OR 1^=2 OR 7^=3 OR 10^=2)"}}
+                  },
+                  "limit": 4,
+                  "fields": ["id", "score", "title"],
+                  "params": {
+                    "combiner": true,
+                    "elevateIds": "10,6",
+                    "combiner.query": ["lexical1", "lexical2"],
+                    "facet": true,
+                    "facet.field": "mod3_idv",
+                    "hl": true,
+                    "hl.fl": "title",
+                    "hl.q": "test doc",
+                    "debug": "true"
+                  }
+                }"""));
     assertEquals(4, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "10", "6", "1", "7");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
@@ -365,7 +365,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   @Test
   @ShardsFixed(num = 2)
   public void testForcedDistrib() throws Exception {
-    QueryResponse rsp = query("qt", "/forcedDistribTest", "q", "*:*", "rows", "0");
+    QueryResponse rsp = query("/forcedDistribTest", params("q", "*:*", "rows", "0"));
     // ForcedDistribSearchHandler would trigger a failure if this didn't work
   }
 
@@ -478,7 +478,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     handle.put("expanded", UNORDERED);
     QueryResponse rsp;
     try {
-      rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+      rsp = query("/search", params(CommonParams.JSON, jsonQuery));
     } finally {
       handle.remove("expanded");
     }
