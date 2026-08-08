@@ -47,7 +47,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testNotEnabledByDefault() throws Exception {
     assertJQ(
-        req("qt", HANDLER, "q", "{!term name=fantasy_cat f=cat_s}fantasy", "sort", "id asc"),
+        HANDLER,
+        req("q", "{!term name=fantasy_cat f=cat_s}fantasy", "sort", "id asc"),
         "!/matched_queries_per_hit==null",
         "!/matched_queries_summary==null");
   }
@@ -56,8 +57,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testSingleNamedTermQuery() throws Exception {
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q", "{!term name=fantasy_cat f=cat_s}fantasy",
             "matched_queries", "true",
             "sort", "id asc",
@@ -75,8 +76,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testShortParamAlias() throws Exception {
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q", "{!term name=fantasy_cat f=cat_s}fantasy",
             "mq", "true",
             "sort", "id asc",
@@ -92,8 +93,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testTwoNamedQueriesOr() throws Exception {
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q",
                 "({!term name=fantasy_cat f=cat_s}fantasy) OR ({!term name=scifi_cat f=cat_s}scifi)",
             "matched_queries", "true",
@@ -110,8 +111,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testUnnamedQueryProducesNoOutput() throws Exception {
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q", "{!term f=cat_s}fantasy",
             "matched_queries", "true",
             "sort", "id asc",
@@ -126,8 +127,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   public void testMultiValuedFieldBothNamesPresent() throws Exception {
     // docs 2 and 3 match both fantasy_cat and childrens_cat
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q",
                 "({!term name=fantasy_cat f=cat_s}fantasy) OR ({!term name=childrens_cat f=cat_s}childrens)",
             "matched_queries", "true",
@@ -146,8 +147,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testTermsNamedQuery() throws Exception {
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q", "{!terms name=genre_all f=cat_s}fantasy,scifi",
             "matched_queries", "true",
             "sort", "id asc",
@@ -167,8 +168,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testBoolOuterAndInnerNamesComposed() throws Exception {
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q",
                 "{!bool name=all_books"
                     + "  should='{!term name=fantasy_cat f=cat_s}fantasy'"
@@ -198,8 +199,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testBoolMultipleShouldNamedTerms() throws Exception {
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q",
                 "{!bool should='{!term name=fantasy_cat f=cat_s}fantasy'"
                     + "     should='{!term name=scifi_cat f=cat_s}scifi'}",
@@ -225,8 +226,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   public void testBoolMustWithNamedShould() throws Exception {
     // MUST: all 4 fantasy docs; named SHOULD: only docs 2 and 3 (childrens)
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q",
                 "{!bool must='{!term f=cat_s}fantasy'"
                     + "     should='{!term name=childrens_cat f=cat_s}childrens'}",
@@ -251,8 +252,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testPrefixNamedQuery() throws Exception {
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q", "{!prefix name=fanta_prefix f=cat_s}fanta",
             "matched_queries", "true",
             "sort", "id asc",
@@ -269,8 +270,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testEdismaxNamedQuery() throws Exception {
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q", "{!edismax name=fantasy_edismax qf=cat_s}fantasy",
             "matched_queries", "true",
             "sort", "id asc",
@@ -287,8 +288,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testLuceneNamedQuery() throws Exception {
     assertJQ(
+        HANDLER,
         req(
-            "qt", HANDLER,
             "q", "{!lucene name=scifi_lucene df=cat_s}scifi",
             "matched_queries", "true",
             "sort", "id asc",
