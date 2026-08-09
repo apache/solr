@@ -28,16 +28,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import org.apache.solr.api.AnnotatedApi;
-import org.apache.solr.api.Api;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.NodeThreadsAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.handler.admin.api.NodeThreadsAPI;
+import org.apache.solr.api.Api;
 /**
  * @since solr 1.2
  */
@@ -179,12 +178,10 @@ public class ThreadDumpHandler extends RequestHandlerBase {
   public Collection<Api> getApis() {
     return AnnotatedApi.getApis(new NodeThreadsAPI(this));
   }
-
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
   }
-
   @Override
   public Name getPermissionName(AuthorizationContext request) {
     return Name.METRICS_READ_PERM;

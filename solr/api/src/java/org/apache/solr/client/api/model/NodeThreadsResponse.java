@@ -14,29 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.security.PermissionNameProvider.Name.METRICS_READ_PERM;
+package org.apache.solr.client.api.model;
 
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.handler.admin.ThreadDumpHandler;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
+import java.util.Map;
 
-public class NodeThreadsAPI {
+public class NodeThreadsResponse extends SolrJerseyResponse {
 
-  private final ThreadDumpHandler handler;
+  @JsonProperty("system")
+  public SystemInfo system;
 
-  public NodeThreadsAPI(ThreadDumpHandler handler) {
-    this.handler = handler;
-  }
+  public static class SystemInfo {
+    @JsonProperty("threadCount")
+    public Map<String, Object> threadCount;
 
-  @EndPoint(
-      path = {"/node/threads"},
-      method = GET,
-      permission = METRICS_READ_PERM)
-  public void triggerThreadDump(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    handler.handleRequestBody(req, rsp);
+    @JsonProperty("deadlocks")
+    public List<Object> deadlocks;
+
+    @JsonProperty("threadDump")
+    public List<Object> threadDump;
   }
 }
