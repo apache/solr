@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-import com.vladsch.flexmark.ast.Heading;
-import com.vladsch.flexmark.ext.abbreviation.AbbreviationExtension;
-import com.vladsch.flexmark.ext.attributes.AttributesExtension;
-import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
-import com.vladsch.flexmark.html.HtmlRenderer;
-import com.vladsch.flexmark.parser.Parser;
-import com.vladsch.flexmark.parser.ParserEmulationProfile;
-import com.vladsch.flexmark.util.ast.Document;
-import com.vladsch.flexmark.util.data.MutableDataSet;
-import com.vladsch.flexmark.util.sequence.Escaping;
-import groovy.text.SimpleTemplateEngine;
+import com.vladsch.flexmark.ast.Heading
+import com.vladsch.flexmark.ext.abbreviation.AbbreviationExtension
+import com.vladsch.flexmark.ext.attributes.AttributesExtension
+import com.vladsch.flexmark.ext.autolink.AutolinkExtension
+import com.vladsch.flexmark.html.HtmlRenderer
+import com.vladsch.flexmark.parser.Parser
+import com.vladsch.flexmark.parser.ParserEmulationProfile
+import com.vladsch.flexmark.util.ast.Document
+import com.vladsch.flexmark.util.data.MutableDataSet
+import com.vladsch.flexmark.util.sequence.Escaping
+import groovy.text.SimpleTemplateEngine
 
 buildscript {
-  repositories {
-    mavenCentral()
-  }
+  apply from: rootProject.file('build-tools/build-infra/declare-repositories.gradle'), to: delegate
 
   dependencies {
     classpath libs.flexmark.flexmark
@@ -72,15 +70,6 @@ configure(project(':solr:documentation')) {
     inputs.property('luceneDocUrl', project.luceneDocUrl)
 
     withProjectList()
-  }
-
-  task createMiniDocumentationIndex(type: MarkdownTemplateTask) {
-    outputFile = file("${project.docrootMinimal}/index.html")
-    templateFile = file("${project.markdownSrc}/online-link.template.md")
-
-    // list all properties used by the template here to allow uptodate checks to be correct:
-    inputs.property('version', project.version)
-    inputs.property('solrDocUrl', project.solrDocUrl).optional(true)
   }
 }
 

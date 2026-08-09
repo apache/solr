@@ -10,7 +10,7 @@ organized in versioned folders and collated into a human-readable *CHANGELOG.md*
 
 This document walks you through the workflow, explains the Gradle helpers
 available, and finishes with a concrete example fragment. We use a tool called
-[logchange](https://logchange.dev/tools/logchange/) as a gradle plugin to manage
+https://logchange.dev/tools/logchange/[logchange] as a gradle plugin to manage
 the changelog.
 
 == 1. Workflow Overview
@@ -38,6 +38,7 @@ solr/
 == 3. The YAML format
 
 Below is an example of a changelog yaml fragment. The full yaml format is https://logchange.dev/tools/logchange/reference/#yaml-entry-format[documented here], but we normally only need `title`, `type`, `authors` and `links`. For a change without a JIRA, you can add the PR number in `issues`:
+For the author section, the `name` key is the only one required. You may optionally want to link to either your github user (`nick`) or e.g. your ASF user (`url`) as shown below.
 
 [source, yaml]
 ----
@@ -45,12 +46,12 @@ title: Fix nasty bug in CoreContainer shutdown
 # added, changed, fixed, deprecated, removed, dependency_update, security, other
 type: fixed
 authors:
-  - name: John Contributor
-    nick: johngithub
-    url: https://home.apache.org/phonebook.html?uid=johnasfid
+  - name: Alex Doe
+    nick: alex_githubid
+    url: https://home.apache.org/phonebook.html?uid=alex_asfid
 links:
-  - name: SOLR-3333
-    url: https://issues.apache.org/jira/browse/SOLR-3333
+  - name: SOLR-12345
+    url: https://issues.apache.org/jira/browse/SOLR-12345
 ----
 
 === Changelog Types Reference
@@ -109,9 +110,9 @@ use that information. Example:
 [source, properties]
 ----
 # Changelog generator settings (./gradlew writeChangelog)
-user.name=John Doe
-user.githubid=johngithub
-user.asfid=johnapache
+user.name=Alex Doe
+user.githubid=alex_githubid
+user.asfid=alex_asfid
 ----
 
 The changelog has comments to help you fill it out.  Remove them after filling out the form.

@@ -36,6 +36,7 @@ import org.apache.solr.CursorPagingTest;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -883,11 +884,12 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   public void assertFullWalkNoDups(SolrParams params, Consumer<SolrDocument> consumer)
       throws Exception {
 
+    final String requestHandler = params.get(CommonParams.QT, "/select");
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
     while (0 < docsOnThisPage) {
       final SolrParams p = p(params, CURSOR_MARK_PARAM, cursorMark);
-      QueryResponse rsp = cloudClient.query(p);
+      QueryResponse rsp = new QueryRequest(requestHandler, p).process(cloudClient);
       String nextCursorMark = assertHashNextCursorMark(rsp);
       SolrDocumentList docs = extractDocList(rsp);
       docsOnThisPage = docs.size();

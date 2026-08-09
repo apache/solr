@@ -70,6 +70,8 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
   protected final ModifiableSolrParams baseParams = new ModifiableSolrParams();
 
+  protected static final String HANDLER = "/tag";
+
   // populated in buildNames; tested in assertTags
   protected static List<String> NAMES;
 
@@ -77,7 +79,6 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     baseParams.clear();
-    baseParams.set(CommonParams.QT, "/tag");
     baseParams.set(CommonParams.WT, "xml");
   }
 
@@ -121,7 +122,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   /** Asserts the tags. Will call req.close(). */
   protected void assertTags(SolrQueryRequest req, TestTag... eTags) throws Exception {
     try {
-      SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
+      SolrQueryResponse rsp = h.queryAndResponse(HANDLER, req);
       TestTag[] aTags = pullTagsFromResponse(req, rsp);
 
       String message;

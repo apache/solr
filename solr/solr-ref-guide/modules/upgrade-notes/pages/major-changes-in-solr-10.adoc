@@ -102,9 +102,9 @@ Its builder will dynamically detect if solr-jetty is available and use that, oth
 CommonParams.QT has been un-deprecated.
 Nonetheless, if your code makes explicit reference to "qt" when constructing a standard request, there is usually a better way.
 
-=== Embedded Jetty Configuration
+=== Jetty Configuration
 
-Solr 10.1 upgrades the embedded server to Eclipse Jetty 12.1, which removed Jetty's directory-scanning deployer (the `DeploymentManager` and `ContextProvider` classes).
+Solr 10.1 upgrades the server to Eclipse Jetty 12.1, which removed Jetty's directory-scanning deployer (the `DeploymentManager` and `ContextProvider` classes).
 Because Solr serves a single, statically-known webapp, that webapp is now deployed directly in `server/etc/jetty.xml`, and the `server/contexts/solr-jetty-context.xml` file has been removed.
 
 Advanced users who relied on Jetty scanning the `server/contexts/` directory to auto-deploy additional context descriptors will find that this no longer happens.
@@ -390,6 +390,14 @@ A new feature vector cache was added that is used not only for feature logging b
 
 The new OTEL based metric system introduced in 10.0 is considered BETA, and some breaking changes are to be expected in this and coming minor releases.
 
+==== OTLP protocols
+
+The `opentelemetry` module no longer includes some dependencies, dropping gRPC support out-of-the-box.
+The default export protocol for tracing has changed from `grpc` to `http/protobuf` (OTLP port `4318` instead of `4317`).
+The default for the separate OTLP metrics exporter's `solr.metrics.otlpExporterProtocol` has likewise changed from `grpc` to `http`.
+
+Use of gRPC can be restored by adding the required gRPC & Netty jars to the `opentelemetry` module's lib directory, and setting `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` (tracing) and/or `solr.metrics.otlpExporterProtocol=grpc` (metrics) as needed.
+
 ==== OTLP Metric Names Changed to Dot-Separated Format
 
 *Breaking change for OTLP consumers.*
@@ -412,6 +420,9 @@ Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format n
   (e.g., `crossdc.consumer.output.total` → `solr.crossdc.consumer.output.total`)
 * All CrossDC producer metrics have been renamed: `solr.core.crossdc.producer.*` → `solr.crossdc.producer.*`
   (e.g., `solr.core.crossdc.producer.submitted` → `solr.crossdc.producer.submitted`)
+* The Prometheus JVM CPU utilization metrics lost their `_ratio` suffix, as the updated OpenTelemetry
+  exporter no longer maps the OTel unit `1` to a `_ratio` suffix: `jvm_system_cpu_utilization_ratio` →
+  `jvm_system_cpu_utilization` and `jvm_cpu_recent_utilization_ratio` → `jvm_cpu_recent_utilization`.
 
 Update your dashboards or other metrics consumers accordingly.
 
