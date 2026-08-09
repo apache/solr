@@ -60,6 +60,8 @@ import org.apache.solr.util.LogLevel;
 import org.jspecify.annotations.NonNull;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Joins a children index to a parents index with {@link JoinUtil}. Children reference parents via a
@@ -485,6 +487,57 @@ public class TestAIJoin extends LuceneTestCase {
           }
         }
         assertEquals(expected, searchParentIds(newSearcher(parentsReader), filteredJoin));
+      }
+    }
+  }
+
+  /**
+   * Not a correctness test but a tracing scenario for the repeated-ForeignKeyColumn-load issue;
+   * asserts nothing, read the {@code AIJOIN} log lines instead.
+   *
+   * <p>The FILTER clause is added <b>before</b> the join clause and filters on {@code
+   * parent_id=parent0}, a term present in only the first parents segment. Per to-leaf, {@code
+   * BooleanWeight.scorerSupplier} asks the clauses in order and bails out with {@code null} on the
+   * first required clause that has no matches -- so for every to-segment except the first one the
+   * join's scorerSupplier is never invoked, no {@code ToLeafJoinContext} is created, and the pairs
+   * (every from-segment x that to-segment) are never written to the sidecar.
+   *
+   * <p>Expected log shape: pass 1 loads all FK columns and builds only the first to-segment's
+   * pairs; passes 2..3 show {@code evt=weight} with the same {@code pairsMissing} again, {@code
+   * evt=fkload} repeating for every from-segment, and no {@code evt=build} -- the profiler-visible
+   * waste. The unfiltered pass then visits every to-segment and writes the remaining pairs, after
+   * which the final filtered pass runs with {@code pairsMissing=0} and no {@code evt=fkload}.
+   */
+  public void testTraceFkReloadForSkippedToSegments() throws Exception {
+    Logger traceLog = LoggerFactory.getLogger(getClass().getPackageName() + ".TRACE");
+    try (ParentChildIndices indices = new ParentChildIndices()) {
+      try (IndexReader childrenReader = indices.childrenWriter.getReader();
+          IndexReader parentsReader = indices.parentsWriter.getReader()) {
+        IndexSearcher parentsSearcher = newSearcher(parentsReader);
+        Query aiJoinQuery =
+            createAiJoinQuery(
+                joinIndex,
+                anyOfChildren(randomChildrenSubset(indices)),
+                newSearcher(childrenReader));
+        Query filteredJoin =
+            new BooleanQuery.Builder()
+                // FILTER first: a to-segment without the term short-circuits BooleanWeight
+                // before the join clause's scorerSupplier is consulted
+                .add(new TermQuery(new Term(PARENT_ID, "parent0")), BooleanClause.Occur.FILTER)
+                .add(aiJoinQuery, BooleanClause.Occur.MUST)
+                .build();
+        for (int pass = 1; pass <= 3; pass++) {
+          traceLog.info(
+              "AIJOIN-TRACE pass={} filtered join; beyond pass 1 expect repeated pairsMissing"
+                  + " and evt=fkload with no evt=build",
+              pass);
+          searchParentIds(parentsSearcher, filteredJoin);
+        }
+        traceLog.info(
+            "AIJOIN-TRACE unfiltered join: every to-segment is visited, remaining pairs written");
+        searchParentIds(parentsSearcher, aiJoinQuery);
+        traceLog.info("AIJOIN-TRACE final filtered pass: expect pairsMissing=0 and no evt=fkload");
+        searchParentIds(parentsSearcher, filteredJoin);
       }
     }
   }

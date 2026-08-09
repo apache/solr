@@ -253,7 +253,8 @@ final class AIJoinUtil {
         }
       }
 
-      // resolve every fromSideData doc to its to-side doc. Docs without the field, or whose term has
+      // resolve every fromSideData doc to its to-side doc. Docs without the field, or whose term
+      // has
       // no to-side match, keep -1.
       int[] toDocByFromDoc = fromSideData.cloneFromOrdByFromDoc();
       int minFromDoc = DocIdSetIterator.NO_MORE_DOCS;
@@ -281,7 +282,8 @@ final class AIJoinUtil {
         toCount++;
       }
       if (maxFromDoc < 0) { // tombstone - column is empty
-        // no fromSideData doc in this pair maps to any to doc: normalize both edges to the symmetric
+        // no fromSideData doc in this pair maps to any to doc: normalize both edges to the
+        // symmetric
         // {-1, -1} sentinel. An asymmetric one (e.g. {NO_MORE_DOCS, -1}) doesn't round-trip
         // through the join index's SORTED_NUMERIC edges column, which always returns its two
         // values in ascending numeric order regardless of which was written as "min" -- so
@@ -293,12 +295,10 @@ final class AIJoinUtil {
       return new JoinColumnModel(
           toDocByFromDoc,
           new Edges(new int[] {minFromDoc, maxFromDoc}, new int[] {minToDoc, maxToDoc}, toCount));
-    } else{ // tombstone - column is empty, due to disjoint terms, perhaps one may optimize it
+    } else { // tombstone - column is empty, due to disjoint terms, perhaps one may optimize it
       int[] minusones = new int[fromSideData.fromSideMaxDocs()];
-      Arrays.fill(minusones,-1);
-      return new JoinColumnModel(
-          minusones ,
-          new Edges(new int[] {-1, -1}, new int[] {-1, -1}, 0));
+      Arrays.fill(minusones, -1);
+      return new JoinColumnModel(minusones, new Edges(new int[] {-1, -1}, new int[] {-1, -1}, 0));
     }
   }
 
@@ -418,13 +418,16 @@ final class AIJoinUtil {
   }
 
   /**
-   * Every pair field name (the part after {@link #TO_DOC_VAL_BY_FROM_DOCNUM}) present in {@code
-   * fieldInfos}, i.e. every join pair this segment carries, needed or not.
+   * Every pair field name (the part after {@link #TO_COUNT_PREFIX}) present in {@code fieldInfos},
+   * i.e. every join pair this segment carries, needed or not. Detected by the toCount companion --
+   * written for every built pair -- not by the join column itself, which a tombstone pair (disjoint
+   * terms) never materializes; the reaper must see tombstones too, or it would judge a segment
+   * carrying only tombstones as pair-free and reap it, resurrecting the pairs' rebuilds.
    */
   static Set<String> pairFieldNames(FieldInfos fieldInfos) {
     Set<String> names = new HashSet<>();
     for (FieldInfo fieldInfo : fieldInfos) {
-      String[] splits = fieldInfo.name.split(TO_DOC_VAL_BY_FROM_DOCNUM);
+      String[] splits = fieldInfo.name.split(TO_COUNT_PREFIX);
       if (splits.length == 2) {
         names.add(splits[1]);
       }

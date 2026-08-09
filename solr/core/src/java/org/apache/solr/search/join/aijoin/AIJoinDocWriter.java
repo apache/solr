@@ -28,12 +28,12 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
 
 /**
- * Sibling of {@link AIJoinColumnWriter} writing the same pair columns through the plain {@link
+ * Sibling of {@code AIJoinColumnWriter} writing the same pair columns through the plain {@link
  * Document} / {@link IndexWriter#addDocuments} API instead of {@code
  * org.apache.lucene.document.column}. The whole batch is built as one in-memory {@link List} of
  * {@code batchNumDocs} documents and handed to a single {@link IndexWriter#addDocuments} call: per
  * its block semantics that list is indexed atomically, with no flush allowed to land in the middle
- * of it, so -- exactly like {@link AIJoinColumnWriter}'s single {@code addBatch} -- the whole batch
+ * of it, so -- exactly like {@code AIJoinColumnWriter}'s single {@code addBatch} -- the whole batch
  * is guaranteed to end up doc-for-doc (list index == doc id) in one sidecar segment, keeping doc
  * 0's edges and every from-doc id aligned the same way.
  */
@@ -62,7 +62,7 @@ final class AIJoinDocWriter extends AIJoinWriter {
    * to doc 0 even when the pair maps nothing, so a once-built pair is detectable in the join index
    * and never rebuilt.
    */
-  private static void addJoinColumns(// TODO don't write minusones columns for tombstones!!
+  private static void addJoinColumns( // TODO don't write minusones columns for tombstones!!
       List<Document> docs, JoinColumnModel mapping, String pairFieldName) throws IOException {
     addOrdMap(docs, AIJoinUtil.TO_DOC_VAL_BY_FROM_DOCNUM + pairFieldName, mapping);
     addEdges(docs, AIJoinUtil.FROM_EDGES_PREFIX + pairFieldName, mapping.edges().fromDocEdges());
@@ -72,7 +72,7 @@ final class AIJoinDocWriter extends AIJoinWriter {
   }
 
   /**
-   * Adds a pair's {min, max} (or count) values to doc 0, mirroring {@link AIJoinColumnWriter}'s
+   * Adds a pair's {min, max} (or count) values to doc 0, mirroring {@code AIJoinColumnWriter}'s
    * {@code edgesColumn}, which puts both values at doc 0 too.
    */
   private static void addEdges(List<Document> docs, String fieldName, int[] values) {
