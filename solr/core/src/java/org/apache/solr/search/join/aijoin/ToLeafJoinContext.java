@@ -459,10 +459,11 @@ class ToLeafJoinContext {
     this.joinCellsByFromSegOrd = new JoinTask[fromSearcher.getLeafContexts().size()];
 
     // 1. check from scorers
-    for (JoinTask newJoinTask : createFromItersTasks()) {
+    List<JoinTask> fromItersTasks = createFromItersTasks();
+    for (JoinTask newJoinTask : fromItersTasks) {
       this.cellsCreated++;
       this.addJoinTask(newJoinTask);
-      // 2. set old segment refernces
+      // 2. set old segment references
       JoinSegmentReference oldReference =
           weightAgeJoinSegmentsReadOnly.get(newJoinTask.pairFieldName);
       if (oldReference != null) {
@@ -471,7 +472,7 @@ class ToLeafJoinContext {
     }
 
     this.lastSeenJoinSearcher =
-        weightAgeJoinSearcher; // set old searcher, it correspondts to weightAgeJoinSegmentsReadOnly
+        weightAgeJoinSearcher; // set old searcher, it corresponds to weightAgeJoinSegmentsReadOnly
     TaskRefreshResult refreshedAndNew = refreshJoinTasksReferences(scorerSupplierAgeJoinSearcher);
     for (Entry<JoinTask, LeafReaderContext> entry : refreshedAndNew.joinSegements) {
       JoinTask cell = entry.getKey();
@@ -580,7 +581,7 @@ class ToLeafJoinContext {
     Set<Map.Entry<JoinTask, LeafReaderContext>> joinSegements = new LinkedHashSet<>();
     Set<Map.Entry<JoinTask, JoinColumnModel>> justWritten = new LinkedHashSet<>();
 
-    Set<JoinTask> refeshReference = new LinkedHashSet<>();
+    Set<JoinTask> refreshReference = new LinkedHashSet<>();
     Set<JoinTask> loadReference = new LinkedHashSet<>();
     Map<String, JoinTask> needIndex = new LinkedHashMap<>();
     for (JoinTask task : joinCells) {
@@ -590,17 +591,17 @@ class ToLeafJoinContext {
         if (newJoinIndexSearcher == this.lastSeenJoinSearcher) {
           loadReference.add(task);
         } else {
-          refeshReference.add(task);
+          refreshReference.add(task);
         }
       } else {
         needIndex.put(task.pairFieldName, task);
       }
     }
-    // referesh old refs, pass 1: same ord, same segment name -> the leaf is already in hand, so
+    // refresh old refs, pass 1: same ord, same segment name -> the leaf is already in hand, so
     // resolve straight into joinSegements instead of adding to loadReference just to re-fetch the
     // very same leaf by ord in the "load edges for regulars" loop below
     List<LeafReaderContext> newLeaves = newJoinIndexSearcher.getLeafContexts();
-    for (Iterator<JoinTask> iter = refeshReference.iterator(); iter.hasNext(); ) {
+    for (Iterator<JoinTask> iter = refreshReference.iterator(); iter.hasNext(); ) {
       JoinTask task = iter.next();
       // check segment name by ord, if true, resolve it right here, remove from here
       LeafReaderContext byOrd =
@@ -614,9 +615,9 @@ class ToLeafJoinContext {
       }
     }
     // pass 2
-    if (!refeshReference.isEmpty()) {
+    if (!refreshReference.isEmpty()) {
       Map<String, JoinTask> byOldJoinSegName = new HashMap<>();
-      for (JoinTask task : refeshReference) {
+      for (JoinTask task : refreshReference) {
         byOldJoinSegName.put(task.joinSegmentRef.joinSegmentName(), task);
       }
       for (LeafReaderContext joinLeaf : newLeaves) {
@@ -628,14 +629,14 @@ class ToLeafJoinContext {
           task.joinSegmentRef =
               new JoinSegmentReference(task.joinSegmentRef.pairFieldName(), segName, joinLeaf.ord);
           joinSegements.add(new SimpleEntry<>(task, joinLeaf));
-          refeshReference.remove(task);
+          refreshReference.remove(task);
         }
       }
     }
     // pass 3
-    if (!refeshReference.isEmpty()) {
+    if (!refreshReference.isEmpty()) {
       Map<String, JoinTask> byPairFieldName = new HashMap<>();
-      for (JoinTask task : refeshReference) {
+      for (JoinTask task : refreshReference) {
         byPairFieldName.put(task.joinSegmentRef.pairFieldName(), task);
       }
       // loop join segments search for fields
@@ -648,13 +649,13 @@ class ToLeafJoinContext {
         if (found != null) {
           task.joinSegmentRef = found;
           loadReference.add(task);
-          refeshReference.remove(task);
+          refreshReference.remove(task);
         }
       }
     }
-    if (!refeshReference.isEmpty()) { // TODO presumably we can go to index it
+    if (!refreshReference.isEmpty()) { // TODO presumably we can go to index it
       throw new IllegalStateException(
-          "unable to refresh segment refs " + refeshReference + " at " + lastSeenJoinSearcher);
+          "unable to refresh segment refs " + refreshReference + " at " + lastSeenJoinSearcher);
     }
     // load edges for regulars
     for (JoinTask cell : loadReference) {
@@ -664,7 +665,7 @@ class ToLeafJoinContext {
       assert AIJoinUtil.segmentName(joinFeafSeg).equals(cell.joinSegmentRef.joinSegmentName());
       joinSegements.add(new SimpleEntry<>(cell, joinFeafSeg));
     }
-    // index for unlucked
+    // index unlucky ones
     if (!needIndex.isEmpty()) {
 
       Map<String, SegmentsTuple> missingPairs = new HashMap<>();
@@ -694,7 +695,7 @@ class ToLeafJoinContext {
       }
     }
     this.lastSeenJoinSearcher =
-        newJoinIndexSearcher; // set old searcher, it correspondts to weightAgeJoinSegmentsReadOnly
+        newJoinIndexSearcher; // set old searcher, it corresponds to weightAgeJoinSegmentsReadOnly
     return new TaskRefreshResult(joinSegements, justWritten);
   }
 

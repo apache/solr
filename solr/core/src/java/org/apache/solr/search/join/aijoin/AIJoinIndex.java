@@ -248,7 +248,6 @@ public final class AIJoinIndex implements Closeable {
       String toField,
       BuildCause buildCause,
       String ctxId,
-      // TODO pass here array of FromSideData futures
       Future<FromLeafJoinContext>[] fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
     long startNanos = System.nanoTime();
@@ -273,12 +272,6 @@ public final class AIJoinIndex implements Closeable {
         // so a batch must start at doc 0 of its sidecar segment, which writeBatch guarantees by
         // flushing one batch per commit
         int batchNumDocs = 0;
-        // TODO parallelise this loop. The pairs are independent -- each merges the term
-        // dictionaries of its own (from, to) segments and shares nothing but scratch, which can
-        // become per-thread -- yet they are computed one after another on the calling thread, and
-        // this loop is the whole cost of a first query. The write must stay a single batch though:
-        // see the comment above, the batch boundary is what makes a column's docid the from-side
-        // docid, so parallelise computeDocMapping, not writeBatch.
         for (String pairFieldName : owned.keySet()) {
           SegmentsTuple position = missingPairs.get(pairFieldName);
           LeafReaderContext toContext = toReader.leaves().get(position.toLeafOrd());
@@ -410,8 +403,15 @@ public final class AIJoinIndex implements Closeable {
    * Serializes sidecar writes: one batch per commit keeps every batch at doc 0 of its own segment,
    * preserving pair-column doc number == from-side doc id. Completing builders' futures after this
    * returns guarantees waiters observe the refreshed reader.
+   *
+   * It should be plain simple synchronized. As alternatives
+   * <ul>
+   *   <li>push synchronized deeper to iw.addDocs(),iw.commit()</li>
+   *   <li>merge columns from concurrent threads and writes them as a single batch - too much</li>
+   *   </>
+   * The invariant is a column starts ad doc#==0, this iw.addDocs(),iw.commit() goes one by one.
+   * But such segment might contain many parallel columns, since they have distinguishing names.
    */
-  @Deprecated // why??
   private synchronized void writeBatch(int batchNumDocs, Map<String, JoinColumnModel> mappings)
       throws IOException {
     AIJoinIndex.INSTANCE.writeJoinColumns(writer, batchNumDocs, mappings);
