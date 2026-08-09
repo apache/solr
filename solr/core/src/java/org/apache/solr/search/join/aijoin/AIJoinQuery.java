@@ -19,6 +19,7 @@ package org.apache.solr.search.join.aijoin;
 import static org.apache.solr.search.join.aijoin.AIJoinUtil.cacheImpl;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +37,8 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.search.join.aijoin.AIJoinIndex.JoinSegmentReference;
 import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Joins the from-side index to the to-side index this query is executed against, resolving
@@ -47,6 +50,7 @@ import org.jspecify.annotations.NonNull;
  * AIJoinIndex#newJoinQuery}. Matches score a constant.
  */
 class AIJoinQuery extends Query {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final AIJoinIndex joinIndex;
   final String fromField;
@@ -118,11 +122,28 @@ class AIJoinQuery extends Query {
     } finally {
       this.joinIndex.release(joinSearcher);
     }
+    int pairsNeeded = neededPairs.size();
     neededPairs.keySet().removeAll(existingJoinSegments.keySet());
     IntHashSet fromOrdsToLoad = new IntHashSet(neededPairs.size());
     neededPairs.values().stream()
         .mapToInt(AIJoinIndex.SegmentsTuple::fromLeafOrd)
         .forEach(fromOrdsToLoad::add);
+    if (AIJoinUtil.diagnosticsEnabled(log)) {
+      // pairsMissing > 0 on a repeat query means those pairs were never persisted by a previous
+      // run (writeBatch never captured them), so their from-segments' FK columns get reloaded
+      // here; pairsClaimed counts missing pairs some build already claimed/completed in-process,
+      // i.e. reloads that are pure waste
+      AIJoinUtil.logDiagnostic(
+          log,
+          "AIJOIN evt=weight pairsNeeded={} pairsExisting={} pairsMissing={} pairsClaimed={}"
+              + " fkOrdsToLoad={} missingPairs={}",
+          pairsNeeded,
+          existingJoinSegments.size(),
+          neededPairs.size(),
+          joinIndex.countClaimedBuilds(neededPairs.keySet()),
+          fromOrdsToLoad.size(),
+          neededPairs.keySet());
+    }
     Future<FromLeafJoinContext>[] fromFutures = loadFromSide(fromOrdsToLoad);
     // TODO this might produce too many small tasks
     return new AIJoinWeight(
@@ -149,7 +170,20 @@ class AIJoinQuery extends Query {
               () -> {
                 try {
                   AIJoinUtil.CacheAndCount docset = computeDocIdSet(fromWeight, ctx);
-                  if (docset != null && docset.count() > 0 && fromLeafsToLoad.contains(ctx.ord)) {
+                  boolean loadFk =
+                      docset != null && docset.count() > 0 && fromLeafsToLoad.contains(ctx.ord);
+                  if (AIJoinUtil.diagnosticsEnabled(log)) {
+                    AIJoinUtil.logDiagnostic(
+                        log,
+                        "AIJOIN evt=fromLeaf fromSeg={} ord={} fromMatches={} missingPair={}"
+                            + " fkLoaded={}",
+                        AIJoinUtil.segmentName(ctx),
+                        ctx.ord,
+                        docset == null ? -1 : docset.count(),
+                        fromLeafsToLoad.contains(ctx.ord),
+                        loadFk);
+                  }
+                  if (loadFk) {
                     // waste case: noone to-seg read FK,
                     return new FromLeafJoinContext(docset, new ForeignKeyColumn(ctx, fromField));
                   } else {

@@ -85,7 +85,7 @@ public final class AIJoinIndex implements Closeable {
   // package-private (not private): tests reach in directly to observe the reaper's state
   final AIJoinMergePolicy mergePolicy;
   private final MergeScheduler mergeScheduler;
-  static final AIJoinWriter INSTANCE = new AIJoinDocWriter(); // new AIJoinColumnWriter(); TODO WHAAAA?????!!!
+  static final AIJoinWriter INSTANCE = new AIJoinDocWriter(); // new AIJoinColumnWriter();
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -129,7 +129,11 @@ public final class AIJoinIndex implements Closeable {
     for (LeafReaderContext joinContext : joinSearcher.getIndexReader().leaves()) {
       String segmentName = AIJoinUtil.segmentName(joinContext);
       for (FieldInfo fieldInfo : joinContext.reader().getFieldInfos()) {
-        String splits[] = fieldInfo.name.split(AIJoinUtil.TO_DOC_VAL_BY_FROM_DOCNUM);
+        // pairs are detected by their toCount companion, which is written to doc 0 for every
+        // built pair; the join column itself is sparse and a tombstone pair (disjoint terms)
+        // never materializes it, so scanning for join columns kept re-reporting once-built
+        // tombstones as missing -- and re-triggering their from-side FK loads on every query
+        String splits[] = fieldInfo.name.split(AIJoinUtil.TO_COUNT_PREFIX);
         if (splits.length == 2 && isNeeded.test(splits[1])) {
           existingJoinSegments.computeIfAbsent(
               splits[1],
@@ -202,6 +206,22 @@ public final class AIJoinIndex implements Closeable {
         fromSearcher,
         toField,
         fromExecutor == null ? new DirectExecutorService() : fromExecutor);
+  }
+
+  /**
+   * How many of the given pair field names already have a build claimed (in-flight or completed) in
+   * {@link #pairBuilds}. Diagnostic only: a pair counted here but still reported missing by {@link
+   * #extractExistingJoinColumns} means the caller is about to redo from-side work for a pair that
+   * was already built -- its column just isn't visible through the searcher it consulted.
+   */
+  int countClaimedBuilds(Set<String> pairFieldNames) {
+    int claimed = 0;
+    for (String pairFieldName : pairFieldNames) {
+      if (pairBuilds.containsKey(pairFieldName)) {
+        claimed++;
+      }
+    }
+    return claimed;
   }
 
   IndexSearcher acquire() throws IOException {
@@ -320,7 +340,7 @@ public final class AIJoinIndex implements Closeable {
       AIJoinUtil.logDiagnostic(
           log,
           "AIJOIN evt=build ctx={} cause={} pairsRequested={} pairsBuilt={} pairsAwaited={}"
-              + " builtMs={} awaitedMs={} toCount={} batchNumDocs={}",
+              + " builtMs={} awaitedMs={} toCount={} batchNumDocs={} writtenPairs={}",
           ctxId == null ? "-" : ctxId,
           buildCause,
           missingPairs.size(),
@@ -329,7 +349,8 @@ public final class AIJoinIndex implements Closeable {
           builtNanos / 1_000_000L,
           (System.nanoTime() - startNanos - builtNanos) / 1_000_000L,
           toCount,
-          batchNumDocsLogged);
+          batchNumDocsLogged,
+          loadedMappings.keySet());
     }
     return result;
   }

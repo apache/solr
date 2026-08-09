@@ -1,6 +1,7 @@
 package org.apache.solr.search.join.aijoin;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -12,6 +13,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * From-side state of one (from-segment, to-segment) pair: the from doc values, its live-docs mask,
@@ -22,13 +25,15 @@ import org.apache.lucene.util.BytesRefHash;
  * place from from-ords to to-docs.
  */
 final class ForeignKeyColumn {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private final BytesRefHash fromTermsHash;
   private final int[] fromOrdByHashOrd;
   private final int[] toDocByFromDoc;
   private final int fromValuesCount;
 
   public ForeignKeyColumn(LeafReaderContext fromContext, String fromField) throws IOException {
-
+    long startNanos = System.nanoTime();
     SortedSetDocValues fromDV = DocValues.getSortedSet(fromContext.reader(), fromField);
     Bits fromLiveDocs = fromContext.reader().getLiveDocs();
     // dead code, kept until M:N support settles: the reverse (to-side sized) ord map was filled
@@ -41,9 +46,12 @@ final class ForeignKeyColumn {
     // seeded at size 1 (fkVals == 1) never rehashes and ends up full; a probe for an absent term
     // then never finds an empty slot and loops forever. Seeding at least 2 lets that rehash kick
     // in.
-    int capacity = Math.max(2, BitUtil.nextHighestPowerOfTwo(fkVals
-        *2+2 // don't want to rehash
-    ));
+    int capacity =
+        Math.max(
+            2,
+            BitUtil.nextHighestPowerOfTwo(
+                fkVals * 2 + 2 // don't want to rehash
+                ));
     // pool,
     BytesRefHash fromTermsHash =
         new BytesRefHash(
@@ -70,6 +78,20 @@ final class ForeignKeyColumn {
     this.fromOrdByHashOrd = fromOrdByHashOrd;
     this.toDocByFromDoc = toDocByFromDoc;
     this.fromValuesCount = Math.toIntExact(fromDV.getValueCount());
+    if (AIJoinUtil.diagnosticsEnabled(log)) {
+      // this constructor is the heavy from-side work (hashes the whole term dictionary), so every
+      // line here is one profiler-visible FK load; a segment recurring across queries means its
+      // pairs never get persisted and the load is being repeated in vain
+      AIJoinUtil.logDiagnostic(
+          log,
+          "AIJOIN evt=fkload fromSeg={} field={} ord={} maxDoc={} values={} tookUs={}",
+          AIJoinUtil.segmentName(fromContext),
+          fromField,
+          fromContext.ord,
+          fromContext.reader().maxDoc(),
+          fromValuesCount,
+          (System.nanoTime() - startNanos) / 1_000L);
+    }
   }
 
   public int getFromTermOrdOrDashOne(BytesRef value) {
@@ -90,7 +112,7 @@ final class ForeignKeyColumn {
     return toDocByFromDoc.clone();
   }
 
-  public int fromSideMaxDocs(){
+  public int fromSideMaxDocs() {
     return toDocByFromDoc.length;
   }
 
