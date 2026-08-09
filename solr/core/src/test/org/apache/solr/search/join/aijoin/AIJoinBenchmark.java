@@ -98,7 +98,7 @@ public class AIJoinBenchmark {
 
   public static void main(String[] args) throws Exception {
     new AIJoinBenchmark().runBenchmark();
-    //executor.shutdown();
+    // executor.shutdown();
   }
 
   public void runBenchmark() throws Exception {
@@ -116,6 +116,28 @@ public class AIJoinBenchmark {
         if (round < ROUNDS - 1) {
           numParents += numParents / GROWTH_DENOMINATOR;
           updateIndices(parentsDir, childrenDir, numParents);
+        }
+      }
+      System.out.println("start warming");
+      try (IndexReader parentsReader = DirectoryReader.open(parentsDir);
+          IndexReader childrenReader = DirectoryReader.open(childrenDir)) {
+        IndexSearcher childrenSearcher = new ParallelIndexSearcher(childrenReader, executor);
+        childrenSearcher.setQueryCache(null);
+        IndexSearcher parentsSearcher = new ParallelIndexSearcher(parentsReader, executor);
+        parentsSearcher.setQueryCache(null);
+
+        Query childFilter = new TermQuery(new Term(TAG, HOT));
+        Query parentFilter = new TermQuery(new Term(COLOR, color(0)));
+
+        for (int i = 0; i < 10000; i++) {
+          exactSearch(
+              parentsSearcher,
+              filterParents(
+                  aiJoinChildrenToParents(joinIndex, childFilter, childrenSearcher, executor),
+                  parentFilter));
+          if (i % 100 == 0 && i > 0) {
+            System.out.println(i);
+          }
         }
       }
     }
@@ -159,7 +181,8 @@ public class AIJoinBenchmark {
       // passes
       long buildStart = System.nanoTime();
       exactSearch(
-          parentsSearcher, aiJoinChildrenToParents(joinIndex, childFilter, childrenSearcher, executor));
+          parentsSearcher,
+          aiJoinChildrenToParents(joinIndex, childFilter, childrenSearcher, executor));
       System.out.printf(
           Locale.ROOT,
           "AI join first search (lazy pair build): %.2fms%n",
@@ -202,10 +225,13 @@ public class AIJoinBenchmark {
         PARENT_ID_FK, false, PARENT_ID, childFilter, childrenSearcher, ScoreMode.None);
   }
 
-  //private static final ExecutorService executor = Executors.newFixedThreadPool(4);
+  // private static final ExecutorService executor = Executors.newFixedThreadPool(4);
 
   private static Query aiJoinChildrenToParents(
-      AIJoinIndex joinIndex, Query childFilter, IndexSearcher childrenSearcher, ExecutorService executor) {
+      AIJoinIndex joinIndex,
+      Query childFilter,
+      IndexSearcher childrenSearcher,
+      ExecutorService executor) {
     return joinIndex.newJoinQuery(PARENT_ID_FK, childFilter, childrenSearcher, PARENT_ID, executor);
   }
 

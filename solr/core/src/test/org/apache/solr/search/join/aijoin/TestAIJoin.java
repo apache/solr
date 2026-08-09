@@ -33,7 +33,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -321,6 +323,49 @@ public class TestAIJoin extends LuceneTestCase {
             searchParentIdsBothJoins(
                 newSearcher(parentsReader),
                 anyOfChildren(new TreeSet<>(List.of(oldChildId, newChildId))),
+                newSearcher(childrenReader)));
+      }
+    }
+  }
+
+  /**
+   * A from-side segment whose join field holds a single distinct value (one parent referenced by
+   * every child) must still answer lookups for to-side terms absent from it. The per-segment term
+   * dictionary then has {@code getValueCount() == 1}, which used to seed the lookup hash at size 1
+   * -- a table {@code add()} fills to 100%, so probing for the orphan parent's term never found an
+   * empty slot and spun forever.
+   */
+  public void testFromSegmentWithSingleDistinctValue() throws Exception {
+    try (Directory childrenDir = newDirectory();
+        Directory parentsDir = newDirectory()) {
+      // a plain IndexWriter (not RandomIndexWriter) keeps all children in one in-RAM segment until
+      // close, so the from-segment's term dictionary has exactly one distinct value
+      try (IndexWriter childrenWriter =
+          new IndexWriter(
+              childrenDir,
+              newIndexWriterConfig(new MockAnalyzer(random()))
+                  .setMergePolicy(NoMergePolicy.INSTANCE))) {
+        for (int c = 0; c < 5; c++) {
+          childrenWriter.addDocument(childDoc("child" + c, "onlyParent"));
+        }
+      }
+      try (IndexWriter parentsWriter =
+          new IndexWriter(
+              parentsDir,
+              newIndexWriterConfig(new MockAnalyzer(random()))
+                  .setMergePolicy(NoMergePolicy.INSTANCE))) {
+        // one parent referenced by every child, plus an orphan parent whose term is absent from the
+        // children's single-value term dictionary -- the lookup that used to hang
+        parentsWriter.addDocument(parentDoc("onlyParent", "red"));
+        parentsWriter.addDocument(parentDoc("orphanParent", "blue"));
+      }
+      try (IndexReader childrenReader = DirectoryReader.open(childrenDir);
+          IndexReader parentsReader = DirectoryReader.open(parentsDir)) {
+        assertEquals(
+            Set.of("onlyParent"),
+            searchParentIdsBothJoins(
+                newSearcher(parentsReader),
+                anyOfChildren(new TreeSet<>(List.of("child0", "child1"))),
                 newSearcher(childrenReader)));
       }
     }

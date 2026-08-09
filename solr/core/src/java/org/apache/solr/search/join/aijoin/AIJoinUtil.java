@@ -221,10 +221,12 @@ final class AIJoinUtil {
     Bits toLiveDocs = toContext.reader().getLiveDocs();
     TermsEnum toTerms = toDV.termsEnum();
     // resolve from-side ords to to-side ords: look each to-side term up in the from-side hash.
+    boolean termsAreDisjoint = true;
     for (BytesRef term = toTerms.next(); term != null; term = toTerms.next()) {
       int fromOrd = fromSideData.getFromTermOrdOrDashOne(term);
       if (fromOrd != -1) {
         toOrdByFromOrd[fromOrd] = (int) toTerms.ord();
+        termsAreDisjoint = false;
       }
     }
     // TODO: this degrades M:N joins to M:1. Both toDocByToOrd and toDocByFromDoc keep a single
@@ -234,62 +236,70 @@ final class AIJoinUtil {
     // and only the last match survives. The read side (AIJoinQuery) already consumes all
     // docValueCount() values per doc, so only this writer needs to learn to emit multiple
     // to docs per fromSideData doc.
-    int[] toDocByToOrd = new int[Math.toIntExact(toDV.getValueCount())];
-    Arrays.fill(toDocByToOrd, -1);
-    for (int toDoc = toDV.nextDoc();
-        toDoc != DocIdSetIterator.NO_MORE_DOCS;
-        toDoc = toDV.nextDoc()) {
-      if (toLiveDocs != null && !toLiveDocs.get(toDoc)) {
-        continue;
+    if (!termsAreDisjoint) {
+      int[] toDocByToOrd = new int[Math.toIntExact(toDV.getValueCount())];
+      Arrays.fill(toDocByToOrd, -1);
+      for (int toDoc = toDV.nextDoc();
+          toDoc != DocIdSetIterator.NO_MORE_DOCS;
+          toDoc = toDV.nextDoc()) {
+        if (toLiveDocs != null && !toLiveDocs.get(toDoc)) {
+          continue;
+        }
+        for (int i = 0; i < toDV.docValueCount(); i++) {
+          long toOrd = toDV.nextOrd();
+          toDocByToOrd[(int) toOrd] = toDoc;
+          // TODO we can apply toOrdByFromOrd right here
+          // and get toDocByFromOrd[]
+        }
       }
-      for (int i = 0; i < toDV.docValueCount(); i++) {
-        long toOrd = toDV.nextOrd();
-        toDocByToOrd[(int) toOrd] = toDoc;
-        // TODO we can apply toOrdByFromOrd right here
-        // and get toDocByFromOrd[]
-      }
-    }
 
-    // resolve every fromSideData doc to its to-side doc. Docs without the field, or whose term has
-    // no to-side match, keep -1.
-    int[] toDocByFromDoc = fromSideData.cloneFromOrdByFromDoc();
-    int minFromDoc = DocIdSetIterator.NO_MORE_DOCS;
-    int maxFromDoc = -1;
-    int minToDoc = DocIdSetIterator.NO_MORE_DOCS;
-    int maxToDoc = -1;
-    int toCount = 0;
-    // walk the array, mapping each fromSideData ord to its to-side doc in place.
-    for (int fromDoc = 0; fromDoc < toDocByFromDoc.length; fromDoc++) {
-      int fromOrd = toDocByFromDoc[fromDoc];
-      if (fromOrd == -1) {
-        continue;
+      // resolve every fromSideData doc to its to-side doc. Docs without the field, or whose term has
+      // no to-side match, keep -1.
+      int[] toDocByFromDoc = fromSideData.cloneFromOrdByFromDoc();
+      int minFromDoc = DocIdSetIterator.NO_MORE_DOCS;
+      int maxFromDoc = -1;
+      int minToDoc = DocIdSetIterator.NO_MORE_DOCS;
+      int maxToDoc = -1;
+      int toCount = 0;
+      // walk the array, mapping each fromSideData ord to its to-side doc in place.
+      for (int fromDoc = 0; fromDoc < toDocByFromDoc.length; fromDoc++) {
+        int fromOrd = toDocByFromDoc[fromDoc];
+        if (fromOrd == -1) {
+          continue;
+        }
+        int toOrd = (int) toOrdByFromOrd[fromOrd];
+        int toDoc = toOrd == -1 ? -1 : toDocByToOrd[toOrd];
+        if (toDoc == -1) {
+          toDocByFromDoc[fromDoc] = -1; // wiping is crucial
+          continue;
+        }
+        toDocByFromDoc[fromDoc] = toDoc;
+        minFromDoc = Math.min(minFromDoc, fromDoc);
+        maxFromDoc = Math.max(maxFromDoc, fromDoc);
+        minToDoc = Math.min(minToDoc, toDoc);
+        maxToDoc = Math.max(maxToDoc, toDoc);
+        toCount++;
       }
-      int toOrd = (int) toOrdByFromOrd[fromOrd];
-      int toDoc = toOrd == -1 ? -1 : toDocByToOrd[toOrd];
-      if (toDoc == -1) {
-        toDocByFromDoc[fromDoc] = -1; // wiping is crucial
-        continue;
+      if (maxFromDoc < 0) { // tombstone - column is empty
+        // no fromSideData doc in this pair maps to any to doc: normalize both edges to the symmetric
+        // {-1, -1} sentinel. An asymmetric one (e.g. {NO_MORE_DOCS, -1}) doesn't round-trip
+        // through the join index's SORTED_NUMERIC edges column, which always returns its two
+        // values in ascending numeric order regardless of which was written as "min" -- so
+        // {NO_MORE_DOCS, -1} silently comes back as {-1, NO_MORE_DOCS} on the next read.
+        minFromDoc = -1;
+        minToDoc = -1;
+        maxToDoc = -1;
       }
-      toDocByFromDoc[fromDoc] = toDoc;
-      minFromDoc = Math.min(minFromDoc, fromDoc);
-      maxFromDoc = Math.max(maxFromDoc, fromDoc);
-      minToDoc = Math.min(minToDoc, toDoc);
-      maxToDoc = Math.max(maxToDoc, toDoc);
-      toCount++;
+      return new JoinColumnModel(
+          toDocByFromDoc,
+          new Edges(new int[] {minFromDoc, maxFromDoc}, new int[] {minToDoc, maxToDoc}, toCount));
+    } else{ // tombstone - column is empty, due to disjoint terms, perhaps one may optimize it
+      int[] minusones = new int[fromSideData.fromSideMaxDocs()];
+      Arrays.fill(minusones,-1);
+      return new JoinColumnModel(
+          minusones ,
+          new Edges(new int[] {-1, -1}, new int[] {-1, -1}, 0));
     }
-    if (maxFromDoc < 0) {
-      // no fromSideData doc in this pair maps to any to doc: normalize both edges to the symmetric
-      // {-1, -1} sentinel. An asymmetric one (e.g. {NO_MORE_DOCS, -1}) doesn't round-trip
-      // through the join index's SORTED_NUMERIC edges column, which always returns its two
-      // values in ascending numeric order regardless of which was written as "min" -- so
-      // {NO_MORE_DOCS, -1} silently comes back as {-1, NO_MORE_DOCS} on the next read.
-      minFromDoc = -1;
-      minToDoc = -1;
-      maxToDoc = -1;
-    }
-    return new JoinColumnModel(
-        toDocByFromDoc,
-        new Edges(new int[] {minFromDoc, maxFromDoc}, new int[] {minToDoc, maxToDoc}, toCount));
   }
 
   /**

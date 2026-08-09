@@ -149,7 +149,8 @@ class AIJoinQuery extends Query {
               () -> {
                 try {
                   AIJoinUtil.CacheAndCount docset = computeDocIdSet(fromWeight, ctx);
-                  if (docset != null && docset.count() >= 0 && fromLeafsToLoad.contains(ctx.ord)) {
+                  if (docset != null && docset.count() > 0 && fromLeafsToLoad.contains(ctx.ord)) {
+                    // waste case: noone to-seg read FK,
                     return new FromLeafJoinContext(docset, new ForeignKeyColumn(ctx, fromField));
                   } else {
                     return new FromLeafJoinContext(docset, null);
@@ -176,7 +177,6 @@ class AIJoinQuery extends Query {
     }
     return neededPairs;
   }
-
 
   @Override
   public String toString(String field) {

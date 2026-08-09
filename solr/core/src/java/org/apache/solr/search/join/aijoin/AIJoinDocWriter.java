@@ -62,7 +62,7 @@ final class AIJoinDocWriter extends AIJoinWriter {
    * to doc 0 even when the pair maps nothing, so a once-built pair is detectable in the join index
    * and never rebuilt.
    */
-  private static void addJoinColumns(
+  private static void addJoinColumns(// TODO don't write minusones columns for tombstones!!
       List<Document> docs, JoinColumnModel mapping, String pairFieldName) throws IOException {
     addOrdMap(docs, AIJoinUtil.TO_DOC_VAL_BY_FROM_DOCNUM + pairFieldName, mapping);
     addEdges(docs, AIJoinUtil.FROM_EDGES_PREFIX + pairFieldName, mapping.edges().fromDocEdges());

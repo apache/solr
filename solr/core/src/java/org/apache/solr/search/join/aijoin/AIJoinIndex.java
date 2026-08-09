@@ -85,7 +85,7 @@ public final class AIJoinIndex implements Closeable {
   // package-private (not private): tests reach in directly to observe the reaper's state
   final AIJoinMergePolicy mergePolicy;
   private final MergeScheduler mergeScheduler;
-  static final AIJoinWriter INSTANCE = new AIJoinDocWriter(); // new AIJoinColumnWriter();
+  static final AIJoinWriter INSTANCE = new AIJoinDocWriter(); // new AIJoinColumnWriter(); TODO WHAAAA?????!!!
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

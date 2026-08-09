@@ -7,7 +7,9 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
@@ -34,11 +36,25 @@ final class ForeignKeyColumn {
     // long[] fromOrdByToOrd = new long[Math.toIntExact(toDV.getValueCount())];
     // Arrays.fill(fromOrdByToOrd, -1L);
     TermsEnum fromTerms = fromDV.termsEnum();
-    BytesRefHash fromTermsHash = new BytesRefHash();
-    int[] fromOrdByHashOrd = new int[Math.toIntExact(fromDV.getValueCount())];
+    int fkVals = Math.toIntExact(fromDV.getValueCount());
+    // BytesRefHash only rehashes once it is exactly half full (count == hashHalfSize), so a table
+    // seeded at size 1 (fkVals == 1) never rehashes and ends up full; a probe for an absent term
+    // then never finds an empty slot and loops forever. Seeding at least 2 lets that rehash kick
+    // in.
+    int capacity = Math.max(2, BitUtil.nextHighestPowerOfTwo(fkVals
+        *2+2 // don't want to rehash
+    ));
+    // pool,
+    BytesRefHash fromTermsHash =
+        new BytesRefHash(
+            new ByteBlockPool(new ByteBlockPool.DirectAllocator()),
+            capacity,
+            new BytesRefHash.DirectBytesStartArray(capacity));
+    int[] fromOrdByHashOrd = new int[capacity]; // should we fill it with -1 ? - probably shouldn't
     for (BytesRef term = fromTerms.next(); term != null; term = fromTerms.next()) {
       fromOrdByHashOrd[fromTermsHash.add(term)] = (int) fromTerms.ord();
     }
+    // should we shrink it then? idk
     int[] toDocByFromDoc = new int[fromContext.reader().maxDoc()];
     Arrays.fill(toDocByFromDoc, -1);
     for (int fromDoc = fromDV.nextDoc();
@@ -72,6 +88,10 @@ final class ForeignKeyColumn {
    */
   public int[] cloneFromOrdByFromDoc() {
     return toDocByFromDoc.clone();
+  }
+
+  public int fromSideMaxDocs(){
+    return toDocByFromDoc.length;
   }
 
   public int getFromValuesCount() {
