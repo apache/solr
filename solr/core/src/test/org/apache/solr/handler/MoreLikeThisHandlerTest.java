@@ -220,17 +220,17 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     }
 
     // test that qparser plugins work w/ the MoreLikeThisHandler
-    params.set(CommonParams.QT, "/mlt");
     params.set(CommonParams.Q, "{!field f=id}44");
     try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
-      assertQ(mltreq, "//result/doc[1]/str[@name='id'][.='45']");
+      assertQ(null, "/mlt", mltreq, "//result/doc[1]/str[@name='id'][.='45']");
     }
 
     // test that debugging works (test for MoreLikeThis*Handler*)
-    params.set(CommonParams.QT, "/mlt");
     params.set(CommonParams.DEBUG_QUERY, "true");
     try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
       assertQ(
+          null,
+          "/mlt",
           mltreq,
           "//result/doc[1]/str[@name='id'][.='45']",
           "//lst[@name='debug']/lst[@name='explain']");
@@ -240,6 +240,8 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     params.set("facet.field", "name");
     try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
       assertQ(
+          null,
+          "/mlt",
           mltreq,
           "//result/doc[1]/str[@name='id'][.='45']",
           "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='name']/int[@name='George'][.='1']");
@@ -248,6 +250,8 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     params.set("fq", "{!tag=tg}name:George");
     try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
       assertQ(
+          null,
+          "/mlt",
           mltreq,
           "//result/doc[1]/str[@name='id'][.='45']",
           "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='name']/int[@name='George'][.='1']");
@@ -265,7 +269,6 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "4", "name", "        ccc", "subword", "    bbb    "));
     assertU(commit());
 
-    params.set(CommonParams.QT, "/mlt");
     params.set(MoreLikeThisParams.MLT, "true");
     params.set(MoreLikeThisParams.SIMILARITY_FIELDS, "name,subword");
     params.set(MoreLikeThisParams.INTERESTING_TERMS, "details");
@@ -280,6 +283,8 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
       // Make sure we have terms from both fields in the interestingTerms array and all documents
       // have been retrieved as matching.
       assertQ(
+          null,
+          "/mlt",
           req,
           "//lst[@name = 'interestingTerms']/float[@name = 'subword:bbb']",
           "//lst[@name = 'interestingTerms']/float[@name = 'name:bbb']",

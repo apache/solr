@@ -352,6 +352,36 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
+   * Whether this type needs all values of a multiValued field together (rather than one value at a
+   * time) in order to build its indexable fields - for example to pack several ranges into a single
+   * {@code BinaryDocValues} blob. When {@code true}, {@link org.apache.solr.update.DocumentBuilder}
+   * calls {@link #createFieldsFromAllValues(SchemaField, Collection)} once per (multiValued) field
+   * instead of {@link #createFields(SchemaField, Object)} per value.
+   */
+  public boolean shouldCreateFieldsFromAllValues() {
+    return false;
+  }
+
+  /**
+   * Builds the indexable fields for <em>all</em> values of {@code field} in a single document at
+   * once. Only invoked when {@link #shouldCreateFieldsFromAllValues()} returns {@code true}; the
+   * default simply concatenates {@link #createFields(SchemaField, Object)} over each value,
+   * preserving per-value behavior.
+   *
+   * @param field the schema field
+   * @param values all (non-null) values for this field in the current document
+   * @return the indexable fields to add to the document
+   */
+  public List<IndexableField> createFieldsFromAllValues(
+      SchemaField field, Collection<Object> values) {
+    List<IndexableField> fields = new ArrayList<>();
+    for (Object value : values) {
+      fields.addAll(createFields(field, value));
+    }
+    return fields;
+  }
+
+  /**
    * Convert an external value (from XML update command or from query string) into the internal
    * format for both storing and indexing (which can be modified by any analyzers).
    *
@@ -778,10 +808,8 @@ public abstract class FieldType extends FieldProperties {
       Object missingHigh) {
     field.checkSortability();
 
-    SortField sf = new SortField(field.getName(), sortType, reverse);
-    applySetMissingValue(field, sf, missingLow, missingHigh);
-
-    return sf;
+    return new SortField(
+        field.getName(), sortType, reverse, missingValue(field, reverse, missingLow, missingHigh));
   }
 
   /** Same as {@link #getSortField} but using {@link SortedSetSortField} */
@@ -793,10 +821,8 @@ public abstract class FieldType extends FieldProperties {
       Object missingHigh) {
 
     field.checkSortability();
-    SortField sf = new SortedSetSortField(field.getName(), reverse, selector);
-    applySetMissingValue(field, sf, missingLow, missingHigh);
-
-    return sf;
+    return new SortedSetSortField(
+        field.getName(), reverse, selector, missingValue(field, reverse, missingLow, missingHigh));
   }
 
   /** Same as {@link #getSortField} but using {@link SortedNumericSortField}. */
@@ -809,25 +835,30 @@ public abstract class FieldType extends FieldProperties {
       Object missingHigh) {
 
     field.checkSortability();
-    SortField sf = new SortedNumericSortField(field.getName(), sortType, reverse, selector);
-    applySetMissingValue(field, sf, missingLow, missingHigh);
-
-    return sf;
+    return new SortedNumericSortField(
+        field.getName(),
+        sortType,
+        reverse,
+        selector,
+        missingValue(field, reverse, missingLow, missingHigh));
   }
 
   /**
+   * Computes the sort {@code missingValue} to pass to a {@link SortField} constructor based on the
+   * field's {@code sortMissingFirst}/{@code sortMissingLast} properties and the sort direction.
+   * Returns {@code null} when neither property is set.
+   *
    * @see #getSortField
    * @see #getSortedSetSortField
    */
-  private static void applySetMissingValue(
-      SchemaField field, SortField sortField, Object missingLow, Object missingHigh) {
-    final boolean reverse = sortField.getReverse();
-
+  private static Object missingValue(
+      SchemaField field, boolean reverse, Object missingLow, Object missingHigh) {
     if (field.sortMissingLast()) {
-      sortField.setMissingValue(reverse ? missingLow : missingHigh);
+      return reverse ? missingLow : missingHigh;
     } else if (field.sortMissingFirst()) {
-      sortField.setMissingValue(reverse ? missingHigh : missingLow);
+      return reverse ? missingHigh : missingLow;
     }
+    return null;
   }
 
   /**

@@ -227,8 +227,7 @@ public class SolrResourceLoader
 
     if (log.isInfoEnabled()) {
       log.info(
-          "Added {} libs to classloader, from paths: {}",
-          urls.size(),
+          "Added lib dirs to classloader: {}",
           urls.stream()
               .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf('/')))
               .sorted()
