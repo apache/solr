@@ -84,9 +84,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testEmptyLower() {
     assertQ(
-        null,
-        "/terms",
-        req("indent", "true", "terms.fl", "lowerfilt", "terms.upper", "b"),
+        reqWithPath("/terms", "indent", "true", "terms.fl", "lowerfilt", "terms.upper", "b"),
         "count(//lst[@name='lowerfilt']/*)=6",
         "//int[@name='a'] ",
         "//int[@name='aa'] ",
@@ -99,9 +97,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testMultipleFields() {
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -117,15 +114,13 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testUnlimitedRows() {
     assertQ(
-        null,
-        "/terms",
-        req("indent", "true", "terms.fl", "lowerfilt", "terms.fl", "standardfilt"),
+        reqWithPath(
+            "/terms", "indent", "true", "terms.fl", "lowerfilt", "terms.fl", "standardfilt"),
         "count(//lst[@name='lowerfilt']/*)=9",
         "count(//lst[@name='standardfilt']/*)=10");
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -141,9 +136,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testPrefix() {
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -169,9 +163,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testRegexp() {
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -223,9 +216,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   public void testRegexpWithFlags() {
     // TODO: there are no uppercase or mixed-case terms in the index!
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -248,9 +240,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testSortCount() {
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -273,9 +264,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   public void testTermsList() {
     // Terms list always returns in index order
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -291,9 +281,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
 
     // Test with numeric terms
     assertQ(
-        null,
-        "/terms",
-        req("indent", "true", "terms.fl", "foo_i", "terms.list", "2,1"),
+        reqWithPath("/terms", "indent", "true", "terms.fl", "foo_i", "terms.list", "2,1"),
         "count(//lst[@name='foo_i']/*)=2",
         "//lst[@name='foo_i']/int[1][@name='1'][.='2']",
         "//lst[@name='foo_i']/int[2][@name='2'][.='1']");
@@ -303,9 +291,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   public void testStats() {
     // Terms list always returns in index order
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -320,9 +307,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testSortIndex() {
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -344,9 +330,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testPastUpper() {
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -360,9 +345,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testLowerExclusive() {
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -381,9 +365,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         "//int[@name='abc'] ");
 
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -400,9 +383,16 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void test() {
     assertQ(
-        null,
-        "/terms",
-        req("indent", "true", "terms.fl", "lowerfilt", "terms.lower", "a", "terms.upper", "b"),
+        reqWithPath(
+            "/terms",
+            "indent",
+            "true",
+            "terms.fl",
+            "lowerfilt",
+            "terms.lower",
+            "a",
+            "terms.upper",
+            "b"),
         "count(//lst[@name='lowerfilt']/*)=6",
         "//int[@name='a'] ",
         "//int[@name='aa'] ",
@@ -412,9 +402,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         "//int[@name='abc'] ");
 
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -424,36 +413,34 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
             "terms.upper",
             "b",
             "terms.raw",
-            "true", // this should have no effect on a text field
+            "true",
+            // this should have no effect on a text field
             "terms.limit",
             "2"),
         "count(//lst[@name='lowerfilt']/*)=2",
         "//int[@name='a']",
         "//int[@name='aa']");
 
-    assertQ(null, "/terms", req("indent", "true", "terms.fl", "foo_i"), "//int[@name='1'][.='2']");
+    assertQ(
+        reqWithPath("/terms", "indent", "true", "terms.fl", "foo_i"), "//int[@name='1'][.='2']");
 
     /* terms.raw only applies to indexed fields
     assertQ(req("indent","true", "qt","/terms",
        "terms.fl","foo_i", "terms.raw","true")
-       ,"not(//int[@name='1'][.='2'])"
-    );
+       ,"not(//int[@name='1'][.='2'])");
     */
 
     // check something at the end of the index
     assertQ(
-        null,
-        "/terms",
-        req("indent", "true", "terms.fl", "zzz_i"),
+        reqWithPath("/terms", "indent", "true", "terms.fl", "zzz_i"),
         "count(//lst[@name='zzz_i']/*)=0");
   }
 
   @Test
   public void testMinMaxFreq() {
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -469,9 +456,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         "count(//lst[@name='lowerfilt']/*)=1");
 
     assertQ(
-        null,
-        "/terms",
-        req(
+        reqWithPath(
+            "/terms",
             "indent",
             "true",
             "terms.fl",
@@ -492,13 +478,13 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     ModifiableSolrParams params =
         params("terms.fl", "standardfilt", "terms.lower", "a", "terms.sort", "index", "wt", "json");
 
-    assertJQ("/terms", req(params), "/terms/standardfilt/[0]==a", "/terms/standardfilt/[1]==1");
+    assertJQ(
+        reqWithPath("/terms", params), "/terms/standardfilt/[0]==a", "/terms/standardfilt/[1]==1");
 
     // enable terms.ttf
     params.set("terms.ttf", "true");
     assertJQ(
-        "/terms",
-        req(params),
+        reqWithPath("/terms", params),
         "/terms/standardfilt/[0]==a",
         "/terms/standardfilt/[1]/df==1",
         "/terms/standardfilt/[1]/ttf==1");
@@ -507,8 +493,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     params.set("terms.list", "spider,snake,shark");
     params.remove("terms.ttf");
     assertJQ(
-        "/terms",
-        req(params),
+        reqWithPath("/terms", params),
         "/terms/standardfilt/[0]==shark",
         "/terms/standardfilt/[1]==2",
         "/terms/standardfilt/[2]==snake",
@@ -518,8 +503,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     // with terms.list and terms.ttf=true
     params.set("terms.ttf", "true");
     assertJQ(
-        "/terms",
-        req(params),
+        reqWithPath("/terms", params),
         "/terms/standardfilt/[0]==shark",
         "/terms/standardfilt/[1]/df==2",
         "/terms/standardfilt/[1]/ttf==2",
@@ -534,14 +518,17 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testDocFreqAndTotalTermFreq() {
     SolrQueryRequest req =
-        req(
-            "indent", "true",
-            "terms.fl", "standardfilt",
-            "terms.ttf", "true",
-            "terms.list", "snake,spider,shark,ddddd");
+        reqWithPath(
+            "/terms",
+            "indent",
+            "true",
+            "terms.fl",
+            "standardfilt",
+            "terms.ttf",
+            "true",
+            "terms.list",
+            "snake,spider,shark,ddddd");
     assertQ(
-        null,
-        "/terms",
         req,
         "count(//lst[@name='standardfilt']/*)=4",
         "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='df'][.='4']",
@@ -555,15 +542,19 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
 
     // terms.limit=-1 and terms.sort=count and NO terms.list
     req =
-        req(
-            "indent", "true",
-            "terms.fl", "standardfilt",
-            "terms.ttf", "true",
-            "terms.limit", "-1",
-            "terms.sort", "count");
+        reqWithPath(
+            "/terms",
+            "indent",
+            "true",
+            "terms.fl",
+            "standardfilt",
+            "terms.ttf",
+            "true",
+            "terms.limit",
+            "-1",
+            "terms.sort",
+            "count");
     assertQ(
-        null,
-        "/terms",
         req,
         "count(//lst[@name='standardfilt']/*)>=4", // it would be at-least 4
         "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='df'][.='4']",
@@ -579,14 +570,17 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testDocFreqAndTotalTermFreqForNonExistingTerm() {
     SolrQueryRequest req =
-        req(
-            "indent", "true",
-            "terms.fl", "standardfilt",
-            "terms.ttf", "true",
-            "terms.list", "boo,snake");
+        reqWithPath(
+            "/terms",
+            "indent",
+            "true",
+            "terms.fl",
+            "standardfilt",
+            "terms.ttf",
+            "true",
+            "terms.list",
+            "boo,snake");
     assertQ(
-        null,
-        "/terms",
         req,
         "count(//lst[@name='standardfilt']/*)=1",
         "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='df'][.='3']",
@@ -596,15 +590,19 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testDocFreqAndTotalTermFreqForMultipleFields() {
     SolrQueryRequest req =
-        req(
-            "indent", "true",
-            "terms.fl", "lowerfilt",
-            "terms.fl", "standardfilt",
-            "terms.ttf", "true",
-            "terms.list", "a,aa,aaa");
+        reqWithPath(
+            "/terms",
+            "indent",
+            "true",
+            "terms.fl",
+            "lowerfilt",
+            "terms.fl",
+            "standardfilt",
+            "terms.ttf",
+            "true",
+            "terms.list",
+            "a,aa,aaa");
     assertQ(
-        null,
-        "/terms",
         req,
         "count(//lst[@name='lowerfilt']/*)=3",
         "count(//lst[@name='standardfilt']/*)=3",
@@ -623,16 +621,21 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
 
     // terms.ttf=true, terms.sort=index and no terms list
     req =
-        req(
-            "indent", "true",
-            "terms.fl", "lowerfilt",
-            "terms.fl", "standardfilt",
-            "terms.ttf", "true",
-            "terms.sort", "index",
-            "terms.limit", "10");
+        reqWithPath(
+            "/terms",
+            "indent",
+            "true",
+            "terms.fl",
+            "lowerfilt",
+            "terms.fl",
+            "standardfilt",
+            "terms.ttf",
+            "true",
+            "terms.sort",
+            "index",
+            "terms.limit",
+            "10");
     assertQ(
-        null,
-        "/terms",
         req,
         "count(//lst[@name='lowerfilt']/*)<=10",
         "count(//lst[@name='standardfilt']/*)<=10",
@@ -772,9 +775,16 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
       assertEquals(i, nvals);
 
       assertQ(
-          null,
-          "/terms",
-          req("indent", "true", "terms.fl", "foo_pi", "terms.sort", "index", "terms.limit", "2"),
+          reqWithPath(
+              "/terms",
+              "indent",
+              "true",
+              "terms.fl",
+              "foo_pi",
+              "terms.sort",
+              "index",
+              "terms.limit",
+              "2"),
           "count(//lst[@name='foo_pi']/*)=2",
           "//lst[@name='foo_pi']/int[1][@name='" + val1 + "']",
           "//lst[@name='foo_pi']/int[2][@name='" + val2 + "']");
@@ -821,9 +831,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertQ(
-        null,
-        "/terms",
-        req("indent", "true", "terms.fl", "foo_pdt", "terms.sort", "count"),
+        reqWithPath("/terms", "indent", "true", "terms.fl", "foo_pdt", "terms.sort", "count"),
         "count(//lst[@name='foo_pdt']/*)=2",
         "//lst[@name='foo_pdt']/int[1][@name='" + dates[1] + "'][.='51']",
         "//lst[@name='foo_pdt']/int[2][@name='" + dates[0] + "'][.='50']");
@@ -833,9 +841,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertQ(
-        null,
-        "/terms",
-        req("indent", "true", "terms.fl", "foo_pdt", "terms.sort", "count"),
+        reqWithPath("/terms", "indent", "true", "terms.fl", "foo_pdt", "terms.sort", "count"),
         "count(//lst[@name='foo_pdt']/*)=0");
   }
 }

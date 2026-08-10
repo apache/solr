@@ -493,9 +493,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "10");
     params.add("elevateIds", "1");
     assertQ(
-        null,
-        "/elevate",
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']",
@@ -557,9 +555,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "1,4");
 
     assertQ(
-        null,
-        "/elevate",
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='1']", // Elevated
         "//result/doc[2]/str[@name='id'][.='4']", // Elevated
@@ -590,9 +586,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "4,1");
 
     assertQ(
-        null,
-        "/elevate",
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='4']", // Elevated
         "//result/doc[2]/str[@name='id'][.='1']", // Elevated
@@ -622,9 +616,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "4,1");
 
     assertQ(
-        null,
-        "/elevate",
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='4']", // Elevated
         "//result/doc[2]/str[@name='id'][.='1']", // Elevated
@@ -656,9 +648,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "4,1");
 
     assertQ(
-        null,
-        "/elevate",
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[2]/str[@name='id'][.='2']" // Was not in reRankDocs
@@ -685,7 +675,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "10");
     params.add("elevateIds", "4,1");
 
-    assertQ(null, "/elevate", req(params), "*[count(//doc)=0]");
+    assertQ(reqWithPath("/elevate", params), "*[count(//doc)=0]");
 
     // Pass in reRankDocs lower than the length being collected.
     params = new ModifiableSolrParams();
@@ -1102,9 +1092,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "1,4");
 
     assertQ(
-        null,
-        "/elevate",
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=3]",
         "//result/doc[1]/str[@name='id'][.='1']", // Elevated
         "//result/doc[2]/str[@name='id'][.='4']", // Elevated

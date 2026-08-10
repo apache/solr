@@ -118,8 +118,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath("/elevate", CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='7']",
           "//result/doc[2]/str[@name='id'][.='9']",
@@ -151,10 +150,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // elevated docs 1, 2, and 3 are returned even though our query "ZZZZ" doesn't match them
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath("/elevate", CommonParams.Q, "ZZZZ", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='2']",
@@ -167,11 +163,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // exclude docs 1 and 3 even though those docs are elevated
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "str_s:b"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "str_s:b"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
@@ -181,12 +180,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // docs
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!tag=test1,test2}str_s:b",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test3"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!tag=test1,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              "test3"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
@@ -195,12 +198,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // behavior as above; the filter still takes effect on the elevated docs
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!tag=test1,test2}str_s:b",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, ","),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!tag=test1,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              ","),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
@@ -210,12 +217,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // the original filter
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!tag=test1,test2}str_s:b",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test0,test2,test4"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!tag=test1,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              "test0,test2,test4"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='2']",
@@ -228,12 +239,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // this case, the main query); nor does including empty values in the list of tags to exclude
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "{!tag=test0}ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!tag=test1,test1,test2,test2}str_s:b",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test0,test0,test2,test2,test4,test4,,,"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "{!tag=test0}ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!tag=test1,test1,test2,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              "test0,test0,test2,test2,test4,test4,,,"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='2']",
@@ -245,14 +260,20 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // we can exclude some filters while leaving others in place
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!tag=test1}id:10",
-              CommonParams.FQ, "{!tag=test2}str_s:b",
-              CommonParams.FQ, "{!tag=test3}id:11",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test3"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!tag=test1}id:10",
+              CommonParams.FQ,
+              "{!tag=test2}str_s:b",
+              CommonParams.FQ,
+              "{!tag=test3}id:11",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              "test1,test3"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
@@ -260,14 +281,20 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // when filters are marked as cache=false, tag exclusion works the same as before
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!tag=test1 cache=false}id:10",
-              CommonParams.FQ, "{!tag=test2 cache=false}str_s:b",
-              CommonParams.FQ, "{!tag=test3 cache=false}id:11",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test3"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!tag=test1 cache=false}id:10",
+              CommonParams.FQ,
+              "{!tag=test2 cache=false}str_s:b",
+              CommonParams.FQ,
+              "{!tag=test3 cache=false}id:11",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              "test1,test3"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
@@ -275,14 +302,20 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // we can apply the same tag to two different filters
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!tag=test1}id:10",
-              CommonParams.FQ, "{!tag=test2}str_s:b",
-              CommonParams.FQ, "{!tag=test1}id:11",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test3"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!tag=test1}id:10",
+              CommonParams.FQ,
+              "{!tag=test2}str_s:b",
+              CommonParams.FQ,
+              "{!tag=test1}id:11",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              "test1,test3"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
@@ -290,13 +323,18 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // we can use filter() syntax inside fq's that are tagged for exclusion
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!tag=test1}+filter(id:10) +filter(id:11)",
-              CommonParams.FQ, "{!tag=test2}filter(str_s:b)",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!tag=test1}+filter(id:10) +filter(id:11)",
+              CommonParams.FQ,
+              "{!tag=test2}filter(str_s:b)",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              "test1"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
@@ -305,10 +343,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // if we search for MMMM we should get one match; no documents are elevated for this query
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "MMMM",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath("/elevate", CommonParams.Q, "MMMM", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='4']",
           "//result/doc[1]/bool[@name='[elevated]'][.='false']");
@@ -316,11 +351,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // if we add fq=str_s:b, our one document that matches MMMM will be filtered out
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "MMMM",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "str_s:b"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "MMMM",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "str_s:b"),
           "//*[@numFound='0']");
 
       // if we tag the filter and exclude it, we should see the same behavior as before; filters are
@@ -328,23 +366,30 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // subject to the filter
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "MMMM",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!tag=test1}str_s:b",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "MMMM",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!tag=test1}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              "test1"),
           "//*[@numFound='0']");
 
       // the next few assertions confirm that collapsing works as expected when filters are
       // excluded; first, confirm that when collapsing, all elevated docs are visible by default
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!collapse field=str_s sort='score desc'}"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='2']",
@@ -356,12 +401,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // when collapsing, an added filter has the expected effect
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
-              CommonParams.FQ, "str_s:b"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!collapse field=str_s sort='score desc'}",
+              CommonParams.FQ,
+              "str_s:b"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
@@ -370,13 +419,18 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // elevated documents
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
-              CommonParams.FQ, "{!tag=test1}str_s:b",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!collapse field=str_s sort='score desc'}",
+              CommonParams.FQ,
+              "{!tag=test1}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              "test1"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='2']",
@@ -389,14 +443,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // user should be informed
       assertQEx(
           "tagging a collapse filter for exclusion should lead to a BAD_REQUEST",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!collapse tag=test1 field=str_s sort='score desc'}",
-              CommonParams.FQ, "{!tag=test2}str_s:b",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test2"),
-          SolrException.ErrorCode.BAD_REQUEST,
-          "/elevate");
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!collapse tag=test1 field=str_s sort='score desc'}",
+              CommonParams.FQ,
+              "{!tag=test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              "test1,test2"),
+          SolrException.ErrorCode.BAD_REQUEST);
 
       // if a function range query is provided as a filter, it can be tagged for exclusion;
       // FunctionRangeQuery is special because it implements the PostFilter interface and
@@ -405,13 +464,18 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // behavior
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CommonParams.FL, "id, score, [elevated]",
-              CommonParams.FQ, "{!frange tag=test1 l=100 cache=false cost=200}5.0",
-              CommonParams.FQ, "{!tag=test2}str_s:b",
-              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test2"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CommonParams.FL,
+              "id, score, [elevated]",
+              CommonParams.FQ,
+              "{!frange tag=test1 l=100 cache=false cost=200}5.0",
+              CommonParams.FQ,
+              "{!tag=test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS,
+              "test1,test2"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='2']",
@@ -670,15 +734,22 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "non-elevated group query",
-          "/elevate",
-          req(
-              CommonParams.Q, "AAAA",
-              GroupParams.GROUP_FIELD, "str_s",
-              GroupParams.GROUP, "true",
-              GroupParams.GROUP_TOTAL_COUNT, "true",
-              GroupParams.GROUP_LIMIT, "100",
-              QueryElevationParams.ENABLE, "false",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "AAAA",
+              GroupParams.GROUP_FIELD,
+              "str_s",
+              GroupParams.GROUP,
+              "true",
+              GroupParams.GROUP_TOTAL_COUNT,
+              "true",
+              GroupParams.GROUP_LIMIT,
+              "100",
+              QueryElevationParams.ENABLE,
+              "false",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@name='ngroups'][.='3']",
           "//*[@name='matches'][.='6']",
           groups + "/lst[1]//doc[1]/str[@name='id'][.='6']",
@@ -696,14 +767,20 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "elevated group query",
-          "/elevate",
-          req(
-              CommonParams.Q, "AAAA",
-              GroupParams.GROUP_FIELD, "str_s",
-              GroupParams.GROUP, "true",
-              GroupParams.GROUP_TOTAL_COUNT, "true",
-              GroupParams.GROUP_LIMIT, "100",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "AAAA",
+              GroupParams.GROUP_FIELD,
+              "str_s",
+              GroupParams.GROUP,
+              "true",
+              GroupParams.GROUP_TOTAL_COUNT,
+              "true",
+              GroupParams.GROUP_LIMIT,
+              "100",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@name='ngroups'][.='3']",
           "//*[@name='matches'][.='6']",
           groups + "/lst[1]//doc[1]/str[@name='id'][.='7']",
@@ -721,15 +798,22 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "non-elevated because sorted group query",
-          "/elevate",
-          req(
-              CommonParams.Q, "AAAA",
-              CommonParams.SORT, "id asc",
-              GroupParams.GROUP_FIELD, "str_s",
-              GroupParams.GROUP, "true",
-              GroupParams.GROUP_TOTAL_COUNT, "true",
-              GroupParams.GROUP_LIMIT, "100",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "AAAA",
+              CommonParams.SORT,
+              "id asc",
+              GroupParams.GROUP_FIELD,
+              "str_s",
+              GroupParams.GROUP,
+              "true",
+              GroupParams.GROUP_TOTAL_COUNT,
+              "true",
+              GroupParams.GROUP_LIMIT,
+              "100",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@name='ngroups'][.='3']",
           "//*[@name='matches'][.='6']",
           groups + "/lst[1]//doc[1]/str[@name='id'][.='2']",
@@ -747,16 +831,24 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "force-elevated sorted group query",
-          "/elevate",
-          req(
-              CommonParams.Q, "AAAA",
-              CommonParams.SORT, "id asc",
-              QueryElevationParams.FORCE_ELEVATION, "true",
-              GroupParams.GROUP_FIELD, "str_s",
-              GroupParams.GROUP, "true",
-              GroupParams.GROUP_TOTAL_COUNT, "true",
-              GroupParams.GROUP_LIMIT, "100",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "AAAA",
+              CommonParams.SORT,
+              "id asc",
+              QueryElevationParams.FORCE_ELEVATION,
+              "true",
+              GroupParams.GROUP_FIELD,
+              "str_s",
+              GroupParams.GROUP,
+              "true",
+              GroupParams.GROUP_TOTAL_COUNT,
+              "true",
+              GroupParams.GROUP_LIMIT,
+              "100",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@name='ngroups'][.='3']",
           "//*[@name='matches'][.='6']",
           groups + "/lst[1]//doc[1]/str[@name='id'][.='7']",
@@ -774,16 +866,24 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "non-elevated because of sort within group query",
-          "/elevate",
-          req(
-              CommonParams.Q, "AAAA",
-              CommonParams.SORT, "id asc",
-              GroupParams.GROUP_SORT, "id desc",
-              GroupParams.GROUP_FIELD, "str_s",
-              GroupParams.GROUP, "true",
-              GroupParams.GROUP_TOTAL_COUNT, "true",
-              GroupParams.GROUP_LIMIT, "100",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "AAAA",
+              CommonParams.SORT,
+              "id asc",
+              GroupParams.GROUP_SORT,
+              "id desc",
+              GroupParams.GROUP_FIELD,
+              "str_s",
+              GroupParams.GROUP,
+              "true",
+              GroupParams.GROUP_TOTAL_COUNT,
+              "true",
+              GroupParams.GROUP_LIMIT,
+              "100",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@name='ngroups'][.='3']",
           "//*[@name='matches'][.='6']",
           groups + "/lst[1]//doc[1]/str[@name='id'][.='22']",
@@ -801,17 +901,26 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "force elevated sort within sorted group query",
-          "/elevate",
-          req(
-              CommonParams.Q, "AAAA",
-              CommonParams.SORT, "id asc",
-              GroupParams.GROUP_SORT, "id desc",
-              QueryElevationParams.FORCE_ELEVATION, "true",
-              GroupParams.GROUP_FIELD, "str_s",
-              GroupParams.GROUP, "true",
-              GroupParams.GROUP_TOTAL_COUNT, "true",
-              GroupParams.GROUP_LIMIT, "100",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "AAAA",
+              CommonParams.SORT,
+              "id asc",
+              GroupParams.GROUP_SORT,
+              "id desc",
+              QueryElevationParams.FORCE_ELEVATION,
+              "true",
+              GroupParams.GROUP_FIELD,
+              "str_s",
+              GroupParams.GROUP,
+              "true",
+              GroupParams.GROUP_TOTAL_COUNT,
+              "true",
+              GroupParams.GROUP_LIMIT,
+              "100",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@name='ngroups'][.='3']",
           "//*[@name='matches'][.='6']",
           groups + "/lst[1]//doc[1]/str[@name='id'][.='7']",
@@ -852,8 +961,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath("/elevate", CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='7']",
           "//result/doc[2]/str[@name='id'][.='8']",
@@ -921,8 +1029,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
         assertQ(
             "Make sure QEC handles null queries",
-            "/elevate",
-            req("q.alt", "*:*", "defType", "dismax"),
+            reqWithPath("/elevate", "q.alt", "*:*", "defType", "dismax"),
             "//*[@numFound='0']");
       }
     } finally {
@@ -946,8 +1053,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "XXXX", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath("/elevate", CommonParams.Q, "XXXX", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='4']",
@@ -958,16 +1064,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath("/elevate", CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='7']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elev]"),
+          reqWithPath("/elevate", CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elev]"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='7']",
           "not(//result/doc[1]/bool[@name='[elevated]'][.='false'])",
@@ -1001,8 +1105,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "",
-          "/elevate",
-          req(
+          reqWithPath(
+              "/elevate",
               CommonParams.Q,
               "XXXX XXXX",
               QueryElevationParams.MARK_EXCLUDES,
@@ -1025,8 +1129,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // thus, number 6 should not be returned, b/c it is excluded
       assertQ(
           "",
-          "/elevate",
-          req(
+          reqWithPath(
+              "/elevate",
               CommonParams.Q,
               "XXXX XXXX",
               QueryElevationParams.MARK_EXCLUDES,
@@ -1047,8 +1151,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // excluded results)
       assertQ(
           "",
-          "/elevate",
-          req(
+          reqWithPath(
+              "/elevate",
               CommonParams.Q,
               "QQQQ",
               QueryElevationParams.ENABLE,
@@ -1063,8 +1167,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[3]/str[@name='id'][.='8']");
       assertQ(
           "",
-          "/elevate",
-          req(
+          reqWithPath(
+              "/elevate",
               CommonParams.Q,
               "QQQQ",
               QueryElevationParams.MARK_EXCLUDES,
@@ -1112,8 +1216,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "Make sure standard sort works as expected",
-          "/elevate",
-          req(baseParams),
+          reqWithPath("/elevate", baseParams),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='c']",
           "//result/doc[2]/str[@name='id'][.='b']",
@@ -1124,8 +1227,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "All six should make it",
-          "/elevate",
-          req(baseParams),
+          reqWithPath("/elevate", baseParams),
           "//*[@numFound='6']",
           "//result/doc[1]/str[@name='id'][.='x']",
           "//result/doc[2]/str[@name='id'][.='y']",
@@ -1137,9 +1239,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // now switch the order:
       booster.setTopQueryResults(reader, query, false, new String[] {"a", "x"}, null);
       assertQ(
-          null,
-          "/elevate",
-          req(baseParams),
+          reqWithPath("/elevate", baseParams),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='a']",
           "//result/doc[2]/str[@name='id'][.='x']",
@@ -1150,9 +1250,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // default 'forceBoost' should be false
       assertFalse(booster.forceElevation);
       assertQ(
-          null,
-          "/elevate",
-          req(baseParams, "sort", "id asc"),
+          reqWithPath("/elevate", baseParams, "sort", "id asc"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='a']",
           "//result/doc[2]/str[@name='id'][.='b']",
@@ -1161,8 +1259,13 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "useConfiguredElevatedOrder=false",
-          "/elevate",
-          req(baseParams, "sort", "str_s1 asc,id desc", "useConfiguredElevatedOrder", "false"),
+          reqWithPath(
+              "/elevate",
+              baseParams,
+              "sort",
+              "str_s1 asc,id desc",
+              "useConfiguredElevatedOrder",
+              "false"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='x']", // group1
           "//result/doc[2]/str[@name='id'][.='a']", // group1
@@ -1171,9 +1274,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       booster.forceElevation = true;
       assertQ(
-          null,
-          "/elevate",
-          req(baseParams, "sort", "id asc"),
+          reqWithPath("/elevate", baseParams, "sort", "id asc"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='a']",
           "//result/doc[2]/str[@name='id'][.='x']",
@@ -1183,8 +1284,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       booster.forceElevation = true;
       assertQ(
           "useConfiguredElevatedOrder=false and forceElevation",
-          "/elevate",
-          req(baseParams, "sort", "id desc", "useConfiguredElevatedOrder", "false"),
+          reqWithPath(
+              "/elevate", baseParams, "sort", "id desc", "useConfiguredElevatedOrder", "false"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='x']", // force elevated
           "//result/doc[2]/str[@name='id'][.='a']", // force elevated
@@ -1194,9 +1295,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // Test exclusive (not to be confused with exclusion)
       booster.setTopQueryResults(reader, query, false, new String[] {"x", "a"}, new String[] {});
       assertQ(
-          null,
-          "/elevate",
-          req(baseParams, "exclusive", "true"),
+          reqWithPath("/elevate", baseParams, "exclusive", "true"),
           "//*[@numFound='2']",
           "//result/doc[1]/str[@name='id'][.='x']",
           "//result/doc[2]/str[@name='id'][.='a']");
@@ -1204,9 +1303,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // Test exclusion
       booster.setTopQueryResults(reader, query, false, new String[] {"x"}, new String[] {"a"});
       assertQ(
-          null,
-          "/elevate",
-          req(baseParams),
+          reqWithPath("/elevate", baseParams),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='x']",
           "//result/doc[2]/str[@name='id'][.='c']",
@@ -1217,8 +1314,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       booster.clearElevationProviderCache();
       assertQ(
           "All five should make it",
-          "/elevate",
-          req(baseParams, "elevateIds", "x,y,z", "excludeIds", "b"),
+          reqWithPath("/elevate", baseParams, "elevateIds", "x,y,z", "excludeIds", "b"),
           "//*[@numFound='5']",
           "//result/doc[1]/str[@name='id'][.='x']",
           "//result/doc[2]/str[@name='id'][.='y']",
@@ -1228,8 +1324,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "All four should make it",
-          "/elevate",
-          req(baseParams, "elevateIds", "x,z,y", "excludeIds", "b,c"),
+          reqWithPath("/elevate", baseParams, "elevateIds", "x,z,y", "excludeIds", "b,c"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='x']",
           "//result/doc[2]/str[@name='id'][.='z']",
@@ -1348,22 +1443,29 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath("/elevate", CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='7']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "{!q.op=AND}AAAA", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "{!q.op=AND}AAAA",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='7']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "{!q.op=AND v='AAAA'}", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "{!q.op=AND v='AAAA'}",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='7']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
@@ -1395,8 +1497,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // Exact matching.
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "XXXX", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath("/elevate", CommonParams.Q, "XXXX", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='4']",
@@ -1408,15 +1509,15 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // Exact matching.
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "QQQQ EE", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate", CommonParams.Q, "QQQQ EE", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='0']");
 
       // Subset matching.
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "BB DD CC VV", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate", CommonParams.Q, "BB DD CC VV", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='10']",
           "//result/doc[2]/str[@name='id'][.='12']",
@@ -1430,8 +1531,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // Subset + exact matching.
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "BB CC", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate", CommonParams.Q, "BB CC", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='13']",
           "//result/doc[2]/str[@name='id'][.='10']",
@@ -1445,8 +1546,12 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // Subset matching.
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "AA BB DD CC AA", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "AA BB DD CC AA",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='10']",
           "//result/doc[2]/str[@name='id'][.='12']",
@@ -1460,8 +1565,12 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // Subset matching.
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "AA RR BB DD AA", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "AA RR BB DD AA",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='12']",
           "//result/doc[2]/str[@name='id'][.='14']",
@@ -1473,8 +1582,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // Subset matching.
       assertQ(
           "",
-          "/elevate",
-          req(CommonParams.Q, "AA BB EE", CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate", CommonParams.Q, "AA BB EE", CommonParams.FL, "id, score, [elevated]"),
           "//*[@numFound='0']");
     } finally {
       delete();
@@ -1533,11 +1642,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // default behaviour
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "YYYY",
-              QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, "false",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "YYYY",
+              QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY,
+              "false",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='2']",
@@ -1549,11 +1661,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // only docs that matches q
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "YYYY",
-              QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, "true",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "YYYY",
+              QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY,
+              "true",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='2']",
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[2]/str[@name='id'][.='5']",
@@ -1579,12 +1694,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // default behaviour - all elevated docs are visible
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CollapsingQParserPlugin.COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, "true",
-              CommonParams.FQ, "{!collapse field=str_s1 sort='score desc'}",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CollapsingQParserPlugin.COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING,
+              "true",
+              CommonParams.FQ,
+              "{!collapse field=str_s1 sort='score desc'}",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='2']",
@@ -1598,12 +1717,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       // only representative elevated doc visible
       assertQ(
           "",
-          "/elevate",
-          req(
-              CommonParams.Q, "ZZZZ",
-              CollapsingQParserPlugin.COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, "false",
-              CommonParams.FQ, "{!collapse field=str_s1 sort='score desc'}",
-              CommonParams.FL, "id, score, [elevated]"),
+          reqWithPath(
+              "/elevate",
+              CommonParams.Q,
+              "ZZZZ",
+              CollapsingQParserPlugin.COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING,
+              "false",
+              CommonParams.FQ,
+              "{!collapse field=str_s1 sort='score desc'}",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='2']",
           "//result/doc[2]/str[@name='id'][.='3']",
@@ -1641,15 +1764,13 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       // sanity check everything returned w/these elevation options...
       assertJQ(
-          "/elevate",
-          req(baseParams),
+          reqWithPath("/elevate", baseParams),
           "/response/numFound==5",
           "/response/start==0",
           "/response/docs==[{'id':'x'},{'id':'y'},{'id':'z'},{'id':'c'},{'id':'a'}]");
       // same query using CURSOR_MARK_START should produce a 'next' cursor...
       assertCursorJQ(
-          "/elevate",
-          req(baseParams, CURSOR_MARK_PARAM, CURSOR_MARK_START),
+          reqWithPath("/elevate", baseParams, CURSOR_MARK_PARAM, CURSOR_MARK_START),
           "/response/numFound==5",
           "/response/start==0",
           "/response/docs==[{'id':'x'},{'id':'y'},{'id':'z'},{'id':'c'},{'id':'a'}]");
@@ -1658,30 +1779,27 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       String nextCursor = null;
       nextCursor =
           assertCursorJQ(
-              "/elevate",
-              req(baseParams, CURSOR_MARK_PARAM, CURSOR_MARK_START, "rows", "2"),
+              reqWithPath(
+                  "/elevate", baseParams, CURSOR_MARK_PARAM, CURSOR_MARK_START, "rows", "2"),
               "/response/numFound==5",
               "/response/start==0",
               "/response/docs==[{'id':'x'},{'id':'y'}]");
       nextCursor =
           assertCursorJQ(
-              "/elevate",
-              req(baseParams, CURSOR_MARK_PARAM, nextCursor, "rows", "2"),
+              reqWithPath("/elevate", baseParams, CURSOR_MARK_PARAM, nextCursor, "rows", "2"),
               "/response/numFound==5",
               "/response/start==0",
               "/response/docs==[{'id':'z'},{'id':'c'}]");
       nextCursor =
           assertCursorJQ(
-              "/elevate",
-              req(baseParams, CURSOR_MARK_PARAM, nextCursor, "rows", "2"),
+              reqWithPath("/elevate", baseParams, CURSOR_MARK_PARAM, nextCursor, "rows", "2"),
               "/response/numFound==5",
               "/response/start==0",
               "/response/docs==[{'id':'a'}]");
       final String lastCursor = nextCursor;
       nextCursor =
           assertCursorJQ(
-              "/elevate",
-              req(baseParams, CURSOR_MARK_PARAM, nextCursor, "rows", "2"),
+              reqWithPath("/elevate", baseParams, CURSOR_MARK_PARAM, nextCursor, "rows", "2"),
               "/response/numFound==5",
               "/response/start==0",
               "/response/docs==[]");
@@ -1702,9 +1820,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
    *
    * @see #assertJQ
    */
-  private static String assertCursorJQ(String handler, SolrQueryRequest req, String... tests)
-      throws Exception {
-    String json = assertJQ(handler, req, tests);
+  private static String assertCursorJQ(SolrQueryRequest req, String... tests) throws Exception {
+    String json = assertJQ(req, tests);
     Map<?, ?> rsp = (Map<?, ?>) fromJSONString(json);
     assertTrue(
         "response doesn't contain " + CURSOR_MARK_NEXT + ": " + json,

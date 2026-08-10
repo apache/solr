@@ -186,9 +186,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("forceElevation", "true");
     params.add("elevateIds", "4");
     assertQ(
-        null,
-        "/elevate",
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='5']");
@@ -200,9 +198,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("forceElevation", "true");
     params.add("elevateIds", "7");
     assertQ(
-        null,
-        "/elevate",
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='7']",
         "//result/doc[2]/str[@name='id'][.='1']");
@@ -570,9 +566,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("bf", "field(test_i)");
     params.add("qf", "term_s");
     assertQ(
-        null,
-        "/elevate",
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=4]",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']",
@@ -591,9 +585,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       params.add("qf", "term_s");
       params.add("elevateIds", "1,5");
       assertQ(
-          null,
-          "/elevate",
-          req(params),
+          reqWithPath("/elevate", params),
           "*[count(//doc)=3]",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='5']",
@@ -611,9 +603,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       params.add("qf", "term_s");
       params.add("elevateIds", "1,5");
       assertQ(
-          null,
-          "/elevate",
-          req(params),
+          reqWithPath("/elevate", params),
           "*[count(//doc)=3]",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='5']",
@@ -631,9 +621,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       params.add("qf", "term_s");
       params.add("elevateIds", "1,5");
       assertQ(
-          null,
-          "/elevate",
-          req(params),
+          reqWithPath("/elevate", params),
           "*[count(//doc)=3]",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='5']",
@@ -649,9 +637,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("qf", "term_s");
     params.add("elevateIds", "3,4");
     assertQ(
-        null,
-        "/elevate",
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=4]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[2]/str[@name='id'][.='4']",
@@ -983,9 +969,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("bf", "field(test_i)");
     params.add("qf", "term_s");
     assertQ(
-        null,
-        "/elevate",
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=3]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[2]/str[@name='id'][.='6']",
@@ -1388,9 +1372,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[3]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              null,
-              "/elevate",
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
                       "elevateIds",
                       "1,5",
@@ -1405,9 +1388,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[4]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              null,
-              "/elevate",
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
                       "elevateIds",
                       "0,7",
@@ -1423,9 +1405,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[5]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              null,
-              "/elevate",
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
                       "elevateIds",
                       "6,0",
@@ -1455,9 +1436,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[4]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              null,
-              "/elevate",
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
                       "elevateIds",
                       "1,5",
@@ -1473,9 +1453,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[5]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              null,
-              "/elevate",
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
                       "elevateIds",
                       "0,7",
@@ -1491,9 +1470,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[5]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              null,
-              "/elevate",
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
                       "elevateIds",
                       "6,0",
@@ -1525,9 +1503,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[6]/str[@name='id'][.='0']" // null
               );
           assertQ(
-              null,
-              "/elevate",
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
                       "elevateIds",
                       "1,5",
@@ -1545,9 +1522,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[7]/str[@name='id'][.='0']" // null
               );
           assertQ(
-              null,
-              "/elevate",
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
                       "elevateIds",
                       "0,7",
@@ -1564,9 +1540,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[6]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              null,
-              "/elevate",
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
                       "elevateIds",
                       "6,0",

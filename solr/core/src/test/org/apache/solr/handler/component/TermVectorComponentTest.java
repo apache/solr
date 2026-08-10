@@ -227,8 +227,8 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
 
   private void doBasics() throws Exception {
     assertJQ(
-        tv,
-        req(
+        reqWithPath(
+            tv,
             "json.nl",
             "map",
             "q",
@@ -245,8 +245,8 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             + " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}}");
     // tv.fl diff from fl
     assertJQ(
-        tv,
-        req(
+        reqWithPath(
+            tv,
             "json.nl",
             "map",
             "q",
@@ -264,8 +264,8 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             + " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}}}");
     // multi-valued tv.fl
     assertJQ(
-        tv,
-        req(
+        reqWithPath(
+            tv,
             "json.nl",
             "map",
             "q",
@@ -285,8 +285,8 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             + " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}}}");
     // re-use fl glob
     assertJQ(
-        tv,
-        req(
+        reqWithPath(
+            tv,
             "json.nl",
             "map",
             "q",
@@ -305,8 +305,8 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             + " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}}");
     // re-use fl, ignore things we can't handle
     assertJQ(
-        tv,
-        req(
+        reqWithPath(
+            tv,
             "json.nl",
             "map",
             "q",
@@ -322,8 +322,8 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             + " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}}");
     // re-use (multi-valued) fl, ignore things we can't handle
     assertJQ(
-        tv,
-        req(
+        reqWithPath(
+            tv,
             "json.nl",
             "map",
             "q",
@@ -343,8 +343,8 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
 
   private void doOptions() throws Exception {
     assertJQ(
-        tv,
-        req(
+        reqWithPath(
+            tv,
             "json.nl",
             "map",
             "q",
@@ -364,8 +364,8 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
         "/termVectors/0/test_posofftv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':5}, 'df':2, 'tf-idf':0.5}");
 
     assertJQ(
-        tv,
-        req(
+        reqWithPath(
+            tv,
             "json.nl",
             "map",
             "q",
@@ -404,13 +404,13 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     }
 
     expected.append("}");
-    assertJQ(tv, req(list.toArray(new String[0])), expected.toString());
+    assertJQ(reqWithPath(tv, list.toArray(new String[0])), expected.toString());
   }
 
   private void doPerField() throws Exception {
     assertJQ(
-        tv,
-        req(
+        reqWithPath(
+            tv,
             "json.nl",
             "map",
             "q",
@@ -452,8 +452,8 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     // stuffs start (20) and end offset (27) into the
     // payload:
     assertJQ(
-        tv,
-        req(
+        reqWithPath(
+            tv,
             "json.nl",
             "map",
             "q",
@@ -487,8 +487,8 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     // Kind of an odd test, but we just want to know if we don't generate an NPE when there is
     // nothing to give back in the term vectors.
     assertJQ(
-        tv,
-        req(
+        reqWithPath(
+            tv,
             "json.nl",
             "map",
             "q",
