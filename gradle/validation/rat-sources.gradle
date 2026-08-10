@@ -91,6 +91,10 @@ allprojects {
                     // Exclude github stuff (templates, workflows).
                     exclude ".github"
 
+                    // Not "released" (not in the source or any other release), thus no header needed
+                    exclude "dev-docs"
+                    exclude "AGENTS.md"
+
                     exclude "dev-tools/scripts/cloud.sh"
                     exclude "dev-tools/scripts/README.md"
                     exclude "dev-tools/scripts/create_line_file_docs.py"
