@@ -179,10 +179,6 @@ public class ThreadDumpHandler extends RequestHandlerBase {
     return AnnotatedApi.getApis(new NodeThreadsAPI(this));
   }
   @Override
-  public Boolean registerV2() {
-    return Boolean.TRUE;
-  }
-  @Override
   public Name getPermissionName(AuthorizationContext request) {
     return Name.METRICS_READ_PERM;
   }

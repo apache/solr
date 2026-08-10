@@ -36,7 +36,8 @@ public class NodeThreadsAPI {
       path = {"/node/threads"},
       method = GET,
       permission = METRICS_READ_PERM)
-  public void triggerThreadDump(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+  public void triggerThreadDump(
+      SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     handler.handleRequestBody(req, rsp);
   }
 }
