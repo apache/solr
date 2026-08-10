@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MissingMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.PercentileMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.StdMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -1665,6 +1666,8 @@ public class StreamingTest extends SolrCloudTestCase {
         new MaxMetric("a_f"),
         new MeanMetric("a_i"),
         new MeanMetric("a_f"),
+        new StdMetric("a_i"),
+        new StdMetric("a_f"),
         new CountMetric(),
         new MissingMetric("b_f"),
         new CountDistinctMetric("a_i"),
@@ -1689,6 +1692,8 @@ public class StreamingTest extends SolrCloudTestCase {
       Double maxf = tuple.getDouble("max(a_f)");
       Double avgi = tuple.getDouble("avg(a_i)");
       Double avgf = tuple.getDouble("avg(a_f)");
+      Double stdi = tuple.getDouble("std(a_i)");
+      Double stdf = tuple.getDouble("std(a_f)");
       Double count = tuple.getDouble("count(*)");
       Double missingBf = tuple.getDouble("missing(b_f)");
       Double countDistI = tuple.getDouble("countDist(a_i)");
@@ -1703,6 +1708,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(10, maxf, 0.001);
       assertEquals(4.25, avgi, 0.001);
       assertEquals(4.5, avgf, 0.001);
+      assertEquals(6.5511, stdi, 0.001);
+      assertEquals(4.0415, stdf, 0.001);
       assertEquals(4, count, 0.001);
       assertEquals(2, missingBf, 0.001);
       assertEquals(4, countDistI, 0.001);
@@ -1718,6 +1725,8 @@ public class StreamingTest extends SolrCloudTestCase {
       maxf = tuple.getDouble("max(a_f)");
       avgi = tuple.getDouble("avg(a_i)");
       avgf = tuple.getDouble("avg(a_f)");
+      stdi = tuple.getDouble("std(a_i)");
+      stdf = tuple.getDouble("std(a_f)");
       count = tuple.getDouble("count(*)");
       missingBf = tuple.getDouble("missing(b_f)");
       countDistI = tuple.getDouble("countDist(a_i)");
@@ -1732,6 +1741,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(9, maxf, 0.001);
       assertEquals(9.5, avgi, 0.001);
       assertEquals(6.5, avgf, 0.001);
+      assertEquals(4.5092, stdi, 0.001);
+      assertEquals(2.6458, stdf, 0.001);
       assertEquals(4, count, 0.001);
       assertEquals(3, missingBf, 0.001);
       assertEquals(4, countDistI, 0.001);
@@ -1747,6 +1758,8 @@ public class StreamingTest extends SolrCloudTestCase {
       maxf = tuple.getDouble("max(a_f)");
       avgi = tuple.getDouble("avg(a_i)");
       avgf = tuple.getDouble("avg(a_f)");
+      stdi = tuple.getDouble("std(a_i)");
+      stdf = tuple.getDouble("std(a_f)");
       count = tuple.getDouble("count(*)");
       missingBf = tuple.getDouble("missing(b_f)");
       countDistI = tuple.getDouble("countDist(a_i)");
@@ -1761,6 +1774,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(7, maxf, 0.01);
       assertEquals(7.5, avgi, 0.01);
       assertEquals(5.5, avgf, 0.01);
+      assertEquals(4.9497, stdi, 0.01);
+      assertEquals(2.1213, stdf, 0.01);
       assertEquals(2, count, 0.01);
       assertEquals(0, missingBf, 0.01);
       assertEquals(2, countDistI, 0.01);
