@@ -482,6 +482,7 @@ class ToLeafJoinContext {
       cell.resolveFromIndex( // ok. this one may be ready for search.
           new AIJoinUtil.Edges(
               AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.FROM_EDGES_PREFIX + cell.pairFieldName),
+              // TODO it might not need to be loaded, if "from" edges fully cut of the column. Thus, we won't read even "to" edges at all.
               AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.TO_EDGES_PREFIX + cell.pairFieldName),
               // TODO use it for ordering join segment iteration, desc
               AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.TO_COUNT_PREFIX + cell.pairFieldName)[0]));
@@ -578,7 +579,7 @@ class ToLeafJoinContext {
 
   private TaskRefreshResult refreshJoinTasksReferences(IndexSearcher newJoinIndexSearcher)
       throws IOException, ExecutionException, InterruptedException {
-    Set<Map.Entry<JoinTask, LeafReaderContext>> joinSegements = new LinkedHashSet<>();
+    Set<Map.Entry<JoinTask, LeafReaderContext>> joinSegments = new LinkedHashSet<>();
     Set<Map.Entry<JoinTask, JoinColumnModel>> justWritten = new LinkedHashSet<>();
 
     Set<JoinTask> refreshReference = new LinkedHashSet<>();
@@ -598,7 +599,7 @@ class ToLeafJoinContext {
       }
     }
     // refresh old refs, pass 1: same ord, same segment name -> the leaf is already in hand, so
-    // resolve straight into joinSegements instead of adding to loadReference just to re-fetch the
+    // resolve straight into joinSegments instead of adding to loadReference just to re-fetch the
     // very same leaf by ord in the "load edges for regulars" loop below
     List<LeafReaderContext> newLeaves = newJoinIndexSearcher.getLeafContexts();
     for (Iterator<JoinTask> iter = refreshReference.iterator(); iter.hasNext(); ) {
@@ -610,7 +611,7 @@ class ToLeafJoinContext {
               : null;
       if (byOrd != null
           && AIJoinUtil.segmentName(byOrd).equals(task.joinSegmentRef.joinSegmentName())) {
-        joinSegements.add(new SimpleEntry<>(task, byOrd));
+        joinSegments.add(new SimpleEntry<>(task, byOrd));
         iter.remove();
       }
     }
@@ -625,10 +626,10 @@ class ToLeafJoinContext {
         JoinTask task = byOldJoinSegName.get(segName);
         if (task != null) {
           // renamed segment, found by scanning for its old name -- joinLeaf is already the
-          // resolved leaf, so resolve straight into joinSegements, same as pass 1
+          // resolved leaf, so resolve straight into joinSegments, same as pass 1
           task.joinSegmentRef =
               new JoinSegmentReference(task.joinSegmentRef.pairFieldName(), segName, joinLeaf.ord);
-          joinSegements.add(new SimpleEntry<>(task, joinLeaf));
+          joinSegments.add(new SimpleEntry<>(task, joinLeaf));
           refreshReference.remove(task);
         }
       }
@@ -663,7 +664,7 @@ class ToLeafJoinContext {
       LeafReaderContext joinFeafSeg =
           lastSeenJoinSearcher.getLeafContexts().get(cell.joinSegmentRef.joinSegmentLeafOrd());
       assert AIJoinUtil.segmentName(joinFeafSeg).equals(cell.joinSegmentRef.joinSegmentName());
-      joinSegements.add(new SimpleEntry<>(cell, joinFeafSeg));
+      joinSegments.add(new SimpleEntry<>(cell, joinFeafSeg));
     }
     // index unlucky ones
     if (!needIndex.isEmpty()) {
@@ -696,7 +697,7 @@ class ToLeafJoinContext {
     }
     this.lastSeenJoinSearcher =
         newJoinIndexSearcher; // set old searcher, it corresponds to weightAgeJoinSegmentsReadOnly
-    return new TaskRefreshResult(joinSegements, justWritten);
+    return new TaskRefreshResult(joinSegments, justWritten);
   }
 
   /**

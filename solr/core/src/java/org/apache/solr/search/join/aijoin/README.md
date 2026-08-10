@@ -66,4 +66,9 @@ side key can never be read again. `AIJoinMergePolicy` reaps them:
  - flush one pair field per sidecar segment, trading a longer sweep for finer-grained reaping
    (`AIJoinIndexConfig#setSingleFieldPerSegment`, currently unused by the writers)
  - AIJoinUtil.getSideKey throws an NPE if the from field was never indexed in any document — it does getFieldInfos().fieldInfo(field).getDocValuesGen() without a null check. JoinUtil-based {!join} degrades gracefully in this situation; AIJoin currently doesn't.
+ - we estimate to&from set by a range. Alternatives: union of ranges, roaring (bitset).
+   Note: to and from estimates might be built different. For "to" side we need to provide
+   advance()-eble iterator over union. And for "from" side it should be just intersectable
+   with docSetIter. Format should balance storage size and decoding efforts.
+   It should be stored as a Document fields.
 
