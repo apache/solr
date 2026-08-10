@@ -77,14 +77,14 @@ public class StdMetric extends Metric {
   public void update(Tuple tuple) {
     Object o = tuple.get(columnName);
     double val;
-    if (o instanceof Double d) {
-      val = d;
-    } else if (o instanceof Float f) {
-      val = f.doubleValue();
-    } else if (o instanceof Integer i) {
-      val = i.doubleValue();
-    } else if (o instanceof Long l) {
-      val = l.doubleValue();
+    if (o instanceof Double) {
+      val = (Double) o;
+    } else if (o instanceof Float) {
+      val = ((Float) o).doubleValue();
+    } else if (o instanceof Integer) {
+      val = ((Integer) o).doubleValue();
+    } else if (o instanceof Long) {
+      val = ((Long) o).doubleValue();
     } else {
       return;
     }
