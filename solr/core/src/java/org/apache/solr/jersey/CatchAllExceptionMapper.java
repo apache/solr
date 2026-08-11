@@ -78,7 +78,7 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
       solrQueryResponse.setException(exception);
     }
 
-    // JSON deserialization errors indicate a malformed request body and should be 400s.
+    // Creating Solr exception with message stating mismatched field and it expected type.
     if (exception instanceof MismatchedInputException mie) {
       final String field =
           mie.getPath().isEmpty()
@@ -96,6 +96,7 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
           solrQueryRequest,
           containerRequestContext);
     }
+    // JSON deserialization errors indicate a malformed request body and should be 400s.
     if (exception instanceof JsonMappingException jme) {
       return processAndRespondToException(
           new SolrException(SolrException.ErrorCode.BAD_REQUEST, jme.getOriginalMessage()),
