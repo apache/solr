@@ -62,14 +62,12 @@ public class GetTaskStatusTest extends SolrTestCaseJ4 {
     when(cancellableQueryTracker.isQueryIdActive("taskID_running")).thenReturn(true);
     when(cancellableQueryTracker.isQueryIdActive("taskID_stopped")).thenReturn(false);
 
-    TaskStatusResponse taskStatusResponse;
+    TaskStatusResponse responseRunningTask = getTaskStatus.getTaskStatus("taskID_running");
+    assertEquals(TaskStatusResponse.TaskStatus.ACTIVE, responseRunningTask.status);
+    assertNull(responseRunningTask.error);
 
-    taskStatusResponse = getTaskStatus.getTaskStatus("taskID_running");
-    assertEquals(TaskStatusResponse.TaskStatus.ACTIVE, taskStatusResponse.status);
-    assertNull(taskStatusResponse.error);
-
-    taskStatusResponse = getTaskStatus.getTaskStatus("taskID_stopped");
-    assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, taskStatusResponse.status);
-    assertNull(taskStatusResponse.error);
+    TaskStatusResponse responseStoppedTask = getTaskStatus.getTaskStatus("taskID_stopped");
+    assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, responseStoppedTask.status);
+    assertNull(responseStoppedTask.error);
   }
 }

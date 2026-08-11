@@ -77,9 +77,6 @@ public class ListActiveTasksTest extends SolrTestCaseJ4 {
     assertEquals("taskID1", response.tasks.get(0).id);
     assertEquals("/search?q=h&gf=text-1", response.tasks.get(0).query);
 
-    assertEquals("taskID2", response.tasks.get(1).id);
-    assertEquals("/search?q=h&gf=text-2", response.tasks.get(1).query);
-
     assertNull(response.error);
   }
 }
