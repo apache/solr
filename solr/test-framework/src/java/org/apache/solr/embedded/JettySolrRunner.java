@@ -43,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -832,7 +831,7 @@ public class JettySolrRunner implements SolrBackend {
       throw new IllegalStateException(
           "Don't call SolrBackend methods in SolrCloud on JettySolrRunner");
     }
-    return new EmbeddedSolrBackend(new EmbeddedSolrServer(container, null)); // cheap
+    return new EmbeddedSolrBackend(container); // cheap
   }
 
   @Override

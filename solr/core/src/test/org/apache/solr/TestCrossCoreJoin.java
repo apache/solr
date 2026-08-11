@@ -186,7 +186,6 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     assertQEx("schema12.xml" + " has no \"cat\" field", req("cat:*"), ErrorCode.BAD_REQUEST);
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.set(CommonParams.Q, "cat:*");
-    solrParams.set(CommonParams.QT, "/select");
     solrParams.set(CommonParams.ROWS, 100);
     try (var req = new SolrQueryRequestBase(fromCore, solrParams)) {
       final String resp = query(fromCore, req);
@@ -196,10 +195,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
   }
 
   public String query(SolrCore core, SolrQueryRequest req) throws Exception {
-    String handler = "standard";
-    if (req.getParams().get("qt") != null) {
-      handler = req.getParams().get("qt");
-    }
+    String handler = "/select";
     if (req.getParams().get("wt") == null) {
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       params.set("wt", "xml");

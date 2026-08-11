@@ -74,7 +74,7 @@ public class NodeValueFetcher {
             .sum();
       }
     },
-    SYSLOADAVG("sysLoadAvg", "jvm_system_cpu_utilization_ratio");
+    SYSLOADAVG("sysLoadAvg", "jvm_system_cpu_utilization");
 
     public final String tagName;
     public final String metricName;

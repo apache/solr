@@ -556,18 +556,36 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     }
   }
 
-  /** Not Supported */
   @Test
-  public void query_existenceSearch_shouldThrowException() throws Exception {
+  public void query_existenceSearch_shouldMatchDocumentsWithVector() throws Exception {
     try {
       initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
-      assertQEx(
-          "Running Existence queries on a dense vector field should raise an Exception",
-          "Range Queries are not supported for Dense Vector fields."
-              + " Please use the {!knn} query parser to run K nearest neighbors search queries.",
-          req("q", "vector:[* TO *]", "fl", "vector"),
-          SolrException.ErrorCode.BAD_REQUEST);
+      SolrInputDocument doc1 = new SolrInputDocument();
+      doc1.addField("id", "1");
+      doc1.addField("vector", List.of(1.0f, 2.0f, 3.0f, 4.0f));
+      assertU(adoc(doc1));
+
+      SolrInputDocument doc2 = new SolrInputDocument();
+      doc2.addField("id", "2");
+      assertU(adoc(doc2));
+
+      assertU(commit());
+
+      assertJQ(
+          req("q", "vector:[* TO *]", "fl", "id", "sort", "id asc"),
+          "/response/numFound==1",
+          "/response/docs/[0]/id=='1'");
+
+      assertJQ(
+          req("q", "vector:*", "fl", "id", "sort", "id asc"),
+          "/response/numFound==1",
+          "/response/docs/[0]/id=='1'");
+
+      assertJQ(
+          req("q", "-vector:*", "fl", "id", "sort", "id asc"),
+          "/response/numFound==1",
+          "/response/docs/[0]/id=='2'");
     } finally {
       deleteCore();
     }

@@ -55,6 +55,9 @@ allprojects {
           // Other settings.
           [propName: 'tests.neverUpToDate', value: true,
               description: "Make test tasks always fail the up-to-date checks (rerun) even if the inputs have not changed."],
+          // The coverage flag is acted upon in settings.gradle and gradle/testing/coverage.gradle.kts;
+          // it is registered here so that it is always listed by 'gradlew testOpts'.
+          [propName: 'tests.coverage', value: false, description: "Enables jacoco test coverage.", includeInReproLine: false],
       ]
 
       // Resolves test option's value.

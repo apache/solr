@@ -481,7 +481,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             "group.query",
             "id:2",
             "timeAllowed",
-            "200"),
+            "10000"), // generous; must complete fully even on slow CI
         "/grouped/id:1/matches==5",
         "/grouped/id:2/matches==5");
   }

@@ -1,5 +1,5 @@
 title: Core system properties can now also be configured via environment variables
-type: changed
+type: added
 authors:
   - name: Prithvi S
 links:

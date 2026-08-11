@@ -848,6 +848,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /** Validates a query matches some XPath test expressions and closes the query */
   public static void assertQ(String message, SolrQueryRequest req, String... tests) {
+    assertQ(message, req.getParams().get(CommonParams.QT), req, tests);
+  }
+
+  /**
+   * Validates a query against the named handler matches some XPath test expressions and closes the
+   * query
+   */
+  public static void assertQ(
+      String message, String handler, SolrQueryRequest req, String... tests) {
     try {
       String m = (null == message) ? "" : message + " "; // TODO log 'm' !!!
       // since the default (standard) response format is now JSON
@@ -857,7 +866,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       // for tests, let's turn indention off so we don't have to handle extraneous spaces
       xmlWriterTypeParams.set("indent", xmlWriterTypeParams.get("indent", "off"));
       req.setParams(xmlWriterTypeParams);
-      String response = h.query(req);
+      String response = h.query(handler, req);
 
       if (req.getParams().getBool("facet", false)) {
         // add a test to ensure that faceting did not throw an exception
@@ -911,6 +920,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     return response;
+  }
+
+  /**
+   * Validates a JSON DSL request matches the given JSON test expressions
+   *
+   * @param jsonBody The JSON DSL request body to send to Solr
+   * @param tests JSON path expression + '==' + expected value
+   * @see JSONTestUtil#DEFAULT_DELTA
+   * @see #assertJQ(SolrQueryRequest,double,String...)
+   * @return The request response as a JSON String if all test patterns pass
+   */
+  public static String assertJJQ(String jsonBody, String... tests) throws Exception {
+    SolrQueryRequestBase jreq = (SolrQueryRequestBase) req();
+    jreq.setContentStreams(List.of(new ContentStreamBase.StringStream(jsonBody)));
+    return assertJQ(jreq, JSONTestUtil.DEFAULT_DELTA, tests);
   }
 
   /**
