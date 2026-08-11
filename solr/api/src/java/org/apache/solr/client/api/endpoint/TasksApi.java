@@ -40,7 +40,7 @@ public interface TasksApi {
     ListActiveTaskResponse listAllActiveTasks() throws Exception;
   }
 
-  @Path("{taskID}")
+  @Path("/{taskID}")
   interface Status {
     @GET
     @StoreApiParameters

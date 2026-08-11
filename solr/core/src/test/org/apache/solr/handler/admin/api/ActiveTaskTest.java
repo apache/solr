@@ -39,7 +39,8 @@ public class ActiveTaskTest extends SolrTestCaseJ4 {
   private SolrCore solrCore;
   private CancellableQueryTracker cancellableQueryTracker;
 
-  private ActiveTask activeTask;
+  private ListActiveTasks listActiveTasks;
+  private GetTaskStatus getTaskStatus;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -55,7 +56,8 @@ public class ActiveTaskTest extends SolrTestCaseJ4 {
     solrCore = mock(SolrCore.class);
     cancellableQueryTracker = mock(CancellableQueryTracker.class);
 
-    activeTask = new ActiveTask(mockQueryRequest);
+    listActiveTasks = new ListActiveTasks(mockQueryRequest);
+    getTaskStatus = new GetTaskStatus(mockQueryRequest);
   }
 
   @Test
@@ -70,7 +72,7 @@ public class ActiveTaskTest extends SolrTestCaseJ4 {
     when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
     when(cancellableQueryTracker.getActiveQueriesGenerated()).thenReturn(mockIterator);
 
-    ListActiveTaskResponse response = activeTask.listAllActiveTasks();
+    ListActiveTaskResponse response = listActiveTasks.listAllActiveTasks();
     assertNotNull(response.tasks);
 
     assertEquals(2, response.tasks.size());
@@ -89,11 +91,11 @@ public class ActiveTaskTest extends SolrTestCaseJ4 {
     when(cancellableQueryTracker.isQueryIdActive("taskID_running")).thenReturn(true);
     when(cancellableQueryTracker.isQueryIdActive("taskID_stopped")).thenReturn(false);
 
-    TaskStatusResponse responseRunningTask = activeTask.getTaskStatus("taskID_running");
+    TaskStatusResponse responseRunningTask = getTaskStatus.getTaskStatus("taskID_running");
     assertEquals(TaskStatusResponse.TaskStatus.ACTIVE, responseRunningTask.status);
     assertNull(responseRunningTask.error);
 
-    TaskStatusResponse responseStoppedTask = activeTask.getTaskStatus("taskID_stopped");
+    TaskStatusResponse responseStoppedTask = getTaskStatus.getTaskStatus("taskID_stopped");
     assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, responseStoppedTask.status);
     assertNull(responseStoppedTask.error);
   }

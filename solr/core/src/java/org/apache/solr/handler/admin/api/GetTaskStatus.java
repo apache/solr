@@ -17,13 +17,13 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.api.model.TaskStatusResponse.TaskStatus;
 import static org.apache.solr.security.PermissionNameProvider.Name.READ_PERM;
 
 import jakarta.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.TasksApi;
 import org.apache.solr.client.api.model.TaskStatusResponse;
+import org.apache.solr.handler.component.ActiveTaskQuerySupport;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -41,10 +41,12 @@ public class GetTaskStatus extends JerseyResource implements TasksApi.Status {
   public TaskStatusResponse getTaskStatus(String taskID) throws Exception {
     final TaskStatusResponse response = instantiateJerseyResponse(TaskStatusResponse.class);
 
-    boolean isTaskActive =
-        solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskID);
+    boolean isTaskActive = ActiveTaskQuerySupport.isTaskActive(solrQueryRequest, taskID);
 
-    response.status = (isTaskActive) ? TaskStatus.ACTIVE : TaskStatus.INACTIVE;
+    response.status =
+        (isTaskActive)
+            ? TaskStatusResponse.TaskStatus.ACTIVE
+            : TaskStatusResponse.TaskStatus.INACTIVE;
 
     return response;
   }

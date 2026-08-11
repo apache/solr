@@ -28,6 +28,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.TasksApi;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
+import org.apache.solr.handler.component.ActiveTaskQuerySupport;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -44,11 +45,12 @@ public class ListActiveTasks extends JerseyResource implements TasksApi.List {
   @PermissionName(READ_PERM)
   public ListActiveTaskResponse listAllActiveTasks() throws Exception {
     final ListActiveTaskResponse response = instantiateJerseyResponse(ListActiveTaskResponse.class);
-    response.tasks = extractActiveTaskLists();
+    response.tasks = ActiveTaskQuerySupport.listActiveTasks(solrQueryRequest);
     return response;
   }
 
-  private List<ActiveTaskDetails> extractActiveTaskLists() {
+  public static List<ActiveTaskDetails> getActiveTasksOnThisShard(
+      SolrQueryRequest solrQueryRequest) {
     Iterator<Map.Entry<String, String>> iterator =
         solrQueryRequest.getCore().getCancellableQueryTracker().getActiveQueriesGenerated();
 
@@ -59,5 +61,9 @@ public class ListActiveTasks extends JerseyResource implements TasksApi.List {
     }
 
     return activeTaskDetails;
+  }
+
+  public static boolean isTaskActiveOnThisShard(SolrQueryRequest solrQueryRequest, String taskId) {
+    return solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskId);
   }
 }
