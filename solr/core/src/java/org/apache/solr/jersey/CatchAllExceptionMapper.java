@@ -24,6 +24,7 @@ import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ResourceContext;
@@ -32,6 +33,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import java.lang.invoke.MethodHandles;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -76,6 +79,23 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
     }
 
     // JSON deserialization errors indicate a malformed request body and should be 400s.
+    if (exception instanceof MismatchedInputException mie) {
+      final String field =
+          mie.getPath().isEmpty()
+              ? "(root)"
+              : mie.getPath().stream()
+                  .map(JsonMappingException.Reference::getFieldName)
+                  .filter(Objects::nonNull)
+                  .collect(Collectors.joining("."));
+      final String target =
+          mie.getTargetType() != null ? mie.getTargetType().getSimpleName() : "expected type";
+      return processAndRespondToException(
+          new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Invalid value for field '" + field + "': expected " + target),
+          solrQueryRequest,
+          containerRequestContext);
+    }
     if (exception instanceof JsonMappingException jme) {
       return processAndRespondToException(
           new SolrException(SolrException.ErrorCode.BAD_REQUEST, jme.getOriginalMessage()),

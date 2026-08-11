@@ -294,8 +294,11 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         expectThrows(RemoteSolrException.class, () -> request.process(cluster.getSolrClient()));
 
     assertEquals(400, ex.code());
+    String expectedMsg = "Invalid value for field 'name': expected String";
+    assertTrue(
+        "Exception message must contain \"" + expectedMsg + "\"",
+        ex.getMessage().contains(expectedMsg));
   }
-
 
   @Test
   public void testCreateCollectionWithBooleanNameIsRejected() {
@@ -344,7 +347,8 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     final V2Request request =
         new V2Request.Builder("/collections")
             .withMethod(SolrRequest.METHOD.POST)
-            .withPayload("{\"name\": \"stringShuffleNodes_collection\", \"shuffleNodes\": \"true\"}")
+            .withPayload(
+                "{\"name\": \"stringShuffleNodes_collection\", \"shuffleNodes\": \"true\", \"numShards\": \"1\"}")
             .build();
 
     final RemoteSolrException ex =
@@ -366,6 +370,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
     assertEquals(400, ex.code());
   }
+
   private void assertRSECodeAndMessage(
       RemoteSolrException rse, int expectedCode, String... expectedMessagePieces) {
     assertEquals(expectedCode, rse.code());
