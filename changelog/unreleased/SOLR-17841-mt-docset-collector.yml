@@ -1,6 +1,6 @@
 title: >
   Improved multiThreaded=true performance when a docset is needed (e.g. faceting).
-type: fixed
+type: changed
 authors:
   - name: Puneet Ahuja
     nick: punAhuja
