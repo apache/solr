@@ -34,6 +34,16 @@
       "description": "Keep Error Prone on 2.31.0; the build hard-pins it to 2.31.0 for JDK11 compatibility on branch_9x",
       "matchPackagePrefixes": ["com.google.errorprone:"],
       "allowedVersions": "2.31.0"
+    },
+    {
+      "description": "Pin no.nav.security:mock-oauth2-server to 0.5.10; every 1.0.0+ release requires Java 17 but branch_9x builds with Java 11",
+      "matchPackageNames": ["no.nav.security:mock-oauth2-server"],
+      "allowedVersions": "0.5.10"
+    },
+    {
+      "description": "Pin com.carrotsearch:hppc to 0.10.0; 0.11.0+ is compiled for Java 21 but branch_9x builds with Java 11",
+      "matchPackageNames": ["com.carrotsearch:hppc"],
+      "allowedVersions": "0.10.0"
     }
   ],
   "schedule": ["* * * * *"],
