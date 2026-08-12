@@ -1,6 +1,5 @@
 title: >
-  Multithreaded search now builds DocSets with DocSetCollector and skips the
-  parallel path when no searcher executor is configured.
+  Improved multiThreaded=true performance when a docset is needed (e.g. faceting).
 type: fixed
 authors:
   - name: Puneet Ahuja
