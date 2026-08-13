@@ -22,12 +22,16 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.logging.Level;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.SuppressForbidden;
@@ -35,6 +39,7 @@ import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
@@ -123,7 +128,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
                       + "    };\n"
                       + "  }\n"
                       + "};\n")
-                  .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                  .getBytes(StandardCharsets.UTF_8));
     }
   }
 
@@ -250,8 +255,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
    * Polls the given element until {@code condition} returns non-null (a fresh lookup each round, so
    * elements replaced by Angular re-renders are tolerated), failing after {@link #WAIT_TIMEOUT}.
    */
-  private static <T> T poll(
-      By locator, java.util.function.Function<WebElement, T> condition, String description) {
+  private static <T> T poll(By locator, Function<WebElement, T> condition, String description) {
     long deadlineNanos = System.nanoTime() + WAIT_TIMEOUT.toNanos();
     WebDriverException lastException = null;
     while (System.nanoTime() < deadlineNanos) {
@@ -281,7 +285,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
    * the UI should display.
    */
   protected static NamedList<Object> adminApi(String path, SolrParams params)
-      throws IOException, org.apache.solr.client.solrj.SolrServerException {
+      throws IOException, SolrServerException {
     try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
       return client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, path, params));
     }
@@ -353,7 +357,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
             .filter(entry -> entry.getLevel().intValue() >= Level.SEVERE.intValue())
             .filter(
                 entry ->
-                    java.util.Arrays.stream(allowedSubstrings)
+                    Arrays.stream(allowedSubstrings)
                         .noneMatch(allowed -> entry.getMessage().contains(allowed)))
             .filter(entry -> !entry.getMessage().contains("favicon.ico"))
             .toList();
@@ -391,7 +395,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
     String pathEnv = System.getenv("PATH");
     if (pathEnv != null) {
-      for (String dir : pathEnv.split(java.io.File.pathSeparator)) {
+      for (String dir : pathEnv.split(File.pathSeparator)) {
         for (String name : List.of("google-chrome", "chromium", "chromium-browser")) {
           Path path = Path.of(dir, name);
           if (Files.isExecutable(path)) {
