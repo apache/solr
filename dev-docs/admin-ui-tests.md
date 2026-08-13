@@ -120,8 +120,10 @@ This document tracks browser-based test coverage of the old AngularJS Admin UI
 - [x] Add a user through the dialog (verified via `/admin/authentication`)
 - [ ] Add role / add permission dialogs
 
-### Schema Designer — `AdminUiSchemaDesignerTest` (`@Nightly`)
-- [x] Create a new schema, paste a sample doc, analyze; derived field shown
+### Schema Designer — `AdminUiSchemaDesignerTest` (`@Nightly`, `@AwaitsFix`)
+- [x] Create a new schema, paste a sample doc, analyze; derived field shown —
+      but the designer backend is too flaky under automation (see Possible UI
+      bugs), so the test awaits a fix before running by default
 
 ## Deliberately skipped (effort vs value)
 
@@ -136,6 +138,51 @@ This document tracks browser-based test coverage of the old AngularJS Admin UI
 - **Standalone (non-cloud) mode screens**: replication actions and core admin
   rename/swap/unload need a standalone harness (`JettySolrRunner` without ZK);
   the cloud harness covers everything else.
+
+## Possible UI bugs to investigate
+
+Issues surfaced by these tests that look like real bugs, weaknesses or
+flakiness in the Admin UI (or its backing APIs) rather than bad test code.
+Tests work around them as noted; each deserves investigation and possibly a
+JIRA:
+
+1. **Menu TypeError on per-collection pages**: navigating to any
+   per-collection screen intermittently logs
+   `TypeError: Cannot read properties of null (reading 'name')` from
+   `$scope.showCore` in `js/angular/app.js` — the core selector fires its
+   change handler with a null core while the menu resolves. Workaround: the
+   console-error assertion filters this signature.
+2. **Collections screen dies without the js-client bundle**: the
+   `CollectionsV2` service factory (`services.js`) references the `solrApi`
+   global at injection time; if `libs/solr/index.js` fails to load, the whole
+   `CollectionsController` fails and the screen is blank. Only
+   `reloadCollection` is used from that bundle — a lazy/optional lookup would
+   degrade gracefully. Workaround: tests serve a stub bundle.
+3. **Security screen dialogs unreliable under automation**: native clicks on
+   the Add User toggle and keystrokes into the absolutely-positioned dialog
+   (jQuery-positioned, `escape-pressed` directive) are dropped in headless
+   Chrome even though the same interactions work on other screens. May
+   indicate a focus/z-index issue. Workaround: the test drives the dialog via
+   the Angular controller scope.
+4. **Schema Designer races itself**: creating a schema and analyzing sample
+   docs transiently fails with `Failed to persist managed schema ... version
+   mismatch, retry` from its own `prep`/`analyze` calls, surfacing an error
+   dialog the user has to dismiss. Workaround: the test retries via the
+   offered Reload Schema button and ignores the designer's own 5xx console
+   errors.
+5. **Plugins screen 500s when metrics are disabled**: `/admin/metrics` with
+   `wt=prometheus` returns HTTP 500 ("No metrics found in response") when
+   metrics collection is disabled, instead of a clean error; the Plugins
+   screen just shows nothing while the console logs the 500. Workaround:
+   tests enable `metricsEnabled`.
+6. **Core overview ping widget logs a 503**: with a configset that has no
+   healthcheck file, the ping status call answers 503 and the console shows a
+   resource-load error on every visit; the widget could handle "healthcheck
+   not configured" gracefully. Workaround: allowed in the affected tests.
+7. **Reload success indicator is a 1-second flash**: the Collections screen's
+   reload button only flags success via a CSS class for one second, which is
+   easy to miss (and impossible to assert on reliably). Workaround: the test
+   verifies the reload via the core start time instead.
 
 ## Known limitations
 

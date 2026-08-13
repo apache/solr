@@ -16,6 +16,7 @@
  */
 package org.apache.solr.webapp;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
@@ -23,10 +24,13 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Tests the Logging screens: the recent-events viewer and the log level editor. */
 public class AdminUiLoggingScreenTest extends AdminUiTestBase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void testLoggingLevelTree() {
@@ -40,7 +44,7 @@ public class AdminUiLoggingScreenTest extends AdminUiTestBase {
   public void testEventsViewerShowsWarnings() throws Exception {
     // the cluster nodes run in this JVM, so the log watcher observes our own log events
     String probeMessage = "Admin UI logging viewer probe event";
-    LoggerFactory.getLogger(AdminUiLoggingScreenTest.class).warn(probeMessage);
+    log.warn(probeMessage);
 
     // all test clusters in this JVM register a log-watcher appender under the same name
     // in the shared log4j config, so this cluster's watcher may be blind when other UI
