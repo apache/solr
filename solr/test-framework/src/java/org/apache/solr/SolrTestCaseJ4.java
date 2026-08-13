@@ -846,19 +846,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     assertQ(null, req, tests);
   }
 
-  /**
-   * The handler that should process {@code req}: its {@link SolrQueryRequest#getPath()} if set,
-   * otherwise falls back to the deprecated "qt" request param.
-   */
-  private static String handlerOf(SolrQueryRequest req) {
-    String path = req.getPath();
-    return path != null ? path : req.getParams().get(CommonParams.QT);
-  }
-
   /** Validates a query matches some XPath test expressions and closes the query */
   public static void assertQ(String message, SolrQueryRequest req, String... tests) {
     try {
-      String handler = handlerOf(req);
       String m = (null == message) ? "" : message + " "; // TODO log 'm' !!!
       // since the default (standard) response format is now JSON
       // need to explicitly request XML since this class uses XPath
@@ -867,7 +857,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       // for tests, let's turn indention off so we don't have to handle extraneous spaces
       xmlWriterTypeParams.set("indent", xmlWriterTypeParams.get("indent", "off"));
       req.setParams(xmlWriterTypeParams);
-      String response = h.query(handler, req);
+      String response = h.query(req);
 
       if (req.getParams().getBool("facet", false)) {
         // add a test to ensure that faceting did not throw an exception
@@ -901,7 +891,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /** Makes a query request and returns the JSON string response */
   public static String JQ(SolrQueryRequest req) throws Exception {
-    String handler = handlerOf(req);
     SolrParams params = req.getParams();
     if (!"json".equals(params.get("wt", "xml")) || params.get("indent") == null) {
       ModifiableSolrParams newParams = new ModifiableSolrParams(params);
@@ -913,7 +902,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     String response;
     boolean failed = true;
     try {
-      response = h.query(handler, req);
+      response = h.query(req);
       failed = false;
     } finally {
       if (failed) {
@@ -965,7 +954,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   public static String assertJQ(SolrQueryRequest req, double delta, String... tests)
       throws Exception {
-    String handler = handlerOf(req);
     SolrParams params = null;
     try {
       params = req.getParams();
@@ -979,7 +967,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       String response;
       boolean failed = true;
       try {
-        response = h.query(handler, req);
+        response = h.query(req);
         failed = false;
       } finally {
         if (failed) {
@@ -1039,7 +1027,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   @SuppressWarnings("unchecked")
   public static <T> String assertThatJQ(SolrQueryRequest req, String message, Matcher<T> test)
       throws Exception {
-    String handler = handlerOf(req);
     final SolrParams params = req.getParams();
     try {
       if (!"json".equals(params.get("wt", "xml")) || params.get("indent") == null) {
@@ -1052,7 +1039,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       String response;
       boolean failed = true;
       try {
-        response = h.query(handler, req);
+        response = h.query(req);
         failed = false;
       } finally {
         if (failed) {
@@ -1082,7 +1069,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static void assertQEx(String message, SolrQueryRequest req, int code) {
     try {
       ignoreException(".");
-      h.query(handlerOf(req), req);
+      h.query(req);
       fail(message);
     } catch (SolrException sex) {
       assertEquals(code, sex.code());
@@ -1097,7 +1084,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static void assertQEx(String message, SolrQueryRequest req, SolrException.ErrorCode code) {
     try {
       ignoreException(".");
-      h.query(handlerOf(req), req);
+      h.query(req);
       fail(message);
     } catch (SolrException e) {
       assertEquals(code.code, e.code());
@@ -1124,7 +1111,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       SolrException.ErrorCode code) {
     try {
       ignoreException(".");
-      h.query(handlerOf(req), req);
+      h.query(req);
       fail(failMessage);
     } catch (SolrException e) {
       assertEquals(code.code, e.code());
