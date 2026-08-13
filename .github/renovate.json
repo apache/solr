@@ -12,7 +12,7 @@
   "packageRules": [
     {
       "description": "Pin com.palantir.consistent-versions to 2.32.0; newer versions require Java 17 but branch_9x builds with Java 11",
-      "matchPackageNames": ["com.palantir.consistent-versions"],
+      "matchDepNames": ["com.palantir.consistent-versions"],
       "allowedVersions": "2.32.0"
     },
     {
