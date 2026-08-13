@@ -1,0 +1,197 @@
+#!/usr/bin/env bats
+
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load bats_helper
+
+setup() {
+  common_clean_setup
+}
+
+teardown() {
+  # save a snapshot of SOLR_HOME for failed tests
+  save_home_on_failure
+
+  solr stop -all >/dev/null 2>&1
+}
+
+@test "user managed index replication with a twist" {  
+  # This demonstrates traditional user managed cluster working as defined in
+  # https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html 
+  #
+  # See "Loosely coupled Solr Nodes" in https://github.com/apache/solr/pull/2783/files#diff-b58818a370dac65f7abb0064599f8813a56841b4a40f960ea2b81e398b820f43
+  #
+  # We demonstrate starting up three independent SolrCloud nodes in the Leader/Repeater/Follower pattern.
+  # Then we create three seperate 'techproducts' collections, uploading the same configset three seperate times
+  # to demonstrate that there is no interconnection or shard config between them.
+  # We then index some XML data on the Leader, and then check that it flows through the Repeater to the Follower.
+  # This is repeated for some more documents.
+  # Lastly, we shutdown the Repeater and demonstrate that the Follower still has all of it's documents available for querying.
+  # We delete the data on the Leader, and then subsequantly bring back up the Repeater.
+  # The Repeater preserves all fo the configuration that was done during the setup process after restarting, and immediatley copies
+  # over the now empty 'techproducts' index and we then see the Follower picks up that empty collection as well.
+  
+  export SOLR_SECURITY_MANAGER_ENABLED=false
+  
+  LEADER_PORT=$SOLR_PORT
+  REPEATER_PORT=$SOLR2_PORT
+  FOLLOWER_PORT=$SOLR3_PORT
+  
+  export clusters_dir="${BATS_TEST_TMPDIR}/clusters"
+  
+  mkdir -p ${clusters_dir}/leader
+  mkdir -p ${clusters_dir}/repeater
+  mkdir -p ${clusters_dir}/follower
+  
+
+  
+  # Get our three seperate independent Solr nodes running.
+  solr start -p ${LEADER_PORT} -Dsolr.disable.allowUrls=true --solr-home "${clusters_dir}"/leader -DzkServerDataDir="${clusters_dir}"/leader/zoo_data --verbose
+  solr start -p ${REPEATER_PORT} -Dsolr.disable.allowUrls=true --solr-home "${clusters_dir}"/repeater -DzkServerDataDir="${clusters_dir}"/repeater/zoo_data --verbose
+  solr start -p ${FOLLOWER_PORT} -Dsolr.disable.allowUrls=true --solr-home "${clusters_dir}"/follower -DzkServerDataDir="${clusters_dir}"/follower/zoo_data --verbose 
+  
+  solr assert --started http://localhost:${LEADER_PORT} --timeout 5000
+  solr assert --started http://localhost:${REPEATER_PORT} --timeout 5000
+  solr assert --started http://localhost:${FOLLOWER_PORT} --timeout 5000
+  
+  solr assert --cloud http://localhost:${LEADER_PORT}
+  solr assert --cloud http://localhost:${REPEATER_PORT}
+  solr assert --cloud http://localhost:${FOLLOWER_PORT}  
+  
+  # Wish I loaded configset seperately...
+  local source_configset_dir="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs"
+  solr create -c techproducts --conf-dir "${source_configset_dir}" --solr-url http://localhost:${LEADER_PORT}
+  solr create -c techproducts --conf-dir "${source_configset_dir}" --solr-url http://localhost:${REPEATER_PORT}
+  solr create -c techproducts --conf-dir "${source_configset_dir}" --solr-url http://localhost:${FOLLOWER_PORT}
+  
+  # Verify empty state of all the clusters
+  run curl "http://localhost:${LEADER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":0'
+  run curl "http://localhost:${REPEATER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":0'
+  run curl "http://localhost:${FOLLOWER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":0'  
+  
+  # Load XML formatted data into the leader
+  solr post --type application/xml --solr-url http://localhost:${LEADER_PORT} -c techproducts "${SOLR_TIP}"/example/exampledocs/*.xml
+  run curl "http://localhost:${LEADER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":32'
+  
+  # Confirm no replication is taking place
+  run curl "http://localhost:${REPEATER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":0'  
+  run curl "http://localhost:${FOLLOWER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":0'  
+  
+  # Setup the leader for replication
+  run curl -X POST -H 'Content-type:application/json' -d '{
+    "add-requesthandler": {
+      "name": "/replication",
+      "class": "solr.ReplicationHandler",
+      "leader":{ "replicateAfter": "commit", "backupAfter":"commit", "confFiles":""},
+      "maxNumberOfBackups":2            
+    }
+  }' "http://localhost:${LEADER_PORT}/solr/techproducts/config"
+  assert_output --partial '"status":0'
+  
+  run curl "http://localhost:${LEADER_PORT}/solr/techproducts/replication?command=details"
+  assert_output --partial '"replicationEnabled":"true"'
+  
+  # Setup the Repeater for replication  
+  run curl -X POST -H 'Content-type:application/json' -d '{
+    "add-requesthandler": {
+      "name": "/replication",
+      "class": "solr.ReplicationHandler",
+      "follower":{ "leaderUrl": "http://localhost:'"${LEADER_PORT}"'/solr/techproducts/replication", "pollInterval":"00:00:02"},
+      "leader":{ "replicateAfter": "commit", "backupAfter":"commit", "confFiles":""},
+      "maxNumberOfBackups":2            
+    }
+  }' "http://localhost:${REPEATER_PORT}/solr/techproducts/config"
+  assert_output --partial '"status":0'
+  
+  run curl "http://localhost:${REPEATER_PORT}/solr/techproducts/replication?command=details"
+  assert_output --partial '"isPollingDisabled":"false"'
+  
+  # Setup the Follower for replication  
+  run curl -X POST -H 'Content-type:application/json' -d '{
+    "add-requesthandler": {
+      "name": "/replication",
+      "class": "solr.ReplicationHandler",
+      "follower":{ "leaderUrl": "http://localhost:'"${REPEATER_PORT}"'/solr/techproducts/replication", "pollInterval":"00:00:02"}         
+    }
+  }' "http://localhost:${FOLLOWER_PORT}/solr/techproducts/config"
+  assert_output --partial '"status":0'
+  
+  run curl "http://localhost:${FOLLOWER_PORT}/solr/techproducts/replication?command=details"
+  assert_output --partial '"isPollingDisabled":"false"'  
+ 
+  # How can we know when a replication has happened and then check?
+  run curl "http://localhost:${LEADER_PORT}/solr/techproducts/update?optimize=true"
+  assert_output --partial '"status":0'
+  sleep 10
+  run curl "http://localhost:${REPEATER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":32' 
+  
+  # Testing adding new data by adding JSON formatted data into the leader
+  solr post --type application/json --solr-url http://localhost:${LEADER_PORT} -c techproducts "${SOLR_TIP}"/example/exampledocs/*.json
+  run curl "http://localhost:${LEADER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":36'
+  sleep 5
+  run curl "http://localhost:${REPEATER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":36' 
+  
+  # Testing adding new data by adding CSV formatted data into the leader
+  solr post --solr-url http://localhost:${LEADER_PORT} -c techproducts "${SOLR_TIP}"/example/exampledocs/*.csv
+  run curl "http://localhost:${LEADER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":46'  
+  sleep 20
+  run curl "http://localhost:${REPEATER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":46'  
+  
+  # Now lets go check our follower and make sure it picks up all the changes too!
+  sleep 5  
+  run curl "http://localhost:${FOLLOWER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":46' 
+  
+  # Now lets stop our repeater
+  solr stop -p ${REPEATER_PORT}
+  solr assert --not-started http://localhost:${REPEATER_PORT} --timeout 5000
+  
+  # Delete data on the leader
+  solr post --solr-url http://localhost:${LEADER_PORT} -c techproducts  --mode args --verbose "{'delete': {'query': '*:*'}}"
+  run curl "http://localhost:${LEADER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":0' 
+
+  # check our follower is still up and responding
+  sleep 5  
+  run curl "http://localhost:${FOLLOWER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":46' 
+  
+  # Bring back our repeater
+  solr start -p ${REPEATER_PORT} -Dsolr.disable.allowUrls=true --solr-home "${clusters_dir}"/repeater -DzkServerDataDir="${clusters_dir}"/repeater/zoo_data --verbose
+  solr assert --started http://localhost:${REPEATER_PORT} --timeout 5000
+  
+  # check our repeater is picking up the now deleted documents from the leader
+  sleep 5  
+  run curl "http://localhost:${REPEATER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":0' 
+  
+  # And check our follower has no documents as well.
+  sleep 5  
+  run curl "http://localhost:${FOLLOWER_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":0' 
+  
+}
