@@ -514,7 +514,6 @@ prometheus-metrics-expositionformats = { module = "io.prometheus:prometheus-metr
 prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus-metrics" }
 quicktheories-quicktheories = { module = "org.quicktheories:quicktheories", version.ref = "quicktheories" }
 selenium-chromedriver = { module = "org.seleniumhq.selenium:selenium-chrome-driver", version.ref = "selenium" }
-selenium-support = { module = "org.seleniumhq.selenium:selenium-support", version.ref = "selenium" }
 semver4j-semver4j = { module = "org.semver4j:semver4j", version.ref = "semver4j" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jcloverslf4j = { module = "org.slf4j:jcl-over-slf4j", version.ref = "slf4j" }

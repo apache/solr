@@ -56,8 +56,15 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
-  testImplementation libs.selenium.chromedriver
-  testImplementation libs.selenium.support
+  testImplementation(libs.selenium.chromedriver, {
+    // solr-core already provides the opentelemetry api/sdk that selenium's optional
+    // tracing uses; the remaining excludes are compile-time-only annotation jars
+    exclude group: 'io.opentelemetry'
+    exclude group: 'io.opentelemetry.instrumentation'
+    exclude group: 'io.opentelemetry.semconv'
+    exclude group: 'com.google.auto.service'
+    exclude group: 'org.jspecify'
+  })
 }
 
 // Forward the browser-binary override for the Admin UI tests to the forked test JVM

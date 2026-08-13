@@ -44,7 +44,9 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
@@ -54,8 +56,6 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +117,9 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
         "No Chrome/Chromium binary found (set -Dtests.ui.chrome.binary=...), skipping UI tests",
         chrome != null);
 
+    // metrics are off by default in test clusters, but UI screens (e.g. Plugins) need them;
+    // restored after the class by SolrTestCase's SystemPropertiesRestoreRule
+    System.setProperty("metricsEnabled", "true");
     configureCluster(2).withJettyConfig(jetty -> jetty.enableAdminUi(true)).configure();
     baseUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
@@ -186,19 +189,47 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
 
   /** Waits for the given element to be visible, up to {@link #WAIT_TIMEOUT}. */
   protected static WebElement waitFor(By locator) {
-    return new WebDriverWait(driver, WAIT_TIMEOUT)
-        .until(ExpectedConditions.visibilityOfElementLocated(locator));
+    return poll(locator, el -> el.isDisplayed() ? el : null, "visible element");
   }
 
-  /** Waits until the given condition on an element's text holds, and returns the text. */
+  /** Waits until the given element has non-blank text, and returns the text. */
   protected static String waitForText(By locator) {
-    new WebDriverWait(driver, WAIT_TIMEOUT)
-        .until(
-            d -> {
-              WebElement el = d.findElement(locator);
-              return el != null && !el.getText().isBlank();
-            });
-    return driver.findElement(locator).getText();
+    return poll(
+        locator,
+        el -> {
+          String text = el.getText();
+          return el.isDisplayed() && !text.isBlank() ? text : null;
+        },
+        "non-empty text");
+  }
+
+  /**
+   * Polls the given element until {@code condition} returns non-null (a fresh lookup each round, so
+   * elements replaced by Angular re-renders are tolerated), failing after {@link #WAIT_TIMEOUT}.
+   */
+  private static <T> T poll(
+      By locator, java.util.function.Function<WebElement, T> condition, String description) {
+    long deadlineNanos = System.nanoTime() + WAIT_TIMEOUT.toNanos();
+    WebDriverException lastException = null;
+    while (System.nanoTime() < deadlineNanos) {
+      try {
+        T result = condition.apply(driver.findElement(locator));
+        if (result != null) {
+          return result;
+        }
+        lastException = null;
+      } catch (NoSuchElementException | StaleElementReferenceException e) {
+        lastException = e;
+      }
+      try {
+        Thread.sleep(200);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
+    throw new AssertionError(
+        "Timed out waiting for " + description + " at " + locator, lastException);
   }
 
   /**
@@ -213,16 +244,25 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
   }
 
-  /** Fails the test if the browser console contains SEVERE errors (ignoring known-benign ones). */
-  protected static void assertNoSevereConsoleErrors() {
+  /**
+   * Fails the test if the browser console contains SEVERE errors, ignoring known-benign ones and
+   * any messages containing one of {@code allowedSubstrings}.
+   */
+  protected static void assertNoSevereConsoleErrors(String... allowedSubstrings) {
     List<LogEntry> entries = driver.manage().logs().get(LogType.BROWSER).getAll();
     List<LogEntry> severe =
         entries.stream()
             .filter(entry -> entry.getLevel().intValue() >= Level.SEVERE.intValue())
+            .filter(
+                entry ->
+                    java.util.Arrays.stream(allowedSubstrings)
+                        .noneMatch(allowed -> entry.getMessage().contains(allowed)))
             .filter(entry -> !entry.getMessage().contains("favicon.ico"))
             // the js-client bundle is generated into the war at build time and does not
             // exist in the source tree that tests serve from; the UI degrades gracefully
             .filter(entry -> !entry.getMessage().contains("libs/solr/index.js"))
+            // "solrApi" is defined by that same missing js-client bundle
+            .filter(entry -> !entry.getMessage().contains("solrApi is not defined"))
             .toList();
     assertTrue("Severe browser console errors: " + severe, severe.isEmpty());
   }
