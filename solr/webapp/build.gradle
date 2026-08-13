@@ -59,6 +59,8 @@ dependencies {
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj')
   testImplementation project(':solr:test-framework')
+  // puts the /sql handler on the in-JVM server classpath so the SQL screen works
+  testRuntimeOnly project(':solr:modules:sql')
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.eclipse.jetty.ee10.servlet
   testImplementation libs.jakarta.servlet.api
@@ -74,8 +76,13 @@ dependencies {
   })
 }
 
-// Forward the browser-binary override for the Admin UI tests to the forked test JVM
+// Configure all Test tasks (including the generated beast test_N tasks, which do not
+// inherit the default test suite wiring in this war project):
+// - test classes/classpath so `gradlew -p solr/webapp beast -Ptests.dups=N` works
+// - forward the browser-binary override for the Admin UI tests to the forked test JVM
 tasks.withType(Test).configureEach {
+  testClassesDirs = sourceSets.test.output.classesDirs
+  classpath = sourceSets.test.runtimeClasspath
   def chromeBinary = providers.systemProperty('tests.ui.chrome.binary').orNull
   if (chromeBinary != null) {
     systemProperty 'tests.ui.chrome.binary', chromeBinary
