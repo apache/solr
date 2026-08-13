@@ -16,12 +16,13 @@
  */
 package org.apache.solr.webapp;
 
+import java.util.List;
 import java.util.Map;
-import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.util.NamedList;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -30,18 +31,15 @@ import org.openqa.selenium.WebElement;
 /**
  * Tests the Admin UI with BasicAuth enabled: the login screen flow and the Security screen,
  * including adding a user through the UI dialog.
- *
- * <p>Nightly: the login/session interplay between the browser and the auth filter is the most
- * timing-sensitive part of the UI test suite.
  */
-@Nightly
 public class AdminUiSecurityAuthTest extends AdminUiTestBase {
 
   private static final String USER = "solr";
   private static final String PASS = "SolrRocks";
 
-  static {
-    // consumed by AdminUiTestBase when starting the cluster
+  @BeforeClass
+  public static void setSecurityConfig() {
+    // consumed by AdminUiTestBase when the cluster starts lazily on first use
     securityJson =
         "{\n"
             + "  \"authentication\": {\n"
@@ -62,8 +60,7 @@ public class AdminUiSecurityAuthTest extends AdminUiTestBase {
   @Test
   public void testLoginAndSecurityScreen() throws Exception {
     // an unauthenticated visit is redirected to the login screen
-    driver.get(baseUrl + "/index.html#/");
-    waitFor(By.id("login"));
+    openPage("", By.id("login"));
     WebElement username = waitFor(By.id("username"));
     username.clear();
     username.sendKeys(USER);
@@ -105,6 +102,63 @@ public class AdminUiSecurityAuthTest extends AdminUiTestBase {
     waitUntil("user " + newUser + " should exist", () -> userExists(newUser));
     // the users list refreshes to include the new user
     waitForPageContains(newUser);
+
+    // add a role for the new user through the role dialog
+    String newRole = "uitestrole";
+    waitFor(By.id("add-role"));
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "var scope = angular.element(document.getElementById('add-role')).scope();"
+                + " scope.showAddRoleDialog();"
+                + " scope.upsertRole = {name: arguments[0], selectedUsers: [arguments[1]]};"
+                + " scope.doUpsertRole(); scope.$apply();",
+            newRole,
+            newUser);
+    waitUntil(
+        "user " + newUser + " should have role " + newRole,
+        () -> authorizationApi().toString().contains(newRole));
+    waitForPageContains(newRole);
+
+    // grant a predefined permission to the role through the permission dialog
+    String permission = "collection-admin-read";
+    waitFor(By.id("add-permission"));
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "var scope = angular.element(document.getElementById('add-permission')).scope();"
+                + " scope.showAddPermDialog();"
+                + " scope.selectedPredefinedPermission = arguments[0];"
+                + " scope.upsertPerm.selectedRoles = [arguments[1]];"
+                + " scope.doUpsertPermission(); scope.$apply();",
+            permission,
+            newRole);
+    waitUntil(
+        "permission " + permission + " should be granted to " + newRole,
+        () -> permissionRole(permission).contains(newRole));
+    waitForPageContains(permission);
+  }
+
+  /** Returns the authorization config as fetched with credentials. */
+  private NamedList<Object> authorizationApi() {
+    try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
+      GenericSolrRequest req =
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/authorization", params());
+      req.setBasicAuthCredentials(USER, PASS);
+      return client.request(req);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /** Returns the roles granted the named permission, as a string, or empty when absent. */
+  @SuppressWarnings("unchecked")
+  private String permissionRole(String permission) {
+    Map<?, ?> authorization = (Map<?, ?>) authorizationApi().get("authorization");
+    for (Map<?, ?> perm : (List<Map<?, ?>>) authorization.get("permissions")) {
+      if (permission.equals(perm.get("name")) && perm.get("role") != null) {
+        return perm.get("role").toString();
+      }
+    }
+    return "";
   }
 
   /** Checks via the authentication API (with credentials) whether the user exists. */
