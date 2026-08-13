@@ -17,7 +17,11 @@
 package org.apache.solr.webapp;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
@@ -76,6 +80,73 @@ public class AdminUiQueryScreenTest extends AdminUiTestBase {
     // only two docs are returned, and only their id field
     assertEquals("Expected 2 returned docs: " + response, 2, countOccurrences(response, "\"id\":"));
     assertFalse("fl=id should exclude other fields: " + response, response.contains("title_txt"));
+    assertNoSevereConsoleErrors();
+  }
+
+  @Test
+  public void testParamsetDropdown() throws Exception {
+    // create a paramset via the API, then apply it through the useParams dropdown
+    String paramset = "uiqueryparams";
+    GenericSolrRequest setParams =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.POST, "/" + COLLECTION + "/config/params", params());
+    setParams.setContentWriter(
+        new RequestWriter.StringPayloadContentWriter(
+            "{\"set\":{\"" + paramset + "\":{\"rows\":\"2\"}}}", CommonParams.JSON_MIME));
+    try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
+      client.request(setParams);
+    }
+
+    openPage(COLLECTION + "/query", By.id("query"));
+    chosenSelect("useParams", paramset);
+    waitFor(By.cssSelector("#query button[type=submit]")).click();
+
+    String response =
+        waitForTextContains(By.cssSelector("#query #response"), "\"numFound\":" + NUM_DOCS);
+    assertEquals(
+        "Paramset rows=2 should limit returned docs: " + response,
+        2,
+        countOccurrences(response, "\"id\":"));
+    assertNoSevereConsoleErrors();
+  }
+
+  @Test
+  public void testEdismaxToggle() {
+    openPage(COLLECTION + "/query", By.id("query"));
+
+    // the qf field only shows once a dismax parser is selected
+    assertFalse(
+        "qf should be hidden for the default parser",
+        driver.findElement(By.id("qf")).isDisplayed());
+    waitFor(By.id("defType")).sendKeys("edismax");
+    WebElement qf = waitFor(By.id("qf"));
+    qf.sendKeys("title_txt");
+    WebElement queryInput = waitFor(By.id("q"));
+    queryInput.clear();
+    queryInput.sendKeys("number");
+    waitFor(By.cssSelector("#query button[type=submit]")).click();
+
+    // all fixture docs match "number" in title_txt via the edismax qf
+    String response =
+        waitForTextContains(By.cssSelector("#query #response"), "\"numFound\":" + NUM_DOCS);
+    assertTrue("Response should echo defType", response.contains("edismax"));
+
+    // the edismax-only uf field is offered, dismax hides it again
+    assertTrue("uf should show for edismax", driver.findElement(By.id("uf")).isDisplayed());
+    waitFor(By.id("defType")).sendKeys("dismax");
+    assertFalse("uf should hide for dismax", driver.findElement(By.id("uf")).isDisplayed());
+    assertNoSevereConsoleErrors();
+  }
+
+  @Test
+  public void testRawQueryParameters() {
+    openPage(COLLECTION + "/query", By.id("query"));
+
+    waitFor(By.cssSelector("#custom_parameters input[name=rawParamQuery]")).sendKeys("fq=id:2");
+    waitFor(By.cssSelector("#query button[type=submit]")).click();
+
+    String response = waitForTextContains(By.cssSelector("#query #response"), "\"numFound\":1");
+    assertTrue("The raw fq param should be echoed: " + response, response.contains("id:2"));
     assertNoSevereConsoleErrors();
   }
 
