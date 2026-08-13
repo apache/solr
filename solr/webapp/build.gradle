@@ -55,6 +55,8 @@ dependencies {
   testImplementation project(':solr:solrj')
   testImplementation project(':solr:test-framework')
   testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.eclipse.jetty.ee10.servlet
+  testImplementation libs.jakarta.servlet.api
   testImplementation libs.junit.junit
   testImplementation(libs.selenium.chromedriver, {
     // solr-core already provides the opentelemetry api/sdk that selenium's optional

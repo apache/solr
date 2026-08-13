@@ -19,6 +19,9 @@ package org.apache.solr.webapp;
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -36,6 +39,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -93,6 +97,35 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   /** Base url of the first node, e.g. {@code http://127.0.0.1:PORT/solr} */
   protected static String baseUrl;
 
+  /**
+   * Serves a minimal stand-in for the generated js-client bundle ({@code libs/solr/index.js}),
+   * which only exists inside the built webapp, not in the source tree tests serve from. The
+   * AngularJS {@code CollectionsV2} service fails to instantiate without the {@code solrApi}
+   * global, taking the whole Collections screen down with it. Only the small API surface the
+   * AngularJS UI actually uses is stubbed.
+   */
+  public static class StubJsClientServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+      resp.setContentType("text/javascript");
+      resp.getWriter()
+          .write(
+              "var solrApi = {\n"
+                  + "  ApiClient: { instance: { basePath: '/api', defaultHeaders: {} } },\n"
+                  + "  CollectionsApi: function() {\n"
+                  + "    this.reloadCollection = function(name, callback) {\n"
+                  + "      var xhr = new XMLHttpRequest();\n"
+                  + "      xhr.open('POST', '/api/collections/' + name + '/reload');\n"
+                  + "      xhr.setRequestHeader('Content-Type', 'application/json');\n"
+                  + "      xhr.onload = function() { callback(null, null, {status: xhr.status}); };\n"
+                  + "      xhr.onerror = function() { callback(new Error('reload failed'), null, {status: xhr.status}); };\n"
+                  + "      xhr.send('{}');\n"
+                  + "    };\n"
+                  + "  }\n"
+                  + "};\n");
+    }
+  }
+
   /** Ignores threads spawned by Selenium and the JDK http client it uses. */
   public static class WebDriverThreadsFilter implements ThreadFilter {
     @Override
@@ -120,7 +153,15 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     // metrics are off by default in test clusters, but UI screens (e.g. Plugins) need them;
     // restored after the class by SolrTestCase's SystemPropertiesRestoreRule
     System.setProperty("metricsEnabled", "true");
-    configureCluster(2).withJettyConfig(jetty -> jetty.enableAdminUi(true)).configure();
+    configureCluster(2)
+        .withJettyConfig(
+            jetty ->
+                jetty
+                    .enableAdminUi(true)
+                    // exact-path mapping takes precedence over the static /libs/* servlet
+                    .withServlet(
+                        new ServletHolder(new StubJsClientServlet()), "/libs/solr/index.js"))
+        .configure();
     baseUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
     ChromeOptions options = new ChromeOptions();
@@ -244,6 +285,49 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
   }
 
+  /** Waits until the page source contains the given text. */
+  protected static void waitForPageContains(String text) {
+    long deadlineNanos = System.nanoTime() + WAIT_TIMEOUT.toNanos();
+    while (System.nanoTime() < deadlineNanos) {
+      if (driver.getPageSource().contains(text)) {
+        return;
+      }
+      try {
+        Thread.sleep(200);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
+    throw new AssertionError("Timed out waiting for page to contain: " + text);
+  }
+
+  /**
+   * Selects an option in a "chosen"-decorated select element. The original select is hidden by the
+   * widget, so this drives the generated container instead.
+   */
+  protected static void chosenSelect(String selectId, String optionText) {
+    WebElement container = waitFor(By.id(selectId + "_chosen"));
+    container.click();
+    long deadlineNanos = System.nanoTime() + WAIT_TIMEOUT.toNanos();
+    while (System.nanoTime() < deadlineNanos) {
+      for (WebElement option :
+          container.findElements(By.cssSelector(".chosen-results li.active-result"))) {
+        if (optionText.equals(option.getText())) {
+          option.click();
+          return;
+        }
+      }
+      try {
+        Thread.sleep(200);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
+    throw new AssertionError("Option '" + optionText + "' not found in select " + selectId);
+  }
+
   /**
    * Fails the test if the browser console contains SEVERE errors, ignoring known-benign ones and
    * any messages containing one of {@code allowedSubstrings}.
@@ -258,11 +342,6 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
                     java.util.Arrays.stream(allowedSubstrings)
                         .noneMatch(allowed -> entry.getMessage().contains(allowed)))
             .filter(entry -> !entry.getMessage().contains("favicon.ico"))
-            // the js-client bundle is generated into the war at build time and does not
-            // exist in the source tree that tests serve from; the UI degrades gracefully
-            .filter(entry -> !entry.getMessage().contains("libs/solr/index.js"))
-            // "solrApi" is defined by that same missing js-client bundle
-            .filter(entry -> !entry.getMessage().contains("solrApi is not defined"))
             .toList();
     assertTrue("Severe browser console errors: " + severe, severe.isEmpty());
   }
