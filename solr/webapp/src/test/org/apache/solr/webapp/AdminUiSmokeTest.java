@@ -17,8 +17,6 @@
 package org.apache.solr.webapp;
 
 import java.util.Map;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
@@ -33,10 +31,7 @@ public class AdminUiSmokeTest extends AdminUiTestBase {
 
   @BeforeClass
   public static void setupCollection() throws Exception {
-    cluster.uploadConfigSet(ExternalPaths.DEFAULT_CONFIGSET, COLLECTION);
-    CollectionAdminRequest.createCollection(COLLECTION, COLLECTION, 1, 2)
-        .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 1, 2);
+    createFixtureCollection(COLLECTION, 1, 2);
   }
 
   @Test

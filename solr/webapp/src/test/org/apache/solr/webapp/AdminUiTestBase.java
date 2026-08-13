@@ -46,6 +46,8 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.AfterClass;
@@ -106,10 +108,22 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   protected static String baseUrl;
 
   /**
-   * Optional security.json for the cluster. Subclasses must assign this in a {@code static} block
-   * (which runs before this class's cluster-starting {@code @BeforeClass} method).
+   * Optional security.json for the cluster. Subclasses assign this in their {@code @BeforeClass}
+   * (which runs after this class's browser-starting one, but before the cluster starts lazily on
+   * first use). Never assign it in a {@code static} block: test runners may load all test classes
+   * up front, so static initializers of one class can run long before its suite executes.
    */
   protected static String securityJson;
+
+  /**
+   * When true (set by {@code AdminUiStandaloneTestBase}), no cloud cluster is started; the test
+   * class starts its own standalone {@link JettySolrRunner}(s), assigns {@link #standaloneJetty}
+   * and {@link #baseUrl}, and stops them again.
+   */
+  protected static boolean standaloneMode = false;
+
+  /** The standalone node backing {@link #adminApi} when {@link #standaloneMode} is set. */
+  protected static JettySolrRunner standaloneJetty;
 
   /**
    * Serves a minimal stand-in for the generated js-client bundle ({@code libs/solr/index.js}),
@@ -171,20 +185,8 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     // metrics are off by default in test clusters, but UI screens (e.g. Plugins) need them;
     // restored after the class by SolrTestCase's SystemPropertiesRestoreRule
     System.setProperty("metricsEnabled", "true");
-    var clusterBuilder =
-        configureCluster(2)
-            .withJettyConfig(
-                jetty ->
-                    jetty
-                        .enableAdminUi(true)
-                        // exact-path mapping takes precedence over the static /libs/* servlet
-                        .withServlet(
-                            new ServletHolder(new StubJsClientServlet()), "/libs/solr/index.js"));
-    if (securityJson != null) {
-      clusterBuilder.withSecurityJson(securityJson);
-    }
-    clusterBuilder.configure();
-    baseUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
+    // the cluster starts lazily via ensureCloudCluster(), after subclass @BeforeClass
+    // methods have had the chance to configure securityJson or standalone mode
 
     ChromeOptions options = new ChromeOptions();
     options.setBinary(chrome.toString());
@@ -206,8 +208,39 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
   }
 
+  /** Starts the 2-node cloud cluster serving the UI, unless already started. */
+  protected static void ensureCloudCluster() {
+    if (standaloneMode || cluster != null) {
+      return;
+    }
+    try {
+      var clusterBuilder =
+          configureCluster(2).withJettyConfig(AdminUiTestBase::configureJettyForUi);
+      if (securityJson != null) {
+        clusterBuilder.withSecurityJson(securityJson);
+      }
+      clusterBuilder.configure();
+      baseUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
+    } catch (Exception e) {
+      throw new RuntimeException("Could not start UI test cluster", e);
+    }
+  }
+
+  /** Configures a Jetty node to serve the Admin UI plus the js-client stub. */
+  protected static void configureJettyForUi(JettyConfig.Builder jetty) {
+    jetty
+        .enableAdminUi(true)
+        // exact-path mapping takes precedence over the static /libs/* servlet
+        .withServlet(new ServletHolder(new StubJsClientServlet()), "/libs/solr/index.js");
+  }
+
   @AfterClass
   public static void stopBrowser() {
+    // reset the static per-class configuration: several test classes run in the same
+    // JVM, and flags set by one class's static initializer must not leak into the next
+    standaloneMode = false;
+    standaloneJetty = null;
+    securityJson = null;
     if (driver != null) {
       try {
         driver.quit();
@@ -251,6 +284,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
    * @return the anchor element
    */
   protected static WebElement openPage(String route, By anchor) {
+    ensureCloudCluster();
     driver.get(baseUrl + "/index.html#/" + route);
     return waitFor(anchor);
   }
@@ -306,7 +340,9 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
    */
   protected static NamedList<Object> adminApi(String path, SolrParams params)
       throws IOException, SolrServerException {
-    try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
+    ensureCloudCluster();
+    JettySolrRunner jetty = standaloneMode ? standaloneJetty : cluster.getJettySolrRunner(0);
+    try (SolrClient client = jetty.newClient()) {
       return client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, path, params));
     }
   }
@@ -318,6 +354,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
    */
   protected static void createFixtureCollection(String name, int numShards, int numReplicas)
       throws Exception {
+    ensureCloudCluster();
     cluster.uploadConfigSet(ExternalPaths.DEFAULT_CONFIGSET, name);
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(name, name, numShards, numReplicas);
@@ -349,6 +386,24 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
       }
     }
     throw new AssertionError("No core found on node 0 for collection " + collection);
+  }
+
+  /**
+   * Clears the input at the locator and types the given text, retrying when Angular re-renders the
+   * element mid-interaction (StaleElementReferenceException).
+   */
+  protected static void setText(By locator, String text) {
+    poll(
+        locator,
+        el -> {
+          if (!el.isDisplayed()) {
+            return null;
+          }
+          el.clear();
+          el.sendKeys(text);
+          return Boolean.TRUE;
+        },
+        "typing '" + text + "'");
   }
 
   /** Waits until the element's rendered text contains the given substring, and returns it. */
@@ -420,6 +475,9 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
                     Arrays.stream(allowedSubstrings)
                         .noneMatch(allowed -> entry.getMessage().contains(allowed)))
             .filter(entry -> !entry.getMessage().contains("favicon.ico"))
+            // the ui-grid icon font referenced from ui-grid.min.css is not shipped with
+            // the webapp at all, so it 404s in production too
+            .filter(entry -> !entry.getMessage().contains("fonts/ui-grid"))
             // benign race in the shared menu code: showCore() fires with a null core
             // while the per-collection menu resolves after navigation
             .filter(
