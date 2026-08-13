@@ -16,19 +16,17 @@
  */
 package org.apache.solr.webapp;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
 /**
- * Verifies the per-collection Admin UI screens against a fixture collection with indexed documents.
+ * Verifies the per-collection analysis/files/segments/plugins/overview screens against a fixture
+ * collection with indexed documents. Screens with their own write actions have dedicated test
+ * classes (query, documents, schema, paramsets).
  */
 public class AdminUiCollectionScreensTest extends AdminUiTestBase {
 
@@ -37,14 +35,7 @@ public class AdminUiCollectionScreensTest extends AdminUiTestBase {
 
   @BeforeClass
   public static void setupCollection() throws Exception {
-    cluster.uploadConfigSet(ExternalPaths.DEFAULT_CONFIGSET, COLLECTION);
-    // pin the replica to the node the browser talks to, so core-level screens
-    // (plugins, segments) find it locally
-    CollectionAdminRequest.createCollection(COLLECTION, COLLECTION, 1, 1)
-        .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
-        .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 1, 1);
-
+    createFixtureCollection(COLLECTION, 1, 1);
     SolrClient client = cluster.getSolrClient(COLLECTION);
     for (int i = 1; i <= NUM_DOCS; i++) {
       SolrInputDocument doc = new SolrInputDocument();
@@ -53,23 +44,6 @@ public class AdminUiCollectionScreensTest extends AdminUiTestBase {
       client.add(doc);
     }
     client.commit();
-  }
-
-  @Test
-  public void testQueryScreenExecutesQueries() {
-    openPage(COLLECTION + "/query", By.id("query"));
-
-    // default *:* query finds all documents
-    waitFor(By.cssSelector("#query button[type=submit]")).click();
-    waitForTextContains(By.cssSelector("#query #response"), "\"numFound\":" + NUM_DOCS);
-
-    // a specific id query finds exactly one document
-    WebElement queryInput = waitFor(By.id("q"));
-    queryInput.clear();
-    queryInput.sendKeys("id:1");
-    waitFor(By.cssSelector("#query button[type=submit]")).click();
-    waitForTextContains(By.cssSelector("#query #response"), "\"numFound\":1");
-    assertNoSevereConsoleErrors();
   }
 
   @Test
@@ -87,16 +61,6 @@ public class AdminUiCollectionScreensTest extends AdminUiTestBase {
   }
 
   @Test
-  public void testSchemaScreenShowsFields() {
-    openPage(COLLECTION + "/schema", By.id("schema"));
-    // managed schema is editable, so the action buttons are shown
-    waitFor(By.id("addField"));
-    // known fields from the _default configset are browsable
-    waitForPageContains("_version_");
-    assertNoSevereConsoleErrors();
-  }
-
-  @Test
   public void testFilesScreenShowsConfig() {
     openPage(COLLECTION + "/files", By.id("files"));
     waitForPageContains("solrconfig.xml");
@@ -108,48 +72,20 @@ public class AdminUiCollectionScreensTest extends AdminUiTestBase {
 
   @Test
   public void testSegmentsScreenShowsSegments() throws Exception {
-    String coreName = coreNameOnNode0();
+    String coreName = coreNameOnNode0(COLLECTION);
     openPage(coreName + "/segments", By.id("segments"));
-    long deadlineNanos = System.nanoTime() + WAIT_TIMEOUT.toNanos();
-    List<WebElement> segments = List.of();
-    while (System.nanoTime() < deadlineNanos) {
-      segments = driver.findElements(By.cssSelector("#segments #response li"));
-      if (!segments.isEmpty()) break;
-      Thread.sleep(200);
-    }
-    assertFalse("Expected at least one segment after committing docs", segments.isEmpty());
+    waitUntil(
+        "at least one segment should render after committing docs",
+        () -> !driver.findElements(By.cssSelector("#segments #response li")).isEmpty());
     assertNoSevereConsoleErrors();
   }
 
   @Test
-  public void testPluginsScreenShowsStats() throws Exception {
-    String coreName = coreNameOnNode0();
+  public void testPluginsScreenShowsStats() {
+    String coreName = coreNameOnNode0(COLLECTION);
     openPage(coreName + "/plugins", By.id("plugins"));
     waitForPageContains("searcher");
     assertNoSevereConsoleErrors();
-  }
-
-  @Test
-  public void testDocumentsScreenForm() {
-    openPage(COLLECTION + "/documents", By.id("documents"));
-    List<String> types =
-        driver.findElements(By.cssSelector("#document-type option")).stream()
-            .map(WebElement::getText)
-            .collect(Collectors.toList());
-    assertTrue("Doc type dropdown should offer JSON, got " + types, types.contains("JSON"));
-    assertTrue("Doc type dropdown should offer XML, got " + types, types.contains("XML"));
-    assertTrue("Doc type dropdown should offer CSV, got " + types, types.contains("CSV"));
-    waitFor(By.id("submit"));
-    assertNoSevereConsoleErrors();
-  }
-
-  @Test
-  public void testParamsetsScreenRenders() {
-    openPage(COLLECTION + "/paramsets", By.id("paramsets"));
-    waitFor(By.cssSelector("#paramsets #form"));
-    // the shared menu code intermittently throws a benign TypeError while the
-    // per-collection menu resolves; the screen itself renders fine
-    assertNoSevereConsoleErrors("Cannot read properties of null (reading 'name')");
   }
 
   @Test
@@ -159,17 +95,13 @@ public class AdminUiCollectionScreensTest extends AdminUiTestBase {
     assertNoSevereConsoleErrors();
   }
 
-  /** Returns the fixture collection's core name on node 0, the node the browser talks to. */
-  private static String coreNameOnNode0() {
-    for (String name : cluster.getJettySolrRunner(0).getCoreContainer().getAllCoreNames()) {
-      if (name.startsWith(COLLECTION + "_")) {
-        return name;
-      }
-    }
-    throw new AssertionError("No core found on node 0 for collection " + COLLECTION);
-  }
-
-  private static String abbreviate(String s) {
-    return s.length() > 300 ? s.substring(0, 300) + "..." : s;
+  @Test
+  public void testCoreOverviewShowsStats() {
+    String coreName = coreNameOnNode0(COLLECTION);
+    openPage(coreName + "/core-overview", By.id("dashboard"));
+    waitForPageContains("Num Docs");
+    waitForPageContains(Integer.toString(NUM_DOCS));
+    // the ping widget answers 503 when the configset has no healthcheck file
+    assertNoSevereConsoleErrors("/admin/ping");
   }
 }

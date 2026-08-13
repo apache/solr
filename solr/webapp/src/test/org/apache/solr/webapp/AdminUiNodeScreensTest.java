@@ -18,25 +18,23 @@ package org.apache.solr.webapp;
 
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
-/** Verifies the data displayed on the node-level Admin UI screens against the backing APIs. */
+/**
+ * Verifies the data displayed on the node-level Admin UI screens (java properties, thread dump,
+ * cloud views, security, login) against the backing APIs.
+ */
 public class AdminUiNodeScreensTest extends AdminUiTestBase {
 
   private static final String COLLECTION = "nodescoll";
 
   @BeforeClass
   public static void setupCollection() throws Exception {
-    cluster.uploadConfigSet(ExternalPaths.DEFAULT_CONFIGSET, COLLECTION);
-    CollectionAdminRequest.createCollection(COLLECTION, COLLECTION, 1, 2)
-        .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 1, 2);
+    createFixtureCollection(COLLECTION, 1, 2);
   }
 
   @Test
@@ -51,9 +49,9 @@ public class AdminUiNodeScreensTest extends AdminUiTestBase {
     // spaces (&#8203;) into names and values for line wrapping, so strip them
     String value = null;
     for (WebElement row : driver.findElements(By.cssSelector("#java-properties li"))) {
-      String name = row.findElement(By.cssSelector("dt")).getText().replace("\u200B", "");
+      String name = row.findElement(By.cssSelector("dt")).getText().replace("​", "");
       if (name.equals("java.version")) {
-        value = row.findElement(By.cssSelector("dd")).getText().replace("\u200B", "");
+        value = row.findElement(By.cssSelector("dd")).getText().replace("​", "");
       }
     }
     assertEquals(expectedJavaVersion, value);
@@ -67,15 +65,6 @@ public class AdminUiNodeScreensTest extends AdminUiTestBase {
     assertFalse("Thread dump should list threads", rows.isEmpty());
     // a Jetty worker thread is always present in a running Solr node
     waitForPageContains("qtp");
-    assertNoSevereConsoleErrors();
-  }
-
-  @Test
-  public void testLoggingLevelTree() {
-    openPage("~logging/level", By.id("loggingtree"));
-    waitForPageContains("org.apache.solr");
-    // the level legend/menu offers the standard levels
-    waitFor(By.cssSelector("#loggingtree .jstree-anchor"));
     assertNoSevereConsoleErrors();
   }
 
@@ -101,22 +90,24 @@ public class AdminUiNodeScreensTest extends AdminUiTestBase {
   }
 
   @Test
-  public void testCollectionsScreenShowsCollectionDetail() {
-    openPage("~collections/" + COLLECTION, By.id("collections"));
+  public void testCloudGraphShowsReplicas() throws Exception {
+    openPage("~cloud?view=graph", By.id("graph-content"));
+    // the d3 tree renders one circle per zk/collection/shard/replica node; the fixture
+    // collection has two replicas, so expect at least: root + collection + shard + 2 replicas
+    waitUntil(
+        "graph should render circles",
+        () -> driver.findElements(By.cssSelector("#graph-content svg circle")).size() >= 5);
     waitForPageContains(COLLECTION);
     waitForPageContains("shard1");
     assertNoSevereConsoleErrors();
   }
 
   @Test
-  public void testCoreAdminShowsCore() throws Exception {
-    NamedList<Object> response = adminApi("/admin/cores", params());
-    Map<?, ?> status = (Map<?, ?>) response.get("status");
-    assertFalse("Node should host at least one core", status.isEmpty());
-    String coreName = status.keySet().iterator().next().toString();
-
-    openPage("~cores", By.id("cores"));
-    waitForPageContains(coreName);
+  public void testCloudZkStatusShowsEnsemble() {
+    openPage("~cloud?view=zkstatus", By.id("zk-status-content"));
+    // the embedded test ensemble is a single standalone zookeeper reported green
+    waitForTextContains(By.cssSelector(".zookeeper-status"), "green");
+    waitForPageContains("Ensemble size: 1");
     assertNoSevereConsoleErrors();
   }
 
