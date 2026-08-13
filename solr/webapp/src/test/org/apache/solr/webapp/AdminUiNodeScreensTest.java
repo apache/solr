@@ -62,6 +62,7 @@ public class AdminUiNodeScreensTest extends AdminUiTestBase {
   @Test
   public void testThreadDumpShowsThreads() {
     openPage("~threads", By.id("thread-dump"));
+    waitFor(By.cssSelector("#thread-dump tbody tr"));
     List<WebElement> rows = driver.findElements(By.cssSelector("#thread-dump tbody tr"));
     assertFalse("Thread dump should list threads", rows.isEmpty());
     // a Jetty worker thread is always present in a running Solr node

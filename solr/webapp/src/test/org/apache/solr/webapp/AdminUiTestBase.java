@@ -285,6 +285,17 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
   }
 
+  /** Waits until the element's rendered text contains the given substring, and returns it. */
+  protected static String waitForTextContains(By locator, String substring) {
+    return poll(
+        locator,
+        el -> {
+          String text = el.getText();
+          return text.contains(substring) ? text : null;
+        },
+        "text containing '" + substring + "'");
+  }
+
   /** Waits until the page source contains the given text. */
   protected static void waitForPageContains(String text) {
     long deadlineNanos = System.nanoTime() + WAIT_TIMEOUT.toNanos();
