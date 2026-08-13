@@ -33,10 +33,13 @@ This document tracks browser-based test coverage of the old AngularJS Admin UI
   admin APIs — never hardcoded values.
 - Tests are grouped per screen/feature, so each screen's display and write
   tests live in the same class.
+- Most tests run against a 2-node cloud cluster; `AdminUiStandaloneTestBase`
+  additionally supports standalone (user-managed, no ZooKeeper) nodes, whose
+  UI differs (no Cloud/Collections/Schema Designer menus; the per-core menu
+  offers query/replication etc. directly).
 - On failure, a screenshot, the page source and the browser console log are
   saved into the test temp dir.
-- Run with: `./gradlew :solr:webapp:test` (add `-Ptests.nightly=true` for the
-  security and schema-designer classes)
+- Run with: `./gradlew :solr:webapp:test`
 
 ## Coverage by screen
 
@@ -71,7 +74,10 @@ This document tracks browser-based test coverage of the old AngularJS Admin UI
 ### Query screen — `AdminUiQueryScreenTest`
 - [x] `*:*` and `id:` queries via the form, `numFound` in the response
 - [x] `rows` and `fl` parameters affect the returned documents
-- [ ] Paramsets dropdown, dismax/edismax toggles, raw query parameters
+- [x] Paramsets dropdown applies a paramset created via the API
+- [x] defType dismax/edismax toggles reveal their parameter fields; edismax
+      query with `qf` returns the expected results
+- [x] Raw query parameters (e.g. an extra `fq`) are applied
 
 ### Documents screen — `AdminUiDocumentsScreenTest`
 - [x] Form renders with JSON/XML/CSV document types
@@ -93,11 +99,16 @@ This document tracks browser-based test coverage of the old AngularJS Admin UI
       when the node's log watcher is blind due to shared-JVM log4j state, see
       Known limitations)
 
-### Core Admin screen — `AdminUiCoreAdminScreenTest`
+### Core Admin screen — `AdminUiCoreAdminScreenTest` (cloud) and
+### `AdminUiCoreAdminStandaloneTest` (standalone)
 - [x] Hosted core listed, matching `/admin/cores`
 - [x] Reload core via the button (success indicator)
-- [ ] Add/rename/swap/unload core — cloud-mode core admin operations conflict
-      with the Overseer; needs a standalone-mode harness
+- [x] Standalone-mode menu differences (no cloud menus; core menu offers
+      query/replication)
+- [x] Add core via the dialog (pre-created instance dir)
+- [x] Rename core via the dialog
+- [x] Swap cores via the dialog (verified by the indexes exchanging)
+- [x] Unload core, accepting the native confirm dialog
 
 ### Per-collection display screens — `AdminUiCollectionScreensTest`
 - [x] Analysis: `text_general` tokenizes and lowercases entered text
@@ -109,35 +120,37 @@ This document tracks browser-based test coverage of the old AngularJS Admin UI
 ### Stream screen — `AdminUiStreamScreenTest`
 - [x] A `search(...)` streaming expression executes and renders all docs
 
-### Replication screen — `AdminUiReplicationScreenTest`
-- [x] Renders index version info in cloud mode
-- [ ] Standalone leader/follower actions (replicate now, disable polling) —
-      needs a standalone-mode harness
+### SQL screen — `AdminUiSqlScreenTest`
+- [x] A SQL query executes through the form and the result grid lists the
+      documents (the sql module is a test-only dependency of `solr:webapp`)
 
-### Security with BasicAuth — `AdminUiSecurityAuthTest` (`@Nightly`)
+### Replication screen — `AdminUiReplicationScreenTest` (cloud) and
+### `AdminUiReplicationStandaloneTest` (standalone leader/follower)
+- [x] Renders index version info in cloud mode
+- [x] Follower screen shows the leader's info
+- [x] Disable polling, index on the leader, replicate-now transfers the
+      index, re-enable polling — verified via the replication API
+
+### Security with BasicAuth — `AdminUiSecurityAuthTest`
 - [x] Unauthenticated visit redirects to login; login form authenticates
 - [x] Security screen shows authn/authz plugins, users, roles, permissions
 - [x] Add a user through the dialog (verified via `/admin/authentication`)
-- [ ] Add role / add permission dialogs
+- [x] Add a role for the user through the dialog (verified via API)
+- [x] Grant a predefined permission to the role (verified via API)
 
-### Schema Designer — `AdminUiSchemaDesignerTest` (`@Nightly`, `@AwaitsFix`)
+### Schema Designer — `AdminUiSchemaDesignerTest` (`@AwaitsFix`)
 - [x] Create a new schema, paste a sample doc, analyze; derived field shown —
       but the designer backend is too flaky under automation (see Possible UI
       bugs), so the test awaits a fix before running by default
 
 ## Deliberately skipped (effort vs value)
 
-- **SQL screen**: needs the `sql` module (Calcite and friends) on the webapp
-  test classpath, dragging in many jars and license files for one screen.
 - **JWT/OAuth login flows**: require an external identity provider or heavy
   mocking; BasicAuth covers the UI's login/session mechanics.
 - **Keystroke-level entry in the security dialogs**: native clicks/keystrokes
   into the absolutely-positioned dialogs proved unreliable in headless Chrome;
   the dialogs are driven via the Angular controller scope instead. Keyboard
   entry is covered by the login form and the other screens' forms.
-- **Standalone (non-cloud) mode screens**: replication actions and core admin
-  rename/swap/unload need a standalone harness (`JettySolrRunner` without ZK);
-  the cloud harness covers everything else.
 
 ## Possible UI bugs to investigate
 
@@ -183,6 +196,11 @@ JIRA:
    reload button only flags success via a CSS class for one second, which is
    easy to miss (and impossible to assert on reliably). Workaround: the test
    verifies the reload via the core start time instead.
+8. **ui-grid icon font is missing from the webapp**: `css/angular/ui-grid.min.css`
+   references `fonts/ui-grid.woff` (and .ttf/.eot), but no such font files are
+   shipped anywhere under `solr/webapp/web` — the SQL screen's result grid
+   logs a 404 for it in production too, and grid icons render as boxes.
+   Workaround: the console-error assertion filters this 404.
 
 ## Known limitations
 

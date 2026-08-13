@@ -17,7 +17,6 @@
 package org.apache.solr.webapp;
 
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -26,12 +25,10 @@ import org.openqa.selenium.WebElement;
  * Happy-path test of the Schema Designer screen: create a new schema, paste a sample document and
  * let the designer analyze it.
  *
- * <p>Nightly: the designer chains many requests and is the most complex screen in the UI.
- * AwaitsFix: the designer backend transiently fails its own prep/analyze calls ("version mismatch,
- * retry", "Error loading solr config") when driven at automation speed, making this test flaky even
- * with retries; see the "Possible UI bugs" section in dev-docs/admin-ui-tests.md.
+ * <p>AwaitsFix: the designer backend transiently fails its own prep/analyze calls ("version
+ * mismatch, retry", "Error loading solr config") when driven at automation speed, making this test
+ * flaky even with retries; see the "Possible UI bugs" section in dev-docs/admin-ui-tests.md.
  */
-@Nightly
 @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-8474")
 public class AdminUiSchemaDesignerTest extends AdminUiTestBase {
 
