@@ -108,21 +108,22 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
       resp.setContentType("text/javascript");
-      resp.getWriter()
+      resp.getOutputStream()
           .write(
-              "var solrApi = {\n"
-                  + "  ApiClient: { instance: { basePath: '/api', defaultHeaders: {} } },\n"
-                  + "  CollectionsApi: function() {\n"
-                  + "    this.reloadCollection = function(name, callback) {\n"
-                  + "      var xhr = new XMLHttpRequest();\n"
-                  + "      xhr.open('POST', '/api/collections/' + name + '/reload');\n"
-                  + "      xhr.setRequestHeader('Content-Type', 'application/json');\n"
-                  + "      xhr.onload = function() { callback(null, null, {status: xhr.status}); };\n"
-                  + "      xhr.onerror = function() { callback(new Error('reload failed'), null, {status: xhr.status}); };\n"
-                  + "      xhr.send('{}');\n"
-                  + "    };\n"
-                  + "  }\n"
-                  + "};\n");
+              ("var solrApi = {\n"
+                      + "  ApiClient: { instance: { basePath: '/api', defaultHeaders: {} } },\n"
+                      + "  CollectionsApi: function() {\n"
+                      + "    this.reloadCollection = function(name, callback) {\n"
+                      + "      var xhr = new XMLHttpRequest();\n"
+                      + "      xhr.open('POST', '/api/collections/' + name + '/reload');\n"
+                      + "      xhr.setRequestHeader('Content-Type', 'application/json');\n"
+                      + "      xhr.onload = function() { callback(null, null, {status: xhr.status}); };\n"
+                      + "      xhr.onerror = function() { callback(new Error('reload failed'), null, {status: xhr.status}); };\n"
+                      + "      xhr.send('{}');\n"
+                      + "    };\n"
+                      + "  }\n"
+                      + "};\n")
+                  .getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
   }
 
@@ -144,6 +145,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   }
 
   @BeforeClass
+  @SuppressForbidden(reason = "Selenium's logging preferences API uses java.util.logging levels")
   public static void startClusterAndBrowser() throws Exception {
     Path chrome = findChromeBinary();
     Assume.assumeTrue(
@@ -343,6 +345,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
    * Fails the test if the browser console contains SEVERE errors, ignoring known-benign ones and
    * any messages containing one of {@code allowedSubstrings}.
    */
+  @SuppressForbidden(reason = "Selenium's log API reports java.util.logging levels")
   protected static void assertNoSevereConsoleErrors(String... allowedSubstrings) {
     List<LogEntry> entries = driver.manage().logs().get(LogType.BROWSER).getAll();
     List<LogEntry> severe =
