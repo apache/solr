@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.logging.Level;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
@@ -40,10 +41,12 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -103,6 +106,12 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   protected static String baseUrl;
 
   /**
+   * Optional security.json for the cluster. Subclasses must assign this in a {@code static} block
+   * (which runs before this class's cluster-starting {@code @BeforeClass} method).
+   */
+  protected static String securityJson;
+
+  /**
    * Serves a minimal stand-in for the generated js-client bundle ({@code libs/solr/index.js}),
    * which only exists inside the built webapp, not in the source tree tests serve from. The
    * AngularJS {@code CollectionsV2} service fails to instantiate without the {@code solrApi}
@@ -144,6 +153,8 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
           || name.startsWith("process reaper")
           // selenium driver-service startup checker pool, terminates on its own
           || name.startsWith("UrlChecker-")
+          // selenium's chromedriver stdout/stderr pump, stops when the process exits
+          || name.startsWith("External Process Output Forwarder")
           // JDK-internal scheduler backing CompletableFuture timeouts, lives forever
           || name.equals("CompletableFutureDelayScheduler");
     }
@@ -160,15 +171,19 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     // metrics are off by default in test clusters, but UI screens (e.g. Plugins) need them;
     // restored after the class by SolrTestCase's SystemPropertiesRestoreRule
     System.setProperty("metricsEnabled", "true");
-    configureCluster(2)
-        .withJettyConfig(
-            jetty ->
-                jetty
-                    .enableAdminUi(true)
-                    // exact-path mapping takes precedence over the static /libs/* servlet
-                    .withServlet(
-                        new ServletHolder(new StubJsClientServlet()), "/libs/solr/index.js"))
-        .configure();
+    var clusterBuilder =
+        configureCluster(2)
+            .withJettyConfig(
+                jetty ->
+                    jetty
+                        .enableAdminUi(true)
+                        // exact-path mapping takes precedence over the static /libs/* servlet
+                        .withServlet(
+                            new ServletHolder(new StubJsClientServlet()), "/libs/solr/index.js"));
+    if (securityJson != null) {
+      clusterBuilder.withSecurityJson(securityJson);
+    }
+    clusterBuilder.configure();
     baseUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
     ChromeOptions options = new ChromeOptions();
@@ -215,6 +230,11 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
             byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
             Files.write(dir.resolve("screenshot.png"), png);
             Files.writeString(dir.resolve("page.html"), driver.getPageSource());
+            StringBuilder console = new StringBuilder();
+            for (LogEntry entry : driver.manage().logs().get(LogType.BROWSER).getAll()) {
+              console.append(entry.getLevel()).append(' ').append(entry.getMessage()).append('\n');
+            }
+            Files.writeString(dir.resolve("console.log"), console.toString());
             log.error("UI test failure artifacts saved to {}", dir);
           } catch (Exception suppressed) {
             log.warn("Could not save UI failure artifacts", suppressed);
@@ -291,6 +311,46 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
   }
 
+  /**
+   * Uploads the default configset under the collection's name and creates the collection. A
+   * single-replica collection is pinned to the node the browser talks to, so core-level screens
+   * find its core locally.
+   */
+  protected static void createFixtureCollection(String name, int numShards, int numReplicas)
+      throws Exception {
+    cluster.uploadConfigSet(ExternalPaths.DEFAULT_CONFIGSET, name);
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(name, name, numShards, numReplicas);
+    if (numShards * numReplicas == 1) {
+      create.setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName());
+    }
+    create.process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
+  }
+
+  /** Polls the condition until it holds, failing after {@link #WAIT_TIMEOUT}. */
+  protected static void waitUntil(String description, BooleanSupplier condition)
+      throws InterruptedException {
+    long deadlineNanos = System.nanoTime() + WAIT_TIMEOUT.toNanos();
+    while (System.nanoTime() < deadlineNanos) {
+      if (condition.getAsBoolean()) {
+        return;
+      }
+      Thread.sleep(250);
+    }
+    fail("Timed out waiting until " + description);
+  }
+
+  /** Returns the name of a core of the given collection hosted on node 0. */
+  protected static String coreNameOnNode0(String collection) {
+    for (String name : cluster.getJettySolrRunner(0).getCoreContainer().getAllCoreNames()) {
+      if (name.startsWith(collection + "_")) {
+        return name;
+      }
+    }
+    throw new AssertionError("No core found on node 0 for collection " + collection);
+  }
+
   /** Waits until the element's rendered text contains the given substring, and returns it. */
   protected static String waitForTextContains(By locator, String substring) {
     return poll(
@@ -360,6 +420,12 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
                     Arrays.stream(allowedSubstrings)
                         .noneMatch(allowed -> entry.getMessage().contains(allowed)))
             .filter(entry -> !entry.getMessage().contains("favicon.ico"))
+            // benign race in the shared menu code: showCore() fires with a null core
+            // while the per-collection menu resolves after navigation
+            .filter(
+                entry ->
+                    !(entry.getMessage().contains("reading 'name'")
+                        && entry.getMessage().contains("showCore")))
             .toList();
     assertTrue("Severe browser console errors: " + severe, severe.isEmpty());
   }
