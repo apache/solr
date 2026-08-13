@@ -22,6 +22,12 @@ plugins {
 
 description = 'Solr webapp'
 
+ext {
+  // The Selenium-based Admin UI tests spawn external chromedriver/Chrome processes,
+  // which the security manager forbids
+  useSecurityManager = false
+}
+
 configurations {
   war {}
   serverLib
@@ -42,6 +48,23 @@ dependencies {
 
   if (gradle.ext.withUiModule) {
     generatedUIBundle project(path: ":solr:ui", configuration: "wasmJsUIBundle")
+  }
+
+  // Browser-based tests of the AngularJS Admin UI (see src/test)
+  testImplementation project(':solr:core')
+  testImplementation project(':solr:solrj')
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
+  testImplementation libs.selenium.chromedriver
+  testImplementation libs.selenium.support
+}
+
+// Forward the browser-binary override for the Admin UI tests to the forked test JVM
+tasks.withType(Test).configureEach {
+  def chromeBinary = providers.systemProperty('tests.ui.chrome.binary').orNull
+  if (chromeBinary != null) {
+    systemProperty 'tests.ui.chrome.binary', chromeBinary
   }
 }
 
