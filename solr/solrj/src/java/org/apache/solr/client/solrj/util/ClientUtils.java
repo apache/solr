@@ -234,22 +234,24 @@ public class ClientUtils {
    */
   public static String encodeLocalParamVal(String val) {
     int len = val.length();
+    if (0 == len) return "''"; // quoted empty string
 
-    // An empty value needs no quoting: QueryParsing#parseLocalParams reads an unquoted value up to
-    // whitespace/the end char, so a zero-length span there is already unambiguous.
+    // Note: QueryParsing#parseLocalParams's peek() (used to check for a '=' or the closing quote
+    // char) skips leading whitespace as a side effect, so an unquoted empty value would silently
+    // absorb the whitespace meant to separate it from the next local param, corrupting parsing of
+    // everything that follows. Quoting sidesteps this entirely.
+
     int i = 0;
-    if (len > 0) {
-      char first = val.charAt(0);
-      // A leading '$' would be read back as a param dereference, and a leading quote char would be
-      // read back as the start of a quoted string (StrParser#getQuotedString accepts both ' and "
-      // as delimiters); both must be quoted regardless of the rest of the value.
-      if (first == '$' || first == '\'' || first == '"') {
-        // leave i == 0 so the quoting branch below is taken
-      } else {
-        for (; i < len; i++) {
-          char ch = val.charAt(i);
-          if (Character.isWhitespace(ch) || ch == '}') break;
-        }
+    char first = val.charAt(0);
+    // A leading '$' would be read back as a param dereference, and a leading quote char would be
+    // read back as the start of a quoted string (StrParser#getQuotedString accepts both ' and "
+    // as delimiters); both must be quoted regardless of the rest of the value.
+    if (first == '$' || first == '\'' || first == '"') {
+      // leave i == 0 so the quoting branch below is taken
+    } else {
+      for (; i < len; i++) {
+        char ch = val.charAt(i);
+        if (Character.isWhitespace(ch) || ch == '}') break;
       }
     }
 

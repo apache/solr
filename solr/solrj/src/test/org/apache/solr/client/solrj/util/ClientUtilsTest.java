@@ -39,14 +39,12 @@ public class ClientUtilsTest extends SolrTestCase {
     assertEquals("h\\~\\!", ClientUtils.escapeQueryChars("h~!"));
   }
 
-  public void testEncodeLocalParamValEmptyIsUnquoted() {
-    assertEquals("", ClientUtils.encodeLocalParamVal(""));
-  }
-
+  // FYI also tested via org.apache.solr.common.params.SolrParamTest.testLocalParamRoundTripParsing
   public void testEncodeLocalParamValRoundTrip() throws Exception {
     // Values that require quoting (whitespace, '}', or a leading '$') must round-trip through
     // Solr's own local-params reader, in particular values containing a literal backslash or
     // single quote.
+    assertRoundTrips("");
     assertRoundTrips("'leadingQuote");
     assertRoundTrips("\"leadingDoubleQuote");
     assertRoundTrips("plain");
@@ -73,6 +71,15 @@ public class ClientUtilsTest extends SolrTestCase {
         "encodeLocalParamVal(" + original + ") -> " + encoded + " did not round-trip",
         original,
         target.get("key"));
+
+    // Also confirm the encoded value doesn't swallow whatever follows it.
+    String txtFollowedByAnother = "{!key=" + encoded + " next=followed}";
+    ModifiableSolrParams targetFollowedByAnother = new ModifiableSolrParams();
+    QueryParsing.parseLocalParams(txtFollowedByAnother, 0, targetFollowedByAnother, null);
+    assertEquals(
+        "encodeLocalParamVal(" + original + ") -> " + encoded + " swallowed the next local param",
+        "followed",
+        targetFollowedByAnother.get("next"));
   }
 
   @Test
