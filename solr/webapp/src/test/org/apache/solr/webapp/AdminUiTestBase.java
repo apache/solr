@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -491,7 +492,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   /** Locates a Chrome/Chromium binary, or returns null if none can be found. */
   @SuppressForbidden(reason = "Reading CHROME_BIN/PATH from the environment to locate a browser")
   protected static Path findChromeBinary() {
-    String sysProp = System.getProperty("tests.ui.chrome.binary");
+    String sysProp = EnvUtils.getProperty("tests.ui.chrome.binary");
     if (sysProp != null) {
       Path path = Path.of(sysProp);
       return Files.isExecutable(path) ? path : null;

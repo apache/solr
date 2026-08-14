@@ -42,6 +42,10 @@ public class AdminUiLoggingScreenTest extends AdminUiTestBase {
 
   @Test
   public void testEventsViewerShowsWarnings() throws Exception {
+    // start the cluster before emitting the probe: the log watcher only exists once the
+    // nodes are up, and with lazy startup this test may be the first cluster user
+    ensureCloudCluster();
+
     // the cluster nodes run in this JVM, so the log watcher observes our own log events
     String probeMessage = "Admin UI logging viewer probe event";
     log.warn(probeMessage);
