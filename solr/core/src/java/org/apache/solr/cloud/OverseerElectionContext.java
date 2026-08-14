@@ -60,12 +60,9 @@ final class OverseerElectionContext extends ElectionContext {
     final String id = leaderSeqPath.substring(leaderSeqPath.lastIndexOf('/') + 1);
     ZkNodeProps myProps = new ZkNodeProps(ID, id);
 
-    // Create the leader registration znode and start the overseer atomically, under the same lock
-    // close() takes, so a concurrent close() can no longer slip in between the create and start and
-    // leave a "zombie leader" znode with no overseer behind it. The registration is a multi op that
-    // also setData's the parent, which bumps (and lets us capture) the parent version so
-    // cancelElection() can later delete only our own registration, ABA-safe. Mirrors
-    // ShardLeaderElectionContextBase.
+    // Register and start under the same lock close() takes, so a close() cannot land between them
+    // and leave a leader znode with no overseer behind it. Registration also captures the parent
+    // version so cancelElection() only deletes our own. Mirrors ShardLeaderElectionContextBase.
     synchronized (this) {
       boolean shutDown = overseer.getZkController().getCoreContainer().isShutDown();
       if (!this.isClosed && !shutDown) {
@@ -73,14 +70,9 @@ final class OverseerElectionContext extends ElectionContext {
         log.info("Created overseer leader registration {} -> {}", leaderPath, id);
         overseer.start(id);
       } else {
-        //        Thread.dumpStack();
-        log.warn(
-            "ZOMBIE LEADER: created leader registration {} -> {} but skipping overseer.start() "
-                + "because the election context was closed underneath us (isClosed={}, shutDown={}). "
-                + "The leader znode now points at an overseer that will never run and will not be "
-                + "removed by cancelElection(); subsequent elections will fail with NodeExists.",
+        log.info(
+            "Not registering as overseer leader for {}: isClosed={}, shutDown={}",
             leaderPath,
-            id,
             this.isClosed,
             shutDown);
       }
@@ -90,10 +82,8 @@ final class OverseerElectionContext extends ElectionContext {
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
     super.cancelElection();
-    // Delete our own leader registration, guarded by the parent version we captured at
-    // registration,
-    // so we can never delete a newer lineage's/host's registration (ABA-safe). Mirrors
-    // ShardLeaderElectionContextBase.cancelElection.
+    // Delete only our own registration, guarded by the parent version captured at registration, so
+    // we can never remove a newer lineage's (ABA-safe). Mirrors ShardLeaderElectionContextBase.
     synchronized (this) {
       if (leaderZkNodeParentVersion != null) {
         try {
@@ -110,7 +100,6 @@ final class OverseerElectionContext extends ElectionContext {
 
   @Override
   public synchronized void close() {
-    //    Thread.dumpStack();
     this.isClosed = true;
     overseer.close();
   }

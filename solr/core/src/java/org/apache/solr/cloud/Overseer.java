@@ -472,14 +472,9 @@ public class Overseer implements SolrCloseable {
           && (zkController.getCoreContainer().isShutDown() || zkController.isClosed())) {
         return; // shutting down no need to go further
       }
-      // We only reach here after a QUIT (roles handoff) or an unexpected crash (see run()'s
-      // finally),
-      // i.e. cases where no Zk reconnect handler will re-drive the election. Our own leader
-      // registration is removed, version-guarded, by OverseerElectionContext.cancelElection() as
-      // part
-      // of the rejoin below -- we no longer delete /overseer_elect/leader here (that used an
-      // always-0
-      // dataVersion guard that could ABA-delete a newer lineage's registration).
+      // We only reach here after a QUIT (roles handoff) or an unexpected crash, i.e. cases where no
+      // Zk reconnect handler will re-drive the election. The rejoin below cancels our context,
+      // which is what removes our leader registration.
       try {
         if (zkController != null && !zkController.getCoreContainer().isShutDown()) {
           zkController.rejoinOverseerElection(null, false);
@@ -624,7 +619,6 @@ public class Overseer implements SolrCloseable {
 
     @Override
     public void close() {
-      //      Thread.dumpStack();
       this.isClosed = true;
       IOUtils.closeQuietly(clusterStateUpdaterMetricContext);
     }
@@ -659,7 +653,6 @@ public class Overseer implements SolrCloseable {
     @Override
     public void close() throws IOException {
       thread.close();
-      //      Thread.dumpStack();
       this.isClosed = true;
     }
 

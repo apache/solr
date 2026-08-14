@@ -16,10 +16,12 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.TimeSource;
@@ -27,185 +29,111 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
+import org.jspecify.annotations.NonNull;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Tests that overseer election recovers correctly after a ZooKeeper connection blip (SUSPENDED →
- * RECONNECTED with same session). Reproduces the doom loop where the old ephemeral leader node
- * still exists on reconnect, causing NodeExistsException → unbounded recursion →
- * StackOverflowError.
- *
- * <p>Uses a SocketProxy between the Solr node and ZooKeeper so that pausing traffic triggers
- * SUSPENDED without expiring the session (ZK stays running, session stays alive, ephemerals
- * persist).
+ * Regression test that overseer election recovers correctly when a ZooKeeper session expiry
+ * coincides with the reconnect that re-drives election. Specifically in the case where a departing
+ * overseer lineage could race the reconnecting one and leave a "zombie" /overseer_elect/leader
+ * znode with no running overseer behind it.
  */
+// This test deliberately strands ZooKeeper connections (Curator abandons one per expiry), and a
+// discarded ClientCnxn.SendThread sleeps briefly inside its socket cleanup on the way out. Give
+// those threads a moment to finish rather than reporting them as leaks.
+@ThreadLeakLingering(linger = 2000)
 public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String SOLRXML = "<solr></solr>";
 
   /**
-   * Probabilistic reproduction of the single-node overseer livelock. Rapidly toggles connectivity
-   * to the ZK ensemble so that, on some cycle, {@code onReconnect} fires while the {@code
-   * OverseerExitThread} spawned by {@code onDisconnect} is mid-{@code runLeaderProcess} — landing a
-   * {@code close()} in the window between {@code makePath(leaderPath)} and the guarded {@code
-   * overseer.start()}. When that happens the leader znode is created with no overseer behind it (a
-   * "zombie"), every later election fails with NodeExists, and the overseer never recovers even
-   * after connectivity is stable.
-   *
-   * <p>Health/wedge is decided precisely: a healthy overseer has a live updater thread whose id
-   * equals the id stored in {@code /overseer_elect/leader}. A zombie has a leader znode whose id
-   * matches no running updater.
+   * ZooKeeper's fixed reconnect interval: ClientCnxn passes 1000 to hostProvider.next(), and with a
+   * single-server connect string that sleep runs before every retry. It is not configurable, and
+   * the constants below are chosen relative to it.
    */
-  @Test
-  public void testOverseerWedgesUnderRapidZkReconnects() throws Exception {
-    Path zkDir = createTempDir("zkData");
-    Path ccDir = createTempDir("testOverseerRapidReconnect-solr");
-
-    ZkTestServer zkServer = new ZkTestServer(zkDir);
-    zkServer.setTheTickTime(1000);
-    try {
-      zkServer.run();
-
-      SocketProxy zkProxy = new SocketProxy();
-      zkProxy.open(URI.create("http://127.0.0.1:" + zkServer.getPort()));
-      String proxiedZkAddress = "127.0.0.1:" + zkProxy.getListenPort() + "/solr";
-      log.info("ZK on port {}, proxy on port {}", zkServer.getPort(), zkProxy.getListenPort());
-
-      try {
-        int zkClientTimeout = 30000; // >> outage durations, so the session never expires
-        CloudConfig cloudConfig =
-            new CloudConfig.CloudConfigBuilder("127.0.0.1", 8984)
-                .setLeaderConflictResolveWait(180000)
-                .setLeaderVoteWait(180000)
-                .build();
-
-        CoreContainer cc = createCoreContainer(ccDir, SOLRXML);
-        try (ZkController zkController =
-                new ZkController(cc, proxiedZkAddress, zkClientTimeout, cloudConfig);
-            SolrZkClient probe =
-                new SolrZkClient.Builder()
-                    .withUrl(zkServer.getZkAddress())
-                    .withTimeout(30000, TimeUnit.MILLISECONDS)
-                    .build()) {
-
-          assertNotNull("Overseer leader should be elected", waitForOverseerLeader(zkServer, 30));
-          assertTrue(
-              "Overseer should be healthy before the storm",
-              waitForHealthyOverseer(zkController, probe, 30));
-          log.info("Baseline healthy overseer established; starting reconnect storm");
-
-          // Sweep short outage durations so RECONNECTED lands at varying offsets relative to the
-          // OET's makePath->start window. Short outages keep the client reconnecting to the same
-          // session (no expiry) while giving onDisconnect time to spawn the OET.
-          int[] outageMs = {80, 110, 140, 170, 200, 240, 300, 130, 95, 180, 260, 150};
-          boolean recoveredThisCycle = true;
-          for (int i = 0; i < 60 && recoveredThisCycle; i++) {
-            int outage = outageMs[i % outageMs.length];
-            log.info(
-                "Reconnect storm cycle {}: cutting ZK connectivity for {}ms (leader={}, updater={})",
-                i,
-                outage,
-                OverseerTaskProcessor.getLeaderId(probe),
-                updaterId(zkController));
-            zkProxy.close();
-            Thread.sleep(outage);
-            zkProxy.reopen();
-            // Give this cycle a bounded chance to recover; if it can't, stop hammering (don't risk
-            // eventually expiring the session, which would clear the zombie and mask the bug).
-            recoveredThisCycle = waitForHealthyOverseer(zkController, probe, 6);
-            if (!recoveredThisCycle) {
-              log.info(
-                  "Overseer did not recover within 6s after cycle {} (outage {}ms)", i, outage);
-            }
-          }
-
-          // Authoritative check: with connectivity now stable, a healthy cluster returns to a
-          // running overseer whose id matches /overseer_elect/leader. A zombie never does.
-          boolean healthy = waitForHealthyOverseer(zkController, probe, 45);
-          if (!healthy) {
-            log.error(
-                "WEDGED: /overseer_elect/leader id={} but no running updater matches it; updater={}",
-                OverseerTaskProcessor.getLeaderId(probe),
-                updaterId(zkController));
-          }
-          assertTrue(
-              "Overseer wedged after rapid ZK reconnects (zombie leader / NodeExists spin) — see"
-                  + " 'ZOMBIE LEADER' warning in the log",
-              healthy);
-        } finally {
-          cc.shutdown();
-        }
-      } finally {
-        zkProxy.close();
-      }
-    } finally {
-      zkServer.shutdown();
-    }
-  }
+  private static final int ZK_RECONNECT_INTERVAL_MS = 1000;
 
   /**
-   * Reproduction of the <em>residual</em> overseer zombie race that survives PR #4577 (which stops
-   * {@code onReconnect}/{@code onDisconnect} from firing on same-session blips, so the first test's
-   * same-session storm can no longer trigger it). Here we drive <em>real session expiries</em> and
-   * try to make the expiry coincide with the reconnect.
+   * Short enough that a real expiry is reachable in a test, but deliberately larger than and offset
+   * from the reconnect interval -- do not round this to a multiple of it.
    *
-   * <p>Mechanics of the surviving race: on a genuine expiry the departing lineage's {@code
-   * OverseerExitThread} (spawned from {@code ClusterStateUpdater.run()}'s {@code finally}) still
-   * runs {@code checkIfIamStillLeader} → {@code getData(/overseer_elect/leader)}. If that read
-   * lands <em>after</em> the new session's {@code onExpiredReconnection} lineage has already
-   * recreated the leader znode, the OET does not take the {@code NoNode} early-out — it falls into
-   * its {@code finally} and calls {@code rejoinOverseerElection} unconditionally. That second
-   * lineage races the first on the shared {@code overseerElector}/{@code Overseer}, reopening the
-   * D1 window where a {@code close()} lands between {@code makePath(leaderPath)} and the guarded
-   * {@code overseer.start()} → a zombie leader znode with no updater behind it.
+   * <p>Curator abandons a session on its own timer, at detectionLag + this, while the old
+   * connection retries on a fixed ladder at detectionLag + N * interval. The detection lag appears
+   * in both and cancels, so a timeout that is a multiple of the interval puts those two events on
+   * the same millisecond. Whoever wins then decides whether the session expires at all -- and if
+   * the old connection wins it resumes the session, nothing expires, and this test silently
+   * exercises nothing. Offsetting by half an interval puts Curator's decision midway between two
+   * rungs, so it wins reliably rather than on a coin flip.
+   */
+  private static final int SESSION_TIMEOUT_MS = ZK_RECONNECT_INTERVAL_MS + 500;
+
+  /**
+   * ZooKeeper's session-expiry bucket width, so the server's reap of an expired session's ephemeral
+   * nodes can trail Curator's client-side expiry by up to this much. That lag is the whole reason
+   * the departing OverseerExitThread still finds the old leader znode instead of taking its NoNode
+   * early-out, so this must comfortably exceed the client's detection latency (~100ms). At 100 the
+   * reap always wins and the race is never reached.
+   */
+  private static final int TICK_MS = 750;
+
+  private static final int MAX_CYCLES = TEST_NIGHTLY ? 25 : 2;
+
+  /**
+   * Recovery cannot start until Curator gives up, which is one session timeout after the cut, so
+   * this has to scale with the timeout -- a fixed value would silently time out on every cycle if
+   * the timeout were raised, leaving the test doing a single cycle and still passing.
+   */
+  private static final int RECOVERY_WAIT_SECONDS = SESSION_TIMEOUT_MS / 1000 + 10;
+
+  /**
+   * Reproduction of the residual overseer zombie race that survives PR #4577 (which stops
+   * onReconnect/onDisconnect from firing on same-session blips). Here we drive real session
+   * expiries and try to make the expiry coincide with the reconnect.
    *
-   * <p>To hit it we need a short session timeout (so expiry is reachable in a test) and outages
-   * that <em>straddle</em> the session-timeout boundary so the client reconnects right as/after the
-   * server expires the session. ZooKeeper clamps the negotiated session timeout to [2*tickTime,
-   * 20*tickTime] and only detects expiry on tickTime-wide buckets, so tickTime must be lowered to
-   * make a ~1s session possible and to give fine timing granularity around the boundary.
+   * <p>The race needs two things to line up.
+   *
+   * <p>First, the departing OverseerExitThread has to miss its early-out. onExpiredReconnection
+   * cancels the previous election context, which calls overseer.close(); the updater loop exits and
+   * its finally block spawns the OET. The OET runs checkIfIamStillLeader, which returns immediately
+   * if /overseer_elect/leader is already gone — so it is only dangerous while the old session's
+   * ephemeral leader znode is still visible. That happens because Curator does not wait for the
+   * server to declare the session dead; it injects the expiration on its own timer and starts a
+   * fresh session, while the server only reaps ephemerals on a tickTime-wide bucket. The reap can
+   * therefore trail the client's expiry by up to a tick, which is why the tick is set coarse here.
+   *
+   * <p>Second, the rejoin has to land in the registration window. Having found the stale node, the
+   * OET deletes it and calls rejoinOverseerElection, which picks up the elector's current context —
+   * by now the reconnect thread's brand-new one — and closes it while that thread is still joining.
+   * If the close lands between creating the leader znode and starting the overseer, the znode is
+   * left with no updater behind it and cancelElection() will not clean it up, so every later
+   * election fails with NodeExists.
    */
   @Test
   public void testOverseerWedgesOnExpiryRacingReconnect() throws Exception {
     Path zkDir = createTempDir("zkData");
     Path ccDir = createTempDir("testOverseerExpiryRace-solr");
 
-    ZkTestServer zkServer = new ZkTestServer(zkDir);
-    // tick=250 => expiry detection granularity ~250ms. ZkTestServer otherwise clamps the negotiated
-    // session timeout to [minSessionTimeout=3000, maxSessionTimeout=90000], which would silently
-    // bump our requested 1000ms up to 3000ms and turn every outage below into a same-session blip.
-    // Lower the floor so a real ~1s session is negotiated.
-    zkServer.setTheTickTime(250);
-    zkServer.setMinSessionTimeout(600);
-    zkServer.setMaxSessionTimeout(5000);
+    ZkTestServer zkServer = buildZkTestServer(zkDir);
     try {
       zkServer.run();
 
       SocketProxy zkProxy = new SocketProxy();
       zkProxy.open(URI.create("http://127.0.0.1:" + zkServer.getPort()));
       String proxiedZkAddress = "127.0.0.1:" + zkProxy.getListenPort() + "/solr";
-      log.info("ZK on port {}, proxy on port {}", zkServer.getPort(), zkProxy.getListenPort());
-
       try {
-        // ~1s session. NOTE: ZkController takes the persistent client's session timeout from
-        // CloudConfig.getZkClientTimeout() (ZkController.java:311), NOT from the constructor arg
-        // below (which only governs the initial bootstrap connect). So the 1s must be set on the
-        // CloudConfigBuilder; with the server floor lowered to 600ms it is honored verbatim.
-        int zkClientTimeout = 1000;
+        // The persistent client's session timeout comes from CloudConfig.getZkClientTimeout(), not
+        // from the ZkController constructor arg (which only governs the bootstrap connect), so it
+        // has to be set on both.
         CloudConfig cloudConfig =
             new CloudConfig.CloudConfigBuilder("127.0.0.1", 8984)
-                .setZkClientTimeout(1000)
+                .setZkClientTimeout(SESSION_TIMEOUT_MS)
                 .setLeaderConflictResolveWait(180000)
                 .setLeaderVoteWait(180000)
                 .build();
 
         CoreContainer cc = createCoreContainer(ccDir, SOLRXML);
         try (ZkController zkController =
-                new ZkController(cc, proxiedZkAddress, zkClientTimeout, cloudConfig);
+                new ZkController(cc, proxiedZkAddress, SESSION_TIMEOUT_MS, cloudConfig);
             SolrZkClient probe =
                 new SolrZkClient.Builder()
                     .withUrl(zkServer.getZkAddress())
@@ -216,99 +144,46 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
           assertTrue(
               "Overseer should be healthy before the storm",
               waitForHealthyOverseer(zkController, probe, 30));
-          int negotiated = zkController.getZkClient().getZkSessionTimeout();
-          log.info(
-              "Baseline healthy overseer established; negotiated session timeout={}ms; starting"
-                  + " expiry-race storm",
-              negotiated);
-          assertTrue(
-              "Expected a sub-2s negotiated session timeout so outages can expire the session, got "
-                  + negotiated
-                  + "ms",
-              negotiated <= 1500);
+          assertEquals(
+              "Session timeout must be negotiated verbatim; check tickTime and the min/max clamping",
+              SESSION_TIMEOUT_MS,
+              zkController.getZkClient().getZkSessionTimeout());
+          long sessionBefore = zkController.getZkClient().getZkSessionId();
 
-          // The exact outage that lands the reconnect inside the OET-vs-reconnect race window is
-          // hardware-sensitive (it depends on how fast re-election runs and when the departing
-          // OET's
-          // getData is scheduled), so we do not bet on a single value. Instead we sweep a fine 10ms
-          // comb across the band just past the ~1000ms expiry boundary (BAND_LO..BAND_HI) and
-          // repeat
-          // it many times: breadth covers wherever the window sits on this machine, depth gives
-          // each
-          // offset multiple independent shots at the inherently racy interleaving. Every outage is
-          // >= the session timeout, so the session expires each cycle. We stop on the first wedge,
-          // so
-          // the run is fast when it reproduces and only pays the full budget when it does not.
-          final int BAND_LO = 1000;
-          final int BAND_HI = 1250;
-          final int STEP = 10;
-          final int OFFSETS = (BAND_HI - BAND_LO) / STEP + 1; // 26
-          final int MAX_CYCLES = OFFSETS * 6; // ~6 shots per offset
-          boolean recoveredThisCycle = true;
-          int wedgeOutage = -1; // the outage (ms) of the cycle that wedged, -1 if none
-          int wedgeCycle = -1;
-          for (int i = 0; i < MAX_CYCLES && recoveredThisCycle; i++) {
-            int outage = BAND_LO + (i % OFFSETS) * STEP;
-            long sidBefore = safeSessionId(zkController);
-            log.info(
-                "Expiry-race cycle {}: cutting ZK connectivity for {}ms (session={}, leader={}, updater={})",
-                i,
-                outage,
-                sidBefore,
-                OverseerTaskProcessor.getLeaderId(probe),
-                updaterId(zkController));
+          for (int i = 0; i < MAX_CYCLES; i++) {
             zkProxy.close();
-            Thread.sleep(outage);
+            // Deliberate fault injection, not a poll: hold ZK unreachable long enough to expire the
+            // session. There is no condition to wait on, so waitFor/RetryUtil do not apply.
+            //
+            // Unpadded on purpose. The cut has to outlast the old connection's retry (detection lag
+            // + the reconnect interval) or that retry resumes the session and nothing ever expires.
+            // It also has to end before Curator's replacement connection reaches out (detection lag
+            // + the session timeout), or that misses the port, waits another full interval, and the
+            // server reaps the old leader znode before the race can happen. Reopening exactly at
+            // the session timeout clears the second bound for any positive detection lag.
+            Thread.sleep(SESSION_TIMEOUT_MS);
             zkProxy.reopen();
-            // Expiry recovery (rejoin + re-elect + re-register) needs a little longer than a
-            // same-session blip; give it a bounded window then stop if wedged.
-            recoveredThisCycle = waitForHealthyOverseer(zkController, probe, 10);
-            long sidAfter = safeSessionId(zkController);
-            log.info(
-                "Expiry-race cycle {} result: recovered={} sessionExpired={} (before={}, after={})",
-                i,
-                recoveredThisCycle,
-                sidBefore != -1 && sidAfter != -1 && sidBefore != sidAfter,
-                sidBefore,
-                sidAfter);
-            if (!recoveredThisCycle) {
-              wedgeOutage = outage;
-              wedgeCycle = i;
-              log.info(
-                  "Overseer did not recover within 10s after cycle {} (outage {}ms)", i, outage);
+            if (!waitForHealthyOverseer(zkController, probe, RECOVERY_WAIT_SECONDS)) {
+              break;
             }
           }
 
-          boolean healthy = waitForHealthyOverseer(zkController, probe, 45);
-          if (!healthy) {
-            log.error(
-                "WEDGED (expiry race): /overseer_elect/leader id={} but no running updater matches"
-                    + " it; updater={}",
-                OverseerTaskProcessor.getLeaderId(probe),
-                updaterId(zkController));
-            if (wedgeOutage != -1) {
-              // Report the observed hitting point and how to narrow the sweep for faster repro on
-              // this same hardware. The window is HW-specific, so we can only suggest it after a
-              // hit.
-              int tightLo = Math.max(BAND_LO, wedgeOutage - 20);
-              int tightHi = Math.min(BAND_HI + 50, wedgeOutage + 20);
-              log.error(
-                  "REPRO WINDOW: this run wedged at outage={}ms (cycle {}). This hitting point is"
-                      + " hardware-specific. For faster repro on THIS machine, tighten the sweep to"
-                      + " BAND_LO={} / BAND_HI={} (a narrow band around {}ms) so nearly every cycle"
-                      + " targets the window; widen it again if a different machine stops"
-                      + " reproducing.",
-                  wedgeOutage,
-                  wedgeCycle,
-                  tightLo,
-                  tightHi,
-                  wedgeOutage);
-            }
-          }
+          boolean healthy = waitForHealthyOverseer(zkController, probe, RECOVERY_WAIT_SECONDS * 4);
           assertTrue(
-              "Overseer wedged after an expiry coinciding with a reconnect (residual zombie-leader"
-                  + " race not fixed by PR #4577) — see 'ZOMBIE LEADER' warning in the log",
+              "Overseer wedged after an expiry coinciding with a reconnect (zombie leader /"
+                  + " NodeExists spin): leader znode id="
+                  + leaderId(probe)
+                  + ", running updater id="
+                  + updaterId(zkController),
               healthy);
+          // Guards against this test silently becoming a no-op: if the outage stops severing the
+          // session, every cycle is just a same-session blip and none of the above exercises the
+          // race.
+          assertNotEquals(
+              "No session ever expired, so this test exercised nothing -- check SESSION_TIMEOUT_MS"
+                  + " against the reconnect interval and the min/max clamping",
+              sessionBefore,
+              zkController.getZkClient().getZkSessionId());
         } finally {
           cc.shutdown();
         }
@@ -320,25 +195,28 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
     }
   }
 
-  /** Current ZK session id, or -1 if not connected. */
-  private long safeSessionId(ZkController zkController) {
-    try {
-      return zkController.getZkClient().getZkSessionId();
-    } catch (Exception e) {
-      return -1;
-    }
+  private static @NonNull ZkTestServer buildZkTestServer(Path zkDir) throws Exception {
+    ZkTestServer zkServer = new ZkTestServer(zkDir);
+    // The coarse tick is load-bearing: the server reaps an expired session's ephemerals on a
+    // tickTime-wide bucket, so it can lag the client's (Curator-injected) expiry by up to tickTime,
+    // and only that lag lets the departing OverseerExitThread still see the old leader znode. Pin
+    // the min/max bounds so the session timeout is negotiated verbatim; ZkTestServer's own defaults
+    // ([3000, 90000]) would otherwise clamp it up.
+    zkServer.setTheTickTime(TICK_MS);
+    zkServer.setMinSessionTimeout(SESSION_TIMEOUT_MS);
+    zkServer.setMaxSessionTimeout(SESSION_TIMEOUT_MS);
+    return zkServer;
   }
 
   private boolean waitForHealthyOverseer(ZkController zkController, SolrZkClient probe, int seconds)
-      throws Exception {
-    TimeOut timeout = new TimeOut(seconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeout.hasTimedOut()) {
-      if (isHealthyOverseer(zkController, probe)) {
-        return true;
-      }
-      Thread.sleep(250);
+      throws InterruptedException {
+    try {
+      new TimeOut(seconds, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+          .waitFor("overseer did not become healthy", () -> isHealthyOverseer(zkController, probe));
+      return true;
+    } catch (TimeoutException e) {
+      return false;
     }
-    return isHealthyOverseer(zkController, probe);
   }
 
   /** Healthy == connected, a live updater thread, and its id equals the leader znode's id. */
@@ -357,6 +235,15 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
     }
   }
 
+  /** The id stored in the leader znode, or null if it cannot be read. */
+  private String leaderId(SolrZkClient probe) {
+    try {
+      return OverseerTaskProcessor.getLeaderId(probe);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
   /** The id of the currently running updater, parsed from its thread name, or null. */
   private String updaterId(ZkController zkController) {
     Overseer overseer = zkController.getOverseer();
@@ -369,24 +256,32 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
   }
 
   private String waitForOverseerLeader(ZkTestServer zkServer, int timeoutSeconds) throws Exception {
-    TimeOut timeout = new TimeOut(timeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    AtomicReference<String> leader = new AtomicReference<>();
     try (SolrZkClient zc =
         new SolrZkClient.Builder()
             .withUrl(zkServer.getZkAddress())
             .withTimeout(30000, TimeUnit.MILLISECONDS)
             .build()) {
-      while (!timeout.hasTimedOut()) {
-        try {
-          String leaderNode = OverseerCollectionConfigSetProcessor.getLeaderNode(zc);
-          if (leaderNode != null && !leaderNode.trim().isEmpty()) {
-            return leaderNode;
-          }
-        } catch (Exception e) {
-          // Leader not yet elected
-        }
-        Thread.sleep(500);
+      try {
+        new TimeOut(timeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+            .waitFor(
+                "overseer leader was not elected",
+                () -> {
+                  try {
+                    String leaderNode = OverseerCollectionConfigSetProcessor.getLeaderNode(zc);
+                    if (leaderNode != null && !leaderNode.trim().isEmpty()) {
+                      leader.set(leaderNode);
+                      return true;
+                    }
+                  } catch (Exception e) {
+                    // Leader not yet elected
+                  }
+                  return false;
+                });
+      } catch (TimeoutException e) {
+        // leave leader null
       }
     }
-    return null;
+    return leader.get();
   }
 }
