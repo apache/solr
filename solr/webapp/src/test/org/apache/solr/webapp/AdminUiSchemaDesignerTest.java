@@ -27,9 +27,9 @@ import org.openqa.selenium.WebElement;
  *
  * <p>AwaitsFix: the designer backend transiently fails its own prep/analyze calls ("version
  * mismatch, retry", "Error loading solr config") when driven at automation speed, making this test
- * flaky even with retries; see the "Possible UI bugs" section in dev-docs/admin-ui-tests.md.
+ * flaky even with retries.
  */
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-8474")
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18347")
 public class AdminUiSchemaDesignerTest extends AdminUiTestBase {
 
   @Test
