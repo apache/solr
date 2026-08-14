@@ -1,5 +1,6 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: /replication?command=details now reports a backup while it is still running, with file counts, instead of showing the previous backup's status until the new one completes
+title: /replication?command=details now reports backup details while the backup is
+  still running, including file counts, instead of the previous backup's status
 type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Idan Tepper
