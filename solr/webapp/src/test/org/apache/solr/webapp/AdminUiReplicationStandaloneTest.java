@@ -77,7 +77,12 @@ public class AdminUiReplicationStandaloneTest extends AdminUiStandaloneTestBase 
     openPage(CORE + "/replication", By.id("replication"));
     // the follower screen shows its own and the leader's index version info
     waitForPageContains("Version");
-    waitForPageContains(":" + leaderJetty.getLocalPort());
+    // scraping the rendered DOM for the leader's port is flaky: the "leader url:" row
+    // can lag the rest of the screen's data on the very first load. Assert against the
+    // API response instead, like the isPollingDisabled/followerNumDocs checks below do.
+    waitUntil(
+        "follower should report the leader's url",
+        () -> followerDetail("leaderUrl").contains(":" + leaderJetty.getLocalPort()));
 
     // disable polling so replication only happens on demand
     waitFor(By.cssSelector("#replication button.disable-polling")).click();
