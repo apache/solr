@@ -67,6 +67,9 @@ import org.slf4j.LoggerFactory;
  * Client. This client is targeted for those users who wish to minimize application dependencies.
  * This client will connect to solr using Http/2 but can seamlessly downgrade to Http/1.1 when
  * connecting to Solr hosts running on older versions.
+ * Uses two {@link java.util.concurrent.ThreadPoolExecutor}, one for
+ * {@link HttpClient} (consumer) and one for writing request bodies (producer).
+ * Both are unbounded cached thread pools (maximumPoolSize = Integer.MAX_VALUE).
  */
 public class HttpJdkSolrClient extends HttpSolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

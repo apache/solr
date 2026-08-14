@@ -95,6 +95,8 @@ When enabled, this escape hatch relaxes both the login-time check and the user c
 It is intended as a temporary measure while you migrate the affected accounts to stronger passwords, and should be removed once that is done.
 
 === SolrJ
+`HttpJdkSolrClient` now uses two separate ThreadPoolExecutors, one for the JDK HttpClient (consumer) and one for writing request bodies (producer).
+Both are unbounded cached thread pools (maximumPoolSize = Integer.MAX_VALUE), create with ExecutorUtil.newMDCAwareCachedThreadPool.
 
 HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
 Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
