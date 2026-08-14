@@ -83,15 +83,18 @@ public class HttpJdkSolrClient extends HttpSolrClient {
    * Executor used to stream (produce) request bodies into the pipe consumed by the JDK HttpClient.
    * This is the "producer" side and may be supplied by the caller.
    */
-  protected ExecutorService executor;
+  protected ExecutorService requestBodyExecutor;
 
   /** Dedicated executor handed to the JDK HttpClient */
-  protected ExecutorService httpClientExecutor;
+  protected ExecutorService executor;
 
   private boolean forceHttp11;
 
   private final boolean shutdownExecutor;
 
+  /**
+   * {@link ExecutorService} on {@link HttpJdkSolrClient.Builder} is used for {@link HttpClient} only.
+   */
   protected HttpJdkSolrClient(String serverBaseUrl, HttpJdkSolrClient.Builder builder) {
     super(serverBaseUrl, builder);
     HttpClient.Builder httpClientBuilder = HttpClient.newBuilder();
@@ -117,13 +120,14 @@ public class HttpJdkSolrClient extends HttpSolrClient {
     } else {
       this.executor =
           ExecutorUtil.newMDCAwareCachedThreadPool(
-              new SolrNamedThreadFactory(this.getClass().getSimpleName() + "-reqBody"));
+              new SolrNamedThreadFactory(this.getClass().getSimpleName() + "-http"));
       this.shutdownExecutor = true;
     }
-    this.httpClientExecutor =
+    httpClientBuilder.executor(this.executor);
+
+    this.requestBodyExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool(
-            new SolrNamedThreadFactory(this.getClass().getSimpleName() + "-http"));
-    httpClientBuilder.executor(this.httpClientExecutor);
+            new SolrNamedThreadFactory(this.getClass().getSimpleName() + "-reqBody"));
 
     if (builder.shouldUseHttp1_1()) {
       this.forceHttp11 = true;
@@ -318,7 +322,7 @@ public class HttpJdkSolrClient extends HttpSolrClient {
 
       bodyPublisher =
           HttpRequest.BodyPublishers.ofInputStream(
-              () -> pReq.beginContentWriting(contentWriter, this.executor));
+              () -> pReq.beginContentWriting(contentWriter, this.requestBodyExecutor));
     } else if (streams != null && streams.size() == 1) {
       boolean success = maybeTryHeadRequest(url);
       if (!success) {
@@ -559,10 +563,9 @@ public class HttpJdkSolrClient extends HttpSolrClient {
     }
     executor = null;
 
-    // The http client executor is always created and owned by this instance.
-    if (httpClientExecutor != null) {
-      ExecutorUtil.shutdownAndAwaitTermination(httpClientExecutor);
-      httpClientExecutor = null;
+    if (requestBodyExecutor != null) {
+      ExecutorUtil.shutdownAndAwaitTermination(requestBodyExecutor);
+      requestBodyExecutor = null;
     }
 
     assert ObjectReleaseTracker.release(this);

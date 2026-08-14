@@ -96,7 +96,8 @@ It is intended as a temporary measure while you migrate the affected accounts to
 
 === SolrJ
 `HttpJdkSolrClient` now uses two separate ThreadPoolExecutors, one for the JDK HttpClient (consumer) and one for writing request bodies (producer).
-Both are unbounded cached thread pools (maximumPoolSize = Integer.MAX_VALUE), create with ExecutorUtil.newMDCAwareCachedThreadPool.
+Both are unbounded cached thread pools (maximumPoolSize = Integer.MAX_VALUE), created with ExecutorUtil.newMDCAwareCachedThreadPool.
+If a Builder.executor is provided, it will be used for the HttpClient only. The one for writing the request bodies cannot be passed in.
 
 HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
 Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
