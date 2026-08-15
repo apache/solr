@@ -163,6 +163,7 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     }
   }
 
+  /** Storage proxy that fails on {@code reader} so we can assert copy errors are propagated. */
   private static Storage createFailingStorage() {
     Storage delegate = LocalStorageHelper.customOptions(false).getService();
     return (Storage)
@@ -177,6 +178,10 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
             });
   }
 
+  /**
+   * Storage proxy whose {@code reader} first returns a zero-byte {@link ReadChannel}, so we can
+   * assert that {@code copyIndexFileTo} retries instead of treating 0 as EOF.
+   */
   private static Storage createZeroReturningStorage(Storage delegate) {
     return (Storage)
         Proxy.newProxyInstance(
@@ -194,6 +199,11 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
             });
   }
 
+  /**
+   * {@link ReadChannel} that returns 0 on the first {@code read} (a short/empty read, not EOF),
+   * then delegates later reads to {@code delegate}. Used to reproduce the restore-truncation bug
+   * where a 0-byte read was treated as end-of-stream.
+   */
   private static ReadChannel createZeroFirstReadChannel(ReadChannel delegate) {
     return (ReadChannel)
         Proxy.newProxyInstance(
@@ -218,6 +228,11 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
             });
   }
 
+  /**
+   * Forwards a JDK proxy call to {@code target}. {@link Method#invoke} wraps checked exceptions in
+   * {@link InvocationTargetException}; unwrap so tests and {@code copyIndexFileTo} see the real GCS
+   * / channel exception instead of a reflection wrapper.
+   */
   private static Object invokeAndUnwrap(Method method, Object target, Object[] args)
       throws Throwable {
     try {
@@ -233,6 +248,10 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     return repo;
   }
 
+  /**
+   * Test-only repository that injects a given {@link Storage} instead of creating a real GCS
+   * client. Lets tests simulate failures and unusual read behavior without talking to GCS.
+   */
   private static class TestGCSBackupRepository extends GCSBackupRepository {
     private final Storage testStorage;
 

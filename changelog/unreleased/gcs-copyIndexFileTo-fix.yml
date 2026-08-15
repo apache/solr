@@ -3,3 +3,8 @@ title: >
 type: fixed
 authors:
   - name: Prithvi S
+links:
+  - name: SOLR-18250
+    url: https://issues.apache.org/jira/browse/SOLR-18250
+  - name: PR#4726
+    url: https://github.com/apache/solr/pull/4726
