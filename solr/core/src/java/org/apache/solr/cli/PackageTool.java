@@ -64,8 +64,8 @@ import org.slf4j.LoggerFactory;
         "  bin/solr package add-repo myrepo https://my.repo.example/solr-packages",
         "",
         "  # Install a package and deploy it to a collection",
-        "  bin/solr package install mypkg-1.0.0",
-        "  bin/solr package deploy mypkg-1.0.0 --collections myCollection -y",
+        "  bin/solr package install mypkg:1.0.0",
+        "  bin/solr package deploy mypkg:1.0.0 --collections myCollection -y",
         "",
         "  # List packages deployed on a collection",
         "  bin/solr package list-deployed -c myCollection"
@@ -149,12 +149,12 @@ public class PackageTool extends ToolBase {
   @picocli.CommandLine.Option(
       names = {"--collections"},
       paramLabel = "COLLECTIONS",
-      description = "Specifies that this action should affect plugins for the given collection only, excluding cluster level plugins.")
+      description = "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
   private String collections;
 
   @picocli.CommandLine.Option(
       names = {"--cluster"},
-      description = "Specifies that this action should affect cluster level plugins only.")
+      description = "Specifies that this action should affect cluster-level plugins only.")
   private boolean cluster;
 
   @picocli.CommandLine.Option(
