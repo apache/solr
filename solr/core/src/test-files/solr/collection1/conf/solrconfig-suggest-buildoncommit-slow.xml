@@ -19,15 +19,18 @@
 <!--
  Reproduces the "commit blocks/times out instead of just slowing down" issue seen when
  a suggester is configured with buildOnCommit=true and its dictionary is slow to read
- (e.g. an I/O-throttled disk under heavy indexing). See SuggestComponent's
- SuggesterListener.newSearcher(), which runs suggester.build() synchronously on the
- single-threaded searcherExecutor thread that DirectUpdateHandler2.commit() blocks on
- via waitSearcher[0].get() (no timeout).
+ (e.g. an I/O-throttled disk under heavy indexing), and the buildOnCommitAsync opt-in fix
+ for it. See SuggestComponent's SuggesterListener: with buildOnCommitAsync=false (the
+ default, preserving pre-fix behavior), newSearcher() runs suggester.build() synchronously
+ on the single-threaded searcherExecutor thread that DirectUpdateHandler2.commit() blocks
+ on via waitSearcher[0].get() (no timeout); with buildOnCommitAsync=true, the rebuild runs
+ on a dedicated executor instead and commit() is not blocked by it.
 
- buildOnCommit is driven by solr.tests.suggestBuildOnCommit (default true) so this one
- config can serve both the "blocks" test (buildOnCommit=true) and its "stays fast"
- control counterpart (buildOnCommit=false) - each in its own core, since buildOnCommit
- is fixed for the life of a core and can't be toggled per-request.
+ buildOnCommit and buildOnCommitAsync are driven by system properties (both default true)
+ so this one config can serve all three scenarios - buildOnCommit=false (no rebuild at
+ all), buildOnCommit=true + buildOnCommitAsync=false (old, blocking behavior), and
+ buildOnCommit=true + buildOnCommitAsync=true (new, non-blocking behavior) - each in its
+ own core, since these are fixed for the life of a core and can't be toggled per-request.
 -->
 <config>
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -51,6 +54,7 @@
       <str name="suggestAnalyzerFieldType">text</str>
       <str name="buildOnStartup">false</str>
       <str name="buildOnCommit">${solr.tests.suggestBuildOnCommit:true}</str>
+      <str name="buildOnCommitAsync">${solr.tests.suggestBuildOnCommitAsync:true}</str>
     </lst>
   </searchComponent>
   <requestHandler name="/suggest_slow" class="solr.SearchHandler">

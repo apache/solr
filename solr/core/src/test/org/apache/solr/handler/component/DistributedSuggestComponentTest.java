@@ -79,6 +79,9 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
     handle.put("timestamp", SKIPVAL);
     handle.put("maxScore", SKIPVAL);
     handle.put("response", SKIP);
+    // index versions are per-core/per-shard Lucene generation counters, not meaningful to compare
+    // between the (single-core) control response and the (multi-shard) distributed response.
+    handle.put("suggesterIndexVersions", SKIP);
 
     String requestHandlerName = "/suggest";
     String docDictName = "suggest_fuzzy_doc_dict";

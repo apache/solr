@@ -23,9 +23,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Control/baseline counterpart to {@link SuggestComponentBuildOnCommitBlocksCommitTest}: it uses
- * the exact same slow, I/O-bound dictionary ({@link SlowIOSimulatingDictionaryFactory}) and the
- * same number of terms/sleep-per-term, but with {@code buildOnCommit=false}.
+ * Control/baseline counterpart to {@link SuggestComponentBuildOnCommitDoesNotBlockCommitTest}: it
+ * uses the exact same slow, I/O-bound dictionary ({@link SlowIOSimulatingDictionaryFactory}) and
+ * the same number of terms/sleep-per-term, but with {@code buildOnCommit=false}.
  *
  * <p>With {@code buildOnCommit=false}, {@code SuggestComponent} never registers a {@code
  * newSearcherListener} for this suggester at all, so {@code commit()} is not slowed down by it.
@@ -48,6 +48,7 @@ public class SuggestComponentBuildOnCommitDisabledCommitStaysFastTest extends So
     System.setProperty("solr.tests.slowDictNumTerms", String.valueOf(SLOW_DICT_NUM_TERMS));
     System.setProperty("solr.tests.slowDictSleepMs", String.valueOf(SLOW_DICT_SLEEP_MS));
     System.setProperty("solr.tests.suggestBuildOnCommit", "false");
+    System.setProperty("solr.tests.suggestBuildOnCommitAsync", "false");
     initCore("solrconfig-suggest-buildoncommit-slow.xml", "schema.xml");
   }
 
@@ -56,6 +57,7 @@ public class SuggestComponentBuildOnCommitDisabledCommitStaysFastTest extends So
     System.clearProperty("solr.tests.slowDictNumTerms");
     System.clearProperty("solr.tests.slowDictSleepMs");
     System.clearProperty("solr.tests.suggestBuildOnCommit");
+    System.clearProperty("solr.tests.suggestBuildOnCommitAsync");
   }
 
   @Test

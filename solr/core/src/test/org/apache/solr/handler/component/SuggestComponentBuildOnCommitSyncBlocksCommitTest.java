@@ -23,26 +23,18 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Reproduces a customer-reported production incident: a suggester configured with {@code
- * buildOnCommit=true} whose dictionary is slow to read (e.g. an I/O-throttled disk under heavy
- * concurrent indexing, as happens once Azure disk burst credits are exhausted) does not just make
- * indexing slower - it makes the commit call itself, and therefore the client waiting on it,
- * block for the full duration of the suggester rebuild with no timeout.
+ * Backward-compatibility counterpart to {@link SuggestComponentBuildOnCommitDoesNotBlockCommitTest}:
+ * {@code buildOnCommitAsync} defaults to {@code false}, so a suggester configured with just {@code
+ * buildOnCommit=true} (no opt-in) keeps the original, pre-fix behavior - commit() blocks for the
+ * full duration of the rebuild.
  *
- * <p>Root cause: {@code SuggestComponent.SuggesterListener.newSearcher()} runs {@code
- * suggester.build()} synchronously as a {@code newSearcherListener}, which {@code
- * SolrCore.getSearcher()} invokes on the core's single-threaded {@code searcherExecutor}.
- * Because {@code DirectUpdateHandler2.commit()} blocks the committing thread on {@code
- * waitSearcher[0].get()} (a no-arg, no-timeout {@code Future.get()}) whenever {@code
- * waitSearcher=true} (the default for a {@code commit=true} request), an arbitrarily slow
- * suggester build directly delays the commit response - it is not decoupled into the background.
- *
- * @see SuggestComponentBuildOnCommitDisabledCommitStaysFastTest the control/baseline
- *     counterpart, which uses the exact same slow dictionary but with buildOnCommit=false, and
- *     shows commit() staying fast - proving the slowdown here is specifically caused by
- *     buildOnCommit=true, not by the slow dictionary or test setup in general.
+ * <p>This is intentional, not a bug: {@code buildOnCommitAsync} is opt-in so existing {@code
+ * buildOnCommit} users - including tests elsewhere in this suite (e.g. {@code
+ * SuggestComponentTest}) that query a suggester immediately after commit() and expect it to
+ * already be built - keep that guarantee unless they explicitly ask for the new, non-blocking,
+ * eventually-consistent behavior.
  */
-public class SuggestComponentBuildOnCommitBlocksCommitTest extends SolrTestCaseJ4 {
+public class SuggestComponentBuildOnCommitSyncBlocksCommitTest extends SolrTestCaseJ4 {
 
   private static final int SLOW_DICT_NUM_TERMS = 20;
   private static final long SLOW_DICT_SLEEP_MS = 100;
@@ -53,6 +45,7 @@ public class SuggestComponentBuildOnCommitBlocksCommitTest extends SolrTestCaseJ
     System.setProperty("solr.tests.slowDictNumTerms", String.valueOf(SLOW_DICT_NUM_TERMS));
     System.setProperty("solr.tests.slowDictSleepMs", String.valueOf(SLOW_DICT_SLEEP_MS));
     System.setProperty("solr.tests.suggestBuildOnCommit", "true");
+    System.setProperty("solr.tests.suggestBuildOnCommitAsync", "false");
     initCore("solrconfig-suggest-buildoncommit-slow.xml", "schema.xml");
   }
 
@@ -61,13 +54,11 @@ public class SuggestComponentBuildOnCommitBlocksCommitTest extends SolrTestCaseJ
     System.clearProperty("solr.tests.slowDictNumTerms");
     System.clearProperty("solr.tests.slowDictSleepMs");
     System.clearProperty("solr.tests.suggestBuildOnCommit");
+    System.clearProperty("solr.tests.suggestBuildOnCommitAsync");
   }
 
   @Test
-  public void testSlowBuildOnCommitBlocksTheCommittingThread() {
-    // A prior commit already happened as part of core/searcher init (buildOnStartup=false, so it
-    // didn't trigger a build); this add+commit is what opens the *next* new searcher, which is
-    // what buildOnCommit reacts to.
+  public void testSyncBuildOnCommitStillBlocksTheCommittingThreadByDefault() {
     assertU(adoc("id", "1", "text", "hello world"));
 
     long startNanos = System.nanoTime();
@@ -77,15 +68,16 @@ public class SuggestComponentBuildOnCommitBlocksCommitTest extends SolrTestCaseJ
     assertTrue(
         "commit() returned after only "
             + elapsedMs
-            + "ms, but the configured suggester dictionary needs at least "
+            + "ms, but with buildOnCommitAsync=false (the default) it should still take at "
+            + "least the "
             + EXPECTED_MIN_BUILD_MS
-            + "ms to build ("
+            + "ms the suggester's slow dictionary needs to build ("
             + SLOW_DICT_NUM_TERMS
             + " terms x "
             + SLOW_DICT_SLEEP_MS
-            + "ms/term). Either the suggester didn't build on this commit, or "
-            + "buildOnCommit's rebuild is no longer blocking the commit call synchronously - "
-            + "if the latter is an intentional fix, please update this test.",
+            + "ms/term). If this is failing, the default (non-opt-in) behavior of buildOnCommit "
+            + "changed - existing users relying on 'suggestions are fresh immediately after "
+            + "commit' would be silently affected.",
         elapsedMs >= EXPECTED_MIN_BUILD_MS);
   }
 }
