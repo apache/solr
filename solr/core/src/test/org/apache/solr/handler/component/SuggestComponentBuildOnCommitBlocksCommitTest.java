@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -51,7 +52,15 @@ public class SuggestComponentBuildOnCommitBlocksCommitTest extends SolrTestCaseJ
   public static void beforeClass() throws Exception {
     System.setProperty("solr.tests.slowDictNumTerms", String.valueOf(SLOW_DICT_NUM_TERMS));
     System.setProperty("solr.tests.slowDictSleepMs", String.valueOf(SLOW_DICT_SLEEP_MS));
+    System.setProperty("solr.tests.suggestBuildOnCommit", "true");
     initCore("solrconfig-suggest-buildoncommit-slow.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("solr.tests.slowDictNumTerms");
+    System.clearProperty("solr.tests.slowDictSleepMs");
+    System.clearProperty("solr.tests.suggestBuildOnCommit");
   }
 
   @Test

@@ -23,6 +23,11 @@
  SuggesterListener.newSearcher(), which runs suggester.build() synchronously on the
  single-threaded searcherExecutor thread that DirectUpdateHandler2.commit() blocks on
  via waitSearcher[0].get() (no timeout).
+
+ buildOnCommit is driven by solr.tests.suggestBuildOnCommit (default true) so this one
+ config can serve both the "blocks" test (buildOnCommit=true) and its "stays fast"
+ control counterpart (buildOnCommit=false) - each in its own core, since buildOnCommit
+ is fixed for the life of a core and can't be toggled per-request.
 -->
 <config>
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -45,7 +50,7 @@
       <str name="indexPath">slow_suggester_build_on_commit</str>
       <str name="suggestAnalyzerFieldType">text</str>
       <str name="buildOnStartup">false</str>
-      <str name="buildOnCommit">true</str>
+      <str name="buildOnCommit">${solr.tests.suggestBuildOnCommit:true}</str>
     </lst>
   </searchComponent>
   <requestHandler name="/suggest_slow" class="solr.SearchHandler">
