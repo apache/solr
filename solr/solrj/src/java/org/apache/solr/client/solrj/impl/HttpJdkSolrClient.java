@@ -81,7 +81,6 @@ public class HttpJdkSolrClient extends HttpSolrClient {
 
   /**
    * Executor used to stream (produce) request bodies into the pipe consumed by the JDK HttpClient.
-   * This is the "producer" side and may be supplied by the caller.
    */
   protected ExecutorService requestBodyExecutor;
 
@@ -120,7 +119,7 @@ public class HttpJdkSolrClient extends HttpSolrClient {
     } else {
       this.executor =
           ExecutorUtil.newMDCAwareCachedThreadPool(
-              new SolrNamedThreadFactory(this.getClass().getSimpleName() + "-http"));
+              new SolrNamedThreadFactory(this.getClass().getSimpleName()));
       this.shutdownExecutor = true;
     }
     httpClientBuilder.executor(this.executor);
