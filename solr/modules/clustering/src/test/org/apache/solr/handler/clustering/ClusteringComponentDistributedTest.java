@@ -118,7 +118,7 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
     clusters.forEach(
         c -> {
           sb.append(indent);
-          sb.append("- " + c.getLabels().stream().collect(Collectors.joining("; ")));
+          sb.append("- " + String.join("; ", c.getLabels()));
           if (!c.getDocs().isEmpty()) {
             sb.append(" [" + c.getDocs().size() + "]");
           }
