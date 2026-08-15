@@ -22,6 +22,7 @@
 ** xref:cli/solr-auth.adoc[auth]
 ** xref:cli/solr-create.adoc[create]
 ** xref:cli/solr-delete.adoc[delete]
+** xref:cli/solr-package.adoc[package]
 ** xref:cli/solr-start.adoc[start]
 ** xref:cli/solr-status.adoc[status]
 ** xref:cli/solr-stop.adoc[stop]
