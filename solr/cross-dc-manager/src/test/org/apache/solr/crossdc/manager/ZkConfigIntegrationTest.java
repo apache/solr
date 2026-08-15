@@ -45,7 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ThreadLeakFilters(
-    defaultFilters = true,
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
@@ -56,8 +55,6 @@ import org.slf4j.LoggerFactory;
 public class ZkConfigIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  static final String VERSION_FIELD = "_version_";
 
   private static final int NUM_BROKERS = 1;
   public static EmbeddedKafkaCluster kafkaCluster;
@@ -140,9 +137,8 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
     log.info("bootstrapServers={}", bootstrapServers);
 
     Map<String, Object> properties = new HashMap<>();
-    Object put =
-        properties.put(
-            KafkaCrossDcConf.ZK_CONNECT_STRING, solrCluster2.getZkServer().getZkAddress());
+
+    properties.put(KafkaCrossDcConf.ZK_CONNECT_STRING, solrCluster2.getZkServer().getZkAddress());
 
     System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, kafkaCluster.bootstrapServers());
 

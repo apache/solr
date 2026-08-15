@@ -55,7 +55,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ThreadLeakFilters(
-    defaultFilters = true,
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
@@ -66,8 +65,6 @@ import org.slf4j.LoggerFactory;
 public class DeleteByQueryToIdTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  static final String VERSION_FIELD = "_version_";
 
   private static final int NUM_BROKERS = 1;
   public static EmbeddedKafkaCluster kafkaCluster;

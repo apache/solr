@@ -58,21 +58,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ThreadLeakFilters(
-    defaultFilters = true,
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
       SolrKafkaTestsIgnoredThreadsFilter.class
     })
 @ThreadLeakLingering(linger = 5000)
-@Ignore("This test relies on collecton properties and I don't see where they are set anymore")
+@Ignore("This test relies on collection properties and I don't see where they are set anymore")
 public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int MAX_DOC_SIZE_BYTES = Integer.parseInt(DEFAULT_MAX_REQUEST_SIZE);
-
-  static final String VERSION_FIELD = "_version_";
 
   private static final int NUM_BROKERS = 1;
   public EmbeddedKafkaCluster kafkaCluster;

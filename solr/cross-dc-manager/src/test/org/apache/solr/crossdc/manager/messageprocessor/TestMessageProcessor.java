@@ -70,7 +70,7 @@ public class TestMessageProcessor {
 
   @Before
   public void setUp() {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
 
     ConsumerMetrics metrics = Mockito.mock(OtelMetrics.class);
     processor = Mockito.spy(new SolrMessageProcessor(metrics, () -> solrClient, backoffPolicy));
