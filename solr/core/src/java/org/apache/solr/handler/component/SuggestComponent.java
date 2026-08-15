@@ -126,6 +126,8 @@ public class SuggestComponent extends SearchComponent
     static final String SUGGESTER_INDEX_VERSIONS = "suggesterIndexVersions";
     static final String BUILT_FROM_INDEX_VERSION = "builtFromIndexVersion";
     static final String CURRENT_INDEX_VERSION = "currentIndexVersion";
+    static final String STALE = "stale";
+    static final String SUGGESTER_STALE = "suggesterStale";
   }
 
   @Override
@@ -327,9 +329,10 @@ public class SuggestComponent extends SearchComponent
         SuggesterResult suggesterResult = suggester.getSuggestions(options);
         toNamedList(suggesterResult, namedListResults);
         SimpleOrderedMap<Object> versions = new SimpleOrderedMap<>();
-        versions.add(
-            SuggesterResultLabels.BUILT_FROM_INDEX_VERSION, suggester.getBuiltFromIndexVersion());
+        long builtFromIndexVersion = suggester.getBuiltFromIndexVersion();
+        versions.add(SuggesterResultLabels.BUILT_FROM_INDEX_VERSION, builtFromIndexVersion);
         versions.add(SuggesterResultLabels.CURRENT_INDEX_VERSION, currentIndexVersion);
+        versions.add(SuggesterResultLabels.STALE, builtFromIndexVersion < currentIndexVersion);
         indexVersions.add(suggester.getName(), versions);
         if (queryLimits.maybeExitWithPartialResults("Suggester process " + suggester.getName())) {
           return;
@@ -348,6 +351,11 @@ public class SuggestComponent extends SearchComponent
     int count = params.getInt(SUGGEST_COUNT, 1);
 
     List<SuggesterResult> suggesterResults = new ArrayList<>();
+    // True if any shard reported any suggester as built from an older index version than that
+    // shard's own current one - i.e. some replica's buildOnCommit rebuild (sync or async) hadn't
+    // caught up when it answered this query. Per-shard index versions aren't comparable with each
+    // other, so this collapses them to a single yes/no signal rather than exposing raw numbers.
+    boolean suggesterStale = false;
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
 
     // Collect Shard responses
@@ -365,6 +373,22 @@ public class SuggestComponent extends SearchComponent
           log.info("{} : {}", srsp.getShard(), namedList);
         }
         suggesterResults.add(toSuggesterResult(namedList));
+
+        Object rawVersions =
+            SolrResponseUtil.getSubsectionFromShardResponse(
+                rb, srsp, SuggesterResultLabels.SUGGESTER_INDEX_VERSIONS, true);
+        if (rawVersions instanceof NamedList) {
+          NamedList<?> versionsByName = (NamedList<?>) rawVersions;
+          for (int i = 0; i < versionsByName.size(); i++) {
+            Object versionEntryObj = versionsByName.getVal(i);
+            if (versionEntryObj instanceof NamedList) {
+              NamedList<?> versionEntry = (NamedList<?>) versionEntryObj;
+              if (Boolean.TRUE.equals(versionEntry.get(SuggesterResultLabels.STALE))) {
+                suggesterStale = true;
+              }
+            }
+          }
+        }
         // may have tripped the mem limits
         if (queryLimits.maybeExitWithPartialResults("Suggester finish")) {
           break;
@@ -378,6 +402,7 @@ public class SuggestComponent extends SearchComponent
     toNamedList(suggesterResult, namedListResults);
 
     rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
+    rb.rsp.add(SuggesterResultLabels.SUGGESTER_STALE, suggesterStale);
 
     // either throw or mark
     queryLimits.maybeExitWithPartialResults("Suggester finish");
