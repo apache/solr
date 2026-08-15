@@ -55,20 +55,20 @@ import org.slf4j.LoggerFactory;
     description = "Install, deploy and manage Solr packages in SolrCloud.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
-        "0:Operation completed successfully.",
-        "1:Operation failed; check output for details."
+      "0:Operation completed successfully.",
+      "1:Operation failed; check output for details."
     },
     footerHeading = "%nExamples:%n",
     footer = {
-        "  # Add a package repository",
-        "  bin/solr package add-repo myrepo https://my.repo.example/solr-packages",
-        "",
-        "  # Install a package and deploy it to a collection",
-        "  bin/solr package install mypkg:1.0.0",
-        "  bin/solr package deploy mypkg:1.0.0 --collections myCollection -y",
-        "",
-        "  # List packages deployed on a collection",
-        "  bin/solr package list-deployed -c myCollection"
+      "  # Add a package repository",
+      "  bin/solr package add-repo myrepo https://my.repo.example/solr-packages",
+      "",
+      "  # Install a package and deploy it to a collection",
+      "  bin/solr package install mypkg:1.0.0",
+      "  bin/solr package deploy mypkg:1.0.0 --collections myCollection -y",
+      "",
+      "  # List packages deployed on a collection",
+      "  bin/solr package list-deployed -c myCollection"
     })
 public class PackageTool extends ToolBase {
 
@@ -136,20 +136,23 @@ public class PackageTool extends ToolBase {
       index = "0",
       arity = "1",
       paramLabel = "COMMAND",
-      description = "Package command: add-repo, add-key, list-installed, list-available, list-deployed, install, deploy, undeploy, uninstall.")
+      description =
+          "Package command: add-repo, add-key, list-installed, list-available, list-deployed, install, deploy, undeploy, uninstall.")
   private String cmd;
 
   @picocli.CommandLine.Parameters(
       index = "1..*",
       arity = "0..*",
       paramLabel = "ARGS",
-      description = "Command-specific arguments (package name[:version], repository name/URL, key file, etc.).")
+      description =
+          "Command-specific arguments (package name[:version], repository name/URL, key file, etc.).")
   private String[] cmdArgs;
 
   @picocli.CommandLine.Option(
       names = {"--collections"},
       paramLabel = "COLLECTIONS",
-      description = "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
+      description =
+          "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
   private String collections;
 
   @picocli.CommandLine.Option(
@@ -208,13 +211,14 @@ public class PackageTool extends ToolBase {
     String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     String command = cli.getArgs()[0];
     String[] cmdArgs = Arrays.copyOfRange(cli.getArgs(), 1, cli.getArgs().length);
-    PackageFlags packageFlags = new PackageFlags(
-        cli.getOptionValue(COLLECTIONS_OPTION),
-        cli.hasOption(CLUSTER_OPTION),
-        cli.getOptionValues(PARAM_OPTION),
-        cli.hasOption(UPDATE_OPTION),
-        cli.getOptionValue(COLLECTION_OPTION),
-        cli.hasOption(NO_PROMPT_OPTION));
+    PackageFlags packageFlags =
+        new PackageFlags(
+            cli.getOptionValue(COLLECTIONS_OPTION),
+            cli.hasOption(CLUSTER_OPTION),
+            cli.getOptionValues(PARAM_OPTION),
+            cli.hasOption(UPDATE_OPTION),
+            cli.getOptionValue(COLLECTION_OPTION),
+            cli.hasOption(NO_PROMPT_OPTION));
 
     executePackage(solrUrl, zkHost, credentials, command, cmdArgs, packageFlags);
   }
@@ -225,7 +229,8 @@ public class PackageTool extends ToolBase {
       String credentials,
       String command,
       String[] cmdArgs,
-      PackageFlags packageFlags) throws Exception {
+      PackageFlags packageFlags)
+      throws Exception {
 
     // Need a logging free, clean output going through to the user.
     Level oldLevel = LoggerContext.getContext(false).getRootLogger().getLevel();
@@ -260,7 +265,8 @@ public class PackageTool extends ToolBase {
     }
   }
 
-  private void handleCommand(String command, String[] cmdArgs, PackageFlags packageFlags) throws Exception {
+  private void handleCommand(String command, String[] cmdArgs, PackageFlags packageFlags)
+      throws Exception {
     switch (command) {
       case "add-repo":
         String repoName = cmdArgs[0];
@@ -322,74 +328,76 @@ public class PackageTool extends ToolBase {
         }
         break;
       case "install":
-      {
-        Pair<String, String> parsedVersion = parsePackageVersion(cmdArgs[0]);
-        String packageName = parsedVersion.first();
-        String version = parsedVersion.second();
-        boolean success = repositoryManager.install(packageName, version);
-        if (success) {
-          printGreen(packageName + " installed.");
-        } else {
-          printRed(packageName + " installation failed.");
-        }
-        break;
-      }
-      case "deploy":
-      {
-        if (packageFlags.cluster() || packageFlags.collections() != null) {
+        {
           Pair<String, String> parsedVersion = parsePackageVersion(cmdArgs[0]);
           String packageName = parsedVersion.first();
           String version = parsedVersion.second();
-          String[] collections = packageFlags.collections() != null
-                  ? PackageUtils.validateCollections(packageFlags.collections().split(","))
-                  : new String[] {};
-          packageManager.deploy(
-              packageName,
-              version,
-              collections,
-              packageFlags.cluster(),
-              packageFlags.parameters(),
-              packageFlags.update(),
-              packageFlags.noPrompt());
-        } else {
-          printRed(
-              "Either specify --cluster to deploy cluster level plugins or --collections <list-of-collections> to deploy collection level plugins");
+          boolean success = repositoryManager.install(packageName, version);
+          if (success) {
+            printGreen(packageName + " installed.");
+          } else {
+            printRed(packageName + " installation failed.");
+          }
+          break;
         }
-        break;
-      }
+      case "deploy":
+        {
+          if (packageFlags.cluster() || packageFlags.collections() != null) {
+            Pair<String, String> parsedVersion = parsePackageVersion(cmdArgs[0]);
+            String packageName = parsedVersion.first();
+            String version = parsedVersion.second();
+            String[] collections =
+                packageFlags.collections() != null
+                    ? PackageUtils.validateCollections(packageFlags.collections().split(","))
+                    : new String[] {};
+            packageManager.deploy(
+                packageName,
+                version,
+                collections,
+                packageFlags.cluster(),
+                packageFlags.parameters(),
+                packageFlags.update(),
+                packageFlags.noPrompt());
+          } else {
+            printRed(
+                "Either specify --cluster to deploy cluster level plugins or --collections <list-of-collections> to deploy collection level plugins");
+          }
+          break;
+        }
       case "undeploy":
-      {
-        if (packageFlags.cluster() || packageFlags.collections() != null) {
+        {
+          if (packageFlags.cluster() || packageFlags.collections() != null) {
+            Pair<String, String> parsedVersion = parsePackageVersion(cmdArgs[0]);
+            if (parsedVersion.second() != null) {
+              throw new SolrException(
+                  ErrorCode.BAD_REQUEST,
+                  "Only package name expected, without a version. Actual: " + cmdArgs[0]);
+            }
+            String packageName = parsedVersion.first();
+            String[] collections =
+                packageFlags.collections() != null
+                    ? PackageUtils.validateCollections(packageFlags.collections().split(","))
+                    : new String[] {};
+            packageManager.undeploy(packageName, collections, packageFlags.cluster());
+          } else {
+            printRed(
+                "Either specify --cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");
+          }
+          break;
+        }
+      case "uninstall":
+        {
           Pair<String, String> parsedVersion = parsePackageVersion(cmdArgs[0]);
-          if (parsedVersion.second() != null) {
+          if (parsedVersion.second() == null) {
             throw new SolrException(
                 ErrorCode.BAD_REQUEST,
-                "Only package name expected, without a version. Actual: " + cmdArgs[0]);
+                "Package name and version are both required. Actual: " + cmdArgs[0]);
           }
           String packageName = parsedVersion.first();
-          String[] collections = packageFlags.collections() != null
-                  ? PackageUtils.validateCollections(packageFlags.collections().split(","))
-                  : new String[] {};
-          packageManager.undeploy(packageName, collections, packageFlags.cluster());
-        } else {
-          printRed(
-              "Either specify --cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");
+          String version = parsedVersion.second();
+          packageManager.uninstall(packageName, version);
+          break;
         }
-        break;
-      }
-      case "uninstall":
-      {
-        Pair<String, String> parsedVersion = parsePackageVersion(cmdArgs[0]);
-        if (parsedVersion.second() == null) {
-          throw new SolrException(
-              ErrorCode.BAD_REQUEST,
-              "Package name and version are both required. Actual: " + cmdArgs[0]);
-        }
-        String packageName = parsedVersion.first();
-        String version = parsedVersion.second();
-        packageManager.uninstall(packageName, version);
-        break;
-      }
       default:
         throw new RuntimeException("Unrecognized command: " + command);
     }
@@ -488,7 +496,8 @@ public class PackageTool extends ToolBase {
     String solrUrl = resolveSolrUrl(credentials);
     String zkHost = resolveZkHost(solrUrl, credentials);
     String[] args = cmdArgs == null ? new String[0] : cmdArgs;
-    PackageFlags packageFlags = new PackageFlags(collections, cluster, param, update, collection, noPrompt);
+    PackageFlags packageFlags =
+        new PackageFlags(collections, cluster, param, update, collection, noPrompt);
     executePackage(solrUrl, zkHost, credentials, cmd, args, packageFlags);
     return 0;
   }
@@ -501,18 +510,20 @@ public class PackageTool extends ToolBase {
       }
       String zkHost = connectionOptions.effectiveZkHost();
       if (zkHost != null) {
-        return CLIUtils.solrUrlFromConnection(CloudSolrClient.CloudSolrClientConnection.parse(zkHost), credentials);
+        return CLIUtils.solrUrlFromConnection(
+            CloudSolrClient.CloudSolrClientConnection.parse(zkHost), credentials);
       }
     }
     String zkHostProp = EnvUtils.getProperty("zkHost");
     if (zkHostProp != null && !zkHostProp.isBlank()) {
-      return CLIUtils.solrUrlFromConnection(CloudSolrClient.CloudSolrClientConnection.parse(zkHostProp), credentials);
+      return CLIUtils.solrUrlFromConnection(
+          CloudSolrClient.CloudSolrClientConnection.parse(zkHostProp), credentials);
     }
     String defaultUrl = CLIUtils.getDefaultSolrUrl();
     CLIO.err(
         "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
-        + defaultUrl
-        + ".");
+            + defaultUrl
+            + ".");
     return defaultUrl;
   }
 

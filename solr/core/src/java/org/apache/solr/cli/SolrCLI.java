@@ -83,7 +83,7 @@ import org.slf4j.LoggerFactory;
       AuthTool.class,
       CreateTool.class,
       DeleteTool.class,
-        PackageTool.class
+      PackageTool.class
     })
 public class SolrCLI implements CLIO {
 
