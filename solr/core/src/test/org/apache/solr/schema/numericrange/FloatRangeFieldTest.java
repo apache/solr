@@ -325,7 +325,7 @@ public class FloatRangeFieldTest extends SolrTestCase {
     // Integer mantissa with positive exponent
     FloatRangeField.RangeValue range = fieldType.parseRangeValue("[123e4 TO 567e8]");
     assertEquals(123e4f, range.mins[0], 0.0f);
-    assertEquals(567e8f, range.maxs[0], 0.0f);
+    assertEquals(5.6699998E+10f, range.maxs[0], 0.0f);
 
     // Decimal mantissa with negative exponent
     range = fieldType.parseRangeValue("[-1.2e-4 TO 3.4e-2]");
