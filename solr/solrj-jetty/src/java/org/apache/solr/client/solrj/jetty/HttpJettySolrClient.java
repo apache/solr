@@ -218,7 +218,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
   private HttpClient createHttpClient(Builder builder) {
     executor = builder.getExecutor();
     if (executor == null) {
-      this.executor = ExecutorUtil.newMDCAwareCachedThreadPool("h2sc"); // nocommmit new PR
+      this.executor = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("h2sc"));
       shutdownExecutor = true;
     } else {
       shutdownExecutor = false;

@@ -1080,6 +1080,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
+  /** Makes sure a query throws a SolrException with the listed response code */
   public static void assertQEx(String message, SolrQueryRequest req, SolrException.ErrorCode code) {
     try {
       ignoreException(".");
@@ -1299,6 +1300,37 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       mp.add(moreParams[i], moreParams[i + 1]);
     }
     return new SolrQueryRequestBase(h.getCore(), mp);
+  }
+
+  /**
+   * Generates a SolrQueryRequest representing the specified path and query params
+   *
+   * <p>Path information is used by {@link #assertQ(SolrQueryRequest, String...)} and similar
+   * helpers to look up the request handler to invoke. When used with these helpers, typically only
+   * the requestHandler path segment need by provided ("/select", "/export", etc.)
+   *
+   * @see #req(String...)
+   */
+  public static SolrQueryRequest reqWithPath(String path, String... params) {
+    return withPath(path, req(params));
+  }
+
+  /**
+   * Generates a SolrQueryRequest representing the specified path and query params
+   *
+   * <p>Path information is used by {@link #assertQ(SolrQueryRequest, String...)} and similar
+   * helpers to look up the request handler to invoke. When used with these helpers, typically only
+   * the requestHandler path segment need by provided ("/select", "/export", etc.)
+   *
+   * @see #req(SolrParams, String...)
+   */
+  public static SolrQueryRequest reqWithPath(String path, SolrParams params, String... moreParams) {
+    return withPath(path, req(params, moreParams));
+  }
+
+  public static SolrQueryRequest withPath(String path, SolrQueryRequest req) {
+    req.getContext().put(CommonParams.PATH, path);
+    return req;
   }
 
   /** Necessary to make method signatures un-ambiguous */

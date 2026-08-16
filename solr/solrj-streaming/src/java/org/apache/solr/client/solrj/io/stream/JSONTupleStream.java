@@ -28,7 +28,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.JSONParser;
@@ -53,16 +52,8 @@ public class JSONTupleStream implements TupleStreamParser {
   // temporary...
   public static JSONTupleStream create(SolrClient server, SolrParams requestParams)
       throws IOException, SolrServerException {
-    String p = requestParams.get("qt");
-    if (p != null) {
-      ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
-      modifiableSolrParams.remove("qt");
-    }
-
-    QueryRequest query = new QueryRequest(requestParams);
-    query.setPath(p);
+    QueryRequest query = new QueryRequest(requestParams, SolrRequest.METHOD.POST);
     query.setResponseParser(new InputStreamResponseParser("json"));
-    query.setMethod(SolrRequest.METHOD.POST);
     NamedList<Object> genericResponse = server.request(query);
     InputStream stream = (InputStream) genericResponse.get(InputStreamResponseParser.STREAM_KEY);
     InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);

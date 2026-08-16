@@ -411,7 +411,7 @@ public class CoreContainer {
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
     OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader);
-    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
+    this.metricManager = new SolrMetricManager(loader);
     this.tracer = TraceUtils.getGlobalTracer();
 
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
