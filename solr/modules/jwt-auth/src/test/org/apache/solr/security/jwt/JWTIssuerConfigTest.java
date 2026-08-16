@@ -61,16 +61,17 @@ public class JWTIssuerConfigTest extends SolrTestCase {
     testIssuerConfigMap = testIssuer.asConfig();
 
     testIssuerJson =
-        "{\n"
-            + "  \"aud\":\"audience\",\n"
-            + "  \"tokenEndpoint\":\"https://issuer/token\",\n"
-            + "  \"wellKnownUrl\":\"wellknown\",\n"
-            + "  \"clientId\":\"clientid\",\n"
-            + "  \"authorizationFlow\":\"code_pkce\",\n"
-            + "  \"jwksUrl\":[\"https://issuer/path\"],\n"
-            + "  \"name\":\"name\",\n"
-            + "  \"iss\":\"issuer\",\n"
-            + "  \"authorizationEndpoint\":\"https://issuer/authz\"}";
+        """
+            {
+              "aud":"audience",
+              "tokenEndpoint":"https://issuer/token",
+              "wellKnownUrl":"wellknown",
+              "clientId":"clientid",
+              "authorizationFlow":"code_pkce",
+              "jwksUrl":["https://issuer/path"],
+              "name":"name",
+              "iss":"issuer",
+              "authorizationEndpoint":"https://issuer/authz"}""";
   }
 
   @Override

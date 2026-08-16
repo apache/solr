@@ -146,7 +146,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     claims.setClaim("admin", false); // another boolean claim
     List<String> roles = Arrays.asList("group-one", "other-group", "group-three");
     claims.setStringListClaim(
-        "roles", roles); // multi-valued claims work too and will end up as a JSON array
+        "roles", roles); // multivalued claims work too and will end up as a JSON array
 
     // Keycloak Style resource_access roles
     HashMap<String, Object> solrMap = new HashMap<>();
@@ -701,7 +701,11 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
         () ->
             CryptoKeys.parseX509Certs(
                 new ByteArrayInputStream(
-                    ("-----BEGIN CERTIFICATE-----\n" + "foo\n" + "-----END CERTIFICATE-----\n")
+                    ("""
+                        -----BEGIN CERTIFICATE-----
+                        foo
+                        -----END CERTIFICATE-----
+                        """)
                         .getBytes(StandardCharsets.UTF_8))));
   }
 
