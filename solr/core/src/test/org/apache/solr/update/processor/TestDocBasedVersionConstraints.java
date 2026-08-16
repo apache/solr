@@ -60,22 +60,22 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertU(adoc("id", "aaa", "name", "a2", "my_version_l", "1002"));
     assertU(commit());
     assertU(adoc("id", "aaa", "name", "XX", "my_version_l", "1"));
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:XX"), "/response/numFound==0");
     assertJQ(req("q", "+id:aaa +name:a2"), "/response/numFound==1");
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
 
     // skip low version against uncommitted data from updateLog
     assertU(adoc("id", "aaa", "name", "a3", "my_version_l", "1003"));
     assertU(adoc("id", "aaa", "name", "XX", "my_version_l", "7"));
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a3'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a3'}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:XX"), "/response/numFound==0");
     assertJQ(req("q", "+id:aaa +name:a3"), "/response/numFound==1");
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a3'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a3'}}");
 
     // interleave updates to multiple docs using same versions
     for (long ver = 1010; ver < 1020; ver++) {
@@ -86,7 +86,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     for (String id : new String[] {"aaa", "bbb", "ccc", "ddd"}) {
       assertU(adoc("id", id, "name", "XX", "my_version_l", "10"));
       assertJQ(
-          req("qt", "/get", "id", id, "fl", "my_version_l"),
+          reqWithPath("/get", "id", id, "fl", "my_version_l"),
           "=={'doc':{'my_version_l':" + 1019 + "}}");
     }
     assertU(commit());
@@ -96,7 +96,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
       assertJQ(req("q", "+name:XX +id:" + id), "/response/numFound==0");
       assertJQ(req("q", "+id:" + id + " +my_version_l:1019"), "/response/numFound==1");
       assertJQ(
-          req("qt", "/get", "id", id, "fl", "my_version_l"),
+          reqWithPath("/get", "id", id, "fl", "my_version_l"),
           "=={'doc':{'my_version_l':" + 1019 + "}}");
     }
   }
@@ -109,42 +109,42 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertU(adoc("id", "aaa", "name", "a2", "my_version_l", "1002"));
     assertU(commit());
     deleteAndGetVersion("aaa", params("del_version", "7"));
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:a2"), "/response/numFound==1");
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
 
     // skip low version delete against uncommitted doc from updateLog
     assertU(adoc("id", "aaa", "name", "a3", "my_version_l", "1003"));
     deleteAndGetVersion("aaa", params("del_version", "8"));
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a3'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a3'}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:a3"), "/response/numFound==1");
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a3'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a3'}}");
 
     // skip low version add against uncommitted "delete" from updateLog
     deleteAndGetVersion("aaa", params("del_version", "1010"));
     assertU(adoc("id", "aaa", "name", "XX", "my_version_l", "22"));
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:XX"), "/response/numFound==0");
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}");
 
     // skip low version add against committed "delete"
     // (delete was already done & committed above)
     assertU(adoc("id", "aaa", "name", "XX", "my_version_l", "23"));
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:XX"), "/response/numFound==0");
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}");
   }
 
   /**
@@ -162,13 +162,13 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
         jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_f", "4.2")),
         params("update.chain", "external-version-float"));
     assertU(commit());
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a1'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a1'}}");
     deleteAndGetVersion(
         "aaa",
         params(
             "del_version", "7",
             "update.chain", "external-version-float"));
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a1'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a1'}}");
     assertU(commit());
 
     // skip low version delete against uncommitted doc from updateLog
@@ -180,11 +180,11 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
         params(
             "del_version", "8",
             "update.chain", "external-version-float"));
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:a2"), "/response/numFound==1");
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
 
     // skip low version add against uncommitted "delete" from updateLog
     deleteAndGetVersion(
@@ -196,12 +196,13 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
         jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_f", "10.05")),
         params("update.chain", "external-version-float"));
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_f"), "=={'doc':{'my_version_f':10.10}}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_f"),
+        "=={'doc':{'my_version_f':10.10}}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:XX"), "/response/numFound==0");
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_f"), "=={'doc':{'my_version_f':10.10}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_f"), "=={'doc':{'my_version_f':10.10}}");
 
     // skip low version add against committed "delete"
     // (delete was already done & committed above)
@@ -209,12 +210,13 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
         jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_f", "10.09")),
         params("update.chain", "external-version-float"));
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_f"), "=={'doc':{'my_version_f':10.10}}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_f"),
+        "=={'doc':{'my_version_f':10.10}}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:XX"), "/response/numFound==0");
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_f"), "=={'doc':{'my_version_f':10.10}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_f"), "=={'doc':{'my_version_f':10.10}}");
   }
 
   public void testFailOnOldVersion() throws Exception {
@@ -236,7 +238,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertEquals(409, ex.code());
 
     assertU(commit());
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a1'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a1'}}");
 
     ex =
         expectThrows(
@@ -247,7 +249,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
             });
     assertEquals(409, ex.code());
 
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a1'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a1'}}");
     assertU(commit());
 
     // fail low version delete against uncommitted doc from updateLog
@@ -263,11 +265,11 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
             });
     assertEquals(409, ex.code());
 
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:a2"), "/response/numFound==1");
-    assertJQ(req("qt", "/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
+    assertJQ(reqWithPath("/get", "id", "aaa", "fl", "name"), "=={'doc':{'name':'a2'}}");
 
     // fail low version add against uncommitted "delete" from updateLog
     deleteAndGetVersion(
@@ -286,12 +288,12 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertEquals(409, ex.code());
 
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:XX"), "/response/numFound==0");
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}");
 
     // fail low version add against committed "delete"
     // (delete was already done & committed above)
@@ -306,12 +308,12 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertEquals(409, ex.code());
 
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}}");
     assertU(commit());
     assertJQ(req("q", "+id:aaa"), "/response/numFound==1");
     assertJQ(req("q", "+id:aaa +name:XX"), "/response/numFound==0");
     assertJQ(
-        req("qt", "/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}");
+        reqWithPath("/get", "id", "aaa", "fl", "my_version_l"), "=={'doc':{'my_version_l':1010}}");
   }
 
   // Test multiple versions, that it has to be greater than my_version_l and my_version_f
@@ -589,7 +591,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
                 + (!winnerIsDeleted ? ",'name':'name" + id + "_" + winner + "'}" : "}");
 
         assertJQ(
-            req("qt", "/get", "id", "" + id, "fl", "id,name,my_version_l"),
+            reqWithPath("/get", "id", "" + id, "fl", "id,name,my_version_l"),
             "=={'doc':" + expectedDoc + "}");
         assertU(commit());
         assertJQ(
@@ -638,10 +640,10 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertU(commit());
     assertJQ(req("q", "*:*"), "/response/numFound==2");
     assertJQ(
-        req("qt", "/get", "id", "a", "fl", "id,my_version_l"),
+        reqWithPath("/get", "id", "a", "fl", "id,my_version_l"),
         "=={'doc':{'id':'a', 'my_version_l':3}}"); // version changed to 3
     assertJQ(
-        req("qt", "/get", "id", "b", "fl", "id,my_version_l"),
+        reqWithPath("/get", "id", "b", "fl", "id,my_version_l"),
         "=={'doc':{'id':'b'}}"); // no version, because update failed
 
     // Try to update again using the external version enforcement, but allowing old docs to not have
@@ -657,10 +659,10 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertU(commit());
     assertJQ(req("q", "*:*"), "/response/numFound==2");
     assertJQ(
-        req("qt", "/get", "id", "a", "fl", "id,my_version_l"),
+        reqWithPath("/get", "id", "a", "fl", "id,my_version_l"),
         "=={'doc':{'id':'a', 'my_version_l':3}}");
     assertJQ(
-        req("qt", "/get", "id", "b", "fl", "id,my_version_l"),
+        reqWithPath("/get", "id", "b", "fl", "id,my_version_l"),
         "=={'doc':{'id':'b', 'my_version_l':1}}");
   }
 
