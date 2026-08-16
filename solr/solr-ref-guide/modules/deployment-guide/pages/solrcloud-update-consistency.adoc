@@ -21,7 +21,7 @@ Several of these guarantees are intentionally weaker than those of a transaction
 
 Developers interested in how these guarantees are implemented should read the companion document https://github.com/apache/solr/blob/main/dev-docs/distributed-update-internals.adoc[Distributed Update Internals] in the source repository.
 
-== What a Successful Update Means
+== Replication
 
 An update request may be sent to any node in the cluster.
 Each document is routed to the leader replica of its shard, which assigns the document a version, applies the update locally, and forwards it to the other in-sync NRT and TLOG replicas of the shard.
@@ -58,15 +58,20 @@ Documents sent in one batch may be applied on replicas, and become searchable, i
 The unit of atomicity is a single document.
 A document update fully replaces the previous version of that document (xref:indexing-guide:partial-document-updates.adoc#atomic-updates[atomic updates] are read-modify-write operations performed on the leader, producing a full replacement document).
 Queries never observe a partially updated document.
+A xref:indexing-guide:indexing-nested-documents.adoc[nested document] hierarchy counts as one document for this purpose: the root and all of its descendants are indexed together as a single block, and an update to any document in the hierarchy rewrites the entire block.
+xref:indexing-guide:partial-document-updates.adoc#in-place-updates[In-place updates] are a narrow exception to full replacement — they modify eligible docValues fields without reindexing the document — but they are still atomic per document.
 
 There are no multi-document transactions.
 A batch of documents is processed as independent operations: some may succeed while others fail, and there is no rollback of the documents that succeeded.
+By default a document error fails the request at that point; the {solr-javadocs}/core/org/apache/solr/update/processor/TolerantUpdateProcessorFactory.html[`TolerantUpdateProcessorFactory`] can be configured to instead continue past per-document failures and report them all in the response.
 Similarly, a delete-by-query spanning multiple shards is not atomic across those shards.
+The xref:indexing-guide:indexing-with-update-handlers.adoc#rollback-operations[rollback command] is not supported in SolrCloud.
 
 == Visibility
 
 An update is not searchable until a commit opens a new searcher; durability (via the transaction log and hard commits) and searchability are independent.
 Each replica opens its searcher independently, so a document may briefly be searchable on one replica but not another; applications using `autoSoftCommit` or `commitWithin` must embrace this eventual consistency, as described in xref:solrcloud-shards-indexing.adoc#ignoring-commits-from-client-applications-in-solrcloud[Ignoring Commits from Client Applications in SolrCloud].
+An application can avoid replica-to-replica visibility differences from any single user by routing that user's queries to the same replica, using stable routing with the xref:solrcloud-distributed-requests.adoc#shards-preference-parameter[`shards.preference` parameter] (e.g., `replica.base:stable:hash:sessionId`); each user then observes one replica's consistent timeline.
 
 The exception is xref:configuration-guide:realtime-get.adoc[RealTime Get], which retrieves the latest version of a document by id — including uncommitted updates — directly from the transaction log.
 
@@ -75,6 +80,8 @@ The exception is xref:configuration-guide:realtime-get.adoc[RealTime Get], which
 Solr supports conditional updates through the `\_version_` field: a client may require that a document already exist, not exist, or exist at an exact version, and a failed condition rejects the update with an HTTP 409 conflict.
 This is the supported way to prevent lost updates when multiple clients read, modify, and rewrite the same documents.
 See xref:indexing-guide:partial-document-updates.adoc#optimistic-concurrency[Optimistic Concurrency].
+
+Applications whose versions originate in an external system of record can instead enforce ordering with a version field of their own, via `DocBasedVersionConstraintsProcessorFactory`; see xref:indexing-guide:partial-document-updates.adoc#document-centric-versioning-constraints[Document Centric Versioning Constraints].
 
 == Failures and Retries
 

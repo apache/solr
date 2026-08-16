@@ -28,7 +28,7 @@ sequenceDiagram
 
     C->>N: /update (batch of docs)
     N->>L: forward each doc (DistribPhase=TOLEADER)
-    L->>L: per-doc lock; OCC check; assign _version_
+    L->>L: per-doc lock, OCC check, assign _version_
     L->>L: Lucene write + tlog append
     L--)R: stream doc (DistribPhase=FROMLEADER, async)
     R->>R: drop if stale version, else apply + tlog
