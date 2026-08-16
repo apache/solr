@@ -103,20 +103,6 @@ public class RegexRulesPasswordProvider implements ExtractionPasswordProvider {
     return rules;
   }
 
-  /**
-   * Initialize rules through file input stream. This is a convenience for first calling
-   * setPasswordMap(parseRulesFile(is)).
-   *
-   * @param is the input stream with rules file, one line per rule on format regex=password
-   */
-  public void parse(InputStream is) {
-    setPasswordMap(parseRulesFile(is));
-  }
-
-  public LinkedHashMap<Pattern, String> getPasswordMap() {
-    return passwordMap;
-  }
-
   public void setPasswordMap(LinkedHashMap<Pattern, String> linkedHashMap) {
     this.passwordMap = linkedHashMap;
   }
@@ -137,10 +123,5 @@ public class RegexRulesPasswordProvider implements ExtractionPasswordProvider {
    */
   public void setExplicitPassword(String explicitPassword) {
     this.explicitPassword = explicitPassword;
-  }
-
-  /** Resets explicit password, so that map will be used for lookups */
-  public void resetExplicitPassword() {
-    this.explicitPassword = null;
   }
 }
