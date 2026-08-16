@@ -43,12 +43,15 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -758,7 +761,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetField(tsort);
     query.setFacetMissing(false);
-    QueryResponse resp = queryRandomShard(query);
+    QueryResponse resp = queryRandomShard("/select", query);
     List<FacetField> ffs = resp.getFacetFields();
     for (FacetField ff : ffs) {
       if (ff.getName().equals(tsort) == false) continue;
@@ -1143,8 +1146,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
     params.set("name", collectionName);
     params.set("collection.configName", configSetName);
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.POST, "/admin/collections", SolrRequestType.ADMIN, params);
 
     CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
@@ -1247,7 +1250,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       expected.add(val);
     }
 
-    QueryRequest qr = new QueryRequest(params("qt", "/get", "id", "1000"));
+    QueryRequest qr = new QueryRequest("/get", params("id", "1000"));
     for (SolrClient client : clients) {
       val += 10;
       NamedList<?> rsp = client.request(qr);
@@ -1662,14 +1665,15 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
+  protected QueryResponse queryRandomShard(String requestHandler, ModifiableSolrParams params)
       throws SolrServerException, IOException {
 
-    if (r.nextBoolean()) return super.queryRandomShard(params);
+    if (r.nextBoolean()) return super.queryRandomShard(requestHandler, params);
 
     if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
 
-    QueryResponse rsp = getCommonCloudSolrClient().query(params);
+    QueryResponse rsp =
+        new QueryRequest(requestHandler, params).process(getCommonCloudSolrClient());
     return rsp;
   }
 

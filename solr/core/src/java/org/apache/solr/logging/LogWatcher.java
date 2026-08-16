@@ -68,9 +68,9 @@ public abstract class LogWatcher<E> {
 
   public abstract String getThreshold();
 
-  public void add(E event, long timstamp) {
+  public void add(E event, long timestamp) {
     history.add(unmodifiable(toSolrDocument(event)));
-    last = timstamp;
+    last = timestamp;
   }
 
   /**
