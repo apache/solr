@@ -106,7 +106,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     doTestSomeStuff("/dismax");
   }
 
-  public void doTestSomeStuff(final String qt) {
+  public void doTestSomeStuff(final String handler) {
 
     assertQ(
         "basic match",
@@ -127,7 +127,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ(
         "multi qf",
-        reqWithPath(qt, "q", "cool", "qf", "subject", "qf", "features_t"),
+        reqWithPath(handler, "q", "cool", "qf", "subject", "qf", "features_t"),
         "//*[@numFound='3']");
 
     assertQ(
@@ -137,7 +137,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ(
         "boost query",
-        reqWithPath(qt, "q", "cool stuff", "bq", "subject:hell^400"),
+        reqWithPath(handler, "q", "cool stuff", "bq", "subject:hell^400"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='666']",
         "//result/doc[2]/str[@name='id'][.='42']",
@@ -146,7 +146,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(
         "multi boost query",
         reqWithPath(
-            qt,
+            handler,
             "q",
             "cool stuff",
             "bq",
@@ -171,19 +171,21 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ(
         "relying on ALTQ from config",
-        reqWithPath(qt, "fq", "id:666", "facet", "false"),
+        reqWithPath(handler, "fq", "id:666", "facet", "false"),
         "//*[@numFound='1']");
 
     assertQ(
         "explicit ALTQ",
-        reqWithPath(qt, "q.alt", "id:9999", "fq", "id:666", "facet", "false"),
+        reqWithPath(handler, "q.alt", "id:9999", "fq", "id:666", "facet", "false"),
         "//*[@numFound='0']");
 
     assertQ(
-        "no query slop == no match", reqWithPath(qt, "q", "\"cool chick\""), "//*[@numFound='0']");
+        "no query slop == no match",
+        reqWithPath(handler, "q", "\"cool chick\""),
+        "//*[@numFound='0']");
     assertQ(
         "query slop == match",
-        reqWithPath(qt, "qs", "2", "q", "\"cool chick\""),
+        reqWithPath(handler, "qs", "2", "q", "\"cool chick\""),
         "//*[@numFound='1']");
   }
 
