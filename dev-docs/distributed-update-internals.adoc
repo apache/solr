@@ -9,10 +9,6 @@ toc::[]
 The Solr Reference Guide states the user-facing consistency model of SolrCloud updates in
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/deployment-guide/pages/solrcloud-update-consistency.adoc[SolrCloud Update Consistency Model].
 This document explains *how* those guarantees are implemented: the distributed update path from the receiving node through the shard leader to the replicas, and the versioning scheme that everything else leans on.
-A particular aim is to give enough precision to reason about idempotency and retry-ability of updates.
-
-It was written from reading the source of the `main` branch in August 2026.
-Things might be off or drift out of date — trust the code over this document, and please fix what you find wrong.
 
 Class names below are under `solr/core/src/java/org/apache/solr/` unless otherwise noted.
 
@@ -209,19 +205,6 @@ Lock acquisition times out after `docLockTimeoutMs`, surfacing pathological cont
 
 Everything that must be atomic per document happens inside `runWithLock`: the OCC check, atomic-update read-modify-write, version assignment, tlog append and index write.
 This is also what makes realtime get reliable — a concurrent RTG cannot observe a state between the tlog map update and the version assignment.
-
-=== Implications for idempotency and retries
-
-What the above buys, and does not buy, for retrying updates:
-
-* *Internal* redelivery (leader → replica) is fully idempotent: the version travels with the document, and the drop rule discards repeats.
-  This is why the streaming fan-out can retry without coordination.
-* A *client* retry of a full-document add or delete-by-id is a new update: the leader assigns a *fresh* version and the document is applied again.
-  The end state is the same document, so the retry is effectively idempotent — but it is a second write, and it will overwrite any concurrent write from another client that landed between the attempts (ordinary last-writer-wins).
-* A client retry of a non-idempotent atomic update (`inc`, `add`, `remove`) is *not* safe: the first attempt may have been applied even though the response was lost (e.g., the connection died after the leader wrote locally).
-  The remedy is optimistic concurrency: read the document (RTG), compute the change, and send it conditioned on the read version; a retry after an ambiguous failure then either applies once or fails with 409, never applies twice.
-* The failure modes a client can actually observe are: an error forwarding to the leader (nothing was applied for that document — safe to retry), a `LeaderChanged` error (ambiguous — the old leader applied it locally; retry is safe only under the full-document rule above), a version conflict (409), and a lost connection (fully ambiguous).
-  A replica failing to apply a document is *never* client-visible except through a reduced `rf`.
 
 == References
 
