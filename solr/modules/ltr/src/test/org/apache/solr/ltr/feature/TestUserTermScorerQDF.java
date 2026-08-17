@@ -23,7 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestUserTermScorereQDF extends TestRerankBase {
+public class TestUserTermScorerQDF extends TestRerankBase {
 
   @Before
   public void before() throws Exception {

@@ -55,7 +55,6 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class LTRQParserPlugin extends QParserPlugin
     implements ResourceLoaderAware, ManagedResourceObserver {
-  public static final String NAME = "ltr";
   private static final String ORIGINAL_RANKING = "_OriginalRanking_";
 
   // params for setting custom external info that features can use, like query
@@ -99,9 +98,9 @@ public class LTRQParserPlugin extends QParserPlugin
   }
 
   /**
-   * Given a set of local SolrParams, extract all of the efi.key=value params into a map
+   * Given a set of local SolrParams, extract all the efi.key=value params into a map
    *
-   * @param localParams Local request parameters that might conatin efi params
+   * @param localParams Local request parameters that might contain efi params
    * @return Map of efi params, where the key is the name of the efi param, and the value is the
    *     value of the efi param
    */

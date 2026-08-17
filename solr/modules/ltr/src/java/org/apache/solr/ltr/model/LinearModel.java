@@ -151,8 +151,7 @@ public class LinearModel extends LTRScoringModel {
       index++;
     }
 
-    return Explanation.match(
-        finalScore, toString() + " model applied to features, sum of:", details);
+    return Explanation.match(finalScore, this + " model applied to features, sum of:", details);
   }
 
   @Override

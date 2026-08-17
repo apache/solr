@@ -59,7 +59,7 @@ public class TestWrapperModel extends TestRerankBase {
   }
 
   @Test
-  public void testValidate() throws Exception {
+  public void testValidate() {
     WrapperModel wrapperModel = new StubWrapperModel("testModel");
     wrapperModel.validate();
 
@@ -124,14 +124,14 @@ public class TestWrapperModel extends TestRerankBase {
   }
 
   @Test
-  public void testMethodOverridesAndDelegation() throws Exception {
+  public void testMethodOverridesAndDelegation() {
     assumeWorkingMockito();
     final int overridableMethodCount = testOverwrittenMethods();
     final int methodCount = testDelegateMethods();
     assertEquals("method count mismatch", overridableMethodCount, methodCount);
   }
 
-  private int testOverwrittenMethods() throws Exception {
+  private int testOverwrittenMethods() {
     int overridableMethodCount = 0;
     for (final Method superClassMethod : LTRScoringModel.class.getDeclaredMethods()) {
       final int modifiers = superClassMethod.getModifiers();
@@ -172,7 +172,7 @@ public class TestWrapperModel extends TestRerankBase {
     return overridableMethodCount;
   }
 
-  private int testDelegateMethods() throws Exception {
+  private int testDelegateMethods() {
     int methodCount = 0;
     WrapperModel wrapperModel = Mockito.spy(new StubWrapperModel("testModel"));
 

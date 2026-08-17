@@ -66,7 +66,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
   private static List<Feature> makeFieldValueFeatures(int[] featureIds, String field) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      final Map<String, Object> params = new HashMap<String, Object>();
+      final Map<String, Object> params = new HashMap<>();
       params.put("field", field);
       final Feature f =
           Feature.getInstance(
@@ -126,7 +126,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
 
       final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2}, "finalScore");
       final List<Normalizer> norms =
-          new ArrayList<Normalizer>(
+          new ArrayList<>(
               Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
       final List<Feature> allFeatures =
           makeFieldValueFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, "finalScore");
@@ -181,7 +181,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
 
       final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2}, "finalScoreFloat");
       final List<Normalizer> norms =
-          new ArrayList<Normalizer>(
+          new ArrayList<>(
               Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
       final List<Feature> allFeatures =
           makeFieldValueFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, "finalScoreFloat");
@@ -238,7 +238,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
         new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams())) {
       List<Feature> features = makeFieldValueFeatures(new int[] {0}, "finalScore");
       List<Normalizer> norms =
-          new ArrayList<Normalizer>(
+          new ArrayList<>(
               Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
       List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0}, "finalScore");
       MockModel ltrScoringModel = new MockModel("test", features, norms, "test", allFeatures, null);
@@ -256,7 +256,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
 
       features = makeFieldValueFeatures(new int[] {0, 1, 2}, "finalScore");
       norms =
-          new ArrayList<Normalizer>(
+          new ArrayList<>(
               Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
       allFeatures = makeFieldValueFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, "finalScore");
       ltrScoringModel = new MockModel("test", features, norms, "test", allFeatures, null);

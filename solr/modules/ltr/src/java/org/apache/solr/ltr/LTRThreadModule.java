@@ -154,7 +154,7 @@ public final class LTRThreadModule implements NamedListInitializedPlugin {
     ltrSemaphore.acquire();
   }
 
-  public void releaseLTRSemaphore() throws InterruptedException {
+  public void releaseLTRSemaphore() {
     ltrSemaphore.release();
   }
 
