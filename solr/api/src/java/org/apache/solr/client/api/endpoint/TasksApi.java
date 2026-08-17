@@ -27,10 +27,9 @@ import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
-@Path(INDEX_PATH_PREFIX + "/tasks")
 public interface TasksApi {
 
-  @Path("")
+  @Path(INDEX_PATH_PREFIX + "/tasks")
   interface List {
     @GET
     @StoreApiParameters
@@ -40,7 +39,7 @@ public interface TasksApi {
     ListActiveTaskResponse listAllActiveTasks() throws Exception;
   }
 
-  @Path("/{taskID}")
+  @Path(INDEX_PATH_PREFIX + "/tasks/{taskID}")
   interface Status {
     @GET
     @StoreApiParameters
