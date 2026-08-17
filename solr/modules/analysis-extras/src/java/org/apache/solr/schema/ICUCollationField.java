@@ -106,8 +106,8 @@ public class ICUCollationField extends FieldType {
   private static void warnOrFailUdvas(boolean failHardOnUdvas) {
     // NOTE: it may seem odd that we're checking these conditions ourselves rather than relying on
     // the internal checking of `assertWarnOrFail(...)`. But the main reason we're logging this
-    // error via
-    // `XMLConfigFile.assertWarnOrFail(...)` is because this is at its root a xml config file
+    // error via `XMLConfigFile.assertWarnOrFail(...)` is because this is at its root a xml config
+    // file
     // error, so we log in a way that's consistent with that.
     assertWarnOrFail(UDVAS_MESSAGE, false, failHardOnUdvas);
   }
