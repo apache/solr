@@ -54,18 +54,14 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
   private static final int ZK_RECONNECT_INTERVAL_MS = 1000;
 
   /**
-   * Short enough that a real expiry is reachable in a test, but deliberately larger than and offset
-   * from the reconnect interval -- do not round this to a multiple of it.
-   *
-   * <p>Curator abandons a session on its own timer, at detectionLag + this, while the old
-   * connection retries on a fixed ladder at detectionLag + N * interval. The detection lag appears
-   * in both and cancels, so a timeout that is a multiple of the interval puts those two events on
-   * the same millisecond. Whoever wins then decides whether the session expires at all -- and if
-   * the old connection wins it resumes the session, nothing expires, and this test silently
-   * exercises nothing. Offsetting by half an interval puts Curator's decision midway between two
-   * rungs, so it wins reliably rather than on a coin flip.
+   * An odd multiple of half the reconnect interval, so Curator's give-up decision lands as far as
+   * possible from every rung of the old connection's retry ladder -- land on a rung and the two
+   * race, and if the retry wins it resumes the session so nothing ever expires. 3/2 is the smallest
+   * such multiple that also exceeds the interval, which it must: the outage is exactly this long,
+   * and it has to outlast a retry while still ending before Curator's replacement connection
+   * reaches out.
    */
-  private static final int SESSION_TIMEOUT_MS = ZK_RECONNECT_INTERVAL_MS + 500;
+  private static final int SESSION_TIMEOUT_MS = ZK_RECONNECT_INTERVAL_MS * 3 / 2;
 
   /**
    * ZooKeeper's session-expiry bucket width, so the server's reap of an expired session's ephemeral
@@ -99,7 +95,7 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
    * ephemeral leader znode is still visible. That happens because Curator does not wait for the
    * server to declare the session dead; it injects the expiration on its own timer and starts a
    * fresh session, while the server only reaps ephemerals on a tickTime-wide bucket. The reap can
-   * therefore trail the client's expiry by up to a tick, which is why the tick is set coarse here.
+   * therefore trail the client's expiry by up to a tick.
    *
    * <p>Second, the rejoin has to land in the registration window. Having found the stale node, the
    * OET deletes it and calls rejoinOverseerElection, which picks up the elector's current context —
@@ -154,13 +150,6 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
             zkProxy.close();
             // Deliberate fault injection, not a poll: hold ZK unreachable long enough to expire the
             // session. There is no condition to wait on, so waitFor/RetryUtil do not apply.
-            //
-            // Unpadded on purpose. The cut has to outlast the old connection's retry (detection lag
-            // + the reconnect interval) or that retry resumes the session and nothing ever expires.
-            // It also has to end before Curator's replacement connection reaches out (detection lag
-            // + the session timeout), or that misses the port, waits another full interval, and the
-            // server reaps the old leader znode before the race can happen. Reopening exactly at
-            // the session timeout clears the second bound for any positive detection lag.
             Thread.sleep(SESSION_TIMEOUT_MS);
             zkProxy.reopen();
             if (!waitForHealthyOverseer(zkController, probe, RECOVERY_WAIT_SECONDS)) {
