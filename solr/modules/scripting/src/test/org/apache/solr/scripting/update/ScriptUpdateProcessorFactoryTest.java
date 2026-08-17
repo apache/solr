@@ -74,7 +74,7 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("single-script");
     final ScriptUpdateProcessorFactory factory =
-        ((ScriptUpdateProcessorFactory) chained.getProcessors().get(0));
+        ((ScriptUpdateProcessorFactory) chained.getProcessors().getFirst());
     final List<String> functionMessages = new ArrayList<>();
     factory.setScriptEngineCustomizer(
         new ScriptEngineCustomizer() {
@@ -85,8 +85,7 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
         });
     assertNotNull(chained);
 
-    SolrInputDocument d =
-        processAdd("single-script", doc(f("id", "1"), f("name", " foo "), f("subject", "bar")));
+    processAdd("single-script", doc(f("id", "1"), f("name", " foo "), f("subject", "bar")));
 
     processCommit("run-no-scripts");
 
@@ -111,7 +110,7 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
 
       UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(chain);
       final ScriptUpdateProcessorFactory factory =
-          ((ScriptUpdateProcessorFactory) chained.getProcessors().get(0));
+          ((ScriptUpdateProcessorFactory) chained.getProcessors().getFirst());
       final List<String> functionMessages = new ArrayList<>();
       ScriptEngineCustomizer customizer =
           new ScriptEngineCustomizer() {
@@ -202,7 +201,7 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
     assertEquals(chain + " didn't add integer field", 42, d.getFieldValue("script_added_i"));
   }
 
-  public void testPropogatedException() throws Exception {
+  public void testPropagatedException() {
     final String chain = "error-on-add";
     SolrException e =
         expectThrows(
@@ -213,7 +212,7 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
         0 < e.getMessage().indexOf("no-soup-fo-you"));
   }
 
-  public void testMissingFunctions() throws Exception {
+  public void testMissingFunctions() {
     final String chain = "missing-functions";
     SolrException e =
         expectThrows(
@@ -233,7 +232,7 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
 
   @SuppressWarnings("removal")
   @SuppressForbidden(reason = "Deprecated for removal in future Java version")
-  public void testScriptSandbox() throws Exception {
+  public void testScriptSandbox() {
     assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
     expectThrows(
         SecurityException.class,
