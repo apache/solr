@@ -83,7 +83,6 @@ import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
@@ -220,10 +219,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
   private HttpClient createHttpClient(Builder builder) {
     executor = builder.getExecutor();
     if (executor == null) {
-      BlockingArrayQueue<Runnable> queue = BlockingArrayQueue.newInstance(256, Integer.MAX_VALUE);
-      this.executor =
-          new ExecutorUtil.MDCAwareThreadPoolExecutor(
-              32, 256, 60, TimeUnit.SECONDS, queue, new SolrNamedThreadFactory("h2sc"));
+      this.executor = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("h2sc"));
       shutdownExecutor = true;
     } else {
       shutdownExecutor = false;
