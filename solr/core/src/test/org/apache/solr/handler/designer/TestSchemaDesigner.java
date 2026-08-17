@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.client.api.model.ListCollectionsResponse;
@@ -61,6 +62,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.ExternalPaths;
+import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -101,6 +103,17 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
             SchemaDesigner.newSchemaSuggester(),
             SchemaDesigner.newSampleDocumentsLoader(),
             mockReq);
+  }
+
+  // indexedVersion lives in ZK now, so invalidate it by deleting the znode directly.
+  private void invalidateIndexedVersionCache(String mutableId) throws Exception {
+    SolrZkClient zkClient = cc.getZkController().getZkClient();
+    String path = SchemaDesigner.getConfigSetZkPath(mutableId, INDEXED_VERSION_ZNODE);
+    try {
+      zkClient.delete(path, -1);
+    } catch (KeeperException.NoNodeException ignored) {
+      // already gone, nothing to do
+    }
   }
 
   public void testTSV() throws Exception {
@@ -737,8 +750,10 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     when(mockReq.getContentStreams()).thenReturn(List.of(stream));
     schemaDesigner.analyze(configSet, null, null, null, null, null, null, null);
 
-    // Build a fresh API instance whose indexedVersion cache is empty (so it always
-    // attempts to re-index before running the query), and which simulates indexing errors.
+    // analyze() already populated the cache; invalidate it so query() below is forced to re-index.
+    invalidateIndexedVersionCache(getMutableId(configSet));
+
+    // Build an API instance that simulates indexing errors.
     Map<Object, Throwable> fakeErrors = new HashMap<>();
     fakeErrors.put("doc1", new RuntimeException("simulated indexing failure"));
     SchemaDesigner apiWithErrors =
@@ -768,6 +783,90 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     Map<Object, Throwable> details = (Map<Object, Throwable>) props.get(ERROR_DETAILS);
     assertNotNull("errorDetails must be present in error response", details);
     assertTrue("errorDetails must contain the failing doc id", details.containsKey("doc1"));
+  }
+
+  @Test
+  public void testAnalyzeIgnoresClientCopyFromWhenConfigSetAlreadyExists() throws Exception {
+    String configSet = "copyFromExistingTest";
+
+    ModifiableSolrParams reqParams = new ModifiableSolrParams();
+    reqParams.set(CONFIG_SET_PARAM, configSet);
+    when(mockReq.getParams()).thenReturn(reqParams);
+    ContentStreamBase.StringStream stream =
+        new ContentStreamBase.StringStream("[{\"id\":\"doc1\",\"title\":\"test doc\"}]", JSON_MIME);
+    when(mockReq.getContentStreams()).thenReturn(List.of(stream));
+
+    // configSet doesn't exist yet, so copyFrom falls back to _default; then publish it so
+    // configExists(configSet) becomes true (disableDesigner=false so it can be reopened below).
+    SchemaDesignerResponse response =
+        schemaDesigner.analyze(configSet, null, null, null, List.of("en"), null, null, null);
+    when(mockReq.getContentStreams()).thenReturn(null);
+    schemaDesigner.publish(configSet, response.schemaVersion, null, false, 1, 1, false, true, false);
+
+    // Reopen with a language change (forces syncLanguageSpecificObjectsAndFiles) and a bogus
+    // copyFrom; copyFrom must be ignored since configSet already exists.
+    SchemaDesignerResponse reopened =
+        schemaDesigner.analyze(
+            configSet, null, "does-not-exist-config", null, List.of("en", "fr"), null, null, null);
+    assertNotNull(reopened.configSet);
+  }
+
+  @Test
+  public void testIndexedVersionCachePersistsAcrossSchemaDesignerInstances() throws Exception {
+    String configSet = "indexedVersionCacheTest";
+
+    schemaDesigner.prepNewSchema(configSet, null);
+    ModifiableSolrParams reqParams = new ModifiableSolrParams();
+    reqParams.set(CONFIG_SET_PARAM, configSet);
+    when(mockReq.getParams()).thenReturn(reqParams);
+    when(mockReq.getContentStreams())
+        .thenReturn(
+            List.of(
+                new ContentStreamBase.StringStream(
+                    "[{\"id\":\"doc1\",\"title\":\"test doc\"}]", JSON_MIME)));
+    schemaDesigner.analyze(configSet, null, null, null, null, null, null, null);
+    when(mockReq.getContentStreams()).thenReturn(null);
+
+    // analyze() already indexes the sample docs itself (for field-guessing) and marks the cache
+    // up-to-date via buildSchemaDesignerResponse, so invalidate it here to simulate "the schema
+    // changed since the last index" and force the next query() to need a genuine rebuild.
+    String mutableId = getMutableId(configSet);
+    invalidateIndexedVersionCache(mutableId);
+
+    // SchemaDesigner is instantiated fresh per JAX-RS request in production (see the @Inject
+    // constructor), so simulate two separate requests querying the same configSet, each with its
+    // own new instance, and count how many times the sample-doc rebuild actually runs.
+    AtomicInteger rebuildCount = new AtomicInteger();
+    for (int i = 0; i < 2; i++) {
+      SchemaDesigner perRequestInstance =
+          new SchemaDesigner(
+              cc,
+              SchemaDesigner.newSchemaSuggester(),
+              SchemaDesigner.newSampleDocumentsLoader(),
+              mockReq) {
+            @Override
+            protected Map<Object, Throwable> indexSampleDocsWithRebuildOnAnalysisError(
+                String idField,
+                List<SolrInputDocument> docs,
+                String collectionName,
+                boolean asBatch,
+                String[] analysisErrorHolder)
+                throws IOException, SolrServerException {
+              rebuildCount.incrementAndGet();
+              return super.indexSampleDocsWithRebuildOnAnalysisError(
+                  idField, docs, collectionName, asBatch, analysisErrorHolder);
+            }
+          };
+      perRequestInstance.query(configSet);
+    }
+
+    // Only the first (post-invalidation) query should need to rebuild; the second, from a fresh
+    // instance, should hit the shared cache.
+    assertEquals(
+        "a fresh SchemaDesigner instance querying an unchanged schema should hit the shared "
+            + "indexedVersion cache and skip re-indexing, not rebuild again",
+        1,
+        rebuildCount.get());
   }
 
   @Test

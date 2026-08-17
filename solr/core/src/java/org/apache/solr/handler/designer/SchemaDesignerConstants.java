@@ -35,6 +35,8 @@ public interface SchemaDesignerConstants {
   String DESIGNER_KEY = "_designer.";
   String LANGUAGES_PARAM = "languages";
   String CONFIGOVERLAY_JSON = "configoverlay.json";
+  // Separate from configoverlay.json so writes here don't trigger a collection reload.
+  String INDEXED_VERSION_ZNODE = "_designer_indexed_version";
   String UPDATE_ERROR = "updateError";
   String ANALYSIS_ERROR = "analysisError";
   String ERROR_DETAILS = "errorDetails";
