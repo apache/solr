@@ -30,17 +30,19 @@ import org.junit.Test;
 public class EnvUtilsTest extends SolrTestCase {
 
   private static final Map<String, String> ENV =
-      Map.of(
-          "SOLR_HOME", "/home/solr",
-          "SOLR_PORT_LISTEN", "8983",
-          "SOLR_HOST_ADVERTISE", "localhost",
-          "SOLR_LOG_LEVEL", "INFO",
-          "SOLR_BOOLEAN", "true",
-          "SOLR_LONG", "1234567890",
-          "SOLR_COMMASEP", "one,two, three",
-          "SOLR_JSON_LIST", "[\"one\", \"two\", \"three\"]",
-          "SOLR_ALWAYS_ON_TRACE_ID", "true",
-          "SOLR_STR_WITH_NEWLINE", "foo\nbar,baz");
+      Map.ofEntries(
+          Map.entry("SOLR_HOME", "/home/solr"),
+          Map.entry("SOLR_PORT_LISTEN", "8983"),
+          Map.entry("SOLR_HOST_ADVERTISE", "localhost"),
+          Map.entry("SOLR_LOG_LEVEL", "INFO"),
+          Map.entry("SOLR_BOOLEAN", "true"),
+          Map.entry("SOLR_LONG", "1234567890"),
+          Map.entry("SOLR_COMMASEP", "one,two, three"),
+          Map.entry("SOLR_JSON_LIST", "[\"one\", \"two\", \"three\"]"),
+          Map.entry("SOLR_ALWAYS_ON_TRACE_ID", "true"),
+          Map.entry("SOLR_STR_WITH_NEWLINE", "foo\nbar,baz"),
+          Map.entry("SOLR_TIP", "/opt/solr"),
+          Map.entry("SOLR_TIP_SYM", "/opt/solr-9.9.9"));
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -79,10 +81,12 @@ public class EnvUtilsTest extends SolrTestCase {
 
   @Test
   public void testEnvsWithCustomKeyNameMappings() {
-    // These have different names than the environment variables
-    assertEquals(ENV.get("SOLR_HOME"), EnvUtils.getProperty("solr.solr.home"));
-    assertEquals(ENV.get("SOLR_HOST_ADVERTISE"), EnvUtils.getProperty("solr.host.advertise"));
-    assertEquals(ENV.get("SOLR_LOGS_DIR"), EnvUtils.getProperty("solr.logs.dir"));
+    // These map to a sysprop name that doesn't follow the standard SOLR_FOO_BAR -> solr.foo.bar
+    // convention (see EnvToSyspropMappings.properties). Assert against literal expected values,
+    // not ENV.get(...), so a broken/missing mapping would actually be caught here.
+    assertEquals("/home/solr", EnvUtils.getProperty("solr.solr.home"));
+    assertEquals("/opt/solr", EnvUtils.getProperty("solr.install.dir"));
+    assertEquals("/opt/solr-9.9.9", EnvUtils.getProperty("solr.install.symDir"));
   }
 
   @Test
