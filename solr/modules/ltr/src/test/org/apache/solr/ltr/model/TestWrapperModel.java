@@ -136,6 +136,7 @@ public class TestWrapperModel extends TestRerankBase {
     for (final Method superClassMethod : LTRScoringModel.class.getDeclaredMethods()) {
       final int modifiers = superClassMethod.getModifiers();
       if (Modifier.isFinal(modifiers)) continue;
+      if (Modifier.isPrivate(modifiers)) continue;
       if (Modifier.isStatic(modifiers)) continue;
 
       ++overridableMethodCount;
