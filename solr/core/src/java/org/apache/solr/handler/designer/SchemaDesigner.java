@@ -1503,14 +1503,16 @@ public class SchemaDesigner extends JerseyResource
   }
 
   protected void requireSchemaVersion(Integer schemaVersion) {
-    if (schemaVersion == null || schemaVersion < 0) {
+    ensureRequiredParameterProvided(SCHEMA_VERSION_PARAM, schemaVersion);
+    if (schemaVersion < 0) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, SCHEMA_VERSION_PARAM + " is a required parameter!");
     }
   }
 
   protected void requireNotEmpty(final String param, final String value) {
-    if (StrUtils.isNullOrEmpty(value)) {
+    ensureRequiredParameterProvided(param, value);
+    if (value.isEmpty()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, param + " is a required parameter!");
     }
