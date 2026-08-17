@@ -21,9 +21,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Response body for Schema Designer endpoints that operate on a full schema: {@code prepNewSchema},
- * {@code updateFileContents}, {@code addSchemaObject}, {@code updateSchemaObject}, and {@code
- * analyze}.
+ * Base response body for Schema Designer endpoints that operate on a full schema: {@code
+ * prepNewSchema} returns this directly; {@code updateFileContents}, {@code addSchemaObject}, {@code
+ * updateSchemaObject}, and {@code analyze} return the more specific subclasses declared in this
+ * package, adding fields particular to each.
  */
 public class SchemaDesignerResponse extends SchemaDesignerSettingsResponse {
 
@@ -84,63 +85,10 @@ public class SchemaDesignerResponse extends SchemaDesignerSettingsResponse {
   @JsonProperty("errorDetails")
   public Object errorDetails;
 
-  // --- endpoint-specific fields ---
-
-  /** Source of the sample documents (e.g. "blob", "request"); set by {@code analyze}. */
-  @JsonProperty("sampleSource")
-  public String sampleSource;
-
-  /** Analysis warning when field-type inference produced errors; set by {@code analyze}. */
+  /**
+   * Analysis warning when field-type inference produced errors; set by {@code analyze}, {@code
+   * updateFileContents}, and {@code updateSchemaObject}.
+   */
   @JsonProperty("analysisError")
   public String analysisError;
-
-  /**
-   * The type of schema object that was updated: {@code "field"} or {@code "type"}; set by {@code
-   * updateSchemaObject}.
-   */
-  @JsonProperty("updateType")
-  public String updateType;
-
-  /**
-   * The updated field definition map; populated when {@code updateType} is {@code "field"} in
-   * {@code updateSchemaObject}, or the field name string when returned by {@code addSchemaObject}.
-   */
-  @JsonProperty("field")
-  public Object field;
-
-  /**
-   * The updated field-type definition map; populated when {@code updateType} is {@code "type"} in
-   * {@code updateSchemaObject}, or the type name string when returned by {@code addSchemaObject}.
-   */
-  @JsonProperty("type")
-  public Object type;
-
-  /** The added dynamic-field name; set by {@code addSchemaObject} when adding a dynamic field. */
-  @JsonProperty("dynamicField")
-  public Object dynamicField;
-
-  /** The added field-type name; set by {@code addSchemaObject} when adding a field type. */
-  @JsonProperty("fieldType")
-  public Object fieldType;
-
-  /**
-   * Whether the temp collection needs to be rebuilt after this update; set by {@code
-   * updateSchemaObject}.
-   */
-  @JsonProperty("rebuild")
-  public Boolean rebuild;
-
-  /**
-   * Error message when a file update (e.g. {@code solrconfig.xml}) fails validation; set by {@code
-   * updateFileContents}.
-   */
-  @JsonProperty("updateFileError")
-  public String updateFileError;
-
-  /**
-   * The raw file content returned when a file update fails validation; set by {@code
-   * updateFileContents} so the UI can display the attempted content alongside the error.
-   */
-  @JsonProperty("fileContent")
-  public String fileContent;
 }

@@ -35,12 +35,16 @@ import java.util.List;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.client.api.model.ListCollectionsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerAddRequestBody;
+import org.apache.solr.client.api.model.SchemaDesignerAddResponse;
+import org.apache.solr.client.api.model.SchemaDesignerAnalyzeResponse;
 import org.apache.solr.client.api.model.SchemaDesignerConfigsResponse;
+import org.apache.solr.client.api.model.SchemaDesignerFileContentsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerInfoResponse;
 import org.apache.solr.client.api.model.SchemaDesignerPublishResponse;
 import org.apache.solr.client.api.model.SchemaDesignerResponse;
 import org.apache.solr.client.api.model.SchemaDesignerSchemaDiffResponse;
 import org.apache.solr.client.api.model.SchemaDesignerUpdateRequestBody;
+import org.apache.solr.client.api.model.SchemaDesignerUpdateResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /** V2 API definitions for the Solr Schema Designer. */
@@ -75,7 +79,7 @@ public interface SchemaDesignerApi {
   @Operation(
       summary = "Update the contents of a file in a configSet being designed.",
       tags = {"schema-designer"})
-  SchemaDesignerResponse updateFileContents(
+  SchemaDesignerFileContentsResponse updateFileContents(
       @PathParam("configSet") String configSet,
       @QueryParam("file") String file,
       @RequestBody(
@@ -129,7 +133,7 @@ public interface SchemaDesignerApi {
   @Operation(
       summary = "Add a new field, field type, or dynamic field to the schema being designed.",
       tags = {"schema-designer"})
-  SchemaDesignerResponse addSchemaObject(
+  SchemaDesignerAddResponse addSchemaObject(
       @PathParam("configSet") String configSet,
       @QueryParam("schemaVersion") Integer schemaVersion,
       SchemaDesignerAddRequestBody requestBody)
@@ -140,7 +144,7 @@ public interface SchemaDesignerApi {
   @Operation(
       summary = "Update an existing field or field type in the schema being designed.",
       tags = {"schema-designer"})
-  SchemaDesignerResponse updateSchemaObject(
+  SchemaDesignerUpdateResponse updateSchemaObject(
       @PathParam("configSet") String configSet,
       @QueryParam("schemaVersion") Integer schemaVersion,
       SchemaDesignerUpdateRequestBody requestBody)
@@ -180,7 +184,7 @@ public interface SchemaDesignerApi {
               + " application/csv, or text/plain or application/octet-stream (treated as JSON"
               + " lines). Capped at 5MB and 1000 documents.",
       tags = {"schema-designer"})
-  SchemaDesignerResponse analyze(
+  SchemaDesignerAnalyzeResponse analyze(
       @PathParam("configSet") String configSet,
       @QueryParam("schemaVersion") Integer schemaVersion,
       @QueryParam("copyFrom") String copyFrom,

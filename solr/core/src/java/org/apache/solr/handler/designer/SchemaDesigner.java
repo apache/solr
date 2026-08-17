@@ -51,13 +51,17 @@ import org.apache.solr.client.api.endpoint.SchemaDesignerApi;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.client.api.model.ListCollectionsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerAddRequestBody;
+import org.apache.solr.client.api.model.SchemaDesignerAddResponse;
+import org.apache.solr.client.api.model.SchemaDesignerAnalyzeResponse;
 import org.apache.solr.client.api.model.SchemaDesignerConfigsResponse;
+import org.apache.solr.client.api.model.SchemaDesignerFileContentsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerInfoResponse;
 import org.apache.solr.client.api.model.SchemaDesignerPublishResponse;
 import org.apache.solr.client.api.model.SchemaDesignerResponse;
 import org.apache.solr.client.api.model.SchemaDesignerSchemaDiffResponse;
 import org.apache.solr.client.api.model.SchemaDesignerSettingsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerUpdateRequestBody;
+import org.apache.solr.client.api.model.SchemaDesignerUpdateResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -256,7 +260,8 @@ public class SchemaDesigner extends JerseyResource
 
     settingsDAO.persistIfChanged(mutableId, settings);
 
-    return buildSchemaDesignerResponse(configSet, schema, settings, null);
+    return buildSchemaDesignerResponse(
+        SchemaDesignerResponse.class, configSet, schema, settings, null);
   }
 
   @Override
@@ -269,7 +274,7 @@ public class SchemaDesigner extends JerseyResource
 
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  public SchemaDesignerResponse updateFileContents(
+  public SchemaDesignerFileContentsResponse updateFileContents(
       String configSet, String file, InputStream fileContents) throws Exception {
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
     requireNotEmpty("file", file);
@@ -308,7 +313,7 @@ public class SchemaDesigner extends JerseyResource
       // solrconfig.xml update failed, but haven't impacted the configSet yet, so just return the
       // error directly
       Throwable causedBy = SolrException.getRootCause(updateFileError);
-      final var errorResponse = instantiateJerseyResponse(SchemaDesignerResponse.class);
+      final var errorResponse = instantiateJerseyResponse(SchemaDesignerFileContentsResponse.class);
       errorResponse.updateFileError = causedBy.getMessage();
       errorResponse.fileContent = new String(data, StandardCharsets.UTF_8);
       return errorResponse;
@@ -341,7 +346,9 @@ public class SchemaDesigner extends JerseyResource
       }
     }
 
-    SchemaDesignerResponse response = buildSchemaDesignerResponse(configSet, schema, null, docs);
+    SchemaDesignerFileContentsResponse response =
+        buildSchemaDesignerResponse(
+            SchemaDesignerFileContentsResponse.class, configSet, schema, null, docs);
 
     if (analysisErrorHolder[0] != null) {
       response.analysisError = analysisErrorHolder[0];
@@ -437,7 +444,7 @@ public class SchemaDesigner extends JerseyResource
 
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  public SchemaDesignerResponse addSchemaObject(
+  public SchemaDesignerAddResponse addSchemaObject(
       String configSet, Integer schemaVersion, SchemaDesignerAddRequestBody requestBody)
       throws Exception {
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
@@ -477,16 +484,20 @@ public class SchemaDesigner extends JerseyResource
     String objectName = configSetHelper.addSchemaObject(configSet, addJson);
 
     ManagedIndexSchema schema = loadLatestSchema(mutableId);
-    SchemaDesignerResponse response =
+    SchemaDesignerAddResponse response =
         buildSchemaDesignerResponse(
-            configSet, schema, null, configSetHelper.retrieveSampleDocs(configSet));
+            SchemaDesignerAddResponse.class,
+            configSet,
+            schema,
+            null,
+            configSetHelper.retrieveSampleDocs(configSet));
     setSchemaObjectField(response, action, objectName);
     return response;
   }
 
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  public SchemaDesignerResponse updateSchemaObject(
+  public SchemaDesignerUpdateResponse updateSchemaObject(
       String configSet, Integer schemaVersion, SchemaDesignerUpdateRequestBody requestBody)
       throws Exception {
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
@@ -541,8 +552,9 @@ public class SchemaDesigner extends JerseyResource
       }
     }
 
-    SchemaDesignerResponse response =
-        buildSchemaDesignerResponse(configSet, schema, settings, docs);
+    SchemaDesignerUpdateResponse response =
+        buildSchemaDesignerResponse(
+            SchemaDesignerUpdateResponse.class, configSet, schema, settings, docs);
     response.updateType = updateType;
     if (FIELD_PARAM.equals(updateType)) {
       response.field = fieldToMap(schema.getField(name), schema);
@@ -676,7 +688,7 @@ public class SchemaDesigner extends JerseyResource
 
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  public SchemaDesignerResponse analyze(
+  public SchemaDesignerAnalyzeResponse analyze(
       String configSet,
       Integer schemaVersion,
       String copyFrom,
@@ -810,8 +822,13 @@ public class SchemaDesigner extends JerseyResource
       CollectionAdminRequest.reloadCollection(mutableId).process(cloudClient());
     }
 
-    SchemaDesignerResponse response =
-        buildSchemaDesignerResponse(configSet, loadLatestSchema(mutableId), settings, docs);
+    SchemaDesignerAnalyzeResponse response =
+        buildSchemaDesignerResponse(
+            SchemaDesignerAnalyzeResponse.class,
+            configSet,
+            loadLatestSchema(mutableId),
+            settings,
+            docs);
     response.sampleSource = sampleDocuments.getSource();
     if (analysisErrorHolder[0] != null) {
       response.analysisError = analysisErrorHolder[0];
@@ -1208,7 +1225,8 @@ public class SchemaDesigner extends JerseyResource
     return numFound;
   }
 
-  SchemaDesignerResponse buildSchemaDesignerResponse(
+  <T extends SchemaDesignerResponse> T buildSchemaDesignerResponse(
+      Class<T> responseClass,
       String configSet,
       final ManagedIndexSchema schema,
       SchemaDesignerSettings settings,
@@ -1218,7 +1236,7 @@ public class SchemaDesigner extends JerseyResource
     int currentVersion = configSetHelper.getCurrentSchemaVersion(mutableId);
     putIndexedVersion(mutableId, currentVersion);
 
-    final var response = instantiateJerseyResponse(SchemaDesignerResponse.class);
+    final T response = instantiateJerseyResponse(responseClass);
 
     DocCollection coll = zkStateReader().getCollection(mutableId);
     Collection<Slice> activeSlices = coll.getActiveSlices();
@@ -1308,7 +1326,7 @@ public class SchemaDesigner extends JerseyResource
    * programmer error (e.g. a new action added upstream without a corresponding case here).
    */
   private static void setSchemaObjectField(
-      SchemaDesignerResponse response, String action, Object value) {
+      SchemaDesignerAddResponse response, String action, String value) {
     switch (action) {
       case "add-field" -> response.field = value;
       case "add-dynamic-field" -> response.dynamicField = value;
@@ -1317,10 +1335,11 @@ public class SchemaDesigner extends JerseyResource
         // Copy fields have no single "name" to surface on the response — the JS UI only checks
         // for an error and refreshes; nothing to set.
       }
-      default -> throw new IllegalStateException(
-          "Unhandled schema-designer action '"
-              + action
-              + "'; addSchemaObject should have rejected this upstream.");
+      default ->
+          throw new IllegalStateException(
+              "Unhandled schema-designer action '"
+                  + action
+                  + "'; addSchemaObject should have rejected this upstream.");
     }
   }
 

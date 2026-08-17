@@ -22,8 +22,11 @@ import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import org.apache.solr.client.api.model.SchemaDesignerAddResponse;
+import org.apache.solr.client.api.model.SchemaDesignerFileContentsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerInfoResponse;
 import org.apache.solr.client.api.model.SchemaDesignerResponse;
+import org.apache.solr.client.api.model.SchemaDesignerUpdateResponse;
 import org.apache.solr.client.solrj.request.SchemaDesignerApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.ExternalPaths;
@@ -78,7 +81,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     var addField = new SchemaDesignerApi.AddSchemaObject(configSet);
     addField.setSchemaVersion(schemaVersion);
     addField.setAddField(Map.of("name", "keywords", "type", "string", "stored", true));
-    SchemaDesignerResponse addFieldResp = addField.process(cluster.getSolrClient());
+    SchemaDesignerAddResponse addFieldResp = addField.process(cluster.getSolrClient());
     assertEquals("keywords", addFieldResp.field);
     schemaVersion = addFieldResp.schemaVersion;
 
@@ -93,7 +96,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
             "solr.TextField",
             "analyzer",
             Map.of("tokenizer", Map.of("class", "solr.StandardTokenizerFactory"))));
-    SchemaDesignerResponse addTypeResp = addType.process(cluster.getSolrClient());
+    SchemaDesignerAddResponse addTypeResp = addType.process(cluster.getSolrClient());
     assertEquals("smoke_txt", addTypeResp.fieldType);
     schemaVersion = addTypeResp.schemaVersion;
 
@@ -101,7 +104,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     var addDyn = new SchemaDesignerApi.AddSchemaObject(configSet);
     addDyn.setSchemaVersion(schemaVersion);
     addDyn.setAddDynamicField(Map.of("name", "*_smoke", "type", "string"));
-    SchemaDesignerResponse addDynResp = addDyn.process(cluster.getSolrClient());
+    SchemaDesignerAddResponse addDynResp = addDyn.process(cluster.getSolrClient());
     assertEquals("*_smoke", addDynResp.dynamicField);
     schemaVersion = addDynResp.schemaVersion;
 
@@ -110,7 +113,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     var addCopy = new SchemaDesignerApi.AddSchemaObject(configSet);
     addCopy.setSchemaVersion(schemaVersion);
     addCopy.setAddCopyField(Map.of("source", "keywords", "dest", "_text_"));
-    SchemaDesignerResponse addCopyResp = addCopy.process(cluster.getSolrClient());
+    SchemaDesignerAddResponse addCopyResp = addCopy.process(cluster.getSolrClient());
     assertNull(addCopyResp.field);
     assertNull(addCopyResp.fieldType);
     assertNull(addCopyResp.dynamicField);
@@ -121,7 +124,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     update.setSchemaVersion(schemaVersion);
     update.setName("keywords");
     update.setAdditionalProperties(Map.of("type", "string", "stored", true, "multiValued", true));
-    SchemaDesignerResponse updateResp = update.process(cluster.getSolrClient());
+    SchemaDesignerUpdateResponse updateResp = update.process(cluster.getSolrClient());
     assertNotNull(updateResp.field);
     assertEquals("field", updateResp.updateType);
 
@@ -146,7 +149,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     var req =
         new SchemaDesignerApi.UpdateFileContents(configSet, new ByteArrayInputStream(invalidXml));
     req.setFile("solrconfig.xml");
-    SchemaDesignerResponse resp = req.process(cluster.getSolrClient());
+    SchemaDesignerFileContentsResponse resp = req.process(cluster.getSolrClient());
 
     assertNotNull(
         "server should report a validation error for the invalid solrconfig.xml",
