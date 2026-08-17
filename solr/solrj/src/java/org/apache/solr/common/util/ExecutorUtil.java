@@ -246,6 +246,7 @@ public class ExecutorUtil {
    * simultaneous tasks starts a thread apiece. Only use this where something upstream already
    * limits how many tasks can be in flight.
    */
+  @Deprecated(since = "10.1") // prefer an overload that uses a named thread factory
   public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
         0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory);
@@ -267,9 +268,9 @@ public class ExecutorUtil {
       assert false : "Creating a thread pool " + poolName + " with " + nThreads + " threads";
       log.warn("Creating a thread pool {} with {} threads", poolName, nThreads);
     }
-    // Core and max must be equal: any queue with spare capacity is filled before threads are added
-    // beyond the core size, which would cap the pool below maxThreads. Core threads are then
-    // allowed to die so that an idle pool still releases its threads.
+    // Core and max must be equal: threads beyond the core size are only created once the queue is
+    // full, so a core below max would leave the pool small until the queue backs up. Core threads
+    // are then allowed to die so that an idle pool still releases its threads.
     MDCAwareThreadPoolExecutor executor =
         new MDCAwareThreadPoolExecutor(
             nThreads,
@@ -304,9 +305,9 @@ public class ExecutorUtil {
    *       threads are idle</em>. So the pool grows to {@code corePoolSize} in proportion to tasks
    *       submitted, not to how many run at once.
    *   <li>At or above {@code corePoolSize}, a thread is created only once the queue is
-   *       <em>full</em>. A queue with spare capacity therefore caps the pool at {@code
-   *       corePoolSize} and makes {@code maximumPoolSize} unreachable; this class rejects that
-   *       combination outright.
+   *       <em>full</em>. Extra threads therefore answer a backlog, not busy-ness: the pool sits at
+   *       {@code corePoolSize} until the queue fills &mdash; forever, if the queue is unbounded.
+   *       This class rejects {@code corePoolSize < maximumPoolSize} unless the queue holds nothing.
    * </ol>
    *
    * Which leaves three shapes, chosen by what should happen when every thread is busy:
@@ -406,27 +407,28 @@ public class ExecutorUtil {
     }
 
     /**
-     * Rejects a pool that can never reach {@code maximumPoolSize}. {@link ThreadPoolExecutor} only
-     * creates threads beyond {@code corePoolSize} once the queue is full, so a queue with spare
-     * capacity silently caps the pool at {@code corePoolSize} (or at one thread, which is always
-     * created to rescue a queued task when {@code corePoolSize} is 0).
+     * Rejects {@code corePoolSize < maximumPoolSize} when the queue can hold anything. {@link
+     * ThreadPoolExecutor} only creates threads beyond {@code corePoolSize} once the queue is full,
+     * so the pool sits at {@code corePoolSize} (or at one thread, which is always created to rescue
+     * a queued task when {@code corePoolSize} is 0) until that many tasks are backlogged &mdash;
+     * never, if the queue is unbounded.
      */
     private static void checkPoolConfig(
         int corePoolSize, int maximumPoolSize, BlockingQueue<Runnable> workQueue) {
       int queueCapacity = workQueue.remainingCapacity(); // exact; the queue is empty
-      int effectiveMaximum = Math.max(corePoolSize, 1);
-      if (effectiveMaximum < maximumPoolSize && queueCapacity > 0) {
+      int threadsUntilQueueFull = Math.max(corePoolSize, 1);
+      if (threadsUntilQueueFull < maximumPoolSize && queueCapacity > 0) {
         throw new IllegalArgumentException(
             "maximumPoolSize "
                 + maximumPoolSize
-                + " is unreachable: a queue of capacity "
-                + queueCapacity
-                + " is filled before threads are created beyond corePoolSize "
-                + corePoolSize
-                + ", capping the pool at "
-                + effectiveMaximum
+                + " is only reached once the queue is full: this pool runs "
+                + threadsUntilQueueFull
+                + " thread(s) until "
+                + (queueCapacity == Integer.MAX_VALUE
+                    ? "the unbounded queue fills, which never happens"
+                    : queueCapacity + " tasks are backlogged")
                 + ". Use corePoolSize == maximumPoolSize (with allowCoreThreadTimeOut(true) to"
-                + " reclaim idle threads), or a SynchronousQueue.");
+                + " reclaim idle threads), or a SynchronousQueue to add threads on demand.");
       }
       if (maximumPoolSize == Integer.MAX_VALUE
           && !(workQueue instanceof SynchronousQueue<Runnable>)) {

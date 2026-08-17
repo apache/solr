@@ -277,9 +277,9 @@ public class ExecutorUtilTest extends SolrTestCase {
   }
 
   @Test
-  public void unreachableMaximumPoolSizeIsRejected() {
-    // a queue with spare capacity is filled before threads are created beyond corePoolSize,
-    // so maximumPoolSize is unreachable and the pool is silently capped at corePoolSize
+  public void poolThatGrowsOnlyWhenQueueFullIsRejected() {
+    // threads beyond corePoolSize are only created once the queue is full, so the pool stays at
+    // corePoolSize until 1024 tasks are backlogged -- and forever, with an unbounded queue
     expectThrows(
         IllegalArgumentException.class,
         () ->
