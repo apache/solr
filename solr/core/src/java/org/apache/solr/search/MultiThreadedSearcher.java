@@ -27,6 +27,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.TaskExecutor;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldDocs;
@@ -116,14 +117,14 @@ public class MultiThreadedSearcher {
     return new SearchResult(scoreMode, ret);
   }
 
-  static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, boolean hasExecutor) {
+  static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, TaskExecutor executor) {
     // TODO: it's unclear if segmentTerminateEarly is truly incompatible but
     //  since it has to appropriately denote partial results this needs to be
     //  investigated/tested before we can remove this check (perhaps for 9.8).
     return postFilter == null
         && !cmd.getSegmentTerminateEarly()
         && cmd.getMultiThreaded()
-        && hasExecutor;
+        && executor != null;
   }
 
   static class MaxScoreResult {
