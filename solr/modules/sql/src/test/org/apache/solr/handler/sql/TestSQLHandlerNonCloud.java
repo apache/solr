@@ -51,7 +51,7 @@ public class TestSQLHandlerNonCloud extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSQLHandler() throws Exception {
+  public void testSQLHandler() {
     String sql = "select id, field_i, str_s from " + DEFAULT_TEST_COLLECTION_NAME + " limit 10";
     SolrParams sParams = params(CommonParams.QT, "/sql", "stmt", sql);
     String url = solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;

@@ -67,12 +67,10 @@ class SolrRules {
 
   /** Translator from {@link RexNode} to strings in Solr's expression language. */
   static class RexToSolrTranslator extends RexVisitorImpl<String> {
-    private final JavaTypeFactory typeFactory;
     private final List<String> inFields;
 
     RexToSolrTranslator(JavaTypeFactory typeFactory, List<String> inFields) {
       super(true);
-      this.typeFactory = typeFactory;
       this.inFields = inFields;
     }
 
@@ -118,7 +116,7 @@ class SolrRules {
   private static class SolrFilterRule extends SolrConverterRule {
     private static boolean isNotFilterByExpr(List<RexNode> rexNodes, List<String> fieldNames) {
 
-      // We dont have a way to filter by result of aggregator now
+      // We don't have a way to filter by result of aggregator now
       boolean result = true;
 
       for (RexNode rexNode : rexNodes) {
@@ -195,7 +193,7 @@ class SolrRules {
 
   /** Rule to convert an {@link LogicalAggregate} to an {@link SolrAggregate}. */
   private static class SolrAggregateRule extends SolrConverterRule {
-    //    private static final Predicate<RelNode> AGGREGATE_PREDICTE = relNode ->
+    //    private static final Predicate<RelNode> AGGREGATE_PREDICATE = relNode ->
     //        Aggregate.IS_SIMPLE.apply(((LogicalAggregate)relNode));// &&
     //        !((LogicalAggregate)relNode).containsDistinctCall();
 
