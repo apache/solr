@@ -19,14 +19,11 @@ package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import java.lang.invoke.MethodHandles;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.regions.Region;
 
 // Backups do checksum validation against a footer value not present in 'SimpleText'
@@ -37,7 +34,6 @@ import software.amazon.awssdk.regions.Region;
     value =
         "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
 public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String BUCKET_NAME = S3IncrementalBackupTest.class.getSimpleName();
 
@@ -86,8 +82,6 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
           + "  </backup>\n"
           + "  \n"
           + "</solr>\n";
-
-  private static String backupLocation;
 
   @BeforeClass
   public static void ensureCompatibleLocale() {
