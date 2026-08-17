@@ -95,6 +95,7 @@ When enabled, this escape hatch relaxes both the login-time check and the user c
 It is intended as a temporary measure while you migrate the affected accounts to stronger passwords, and should be removed once that is done.
 
 === SolrJ
+The `HttpJdkSolrClient` and `HttpJettySolrClient` no longer have default thread/executor limits.  Nonetheless the Executor is configurable.
 
 HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
 Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
