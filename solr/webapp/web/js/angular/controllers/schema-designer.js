@@ -582,7 +582,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       $scope.addErrors.push($scope.adding + " name is required!");
     }
 
-    if ($scope.newField.name.indexOf(" ") != -1) {
+    if ($scope.newField.name && $scope.newField.name.indexOf(" ") != -1) {
       $scope.addErrors.push($scope.adding + " name should not have whitespace");
     }
 
@@ -595,7 +595,8 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       }
 
       // TODO: is this the correct logic for detecting dynamic? Probably good enough for the designer
-      var isDynamic = $scope.newField.name.startsWith("*") || $scope.newField.name.endsWith("*");
+      var isDynamic = !!$scope.newField.name &&
+          ($scope.newField.name.startsWith("*") || $scope.newField.name.endsWith("*"));
       if (isDynamic) {
         if ($scope.luke && $scope.luke.dynamic_fields[$scope.newField.name]) {
           $scope.addErrors.push("dynamic field '" + $scope.newField.name + "' already exists!");
