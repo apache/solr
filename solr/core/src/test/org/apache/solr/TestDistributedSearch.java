@@ -35,6 +35,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -615,18 +616,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // basic spellcheck testing
     query(
-        "q",
-        "toyata",
-        "fl",
-        "id,lowerfilt",
-        "spellcheck",
-        true,
-        "spellcheck.q",
-        "toyata",
-        "qt",
         "/spellCheckCompRH_Direct",
-        "shards.qt",
-        "/spellCheckCompRH_Direct");
+        params(
+            "q", "toyata",
+            "fl", "id,lowerfilt",
+            "spellcheck", "true",
+            "spellcheck.q", "toyata",
+            "shards.qt", "/spellCheckCompRH_Direct"));
 
     stress = 0; // turn off stress... we want to tex max combos in min time
     for (int i = 0; i < 25 * RANDOM_MULTIPLIER; i++) {
@@ -1592,6 +1588,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     Thread.sleep(100);
 
     queryPartialResults(
+        "/select",
         upShards,
         upClients,
         "q",
@@ -1610,6 +1607,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         "true");
 
     queryPartialResults(
+        "/select",
         upShards,
         upClients,
         "q",
@@ -1627,6 +1625,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // test group query
     queryPartialResults(
+        "/select",
         upShards,
         upClients,
         "q",
@@ -1651,6 +1650,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         "true");
 
     queryPartialResults(
+        "/select",
         upShards,
         upClients,
         "q",
@@ -1665,6 +1665,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         "true");
 
     queryPartialResults(
+        "/spellCheckCompRH_Direct",
         upShards,
         upClients,
         "q",
@@ -1673,8 +1674,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         "true",
         "spellcheck.q",
         "toyata",
-        "qt",
-        "/spellCheckCompRH_Direct",
         "shards.qt",
         "/spellCheckCompRH_Direct",
         ShardParams.SHARDS_INFO,
@@ -1907,7 +1906,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
 
   protected void queryPartialResults(
-      final List<String> upShards, final List<SolrClient> upClients, Object... q) throws Exception {
+      String requestHandler,
+      final List<String> upShards,
+      final List<SolrClient> upClients,
+      Object... q)
+      throws Exception {
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -1916,7 +1919,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
     // TODO: look into why passing true causes fails
     params.set("distrib", "false");
-    final QueryResponse controlRsp = controlClient.query(params);
+    final QueryResponse controlRsp =
+        new QueryRequest(requestHandler, params).process(controlClient);
     // if time.allowed is specified then even a control response can return a partialResults header
     if (params.get(CommonParams.TIME_ALLOWED) == null) {
       validateControlData(controlRsp);
@@ -1928,7 +1932,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     if (upClients.size() == 0) {
       return;
     }
-    QueryResponse rsp = queryRandomUpServer(params, upClients);
+    QueryResponse rsp = queryRandomUpServer(requestHandler, params, upClients);
 
     comparePartialResponses(rsp, upShards);
 
@@ -1948,7 +1952,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                   int which = r.nextInt(upClients.size());
                   SolrClient client = upClients.get(which);
                   try {
-                    QueryResponse rsp = client.query(new ModifiableSolrParams(params));
+                    QueryResponse rsp =
+                        new QueryRequest(requestHandler, new ModifiableSolrParams(params))
+                            .process(client);
                     if (verifyStress) {
                       comparePartialResponses(rsp, upShards);
                     }
@@ -1971,7 +1977,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
 
   protected QueryResponse queryRandomUpServer(
-      ModifiableSolrParams params, List<SolrClient> upClients)
+      String requestHandler, ModifiableSolrParams params, List<SolrClient> upClients)
       throws SolrServerException, IOException {
     // query a random "up" server
     SolrClient client;
@@ -1982,7 +1988,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       client = upClients.get(which);
     }
 
-    return client.query(params);
+    return new QueryRequest(requestHandler, params).process(client);
   }
 
   protected void comparePartialResponses(QueryResponse rsp, List<String> upShards) {
