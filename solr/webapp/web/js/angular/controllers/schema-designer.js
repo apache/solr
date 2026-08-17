@@ -672,9 +672,9 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
           $scope.added = false;
           var nodeId = "/";
           if ("field" === $scope.adding) {
-            nodeId = "field/" + data[command];
+            nodeId = "field/" + ("add-dynamic-field" === command ? data.dynamicField : data.field);
           } else if ("type" === $scope.adding) {
-            nodeId = "type/" + data[command];
+            nodeId = "type/" + data.fieldType;
           }
           $scope.onSchemaUpdated(data.configSet, data, nodeId);
         }, 500);
