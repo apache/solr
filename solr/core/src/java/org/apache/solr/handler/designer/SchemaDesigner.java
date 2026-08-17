@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.api.JerseyResource;
@@ -107,7 +106,7 @@ public class SchemaDesigner extends JerseyResource
   private final SampleDocumentsLoader sampleDocLoader;
   private final SchemaDesignerSettingsDAO settingsDAO;
   private final SchemaDesignerConfigSetHelper configSetHelper;
-  private final Map<String, Integer> indexedVersion = new ConcurrentHashMap<>();
+
   private final SolrQueryRequest solrQueryRequest;
 
   @Inject
@@ -161,6 +160,47 @@ public class SchemaDesigner extends JerseyResource
     return DESIGNER_PREFIX + configSet;
   }
 
+  // Last-indexed schema version per temp collection, cached in ZK so it survives across
+  // per-request SchemaDesigner instances.
+
+  private Integer getIndexedVersion(String mutableId) throws IOException {
+    String path = getConfigSetZkPath(mutableId, INDEXED_VERSION_ZNODE);
+    try {
+      byte[] data = zkStateReader().getZkClient().getData(path, null, null);
+      return data != null && data.length > 0
+          ? Integer.valueOf(new String(data, StandardCharsets.UTF_8))
+          : null;
+    } catch (KeeperException.NoNodeException nne) {
+      return null;
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(
+          "Failed to read data from ZK at path: " + path, SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  private void putIndexedVersion(String mutableId, int version) throws IOException {
+    String path = getConfigSetZkPath(mutableId, INDEXED_VERSION_ZNODE);
+    byte[] data = String.valueOf(version).getBytes(StandardCharsets.UTF_8);
+    try {
+      zkStateReader().getZkClient().makePath(path, data, false);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(
+          "Failed to save data in ZK at path: " + path, SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  private void removeIndexedVersion(String mutableId) throws IOException {
+    String path = getConfigSetZkPath(mutableId, INDEXED_VERSION_ZNODE);
+    try {
+      zkStateReader().getZkClient().delete(path, -1);
+    } catch (KeeperException.NoNodeException nne) {
+      // already gone, nothing to do
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(
+          "Failed to delete data from ZK at path: " + path, SolrZkClient.checkInterrupted(e));
+    }
+  }
+
   @Override
   @PermissionName(CONFIG_READ_PERM)
   public SchemaDesignerInfoResponse getInfo(String configSet) throws Exception {
@@ -210,7 +250,7 @@ public class SchemaDesigner extends JerseyResource
 
     // make sure the temp collection for this analysis exists
     if (!zkStateReader().getClusterState().hasCollection(mutableId)) {
-      indexedVersion.remove(mutableId);
+      removeIndexedVersion(mutableId);
       configSetHelper.createCollection(mutableId, mutableId);
     }
 
@@ -663,11 +703,14 @@ public class SchemaDesigner extends JerseyResource
     // previously stored
     SampleDocuments sampleDocuments = loadSampleDocuments(configSet);
 
-    // Get a mutable "temp" schema either from the specified copy source or configSet if it already
-    // exists.
-    if (copyFrom == null) {
-      copyFrom = configExists(configSet) ? configSet : DEFAULT_CONFIGSET_NAME;
-    }
+    // Get a mutable "temp" schema either from the specified copy source or configSet if it
+    // already exists. Must stay unconditional, not just a fallback for copyFrom == null: below,
+    // copyFrom is also relied on for syncing language files, and must match what the schema was
+    // actually copied from.
+    copyFrom =
+        configExists(configSet)
+            ? configSet
+            : (copyFrom != null ? copyFrom : DEFAULT_CONFIGSET_NAME);
 
     String mutableId = getMutableId(configSet);
 
@@ -741,7 +784,7 @@ public class SchemaDesigner extends JerseyResource
     // make sure the temp collection for this analysis exists
     if (!zkStateReader().getClusterState().hasCollection(mutableId)) {
       configSetHelper.createCollection(mutableId, mutableId);
-      indexedVersion.remove(mutableId);
+      removeIndexedVersion(mutableId);
     } else {
       // already created in the prep step ... reload it to pull in the updated schema
       CollectionAdminRequest.reloadCollection(mutableId).process(cloudClient());
@@ -792,13 +835,13 @@ public class SchemaDesigner extends JerseyResource
     }
 
     if (!zkStateReader().getClusterState().hasCollection(mutableId)) {
-      indexedVersion.remove(mutableId);
+      removeIndexedVersion(mutableId);
       configSetHelper.createCollection(mutableId, mutableId);
     }
 
     // only re-index if current state of test collection is not up-to-date
     int currentVersion = configSetHelper.getCurrentSchemaVersion(mutableId);
-    Integer version = indexedVersion.get(mutableId);
+    Integer version = getIndexedVersion(mutableId);
     Map<Object, Throwable> errorsDuringIndexing = null;
     if (version == null || version != currentVersion) {
       log.debug(
@@ -815,7 +858,7 @@ public class SchemaDesigner extends JerseyResource
         // the version changes when you index (due to field guessing URP)
         currentVersion = configSetHelper.getCurrentSchemaVersion(mutableId);
       }
-      indexedVersion.put(mutableId, currentVersion);
+      putIndexedVersion(mutableId, currentVersion);
     }
 
     if (errorsDuringIndexing != null) {
@@ -1173,7 +1216,7 @@ public class SchemaDesigner extends JerseyResource
       throws IOException {
     String mutableId = getMutableId(configSet);
     int currentVersion = configSetHelper.getCurrentSchemaVersion(mutableId);
-    indexedVersion.put(mutableId, currentVersion);
+    putIndexedVersion(mutableId, currentVersion);
 
     final var response = instantiateJerseyResponse(SchemaDesignerResponse.class);
 
@@ -1236,6 +1279,7 @@ public class SchemaDesigner extends JerseyResource
     stripPrefix.remove(schema.getResourceName());
     stripPrefix.remove("lang");
     stripPrefix.remove(CONFIGOVERLAY_JSON); // treat this file as private
+    stripPrefix.remove(INDEXED_VERSION_ZNODE); // treat this file as private
 
     List<String> sortedFiles = new ArrayList<>(stripPrefix);
     Collections.sort(sortedFiles);
@@ -1474,7 +1518,6 @@ public class SchemaDesigner extends JerseyResource
 
   protected void doCleanupTemp(String configSet) throws IOException, SolrServerException {
     String mutableId = getMutableId(configSet);
-    indexedVersion.remove(mutableId);
     CollectionAdminRequest.deleteCollection(mutableId).process(cloudClient());
     configSetHelper.deleteStoredSampleDocs(configSet);
     deleteConfig(mutableId);
