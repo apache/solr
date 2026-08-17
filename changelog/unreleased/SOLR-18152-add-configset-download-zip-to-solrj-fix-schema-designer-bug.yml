@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Schema Designer sample-doc analysis now works correctly when analyze sample documents.  Uses V2 instead of V1 API structure as well.
+title: Schema Designer sample-doc analysis now works correctly when analyze sample documents.  More robust state management in SolrCloud.
 type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Eric Pugh
