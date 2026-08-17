@@ -291,8 +291,7 @@ public class TestRerankBase extends RestTestBase {
   }
 
   public static LTRScoringModel createModelFromFiles(
-      String modelFileName, String featureFileName, String featureStoreName)
-      throws Exception {
+      String modelFileName, String featureFileName, String featureStoreName) throws Exception {
     URL url = TestRerankBase.class.getResource("/modelExamples/" + modelFileName);
     final String modelJson = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
     final ManagedModelStore ms = getManagedModelStore();
