@@ -102,11 +102,10 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
   @Test
   public void testOnlyMorePopularWithExtendedResults() {
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckCompRH",
             "q",
             "teststop:fox",
-            "qt",
-            "/spellCheckCompRH",
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             SpellingParams.SPELLCHECK_DICT,

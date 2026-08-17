@@ -1244,8 +1244,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
             + "gather=\"to_s\"))";
 
     params.add("expr", expr);
-    QueryRequest query = new QueryRequest(params);
-    query.setPath("/collection1/graph");
+    QueryRequest query = new QueryRequest("/collection1/graph", params);
 
     query.setResponseParser(new InputStreamResponseParser("xml"));
     query.setMethod(SolrRequest.METHOD.POST);

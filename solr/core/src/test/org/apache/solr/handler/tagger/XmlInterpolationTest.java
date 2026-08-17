@@ -102,7 +102,7 @@ public class XmlInterpolationTest extends TaggerTestCase {
 
   protected void assertXmlTag(String docText, boolean expected) throws Exception {
     try (SolrQueryRequest req = reqDoc(docText)) {
-      final SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get("qt"), req);
+      final SolrQueryResponse rsp = h.queryAndResponse(HANDLER, req);
       final TestTag[] testTags = pullTagsFromResponse(req, rsp);
       if (!expected) {
         assertEquals(0, testTags.length);

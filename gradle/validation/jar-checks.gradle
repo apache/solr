@@ -31,9 +31,7 @@ def failOnError = true
 
 // We're using commons-codec for computing checksums.
 buildscript {
-  repositories {
-    mavenCentral()
-  }
+  apply from: rootProject.file('build-tools/build-infra/declare-repositories.gradle'), to: delegate
 
   dependencies {
     classpath libs.commonscodec.commonscodec
@@ -130,7 +128,6 @@ subprojects {
         if (excludeRules && excludeRules.size() > 0) {
           conf = conf.copyRecursive()
           conf.canBeResolved = true
-          conf.canBeConsumed = true
           excludeRuleMaps.forEach {conf.exclude(it)}
         }
         if (conf.canBeResolved) {

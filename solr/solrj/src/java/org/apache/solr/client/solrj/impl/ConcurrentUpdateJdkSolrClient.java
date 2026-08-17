@@ -36,41 +36,43 @@ public class ConcurrentUpdateJdkSolrClient extends ConcurrentUpdateBaseSolrClien
   }
 
   @Override
-  protected StreamingResponse doSendUpdateStream(Update update) {
+  protected SentStream doSendUpdateStream(Update update) {
     UpdateRequest req = update.request();
     String collection = update.collection();
     CompletableFuture<HttpResponse<InputStream>> resp =
         client.requestInputStreamAsync(basePath, req, collection);
 
-    return new StreamingResponse() {
+    StreamingResponse response =
+        new StreamingResponse() {
 
-      @Override
-      public int awaitResponse(long timeoutMillis) throws Exception {
-        return resp.get(timeoutMillis, TimeUnit.MILLISECONDS).statusCode();
-      }
+          @Override
+          public int awaitResponse(long timeoutMillis) throws Exception {
+            return resp.get(timeoutMillis, TimeUnit.MILLISECONDS).statusCode();
+          }
 
-      @Override
-      public InputStream getInputStream() {
-        try {
-          return resp.get().body();
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return InputStream.nullInputStream();
-        } catch (ExecutionException e) {
-          throw new RuntimeException(e);
-        }
-      }
+          @Override
+          public InputStream getInputStream() {
+            try {
+              return resp.get().body();
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              return InputStream.nullInputStream();
+            } catch (ExecutionException e) {
+              throw new RuntimeException(e);
+            }
+          }
 
-      @Override
-      public Object getUnderlyingResponse() {
-        return resp;
-      }
+          @Override
+          public Object getUnderlyingResponse() {
+            return resp;
+          }
 
-      @Override
-      public void close() throws IOException {
-        // No-op: InputStream is managed by java.net.http.HttpClient
-      }
-    };
+          @Override
+          public void close() throws IOException {
+            // No-op: InputStream is managed by java.net.http.HttpClient
+          }
+        };
+    return new SentStream(response, idsForErrorReporting(req), collection);
   }
 
   public static class Builder extends ConcurrentUpdateBaseSolrClient.Builder {

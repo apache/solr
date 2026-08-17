@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.JSONTestUtil;
@@ -75,10 +74,6 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
               throws Exception {
             QueryRequest query = new QueryRequest(args);
             query.setResponseParser(new SmileResponseParser());
-            String path = args.get("qt");
-            if (path != null) {
-              query.setPath(path);
-            }
             NamedList<Object> rsp = client.request(query);
             @SuppressWarnings({"rawtypes"})
             Map m = rsp.asMap(5);
@@ -106,9 +101,12 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
       return new NamedList(m);
     }
 
+    private static final Set<String> CONTENT_TYPES =
+        Set.of("application/x-jackson-smile", "application/octet-stream");
+
     @Override
-    public Collection<String> getContentTypes() {
-      return Set.of("application/x-jackson-smile", "application/octet-stream");
+    public Set<String> getContentTypes() {
+      return CONTENT_TYPES;
     }
   }
 }

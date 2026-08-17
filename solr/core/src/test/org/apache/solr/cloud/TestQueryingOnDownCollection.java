@@ -37,7 +37,8 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
   private static final String COLLECTION_NAME = "infected";
 
   private static final String USERNAME = "solr";
-  private static final String PASSWORD = "solr";
+  // Password must differ from the username (Basic Auth policy rejects username==password)
+  private static final String PASSWORD = "SolrRocks";
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -155,7 +156,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
           + "  \"authentication\":{\n"
           + "   \"blockUnknown\": true,\n"
           + "   \"class\":\"solr.BasicAuthPlugin\",\n"
-          + "   \"credentials\":{\"solr\":\"EEKn7ywYk5jY8vG9TyqlG2jvYuvh1Q7kCCor6Hqm320= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
+          + "   \"credentials\":{\"solr\":\"JeRyxP8A3dVWhFgFbf/Eg2RXmuoU8BE5gbNQyxmGAJQ= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
           + "  },\n"
           + "  \"authorization\":{\n"
           + "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n"
