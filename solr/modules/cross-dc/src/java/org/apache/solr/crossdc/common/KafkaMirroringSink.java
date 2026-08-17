@@ -110,13 +110,12 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
             }
           });
 
-      long lastSuccessfulEnqueueNanos = System.nanoTime();
       // Record time since last successful enqueue as 0
       long elapsedTimeMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - enqueueStartNanos);
       // Update elapsed time
 
       if (elapsedTimeMillis > conf.getInt(SLOW_SUBMIT_THRESHOLD_MS)) {
-        slowSubmitAction(request, elapsedTimeMillis);
+        slowSubmitAction(elapsedTimeMillis);
       }
     } catch (Exception e) {
       // We are intentionally catching all exceptions, the expected exception form this function is
@@ -220,7 +219,7 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
         kafkaConsumerProperties, new StringDeserializer(), new MirroredSolrRequestSerializer());
   }
 
-  private void slowSubmitAction(Object request, long elapsedTimeMillis) {
+  private void slowSubmitAction(long elapsedTimeMillis) {
     log.warn(
         "Enqueuing the request to Kafka took more than {} millis. enqueueElapsedTime={}",
         conf.get(KafkaCrossDcConf.SLOW_SUBMIT_THRESHOLD_MS),
