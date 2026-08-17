@@ -1,19 +1,3 @@
-<!--
-    Licensed to the Apache Software Foundation (ASF) under one or more
-    contributor license agreements.  See the NOTICE file distributed with
-    this work for additional information regarding copyright ownership.
-    The ASF licenses this file to You under the Apache License, Version 2.0
-    the "License"); you may not use this file except in compliance with
-    the License.  You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
- -->
 # AGENTS.md for Apache Solr
 
 While README.md and CONTRIBUTING.md are mainly written for humans, this file is a condensed knowledge base for LLM coding agents on the Solr codebase. See https://agents.md for more info and how to make various coding assistants consume this file. Also see `dev-docs/how-to-contribute.adoc` for some guidelines when using genAI to contribute to Solr.
@@ -24,7 +8,6 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - Always apply the Apache License to new source files
 - All versions must be delcared in `gradle/libs.versions.toml`, never build.gradle files
 - Try first declaring a dependency without a version (the version might already be in a BOM); and if fails to resolve _then_ specify a version
-- The build may complain with "Dependency analysis found issues.", a category like "usedUndeclaredArtifacts", and a dependency list.  Declare or undeclare these dependencies, as the category will imply.  The special 'permit*' configurations are a choice of last resort.
 - Always run `gradlew updateLicenses resolveAndLockAll collectJarInfos --write-locks` after adding or changing a dependency. See `dev-docs/gradle-help/dependencies.txt` for more info
 
 ## Build and Development Workflow
@@ -37,6 +20,8 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - Use the project's custom `EnvUtils` to read system properties. It auto converts env.var SOLR_FOO_BAR to system property solr.foo.bar
 - Be careful to not add non-essential logging! If you add slf4j log calls, make sure to wrap debug/trace level calls in `logger.isXxxEnabled()` clause
 - Validate user input. For file paths, always call `myCoreContainer.assertPathAllowed(myPath)` before using
+- Never use fully-qualified-names when an import statement will resolve ambiguity.
+- SolrJ & "api" modules should use the latest Java 17 language features as appropriate.  Other modules can use Java 21.
 
 ## Running Tests
 
@@ -72,3 +57,21 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - We use the "logchange" tooling to manage our changelog. See `dev-docs/changelog.adoc` for details and conventions
 - To scaffold a new changelog entry, run `gradlew writeChangelog` (JIRA) or `gradlew writeChangeLogPr` (no JIRA), and then edit the new file located in `changelog/unreleased/`.
 - Do not add a changelog entry before a JIRA issue or a Github PR is assigned, as one is required.
+
+## Issue Tracking (JIRA)
+
+Solr issues are tracked at https://issues.apache.org/jira (project key `SOLR`). The anonymous REST API works; no auth or scraping needed:
+
+- Search: `curl "https://issues.apache.org/jira/rest/api/2/search?jql=<url-encoded JQL>&fields=summary,status,resolution&maxResults=10"` with JQL like `project=SOLR AND text~"some phrase" ORDER BY updated DESC`
+- Single issue (with comments): `curl "https://issues.apache.org/jira/rest/api/2/issue/SOLR-12345?fields=summary,description,comment"`
+
+## Security
+
+For security findings, follow the project's threat model:
+[THREAT_MODEL.md](THREAT_MODEL.md) — the trust boundaries, the load-bearing
+auth+authz / trusted-environment posture, the properties Solr provides vs. those
+left to the operator (notably: never expose an unauthenticated Solr to an
+untrusted network; SSRF via `shards`/streaming is bounded by operator network
+controls; risky features are off by default), and the recurring non-findings.
+Reporting is via [SECURITY.md](SECURITY.md). Route any scanner/AI-generated
+finding through `THREAT_MODEL.md` section 13 before reporting.

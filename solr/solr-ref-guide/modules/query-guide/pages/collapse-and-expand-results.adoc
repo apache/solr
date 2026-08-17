@@ -18,25 +18,24 @@
 
 The Collapsing query parser and the Expand component combine to form an approach to grouping documents for field collapsing in search results.
 
-The Collapsing query parser groups documents (collapsing the result set) according to your parameters, while the Expand component provides access to documents in the collapsed group for use in results display or other processing by a client application.
+The Collapsing query parser groups documents (collapsing the result set) according to your parameters, while the Expand component provides access to other documents in the collapsed group for use in results display or other processing by a client application.
 Collapse & Expand can together do what the older xref:result-grouping.adoc[] (`group=true`) does for _most_ use-cases but not all.
 Collapse and Expand are not supported when Result Grouping is enabled.
 Generally, you should prefer Collapse & Expand.
 
 [IMPORTANT]
 ====
-In order to use these features with SolrCloud, the documents must be located on the same shard.
-To ensure document co-location, you can define the `router.name` parameter as `compositeId` when creating the collection.
-For more information on this option, see the section xref:deployment-guide:solrcloud-shards-indexing.adoc#document-routing[Document Routing].
+Collapsing happens on each core/shard, not in a distributed sense.
+Consequently, it's typically necessary to co-locate documents by collapsibility somehow.  See xref:deployment-guide:solrcloud-shards-indexing.adoc#document-routing[Document Routing].
+Result Grouping doesn't have this limitation.
 ====
 
 == Collapsing Query Parser
 
-The `CollapsingQParser` is really a _post filter_ that provides more performant field collapsing than Solr's standard approach when the number of distinct groups in the result set is high.
-This parser collapses the result set to a single document per group before it forwards the result set to the rest of the search components.
-So all downstream components (faceting, highlighting, etc.) will work with the collapsed result set.
-
-The CollapsingQParserPlugin fully supports the QueryElevationComponent.
+The `CollapsingQParser` produces a special type of query called a "post filter" that operates on the result set following the `q` and `fq` queries.
+Given a configured group field that matches multiple documents, it will "collapse" a group to just one of those documents.
+Other Solr components (faceting, highlighting, query elevation, etc.) are downstream of this, and thus will work with only the collapsed result set.
+Unlike Result Grouping, Solr's response structure is completely normal, showing no indication of the collapsing behavior.
 
 === Collapsing Query Parser Options
 

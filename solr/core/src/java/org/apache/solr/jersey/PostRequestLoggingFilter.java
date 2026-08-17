@@ -78,7 +78,7 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
       return;
     }
     if (!responseContext.hasEntity()
-        || !SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
+        || !(responseContext.getEntity() instanceof SolrJerseyResponse)) {
       log.debug("Skipping v2 API logging because response is of an unexpected type");
       return;
     }
@@ -113,6 +113,7 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
           requestContext.getMethod(),
           templatedPath,
           filterAndStringifyQueryParameters(requestContext.getUriInfo().getQueryParameters()),
+          bodyVal,
           response.responseHeader.status,
           response.responseHeader.qTime);
     }

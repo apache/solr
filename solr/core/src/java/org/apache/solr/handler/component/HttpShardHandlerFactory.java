@@ -445,7 +445,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     if (isSolrSslEnabled != null) {
       return isSolrSslEnabled ? "https" : "http";
     }
-    String urlScheme = getParameter(args, INIT_URL_SCHEME, System.getProperty(INIT_URL_SCHEME), sb);
+    String urlScheme =
+        getParameter(args, INIT_URL_SCHEME, EnvUtils.getProperty(INIT_URL_SCHEME), sb);
     if (urlScheme != null && urlScheme.endsWith("://")) {
       urlScheme = urlScheme.replace("://", "");
     }

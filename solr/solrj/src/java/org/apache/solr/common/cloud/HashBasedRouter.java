@@ -38,7 +38,7 @@ public abstract class HashBasedRouter extends DocRouter {
     if (route != null) {
       hash = sliceHash(route, sdoc, params, collection);
     } else {
-      if (id == null) id = getId(sdoc, params);
+      if (id == null) id = getId(sdoc);
       hash = sliceHash(id, sdoc, params, collection);
     }
     return hashToSlice(hash, collection);
@@ -51,7 +51,7 @@ public abstract class HashBasedRouter extends DocRouter {
       SolrParams params,
       String shardId,
       DocCollection collection) {
-    if (id == null) id = getId(sdoc, params);
+    if (id == null) id = getId(sdoc);
     int hash = sliceHash(id, sdoc, params, collection);
     Range range = collection.getSlice(shardId).getRange();
     return range != null && range.includes(hash);
@@ -62,7 +62,7 @@ public abstract class HashBasedRouter extends DocRouter {
     return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
   }
 
-  protected String getId(SolrInputDocument sdoc, SolrParams params) {
+  protected String getId(SolrInputDocument sdoc) {
     Object idObj = sdoc.getFieldValue(ID); // blech
     String id = idObj != null ? idObj.toString() : "null"; // should only happen on client side
     return id;

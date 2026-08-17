@@ -19,15 +19,13 @@
 // Configure test randomization seeds and derived test properties.
 //
 
-import java.nio.file.*
 import com.carrotsearch.randomizedtesting.SeedUtils
 import com.carrotsearch.randomizedtesting.generators.RandomPicks
+import java.nio.file.Path
 import org.apache.tools.ant.types.Commandline
 
 buildscript {
-  repositories {
-    mavenCentral()
-  }
+  apply from: rootProject.file('build-tools/build-infra/declare-repositories.gradle'), to: delegate
 
   dependencies {
     classpath libs.carrotsearch.randomizedtesting.runner

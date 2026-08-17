@@ -106,7 +106,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
 
     SolrParams params = config.toSolrParams();
 
-    log.info("init: {}", config);
+    log.debug("init: {}", config);
     String name = super.init(config, core);
 
     Comparator<SuggestWord> comp = SuggestWordQueue.DEFAULT_COMPARATOR;
