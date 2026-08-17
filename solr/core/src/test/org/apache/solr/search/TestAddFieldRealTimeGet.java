@@ -73,10 +73,10 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     assertU(adoc("id", "1", newFieldName, newFieldValue));
     assertJQ(req("q", "id:1"), "/response/numFound==0");
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id," + newFieldName),
+        reqWithPath("/get", "id", "1", "fl", "id," + newFieldName),
         "=={'doc':{'id':'1'," + newFieldKeyValue + "}}");
     assertJQ(
-        req("qt", "/get", "ids", "1", "fl", "id," + newFieldName),
+        reqWithPath("/get", "ids", "1", "fl", "id," + newFieldName),
         "=={'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1',"
             + newFieldKeyValue
             + "}]}}");
@@ -85,10 +85,10 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
 
     assertJQ(req("q", "id:1"), "/response/numFound==1");
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id," + newFieldName),
+        reqWithPath("/get", "id", "1", "fl", "id," + newFieldName),
         "=={'doc':{'id':'1'," + newFieldKeyValue + "}}");
     assertJQ(
-        req("qt", "/get", "ids", "1", "fl", "id," + newFieldName),
+        reqWithPath("/get", "ids", "1", "fl", "id," + newFieldName),
         "=={'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1',"
             + newFieldKeyValue
             + "}]}}");
