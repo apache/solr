@@ -46,7 +46,7 @@
       "allowedVersions": "0.10.0"
     }
   ],
-  "schedule": ["* * * * *"],
+  "schedule": ["before 9am on the first day of the month"],
   "prConcurrentLimit": 100,
   "prHourlyLimit": 10,
   "branchPrefix": "renovate-9x/",
