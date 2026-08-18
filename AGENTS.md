@@ -65,6 +65,16 @@ Solr issues are tracked at https://issues.apache.org/jira (project key `SOLR`). 
 - Search: `curl "https://issues.apache.org/jira/rest/api/2/search?jql=<url-encoded JQL>&fields=summary,status,resolution&maxResults=10"` with JQL like `project=SOLR AND text~"some phrase" ORDER BY updated DESC`
 - Single issue (with comments): `curl "https://issues.apache.org/jira/rest/api/2/issue/SOLR-12345?fields=summary,description,comment"`
 
+## Git Repository History
+
+- This repo's history predates the Lucene/Solr split: before Solr 9.0, Solr was released jointly with Lucene from a combined `lucene-solr` repository. Commits and tags from that era are still present here.
+- Release tags come in two families — check both when doing any git-blame/version archaeology (e.g. figuring out which Solr version something was added or deprecated in), or you will silently get a too-recent answer for anything before the split:
+    - `releases/lucene-solr/X.Y.Z` — joint releases, pre-9.0 (Solr versions up to 8.x)
+    - `releases/solr/X.Y.Z` — standalone Solr releases, 9.0 onward
+- Exclude `releases/lucene/*` (pure Lucene releases, not Solr), and `grafts/*` / `history/branches/*` refs (historical/graft markers, not real releases) from any version lookup.
+- Example pattern to find the earliest release containing a commit: `git tag --contains <hash> | grep -E '^releases/(solr|lucene-solr)/[0-9]+\.[0-9]+(\.[0-9]+)?$' | sed -E 's#^releases/(solr|lucene-solr)/##' | sort -V | head -1`
+- The active development branch is `main`; its in-progress version is the `baseVersion` string in the root `build.gradle`. Maintenance branches for prior lines follow the `branch_9x`, `branch_10x`, etc. naming pattern.
+
 ## Security
 
 For security findings, follow the project's threat model:
