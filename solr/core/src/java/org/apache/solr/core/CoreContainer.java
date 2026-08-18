@@ -712,7 +712,7 @@ public class CoreContainer {
    * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    * @deprecated likely to simply be moved to the ObjectCache so as to not be used
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public SolrClientCache getSolrClientCache() {
     // TODO put in the objectCache instead
     return solrClientCache;
@@ -1847,8 +1847,10 @@ public class CoreContainer {
    *
    * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it
    *     can be sorted). Don't need to close them.
+   * @deprecated Use {@link #getLoadedCoreNames()} and then call {@link #getCore(String)} then close
+   *     it.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public List<SolrCore> getCores() {
     return solrCores.getCores();
   }

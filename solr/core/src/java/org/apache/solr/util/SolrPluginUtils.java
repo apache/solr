@@ -302,8 +302,11 @@ public class SolrPluginUtils {
    * @param results the main result set of the response
    * @return The debug info
    * @throws java.io.IOException if there was an IO error
+   * @deprecated Internal debug helper, to be folded directly into {@link
+   *     org.apache.solr.handler.component.DebugComponent}; not intended for use outside of Solr's
+   *     own request-handling code.
    */
-  @Deprecated // move to DebugComponent
+  @Deprecated(since = "10.0") // move to DebugComponent
   public static NamedList<Object> doStandardDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -318,7 +321,12 @@ public class SolrPluginUtils {
     return dbg;
   }
 
-  @Deprecated // move to DebugComponent
+  /**
+   * @deprecated Internal debug helper, to be folded directly into {@link
+   *     org.apache.solr.handler.component.DebugComponent}; not intended for use outside of Solr's
+   *     own request-handling code.
+   */
+  @Deprecated(since = "10.0") // move to DebugComponent
   public static void doStandardQueryDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -339,7 +347,12 @@ public class SolrPluginUtils {
     }
   }
 
-  @Deprecated
+  /**
+   * @deprecated Internal debug helper, to be folded directly into {@link
+   *     org.apache.solr.handler.component.DebugComponent}; not intended for use outside of Solr's
+   *     own request-handling code.
+   */
+  @Deprecated(since = "10.0")
   public static void doStandardResultsDebug(
       SolrQueryRequest req, Query query, DocList results, boolean dbgResults, NamedList<Object> dbg)
       throws IOException {
@@ -431,8 +444,13 @@ public class SolrPluginUtils {
     return out;
   }
 
-  /** Executes a basic query */
-  @Deprecated
+  /**
+   * Executes a basic query
+   *
+   * @deprecated Internal helper used only for the {@code explainOther} debug feature; not intended
+   *     for use outside of Solr's own request-handling code.
+   */
+  @Deprecated(since = "10.0")
   public static DocList doSimpleQuery(String sreq, SolrQueryRequest req, int start, int limit)
       throws IOException {
     List<String> commands = StrUtils.splitSmart(sreq, ';');

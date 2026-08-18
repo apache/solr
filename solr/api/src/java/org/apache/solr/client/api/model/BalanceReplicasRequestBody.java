@@ -36,6 +36,10 @@ public class BalanceReplicasRequestBody {
   @JsonProperty(value = "nodes")
   public Set<String> nodes;
 
+  /**
+   * @deprecated Waiting for final state is expected to become the unconditional default behavior;
+   *     this parameter will then have no effect and will likely be removed. See SOLR-17712.
+   */
   @Schema(
       description =
           "If true, the request will complete only when all affected replicas become active. "

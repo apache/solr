@@ -206,6 +206,9 @@ public class HttpJettySolrClient extends HttpSolrClient {
     }
   }
 
+  /**
+   * @deprecated Use {@link Builder#addListenerFactory(HttpListenerFactory)} instead.
+   */
   @Deprecated(since = "9.7")
   public void addListenerFactory(HttpListenerFactory factory) {
     this.listenerFactory.add(factory);

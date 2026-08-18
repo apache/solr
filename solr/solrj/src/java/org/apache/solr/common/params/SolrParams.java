@@ -416,7 +416,7 @@ public abstract class SolrParams
    *
    * @deprecated see {@link SimpleOrderedMap#SimpleOrderedMap(MapWriter)}
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public NamedList<Object> toNamedList() {
     final SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
 

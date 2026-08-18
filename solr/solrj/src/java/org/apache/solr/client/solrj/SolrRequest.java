@@ -275,7 +275,7 @@ public abstract class SolrRequest<T> implements Serializable {
   /**
    * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "8.0")
   public Collection<ContentStream> getContentStreams() throws IOException {
     return null;
   }

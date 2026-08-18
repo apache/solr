@@ -47,6 +47,8 @@ import java.util.Map;
  *
  * <p>Matches {@link FieldValueFeature} behaviour prior to 9.4 i.e. DocValues are not used when
  * docValues=true is combined with stored=true.
+ *
+ * @deprecated Use {@link FieldValueFeature} instead.
  */
 @Deprecated(since = "9.4")
 public class LegacyFieldValueFeature extends FieldValueFeature {

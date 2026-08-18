@@ -30,7 +30,7 @@ import org.locationtech.spatial4j.io.GeohashUtils;
  *
  * <p>Note, there is no reciprocal function for this.
  */
-@Deprecated
+@Deprecated(since = "9.0")
 public class GeohashFunction extends ValueSource {
   protected ValueSource lat, lon;
 

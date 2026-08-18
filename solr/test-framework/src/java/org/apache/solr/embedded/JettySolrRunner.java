@@ -749,7 +749,10 @@ public class JettySolrRunner implements SolrBackend {
     }
   }
 
-  @Deprecated
+  /**
+   * @deprecated Use {@link #getSolrClient()} or {@link #newClient(int, int)} instead.
+   */
+  @Deprecated(since = "10.1")
   public HttpJettySolrClient newClient() {
     return new HttpJettySolrClient.Builder(getBaseUrl().toString()).build();
   }

@@ -167,7 +167,7 @@ public class ClusterState implements MapWriter {
     return liveNodes;
   }
 
-  @Deprecated
+  @Deprecated(since = "10.0")
   public Map<String, List<Replica>> getReplicaNamesPerCollectionOnNode(final String nodeName) {
     Map<String, List<Replica>> replicaNamesPerCollectionOnNode = new HashMap<>();
     collectionStates.values().stream()
@@ -209,7 +209,7 @@ public class ClusterState implements MapWriter {
    *     {@link ClusterState}
    * @return the ClusterState
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public static ClusterState createFromJson(
       int version,
       byte[] bytes,
@@ -225,7 +225,7 @@ public class ClusterState implements MapWriter {
     return createFromCollectionMap(version, stateMap, liveNodes, creationTime, prsSupplier);
   }
 
-  @Deprecated
+  @Deprecated(since = "10.0")
   public static ClusterState createFromCollectionMap(
       int version,
       Map<String, Object> stateMap,

@@ -21,7 +21,12 @@ public interface CommonAdminParams {
   /** Async or not? * */
   String ASYNC = "async";
 
-  /** Wait for final state of the operation. */
+  /**
+   * Wait for final state of the operation.
+   *
+   * @deprecated Waiting for final state is expected to become the unconditional default behavior;
+   *     this parameter will then have no effect and will likely be removed. See SOLR-17712.
+   */
   @Deprecated(since = "9.10")
   String WAIT_FOR_FINAL_STATE = "waitForFinalState";
 

@@ -49,7 +49,7 @@ import org.apache.lucene.search.TotalHitCountCollector;
  * @deprecated Use {@link TopFieldCollector} and set trackTotalHits to false.
  * @lucene.experimental
  */
-@Deprecated
+@Deprecated(since = "8.0")
 final class EarlyTerminatingSortingCollector extends FilterCollector {
 
   /**

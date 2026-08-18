@@ -46,7 +46,8 @@ public interface ShardParams {
    * @deprecated This was an internally used param, never meant for clients to specify; it is no
    *     longer used by Solr.
    */
-  @Deprecated String SHARD_URL = "shard.url";
+  @Deprecated(since = "10.0")
+  String SHARD_URL = "shard.url";
 
   /** The requested shard name */
   String SHARD_NAME = "shard.name";

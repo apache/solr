@@ -791,7 +791,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return search(new QueryResult(), cmd);
   }
 
-  @Deprecated
+  /**
+   * @deprecated Use {@link #search(QueryCommand)} instead.
+   */
+  @Deprecated(since = "10.0")
   public QueryResult search(QueryResult qr, QueryCommand cmd) throws IOException {
     getDocListC(qr, cmd);
     return qr;
@@ -841,7 +844,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @see SolrDocumentFetcher
    */
   /* @Override
-  @Deprecated
+  @Deprecated(since = "10.0")
   public Document doc(int docId) throws IOException {
     return doc(docId, (Set<String>) null);
   }*/
@@ -854,7 +857,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @see SolrDocumentFetcher
    */
   /*@Override
-  @Deprecated
+  @Deprecated(since = "10.0")
   public final void doc(int docId, StoredFieldVisitor visitor) throws IOException {
     getDocFetcher().doc(docId, visitor);
   }*/
@@ -869,7 +872,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   /*
     @Override
-    @Deprecated
+    @Deprecated(since = "10.0")
     public final Document doc(int i, Set<String> fields) throws IOException {
       return getDocFetcher().doc(i, fields);
     }
@@ -1544,8 +1547,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @param len maximum number of documents to return
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException If there is a low-level I/O error.
+   * @deprecated Build a {@link QueryCommand} with the equivalent setters and call {@link
+   *     QueryCommand#search(SolrIndexSearcher)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public DocList getDocList(Query query, Query filter, Sort lsort, int offset, int len)
       throws IOException {
     return new QueryCommand()
@@ -1573,8 +1578,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @param len maximum number of documents to return
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException If there is a low-level I/O error.
+   * @deprecated Build a {@link QueryCommand} with the equivalent setters and call {@link
+   *     QueryCommand#search(SolrIndexSearcher)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public DocList getDocList(
       Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags)
       throws IOException {
@@ -2162,8 +2169,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @param len maximum number of documents to return
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException If there is a low-level I/O error.
+   * @deprecated Build a {@link QueryCommand} with the equivalent setters and call {@link
+   *     QueryCommand#search(SolrIndexSearcher)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public DocList getDocList(Query query, Sort lsort, int offset, int len) throws IOException {
     return new QueryCommand()
         .setQuery(query)
@@ -2193,8 +2202,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
    *     caller.
    * @throws IOException If there is a low-level I/O error.
+   * @deprecated Build a {@link QueryCommand} with the equivalent setters and call {@link
+   *     QueryCommand#search(SolrIndexSearcher)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len)
       throws IOException {
     return new QueryCommand()
@@ -2228,8 +2239,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
    *     caller.
    * @throws IOException If there is a low-level I/O error.
+   * @deprecated Build a {@link QueryCommand} with the equivalent setters and call {@link
+   *     QueryCommand#search(SolrIndexSearcher)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public DocListAndSet getDocListAndSet(
       Query query, Query filter, Sort lsort, int offset, int len, int flags) throws IOException {
     return new QueryCommand()
@@ -2263,8 +2276,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
    *     caller.
    * @throws IOException If there is a low-level I/O error.
+   * @deprecated Build a {@link QueryCommand} with the equivalent setters and call {@link
+   *     QueryCommand#search(SolrIndexSearcher)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public DocListAndSet getDocListAndSet(
       Query query, List<Query> filterList, Sort lsort, int offset, int len) throws IOException {
     return new QueryCommand()
@@ -2299,8 +2314,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
    *     caller.
    * @throws IOException If there is a low-level I/O error.
+   * @deprecated Build a {@link QueryCommand} with the equivalent setters and call {@link
+   *     QueryCommand#search(SolrIndexSearcher)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public DocListAndSet getDocListAndSet(
       Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags)
       throws IOException {
@@ -2329,8 +2346,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
    *     caller.
    * @throws IOException If there is a low-level I/O error.
+   * @deprecated Build a {@link QueryCommand} with the equivalent setters and call {@link
+   *     QueryCommand#search(SolrIndexSearcher)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public DocListAndSet getDocListAndSet(Query query, Sort lsort, int offset, int len)
       throws IOException {
     return new QueryCommand()

@@ -54,7 +54,7 @@ public abstract class RequestWriter {
   /**
    * @deprecated Use {@link #getContentWriter(SolrRequest)}.
    */
-  @Deprecated
+  @Deprecated(since = "8.0")
   public abstract Collection<ContentStream> getContentStreams(SolrRequest<?> req)
       throws IOException;
 

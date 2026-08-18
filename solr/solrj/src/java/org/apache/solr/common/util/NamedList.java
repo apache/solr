@@ -274,7 +274,7 @@ public class NamedList<T>
    * @see #indexOf
    * @deprecated Use {@link #indexOf(String, int)} then {@link #getVal(int)}.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public T get(String name, int start) {
     int sz = size();
     for (int i = start; i < sz; i++) {
@@ -346,7 +346,7 @@ public class NamedList<T>
   /**
    * @deprecated Use {@link SimpleOrderedMap} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public Map<String, T> asShallowMap() {
     return asShallowMap(false);
   }
@@ -354,7 +354,7 @@ public class NamedList<T>
   /**
    * @deprecated use {@link SimpleOrderedMap} instead of NamedList when a Map is required.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public Map<String, T> asShallowMap(boolean allowDps) {
     return new Map<>() {
       @Override
@@ -504,8 +504,11 @@ public class NamedList<T>
   /**
    * Helper class implementing Map.Entry&lt;String, T&gt; to store the key-value relationship in
    * NamedList (the keys of which are String-s)
+   *
+   * @deprecated Use {@link AbstractMap.SimpleEntry} or {@link Map#entry} instead (note {@code
+   *     Map#entry} does not allow null keys/values).
    */
-  @Deprecated // use AbstractMap.SimpleEntry or Map.entry() (albeit no nulls)
+  @Deprecated(since = "10.0") // use AbstractMap.SimpleEntry or Map.entry() (albeit no nulls)
   public static final class NamedListEntry<T> extends AbstractMap.SimpleEntry<String, T> {
     public NamedListEntry(String _key, T _value) {
       super(_key, _value);
