@@ -110,7 +110,7 @@ google-javaformat = "1.35.0"
 # @keep for version alignment
 google-protobuf = "4.35.1"
 # @keep Gradle version to run the build
-gradle = "9.6.0"
+gradle = "9.7.0"
 grpc = "1.83.1"
 # @keep Gulp version used in ref-guide
 gulp-cli = "3.1.0"
@@ -152,7 +152,7 @@ kotlinx-datetime = "0.8.0-0.6.x-compat"
 kotlinx-serialization = "1.11.0"
 # @keep used by spotless
 ktlint = "1.8.0"
-ktor = "3.5.0"
+ktor = "3.5.1"
 langchain4j-bom = "1.17.0"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
@@ -182,7 +182,7 @@ opentelemetry-runtime-telemetry = "2.27.0-alpha"
 oshai-logging = "8.0.4"
 # @keep for version alignment
 ow2-asm = "9.10.1"
-owasp-dependencycheck = "12.2.2"
+owasp-dependencycheck = "13.0.0"
 # @keep for version alignment
 perfmark = "0.27.0"
 prometheus-metrics = "1.8.0"
