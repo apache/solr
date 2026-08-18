@@ -61,8 +61,6 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final String VERSION_FIELD = "_version_";
-
   @ClassRule public static final KafkaContainerRule kafkaContainer = new KafkaContainerRule();
 
   protected static volatile MiniSolrCloudCluster solrCluster1;

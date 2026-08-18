@@ -75,10 +75,6 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
 
   private static final int MAX_DOC_SIZE_BYTES = Integer.parseInt(DEFAULT_MAX_REQUEST_SIZE);
 
-  static final String VERSION_FIELD = "_version_";
-
-  private static final int NUM_BROKERS = 1;
-
   @ClassRule public static final KafkaContainerRule kafkaContainer = new KafkaContainerRule();
 
   protected volatile MiniSolrCloudCluster solrCluster1;

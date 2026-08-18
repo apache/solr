@@ -111,8 +111,6 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
 
   private static final int MAX_DOC_SIZE_BYTES = Integer.parseInt(DEFAULT_MAX_REQUEST_SIZE);
 
-  private static final int NUM_BROKERS = 1;
-
   @ClassRule public static final KafkaContainerRule kafkaContainer = new KafkaContainerRule();
 
   private static class ConsumerBatch {
