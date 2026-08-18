@@ -293,8 +293,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("command", "indexversion");
         params.set("_trace", "getIndexVersion");
-        params.set("qt", ReplicationHandler.PATH);
-        QueryRequest req = setAuthIfNeeded(new QueryRequest(params));
+        QueryRequest req = setAuthIfNeeded(new QueryRequest(ReplicationHandler.PATH, params));
 
         NamedList<Object> res = client.request(req);
         assertNotNull("null response from server: " + coreName, res);

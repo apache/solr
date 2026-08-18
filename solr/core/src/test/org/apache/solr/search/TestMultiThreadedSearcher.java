@@ -123,6 +123,37 @@ public class TestMultiThreadedSearcher extends SolrTestCaseJ4 {
             });
   }
 
+  /** Multi-threaded DocSet collection must match single-threaded for the same query. */
+  public void testMultiThreadedDocSetMatchesSingleThreaded() throws Exception {
+    h.getCore()
+        .withSearcher(
+            searcher -> {
+              assertTrue(searcher.getSlices().length > 1);
+
+              final Query query = new TermQuery(new Term("field1_s", "xyzrareterm"));
+              final QueryCommand cmdSingle = new QueryCommand();
+              cmdSingle.setQuery(query);
+              cmdSingle.setNeedDocSet(true);
+              cmdSingle.setLen(10);
+              cmdSingle.setMultiThreaded(false);
+
+              final QueryCommand cmdMulti = new QueryCommand();
+              cmdMulti.setQuery(query);
+              cmdMulti.setNeedDocSet(true);
+              cmdMulti.setLen(10);
+              cmdMulti.setMultiThreaded(true);
+
+              final QueryResult singleThreaded = searcher.search(cmdSingle);
+              final QueryResult multiThreaded = searcher.search(cmdMulti);
+
+              final DocSet stSet = singleThreaded.getDocListAndSet().docSet;
+              final DocSet mtSet = multiThreaded.getDocListAndSet().docSet;
+              assertEquals(stSet.size(), mtSet.size());
+              assertTrue(DocSetUtil.equals(stSet, mtSet));
+              return null;
+            });
+  }
+
   private static final class SimpleReRankQuery extends RankQuery {
 
     private Query q;

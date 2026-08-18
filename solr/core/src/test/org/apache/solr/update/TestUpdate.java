@@ -61,7 +61,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     afterUpdate.call();
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,*_i,*_is,copyfield_*"),
+        reqWithPath("/get", "id", "1", "fl", "id,*_i,*_is,copyfield_*"),
         "=={'doc':{'id':'1', 'val_i':5, 'val_is':[10,5], 'copyfield_source':['a','b']}}" // real-time get should not return stored copyfield targets
         );
 
@@ -70,7 +70,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     afterUpdate.call();
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,*_i,*_is"),
+        reqWithPath("/get", "id", "1", "fl", "id,*_i,*_is"),
         "=={'doc':{'id':'1', 'val_i':100, 'val_is':[10,5,-1]}}");
 
     // Do a search to get all stored fields back and make sure that the stored copyfield target only
@@ -110,7 +110,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     afterUpdate.call();
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,*_i,*_is"),
+        reqWithPath("/get", "id", "1", "fl", "id,*_i,*_is"),
         "=={'doc':{'id':'1', 'val_i':100, 'val_is':[10,5,-1,-100,-200]}}");
 
     // extra field should just be treated as a "set"
@@ -118,7 +118,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     afterUpdate.call();
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,*_i,*_is"),
+        reqWithPath("/get", "id", "1", "fl", "id,*_i,*_is"),
         "=={'doc':{'id':'1', 'val_i':2, 'val_is':[10,5,-1,-100,-200,-300]}}");
 
     // a null value should be treated as "remove"
@@ -126,7 +126,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     afterUpdate.call();
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,*_i,*_is"),
+        reqWithPath("/get", "id", "1", "fl", "id,*_i,*_is"),
         "=={'doc':{'id':'1', 'val_is':[10,5,-1,-100,-200,-300,-400]}}");
 
     version = deleteAndGetVersion("1", null);
@@ -145,7 +145,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     version = addAndGetVersion(sdoc("id", "1", "val_i", 102, "val_is", map("add", -102)), null);
     afterUpdate.call();
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        reqWithPath("/get", "id", "1", "fl", "id,val*"),
         "=={'doc':{'id':'1', 'val_i':102, 'val_is':[-102]}}");
 
     version = addAndGetVersion(sdoc("id", "1", "val_i", 5), null);
@@ -170,7 +170,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     afterUpdate.call();
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        reqWithPath("/get", "id", "1", "fl", "id,val*"),
         "=={'doc':{'id':'1', 'val_i':5, 'val_is':[1], 'val2_i':1, 'val2_f':1.0, 'val2_d':1.0, 'val2_l':1}}");
 
     version =
@@ -192,7 +192,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     afterUpdate.call();
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        reqWithPath("/get", "id", "1", "fl", "id,val*"),
         "=={'doc':{'id':'1', 'val_i':5, 'val_is':[-4], 'val2_i':-4, 'val2_f':-4.0, 'val2_d':-4.0, 'val2_l':-4}}");
 
     version =
@@ -214,7 +214,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     afterUpdate.call();
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        reqWithPath("/get", "id", "1", "fl", "id,val*"),
         "=={'doc':{'id':'1', 'val_i':5, 'val_is':[1999999996], 'val2_i':-2000000004, 'val2_f':1.0E20, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}");
 
     // remove some fields
@@ -229,7 +229,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     afterUpdate.call();
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        reqWithPath("/get", "id", "1", "fl", "id,val*"),
         "=={'doc':{'id':'1', 'val_i':5, 'val2_i':-2000000004, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}");
 
     // test that updating a unique id results in failure.
@@ -248,7 +248,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     afterUpdate.call();
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        reqWithPath("/get", "id", "1", "fl", "id,val*"),
         "=={'doc':{'id':'1', 'val_i':5, 'val2_i':-2000000004, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}");
 
     // nothing should have changed - check with a normal query that we didn't create a duplicate
