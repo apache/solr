@@ -68,6 +68,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     private static final String SINGULAR_VALUE_CHAR = "";
     private boolean storePath;
     private boolean storeParent;
+    private final boolean hasMultiValuedVectorField;
     private String uniqueKeyFieldName;
     private IndexSchema schema;
 
@@ -78,87 +79,128 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
       this.storePath = storePath;
       this.uniqueKeyFieldName = req.getSchema().getUniqueKeyField().getName();
       this.schema = req.getSchema();
+      this.hasMultiValuedVectorField = hasMultiValuedVectorField(schema);
+    }
+
+    /** Whether any field, explicit or dynamic, could yield vectors to split into nested docs. */
+    private static boolean hasMultiValuedVectorField(IndexSchema schema) {
+      for (SchemaField field : schema.getFields().values()) {
+        if (isMultiValuedVectorField(field)) {
+          return true;
+        }
+      }
+      for (IndexSchema.DynamicField dynamicField : schema.getDynamicFields()) {
+        if (isMultiValuedVectorField(dynamicField.getPrototype())) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    private static boolean isMultiValuedVectorField(SchemaField sfield) {
+      return sfield.getType() instanceof DenseVectorField && sfield.multiValued();
     }
 
     @Override
     public void processAdd(AddUpdateCommand cmd) throws IOException {
       SolrInputDocument doc = cmd.getSolrInputDocument();
-      processDocChildren(doc, null);
+      final String rootPath = rootPathPrefix(doc);
+      processDocChildren(doc, rootPath);
+      if (hasMultiValuedVectorField) {
+        // after the children; the docs it generates must not be walked as children themselves
+        processMultiValuedVectorFields(doc, rootPath);
+      }
       super.processAdd(cmd);
     }
 
-    private boolean processDocChildren(SolrInputDocument doc, String fullPath) {
-      boolean isNested = false;
-      List<String> originalVectorFieldsToRemove = new ArrayList<>();
-      ArrayList<SolrInputDocument> vectors = new ArrayList<>();
+    /**
+     * A nest path already on the root doc prefixes its children's, e.g. {@code /myRoot} yields
+     * {@code /myRoot/children#0}. Null when absent or at the top, else without a trailing '/'.
+     * Disclaimer: for advanced/expert usage.
+     */
+    private String rootPathPrefix(SolrInputDocument rootDoc) {
+      Object value = rootDoc.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
+      if (value == null) {
+        return null;
+      }
+      String path = value.toString();
+      if (path.endsWith(PATH_SEP_CHAR)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad nest path field format");
+      }
+      return path;
+    }
+
+    private void processDocChildren(SolrInputDocument doc, String fullPath) {
       for (SolrInputField field : doc.values()) {
-        SchemaField sfield = schema.getFieldOrNull(field.getName());
         int childNum = 0;
         boolean isSingleVal = !(field.getValue() instanceof Collection);
-        boolean firstLevelChildren = fullPath == null;
-        if (firstLevelChildren && sfield != null && isMultiValuedVectorField(sfield)) {
-          for (Object vectorValue : field.getValues()) {
-            SolrInputDocument singleVectorNestedDoc = new SolrInputDocument();
-            singleVectorNestedDoc.setField(field.getName(), vectorValue);
-            final String sChildNum = isSingleVal ? SINGULAR_VALUE_CHAR : String.valueOf(childNum);
+        for (Object val : field) {
+          if (!(val instanceof SolrInputDocument cDoc)) {
+            // either all collection items are child docs or none are.
+            break;
+          }
+          final String fieldName = field.getName();
+
+          if (fieldName.contains(PATH_SEP_CHAR)) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Field name: '"
+                    + fieldName
+                    + "' contains: '"
+                    + PATH_SEP_CHAR
+                    + "' , which is reserved for the nested URP");
+          }
+          final String sChildNum = isSingleVal ? SINGULAR_VALUE_CHAR : String.valueOf(childNum);
+          if (!cDoc.containsKey(uniqueKeyFieldName)) {
             String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
-            singleVectorNestedDoc.setField(
-                uniqueKeyFieldName, generateChildUniqueId(parentDocId, field.getName(), sChildNum));
-
-            if (!isNested) {
-              isNested = true;
-            }
-            final String lastKeyPath = PATH_SEP_CHAR + field.getName() + NUM_SEP_CHAR + sChildNum;
-            final String childDocPath = firstLevelChildren ? lastKeyPath : fullPath + lastKeyPath;
-            if (storePath) {
-              setPathField(singleVectorNestedDoc, childDocPath);
-            }
-            if (storeParent) {
-              setParentKey(singleVectorNestedDoc, doc);
-            }
-            ++childNum;
-            vectors.add(singleVectorNestedDoc);
+            cDoc.setField(
+                uniqueKeyFieldName, generateChildUniqueId(parentDocId, fieldName, sChildNum));
           }
-          originalVectorFieldsToRemove.add(field.getName());
-        } else {
-          for (Object val : field) {
-            if (!(val instanceof SolrInputDocument cDoc)) {
-              // either all collection items are child docs or none are.
-              break;
-            }
-            final String fieldName = field.getName();
-
-            if (fieldName.contains(PATH_SEP_CHAR)) {
-              throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST,
-                  "Field name: '"
-                      + fieldName
-                      + "' contains: '"
-                      + PATH_SEP_CHAR
-                      + "' , which is reserved for the nested URP");
-            }
-            final String sChildNum = isSingleVal ? SINGULAR_VALUE_CHAR : String.valueOf(childNum);
-            if (!cDoc.containsKey(uniqueKeyFieldName)) {
-              String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
-              cDoc.setField(
-                  uniqueKeyFieldName, generateChildUniqueId(parentDocId, fieldName, sChildNum));
-            }
-            if (!isNested) {
-              isNested = true;
-            }
-            final String lastKeyPath = PATH_SEP_CHAR + fieldName + NUM_SEP_CHAR + sChildNum;
-            // concat of all paths children.grandChild => /children#1/grandChild#
-            final String childDocPath = firstLevelChildren ? lastKeyPath : fullPath + lastKeyPath;
-            processChildDoc(cDoc, doc, childDocPath);
-            ++childNum;
-          }
+          final String lastKeyPath = PATH_SEP_CHAR + fieldName + NUM_SEP_CHAR + sChildNum;
+          // concat of all paths children.grandChild => /children#1/grandChild#
+          final String childDocPath = fullPath == null ? lastKeyPath : fullPath + lastKeyPath;
+          processChildDoc(cDoc, doc, childDocPath);
+          ++childNum;
         }
       }
+    }
+
+    /** Replaces each multi-valued vector field on the root doc with a nested doc per value. */
+    private void processMultiValuedVectorFields(SolrInputDocument doc, String fullPath) {
+      List<String> originalVectorFieldsToRemove = new ArrayList<>();
+      List<SolrInputDocument> vectors = new ArrayList<>();
+      for (SolrInputField field : doc.values()) {
+        SchemaField sfield = schema.getFieldOrNull(field.getName());
+        if (sfield == null || !isMultiValuedVectorField(sfield)) {
+          continue;
+        }
+        int childNum = 0;
+        boolean isSingleVal = !(field.getValue() instanceof Collection);
+        for (Object vectorValue : field.getValues()) {
+          SolrInputDocument singleVectorNestedDoc = new SolrInputDocument();
+          singleVectorNestedDoc.setField(field.getName(), vectorValue);
+          final String sChildNum = isSingleVal ? SINGULAR_VALUE_CHAR : String.valueOf(childNum);
+          String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
+          singleVectorNestedDoc.setField(
+              uniqueKeyFieldName, generateChildUniqueId(parentDocId, field.getName(), sChildNum));
+
+          final String lastKeyPath = PATH_SEP_CHAR + field.getName() + NUM_SEP_CHAR + sChildNum;
+          final String childDocPath = fullPath == null ? lastKeyPath : fullPath + lastKeyPath;
+          if (storePath) {
+            setPathField(singleVectorNestedDoc, childDocPath);
+          }
+          if (storeParent) {
+            setParentKey(singleVectorNestedDoc, doc);
+          }
+          ++childNum;
+          vectors.add(singleVectorNestedDoc);
+        }
+        originalVectorFieldsToRemove.add(field.getName());
+      }
       this.cleanOriginalVectorFields(doc, originalVectorFieldsToRemove);
-      if (vectors.size() > 0) {
+      if (!vectors.isEmpty()) {
         doc.setField(NESTED_VECTORS_PSEUDO_FIELD_NAME, vectors);
       }
-      return isNested;
     }
 
     private void cleanOriginalVectorFields(
@@ -166,10 +208,6 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
       for (String fieldName : originalVectorFieldsToRemove) {
         doc.removeField(fieldName);
       }
-    }
-
-    private static boolean isMultiValuedVectorField(SchemaField sfield) {
-      return sfield.getType() instanceof DenseVectorField && sfield.multiValued();
     }
 
     private void processChildDoc(
