@@ -54,12 +54,11 @@ import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.kafka.KafkaContainer;
-import org.testcontainers.utility.DockerImageName;
 
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -69,7 +68,7 @@ import org.testcontainers.utility.DockerImageName;
       SolrKafkaTestsIgnoredThreadsFilter.class
     })
 @ThreadLeakLingering(linger = 5000)
-@Ignore("This test relies on collecton properties and I don't see where they are set anymore")
+@Ignore("This test relies on collection properties and I don't see where they are set anymore")
 public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -79,7 +78,8 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
   static final String VERSION_FIELD = "_version_";
 
   private static final int NUM_BROKERS = 1;
-  public KafkaContainer kafkaContainer;
+
+  @ClassRule public static final KafkaContainerRule kafkaContainer = new KafkaContainerRule();
 
   protected volatile MiniSolrCloudCluster solrCluster1;
   protected volatile MiniSolrCloudCluster solrCluster2;
@@ -87,6 +87,10 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
   protected static volatile Consumer consumer;
 
   private static final String TOPIC = "topic1";
+
+  // Unique per test method (built from TOPIC), so tests sharing the Kafka container don't see
+  // each other's topics, records, or consumer group offsets.
+  private String topic;
 
   private static final String COLLECTION = "collection1";
   private static final String ALT_COLLECTION = "collection2";
@@ -102,20 +106,18 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
     consumer = new Consumer();
     Properties config = new Properties();
 
-    kafkaContainer = new KafkaContainer(DockerImageName.parse("apache/kafka:4.3.1"));
-    kafkaContainer.start();
-
+    topic = TOPIC + "-" + Integer.toHexString(random().nextInt());
     String bootstrapServers = kafkaContainer.getBootstrapServers();
 
     // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
     config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     try (AdminClient adminClient = AdminClient.create(config)) {
-      adminClient.createTopics(List.of(new NewTopic(TOPIC, 3, (short) 1))).all().get();
+      adminClient.createTopics(List.of(new NewTopic(topic, 3, (short) 1))).all().get();
     }
 
     // in this test we will count on collection properties for topicName and enabled=true
     System.setProperty("solr.crossdc.enabled", "false");
-    // System.setProperty("solr.crossdc.topicName", TOPIC);
+    // System.setProperty("solr.crossdc.topicName", topic);
 
     System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, kafkaContainer.getBootstrapServers());
     System.setProperty(INDEX_UNMIRRORABLE_DOCS, "false");
@@ -139,7 +141,7 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
     // Update the collection property "enabled" to true
     CollectionProperties cp = new CollectionProperties(solrCluster1.getZkClient());
     cp.setCollectionProperty(COLLECTION, "solr.crossdc.enabled", "true");
-    cp.setCollectionProperty(COLLECTION, "solr.crossdc.topicName", TOPIC);
+    cp.setCollectionProperty(COLLECTION, "solr.crossdc.topicName", topic);
     // Reloading the collection
     CollectionAdminRequest.Reload reloadRequest =
         CollectionAdminRequest.reloadCollection(COLLECTION);
@@ -150,8 +152,8 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
     Map<String, Object> properties = new HashMap<>();
     properties.put(KafkaCrossDcConf.BOOTSTRAP_SERVERS, bootstrapServers);
     properties.put(KafkaCrossDcConf.ZK_CONNECT_STRING, solrCluster2.getZkServer().getZkAddress());
-    properties.put(KafkaCrossDcConf.TOPIC_NAME, TOPIC);
-    properties.put(KafkaCrossDcConf.GROUP_ID, "group1");
+    properties.put(KafkaCrossDcConf.TOPIC_NAME, topic);
+    properties.put(KafkaCrossDcConf.GROUP_ID, "group1-" + topic);
     properties.put(KafkaCrossDcConf.MAX_REQUEST_SIZE_BYTES, MAX_DOC_SIZE_BYTES);
     consumer.start(properties);
   }
@@ -173,15 +175,6 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
 
     consumer.shutdown();
     consumer = null;
-
-    if (kafkaContainer != null) {
-      try {
-        kafkaContainer.stop();
-        kafkaContainer = null;
-      } catch (Exception e) {
-        log.error("Exception stopping Kafka container", e);
-      }
-    }
   }
 
   private static SolrInputDocument getDoc() {
@@ -212,7 +205,7 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
       // Update the collection property "enabled" to true
       CollectionProperties cp = new CollectionProperties(solrCluster1.getZkClient());
       cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.enabled", "true");
-      cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.topicName", TOPIC);
+      cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.topicName", topic);
       // Reloading the collection
       CollectionAdminRequest.Reload reloadRequest =
           CollectionAdminRequest.reloadCollection(ALT_COLLECTION);
@@ -268,7 +261,7 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
       // Update the collection property "enabled" to true
       CollectionProperties cp = new CollectionProperties(solrCluster1.getZkClient());
       cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.enabled", "true");
-      cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.topicName", TOPIC);
+      cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.topicName", topic);
       // Reloading the collection
       CollectionAdminRequest.Reload reloadRequest =
           CollectionAdminRequest.reloadCollection(ALT_COLLECTION);

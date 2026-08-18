@@ -44,10 +44,9 @@ import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.kafka.KafkaContainer;
-import org.testcontainers.utility.DockerImageName;
 
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -64,8 +63,7 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
 
   static final String VERSION_FIELD = "_version_";
 
-  // Replaced legacy EmbeddedKafkaCluster wrapper with native Testcontainers orchestration
-  public static KafkaContainer kafkaContainer;
+  @ClassRule public static final KafkaContainerRule kafkaContainer = new KafkaContainerRule();
 
   protected static volatile MiniSolrCloudCluster solrCluster1;
   protected static volatile MiniSolrCloudCluster solrCluster2;
@@ -85,10 +83,6 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
     System.setProperty(KafkaCrossDcConf.PORT, "-1");
     consumer1 = new Consumer();
     consumer2 = new Consumer();
-
-    // Spin up an isolated Kafka 4.3.1 broker running purely in KRaft mode
-    kafkaContainer = new KafkaContainer(DockerImageName.parse("apache/kafka:4.3.1"));
-    kafkaContainer.start();
 
     String bootstrapServers = kafkaContainer.getBootstrapServers();
     log.info("Kafka Testcontainer started. bootstrapServers={}", bootstrapServers);
@@ -175,17 +169,8 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
       consumer2.shutdown();
     }
 
-    if (kafkaContainer != null) {
-      try {
-        kafkaContainer.stop();
-      } catch (Exception e) {
-        log.error("Exception stopping Kafka container", e);
-      }
-    }
-
     solrCluster1 = null;
     solrCluster2 = null;
-    kafkaContainer = null;
     consumer1 = null;
     consumer2 = null;
   }

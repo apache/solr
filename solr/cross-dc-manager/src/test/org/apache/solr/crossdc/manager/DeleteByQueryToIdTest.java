@@ -53,12 +53,11 @@ import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.kafka.KafkaContainer;
-import org.testcontainers.utility.DockerImageName;
 
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -76,7 +75,8 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
   static final String VERSION_FIELD = "_version_";
 
   private static final int NUM_BROKERS = 1;
-  public static KafkaContainer kafkaContainer;
+
+  @ClassRule public static final KafkaContainerRule kafkaContainer = new KafkaContainerRule();
 
   protected static volatile MiniSolrCloudCluster solrCluster1;
   protected static volatile MiniSolrCloudCluster solrCluster2;
@@ -99,9 +99,6 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
     System.setProperty("solr.crossdc.dbq_rows", "1");
 
     Properties config = new Properties();
-
-    kafkaContainer = new KafkaContainer(DockerImageName.parse("apache/kafka:4.3.1"));
-    kafkaContainer.start();
 
     String bootstrapServers = kafkaContainer.getBootstrapServers();
 
@@ -194,15 +191,6 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
       consumer.shutdown();
     }
 
-    if (kafkaContainer != null) {
-      try {
-        kafkaContainer.stop();
-        kafkaContainer = null;
-      } catch (Exception e) {
-        log.error("Exception stopping Kafka container", e);
-      }
-    }
-
     if (solrCluster1 != null) {
       solrCluster1.getZkServer().getZkClient().printLayoutToStream(System.out);
       solrCluster1.shutdown();
@@ -214,7 +202,6 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
 
     solrCluster1 = null;
     solrCluster2 = null;
-    kafkaContainer = null;
     consumer = null;
   }
 
