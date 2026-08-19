@@ -1,0 +1,10 @@
+title: >
+  Introducing {!aijoin} query for query-time join with auxiliary index.
+type: added
+authors:
+  - name: Mikhail Khludnev
+    nick: mkhl
+links:
+  - name: SOLR-18307
+    url: https://issues.apache.org/jira/browse/SOLR-18307
+
