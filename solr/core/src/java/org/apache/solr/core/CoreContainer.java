@@ -1107,7 +1107,6 @@ public class CoreContainer {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
-      zkSys.getZkController().checkOverseerDesignate();
     }
 
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at

@@ -21,13 +21,12 @@ import static org.apache.solr.cloud.OverseerTaskProcessor.getSortedElectionNodes
 
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.NodeRoles;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -42,7 +41,12 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
+    // SolrCloudTestCase randomises solr.cloud.overseer.enabled; this test is about the Overseer
+    // election, so pin it on rather than skipping half the runs.
+    configureCluster(4)
+        .withOverseer(true)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
   }
 
   public static void waitForNewOverseer(
@@ -97,131 +101,49 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     }
   }
 
+  /**
+   * A node started with {@code -Dsolr.node.roles=overseer:preferred} must become the Overseer
+   * without waiting for the current Overseer to restart.
+   */
   @Test
-  public void testOverseerRole() throws Exception {
-    if (new CollectionAdminRequest.RequestApiDistributedProcessing()
-        .process(cluster.getSolrClient())
-        .getIsCollectionApiDistributed()) {
-      log.info("Skipping test because Collection API is distributed");
-      return;
+  public void testPreferredOverseerNodeRoleTakesOver() throws Exception {
+    assertFalse(
+        "the Overseer must be enabled for this test",
+        new CollectionAdminRequest.RequestApiDistributedProcessing()
+            .process(cluster.getSolrClient())
+            .getIsCollectionApiDistributed());
+    logOverseerState();
+    final String overseerBefore = getLeaderNode(zkClient());
+    assertNotNull("no Overseer to start from", overseerBefore);
+
+    final JettySolrRunner preferred;
+    System.setProperty(NodeRoles.NODE_ROLES_PROP, "data:on,overseer:preferred");
+    try {
+      preferred = cluster.startJettySolrRunner();
+    } finally {
+      System.clearProperty(NodeRoles.NODE_ROLES_PROP);
     }
+    final String preferredNodeName = preferred.getNodeName();
+    log.info("Started {} as a preferred overseer", preferredNodeName);
 
+    assertEquals(
+        "the new node did not take the preferred overseer role",
+        NodeRoles.MODE_PREFERRED,
+        preferred.getCoreContainer().nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER));
+
+    // the node published its role and nudged the Overseer, so it must take over
+    waitForNewOverseer(30, preferredNodeName, false);
     logOverseerState();
-    List<String> nodes =
-        OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient());
-    // Remove the OVERSEER role, in case it was already assigned by another test in this suite
-    for (String node : nodes) {
-      CollectionAdminRequest.removeRole(node, "overseer").process(cluster.getSolrClient());
-    }
-    String overseer1 = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
-    nodes.remove(overseer1);
+    assertEquals(
+        "the preferred node should be the Overseer", preferredNodeName, getLeaderNode(zkClient()));
 
-    Collections.shuffle(nodes, random());
-    String overseer2 = nodes.get(0);
-    log.info("### Setting overseer designate {}", overseer2);
-
-    CollectionAdminRequest.addRole(overseer2, "overseer").process(cluster.getSolrClient());
-
-    waitForNewOverseer(15, overseer2, false);
-
-    // add another node as overseer
-    nodes.remove(overseer2);
-    Collections.shuffle(nodes, random());
-
-    String overseer3 = nodes.get(0);
-    log.info("### Adding another overseer designate {}", overseer3);
-    CollectionAdminRequest.addRole(overseer3, "overseer").process(cluster.getSolrClient());
-
-    // kill the current overseer, and check that the new designate becomes the new overseer
-    JettySolrRunner leaderJetty = getOverseerJetty();
-    logOverseerState();
-
-    leaderJetty.stop();
-    waitForNewOverseer(10, overseer3, false);
-
-    // add another node as overseer
-    nodes.remove(overseer3);
-    Collections.shuffle(nodes, random());
-    String overseer4 = nodes.get(0);
-    log.info("### Adding last overseer designate {}", overseer4);
-    CollectionAdminRequest.addRole(overseer4, "overseer").process(cluster.getSolrClient());
-    logOverseerState();
-
-    // remove the overseer role from the current overseer
-    CollectionAdminRequest.removeRole(overseer3, "overseer").process(cluster.getSolrClient());
-    waitForNewOverseer(15, overseer4, false);
-
-    // Add it back again - we now have two delegates, 4 and 3
-    CollectionAdminRequest.addRole(overseer3, "overseer").process(cluster.getSolrClient());
-
-    // explicitly tell the overseer to quit
-    String leaderId = OverseerCollectionConfigSetProcessor.getLeaderId(zkClient());
-    String leader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
-    log.info("### Sending QUIT to overseer {}", leader);
-    getOverseerJetty()
-        .getCoreContainer()
-        .getZkController()
-        .getOverseer()
-        .sendQuitToOverseer(leaderId);
-
-    waitForNewOverseer(15, s -> Objects.equals(leader, s) == false, false);
-
-    Thread.sleep(1000);
-
-    logOverseerState();
+    // and it must still be reachable as an ordinary node
     assertTrue(
-        "The old leader should have rejoined election",
-        OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient())
-            .contains(leader));
+        cluster.getZkStateReader().getClusterState().getLiveNodes().contains(preferredNodeName));
 
-    leaderJetty.start(); // starting this back, just for good measure
-  }
-
-  @Test
-  public void testDesignatedOverseerRestarts() throws Exception {
-    if (new CollectionAdminRequest.RequestApiDistributedProcessing()
-        .process(cluster.getSolrClient())
-        .getIsCollectionApiDistributed()) {
-      log.info("Skipping test because Collection API is distributed");
-      return;
-    }
+    cluster.stopJettySolrRunner(preferred);
+    cluster.waitForJettyToStop(preferred);
+    waitForNewOverseer(30, s -> s != null && !s.equals(preferredNodeName), false);
     logOverseerState();
-    // Remove the OVERSEER role, in case it was already assigned by another test in this suite
-    List<String> nodes =
-        OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient());
-    // We want to remove from the last (in election order) to the first.
-    // This way the current overseer will have its role removed last,
-    // so there will not be any elections.
-    Collections.reverse(nodes);
-    for (String node : nodes) {
-      CollectionAdminRequest.removeRole(node, "overseer").process(cluster.getSolrClient());
-    }
-    String overseer1 = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
-    int counter = 0;
-    while (overseer1 == null && counter < 10) {
-      overseer1 = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
-      Thread.sleep(1000);
-    }
-
-    // Setting overseer role to the current overseer
-    CollectionAdminRequest.addRole(overseer1, "overseer").process(cluster.getSolrClient());
-    waitForNewOverseer(15, overseer1, false);
-    JettySolrRunner leaderJetty = getOverseerJetty();
-
-    logOverseerState();
-    // kill the current overseer, and check that the next node in the election queue assumes
-    // leadership
-    leaderJetty.stop();
-    log.info("Killing designated overseer: {}", overseer1);
-
-    // after 5 seconds, bring back dead designated overseer and assert that it assumes leadership
-    // "right away", i.e. without any other node assuming leadership before this node becomes
-    // leader.
-    Thread.sleep(5);
-    logOverseerState();
-    log.info("Starting back the prioritized overseer..");
-    leaderJetty.start();
-    // assert that there is just a single leadership transition
-    waitForNewOverseer(15, overseer1, true);
   }
 }
