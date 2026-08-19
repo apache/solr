@@ -482,7 +482,8 @@ class ToLeafJoinContext {
       cell.resolveFromIndex( // ok. this one may be ready for search.
           new AIJoinUtil.Edges(
               AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.FROM_EDGES_PREFIX + cell.pairFieldName),
-              // TODO it might not need to be loaded, if "from" edges fully cut of the column. Thus, we won't read even "to" edges at all.
+              // TODO it might not need to be loaded, if "from" edges fully cut of the column. Thus,
+              // we won't read even "to" edges at all.
               AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.TO_EDGES_PREFIX + cell.pairFieldName),
               // TODO use it for ordering join segment iteration, desc
               AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.TO_COUNT_PREFIX + cell.pairFieldName)[0]));
