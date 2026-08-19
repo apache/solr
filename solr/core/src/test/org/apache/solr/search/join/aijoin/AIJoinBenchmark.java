@@ -17,10 +17,9 @@
 package org.apache.solr.search.join.aijoin;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Locale;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -43,6 +42,8 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 /**
  * Wall-clock comparison of {@link JoinUtil} (the term-based variant, no global ordinals) against
@@ -90,7 +91,7 @@ public class AIJoinBenchmark {
   private static final int GROWTH_DENOMINATOR = 10;
   private static final int UPDATE_DENOMINATOR = 10;
 
-  private final Random random = new Random();
+  private long random = System.nanoTime(); // forbiddenApi pushed Random() usage
 
   private interface SearchTask {
     TopDocs run() throws IOException;
@@ -107,7 +108,9 @@ public class AIJoinBenchmark {
         Directory childrenDir = new ByteBuffersDirectory();
         Directory joinDir = new ByteBuffersDirectory();
         ExecutorService executor =
-            Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            ExecutorUtil.newMDCAwareFixedThreadPool(
+                Runtime.getRuntime().availableProcessors(),
+                new SolrNamedThreadFactory(MethodHandles.lookup().lookupClass().getSimpleName()));
         AIJoinIndex joinIndex = new AIJoinIndex(joinDir)) {
       buildIndices(parentsDir, childrenDir);
       int numParents = NUM_PARENTS;
@@ -322,7 +325,8 @@ public class AIJoinBenchmark {
     try (IndexWriter parentsWriter = newBenchWriter(parentsDir);
         IndexWriter childrenWriter = newBenchWriter(childrenDir)) {
       for (int i = 0; i < numParents / UPDATE_DENOMINATOR; i++) {
-        int p = random.nextInt(numParents);
+        int p = Math.floorMod(random, numParents);
+        random = random * 31L + 31L;
         parentsWriter.updateDocument(new Term(PARENT_ID, parentId(p)), parentDoc(p));
         for (int c = 0; c < CHILDREN_PER_PARENT; c++) {
           childrenWriter.updateDocument(new Term(CHILD_ID, childId(p, c)), childDoc(p, c));

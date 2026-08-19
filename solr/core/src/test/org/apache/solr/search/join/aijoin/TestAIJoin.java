@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 import org.apache.lucene.document.Document;
@@ -57,6 +56,8 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.LogLevel;
 import org.jspecify.annotations.NonNull;
 import org.junit.AfterClass;
@@ -88,7 +89,10 @@ public class TestAIJoin extends SolrTestCase {
 
   @BeforeClass
   public static void beforeClass() {
-    executor = Executors.newFixedThreadPool(random().nextInt(1, 3));
+    executor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            random().nextInt(1, 3),
+            new SolrNamedThreadFactory(MethodHandles.lookup().lookupClass().getSimpleName()));
   }
 
   @AfterClass
