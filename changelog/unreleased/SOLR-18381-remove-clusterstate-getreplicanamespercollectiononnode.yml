@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the deprecated ClusterState.getReplicaNamesPerCollectionOnNode method; use ClusterState.collectionStream() with DocCollection.getReplicasOnNode(String) instead.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18381
+    url: https://issues.apache.org/jira/browse/SOLR-18381
