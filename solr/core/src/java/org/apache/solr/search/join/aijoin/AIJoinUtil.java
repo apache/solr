@@ -483,7 +483,7 @@ final class AIJoinUtil {
     }
   }
 
-  protected static CacheAndCount cacheImpl(BulkScorer scorer, int maxDoc, Bits liveDocs)
+  static CacheAndCount cacheImpl(BulkScorer scorer, int maxDoc, Bits liveDocs)
       throws IOException {
     if (scorer.cost() * 100 >= maxDoc) {
       // FixedBitSet is faster for dense sets and will enable the random-access
