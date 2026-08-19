@@ -1382,13 +1382,12 @@ public class CoreContainer {
   }
 
   public void cancelCoreRecoveries() {
-
-    List<SolrCore> cores = solrCores.getCores();
-
     // we must cancel without holding the cores sync
     // make sure we wait for any recoveries to stop
-    for (SolrCore core : cores) {
-      try {
+    for (String coreName : solrCores.getLoadedCoreNames()) {
+      // getCoreFromAnyList, not getCore: never loads, safe during shutdown
+      try (SolrCore core = solrCores.getCoreFromAnyList(coreName, true)) {
+        if (core == null) continue; // unloaded since getLoadedCoreNames
         core.getSolrCoreState().cancelRecovery();
       } catch (Exception e) {
         log.error("Error canceling recovery for core", e);
@@ -1408,21 +1407,25 @@ public class CoreContainer {
    * <p>We do not need to unpause ever because the node is being shut down.
    */
   private void pauseUpdatesAndAwaitInflightRequests() {
-    getCores().parallelStream()
+    solrCores.getLoadedCoreNames().parallelStream()
         .forEach(
-            solrCore -> {
-              SolrCoreState solrCoreState = solrCore.getSolrCoreState();
-              try {
-                solrCoreState.pauseUpdatesAndAwaitInflightRequests();
-              } catch (TimeoutException e) {
-                log.warn(
-                    "Timed out waiting for in-flight update requests to complete for core: {}",
-                    solrCore.getName());
-              } catch (InterruptedException e) {
-                log.warn(
-                    "Interrupted while waiting for in-flight update requests to complete for core: {}",
-                    solrCore.getName());
-                Thread.currentThread().interrupt();
+            coreName -> {
+              // see cancelCoreRecoveries: reserve without loading, we are shutting down
+              try (SolrCore solrCore = solrCores.getCoreFromAnyList(coreName, true)) {
+                if (solrCore == null) return; // unloaded since getLoadedCoreNames
+                SolrCoreState solrCoreState = solrCore.getSolrCoreState();
+                try {
+                  solrCoreState.pauseUpdatesAndAwaitInflightRequests();
+                } catch (TimeoutException e) {
+                  log.warn(
+                      "Timed out waiting for in-flight update requests to complete for core: {}",
+                      solrCore.getName());
+                } catch (InterruptedException e) {
+                  log.warn(
+                      "Interrupted while waiting for in-flight update requests to complete for core: {}",
+                      solrCore.getName());
+                  Thread.currentThread().interrupt();
+                }
               }
             });
   }
@@ -1836,21 +1839,6 @@ public class CoreContainer {
         log.error("Exception releasing {}", dir, e);
       }
     }
-  }
-
-  /**
-   * Gets all loaded cores, consistent with {@link #getLoadedCoreNames()}. Caller doesn't need to
-   * close.
-   *
-   * <p>NOTE: rather dangerous API because each core is not reserved (could in theory be closed).
-   * Prefer {@link #getLoadedCoreNames()} and then call {@link #getCore(String)} then close it.
-   *
-   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it
-   *     can be sorted). Don't need to close them.
-   */
-  @Deprecated
-  public List<SolrCore> getCores() {
-    return solrCores.getCores();
   }
 
   /**

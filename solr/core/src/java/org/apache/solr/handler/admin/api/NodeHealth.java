@@ -151,13 +151,16 @@ public class NodeHealth extends JerseyResource implements NodeHealthApi {
         return;
       }
 
-      for (SolrCore core : coreContainer.getCores()) {
-        ReplicationHandler replicationHandler =
-            (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
-        if (replicationHandler.isFollower()) {
-          boolean isCoreInSync =
-              isWithinGenerationLag(core, replicationHandler, maxGenerationLag, laggingCoresInfo);
-          allCoresAreInSync &= isCoreInSync;
+      for (String coreName : coreContainer.getLoadedCoreNames()) {
+        try (SolrCore core = coreContainer.getCore(coreName)) {
+          if (core == null) continue; // unloaded since getLoadedCoreNames
+          ReplicationHandler replicationHandler =
+              (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
+          if (replicationHandler.isFollower()) {
+            boolean isCoreInSync =
+                isWithinGenerationLag(core, replicationHandler, maxGenerationLag, laggingCoresInfo);
+            allCoresAreInSync &= isCoreInSync;
+          }
         }
       }
 

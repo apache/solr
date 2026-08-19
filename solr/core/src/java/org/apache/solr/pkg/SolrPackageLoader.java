@@ -106,8 +106,11 @@ public class SolrPackageLoader implements Closeable {
         }
       }
     }
-    for (SolrCore core : coreContainer.getCores()) {
-      core.getPackageListeners().packagesUpdated(updated);
+    for (String coreName : coreContainer.getLoadedCoreNames()) {
+      try (SolrCore core = coreContainer.getCore(coreName)) {
+        if (core == null) continue; // unloaded since getLoadedCoreNames
+        core.getPackageListeners().packagesUpdated(updated);
+      }
     }
     myCopy = packageAPI.pkgs;
   }
@@ -146,8 +149,11 @@ public class SolrPackageLoader implements Closeable {
     SolrPackage p = packageClassLoaders.get(pkg);
     if (p != null) {
       List<SolrPackage> l = List.of(p);
-      for (SolrCore core : coreContainer.getCores()) {
-        core.getPackageListeners().packagesUpdated(l);
+      for (String coreName : coreContainer.getLoadedCoreNames()) {
+        try (SolrCore core = coreContainer.getCore(coreName)) {
+          if (core == null) continue; // unloaded since getLoadedCoreNames
+          core.getPackageListeners().packagesUpdated(l);
+        }
       }
     }
   }
