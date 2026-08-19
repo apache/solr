@@ -96,7 +96,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   protected static SolrZkClient zkClient() {
     ZkStateReader reader = cluster.getZkStateReader();
-    if (reader == null) cluster.getSolrClient().connect();
+    // force the ZkStateReader into existence
+    if (reader == null) cluster.getSolrClient().getClusterStateProvider().getLiveNodes();
     return cluster.getZkStateReader().getZkClient();
   }
 

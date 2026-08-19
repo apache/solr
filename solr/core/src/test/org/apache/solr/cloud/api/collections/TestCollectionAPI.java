@@ -687,7 +687,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void clusterStatusRolesTest() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
-      client.connect();
+      client.getClusterStateProvider().getLiveNodes(); // force the connection now
       Replica replica = ZkStateReader.from(client).getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -737,7 +737,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void replicaPropTest() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
-      client.connect();
+      client.getClusterStateProvider().getLiveNodes(); // force the connection now
       Map<String, Slice> slices =
           client.getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
@@ -1204,7 +1204,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void testShardCreationNameValidation() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
-      client.connect();
+      client.getClusterStateProvider().getLiveNodes(); // force the connection now
       // Create a collection w/ implicit router
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());

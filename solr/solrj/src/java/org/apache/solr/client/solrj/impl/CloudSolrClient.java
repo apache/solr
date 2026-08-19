@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -43,7 +42,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -234,51 +232,6 @@ public abstract class CloudSolrClient extends SolrClient {
   /** Gets whether direct updates are sent in parallel */
   public boolean isParallelUpdates() {
     return parallelUpdates;
-  }
-
-  /**
-   * Connect to the zookeeper ensemble. This is an optional method that may be used to force a
-   * connection before any other requests are sent.
-   *
-   * @deprecated Call {@link ClusterStateProvider#getLiveNodes()} instead.
-   */
-  @Deprecated
-  public void connect() {
-    getClusterStateProvider().connect();
-  }
-
-  /**
-   * Connect to a cluster. If the cluster is not ready, retry connection up to a given timeout.
-   *
-   * @param duration the timeout
-   * @param timeUnit the units of the timeout
-   * @throws TimeoutException if the cluster is not ready after the timeout
-   * @throws InterruptedException if the wait is interrupted
-   */
-  @Deprecated
-  public void connect(long duration, TimeUnit timeUnit)
-      throws TimeoutException, InterruptedException {
-    if (log.isInfoEnabled()) {
-      log.info(
-          "Waiting for {} {} for cluster at {} to be ready",
-          duration,
-          timeUnit,
-          getClusterStateProvider());
-    }
-    long timeout = System.nanoTime() + timeUnit.toNanos(duration);
-    while (System.nanoTime() < timeout) {
-      try {
-        connect();
-        if (log.isInfoEnabled()) {
-          log.info("Cluster at {} ready", getClusterStateProvider());
-        }
-        return;
-      } catch (RuntimeException e) {
-        // not ready yet, then...
-      }
-      TimeUnit.MILLISECONDS.sleep(250);
-    }
-    throw new TimeoutException("Timed out waiting for cluster");
   }
 
   @SuppressWarnings({"unchecked"})
@@ -1365,37 +1318,6 @@ public abstract class CloudSolrClient extends SolrClient {
      */
     public Builder(List<String> solrUrls) {
       this.solrUrls = solrUrls;
-    }
-
-    /**
-     * Provide a series of ZK hosts which will be used when configuring {@link CloudSolrClient}
-     * instances.
-     *
-     * <p>Usage example when Solr stores data at the ZooKeeper root ('/'):
-     *
-     * <pre>
-     *   final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
-     *   zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *   final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.empty()).build();
-     * </pre>
-     *
-     * Usage example when Solr data is stored in a ZooKeeper chroot:
-     *
-     * <pre>
-     *    final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
-     *    zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *    final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.of("/solr")).build();
-     *  </pre>
-     *
-     * @param zkHosts a List of at least one ZooKeeper host and port (e.g. "zookeeper1:2181")
-     * @param zkChroot the path to the root ZooKeeper node containing Solr data. Provide {@code
-     *     java.util.Optional.empty()} if no ZK chroot is used.
-     * @deprecated Use a connectionString constructor and/or prefer HTTP URLs instead.
-     */
-    @Deprecated(since = "10.1") // sort of 10.0 but accidentally removed
-    public Builder(List<String> zkHosts, Optional<String> zkChroot) {
-      this.zkHosts = zkHosts;
-      if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
     }
 
     /** for an expert use-case */

@@ -377,7 +377,8 @@ public class SolrMessageProcessor extends MessageProcessor
     boolean connected = false;
     while (!connected) {
       try {
-        clientSupplier.get().connect(); // volatile null-check if already connected
+        // a cheap round-trip that fails the same way connect() did
+        clientSupplier.get().getClusterStateProvider().getLiveNodes();
         connected = true;
       } catch (Exception e) {
         log.error("Unable to connect to solr server. Not consuming.", e);

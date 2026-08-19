@@ -668,7 +668,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
         k -> {
           CloudSolrClient solrClient = newSolrClient(collectionName);
 
-          solrClient.connect();
+          solrClient.getClusterStateProvider().getLiveNodes(); // force the connection now
           if (log.isInfoEnabled()) {
             log.info(
                 "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",

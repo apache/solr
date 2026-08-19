@@ -356,7 +356,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     assert (cloudInit == false);
     cloudInit = true;
     cloudClient = createCloudClient(DEFAULT_COLLECTION);
-    cloudClient.connect();
+    cloudClient.getClusterStateProvider().getLiveNodes(); // force the connection now
 
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
 
@@ -406,7 +406,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       // create the normal cloud client.
       // this can change if more tests need it.
       controlClientCloud = createCloudClient("control_collection");
-      controlClientCloud.connect();
+      controlClientCloud.getClusterStateProvider().getLiveNodes(); // force the connection
       // NOTE: we are skipping creation of the chaos monkey by returning here
       cloudClient = controlClientCloud; // temporary - some code needs/uses
       // cloudClient
@@ -2553,7 +2553,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
         commonCloudSolrClient =
             createNewCloudSolrClient(
                 zkServer.getZkAddress(), DEFAULT_COLLECTION, random().nextBoolean(), 5000, 120000);
-        commonCloudSolrClient.connect();
+        commonCloudSolrClient.getClusterStateProvider().getLiveNodes(); // force it now
         if (log.isInfoEnabled()) {
           log.info(
               "Created commonCloudSolrClient with updatesToLeaders={} and parallelUpdates={}",
@@ -2573,7 +2573,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
               createNewCloudSolrClient(
                   zkServer.getZkAddress(), collectionName, random().nextBoolean(), 5000, 120000);
 
-          solrClient.connect();
+          solrClient.getClusterStateProvider().getLiveNodes(); // force the connection now
           if (log.isInfoEnabled()) {
             log.info(
                 "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",

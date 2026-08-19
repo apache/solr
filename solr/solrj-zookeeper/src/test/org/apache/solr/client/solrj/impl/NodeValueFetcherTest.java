@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider.RemoteCallCtx;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -66,8 +64,7 @@ public class NodeValueFetcherTest extends SolrCloudTestCase {
   @Test
   public void testGetTags() throws Exception {
     try (var cloudSolrClient =
-        new CloudSolrClient.Builder(List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .build()) {
+        new CloudSolrClient.Builder(cluster.getZkServer().getZkAddress()).build()) {
       int totalCores = 0;
 
       // Sum all the cores of the collection by fetching tags of all nodes.
