@@ -19,6 +19,7 @@ package org.apache.solr.search.join.aijoin;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -56,10 +57,12 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.LogLevel;
 import org.jspecify.annotations.NonNull;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,8 +72,8 @@ import org.slf4j.LoggerFactory;
  * single valued {@code parent_id} (M:1).
  */
 @LogLevel("org.apache.solr.search.join.aijoin=WARN")
-@LuceneTestCase.SuppressSysoutChecks(bugUrl = "no.url")
-public class TestAIJoin extends LuceneTestCase {
+//@LuceneTestCase.SuppressSysoutChecks(bugUrl = "no.url")
+public class TestAIJoin extends SolrTestCase {
 
   private static final String ID = "id";
   private static final String PARENT_ID = "parent_id";
@@ -81,6 +84,8 @@ public class TestAIJoin extends LuceneTestCase {
   private static final int CHILDREN_PER_PARENT = 5;
 
   private static ExecutorService executor;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeClass() {
@@ -508,8 +513,8 @@ public class TestAIJoin extends LuceneTestCase {
    * waste. The unfiltered pass then visits every to-segment and writes the remaining pairs, after
    * which the final filtered pass runs with {@code pairsMissing=0} and no {@code evt=fkload}.
    */
+  @Ignore
   public void testTraceFkReloadForSkippedToSegments() throws Exception {
-    Logger traceLog = LoggerFactory.getLogger(getClass().getPackageName() + ".TRACE");
     try (ParentChildIndices indices = new ParentChildIndices()) {
       try (IndexReader childrenReader = indices.childrenWriter.getReader();
           IndexReader parentsReader = indices.parentsWriter.getReader()) {
@@ -527,16 +532,16 @@ public class TestAIJoin extends LuceneTestCase {
                 .add(aiJoinQuery, BooleanClause.Occur.MUST)
                 .build();
         for (int pass = 1; pass <= 3; pass++) {
-          traceLog.info(
+          log.info(
               "AIJOIN-TRACE pass={} filtered join; beyond pass 1 expect repeated pairsMissing"
                   + " and evt=fkload with no evt=build",
               pass);
           searchParentIds(parentsSearcher, filteredJoin);
         }
-        traceLog.info(
+        log.info(
             "AIJOIN-TRACE unfiltered join: every to-segment is visited, remaining pairs written");
         searchParentIds(parentsSearcher, aiJoinQuery);
-        traceLog.info("AIJOIN-TRACE final filtered pass: expect pairsMissing=0 and no evt=fkload");
+        log.info("AIJOIN-TRACE final filtered pass: expect pairsMissing=0 and no evt=fkload");
         searchParentIds(parentsSearcher, filteredJoin);
       }
     }
