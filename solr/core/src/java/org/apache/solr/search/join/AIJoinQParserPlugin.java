@@ -120,8 +120,9 @@ public class AIJoinQParserPlugin extends QParserPlugin
     Path path = Path.of(configuredDir);
     if (!path.isAbsolute()) {
       path = Path.of(core.getDataDir()).resolve(path);
+    } else {
+      core.getCoreContainer().assertPathAllowed(path);
     }
-    core.getCoreContainer().assertPathAllowed(path);
     final Directory directory;
     try {
       directory =
