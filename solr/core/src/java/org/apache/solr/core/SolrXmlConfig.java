@@ -45,6 +45,7 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
@@ -127,11 +128,11 @@ public class SolrXmlConfig {
     // It should go inside the fillSolrSection method but
     // since it is arranged as a separate section it is placed here
     Map<String, String> coreAdminHandlerActions =
-        readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")
-            .asShallowMap()
-            .entrySet()
-            .stream()
-            .collect(Collectors.toMap(Entry::getKey, item -> item.getValue().toString()));
+        new SimpleOrderedMap<>(
+                readNodeListAsNamedList(
+                    root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>"))
+            .entrySet().stream()
+                .collect(Collectors.toMap(Entry::getKey, item -> item.getValue().toString()));
 
     UpdateShardHandlerConfig updateConfig;
     if (deprecatedUpdateConfig == null) {

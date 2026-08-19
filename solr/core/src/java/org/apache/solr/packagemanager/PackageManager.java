@@ -59,6 +59,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.DistribFileStore;
@@ -288,7 +289,7 @@ public class PackageManager implements Closeable {
         // Cluster props doesn't exist, that means there are no cluster level plugins installed.
         result = Map.of();
       } else {
-        result = response.asShallowMap();
+        result = new SimpleOrderedMap<>(response);
       }
     } catch (SolrServerException | IOException ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, ex);
@@ -421,16 +422,14 @@ public class PackageManager implements Closeable {
 
       // Get package params
       try {
-        boolean packageParamsExist =
-            solrClient
-                .request(
-                    new GenericV2SolrRequest(
-                            SolrRequest.METHOD.GET,
-                            PackageUtils.getCollectionParamsPath(collection) + "/packages")
-                        .setRequiresCollection(
-                            false) /* Making a collection-request, but already baked into path */)
-                .asShallowMap()
-                .containsKey("params");
+        NamedList<Object> collectionParams =
+            solrClient.request(
+                new GenericV2SolrRequest(
+                        SolrRequest.METHOD.GET,
+                        PackageUtils.getCollectionParamsPath(collection) + "/packages")
+                    .setRequiresCollection(
+                        false) /* Making a collection-request, but already baked into path */);
+        boolean packageParamsExist = new SimpleOrderedMap<>(collectionParams).containsKey("params");
         SolrCLI.postJsonToSolr(
             solrClient,
             PackageUtils.getCollectionParamsPath(collection),

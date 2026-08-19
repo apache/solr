@@ -723,7 +723,11 @@ public abstract class CloudSolrClient extends SolrClient {
       resp = sendRequest(request, inputCollections);
       // to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from
       // there
-      Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
+      Object o = null;
+      if (resp != null && resp.size() > 0) {
+        final int stateVersionIdx = resp.indexOf(STATE_VERSION, resp.size() - 1);
+        o = stateVersionIdx == -1 ? null : resp.getVal(stateVersionIdx);
+      }
       if (o != null && o instanceof Map<?, ?> invalidStates) {
         // remove this because no one else needs this and tests would fail if they are comparing
         // responses

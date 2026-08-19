@@ -864,9 +864,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
           COLLECTION + ":" + (coll.getZNodeVersion() - 1)); // an older version expect error
 
       QueryResponse rsp = solrClient.query(q);
+      final NamedList<Object> response = rsp.getResponse();
+      final int stateVersionIdx =
+          response.indexOf(CloudSolrClient.STATE_VERSION, response.size() - 1);
       @SuppressWarnings({"rawtypes"})
-      Map m =
-          (Map) rsp.getResponse().get(CloudSolrClient.STATE_VERSION, rsp.getResponse().size() - 1);
+      Map m = stateVersionIdx == -1 ? null : (Map) response.getVal(stateVersionIdx);
       assertNotNull(
           "Expected an extra information from server with the list of invalid collection states",
           m);
