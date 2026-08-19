@@ -125,7 +125,7 @@ public class TestAIJoin extends SolrTestCase {
   }
 
   /** Two indices: parents and their children, segmented by intermediate commits. */
-  private class ParentChildIndices implements Closeable {
+  private static class ParentChildIndices implements Closeable {
     final Directory parentsDir = newDirectory();
     final Directory childrenDir = newDirectory();
     final RandomIndexWriter parentsWriter;

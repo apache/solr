@@ -46,6 +46,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
 import org.slf4j.Logger;
@@ -126,7 +127,7 @@ public final class AIJoinIndex implements Closeable {
   static Map<String, JoinSegmentReference> extractExistingJoinColumns(
       IndexSearcher joinSearcher, Predicate<String> isNeeded) {
     Map<String, JoinSegmentReference> existingJoinSegments =
-        new HashMap<>(joinSearcher.getIndexReader().leaves().size());
+        CollectionUtil.newHashMap(joinSearcher.getIndexReader().leaves().size());
     for (LeafReaderContext joinContext : joinSearcher.getIndexReader().leaves()) {
       String segmentName = AIJoinUtil.segmentName(joinContext);
       for (FieldInfo fieldInfo : joinContext.reader().getFieldInfos()) {
