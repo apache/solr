@@ -344,7 +344,8 @@ final class AIJoinUtil {
     // dvGen starts at -1 and advances only when this particular field receives an in-place
     // IndexWriter.updateDocValues update; deletes only bump delGen and leave it untouched. So the
     // key is insensitive to deletes but changes when the join field's docvalues are updated.
-    long dvGen = context.reader().getFieldInfos().fieldInfo(field).getDocValuesGen();
+    FieldInfo fieldInfo = context.reader().getFieldInfos().fieldInfo(field);
+    long dvGen = fieldInfo == null ? -1 : fieldInfo.getDocValuesGen();
     String key = field + ":" + StringHelper.idToString(segmentId) + ":" + dvGen;
     // TODO this is dangerous, no one flip them back
     return NON_IDENTIFIER.matcher(key).replaceAll("_");

@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License
 
-The AIJoin (which stands for Auxiliary Index Join) Query Parser is similar to <<Join Query Parser,Join Query Parser>>, but uses a lazily written sidecar index for faster joins.
+The AIJoin (which stands for Auxiliary Index Join) Query Parser is similar to xref:join-query-parser.adoc[], but uses a lazily written sidecar index for faster joins.
 
 Instead of using Lucene's join utilities directly, the parser matches documents through a dedicated join index that is maintained alongside the core's main index.
 The join index is populated lazily: if the inner (`from`-side) query doesn't hit a certain segment, the join index isn't written for it; and if `{!aijoin}` is intersected (`AND`/`+`) with a query that doesn't hit a certain segment on the outer (`to`) side, the corresponding join index columns aren't written either.
