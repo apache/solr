@@ -349,14 +349,15 @@ public final class AIJoinIndex implements Closeable {
   }
 
   /**
-   * @deprecated don't write all of them upfront
-   *     <p>Eagerly builds and persists every pair column in {@code neededPairs} not yet present in
-   *     this join index, so an {@link AIJoinWeight} being constructed at {@link
-   *     AIJoinQuery#createWeight} already sees a complete view of the pairs it needs, instead of
-   *     discovering gaps lazily -- one to-segment at a time -- in {@link ToLeafJoinContext}.
-   *     Missing pairs are resolved to their (from-segment, to-segment) leaf ordinals by crossing
-   *     {@code fromSearcher}'s leaves against {@code toSearcher}'s leaves; pairs concurrently built
-   *     by another thread are awaited, not rebuilt (see {@link #writeJoinSegments}).
+   * deprecated don't write all of them upfront
+   *
+   * <p>Eagerly builds and persists every pair column in {@code neededPairs} not yet present in this
+   * join index, so an {@link AIJoinWeight} being constructed at {@link AIJoinQuery#createWeight}
+   * already sees a complete view of the pairs it needs, instead of discovering gaps lazily -- one
+   * to-segment at a time -- in {@link ToLeafJoinContext}. Missing pairs are resolved to their
+   * (from-segment, to-segment) leaf ordinals by crossing {@code fromSearcher}'s leaves against
+   * {@code toSearcher}'s leaves; pairs concurrently built by another thread are awaited, not
+   * rebuilt (see {@link #writeJoinSegments}).
    */
   //  @Deprecated
   //  void ensureJoinSegments(
@@ -404,13 +405,14 @@ public final class AIJoinIndex implements Closeable {
    * preserving pair-column doc number == from-side doc id. Completing builders' futures after this
    * returns guarantees waiters observe the refreshed reader.
    *
-   * It should be plain simple synchronized. As alternatives
+   * <p>It should be plain simple synchronized. As alternatives
+   *
    * <ul>
-   *   <li>push synchronized deeper to iw.addDocs(),iw.commit()</li>
-   *   <li>merge columns from concurrent threads and writes them as a single batch - too much</li>
-   *   </>
-   * The invariant is a column starts ad doc#==0, this iw.addDocs(),iw.commit() goes one by one.
-   * But such segment might contain many parallel columns, since they have distinguishing names.
+   *   <li>push synchronized deeper to iw.addDocs(),iw.commit()
+   *   <li>merge columns from concurrent threads and writes them as a single batch - too much </>
+   *       The invariant is a column starts ad doc#==0, this iw.addDocs(),iw.commit() goes one by
+   *       one. But such segment might contain many parallel columns, since they have distinguishing
+   *       names.
    */
   private synchronized void writeBatch(int batchNumDocs, Map<String, JoinColumnModel> mappings)
       throws IOException {
