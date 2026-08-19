@@ -53,7 +53,6 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.index.RandomIndexWriter;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -72,7 +71,7 @@ import org.slf4j.LoggerFactory;
  * single valued {@code parent_id} (M:1).
  */
 @LogLevel("org.apache.solr.search.join.aijoin=WARN")
-//@LuceneTestCase.SuppressSysoutChecks(bugUrl = "no.url")
+// @LuceneTestCase.SuppressSysoutChecks(bugUrl = "no.url")
 public class TestAIJoin extends SolrTestCase {
 
   private static final String ID = "id";
