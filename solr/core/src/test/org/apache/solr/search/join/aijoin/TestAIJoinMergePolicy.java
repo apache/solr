@@ -16,9 +16,6 @@
  */
 package org.apache.solr.search.join.aijoin;
 
-import static org.apache.lucene.tests.util.LuceneTestCase.newIndexWriterConfig;
-import static org.apache.lucene.tests.util.LuceneTestCase.random;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
