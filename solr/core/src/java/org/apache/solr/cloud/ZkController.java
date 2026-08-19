@@ -2548,9 +2548,11 @@ public class ZkController implements Closeable {
             ew.put(
                 Overseer.QUEUE_OPERATION,
                 REPRIORITIZE_OVERSEER.toString().toLowerCase(Locale.ROOT));
-    log.info(
-        "Asking the Overseer to re-run node prioritization for this preferred overseer: {}",
-        props.jsonStr());
+    if (log.isInfoEnabled()) {
+      log.info(
+          "Asking the Overseer to re-run node prioritization for this preferred overseer: {}",
+          props.jsonStr());
+    }
     getOverseerCollectionQueue().offer(props);
   }
 
