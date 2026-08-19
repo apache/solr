@@ -89,12 +89,13 @@ class AIJoinQuery extends Query {
     return cacheImpl(scorer, ctx.reader().maxDoc(), ctx.reader().getLiveDocs());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   @Override
   public Query rewrite(IndexSearcher indexSearcher) throws IOException {
     // the from-side selection rewrites against the from-side searcher, not against the (to-side)
     // searcher this query is executed with
     Query rewrittenFrom = fromQuery.rewrite(fromSearcher);
-    if (rewrittenFrom != fromQuery) {
+    if (rewrittenFrom != fromQuery) { // TODO check MatchNoDocs ?
       return new AIJoinQuery(
           joinIndex, fromField, rewrittenFrom, fromSearcher, toField, fromExecutorService);
     }
