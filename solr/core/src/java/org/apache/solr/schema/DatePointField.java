@@ -98,7 +98,8 @@ import org.apache.solr.util.DateMathParser;
  *
  * @see PointField
  */
-public class DatePointField extends PointField implements DateValueFieldType {
+public class DatePointField extends PointField
+    implements DateValueFieldType, FieldType.ExternalizeStoredValuesAsObjects {
 
   public DatePointField() {
     type = NumberType.DATE;

@@ -34,7 +34,8 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
-public class StrField extends PrimitiveFieldType {
+public class StrField extends PrimitiveFieldType
+    implements FieldType.ExternalizeStoredValuesAsObjects {
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {

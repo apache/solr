@@ -44,17 +44,17 @@ public class DocsStreamerTest extends SolrTestCaseJ4 {
     }
   }
 
-  // ScalarQuantizedDenseVectorField is a subclass of DenseVectorField, and KNOWN_TYPES is
-  // consulted on an equality basis, so the subclass does not take the toObject path its
-  // superclass takes: its stored values are externalized as Strings by FieldType.toExternal.
-  // This pins that difference so it cannot change without a test failing.
+  // ScalarQuantizedDenseVectorField is a subclass of DenseVectorField, and the
+  // ExternalizeStoredValuesAsObjects marker is consulted with instanceof, so the subclass takes
+  // the same toObject path as its superclass: its stored values are externalized as Floats.
+  // This pins that agreement so it cannot change without a test failing.
   public void testScalarQuantizedDenseVectorField() throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-quantized.xml");
-      // plain DenseVectorField, an exact match in KNOWN_TYPES: Float objects
+      // plain DenseVectorField, marker inherited from FloatPointField: Float objects
       assertStoredValues("vector", VECTOR);
-      // subclass of it, so no exact match: Strings
-      assertStoredValues("v_scalar_default", stringsOf(VECTOR));
+      // subclass of it, so it inherits the marker too: Float objects as well
+      assertStoredValues("v_scalar_default", VECTOR);
     } finally {
       deleteCore();
     }
@@ -64,7 +64,7 @@ public class DocsStreamerTest extends SolrTestCaseJ4 {
   public void testBinaryQuantizedDenseVectorField() throws Exception {
     try {
       initCore("solrconfig-basic.xml", "schema-densevector-bq.xml");
-      assertStoredValues("v_bq", stringsOf(VECTOR));
+      assertStoredValues("v_bq", VECTOR);
     } finally {
       deleteCore();
     }
@@ -84,9 +84,5 @@ public class DocsStreamerTest extends SolrTestCaseJ4 {
       assertEquals(label + " type", want.getClass(), value.getClass());
       assertEquals(label, want, value);
     }
-  }
-
-  private static List<String> stringsOf(List<Float> values) {
-    return values.stream().map(String::valueOf).toList();
   }
 }
