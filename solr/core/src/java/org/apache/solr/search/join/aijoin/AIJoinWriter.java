@@ -25,7 +25,7 @@ import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
  * Isolates every write-side representation of a join batch behind this one write-only surface, so
  * {@link AIJoinIndex} and {@link AIJoinUtil} deal only in {@link JoinColumnModel} and never need to
  * import a particular field-writing API themselves. Two sibling package-private implementations
- * exist, selected by {@link AIJoinIndex#INSTANCE}: {@link AIJoinColumnWriter}, built on {@code
+ * exist, selected by {@link AIJoinIndex#INSTANCE}: {@code AIJoinColumnWriter}, built on {@code
  * org.apache.lucene.document.column}, and {@link AIJoinDocWriter}, built on the plain {@link
  * org.apache.lucene.document.Document} / {@link IndexWriter#addDocuments} API.
  */
