@@ -16,6 +16,9 @@
  */
 package org.apache.solr.search.join.aijoin;
 
+import static org.apache.lucene.tests.util.LuceneTestCase.newIndexWriterConfig;
+import static org.apache.lucene.tests.util.LuceneTestCase.random;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +44,7 @@ import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.LogLevel;
 
 /**
@@ -51,7 +55,7 @@ import org.apache.solr.util.LogLevel;
  */
 @LogLevel("org.apache.solr.search.join.aijoin=WARN")
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "no.url")
-public class TestAIJoinMergePolicy extends LuceneTestCase {
+public class TestAIJoinMergePolicy extends SolrTestCase {
 
   private static final String ID = "id";
   private static final String PARENT_ID = "parent_id";
