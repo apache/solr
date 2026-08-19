@@ -191,7 +191,7 @@ final class AIJoinMergePolicy extends MergePolicy {
     return nextSampleAtNanos.compareAndSet(next, now + interval);
   }
 
-  protected void onCreateWeight(
+  void onCreateWeight(
       Set<String> neededPairs, IndexSearcher fromSearcher, IndexSearcher searcher)
       throws IOException {
     if (!shouldSample()) {
