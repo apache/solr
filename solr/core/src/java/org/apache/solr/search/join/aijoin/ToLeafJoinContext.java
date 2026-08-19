@@ -815,13 +815,13 @@ class ToLeafJoinContext {
 
       @Override
       public long cost() {
-        return lastToDoc - firstToDoc + 1;
+        return (long) lastToDoc - firstToDoc + 1;
       }
     };
   }
 
   /**
-   * TODO this refines false positeve approximation , but it can iteratively refine false-negative
+   * TODO this refines false positive approximation , but it can iteratively refine false-negative
    * docset, this let us giveup looping join tasks
    *
    * @deprecated called from EagerRefineTwoPhIter which is out of use now
