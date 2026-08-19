@@ -156,6 +156,7 @@ class ToLeafJoinContext {
   private IndexReader toReader;
 
   // TODO kept alongside LazyRefineTwoPhIter for comparison/rollback; not currently wired up
+  @SuppressWarnings("UnusedNestedClass")
   private final class EagerRefineTwoPhIter extends TwoPhaseIterator {
     boolean pruned = false;
 
@@ -449,7 +450,7 @@ class ToLeafJoinContext {
    * @param weightAgeJoinSearcher the join searcher cached at {@link AIJoinQuery#createWeight} time
    * @param scorerSupplierAgeJoinSearcher the join searcher used at {@link
    *     AIJoinWeight#scorerSupplier} time
-   * @param fromColumnFutures
+   * @param fromColumnFutures from side data by segment ord.
    */
   ToLeafJoinContext(
       LeafReaderContext toContext,
@@ -463,7 +464,7 @@ class ToLeafJoinContext {
       IndexSearcher scorerSupplierAgeJoinSearcher,
       AIJoinIndex joinIndex,
       Future<FromLeafJoinContext>[] fromColumnFutures)
-      throws IOException, ExecutionException, InterruptedException {
+      throws ExecutionException, InterruptedException, IOException {
     this.toContext = toContext;
     this.fromField = fromField;
     this.fromQuery = fromQuery;
@@ -765,10 +766,9 @@ class ToLeafJoinContext {
    *
    * @return tasks are orfered by descending from-side match count, so the first task is the one
    *     with the most matches
-   * @throws IOException
    */
   private List<JoinTask> createFromItersTasks()
-      throws IOException, ExecutionException, InterruptedException {
+      throws ExecutionException, InterruptedException, IOException {
     List<LeafReaderContext> leaves = new ArrayList<>(this.fromSearcher.getLeafContexts());
     Collections.shuffle(leaves, ThreadLocalRandom.current());
 
