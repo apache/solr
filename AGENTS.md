@@ -65,7 +65,7 @@ Solr issues are tracked at https://issues.apache.org/jira (project key `SOLR`). 
 - Search: `curl "https://issues.apache.org/jira/rest/api/2/search?jql=<url-encoded JQL>&fields=summary,status,resolution&maxResults=10"` with JQL like `project=SOLR AND text~"some phrase" ORDER BY updated DESC`
 - Single issue (with comments): `curl "https://issues.apache.org/jira/rest/api/2/issue/SOLR-12345?fields=summary,description,comment"`
 
-## Git Repository History
+## Git Branches and Repository History
 
 - This repo's history predates the Lucene/Solr split: before Solr 9.0, Solr was released jointly with Lucene from a combined `lucene-solr` repository. Commits and tags from that era are still present here.
 - Release tags come in two families — check both when doing any git-blame/version archaeology (e.g. figuring out which Solr version something was added or deprecated in), or you will silently get a too-recent answer for anything before the split:
