@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -214,9 +215,11 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     // but clusterShape will also return true if replica is not live -- which we don't want
     Predicate<DocCollection> collectionStatePredicate =
         collectionState -> {
-          for (Replica r : collectionState.getReplicas()) {
-            if (r.getNodeName().equals(oldNodeName.get())) {
-              return r.getState() == Replica.State.DOWN;
+          for (Slice slice : collectionState) {
+            for (Replica r : slice.getReplicas()) {
+              if (r.getNodeName().equals(oldNodeName.get())) {
+                return r.getState() == Replica.State.DOWN;
+              }
             }
           }
           return false;

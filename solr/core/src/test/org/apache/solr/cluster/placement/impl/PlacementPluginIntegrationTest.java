@@ -341,7 +341,8 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     // try deleting secondary replica from node without the primary replica
     Optional<String> onlySecondaryReplica =
-        secondary.getReplicas().stream()
+        secondary.getSlices().stream()
+            .flatMap(slice -> slice.getReplicas().stream())
             .filter(replica -> !nodeSet.contains(replica.getNodeName()))
             .map(replica -> replica.getName())
             .findFirst();
@@ -355,7 +356,8 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     // try deleting secondary replica from node WITH the primary replica - should fail
     Optional<String> secondaryWithPrimaryReplica =
-        secondary.getReplicas().stream()
+        secondary.getSlices().stream()
+            .flatMap(slice -> slice.getReplicas().stream())
             .filter(replica -> nodeSet.contains(replica.getNodeName()))
             .map(replica -> replica.getName())
             .findFirst();

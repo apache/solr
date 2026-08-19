@@ -411,8 +411,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         collectionName,
         (n, c) -> {
           if (c.getSlice("shard1").getState() == Slice.State.ACTIVE) return false;
-          for (Replica r : c.getReplicas()) {
-            if (r.isActive(n) == false) return false;
+          for (Slice slice : c) {
+            for (Replica r : slice.getReplicas()) {
+              if (r.isActive(n) == false) return false;
+            }
           }
           return true;
         });
@@ -455,7 +457,11 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     DocCollection testCollection = getCollectionState(collectionName);
 
-    Replica replica1 = testCollection.getReplicas().iterator().next();
+    Replica replica1 =
+        testCollection.getSlices().stream()
+            .flatMap(slice -> slice.getReplicas().stream())
+            .findFirst()
+            .orElseThrow();
     final var coreStatus = getCoreStatus(replica1);
 
     assertEquals(Path.of(coreStatus.dataDir).toString(), dataDir.toString());
@@ -501,7 +507,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
     String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
     Optional<Replica> optional =
-        docCollection.getReplicas().stream()
+        docCollection.getSlices().stream()
+            .flatMap(slice -> slice.getReplicas().stream())
             .filter(replica -> replicaName.equals(replica.getCoreName()))
             .findAny();
     if (optional.isPresent()) {

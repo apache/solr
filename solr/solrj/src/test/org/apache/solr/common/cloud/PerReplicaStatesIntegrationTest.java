@@ -97,7 +97,12 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       assertEquals(5, prs.states.size());
 
       // Test delete replica
-      Replica leader = c.getReplicas().stream().filter(Replica::isLeader).findFirst().orElseThrow();
+      Replica leader =
+          c.getSlices().stream()
+              .flatMap(slice -> slice.getReplicas().stream())
+              .filter(Replica::isLeader)
+              .findFirst()
+              .orElseThrow();
       CollectionAdminRequest.deleteReplica(testCollection, leader.shard, leader.getName())
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 2, 4);

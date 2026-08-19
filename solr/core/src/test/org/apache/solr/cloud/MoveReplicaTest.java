@@ -342,7 +342,10 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   }
 
   private Replica getRandomReplica(String coll, CloudSolrClient cloudClient) throws IOException {
-    List<Replica> replicas = cloudClient.getClusterState().getCollection(coll).getReplicas();
+    List<Replica> replicas = new ArrayList<>();
+    for (Slice slice : cloudClient.getClusterState().getCollection(coll)) {
+      replicas.addAll(slice.getReplicas());
+    }
     Collections.shuffle(replicas, random());
     return replicas.get(0);
   }

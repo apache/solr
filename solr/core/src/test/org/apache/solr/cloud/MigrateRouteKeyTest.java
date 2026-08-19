@@ -133,7 +133,11 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     indexer.start();
 
     DocCollection state = getCollectionState(targetCollection);
-    Replica replica = state.getReplicas().get(0);
+    Replica replica =
+        state.getSlices().stream()
+            .flatMap(slice -> slice.getReplicas().stream())
+            .findFirst()
+            .orElseThrow();
     try (SolrClient collectionClient = getHttpSolrClient(replica)) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");

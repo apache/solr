@@ -373,8 +373,11 @@ public class ZkControllerTest extends SolrCloudTestCase {
                   TimeUnit.SECONDS,
                   collectionState ->
                       Optional.ofNullable(collectionState)
-                              .map(DocCollection::getReplicas)
-                              .map(List::size)
+                              .map(
+                                  c ->
+                                      c.getSlices().stream()
+                                          .mapToInt(s -> s.getReplicas().size())
+                                          .sum())
                               .orElse(0)
                           == 3);
         }

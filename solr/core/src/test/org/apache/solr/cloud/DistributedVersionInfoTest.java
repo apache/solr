@@ -92,7 +92,8 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     // verify doc is on the leader and replica
     final List<Replica> notLeaders =
-        stateReader.getClusterState().getCollection(COLLECTION).getReplicas().stream()
+        stateReader.getClusterState().getCollection(COLLECTION).getSlices().stream()
+            .flatMap(slice -> slice.getReplicas().stream())
             .filter(r -> r.getCoreName().equals(leader.getCoreName()) == false)
             .collect(Collectors.toList());
     assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, 1, null);

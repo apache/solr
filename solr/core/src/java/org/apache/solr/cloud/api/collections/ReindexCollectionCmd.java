@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaCount;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -714,9 +715,11 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       return null;
     }
     // build a baseUrl of the replica
-    for (Replica r : coll.getReplicas()) {
-      if (replicaName.equals(r.getCoreName())) {
-        return r;
+    for (Slice slice : coll) {
+      for (Replica r : slice.getReplicas()) {
+        if (replicaName.equals(r.getCoreName())) {
+          return r;
+        }
       }
     }
     return null;

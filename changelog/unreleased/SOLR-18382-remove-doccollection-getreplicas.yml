@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the deprecated DocCollection.getReplicas() method, which allocated a new list on every call. DocCollection is Iterable<Slice>, so iterate its slices and call Slice.getReplicas(), or use getSlices().stream().flatMap(slice -> slice.getReplicas().stream()).
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18382
+    url: https://issues.apache.org/jira/browse/SOLR-18382

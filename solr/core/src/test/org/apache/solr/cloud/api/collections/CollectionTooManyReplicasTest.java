@@ -113,8 +113,10 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
         "Expected to see all replicas active",
         collectionName,
         c -> {
-          for (Replica r : c.getReplicas()) {
-            if (r.getState() != Replica.State.ACTIVE) return false;
+          for (Slice s : c) {
+            for (Replica r : s.getReplicas()) {
+              if (r.getState() != Replica.State.ACTIVE) return false;
+            }
           }
           return true;
         });
@@ -259,7 +261,8 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
   private List<String> getAllNodeNames(String collectionName) {
     DocCollection state = getCollectionState(collectionName);
-    return state.getReplicas().stream()
+    return state.getSlices().stream()
+        .flatMap(slice -> slice.getReplicas().stream())
         .map(Replica::getNodeName)
         .distinct()
         .collect(Collectors.toList());

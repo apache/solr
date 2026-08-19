@@ -968,8 +968,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
             .getZkStateReader()
             .getClusterState()
             .getCollectionOrNull(collection)
-            .getReplicas()
+            .getSlices()
             .stream()
+            .flatMap(slice -> slice.getReplicas().stream())
             .map(Replica::getCoreUrl)
             .collect(Collectors.toList());
     Collections.shuffle(replicaUrls, random());

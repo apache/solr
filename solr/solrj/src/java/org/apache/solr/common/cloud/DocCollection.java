@@ -400,15 +400,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return slices.values().iterator();
   }
 
-  @Deprecated // low usage and builds an ArrayList (surprising)
-  public List<Replica> getReplicas() {
-    List<Replica> replicas = new ArrayList<>();
-    for (Slice slice : this) {
-      replicas.addAll(slice.getReplicas());
-    }
-    return replicas;
-  }
-
   @Override
   public boolean equals(Object that) {
     if (!(that instanceof DocCollection other)) return false;

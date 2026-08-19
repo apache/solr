@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -28,6 +27,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -72,9 +72,10 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     downAllReplicas();
 
     // assert all replicas are in down state
-    List<Replica> replicas = getCollectionState(COLLECTION_NAME).getReplicas();
-    for (Replica replica : replicas) {
-      assertEquals(replica.getState(), Replica.State.DOWN);
+    for (Slice slice : getCollectionState(COLLECTION_NAME)) {
+      for (Replica replica : slice.getReplicas()) {
+        assertEquals(replica.getState(), Replica.State.DOWN);
+      }
     }
 
     // assert all nodes as active
