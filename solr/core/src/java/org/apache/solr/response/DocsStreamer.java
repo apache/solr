@@ -132,7 +132,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
    * @see #convertLuceneDocToSolrDoc(Document, IndexSchema, ReturnFields)
    * @deprecated use the 3 arg version for better performance
    */
-  @Deprecated(since = "8.0")
+  @Deprecated(since = "7.4")
   public static SolrDocument convertLuceneDocToSolrDoc(Document doc, final IndexSchema schema) {
     return convertLuceneDocToSolrDoc(doc, schema, new SolrReturnFields());
   }

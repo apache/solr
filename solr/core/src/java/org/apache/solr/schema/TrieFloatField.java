@@ -49,7 +49,7 @@ import org.apache.solr.legacy.LegacyNumericUtils;
  *     Language Specification, s4.2.3</a>
  * @deprecated Trie fields are deprecated as of Solr 7.0. Use {@link FloatPointField} instead.
  */
-@Deprecated(since = "8.0")
+@Deprecated(since = "7.0")
 public class TrieFloatField extends TrieField implements FloatValueFieldType {
   {
     type = NumberType.FLOAT;

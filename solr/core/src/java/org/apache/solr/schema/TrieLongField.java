@@ -43,7 +43,7 @@ import org.apache.solr.legacy.LegacyNumericUtils;
  * @see Long
  * @deprecated Trie fields are deprecated as of Solr 7.0. Use {@link LongPointField} instead.
  */
-@Deprecated(since = "8.0")
+@Deprecated(since = "7.0")
 public class TrieLongField extends TrieField implements LongValueFieldType {
   {
     type = NumberType.LONG;

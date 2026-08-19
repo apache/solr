@@ -86,7 +86,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  * @deprecated Trie fields are deprecated as of Solr 7.0. Use {@link PointField} instead.
  */
-@Deprecated(since = "8.0")
+@Deprecated(since = "7.0")
 public class TrieField extends NumericFieldType {
   public static final int DEFAULT_PRECISION_STEP = 8;
 
@@ -723,7 +723,7 @@ public class TrieField extends NumericFieldType {
  * @deprecated Internal helper for {@link TrieDateField}, which is deprecated. Use {@link
  *     DatePointField} instead.
  */
-@Deprecated(since = "8.0")
+@Deprecated(since = "7.0")
 class TrieDateFieldSource extends LongFieldSource {
 
   public TrieDateFieldSource(String field) {

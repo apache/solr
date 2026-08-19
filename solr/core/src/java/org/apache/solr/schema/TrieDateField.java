@@ -74,7 +74,7 @@ import org.apache.solr.util.DateMathParser;
  * @see TrieField
  * @deprecated Trie fields are deprecated as of Solr 7.0. Use {@link DatePointField} instead.
  */
-@Deprecated(since = "8.0")
+@Deprecated(since = "7.0")
 public class TrieDateField extends TrieField implements DateValueFieldType {
   {
     this.type = NumberType.DATE;

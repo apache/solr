@@ -43,7 +43,7 @@ import org.apache.solr.legacy.LegacyNumericUtils;
  * @see Integer
  * @deprecated Trie fields are deprecated as of Solr 7.0. Use {@link IntPointField} instead.
  */
-@Deprecated(since = "8.0")
+@Deprecated(since = "7.0")
 public class TrieIntField extends TrieField implements IntValueFieldType {
   {
     type = NumberType.INTEGER;

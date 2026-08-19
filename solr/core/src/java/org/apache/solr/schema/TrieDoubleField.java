@@ -49,7 +49,7 @@ import org.apache.solr.legacy.LegacyNumericUtils;
  *     Language Specification, s4.2.3</a>
  * @deprecated Trie fields are deprecated as of Solr 7.0. Use {@link DoublePointField} instead.
  */
-@Deprecated(since = "8.0")
+@Deprecated(since = "7.0")
 public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
   {
     type = NumberType.DOUBLE;
