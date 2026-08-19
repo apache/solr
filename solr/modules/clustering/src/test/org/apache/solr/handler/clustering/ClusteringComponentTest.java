@@ -130,7 +130,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
    * shorter when highlighter is in use.
    */
   @Test
-  public void testClusteringOnHighlights() {
+  public void testClusteringOnHighlights() throws Exception {
     String query = "+snippet:mine +" + QUERY_TESTSET_SAMPLE_DOCUMENTS;
 
     Consumer<ModifiableSolrParams> common =
@@ -179,7 +179,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
    * check that the results differ.
    */
   @Test
-  public void testSummaryFragSize() {
+  public void testSummaryFragSize() throws Exception {
     String query = "+snippet:mine +" + QUERY_TESTSET_SAMPLE_DOCUMENTS;
 
     Consumer<ModifiableSolrParams> common =
@@ -243,7 +243,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
 
   /** Test maximum label truncation. */
   @Test
-  public void testParamMaxLabels() {
+  public void testParamMaxLabels() throws Exception {
     List<Cluster<SolrDocument>> clusters =
         clusters(
             "mock",
@@ -339,7 +339,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
     clusters.forEach(
         c -> {
           sb.append(indent);
-          sb.append("- " + String.join("; ", c.getLabels()));
+          sb.append("- " + c.getLabels().stream().collect(Collectors.joining("; ")));
           if (!c.getDocuments().isEmpty()) {
             sb.append(" [" + c.getDocuments().size() + "]");
           }

@@ -135,16 +135,16 @@ public class TestCuVSCodecSupportIT extends SolrTestCaseJ4 {
       if (log.isInfoEnabled()) {
         log.info("Rank {}: doc {} (id={}), score: {}", r, sd.doc, doc.get("id"), sd.score);
       }
-      int idx = Integer.parseInt(doc.get("id"));
+      int idx = Integer.valueOf(doc.get("id"));
       assertTrue("Expected doc id is missing:" + idx, expected.contains(idx));
     }
-    assertEquals(numResults + " TopK results were returned instead of " + TOPK, TOPK, numResults);
+    assertTrue(numResults + " TopK results were returned instead of " + TOPK, numResults == TOPK);
   }
 
   private static List<List<Float>> generateRandomVectors(Random random, int size, int dimensions) {
     List<List<Float>> dataset = new ArrayList<List<Float>>();
     for (int i = 0; i < size; i++) {
-      List<Float> row = new ArrayList<>();
+      List<Float> row = new ArrayList<Float>();
       for (int j = 0; j < dimensions; j++) {
         row.add(random.nextFloat() * 100);
       }
