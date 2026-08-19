@@ -29,7 +29,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
@@ -626,8 +625,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(johnTwoFL, rsp));
 
-    SolrQueryResponse response =
-        h.queryAndResponse(johnTwoFL.getParams().get(CommonParams.QT), johnTwoFL);
+    SolrQueryResponse response = h.queryAndResponse(null, johnTwoFL);
 
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     johnTwoFL.getResponseWriter().write(bytes, johnTwoFL, response);

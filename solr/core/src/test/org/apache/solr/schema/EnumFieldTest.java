@@ -690,7 +690,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
             jsonFacetParam,
             "wt",
             "json")) {
-      SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
+      SolrQueryResponse rsp = h.queryAndResponse(null, req);
       List<NamedList<?>> buckets =
           (List<NamedList<?>>)
               ((NamedList<?>) ((NamedList<?>) rsp.getValues().get("facets")).get("severity"))
