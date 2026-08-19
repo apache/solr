@@ -59,7 +59,9 @@ public class FunctionQParser extends QParser {
    */
   public StrParser sp;
 
-  @Deprecated private boolean parseMultipleSources = false;
+  @Deprecated(since = "10.0")
+  private boolean parseMultipleSources = false;
+
   private boolean parseToEnd = true;
 
   public FunctionQParser(
@@ -90,7 +92,7 @@ public class FunctionQParser extends QParser {
     }
   }
 
-  @Deprecated
+  @Deprecated(since = "10.0")
   public void setParseMultipleSources(boolean parseMultipleSources) {
     this.parseMultipleSources = parseMultipleSources;
   }
@@ -101,7 +103,7 @@ public class FunctionQParser extends QParser {
    *
    * @deprecated this is only needed for an unusual use-case and seems hard to support
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public boolean getParseMultipleSources() {
     return parseMultipleSources;
   }

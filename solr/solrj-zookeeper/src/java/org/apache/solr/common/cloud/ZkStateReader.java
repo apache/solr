@@ -1497,12 +1497,18 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  @Deprecated // see DocCollection
+  /**
+   * @deprecated Use {@link DocCollection#getCollectionPathRoot(String)} instead.
+   */
+  @Deprecated(since = "10.0") // see DocCollection
   public static String getCollectionPathRoot(String coll) {
     return DocCollection.getCollectionPathRoot(coll);
   }
 
-  @Deprecated // see DocCollection
+  /**
+   * @deprecated Use {@link DocCollection#getCollectionPath(String)} instead.
+   */
+  @Deprecated(since = "10.0") // see DocCollection
   public static String getCollectionPath(String coll) {
     return DocCollection.getCollectionPath(coll);
   }

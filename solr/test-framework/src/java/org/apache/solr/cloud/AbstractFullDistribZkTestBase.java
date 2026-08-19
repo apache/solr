@@ -753,7 +753,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
    * @deprecated This method is virtually useless as it does not consider the status of either the
    *     shard or replica, nor whether the node hosting each replica is alive.
    */
-  @Deprecated
+  @Deprecated(since = "9.0")
   protected int getTotalReplicas(DocCollection c, String collection) {
     if (c == null) return 0; // support for when collection hasn't been created yet
     int cnt = 0;

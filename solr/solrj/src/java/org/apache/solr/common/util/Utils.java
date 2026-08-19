@@ -707,7 +707,7 @@ public class Utils {
    * @throws IllegalArgumentException if the provided node name is malformed
    * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String)}
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
     return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
@@ -724,7 +724,7 @@ public class Utils {
    * @throws IllegalArgumentException if the provided node name is malformed
    * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String, boolean)}
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public static String getBaseUrlForNodeName(
       final String nodeName, final String urlScheme, boolean isV2) {
     return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, isV2);

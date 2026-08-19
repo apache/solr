@@ -38,6 +38,10 @@ public class CreateCollectionRequestBody {
 
   @JsonProperty public Integer nrtReplicas;
 
+  /**
+   * @deprecated Waiting for final state is expected to become the unconditional default behavior;
+   *     this parameter will then have no effect and will likely be removed. See SOLR-17712.
+   */
   @JsonProperty
   @Deprecated(since = "9.10")
   public Boolean waitForFinalState;

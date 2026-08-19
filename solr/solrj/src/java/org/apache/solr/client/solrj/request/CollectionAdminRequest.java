@@ -77,7 +77,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
   protected final CollectionAction action;
 
-  @Deprecated public static String PROPERTY_PREFIX = CollectionAdminParams.PROPERTY_PREFIX;
+  /**
+   * @deprecated Use {@link CollectionAdminParams#PROPERTY_PREFIX} instead.
+   */
+  @Deprecated(since = "10.0")
+  public static String PROPERTY_PREFIX = CollectionAdminParams.PROPERTY_PREFIX;
 
   public CollectionAdminRequest(CollectionAction action) {
     this("/admin/collections", action);
@@ -166,6 +170,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return asyncId;
     }
 
+    /**
+     * @deprecated Waiting for final state is expected to become the unconditional default behavior;
+     *     this parameter will then have no effect and will likely be removed. See SOLR-17712.
+     */
     @Deprecated(since = "9.10")
     public void setWaitForFinalState(boolean waitForFinalState) {
       this.waitForFinalState = waitForFinalState;
@@ -1154,8 +1162,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * reason to do so.
      *
      * @param incremental true to use incremental backups, false otherwise.
+     * @deprecated The 'full-snapshot' format is being removed; incremental backups are already the
+     *     default, so this method no longer needs to be called.
      */
-    @Deprecated
+    @Deprecated(since = "9.0")
     public Backup setIncremental(boolean incremental) {
       this.incremental = incremental;
       return this;
@@ -2076,7 +2086,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *
      * @deprecated Please use {@link #setMaxFutureMs(Long)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "9.0")
     public CreateTimeRoutedAlias setMaxFutureMs(Integer maxFutureMs) {
       this.maxFutureMs = Long.valueOf(maxFutureMs);
       return this;

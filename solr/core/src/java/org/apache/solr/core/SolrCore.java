@@ -858,7 +858,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * @deprecated Use of this method can only lead to race conditions. Try to actually obtain a lock
    *     instead.
    */
-  @Deprecated
+  @Deprecated(since = "7.0")
   private static boolean isWriterLocked(Directory directory) throws IOException {
     try {
       directory.obtainLock(IndexWriter.WRITE_LOCK_NAME).close();
@@ -3062,7 +3062,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * @return the response writer, never null
    * @deprecated Use {@link ResponseWritersRegistry#getWriter(String)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.1")
   public static QueryResponseWriter getAdminResponseWriter(String writerName) {
     return ResponseWritersRegistry.getWriter(writerName);
   }

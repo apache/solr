@@ -148,8 +148,10 @@ class SolrCores implements SolrInfoBean {
    *     <p>A core may be non-transient but still lazily loaded. If it is "permanent" and lazy-load
    *     _and_ not yet loaded it will _not_ be returned by this call.
    *     <p>This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
+   * @deprecated Use {@link #getLoadedCoreNames()} and then look up each core individually; this
+   *     method returns cores that are not reserved and could be closed concurrently.
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public List<SolrCore> getCores() {
     synchronized (modifyLock) {
       return new ArrayList<>(cores.values());

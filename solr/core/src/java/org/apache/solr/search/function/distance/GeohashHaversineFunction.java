@@ -38,7 +38,7 @@ import org.locationtech.spatial4j.shape.Point;
  * @see org.apache.solr.search.function.distance.HaversineFunction for more details on the
  *     implementation
  */
-@Deprecated
+@Deprecated(since = "9.0")
 public class GeohashHaversineFunction extends ValueSource {
 
   private final ValueSource geoHash1, geoHash2;

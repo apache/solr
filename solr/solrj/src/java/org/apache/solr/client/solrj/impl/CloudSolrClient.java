@@ -198,7 +198,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * @deprecated problematic as a 'get' method, since one implementation will do a remote request
    *     each time this is called, potentially return lots of data that isn't even needed.
    */
-  @Deprecated
+  @Deprecated(since = "10.1")
   public ClusterState getClusterState() {
     // The future of "ClusterState" isn't clear.  Could make it more of a cache instead of a
     // snapshot, so we un-deprecate. Or we avoid it and maybe make the ClusterStateProvider as that
@@ -242,7 +242,7 @@ public abstract class CloudSolrClient extends SolrClient {
    *
    * @deprecated Call {@link ClusterStateProvider#getLiveNodes()} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.1")
   public void connect() {
     getClusterStateProvider().connect();
   }
@@ -254,8 +254,9 @@ public abstract class CloudSolrClient extends SolrClient {
    * @param timeUnit the units of the timeout
    * @throws TimeoutException if the cluster is not ready after the timeout
    * @throws InterruptedException if the wait is interrupted
+   * @deprecated Call {@link ClusterStateProvider#getLiveNodes()} instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.1")
   public void connect(long duration, TimeUnit timeUnit)
       throws TimeoutException, InterruptedException {
     if (log.isInfoEnabled()) {
@@ -1592,6 +1593,9 @@ public abstract class CloudSolrClient extends SolrClient {
       return this;
     }
 
+    /**
+     * @deprecated Use {@link #withHttpClientBuilder(HttpSolrClient.BuilderBase)} instead.
+     */
     @Deprecated(since = "9.10")
     public Builder withInternalClientBuilder(
         HttpSolrClient.BuilderBase<?, ?> internalClientBuilder) {

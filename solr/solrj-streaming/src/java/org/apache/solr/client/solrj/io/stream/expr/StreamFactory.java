@@ -64,7 +64,7 @@ public class StreamFactory implements Serializable {
    * @deprecated use {@link #withCollectionUseThisConnection(String,
    *     CloudSolrClient.CloudSolrClientConnection)}
    */
-  @Deprecated
+  @Deprecated(since = "10.1")
   public StreamFactory withCollectionZkHost(String collectionName, String zkHost) {
     var solrConnection = zkHostToSolrConnection(zkHost);
     return withCollectionUseThisConnection(collectionName, solrConnection);
@@ -85,7 +85,7 @@ public class StreamFactory implements Serializable {
   /**
    * @deprecated use {@link #withDefaultSolrConnection(CloudSolrClient.CloudSolrClientConnection)}
    */
-  @Deprecated
+  @Deprecated(since = "10.1")
   public StreamFactory withDefaultZkHost(String zkHost) {
     var solrConnection = zkHostToSolrConnection(zkHost);
     return withDefaultSolrConnection(solrConnection);
@@ -166,7 +166,7 @@ public class StreamFactory implements Serializable {
   /**
    * @deprecated use {@link #buildSolrConnection(StreamExpression, String)} ()}
    */
-  @Deprecated
+  @Deprecated(since = "10.1")
   public String getDefaultZkHost() {
     return getDefaultSolrConnection().toString();
   }
@@ -178,7 +178,7 @@ public class StreamFactory implements Serializable {
   /**
    * @deprecated use {@link #buildSolrConnection(StreamExpression, String)}
    */
-  @Deprecated
+  @Deprecated(since = "10.1")
   public String getCollectionZkHost(String collectionName) {
     return getConnectionForCollection(collectionName).toString();
   }
