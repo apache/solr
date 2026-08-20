@@ -148,7 +148,7 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
 
     try (CloudSolrClient client =
         cluster
-            .getSolrClientBuilder()
+            .newSolrClientBuilder()
             .withDefaultCollection(collectionName)
             .sendUpdatesOnlyToShardLeaders()
             .sendDirectUpdatesToShardLeadersOnly()

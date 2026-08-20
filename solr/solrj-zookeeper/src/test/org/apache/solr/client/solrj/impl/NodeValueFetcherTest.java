@@ -63,7 +63,7 @@ public class NodeValueFetcherTest extends SolrCloudTestCase {
 
   @Test
   public void testGetTags() throws Exception {
-    try (var cloudSolrClient = cluster.getSolrClientBuilder().build()) {
+    try (var cloudSolrClient = cluster.newSolrClientBuilder().build()) {
       int totalCores = 0;
 
       // Sum all the cores of the collection by fetching tags of all nodes.
