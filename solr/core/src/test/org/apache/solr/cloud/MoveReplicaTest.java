@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -343,8 +344,11 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
   private Replica getRandomReplica(String coll, CloudSolrClient cloudClient) throws IOException {
     List<Replica> replicas =
-        new ArrayList<>(
-            cloudClient.getClusterState().getCollection(coll).getReplicaStream().toList());
+        cloudClient
+            .getClusterState()
+            .getCollection(coll)
+            .getReplicaStream()
+            .collect(Collectors.toCollection(ArrayList::new));
     Collections.shuffle(replicas, random());
     return replicas.get(0);
   }
