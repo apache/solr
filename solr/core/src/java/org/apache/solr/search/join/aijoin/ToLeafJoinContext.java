@@ -603,15 +603,11 @@ class ToLeafJoinContext {
     Set<JoinTask> refreshReference = new LinkedHashSet<>();
     Set<JoinTask> loadReference = new LinkedHashSet<>();
     Map<String, JoinTask> needIndex = new LinkedHashMap<>();
+    Set<JoinTask> resolveTarget =
+        (newJoinIndexSearcher == this.lastSeenJoinSearcher) ? loadReference : refreshReference;
     for (JoinTask task : joinCells) {
-      JoinSegmentReference oldReference = task.joinSegmentRef;
-      if (oldReference != null) {
-        task.joinSegmentRef = oldReference;
-        if (newJoinIndexSearcher == this.lastSeenJoinSearcher) {
-          loadReference.add(task);
-        } else {
-          refreshReference.add(task);
-        }
+      if (task.joinSegmentRef != null) {
+        resolveTarget.add(task);
       } else {
         needIndex.put(task.pairFieldName, task);
       }
@@ -679,10 +675,10 @@ class ToLeafJoinContext {
     // load edges for regulars
     for (JoinTask cell : loadReference) {
       // String pairFieldName = cell.pairFieldName;
-      LeafReaderContext joinFeafSeg =
+      LeafReaderContext joinLeafSeg =
           lastSeenJoinSearcher.getLeafContexts().get(cell.joinSegmentRef.joinSegmentLeafOrd());
-      assert AIJoinUtil.segmentName(joinFeafSeg).equals(cell.joinSegmentRef.joinSegmentName());
-      joinSegments.add(new SimpleEntry<>(cell, joinFeafSeg));
+      assert AIJoinUtil.segmentName(joinLeafSeg).equals(cell.joinSegmentRef.joinSegmentName());
+      joinSegments.add(new SimpleEntry<>(cell, joinLeafSeg));
     }
     // index unlucky ones
     if (!needIndex.isEmpty()) {
