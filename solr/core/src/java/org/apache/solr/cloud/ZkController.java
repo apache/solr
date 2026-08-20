@@ -402,6 +402,9 @@ public class ZkController implements Closeable {
   }
 
   private void onDisconnect(boolean sessionExpired) {
+    if (!sessionExpired) {
+      return;
+    }
     try {
       overseer.close();
     } catch (Exception e) {
