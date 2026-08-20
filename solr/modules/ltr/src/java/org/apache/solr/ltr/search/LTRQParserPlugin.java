@@ -55,6 +55,7 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class LTRQParserPlugin extends QParserPlugin
     implements ResourceLoaderAware, ManagedResourceObserver {
+  public static final String NAME = "ltr";
   private static final String ORIGINAL_RANKING = "_OriginalRanking_";
 
   // params for setting custom external info that features can use, like query
