@@ -3465,8 +3465,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
   }
 
   /**
-   * Calcite 1.42+ constant-folds a WHERE predicate on the exact grouped/aggregated column into
-   * a literal in the output project. These tests verify that the grouped column value is returned
+   * Calcite 1.42+ constant-folds a WHERE predicate on the exact grouped/aggregated column into a
+   * literal in the output project. These tests verify that the grouped column value is returned
    * correctly (not null) when the WHERE filters on the same column as GROUP BY or DISTINCT.
    */
   @Test
@@ -3485,7 +3485,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // WHERE on the exact grouped column (equality) — Calcite 1.42 may constant-fold str_s to 'a'
     SolrParams sParams =
         params(
-            CommonParams.QT, "/sql", "aggregationMode", "facet",
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "facet",
             "stmt",
             "select str_s, count(*), sum(field_i) from collection1"
                 + " where str_s = 'a' group by str_s order by str_s asc");
@@ -3493,14 +3496,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(sParams, baseUrl);
     assertEquals(1, tuples.size());
     Tuple tuple = tuples.get(0);
-    assertEquals("str_s must not be null-folded by Calcite constant folding", "a", tuple.get("str_s"));
+    assertEquals(
+        "str_s must not be null-folded by Calcite constant folding", "a", tuple.get("str_s"));
     assertEquals(2, tuple.getDouble("EXPR$1"), 0.0); // count(*)
     assertEquals(27, tuple.getDouble("EXPR$2"), 0.0); // sum(field_i)
 
     // Same query in map_reduce mode
     sParams =
         params(
-            CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "map_reduce",
             "stmt",
             "select str_s, count(*), sum(field_i) from collection1"
                 + " where str_s = 'a' group by str_s order by str_s asc");
@@ -3508,14 +3515,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
     tuples = getTuples(sParams, baseUrl);
     assertEquals(1, tuples.size());
     tuple = tuples.get(0);
-    assertEquals("str_s must not be null-folded by Calcite constant folding", "a", tuple.get("str_s"));
+    assertEquals(
+        "str_s must not be null-folded by Calcite constant folding", "a", tuple.get("str_s"));
     assertEquals(2, tuple.getDouble("EXPR$1"), 0.0);
     assertEquals(27, tuple.getDouble("EXPR$2"), 0.0);
 
     // WHERE on grouped column using IN — multiple constant-folded values
     sParams =
         params(
-            CommonParams.QT, "/sql", "aggregationMode", "facet",
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "facet",
             "stmt",
             "select str_s, count(*) from collection1"
                 + " where str_s in ('a', 'b') group by str_s order by str_s asc");
@@ -3530,7 +3541,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // WHERE on a NON-grouped column — grouped column must still be present
     sParams =
         params(
-            CommonParams.QT, "/sql", "aggregationMode", "facet",
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "facet",
             "stmt",
             "select str_s, count(*), sum(field_i) from collection1"
                 + " where field_i > 10 group by str_s order by str_s asc");
@@ -3538,17 +3552,17 @@ public class TestSQLHandler extends SolrCloudTestCase {
     tuples = getTuples(sParams, baseUrl);
     assertEquals(3, tuples.size());
     assertEquals("a", tuples.get(0).get("str_s"));
-    assertEquals(1, tuples.get(0).getDouble("EXPR$1"), 0.0);  // only id=3 (field_i=20)
+    assertEquals(1, tuples.get(0).getDouble("EXPR$1"), 0.0); // only id=3 (field_i=20)
     assertEquals("b", tuples.get(1).get("str_s"));
-    assertEquals(1, tuples.get(1).getDouble("EXPR$1"), 0.0);  // only id=4 (field_i=11)
+    assertEquals(1, tuples.get(1).getDouble("EXPR$1"), 0.0); // only id=4 (field_i=11)
     assertEquals("c", tuples.get(2).get("str_s"));
-    assertEquals(1, tuples.get(2).getDouble("EXPR$1"), 0.0);  // id=5 (field_i=30)
+    assertEquals(1, tuples.get(2).getDouble("EXPR$1"), 0.0); // id=5 (field_i=30)
   }
 
   /**
-   * Verifies that DISTINCT queries with WHERE predicates on the distinct columns return the
-   * correct (non-null) column values — the companion test to testSelectDistinct's predicate
-   * sub-case, covering additional patterns not exercised by the existing tests.
+   * Verifies that DISTINCT queries with WHERE predicates on the distinct columns return the correct
+   * (non-null) column values — the companion test to testSelectDistinct's predicate sub-case,
+   * covering additional patterns not exercised by the existing tests.
    */
   @Test
   public void testDistinctWhereOnDistinctColumn() throws Exception {
@@ -3566,7 +3580,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // WHERE on one of the DISTINCT columns (facet mode)
     SolrParams sParams =
         params(
-            CommonParams.QT, "/sql", "aggregationMode", "facet",
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "facet",
             "stmt",
             "select distinct str_s, field_i from collection1"
                 + " where str_s = 'a' order by field_i asc");
@@ -3582,7 +3599,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // Data with field_i>10: id=3 (a,20), id=4 (c,30), id=5 (c,50) → DISTINCT str_s = {a, c}
     sParams =
         params(
-            CommonParams.QT, "/sql", "aggregationMode", "facet",
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "facet",
             "stmt",
             "select distinct str_s from collection1 where field_i > 10 order by str_s asc");
 
