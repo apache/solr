@@ -329,10 +329,6 @@ final class AIJoinUtil {
     return getSideKey(fromContext, fromField) + "_" + getSideKey(toContext, toField);
   }
 
-  // Lucene puts no hard constraints on field names, but conservatively keep side keys usable as
-  // one by reducing them to identifier characters
-  private static final Pattern NON_IDENTIFIER = Pattern.compile("[^A-Za-z0-9_]");
-
   /**
    * Persistent identifier of one join side: the join field name, the immutable id the segment was
    * created with (it survives reopens, growing deletes mask and reorderings of {@link
@@ -347,8 +343,7 @@ final class AIJoinUtil {
     FieldInfo fieldInfo = context.reader().getFieldInfos().fieldInfo(field);
     long dvGen = fieldInfo == null ? -1 : fieldInfo.getDocValuesGen();
     String key = field + ":" + StringHelper.idToString(segmentId) + ":" + dvGen;
-    // TODO this is dangerous, no one flip them back
-    return NON_IDENTIFIER.matcher(key).replaceAll("_");
+    return key;
   }
 
   /**
