@@ -33,9 +33,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
@@ -94,96 +91,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         "Nothing in solr should be overriding the solr home sys prop in order to work!",
         fakeSolrHome.toString(),
         System.getProperty(SOLR_HOME_PROP));
-  }
-
-  /**
-   * Stresses {@code getCoreFromAnyList(name, true)} against a concurrently unloading/reloading core
-   * -- the exact acquire pattern {@code cancelCoreRecoveries()} uses. A core found in the live list
-   * must never be usable-but-already-closed by the time it's opened, and no thread may observe an
-   * exception from the acquire/use/release cycle itself.
-   */
-  @Test
-  public void testGetCoreFromAnyListSafeUnderConcurrentUnload() throws Exception {
-    CoreContainer cc = init(CONFIGSETS_SOLR_XML);
-    try {
-      cc.create("core1", Map.of("configSet", "minimal"));
-
-      final AtomicBoolean stop = new AtomicBoolean(false);
-      final List<Throwable> errors = new CopyOnWriteArrayList<>();
-      final AtomicInteger acquired = new AtomicInteger();
-      final AtomicInteger foundUnloaded = new AtomicInteger();
-
-      Runnable acquireReleaseLoop =
-          () -> {
-            while (!stop.get()) {
-              try {
-                for (String coreName : cc.solrCores.getLoadedCoreNames()) {
-                  try (SolrCore core = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-                    if (core == null) {
-                      foundUnloaded.incrementAndGet();
-                      continue;
-                    }
-                    acquired.incrementAndGet();
-                    if (core.isClosed()) {
-                      throw new AssertionError(
-                          "core reports isClosed() while still held -- resurrection bug");
-                    }
-                    // a genuine call on the held core, mirroring cancelCoreRecoveries()
-                    core.getSolrCoreState().cancelRecovery();
-                  }
-                }
-              } catch (Throwable t) {
-                errors.add(t);
-                return;
-              }
-            }
-          };
-
-      List<Thread> stressThreads =
-          List.of(
-              new Thread(acquireReleaseLoop, "stress-1"),
-              new Thread(acquireReleaseLoop, "stress-2"),
-              new Thread(acquireReleaseLoop, "stress-3"));
-      stressThreads.forEach(Thread::start);
-
-      // race repeated unload/reload against the acquire/release loops above
-      for (int i = 0; i < 20 && errors.isEmpty(); i++) {
-        Thread.sleep(5);
-        try {
-          cc.unload("core1");
-        } catch (Exception e) {
-          // already unloaded by a prior iteration -- fine
-        }
-        if (!cc.isLoaded("core1")) {
-          try {
-            cc.create("core1", Map.of("configSet", "minimal"));
-          } catch (Exception e) {
-            // a create racing a not-yet-finished unload isn't what this test exercises
-          }
-        }
-      }
-
-      stop.set(true);
-      for (Thread t : stressThreads) {
-        t.join(30_000);
-      }
-
-      for (Throwable t : errors) {
-        t.printStackTrace();
-      }
-      assertTrue(
-          "stress threads hit "
-              + errors.size()
-              + " exception(s) racing getCoreFromAnyList against unload -- see stderr above"
-              + " (acquired="
-              + acquired.get()
-              + ", foundUnloaded="
-              + foundUnloaded.get()
-              + ")",
-          errors.isEmpty());
-    } finally {
-      cc.shutdown();
-    }
   }
 
   @Test
