@@ -585,16 +585,15 @@ class SolrFilter extends Filter implements SolrRel {
       }
 
       if (left.getKind() == SqlKind.CAST && right.getKind() == SqlKind.CAST) {
-        return translateBinary2(
-            ((RexCall) left).getOperands().get(0), ((RexCall) right).getOperands().get(0));
+        return translateBinary2(unwrapCast(left), unwrapCast(right));
       }
 
-      // for WHERE clause like: pdatex >= '2021-07-13T15:12:10.037Z'
+      // for WHERE clause like: pdatex >= CAST('2021-07-13 15:12:10.037' AS TIMESTAMP)
+      // Calcite 1.42+ may nest multiple CASTs for timestamp coercion, so unwrap recursively
       if (left.getKind() == SqlKind.INPUT_REF && right.getKind() == SqlKind.CAST) {
-        final RexCall cast = ((RexCall) right);
-        if (cast.getOperands().size() == 1
-            && cast.getOperands().get(0).getKind() == SqlKind.LITERAL) {
-          return translateBinary2(left, cast.getOperands().get(0));
+        RexNode unwrapped = unwrapCast(right);
+        if (unwrapped.getKind() == SqlKind.LITERAL) {
+          return translateBinary2(left, unwrapped);
         }
       }
 
@@ -613,6 +612,13 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     /** Translates a call to a binary operator. Returns whether successful. */
+    private static RexNode unwrapCast(RexNode node) {
+      while (node.getKind() == SqlKind.CAST) {
+        node = ((RexCall) node).getOperands().get(0);
+      }
+      return node;
+    }
+
     protected Pair<String, RexLiteral> translateBinary2(RexNode left, RexNode right) {
       if (log.isDebugEnabled()) {
         log.debug("translateBinary2 left={} right={}", left, right);
