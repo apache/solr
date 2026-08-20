@@ -120,19 +120,6 @@ The changelog has comments to help you fill it out.  Remove them after filling o
 
 TIP: Aliases for the `writeChangelog` task are `changelog` and `newChangelog`.
 
-=== 3.2 When a changelog entry may be skipped
-
-A changelog entry is not needed for:
-
-* Changes confined to *test code only* (nothing user-visible changed).
-* Changes to a *non-public API* (package-private or internal-only members).
-* Removing a single, effectively unused public constant, or another change this minor.
-
-For anything else -- including removing a deprecated *public* member -- add one, even if narrow: for
-external contributions especially, the entry is also how the contribution gets attribution. If a PR makes
-several small, related removals (e.g. multiple deprecated members in the same module), consider grouping
-them into one YAML fragment with multiple `links` entries rather than one file per change.
-
 == 4. Changelog Validation in Pull Requests
 
 The `validate-changelog` GitHub workflow automatically checks that:
@@ -140,8 +127,7 @@ The `validate-changelog` GitHub workflow automatically checks that:
 . **CHANGES.txt is not edited directly** - All changes must use the YAML fragment approach
 . **A changelog entry is added** - Code changes must include a corresponding YAML file in `changelog/unreleased/`
 
-If your change does not require a changelog entry (see "3.2" above), it is still possible to merge the PR: a
-committer can add the `no-changelog` label to skip the check.
+If your change does not require a changelog entry, it is still possible to merge the PR.
 
 == 5. For release managers
 
