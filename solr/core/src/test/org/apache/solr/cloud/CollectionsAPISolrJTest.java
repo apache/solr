@@ -409,15 +409,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expected all shards to be active and parent shard to be removed",
         collectionName,
-        (n, collectionState) -> {
-          if (collectionState.getSlice("shard1").getState() == Slice.State.ACTIVE) return false;
-          for (Slice slice : collectionState) {
-            for (Replica r : slice.getReplicas()) {
-              if (r.isActive(n) == false) return false;
-            }
-          }
-          return true;
-        });
+        (n, collectionState) ->
+            collectionState.getSlice("shard1").getState() != Slice.State.ACTIVE
+                && collectionState.getReplicaStream().allMatch(r -> r.isActive(n)));
 
     // Test splitting using split.key
     response =
