@@ -97,7 +97,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
             .getSolrClient()
             .getClusterState()
             .getCollection(COLLECTION_NAME)
-            .getReplicaStream()
+            .replicaStream()
             .collect(Collectors.toList());
     assertEquals(
         "test preconditions were broken, each replica should have it's own node",

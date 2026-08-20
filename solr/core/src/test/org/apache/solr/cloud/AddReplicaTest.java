@@ -73,7 +73,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
 
     DocCollection docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
-    assertEquals(4, docCollection.getReplicaStream().count());
+    assertEquals(4, docCollection.replicaStream().count());
     assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).size());
     assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).size());
@@ -81,7 +81,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
-    assertEquals(4, docCollection.getReplicaStream().count());
+    assertEquals(4, docCollection.replicaStream().count());
     assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).size());
     assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).size());
@@ -106,7 +106,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
-    assertEquals(9, docCollection.getReplicaStream().count());
+    assertEquals(9, docCollection.replicaStream().count());
     assertEquals(5, getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).size());
     assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).size());
@@ -214,7 +214,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
         cloudClient
             .getClusterState()
             .getCollection(collectionName)
-            .getReplicaStream()
+            .replicaStream()
             .skip(1)
             .findFirst()
             .orElseThrow();

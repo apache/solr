@@ -81,7 +81,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     clusterState
         .getCollection(COLL)
-        .getReplicaStream()
+        .replicaStream()
         .forEach(
             replica ->
                 clients.add(

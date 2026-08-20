@@ -48,7 +48,7 @@ public class TestOnReconnectListenerSupport extends SolrCloudTestCase {
     cluster.waitForActiveCollection(testCollectionName, 1, 1);
 
     Replica leader =
-        getCollectionState(testCollectionName).getReplicaStream().findFirst().orElseThrow();
+        getCollectionState(testCollectionName).replicaStream().findFirst().orElseThrow();
     CoreContainer cores = cluster.getJettySolrRunner(0).getCoreContainer();
     ZkController zkController = cores.getZkController();
     assertNotNull("ZkController is null", zkController);

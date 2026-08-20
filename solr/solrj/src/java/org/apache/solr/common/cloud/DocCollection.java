@@ -402,7 +402,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /** Stream of all replicas across all slices. */
-  public Stream<Replica> getReplicaStream() {
+  public Stream<Replica> replicaStream() {
     return getSlices().stream().flatMap(slice -> slice.getReplicas().stream());
   }
 

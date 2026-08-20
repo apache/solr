@@ -798,7 +798,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           "Cannot find replica on first node yet",
           COLLECTION_NAME,
           collectionState -> {
-            List<Replica> replicas = collectionState.getReplicaStream().toList();
+            List<Replica> replicas = collectionState.replicaStream().toList();
             if (replicas.size() == 1) {
               Replica replica = replicas.get(0);
               return fromNode.equals(replica.getNodeName())
@@ -834,18 +834,14 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
       // now move the shard/replica
       String replicaName =
-          getCollectionState(COLLECTION_NAME)
-              .getReplicaStream()
-              .findFirst()
-              .orElseThrow()
-              .getName();
+          getCollectionState(COLLECTION_NAME).replicaStream().findFirst().orElseThrow().getName();
       String toNodeName = dataNodes.get(1);
       CollectionAdminRequest.moveReplica(COLLECTION_NAME, replicaName, toNodeName).process(client);
       waitForState(
           "Cannot find replica on second node yet after repliac move",
           COLLECTION_NAME,
           collectionState -> {
-            List<Replica> replicas = collectionState.getReplicaStream().toList();
+            List<Replica> replicas = collectionState.replicaStream().toList();
             if (replicas.size() == 1) {
               Replica replica = replicas.get(0);
               return toNodeName.equals(replica.getNodeName())

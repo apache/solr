@@ -60,7 +60,7 @@ public class CreateCollectionWithPropertiesTest extends SolrCloudTestCase {
         cloudClient
             .getClusterState()
             .getCollection(collectionName)
-            .getReplicaStream()
+            .replicaStream()
             .findFirst()
             .orElseThrow();
     CoreDescriptor coreDescriptor =

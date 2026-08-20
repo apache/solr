@@ -542,7 +542,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       DocCollection docColl = zkStateReader().getCollection(collection);
       if (docColl != null && !liveNodes.isEmpty()) {
         Optional<Replica> maybeActive =
-            docColl.getReplicaStream().filter(r -> r.isActive(liveNodes)).findAny();
+            docColl.replicaStream().filter(r -> r.isActive(liveNodes)).findAny();
         if (maybeActive.isPresent()) {
           baseUrl = maybeActive.get().getBaseUrl();
         }

@@ -716,7 +716,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     final String finalReplicaName = replicaName;
     // build a baseUrl of the replica
     return collectionState
-        .getReplicaStream()
+        .replicaStream()
         .filter(r -> finalReplicaName.equals(r.getCoreName()))
         .findFirst()
         .orElse(null);

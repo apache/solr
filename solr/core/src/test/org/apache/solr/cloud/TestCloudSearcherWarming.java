@@ -215,7 +215,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     Predicate<DocCollection> collectionStatePredicate =
         collectionState ->
             collectionState
-                .getReplicaStream()
+                .replicaStream()
                 .filter(r -> r.getNodeName().equals(oldNodeName.get()))
                 .findFirst()
                 .map(r -> r.getState() == Replica.State.DOWN)

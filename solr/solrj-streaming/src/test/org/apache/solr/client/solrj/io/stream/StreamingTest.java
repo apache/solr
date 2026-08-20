@@ -2731,7 +2731,7 @@ public class StreamingTest extends SolrCloudTestCase {
     String collName = strings.size() > 0 ? strings.get(0) : COLLECTIONORALIAS;
     zkStateReader.forceUpdateCollection(collName);
     DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collName);
-    List<Replica> replicas = collection.getReplicaStream().toList();
+    List<Replica> replicas = collection.replicaStream().toList();
     streamContext
         .getEntries()
         .put("core", replicas.get(random().nextInt(replicas.size())).getCoreName());
@@ -3217,7 +3217,7 @@ public class StreamingTest extends SolrCloudTestCase {
       streamContext.setLocal(true);
 
       for (String coll : resolved) {
-        Replica rr = zkStateReader.getCollection(coll).getReplicaStream().findFirst().orElseThrow();
+        Replica rr = zkStateReader.getCollection(coll).replicaStream().findFirst().orElseThrow();
         streamContext.put("core", rr.core);
         List<Replica> replicas =
             TupleStream.getReplicas(

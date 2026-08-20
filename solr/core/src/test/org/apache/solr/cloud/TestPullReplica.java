@@ -184,7 +184,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       while (true) {
         DocCollection docCollection = getCollectionState(collectionName);
         assertNotNull(docCollection);
-        assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicaStream().count());
+        assertEquals("Expecting 4 replicas per shard", 8, docCollection.replicaStream().count());
         assertEquals(
             "Expecting 6 pull replicas, 3 per shard",
             6,
@@ -771,7 +771,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     addDocs(numDocsAdded);
     waitForNumDocsInAllReplicas(
         numDocsAdded,
-        getCollectionState(collectionName).getReplicaStream().collect(Collectors.toList()));
+        getCollectionState(collectionName).replicaStream().collect(Collectors.toList()));
     waitForState(
         "Replica prop never added?",
         collectionName,
@@ -860,7 +860,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         "Leader should be back, all replicas active", collectionName, activeReplicaCount(0, 1, 3));
     waitForNumDocsInAllReplicas(
         numDocsAdded,
-        getCollectionState(collectionName).getReplicaStream().collect(Collectors.toList()));
+        getCollectionState(collectionName).replicaStream().collect(Collectors.toList()));
   }
 
   private void waitForNumDocsInAllActiveReplicas(int numDocs)
@@ -869,7 +869,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForNumDocsInAllReplicas(
         numDocs,
         docCollection
-            .getReplicaStream()
+            .replicaStream()
             .filter(r -> r.getState() == Replica.State.ACTIVE)
             .collect(Collectors.toList()));
   }

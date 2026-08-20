@@ -95,7 +95,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         stateReader
             .getClusterState()
             .getCollection(COLLECTION)
-            .getReplicaStream()
+            .replicaStream()
             .filter(r -> r.getCoreName().equals(leader.getCoreName()) == false)
             .collect(Collectors.toList());
     assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, 1, null);

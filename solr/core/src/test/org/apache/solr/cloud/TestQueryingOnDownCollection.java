@@ -72,7 +72,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     // assert all replicas are in down state
     getCollectionState(COLLECTION_NAME)
-        .getReplicaStream()
+        .replicaStream()
         .forEach(replica -> assertEquals(replica.getState(), Replica.State.DOWN));
 
     // assert all nodes as active

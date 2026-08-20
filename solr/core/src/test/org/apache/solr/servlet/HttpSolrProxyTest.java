@@ -55,7 +55,7 @@ public class HttpSolrProxyTest extends SolrCloudTestCase {
             .getSolrClient()
             .getClusterState()
             .getCollection(COLLECTION)
-            .getReplicaStream()
+            .replicaStream()
             .findFirst()
             .orElseThrow();
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {

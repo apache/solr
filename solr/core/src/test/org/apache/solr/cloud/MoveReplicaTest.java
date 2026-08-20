@@ -347,7 +347,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
         cloudClient
             .getClusterState()
             .getCollection(coll)
-            .getReplicaStream()
+            .replicaStream()
             .collect(Collectors.toCollection(ArrayList::new));
     Collections.shuffle(replicas, random());
     return replicas.get(0);

@@ -197,7 +197,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       DocCollection docCollection = getCollectionState(collectionName);
       assertNotNull(docCollection);
       assertEquals("Expecting 2 shards", 2, docCollection.getSlices().size());
-      assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicaStream().count());
+      assertEquals("Expecting 4 replicas per shard", 8, docCollection.replicaStream().count());
       assertEquals(
           "Expecting 8 tlog replicas, 4 per shard",
           8,
@@ -719,7 +719,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private List<Replica> getNonLeaderReplicas(String collectionName) {
     return getCollectionState(collectionName)
-        .getReplicaStream()
+        .replicaStream()
         .filter((r) -> !r.getBool("leader", false))
         .collect(Collectors.toList());
   }
@@ -978,7 +978,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForNumDocsInAllReplicas(
         numDocs,
         docCollection
-            .getReplicaStream()
+            .replicaStream()
             .filter(r -> r.getState() == Replica.State.ACTIVE)
             .collect(Collectors.toList()),
         timeout);
