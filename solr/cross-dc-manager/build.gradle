@@ -71,12 +71,6 @@ dependencies {
       classifier = "test"
     }
   }
-  // EmbeddedKafkaCluster loads org.apache.kafka.test.TestCondition from this at runtime
-  testRuntimeOnly(libs.apache.kafka.clients) {
-    artifact {
-      classifier = "test"
-    }
-  }
 }
 
 ext {
