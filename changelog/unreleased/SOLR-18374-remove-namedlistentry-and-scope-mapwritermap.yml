@@ -1,8 +1,0 @@
-# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Remove the deprecated NamedList.NamedListEntry helper class; use java.util.AbstractMap.SimpleEntry instead. The equally deprecated MapWriterMap is kept rather than removed, but is no longer public API - both the class and its constructor are now package-private, so obtain one through NavigableObject.wrap instead of constructing it directly.
-type: removed
-authors:
-  - name: Serhiy Bzhezytskyy
-links:
-  - name: SOLR-18374
-    url: https://issues.apache.org/jira/browse/SOLR-18374
