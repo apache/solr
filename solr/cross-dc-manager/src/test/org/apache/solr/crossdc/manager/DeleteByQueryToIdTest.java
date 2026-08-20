@@ -113,7 +113,7 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
             .configure();
 
     props.setProperty("solr.crossdc.topicName", TOPIC);
-    System.setProperty(BOOTSTRAP_SERVERS, bootstrapServers);
+    props.setProperty(BOOTSTRAP_SERVERS, bootstrapServers);
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     props.store(baos, "");
