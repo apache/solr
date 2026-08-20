@@ -103,6 +103,12 @@ public class RegexRulesPasswordProvider implements ExtractionPasswordProvider {
     return rules;
   }
 
+  /**
+   * Initialize rules through file input stream. This is a convenience for first calling
+   * setPasswordMap(parseRulesFile(is)).
+   *
+   * @param is the input stream with rules file, one line per rule on format regex=password
+   */
   public void parse(InputStream is) {
     setPasswordMap(parseRulesFile(is));
   }
