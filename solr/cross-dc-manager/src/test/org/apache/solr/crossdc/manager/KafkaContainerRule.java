@@ -43,12 +43,11 @@ public class KafkaContainerRule extends ExternalResource {
 
   @Override
   protected void before() {
+    Assume.assumeTrue(
+        "Docker/Testcontainers not available; skipping test",
+        org.testcontainers.DockerClientFactory.instance().isDockerAvailable());
     kafkaContainer = new KafkaContainer(DockerImageName.parse(KAFKA_DOCKER_IMAGE));
-    try {
-      kafkaContainer.start();
-    } catch (Throwable t) {
-      Assume.assumeNoException("Docker/Testcontainers not available; skipping test", t);
-    }
+    kafkaContainer.start();
   }
 
   @Override
