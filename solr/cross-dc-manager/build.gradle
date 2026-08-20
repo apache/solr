@@ -38,7 +38,6 @@ dependencies {
   runtimeOnly libs.commonscodec.commonscodec
 
   implementation libs.apache.kafka.clients
-  runtimeOnly libs.apache.kafka.streams
 
   runtimeOnly libs.apache.log4j.api
   runtimeOnly libs.apache.log4j.core
@@ -63,12 +62,6 @@ dependencies {
   testRuntimeOnly libs.bytebuddy.agent
 
   testImplementation libs.testcontainers.kafka
-
-  testImplementation(libs.apache.kafka.streams) {
-    artifact {
-      classifier = "test"
-    }
-  }
 }
 
 ext {
