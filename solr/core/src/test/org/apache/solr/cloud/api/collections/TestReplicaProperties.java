@@ -85,7 +85,6 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
   private void clusterAssignPropertyTest() throws Exception {
 
     try (CloudSolrClient client = createCloudClient(null)) {
-      client.getClusterStateProvider().getLiveNodes(); // force the connection now
       SolrException se =
           assertThrows(
               SolrException.class,
