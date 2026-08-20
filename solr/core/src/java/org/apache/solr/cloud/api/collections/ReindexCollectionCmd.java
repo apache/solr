@@ -48,7 +48,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaCount;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -714,15 +713,13 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     if (replicaName == null) {
       return null;
     }
+    final String finalReplicaName = replicaName;
     // build a baseUrl of the replica
-    for (Slice slice : collectionState) {
-      for (Replica r : slice.getReplicas()) {
-        if (replicaName.equals(r.getCoreName())) {
-          return r;
-        }
-      }
-    }
-    return null;
+    return collectionState
+        .getReplicaStream()
+        .filter(r -> finalReplicaName.equals(r.getCoreName()))
+        .findFirst()
+        .orElse(null);
   }
 
   // XXX currently this is complicated to due a bug in the way the daemon 'list'
