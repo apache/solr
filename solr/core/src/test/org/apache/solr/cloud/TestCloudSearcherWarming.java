@@ -30,7 +30,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -214,16 +213,13 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     // the above call is not enough because we want to assert that the downed replica is not active
     // but clusterShape will also return true if replica is not live -- which we don't want
     Predicate<DocCollection> collectionStatePredicate =
-        collectionState -> {
-          for (Slice slice : collectionState) {
-            for (Replica r : slice.getReplicas()) {
-              if (r.getNodeName().equals(oldNodeName.get())) {
-                return r.getState() == Replica.State.DOWN;
-              }
-            }
-          }
-          return false;
-        };
+        collectionState ->
+            collectionState
+                .getReplicaStream()
+                .filter(r -> r.getNodeName().equals(oldNodeName.get()))
+                .findFirst()
+                .map(r -> r.getState() == Replica.State.DOWN)
+                .orElse(false);
     waitForState("", collectionName, collectionStatePredicate);
     assertNotNull(ZkStateReader.from(solrClient).getLeaderRetry(collectionName, "shard1"));
 
