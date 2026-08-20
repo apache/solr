@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -344,13 +343,8 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
   private Replica getRandomReplica(String coll, CloudSolrClient cloudClient) throws IOException {
     List<Replica> replicas =
-        cloudClient
-            .getClusterState()
-            .getCollection(coll)
-            .replicaStream()
-            .collect(Collectors.toCollection(ArrayList::new));
-    Collections.shuffle(replicas, random());
-    return replicas.get(0);
+        cloudClient.getClusterState().getCollection(coll).replicaStream().toList();
+    return replicas.get(random().nextInt(replicas.size()));
   }
 
   private void checkNumOfCores(
