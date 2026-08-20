@@ -23,6 +23,7 @@ import java.util.function.Predicate;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -35,6 +36,7 @@ import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
@@ -158,7 +160,35 @@ class SolrRules {
     private static final SolrProjectRule PROJECT_RULE = new SolrProjectRule();
 
     private SolrProjectRule() {
-      super(LogicalProject.class, "SolrProjectRule");
+      super(LogicalProject.class, SolrProjectRule::isSupported, "SolrProjectRule");
+    }
+
+    /**
+     * Reject projects where any expression is a bare literal (possibly wrapped in CASTs). This
+     * prevents SolrProject from being created for Calcite 1.42+ plans where constant-folding
+     * replaces a grouped field with a literal constant (e.g. WHERE str_s='a' causes Calcite to
+     * substitute str_s with the literal 'a' in a DISTINCT output project). Such projects must
+     * remain as {@link LogicalProject} so Calcite's enumerable layer handles the substitution.
+     */
+    private static boolean isSupported(RelNode relNode) {
+      for (RexNode expr : ((LogicalProject) relNode).getProjects()) {
+        if (isLiteralExpr(expr)) return false;
+      }
+      return true;
+    }
+
+    /** Returns true if the expression is a literal, possibly wrapped in one or more CASTs. */
+    private static boolean isLiteralExpr(RexNode node) {
+      if (node instanceof RexLiteral) return true;
+      if (node instanceof RexCall && node.getKind() == SqlKind.CAST) {
+        return isLiteralExpr(((RexCall) node).getOperands().get(0));
+      }
+      return false;
+    }
+
+    @Override
+    public boolean matches(RelOptRuleCall call) {
+      return isSupported(call.rel(0));
     }
 
     @Override
