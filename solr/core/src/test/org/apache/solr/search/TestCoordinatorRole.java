@@ -798,8 +798,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           "Cannot find replica on first node yet",
           COLLECTION_NAME,
           collectionState -> {
-            List<Replica> replicas =
-                collectionState.getReplicaStream().collect(Collectors.toList());
+            List<Replica> replicas = collectionState.getReplicaStream().toList();
             if (replicas.size() == 1) {
               Replica replica = replicas.get(0);
               return fromNode.equals(replica.getNodeName())
@@ -846,8 +845,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           "Cannot find replica on second node yet after repliac move",
           COLLECTION_NAME,
           collectionState -> {
-            List<Replica> replicas =
-                collectionState.getReplicaStream().collect(Collectors.toList());
+            List<Replica> replicas = collectionState.getReplicaStream().toList();
             if (replicas.size() == 1) {
               Replica replica = replicas.get(0);
               return toNodeName.equals(replica.getNodeName())
