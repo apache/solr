@@ -377,7 +377,7 @@ public class SolrMessageProcessor extends MessageProcessor
     boolean connected = false;
     while (!connected) {
       try {
-        // a cheap round-trip that fails the same way connect() did
+        // forces a ZK round-trip, throwing if the cluster is unreachable
         clientSupplier.get().getClusterStateProvider().getLiveNodes();
         connected = true;
       } catch (Exception e) {
