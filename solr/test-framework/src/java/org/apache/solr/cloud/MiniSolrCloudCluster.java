@@ -692,6 +692,15 @@ public class MiniSolrCloudCluster implements SolrBackend {
         .build(); // we choose 90 because we run in some harsh envs
   }
 
+  /**
+   * Returns a new {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} pointed at this
+   * cluster's ZooKeeper ensemble, to customize further (default collection, update routing, HTTP
+   * client, ...) before calling {@code build()}.
+   */
+  public CloudSolrClient.Builder getSolrClientBuilder() {
+    return new CloudSolrClient.Builder(getZkServer().getZkAddress());
+  }
+
   public SolrZkClient getZkClient() {
     return getZkStateReader().getZkClient();
   }

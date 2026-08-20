@@ -168,8 +168,7 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
   }
 
   private CloudSolrClient newCloudSolrClient() {
-    var builder = new CloudSolrClient.Builder(cluster.getZkServer().getZkAddress());
-    var client = builder.build();
+    var client = cluster.getSolrClientBuilder().build();
     client.getClusterStateProvider().getLiveNodes(); // force the connection now
     return client;
   }

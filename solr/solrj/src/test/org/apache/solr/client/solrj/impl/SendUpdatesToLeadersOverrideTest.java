@@ -205,17 +205,14 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
   }
 
   public void testBuilderImplicitBehavior() throws Exception {
-    try (CloudSolrClient client =
-        new CloudSolrClient.Builder(cluster.getZkServer().getZkAddress()).build()) {
+    try (CloudSolrClient client = cluster.getSolrClientBuilder().build()) {
       assertTrue(client.isUpdatesToLeaders());
     }
   }
 
   public void testHttp2ClientThatDefaultsToLeaders() throws Exception {
     try (CloudSolrClient client =
-        new CloudSolrClient.Builder(cluster.getZkServer().getZkAddress())
-            .sendUpdatesOnlyToShardLeaders()
-            .build()) {
+        cluster.getSolrClientBuilder().sendUpdatesOnlyToShardLeaders().build()) {
       checkUpdatesDefaultToLeaders(client);
       checkUpdatesWithSendToLeadersFalse(client);
     }
@@ -223,9 +220,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
 
   public void testHttp2ClientThatDoesNotDefaultToLeaders() throws Exception {
     try (CloudSolrClient client =
-        new CloudSolrClient.Builder(cluster.getZkServer().getZkAddress())
-            .sendUpdatesToAnyReplica()
-            .build()) {
+        cluster.getSolrClientBuilder().sendUpdatesToAnyReplica().build()) {
       checkUpdatesWithShardsPrefPull(client);
       checkUpdatesWithSendToLeadersFalse(client);
     }

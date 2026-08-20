@@ -57,7 +57,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
             .useHttp1_1(true)
             .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
 
-    var cloudSolrclientBuilder = new CloudSolrClient.Builder(cluster.getZkServer().getZkAddress());
+    var cloudSolrclientBuilder = cluster.getSolrClientBuilder();
     cloudSolrclientBuilder.withHttpClientBuilder(
         random().nextBoolean() ? jettyClientBuilder : jdkClientBuilder);
 
