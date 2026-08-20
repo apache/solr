@@ -71,8 +71,8 @@ public class TestJavaBinResponseWriter extends SolrTestCaseJ4 {
     String s = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
     assertU(adoc("id", "101", "uuid", s));
     assertU(commit());
-    SolrQueryRequestBase req = lrf.makeRequest("q", "*:*");
-    SolrQueryResponse rsp = h.queryAndResponse(null, req);
+    SolrQueryRequest req = withPath("/select", lrf.makeRequest("q", "*:*"));
+    SolrQueryResponse rsp = h.queryAndResponse(req);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     h.getCore().getQueryResponseWriter("javabin").write(baos, req, rsp);
     NamedList<?> res;

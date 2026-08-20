@@ -613,7 +613,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   @SuppressWarnings("unchecked")
   @Test
   public void testJustJohnJavabin() throws Exception {
-    final SolrQueryRequest johnTwoFL = req(johnAndNancyParams);
+    final SolrQueryRequest johnTwoFL = reqWithPath("/select", johnAndNancyParams);
     ModifiableSolrParams params = new ModifiableSolrParams(johnTwoFL.getParams());
     params.set("q", "name_s:john");
     params.set("wt", "javabin");

@@ -352,7 +352,9 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
   }
 
   void doRTG(String ids) throws Exception {
-    doQuery(StrUtils.splitSmart(ids, ",", true), "/get", "ids", ids);
+    final var expectedIds = StrUtils.splitSmart(ids, ",", true);
+    final var request = new QueryRequest("/get", params("ids", ids));
+    doQuery(expectedIds, request);
   }
 
   // TODO: refactor some of this stuff into the SolrJ client... it should be easier to use

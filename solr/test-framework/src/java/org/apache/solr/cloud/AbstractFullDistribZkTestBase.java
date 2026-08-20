@@ -2180,10 +2180,10 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     assertEquals(expectedIds, obtainedIds);
   }
 
-  void doQuery(List<String> expectedIds, String path, String... queryParams) throws Exception {
+  void doQuery(Collection<String> expectedIds, QueryRequest request) throws Exception {
     Set<String> expectedIdSet = new HashSet<>(expectedIds);
 
-    QueryResponse rsp = new QueryRequest(path, params(queryParams)).process(cloudClient);
+    QueryResponse rsp = request.process(cloudClient);
     Set<String> obtainedIds = new HashSet<>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIds.add((String) doc.get("id"));

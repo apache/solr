@@ -343,6 +343,9 @@ public class TestHarness extends BaseTestHarness {
   /**
    * It is the users responsibility to close the request object when done with it. This method does
    * not set/clear SolrRequestInfo
+   *
+   * @deprecated use {@link #queryAndResponse(SolrQueryRequest)} instead, ensuring that
+   *     SolrQueryRequest has a valid path
    */
   public SolrQueryResponse queryAndResponse(String handler, SolrQueryRequest req) throws Exception {
     try (var mdcSnap = MDCSnapshot.create();
@@ -350,6 +353,23 @@ public class TestHarness extends BaseTestHarness {
       assert null != mdcSnap; // prevent compiler warning of unused var
       SolrQueryResponse rsp = new SolrQueryResponse();
       core.execute(core.getRequestHandler(handler), req, rsp);
+      if (rsp.getException() != null) {
+        throw rsp.getException();
+      }
+      return rsp;
+    }
+  }
+
+  /**
+   * It is the users responsibility to close the request object when done with it. This method does
+   * not set/clear SolrRequestInfo
+   */
+  public SolrQueryResponse queryAndResponse(SolrQueryRequest req) throws Exception {
+    try (var mdcSnap = MDCSnapshot.create();
+        SolrCore core = getCoreInc()) {
+      assert null != mdcSnap; // prevent compiler warning of unused var
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      core.execute(core.getRequestHandler(req.getPath()), req, rsp);
       if (rsp.getException() != null) {
         throw rsp.getException();
       }
