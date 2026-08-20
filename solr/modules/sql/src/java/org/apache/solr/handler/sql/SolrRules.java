@@ -28,7 +28,6 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -113,13 +112,7 @@ class SolrRules {
 
     <R extends RelNode> SolrConverterRule(
         Class<R> clazz, Predicate<RelNode> predicate, String description) {
-      super(
-          clazz,
-          predicate,
-          Convention.NONE,
-          SolrRel.CONVENTION,
-          RelFactories.LOGICAL_BUILDER,
-          description);
+      super(clazz, Convention.NONE, SolrRel.CONVENTION, description);
     }
   }
 
