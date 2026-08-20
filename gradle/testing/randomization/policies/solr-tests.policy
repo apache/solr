@@ -255,6 +255,9 @@ grant {
   permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}active_config", "read,readlink";
   permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}configurations${/}config_default", "read,readlink";
 
+  // Testcontainers (used by cross-dc-manager Kafka integration tests)
+  permission java.io.FilePermission "${user.home}${/}.testcontainers.properties", "read,readlink";
+
 
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
@@ -273,11 +276,6 @@ grant codeBase "file:${gradle.lib.dir}${/}-" {
 };
 
 grant codeBase "file:${gradle.worker.jar}" {
-  permission java.security.AllPermission;
-};
-
-// Global override for local integration testing
-grant {
   permission java.security.AllPermission;
 };
 
