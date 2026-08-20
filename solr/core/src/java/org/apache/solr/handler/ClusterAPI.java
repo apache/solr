@@ -258,6 +258,7 @@ public class ClusterAPI {
   @EndPoint(method = POST, path = "/cluster", permission = COLL_EDIT_PERM)
   public class Commands {
     @Command(name = "add-role")
+    @Deprecated(since = "10.1")
     public void addRole(PayloadObj<RoleInfo> obj) throws Exception {
       RoleInfo info = obj.get();
       Map<String, Object> m = new SimpleOrderedMap<>(info);
@@ -266,6 +267,7 @@ public class ClusterAPI {
     }
 
     @Command(name = "remove-role")
+    @Deprecated(since = "10.1")
     public void removeRole(PayloadObj<RoleInfo> obj) throws Exception {
       RoleInfo info = obj.get();
       Map<String, Object> m = new SimpleOrderedMap<>(info);

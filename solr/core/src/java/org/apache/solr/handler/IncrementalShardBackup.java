@@ -275,8 +275,9 @@ public class IncrementalShardBackup {
         case Error err -> throw err;
         case IOException ioe -> throw ioe;
         case RuntimeException re -> throw re;
-        default -> throw new SolrException(
-            SolrException.ErrorCode.UNKNOWN, "Error during parallel backup upload", cause);
+        default ->
+            throw new SolrException(
+                SolrException.ErrorCode.UNKNOWN, "Error during parallel backup upload", cause);
       }
     } catch (InterruptedException e) {
       uploadFutures.forEach(f -> f.cancel(true));

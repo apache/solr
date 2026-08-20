@@ -690,7 +690,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   private long computeBufferedOps() {
     return switch (state) {
-        // numRecords counts header as a record
+      // numRecords counts header as a record
       case BUFFERING -> (bufferTlog == null ? 0 : bufferTlog.numRecords() - 1);
       case APPLYING_BUFFERED -> {
         if (tlog == null) yield 0;

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SequencedMap;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
@@ -325,7 +326,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
       client.add(sdoc("id", "b!doc", "foo_i", map("inc", 1)));
       expectedVal++;
 
-      QueryResponse rsp = client.query(params("qt", "/get", "id", "b!doc"));
+      QueryResponse rsp = new QueryRequest("/get", params("id", "b!doc")).process(client);
       Object val = ((Map) rsp.getResponse().get("doc")).get("foo_i");
       assertEquals((Integer) expectedVal, val);
     }

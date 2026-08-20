@@ -22,14 +22,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.TaskExecutor;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldDocs;
@@ -119,11 +117,14 @@ public class MultiThreadedSearcher {
     return new SearchResult(scoreMode, ret);
   }
 
-  static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd) {
+  static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, TaskExecutor executor) {
     // TODO: it's unclear if segmentTerminateEarly is truly incompatible but
     //  since it has to appropriately denote partial results this needs to be
     //  investigated/tested before we can remove this check (perhaps for 9.8).
-    return postFilter == null && !cmd.getSegmentTerminateEarly() && cmd.getMultiThreaded();
+    return postFilter == null
+        && !cmd.getSegmentTerminateEarly()
+        && cmd.getMultiThreaded()
+        && executor != null;
   }
 
   static class MaxScoreResult {
@@ -131,67 +132,6 @@ public class MultiThreadedSearcher {
 
     public MaxScoreResult(float maxScore) {
       this.maxScore = maxScore;
-    }
-  }
-
-  static class FixedBitSetCollector extends SimpleCollector {
-    @SuppressWarnings("JdkObsolete")
-    private final LinkedList<FixedBitSet> bitSets = new LinkedList<>();
-
-    @SuppressWarnings("JdkObsolete")
-    private final LinkedList<Integer> skipWords = new LinkedList<>();
-
-    @SuppressWarnings("JdkObsolete")
-    private final LinkedList<Integer> skipBits = new LinkedList<>();
-
-    FixedBitSetCollector() {}
-
-    @Override
-    protected void doSetNextReader(LeafReaderContext context) throws IOException {
-      this.bitSets.add(null); // lazy allocate when collecting document(s)
-      this.skipWords.add(context.docBase / 64);
-      this.skipBits.add(context.docBase % 64);
-    }
-
-    @Override
-    public void collect(int doc) throws IOException {
-      FixedBitSet bitSet = this.bitSets.getLast();
-      final int idx = this.skipBits.getLast() + doc;
-
-      final int numWords = FixedBitSet.bits2words(idx + 1); // +1 to ensure minimum 1 word
-
-      if (bitSet == null) {
-        this.bitSets.removeLast();
-        bitSet = new FixedBitSet(numWords * 64);
-        this.bitSets.addLast(bitSet);
-
-      } else if (bitSet.getBits().length < numWords) {
-        FixedBitSet smallerBitSet = this.bitSets.removeLast();
-        bitSet = new FixedBitSet(numWords * 64);
-        bitSet.xor(smallerBitSet);
-        this.bitSets.addLast(bitSet);
-      }
-
-      bitSet.set(idx);
-    }
-
-    void update(FixedBitSet allBitSet) {
-      final long[] allBits = allBitSet.getBits();
-      for (int bs_idx = 0; bs_idx < this.bitSets.size(); ++bs_idx) {
-        final FixedBitSet itBitSet = this.bitSets.get(bs_idx);
-        if (itBitSet != null) {
-          final int skipWords = this.skipWords.get(bs_idx);
-          final long[] itBits = itBitSet.getBits();
-          for (int idx = 0; idx < itBits.length && skipWords + idx < allBits.length; ++idx) {
-            allBits[skipWords + idx] ^= itBits[idx];
-          }
-        }
-      }
-    }
-
-    @Override
-    public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE_NO_SCORES;
     }
   }
 
@@ -283,8 +223,7 @@ public class MultiThreadedSearcher {
 
     @Override
     public Collector newCollector() throws IOException {
-      // TODO: add to firstCollectors here? or if not have comment w.r.t. why not adding
-      return new FixedBitSetCollector();
+      return new DocSetCollector(maxDoc);
     }
 
     @Override
@@ -292,11 +231,25 @@ public class MultiThreadedSearcher {
     public Object reduce(Collection collectors) throws IOException {
       final FixedBitSet reduced = new FixedBitSet(maxDoc);
       for (Object collector : collectors) {
-        if (collector instanceof FixedBitSetCollector fixedBitSetCollector) {
-          fixedBitSetCollector.update(reduced);
+        if (collector instanceof EarlyTerminatingCollector earlyTerminatingCollector) {
+          collector = earlyTerminatingCollector.getDelegate();
+        }
+        if (collector instanceof DocSetCollector docSetCollector) {
+          mergeDocSetIntoFixedBitSet(docSetCollector.getDocSet(), reduced);
         }
       }
       return reduced;
+    }
+
+    private static void mergeDocSetIntoFixedBitSet(DocSet docSet, FixedBitSet reduced) {
+      if (docSet instanceof BitDocSet bitDocSet) {
+        reduced.or(bitDocSet.getBits());
+      } else {
+        DocIterator iter = docSet.iterator();
+        while (iter.hasNext()) {
+          reduced.set(iter.nextDoc());
+        }
+      }
     }
   }
 

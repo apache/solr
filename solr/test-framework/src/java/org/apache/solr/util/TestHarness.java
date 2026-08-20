@@ -307,7 +307,9 @@ public class TestHarness extends BaseTestHarness {
    * @see SolrQueryRequestBase
    */
   public String query(SolrQueryRequest req) throws Exception {
-    return query(req.getParams().get(CommonParams.QT), req);
+    String path = req.getPath();
+    String handler = path != null ? path : req.getParams().get(CommonParams.QT);
+    return query(handler, req);
   }
 
   /**
