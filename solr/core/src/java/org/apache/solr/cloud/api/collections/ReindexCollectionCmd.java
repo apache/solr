@@ -673,7 +673,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   // XXX see #waitForDaemon() for why we need this
-  private Replica getReplicaForDaemon(SolrResponse rsp, DocCollection coll) {
+  private Replica getReplicaForDaemon(SolrResponse rsp, DocCollection collectionState) {
     @SuppressWarnings({"unchecked"})
     Map<String, Object> rs = (Map<String, Object>) rsp.getResponse().get("result-set");
     if (rs == null || rs.isEmpty()) {
@@ -715,7 +715,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       return null;
     }
     // build a baseUrl of the replica
-    for (Slice slice : coll) {
+    for (Slice slice : collectionState) {
       for (Replica r : slice.getReplicas()) {
         if (replicaName.equals(r.getCoreName())) {
           return r;

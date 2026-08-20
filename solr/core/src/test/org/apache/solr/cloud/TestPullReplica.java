@@ -839,8 +839,8 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState(
         "Special PULL should be ACTIVE, all others should be DOWN",
         collectionName,
-        (liveNodes, colState) -> {
-          for (Slice slice : colState) {
+        (liveNodes, collectionState) -> {
+          for (Slice slice : collectionState) {
             for (Replica r : slice.getReplicas()) {
               if (r.getName().equals(pullThatSkipsRecovery)) {
                 if (!r.getState().equals(Replica.State.ACTIVE)) {

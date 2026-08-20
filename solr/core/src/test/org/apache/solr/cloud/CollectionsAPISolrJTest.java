@@ -409,9 +409,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expected all shards to be active and parent shard to be removed",
         collectionName,
-        (n, c) -> {
-          if (c.getSlice("shard1").getState() == Slice.State.ACTIVE) return false;
-          for (Slice slice : c) {
+        (n, collectionState) -> {
+          if (collectionState.getSlice("shard1").getState() == Slice.State.ACTIVE) return false;
+          for (Slice slice : collectionState) {
             for (Replica r : slice.getReplicas()) {
               if (r.isActive(n) == false) return false;
             }
@@ -1337,8 +1337,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expecting 'preferredleader' property to be balanced across all shards",
         collection,
-        c -> {
-          for (Slice slice : c) {
+        collectionState -> {
+          for (Slice slice : collectionState) {
             int count = 0;
             for (Replica replica : slice) {
               if ("true".equals(replica.getProperty("preferredleader"))) count += 1;
