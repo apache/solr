@@ -4223,12 +4223,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     String collection = useAlias ? COLLECTIONORALIAS + "_collection" : COLLECTIONORALIAS;
     DocCollection coll = clusterState.getCollection(collection);
-    String node =
-        coll.getSlices().stream()
-            .flatMap(slice -> slice.getReplicas().stream())
-            .findFirst()
-            .orElseThrow()
-            .getNodeName();
+    String node = coll.getReplicaStream().findFirst().orElseThrow().getNodeName();
     String url = null;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       if (jetty.getNodeName().equals(node)) {

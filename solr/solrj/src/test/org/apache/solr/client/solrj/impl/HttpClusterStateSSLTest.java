@@ -103,8 +103,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
   private void verifyUrlSchemeInClusterState(
       final DocCollection collection, final int expectedReplicas) {
     assertNotNull(collection);
-    List<Replica> replicas =
-        collection.getSlices().stream().flatMap(slice -> slice.getReplicas().stream()).toList();
+    List<Replica> replicas = collection.getReplicaStream().toList();
     assertNotNull(replicas);
     assertEquals(expectedReplicas, replicas.size());
     for (Replica r : replicas) {

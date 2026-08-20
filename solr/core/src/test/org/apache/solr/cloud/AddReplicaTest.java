@@ -73,7 +73,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
 
     DocCollection docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
-    assertEquals(4, docCollection.getSlices().stream().mapToInt(s -> s.getReplicas().size()).sum());
+    assertEquals(4, docCollection.getReplicaStream().count());
     assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).size());
     assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).size());
@@ -81,7 +81,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
-    assertEquals(4, docCollection.getSlices().stream().mapToInt(s -> s.getReplicas().size()).sum());
+    assertEquals(4, docCollection.getReplicaStream().count());
     assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).size());
     assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).size());
@@ -106,7 +106,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
-    assertEquals(9, docCollection.getSlices().stream().mapToInt(s -> s.getReplicas().size()).sum());
+    assertEquals(9, docCollection.getReplicaStream().count());
     assertEquals(5, getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).size());
     assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).size());
@@ -211,8 +211,10 @@ public class AddReplicaTest extends SolrCloudTestCase {
     // Verify that the new core was created with user-defined properties coming from the request
     // and inherited from the collection (the former taking precedence over the latter).
     Replica replica =
-        cloudClient.getClusterState().getCollection(collectionName).getSlices().stream()
-            .flatMap(slice -> slice.getReplicas().stream())
+        cloudClient
+            .getClusterState()
+            .getCollection(collectionName)
+            .getReplicaStream()
             .skip(1)
             .findFirst()
             .orElseThrow();

@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -398,6 +399,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   @Override
   public Iterator<Slice> iterator() {
     return slices.values().iterator();
+  }
+
+  /** Stream of all replicas across all slices, without allocating an intermediate list. */
+  public Stream<Replica> getReplicaStream() {
+    return getSlices().stream().flatMap(slice -> slice.getReplicas().stream());
   }
 
   @Override

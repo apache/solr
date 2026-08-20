@@ -133,12 +133,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     }
 
     assertDocsExistInAllReplicas(
-        getCollectionState(collectionName).getSlices().stream()
-            .flatMap(slice -> slice.getReplicas().stream())
-            .toList(),
-        collectionName,
-        1,
-        4);
+        getCollectionState(collectionName).getReplicaStream().toList(), collectionName, 1, 4);
 
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }

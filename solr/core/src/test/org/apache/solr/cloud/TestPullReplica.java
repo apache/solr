@@ -184,10 +184,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       while (true) {
         DocCollection docCollection = getCollectionState(collectionName);
         assertNotNull(docCollection);
-        assertEquals(
-            "Expecting 4 replicas per shard",
-            8,
-            docCollection.getSlices().stream().mapToInt(s -> s.getReplicas().size()).sum());
+        assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicaStream().count());
         assertEquals(
             "Expecting 6 pull replicas, 3 per shard",
             6,
@@ -774,9 +771,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     addDocs(numDocsAdded);
     waitForNumDocsInAllReplicas(
         numDocsAdded,
-        getCollectionState(collectionName).getSlices().stream()
-            .flatMap(slice -> slice.getReplicas().stream())
-            .collect(Collectors.toList()));
+        getCollectionState(collectionName).getReplicaStream().collect(Collectors.toList()));
     waitForState(
         "Replica prop never added?",
         collectionName,
@@ -865,9 +860,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         "Leader should be back, all replicas active", collectionName, activeReplicaCount(0, 1, 3));
     waitForNumDocsInAllReplicas(
         numDocsAdded,
-        getCollectionState(collectionName).getSlices().stream()
-            .flatMap(slice -> slice.getReplicas().stream())
-            .collect(Collectors.toList()));
+        getCollectionState(collectionName).getReplicaStream().collect(Collectors.toList()));
   }
 
   private void waitForNumDocsInAllActiveReplicas(int numDocs)
@@ -875,8 +868,8 @@ public class TestPullReplica extends SolrCloudTestCase {
     DocCollection docCollection = getCollectionState(collectionName);
     waitForNumDocsInAllReplicas(
         numDocs,
-        docCollection.getSlices().stream()
-            .flatMap(slice -> slice.getReplicas().stream())
+        docCollection
+            .getReplicaStream()
             .filter(r -> r.getState() == Replica.State.ACTIVE)
             .collect(Collectors.toList()));
   }

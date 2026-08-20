@@ -261,8 +261,8 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
   private List<String> getAllNodeNames(String collectionName) {
     DocCollection state = getCollectionState(collectionName);
-    return state.getSlices().stream()
-        .flatMap(slice -> slice.getReplicas().stream())
+    return state
+        .getReplicaStream()
         .map(Replica::getNodeName)
         .distinct()
         .collect(Collectors.toList());

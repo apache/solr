@@ -538,8 +538,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     waitForState(
         "Waiting for single replica in state",
         collectionName,
-        collectionState ->
-            collectionState.getSlices().stream().mapToInt(s -> s.getReplicas().size()).sum() == 1);
+        collectionState -> collectionState.getReplicaStream().count() == 1);
   }
 
   /**

@@ -51,8 +51,11 @@ public class HttpSolrProxyTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION, 1, 1);
 
     Replica replica =
-        cluster.getSolrClient().getClusterState().getCollection(COLLECTION).getSlices().stream()
-            .flatMap(slice -> slice.getReplicas().stream())
+        cluster
+            .getSolrClient()
+            .getClusterState()
+            .getCollection(COLLECTION)
+            .getReplicaStream()
             .findFirst()
             .orElseThrow();
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {

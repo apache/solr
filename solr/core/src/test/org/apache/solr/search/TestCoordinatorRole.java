@@ -799,9 +799,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           COLLECTION_NAME,
           collectionState -> {
             List<Replica> replicas =
-                collectionState.getSlices().stream()
-                    .flatMap(slice -> slice.getReplicas().stream())
-                    .collect(Collectors.toList());
+                collectionState.getReplicaStream().collect(Collectors.toList());
             if (replicas.size() == 1) {
               Replica replica = replicas.get(0);
               return fromNode.equals(replica.getNodeName())
@@ -837,8 +835,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
       // now move the shard/replica
       String replicaName =
-          getCollectionState(COLLECTION_NAME).getSlices().stream()
-              .flatMap(slice -> slice.getReplicas().stream())
+          getCollectionState(COLLECTION_NAME)
+              .getReplicaStream()
               .findFirst()
               .orElseThrow()
               .getName();
@@ -849,9 +847,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           COLLECTION_NAME,
           collectionState -> {
             List<Replica> replicas =
-                collectionState.getSlices().stream()
-                    .flatMap(slice -> slice.getReplicas().stream())
-                    .collect(Collectors.toList());
+                collectionState.getReplicaStream().collect(Collectors.toList());
             if (replicas.size() == 1) {
               Replica replica = replicas.get(0);
               return toNodeName.equals(replica.getNodeName())

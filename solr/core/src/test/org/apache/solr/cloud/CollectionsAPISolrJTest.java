@@ -457,11 +457,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     DocCollection testCollection = getCollectionState(collectionName);
 
-    Replica replica1 =
-        testCollection.getSlices().stream()
-            .flatMap(slice -> slice.getReplicas().stream())
-            .findFirst()
-            .orElseThrow();
+    Replica replica1 = testCollection.getReplicaStream().findFirst().orElseThrow();
     final var coreStatus = getCoreStatus(replica1);
 
     assertEquals(Path.of(coreStatus.dataDir).toString(), dataDir.toString());
@@ -507,8 +503,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
     String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
     Optional<Replica> optional =
-        docCollection.getSlices().stream()
-            .flatMap(slice -> slice.getReplicas().stream())
+        docCollection
+            .getReplicaStream()
             .filter(replica -> replicaName.equals(replica.getCoreName()))
             .findAny();
     if (optional.isPresent()) {

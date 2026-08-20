@@ -684,8 +684,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
     String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
     Optional<Replica> optional =
-        docCollection.getSlices().stream()
-            .flatMap(slice -> slice.getReplicas().stream())
+        docCollection
+            .getReplicaStream()
             .filter(replica -> replicaName.equals(replica.getCoreName()))
             .findAny();
     if (optional.isPresent()) {

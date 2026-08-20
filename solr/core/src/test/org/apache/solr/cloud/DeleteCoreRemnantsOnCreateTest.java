@@ -211,10 +211,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     // Verify collection was created successfully
     DocCollection collection = getCollectionState(collectionName);
     assertNotNull("Collection should exist", collection);
-    assertEquals(
-        "Should have 1 replica",
-        1,
-        collection.getSlices().stream().mapToInt(s -> s.getReplicas().size()).sum());
+    assertEquals("Should have 1 replica", 1, collection.getReplicaStream().count());
 
     // Verify replica on the node where we had the remnant is active
     Replica recreatedReplica =
@@ -274,10 +271,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     // Verify collection now has 2 replicas
     DocCollection collection = getCollectionState(collectionName);
     assertNotNull("Collection should exist", collection);
-    assertEquals(
-        "Should have 2 replicas after adding",
-        2,
-        collection.getSlices().stream().mapToInt(s -> s.getReplicas().size()).sum());
+    assertEquals("Should have 2 replicas after adding", 2, collection.getReplicaStream().count());
 
     // Verify the replica was added on the single node and is active
     Replica addedReplica = getReplicaOnNode(collectionName, "shard1", primaryNode);
