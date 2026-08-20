@@ -356,7 +356,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     assert (cloudInit == false);
     cloudInit = true;
     cloudClient = createCloudClient(DEFAULT_COLLECTION);
-    cloudClient.getClusterStateProvider().getLiveNodes(); // force the connection now
 
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
 
