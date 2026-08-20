@@ -28,6 +28,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -112,7 +113,13 @@ class SolrRules {
 
     <R extends RelNode> SolrConverterRule(
         Class<R> clazz, Predicate<RelNode> predicate, String description) {
-      super(clazz, Convention.NONE, SolrRel.CONVENTION, description);
+      super(
+          clazz,
+          predicate,
+          Convention.NONE,
+          SolrRel.CONVENTION,
+          RelFactories.LOGICAL_BUILDER,
+          description);
     }
   }
 
@@ -144,6 +151,11 @@ class SolrRules {
 
     private SolrFilterRule() {
       super(LogicalFilter.class, SolrFilterRule::filter, "SolrFilterRule");
+    }
+
+    @Override
+    public boolean matches(RelOptRuleCall call) {
+      return filter(call.rel(0));
     }
 
     @Override
@@ -179,11 +191,10 @@ class SolrRules {
 
     /** Returns true if the expression is a literal, possibly wrapped in one or more CASTs. */
     private static boolean isLiteralExpr(RexNode node) {
-      if (node instanceof RexLiteral) return true;
-      if (node instanceof RexCall && node.getKind() == SqlKind.CAST) {
-        return isLiteralExpr(((RexCall) node).getOperands().get(0));
+      while (node instanceof RexCall && node.getKind() == SqlKind.CAST) {
+        node = ((RexCall) node).getOperands().get(0);
       }
-      return false;
+      return node instanceof RexLiteral;
     }
 
     @Override
