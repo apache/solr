@@ -123,16 +123,24 @@ public class AIJoinQParserPlugin extends QParserPlugin
     } else {
       core.getCoreContainer().assertPathAllowed(path);
     }
-    final Directory directory;
+    Directory directory = null;
     try {
       directory =
           core.getDirectoryFactory()
               .get(path.toString(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       joinIndex = new AIJoinIndex(directory);
-    } catch (IOException e) {
+    } catch (IOException | RuntimeException e) {
+      if (directory != null) {
+        try {
+          core.getDirectoryFactory().release(directory);
+        } catch (IOException releaseException) {
+          e.addSuppressed(releaseException);
+        }
+      }
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Failed to open AIJoinIndex at " + path, e);
     }
+    final Directory capturedDirectory = directory;
     core.addCloseHook(
         new CloseHook() {
           @Override
@@ -143,9 +151,9 @@ public class AIJoinQParserPlugin extends QParserPlugin
               log.warn("Failed closing AIJoinIndex", e);
             } finally {
               try {
-                core.getDirectoryFactory().release(directory);
+                core.getDirectoryFactory().release(capturedDirectory);
               } catch (IOException e) {
-                log.warn("Failed releasing AIJoinIndex directory {}", directory, e);
+                log.warn("Failed releasing AIJoinIndex directory {}", capturedDirectory, e);
               }
             }
           }
