@@ -37,27 +37,21 @@ public class JettyConfig {
   public final boolean enableV2;
   public final boolean enableGracefulShutdown;
 
-  private JettyConfig(
-      boolean onlyHttp1,
-      int port,
-      int portRetryTime,
-      boolean stopAtShutdown,
-      Long waitForLoadingCoresToFinishMs,
-      Map<ServletHolder, String> extraServlets,
-      Map<Class<? extends Filter>, String> extraFilters,
-      SSLConfig sslConfig,
-      boolean enableV2,
-      boolean enableGracefulShutdown) {
-    this.onlyHttp1 = onlyHttp1;
-    this.port = port;
-    this.portRetryTime = portRetryTime;
-    this.stopAtShutdown = stopAtShutdown;
-    this.waitForLoadingCoresToFinishMs = waitForLoadingCoresToFinishMs;
-    this.extraServlets = extraServlets;
-    this.extraFilters = extraFilters;
-    this.sslConfig = sslConfig;
-    this.enableV2 = enableV2;
-    this.enableGracefulShutdown = enableGracefulShutdown;
+  /** Snapshot of the builder that built this config; enables {@link #builder(JettyConfig)}. */
+  private final Builder builder;
+
+  private JettyConfig(Builder builder) {
+    this.builder = builder;
+    this.onlyHttp1 = builder.onlyHttp1;
+    this.port = builder.port;
+    this.portRetryTime = builder.portRetryTime;
+    this.stopAtShutdown = builder.stopAtShutdown;
+    this.waitForLoadingCoresToFinishMs = builder.waitForLoadingCoresToFinishMs;
+    this.extraServlets = builder.extraServlets;
+    this.extraFilters = builder.extraFilters;
+    this.sslConfig = builder.sslConfig;
+    this.enableV2 = builder.enableV2;
+    this.enableGracefulShutdown = builder.enableGracefulShutdown;
   }
 
   public static Builder builder() {
@@ -65,22 +59,10 @@ public class JettyConfig {
   }
 
   public static Builder builder(JettyConfig other) {
-    Builder builder = new Builder();
-
-    builder.onlyHttp1 = other.onlyHttp1;
-    builder.port = other.port;
-    builder.portRetryTime = other.portRetryTime;
-    builder.stopAtShutdown = other.stopAtShutdown;
-    builder.waitForLoadingCoresToFinishMs = other.waitForLoadingCoresToFinishMs;
-    builder.extraServlets = other.extraServlets;
-    builder.extraFilters = other.extraFilters;
-    builder.sslConfig = other.sslConfig;
-    builder.enableV2 = other.enableV2;
-    builder.enableGracefulShutdown = other.enableGracefulShutdown;
-    return builder;
+    return other.builder.clone();
   }
 
-  public static class Builder {
+  public static class Builder implements Cloneable {
 
     boolean onlyHttp1 = false;
     int port = 0;
@@ -154,18 +136,19 @@ public class JettyConfig {
       return this;
     }
 
+    /** Shallow copy; maps are shared with the original, matching historic copy semantics. */
+    @Override
+    public Builder clone() {
+      try {
+        return (Builder) super.clone();
+      } catch (CloneNotSupportedException e) {
+        throw new AssertionError(e);
+      }
+    }
+
     public JettyConfig build() {
-      return new JettyConfig(
-          onlyHttp1,
-          port,
-          portRetryTime,
-          stopAtShutdown,
-          waitForLoadingCoresToFinishMs,
-          extraServlets,
-          extraFilters,
-          sslConfig,
-          enableV2,
-          enableGracefulShutdown);
+      // clone so later mutations of this builder don't leak into the built config's snapshot
+      return new JettyConfig(clone());
     }
   }
 }
