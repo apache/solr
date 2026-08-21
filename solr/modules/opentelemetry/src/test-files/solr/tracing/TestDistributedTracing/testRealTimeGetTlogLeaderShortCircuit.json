@@ -1,0 +1,19 @@
+{
+  "phases": [
+    {
+      "description": "phase 0",
+      "spans": [
+        {
+          "name": "get:/{collection}/get",
+          "kind": "SERVER",
+          "db.instance": "tlogCollection",
+          "db.type": "solr",
+          "http.request.method": "GET",
+          "http.response.status_code": 200,
+          "http.url": "http://NORMALIZED/solr/tlogCollection/get",
+          "http.params": "ids=1&wt=javabin"
+        }
+      ]
+    }
+  ]
+}
