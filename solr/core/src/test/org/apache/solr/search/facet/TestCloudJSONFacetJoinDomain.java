@@ -31,6 +31,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -123,7 +124,10 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners())
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
+      CLIENTS.add(
+          new HttpJettySolrClient.Builder(jetty.getBaseUrl().toString())
+              .withDefaultCollection(COLLECTION_NAME)
+              .build());
 
     final int numDocs = atLeast(100);
     for (int id = 0; id < numDocs; id++) {

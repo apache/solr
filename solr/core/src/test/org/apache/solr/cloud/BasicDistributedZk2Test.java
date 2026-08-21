@@ -26,6 +26,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -221,7 +222,10 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
     SolrQuery query = new SolrQuery("*:*");
 
-    try (SolrClient client = getHttpSolrClient(baseUrl, "onenodecollection")) {
+    try (SolrClient client =
+        new HttpJettySolrClient.Builder(baseUrl)
+            .withDefaultCollection("onenodecollection")
+            .build()) {
       // add a doc
       client.add(sdoc("id", docs));
       client.commit();
@@ -442,7 +446,9 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
     // try a backup command
     try (final SolrClient client =
-        getHttpSolrClient((String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))) {
+        new HttpJettySolrClient.Builder(
+                (String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))
+            .build()) {
       final String backupName = "the_backup";
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("command", "backup");

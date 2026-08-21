@@ -34,6 +34,7 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -107,7 +108,10 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         maxOnReplica);
 
     // send the same doc but with a lower version than the max in the index
-    try (SolrClient client = getHttpSolrClient(replica)) {
+    try (SolrClient client =
+        new HttpJettySolrClient.Builder(replica.getBaseUrl())
+            .withDefaultCollection(replica.getCoreName())
+            .build()) {
       String docId = String.valueOf(1);
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField("id", docId);
@@ -298,7 +302,10 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     query.addSort(new SolrQuery.SortClause("_version_", SolrQuery.ORDER.desc));
     query.setParam("distrib", false);
 
-    try (SolrClient client = getHttpSolrClient(replica)) {
+    try (SolrClient client =
+        new HttpJettySolrClient.Builder(replica.getBaseUrl())
+            .withDefaultCollection(replica.getCoreName())
+            .build()) {
       QueryResponse qr = client.query(query);
       SolrDocumentList hits = qr.getResults();
       if (hits.isEmpty()) fail("No results returned from query: " + query);
@@ -320,9 +327,16 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       int lastDocId,
       Set<Integer> deletedDocs)
       throws Exception {
-    SolrClient leaderSolr = getHttpSolrClient(leader);
+    SolrClient leaderSolr =
+        new HttpJettySolrClient.Builder(leader.getBaseUrl())
+            .withDefaultCollection(leader.getCoreName())
+            .build();
     List<SolrClient> replicas = new ArrayList<SolrClient>(notLeaders.size());
-    for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r));
+    for (Replica r : notLeaders)
+      replicas.add(
+          new HttpJettySolrClient.Builder(r.getBaseUrl())
+              .withDefaultCollection(r.getCoreName())
+              .build());
 
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {
@@ -376,7 +390,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
     String coreName = replica.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = getHttpSolrClient(replica.getBaseUrl())) {
+    try (SolrClient client = new HttpJettySolrClient.Builder(replica.getBaseUrl()).build()) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

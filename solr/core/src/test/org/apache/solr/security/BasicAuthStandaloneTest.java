@@ -27,6 +27,7 @@ import java.util.Base64;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -75,7 +76,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 20);
 

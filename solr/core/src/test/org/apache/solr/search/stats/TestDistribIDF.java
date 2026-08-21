@@ -22,6 +22,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -108,9 +109,10 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
 
     // Test against all nodes
     for (JettySolrRunner jettySolrRunner : solrCluster.getJettySolrRunners()) {
-      try (SolrClient solrClient = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
+      try (SolrClient solrClient =
+          new HttpJettySolrClient.Builder(jettySolrRunner.getBaseUrl().toString()).build()) {
         try (SolrClient solrClient_local =
-            getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
+            new HttpJettySolrClient.Builder(jettySolrRunner.getBaseUrl().toString()).build()) {
 
           SolrQuery query = new SolrQuery("cat:football");
           query.setFields("*,score");
@@ -160,10 +162,11 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     // Test against all nodes
     for (JettySolrRunner jettySolrRunner : solrCluster.getJettySolrRunners()) {
 
-      try (SolrClient solrClient = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
+      try (SolrClient solrClient =
+          new HttpJettySolrClient.Builder(jettySolrRunner.getBaseUrl().toString()).build()) {
 
         try (SolrClient solrClient_local =
-            getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
+            new HttpJettySolrClient.Builder(jettySolrRunner.getBaseUrl().toString()).build()) {
           SolrQuery query = new SolrQuery("cat:football");
           query.setFields("*,score").add("collection", "collection1,collection2");
           QueryResponse queryResponse = solrClient.query("collection1", query);

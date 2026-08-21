@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
@@ -123,7 +124,8 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
               reader, "solr_zk_ops", baseLabels.merge(Labels.of("ops", type))));
     }
 
-    try (SolrClient solrClient = j.newClient()) {
+    try (SolrClient solrClient =
+        new HttpJettySolrClient.Builder(j.getBaseUrl().toString()).build()) {
       assertNotNull(solrClient);
       HttpClient httpClient = j.getSolrClient().getHttpClient();
       var initialChildFetches =

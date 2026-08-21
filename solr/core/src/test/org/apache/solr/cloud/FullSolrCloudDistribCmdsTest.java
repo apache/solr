@@ -31,6 +31,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.ConcurrentUpdateJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -170,8 +171,14 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 2, 2));
 
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
-    try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader());
-        SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader())) {
+    try (SolrClient shard1 =
+            new HttpJettySolrClient.Builder(docCol.getSlice("shard1").getLeader().getBaseUrl())
+                .withDefaultCollection(docCol.getSlice("shard1").getLeader().getCoreName())
+                .build();
+        SolrClient shard2 =
+            new HttpJettySolrClient.Builder(docCol.getSlice("shard2").getLeader().getBaseUrl())
+                .withDefaultCollection(docCol.getSlice("shard2").getLeader().getCoreName())
+                .build()) {
 
       // Add three documents to shard1
       shard1.add(sdoc("id", "1", "title", "s1 one"));
@@ -325,8 +332,14 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 2, 2));
 
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
-    try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader());
-        SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader())) {
+    try (SolrClient shard1 =
+            new HttpJettySolrClient.Builder(docCol.getSlice("shard1").getLeader().getBaseUrl())
+                .withDefaultCollection(docCol.getSlice("shard1").getLeader().getCoreName())
+                .build();
+        SolrClient shard2 =
+            new HttpJettySolrClient.Builder(docCol.getSlice("shard2").getLeader().getBaseUrl())
+                .withDefaultCollection(docCol.getSlice("shard2").getLeader().getCoreName())
+                .build()) {
 
       // Add six documents w/diff routes (all sent to shard1 leader's core)
       shard1.add(sdoc("id", "1", "routefield_s", "europe"));
@@ -488,7 +501,10 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         }
 
         // create client to send our updates to...
-        try (SolrClient indexClient = getHttpSolrClient(indexingBaseUrl, collectionName)) {
+        try (SolrClient indexClient =
+            new HttpJettySolrClient.Builder(indexingBaseUrl)
+                .withDefaultCollection(collectionName)
+                .build()) {
 
           // Sanity check: we should be able to send a bunch of updates that work right now...
           for (int i = 0; i < 100; i++) {
@@ -862,11 +878,17 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       final Slice slice = entry.getValue();
       log.info("Checking: {} -> {}", shardName, slice);
       final Replica leader = entry.getValue().getLeader();
-      try (SolrClient leaderClient = getHttpSolrClient(leader)) {
+      try (SolrClient leaderClient =
+          new HttpJettySolrClient.Builder(leader.getBaseUrl())
+              .withDefaultCollection(leader.getCoreName())
+              .build()) {
         final SolrDocumentList leaderResults = leaderClient.query(perReplicaParams).getResults();
         log.debug("Shard {}: Leader results: {}", shardName, leaderResults);
         for (Replica replica : slice) {
-          try (SolrClient replicaClient = getHttpSolrClient(replica)) {
+          try (SolrClient replicaClient =
+              new HttpJettySolrClient.Builder(replica.getBaseUrl())
+                  .withDefaultCollection(replica.getCoreName())
+                  .build()) {
             final SolrDocumentList replicaResults =
                 replicaClient.query(perReplicaParams).getResults();
             if (log.isDebugEnabled()) {

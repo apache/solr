@@ -31,6 +31,7 @@ import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -268,7 +269,10 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
   protected void sendNonDirectUpdateRequestReplica(
       Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
-    try (SolrClient solrServer = getHttpSolrClient(replica.getBaseUrl(), collection)) {
+    try (SolrClient solrServer =
+        new HttpJettySolrClient.Builder(replica.getBaseUrl())
+            .withDefaultCollection(collection)
+            .build()) {
       NamedList<?> resp = solrServer.request(up);
       NamedList<?> hdr = (NamedList<?>) resp.get("responseHeader");
       Integer batchRf = (Integer) hdr.get(UpdateRequest.REPFACT);

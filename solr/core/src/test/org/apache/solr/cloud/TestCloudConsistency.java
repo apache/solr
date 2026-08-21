@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -351,6 +352,8 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   }
 
   protected SolrClient getHttpSolrClient(Replica replica, String coll) {
-    return getHttpSolrClient(replica.getBaseUrl(), coll);
+    return new HttpJettySolrClient.Builder(replica.getBaseUrl())
+        .withDefaultCollection(coll)
+        .build();
   }
 }

@@ -27,6 +27,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudInspectUtil;
@@ -114,10 +115,16 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
       final String shardName = entry.getKey();
       final Slice slice = entry.getValue();
       final Replica leader = entry.getValue().getLeader();
-      try (SolrClient leaderClient = getHttpSolrClient(leader)) {
+      try (SolrClient leaderClient =
+          new HttpJettySolrClient.Builder(leader.getBaseUrl())
+              .withDefaultCollection(leader.getCoreName())
+              .build()) {
         final SolrDocumentList leaderResults = leaderClient.query(params).getResults();
         for (Replica replica : slice) {
-          try (SolrClient replicaClient = getHttpSolrClient(replica)) {
+          try (SolrClient replicaClient =
+              new HttpJettySolrClient.Builder(replica.getBaseUrl())
+                  .withDefaultCollection(replica.getCoreName())
+                  .build()) {
             final SolrDocumentList replicaResults = replicaClient.query(params).getResults();
             assertEquals(
                 "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),

@@ -89,7 +89,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -2555,38 +2554,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       this.shardLeadersOnly = random().nextBoolean();
       this.parallelUpdates = random().nextBoolean();
     }
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.jetty.HttpJettySolrClient.Builder} class
-   * directly
-   *
-   * @param url the base URL for a Solr node. Should not contain a core or collection name.
-   */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
-  public static HttpJettySolrClient getHttpSolrClient(String url) {
-    return new HttpJettySolrClient.Builder(url).build();
-  }
-
-  /** Create a basic HttpSolrClient pointed at the specified replica */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
-  public static HttpJettySolrClient getHttpSolrClient(Replica replica) {
-    return getHttpSolrClient(replica.getBaseUrl(), replica.getCoreName());
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.jetty.HttpJettySolrClient.Builder} class
-   * directly
-   *
-   * @param url the base URL of a Solr node. Should <em>not</em> include a collection or core name.
-   * @param defaultCoreName the name of a core that the created client should default to when making
-   *     core-aware requests
-   */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
-  public static HttpJettySolrClient getHttpSolrClient(String url, String defaultCoreName) {
-    return new HttpJettySolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
   }
 
   /**

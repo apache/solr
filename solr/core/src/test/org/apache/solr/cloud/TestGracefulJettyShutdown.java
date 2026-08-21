@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -86,7 +87,8 @@ public class TestGracefulJettyShutdown extends SolrTestCaseJ4 {
 
       final List<Future<QueryResponse>> results = new ArrayList<>(13);
 
-      try (SolrClient jettyClient = nodeToStop.newClient()) {
+      try (SolrClient jettyClient =
+          new HttpJettySolrClient.Builder(nodeToStop.getBaseUrl().toString()).build()) {
         final QueryRequest req = new QueryRequest(handler, params("q", "foo_s:aaa"));
 
         // check inflight requests using both clients...

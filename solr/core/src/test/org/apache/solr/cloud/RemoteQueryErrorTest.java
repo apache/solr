@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import static org.hamcrest.core.StringContains.containsString;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -43,7 +44,8 @@ public class RemoteQueryErrorTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      try (SolrClient client = jetty.newClient()) {
+      try (SolrClient client =
+          new HttpJettySolrClient.Builder(jetty.getBaseUrl().toString()).build()) {
         SolrException e =
             expectThrows(
                 SolrException.class,

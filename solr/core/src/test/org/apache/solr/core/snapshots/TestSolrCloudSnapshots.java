@@ -29,6 +29,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.ListSnapshots;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -157,7 +158,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         assertTrue(snapshotByCoreName.containsKey(coreName));
         CoreSnapshotMetaData coreSnapshot = snapshotByCoreName.get(coreName);
 
-        try (SolrClient adminClient = getHttpSolrClient(replicaBaseUrl)) {
+        try (SolrClient adminClient = new HttpJettySolrClient.Builder(replicaBaseUrl).build()) {
           Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);
           Optional<SnapshotMetaData> metaData =
               snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();
@@ -276,7 +277,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         String replicaBaseUrl = replica.getBaseUrl();
         String coreName = replica.getCoreName();
 
-        try (SolrClient adminClient = getHttpSolrClient(replicaBaseUrl)) {
+        try (SolrClient adminClient = new HttpJettySolrClient.Builder(replicaBaseUrl).build()) {
           Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);
           Optional<SnapshotMetaData> metaData =
               snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();

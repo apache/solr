@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.junit.Test;
@@ -55,7 +56,8 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
     try {
       runner.start();
 
-      try (SolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
+      try (SolrClient client =
+          new HttpJettySolrClient.Builder(runner.getBaseUrl().toString()).build()) {
         CoreAdminRequest.Create createReq = new CoreAdminRequest.Create();
         createReq.setCoreName("newcore");
         createReq.setConfigSet("minimal");

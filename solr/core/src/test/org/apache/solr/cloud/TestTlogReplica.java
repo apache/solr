@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -254,14 +255,20 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
 
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
+    try (SolrClient leaderClient =
+        new HttpJettySolrClient.Builder(s.getLeader().getBaseUrl())
+            .withDefaultCollection(s.getLeader().getCoreName())
+            .build()) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r : s.getReplicas(EnumSet.of(Replica.Type.TLOG))) {
       // TODO: assert replication < REPLICATION_TIMEOUT_SECS
-      try (SolrClient tlogReplicaClient = getHttpSolrClient(r)) {
+      try (SolrClient tlogReplicaClient =
+          new HttpJettySolrClient.Builder(r.getBaseUrl())
+              .withDefaultCollection(r.getCoreName())
+              .build()) {
         while (true) {
           try {
             assertEquals(
@@ -440,7 +447,10 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
+    try (SolrClient leaderClient =
+        new HttpJettySolrClient.Builder(s.getLeader().getBaseUrl())
+            .withDefaultCollection(s.getLeader().getCoreName())
+            .build()) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
@@ -891,7 +901,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     updates.add(simulatedDBQ("inplace_updatable_int:5", 3L));
     updates.add(simulatedUpdateRequest(1L, "id", 1, "inplace_updatable_int", 6, "_version_", 2L));
     for (JettySolrRunner solrRunner : getSolrRunner(false)) {
-      try (SolrClient client = solrRunner.newClient()) {
+      try (SolrClient client =
+          new HttpJettySolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
         for (UpdateRequest up : updates) {
           up.process(client, collectionName);
         }
@@ -995,7 +1006,10 @@ public class TestTlogReplica extends SolrCloudTestCase {
       if (!r.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
         continue;
       }
-      try (SolrClient replicaClient = getHttpSolrClient(r)) {
+      try (SolrClient replicaClient =
+          new HttpJettySolrClient.Builder(r.getBaseUrl())
+              .withDefaultCollection(r.getCoreName())
+              .build()) {
         while (true) {
           try {
             assertEquals(
@@ -1130,7 +1144,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private void checkRTG(int from, int to, List<JettySolrRunner> solrRunners) throws Exception {
     for (JettySolrRunner solrRunner : solrRunners) {
-      try (SolrClient client = solrRunner.newClient()) {
+      try (SolrClient client =
+          new HttpJettySolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
         for (int i = from; i <= to; i++) {
           SolrQuery query = new SolrQuery();
           query.set("distrib", false);

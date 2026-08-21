@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -124,7 +125,8 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         ((Map<?, ?>) response.get("responseHeader")).get("status"));
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     try (SolrClient coreClient =
-        getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(nodeToBeDecommissioned))) {
+        new HttpJettySolrClient.Builder(zkStateReader.getBaseUrlForNodeName(nodeToBeDecommissioned))
+            .build()) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
       assertEquals(
           "There should not be any cores left on decommissioned node",
@@ -151,7 +153,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         ((Map<?, ?>) response.get("responseHeader")).get("status"));
 
     try (SolrClient coreClient =
-        getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(emptyNode))) {
+        new HttpJettySolrClient.Builder(zkStateReader.getBaseUrlForNodeName(emptyNode)).build()) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
       assertEquals(
           "Expecting no cores but found some: " + status.getCoreStatus(),

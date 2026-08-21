@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -555,7 +556,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
       for (Slice shard : collectionState) {
         for (Replica replica : shard) {
           CoreStatusResponse.SingleCoreData coreStatus;
-          try (SolrClient server = getHttpSolrClient(replica.getBaseUrl())) {
+          try (SolrClient server = new HttpJettySolrClient.Builder(replica.getBaseUrl()).build()) {
             coreStatus = CoreAdminRequest.getCoreStatus(replica.getCoreName(), false, server);
           }
           long before = coreStatus.startTime.getTime();
@@ -635,7 +636,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     assertNotNull(newReplica);
     cluster.waitForActiveCollection(collectionName, 2, 6);
 
-    try (SolrClient coreclient = getHttpSolrClient(newReplica.getBaseUrl())) {
+    try (SolrClient coreclient = new HttpJettySolrClient.Builder(newReplica.getBaseUrl()).build()) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
       final var coreStatus = status.getCoreStatus(newReplica.getStr("core"));
       String instanceDirStr = coreStatus.instanceDir;

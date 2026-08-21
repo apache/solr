@@ -51,6 +51,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -455,7 +456,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected HttpSolrClient createNewSolrClient(int port) {
-    return getHttpSolrClient(buildUrl(port), DEFAULT_TEST_CORENAME);
+    return new HttpJettySolrClient.Builder(buildUrl(port))
+        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+        .build();
   }
 
   protected static void addFields(SolrInputDocument doc, Object... fields) {

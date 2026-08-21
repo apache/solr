@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -93,7 +94,10 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       ureq.commit(solrClient, collectionName);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
+      try (SolrClient leaderClient =
+          new HttpJettySolrClient.Builder(s.getLeader().getBaseUrl())
+              .withDefaultCollection(s.getLeader().getCoreName())
+              .build()) {
         assertEquals(
             numDocs,
             queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());

@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -134,7 +135,10 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     DocCollection state = getCollectionState(targetCollection);
     Replica replica = state.getReplicas().get(0);
-    try (SolrClient collectionClient = getHttpSolrClient(replica)) {
+    try (SolrClient collectionClient =
+        new HttpJettySolrClient.Builder(replica.getBaseUrl())
+            .withDefaultCollection(replica.getCoreName())
+            .build()) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");
       assertEquals(

@@ -690,7 +690,7 @@ public class JettySolrRunner implements SolrBackend {
     if (getCoreContainer() != null) {
       final var coreStatusReq = new CoresApi.GetAllCoreStatus();
       coreStatusReq.setIndexInfo(true);
-      try (final var client = newClient()) {
+      try (final var client = new HttpJettySolrClient.Builder(getBaseUrl().toString()).build()) {
         final var coreStatusRsp = coreStatusReq.process(client);
         Utils.writeJson(coreStatusRsp, pw, true);
       } catch (SolrServerException | IOException e) {
@@ -783,11 +783,6 @@ public class JettySolrRunner implements SolrBackend {
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  @Deprecated
-  public HttpJettySolrClient newClient() {
-    return new HttpJettySolrClient.Builder(getBaseUrl().toString()).build();
   }
 
   public HttpJettySolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
