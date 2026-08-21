@@ -91,6 +91,7 @@ configure(allprojects
             return true
           }
         }
+        pinCopyToSource(externalLibs, configurations.runtimeLibs)
         return externalLibs - configurations.solrPlatformLibs
       }, {
         into "lib"
@@ -117,6 +118,7 @@ configure(allprojects
         def testRuntimeLibs = configurations.testRuntimeClasspath.copyRecursive {dep ->
           !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
         }
+        pinCopyToSource(testRuntimeLibs, configurations.testRuntimeClasspath)
 
         return testRuntimeLibs - configurations.runtimeLibs
       })
