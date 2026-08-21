@@ -1,0 +1,10 @@
+title: >
+  Removed the deprecated `DocsStreamer.convertLuceneDocToSolrDoc(Document, IndexSchema)` 2-arg
+  overload. Use the 3-arg `convertLuceneDocToSolrDoc(Document, IndexSchema, ReturnFields)` version
+  instead, which is also more efficient.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18356
+    url: https://issues.apache.org/jira/browse/SOLR-18356
