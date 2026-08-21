@@ -12,6 +12,10 @@ on:
       - 'solr/api/**'
       # the v2 API implementations backing the UI screens
       - 'solr/core/src/java/org/apache/solr/handler/admin/api/**'
+      # the embedded-Jetty harness and test-group annotation this suite runs on
+      - 'solr/test-framework/src/java/org/apache/solr/embedded/**'
+      - 'solr/test-framework/src/java/org/apache/solr/util/SeleniumTest.java'
+      - 'gradle/testing/randomization.gradle'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
