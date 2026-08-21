@@ -49,6 +49,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SeleniumTest;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -80,12 +81,12 @@ import org.slf4j.LoggerFactory;
  * static files (see {@code JettyConfig.Builder#enableAdminUi(boolean)}), then drives the UI with a
  * headless Chrome via Selenium WebDriver.
  *
- * <p>The tests require a locally installed Chrome/Chromium browser. Discovery order: the {@code
- * tests.ui.chrome.binary} system property, the {@code CHROME_BIN} environment variable, then a list
- * of well-known install locations. When no browser is found, all tests in the class are skipped via
- * {@link Assume}. The matching chromedriver is provisioned by Selenium Manager, which may download
- * it on first use (cached under {@code ~/.cache/selenium}); if that fails (e.g. offline), tests are
- * likewise skipped.
+ * <p>The tests are opt-in via {@code -Ptests.selenium=true} (see {@link SeleniumTest}) and require
+ * a locally installed Chrome/Chromium browser. Discovery order: the {@code tests.ui.chrome.binary}
+ * system property, the {@code CHROME_BIN} environment variable, then a list of well-known install
+ * locations. Since the tests only run when explicitly enabled, a missing browser is a test failure,
+ * not a skip. The matching chromedriver is provisioned by Selenium Manager, which may download it
+ * on first use (cached under {@code ~/.cache/selenium}).
  */
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "Admin UI browser tests drive plain http")
 @ThreadLeakFilters(
@@ -96,6 +97,7 @@ import org.slf4j.LoggerFactory;
       AdminUiTestBase.WebDriverThreadsFilter.class
     })
 @ThreadLeakLingering(linger = 5000)
+@SeleniumTest
 public abstract class AdminUiTestBase extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -186,9 +188,11 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   @SuppressForbidden(reason = "Selenium's logging preferences API uses java.util.logging levels")
   public static void startClusterAndBrowser() throws Exception {
     Path chrome = findChromeBinary();
-    Assume.assumeTrue(
-        "No Chrome/Chromium binary found (set -Dtests.ui.chrome.binary=...), skipping UI tests",
-        chrome != null);
+    if (chrome == null) {
+      fail(
+          "Selenium tests are enabled (-Ptests.selenium=true) but no Chrome/Chromium binary was"
+              + " found; install one or point -Dtests.ui.chrome.binary at it");
+    }
     Assume.assumeTrue(
         "No generated js-client bundle available (js-client build disabled?), skipping UI tests",
         jsClientBundlePath() != null);
@@ -213,8 +217,10 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     try {
       driver = new ChromeDriver(options);
     } catch (WebDriverException e) {
-      Assume.assumeNoException(
-          "Could not start ChromeDriver (chromedriver missing and not downloadable?)", e);
+      throw new AssertionError(
+          "Selenium tests are enabled (-Ptests.selenium=true) but ChromeDriver could not start"
+              + " (chromedriver missing and not downloadable?)",
+          e);
     }
     driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
   }

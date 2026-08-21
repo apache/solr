@@ -11,9 +11,13 @@ deliberately does not do.
   `AdminUiTestBase`, which starts a 2-node `MiniSolrCloudCluster` whose Jetty
   nodes also serve the Admin UI (opt-in `JettyConfig.Builder#enableAdminUi`),
   then starts a headless Chrome via Selenium WebDriver.
-- A locally installed Chrome/Chromium is required; without one, tests skip via
-  `Assume`. Override discovery with `-Dtests.ui.chrome.binary=/path/to/chrome`.
-  The matching chromedriver is provisioned (and cached) by Selenium Manager.
+- The tests are opt-in: the suites carry the `@SeleniumTest` test group
+  annotation (disabled by default), enabled with `-Ptests.selenium=true`.
+- A locally installed Chrome/Chromium is required; since the tests only run
+  when explicitly enabled, a missing browser fails the tests rather than
+  skipping them. Override discovery with
+  `-Dtests.ui.chrome.binary=/path/to/chrome`. The matching chromedriver is
+  provisioned (and cached) by Selenium Manager.
 - Display assertions compare UI text against live JSON from the same node's
   admin APIs — never hardcoded values.
 - Tests are grouped per screen/feature, so each screen's display and write
@@ -24,7 +28,7 @@ deliberately does not do.
   offers query/replication etc. directly).
 - On failure, a screenshot, the page source and the browser console log are
   saved into the test temp dir.
-- Run with: `./gradlew :solr:webapp:test`
+- Run with: `./gradlew :solr:webapp:test -Ptests.selenium=true`
 
 ## Deliberately skipped (effort vs value)
 
@@ -54,6 +58,6 @@ deliberately does not do.
 - The Schema Designer's backend transiently fails its own prep/analyze calls
   with "version mismatch, retry" and recovers via its retry dialog; its API
   errors are excluded from the console-error assertion.
-- ASF Jenkins has no Chrome, so these tests skip there; they run on developer
-  machines and could run in a GitHub Actions workflow (Chrome preinstalled on
-  `ubuntu-latest`) as a follow-up.
+- ASF Jenkins has no Chrome and does not pass `-Ptests.selenium=true`, so
+  these tests do not run there; they run on developer machines and in CI
+  environments with Chrome available (e.g. GitHub Actions `ubuntu-latest`).
