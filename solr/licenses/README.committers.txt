@@ -29,7 +29,7 @@ what changed with respect to licensing in the commit diff.
 
 LICENSE/NOTICE files are only required for jars that ship in the binary
 distribution (runtime dependencies of the server, modules and
-cross-dc-manager). Checksum (.sha1) files are required for all dependencies,
+cross-dc-manager, plus the server's start.jar). Checksum (.sha1) files are required for all dependencies,
 including test-only ones. Unreferenced files in this directory fail the
 "gradlew licenses" check and must be deleted.
 
