@@ -415,13 +415,16 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           BooleanClause.Occur.MUST_NOT);
       this.realMLTQuery = realMLTQuery.build();
 
-      DocListAndSet results = new DocListAndSet();
-      if (this.needDocSet) {
-        results = searcher.getDocListAndSet(this.realMLTQuery, filters, null, start, rows, flags);
-      } else {
-        results.docList = searcher.getDocList(this.realMLTQuery, filters, null, start, rows, flags);
-      }
-      return results;
+      // setNeedDocSet must follow setFlags: it sets or clears GET_DOCSET within the flags
+      QueryCommand qc =
+          new QueryCommand()
+              .setQuery(this.realMLTQuery)
+              .setFilterList(filters)
+              .setOffset(start)
+              .setLen(rows)
+              .setFlags(flags)
+              .setNeedDocSet(this.needDocSet);
+      return qc.search(searcher).getDocListAndSet();
     }
 
     /** Sets {@link #boostedMLTQuery} and returns it */
@@ -455,13 +458,16 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         rawMLTQuery = mlt.like(multifieldDoc);
       }
       boostedMLTQuery = getBoostedQuery(rawMLTQuery);
-      DocListAndSet results = new DocListAndSet();
-      if (this.needDocSet) {
-        results = searcher.getDocListAndSet(boostedMLTQuery, filters, null, start, rows, flags);
-      } else {
-        results.docList = searcher.getDocList(boostedMLTQuery, filters, null, start, rows, flags);
-      }
-      return results;
+      // setNeedDocSet must follow setFlags: it sets or clears GET_DOCSET within the flags
+      QueryCommand qc =
+          new QueryCommand()
+              .setQuery(boostedMLTQuery)
+              .setFilterList(filters)
+              .setOffset(start)
+              .setLen(rows)
+              .setFlags(flags)
+              .setNeedDocSet(this.needDocSet);
+      return qc.search(searcher).getDocListAndSet();
     }
 
     /**

@@ -3056,18 +3056,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /**
-   * Gets a response writer suitable for node/container-level requests.
-   *
-   * @param writerName the writer name, or null for default
-   * @return the response writer, never null
-   * @deprecated Use {@link ResponseWritersRegistry#getWriter(String)} instead.
-   */
-  @Deprecated
-  public static QueryResponseWriter getAdminResponseWriter(String writerName) {
-    return ResponseWritersRegistry.getWriter(writerName);
-  }
-
-  /**
    * Initializes query response writers. Response writers from {@code ImplicitPlugins.json} may also
    * be configured.
    */
