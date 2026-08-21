@@ -38,10 +38,10 @@ deliberately does not do.
 ## Known limitations
 
 - The generated js-client bundle (`libs/solr/index.js`) only exists inside the
-  built WAR, not in the source tree tests serve from. `AdminUiTestBase` serves
-  a minimal stub defining the `solrApi` global (only `reloadCollection` is used
-  by the AngularJS UI); a future improvement could serve the real bundle when
-  it has been built.
+  built WAR, not in the source tree tests serve from, so the build hands its
+  location to the test JVM in `tests.ui.jsclient.bundle`. With the js-client
+  build turned off (`-PdisableJsClient=true`) a stub of the one API the
+  AngularJS UI calls is served instead.
 - Every test cluster in the JVM registers a log-watcher appender under the same
   name in the shared log4j config, so a later cluster's watcher can be blind;
   the events-viewer test detects this via the API and skips itself.

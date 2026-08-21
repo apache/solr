@@ -87,6 +87,16 @@ tasks.withType(Test).configureEach {
   if (chromeBinary != null) {
     systemProperty 'tests.ui.chrome.binary', chromeBinary
   }
+
+  // let the Admin UI tests serve the real generated js-client bundle; without it (the
+  // js-client build can be turned off) they fall back to a stub of the API the UI uses
+  if (gradle.ext.withJsClient) {
+    def jsClientBundle = configurations.generatedJSClientBundle
+    inputs.files(jsClientBundle).withPropertyName('jsClientBundle')
+    doFirst {
+      systemProperty 'tests.ui.jsclient.bundle', new File(jsClientBundle.singleFile, 'index.js')
+    }
+  }
 }
 
 war {

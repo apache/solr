@@ -127,32 +127,53 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   protected static JettySolrRunner standaloneJetty;
 
   /**
-   * Serves a minimal stand-in for the generated js-client bundle ({@code libs/solr/index.js}),
-   * which only exists inside the built webapp, not in the source tree tests serve from. The
-   * AngularJS {@code CollectionsV2} service fails to instantiate without the {@code solrApi}
-   * global, taking the whole Collections screen down with it. Only the small API surface the
-   * AngularJS UI actually uses is stubbed.
+   * Serves the js-client bundle the AngularJS UI expects at {@code libs/solr/index.js}: its {@code
+   * CollectionsV2} service fails to instantiate without the {@code solrApi} global, taking the
+   * whole Collections screen down with it. The real bundle is built by {@code
+   * :solr:webapp:js-client} and its location handed to the test JVM in {@code
+   * tests.ui.jsclient.bundle}; when that build is disabled ({@code -PdisableJsClient=true}) the
+   * stub below is served instead, covering the only call the AngularJS UI makes.
    */
-  public static class StubJsClientServlet extends HttpServlet {
+  public static class JsClientServlet extends HttpServlet {
+
+    private static final String STUB =
+        """
+        var solrApi = {
+          ApiClient: { instance: { basePath: '/api', defaultHeaders: {} } },
+          CollectionsApi: function() {
+            this.reloadCollection = function(name, callback) {
+              var xhr = new XMLHttpRequest();
+              xhr.open('POST', '/api/collections/' + name + '/reload');
+              xhr.setRequestHeader('Content-Type', 'application/json');
+              xhr.onload = function() { callback(null, null, {status: xhr.status}); };
+              xhr.onerror = function() { callback(new Error('reload failed'), null, {status: xhr.status}); };
+              xhr.send('{}');
+            };
+          }
+        };
+        """;
+
+    private static volatile byte[] bundle;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
       resp.setContentType("text/javascript");
-      resp.getOutputStream()
-          .write(
-              ("var solrApi = {\n"
-                      + "  ApiClient: { instance: { basePath: '/api', defaultHeaders: {} } },\n"
-                      + "  CollectionsApi: function() {\n"
-                      + "    this.reloadCollection = function(name, callback) {\n"
-                      + "      var xhr = new XMLHttpRequest();\n"
-                      + "      xhr.open('POST', '/api/collections/' + name + '/reload');\n"
-                      + "      xhr.setRequestHeader('Content-Type', 'application/json');\n"
-                      + "      xhr.onload = function() { callback(null, null, {status: xhr.status}); };\n"
-                      + "      xhr.onerror = function() { callback(new Error('reload failed'), null, {status: xhr.status}); };\n"
-                      + "      xhr.send('{}');\n"
-                      + "    };\n"
-                      + "  }\n"
-                      + "};\n")
-                  .getBytes(StandardCharsets.UTF_8));
+      resp.getOutputStream().write(bundle());
+    }
+
+    private static byte[] bundle() throws IOException {
+      byte[] cached = bundle;
+      if (cached == null) {
+        String path = EnvUtils.getProperty("tests.ui.jsclient.bundle");
+        if (path != null && Files.isReadable(Path.of(path))) {
+          cached = Files.readAllBytes(Path.of(path));
+        } else {
+          log.info("Generated js-client bundle unavailable, serving the stub instead");
+          cached = STUB.getBytes(StandardCharsets.UTF_8);
+        }
+        bundle = cached;
+      }
+      return cached;
     }
   }
 
@@ -227,12 +248,12 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
   }
 
-  /** Configures a Jetty node to serve the Admin UI plus the js-client stub. */
+  /** Configures a Jetty node to serve the Admin UI plus the js-client bundle. */
   protected static void configureJettyForUi(JettyConfig.Builder jetty) {
     jetty
         .enableAdminUi(true)
         // exact-path mapping takes precedence over the static /libs/* servlet
-        .withServlet(new ServletHolder(new StubJsClientServlet()), "/libs/solr/index.js");
+        .withServlet(new ServletHolder(new JsClientServlet()), "/libs/solr/index.js");
   }
 
   @AfterClass
