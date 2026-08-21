@@ -52,7 +52,6 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SeleniumTest;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -193,9 +192,11 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
           "Selenium tests are enabled (-Ptests.selenium=true) but no Chrome/Chromium binary was"
               + " found; install one or point -Dtests.ui.chrome.binary at it");
     }
-    Assume.assumeTrue(
-        "No generated js-client bundle available (js-client build disabled?), skipping UI tests",
-        jsClientBundlePath() != null);
+    if (jsClientBundlePath() == null) {
+      fail(
+          "No generated js-client bundle available; the build should have set"
+              + " tests.ui.jsclient.bundle (is -PdisableJsClient=true set?)");
+    }
 
     // metrics are off by default in test clusters, but UI screens (e.g. Plugins) need them;
     // restored after the class by SolrTestCase's SystemPropertiesRestoreRule

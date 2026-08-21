@@ -88,14 +88,24 @@ tasks.withType(Test).configureEach {
     systemProperty 'tests.ui.chrome.binary', chromeBinary
   }
 
-  // the Admin UI tests serve the generated js-client bundle the UI needs; when the
-  // js-client build is turned off it is unavailable and the tests skip themselves
+  // the Admin UI tests exercise the generated js-client bundle; a stub would only grow
+  // stale as the UI adopts more of the v2 API, so without the bundle the tests cannot
+  // run at all: skipped with a warning by default, an error when explicitly requested
   if (gradle.ext.withJsClient) {
     def jsClientBundle = configurations.generatedJSClientBundle
     inputs.files(jsClientBundle).withPropertyName('jsClientBundle')
     doFirst {
       systemProperty 'tests.ui.jsclient.bundle', new File(jsClientBundle.singleFile, 'index.js')
     }
+  } else if (Boolean.parseBoolean(Objects.toString(propertyOrDefault('tests.selenium', 'false')))) {
+    doFirst {
+      throw new GradleException('Cannot run the Admin UI tests (-Ptests.selenium=true): ' +
+          '-PdisableJsClient=true excludes the js-client bundle they need. Drop one of the two flags.')
+    }
+  } else {
+    enabled = false
+    logger.warn('NOTE: :solr:webapp tests are disabled because -PdisableJsClient=true ' +
+        'excludes the js-client bundle the Admin UI tests need.')
   }
 }
 
