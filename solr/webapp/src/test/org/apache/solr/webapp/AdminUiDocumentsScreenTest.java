@@ -54,7 +54,7 @@ public class AdminUiDocumentsScreenTest extends AdminUiTestBase {
     WebElement docInput = waitFor(By.id("document"));
     docInput.clear();
     docInput.sendKeys("{\"id\":\"ui-doc-1\",\"title_txt\":\"indexed from the admin ui\"}");
-    waitFor(By.id("submit")).click();
+    click(By.id("submit"));
     waitForTextContains(By.cssSelector("#documents #result"), "success");
 
     // the document becomes searchable (the form defaults to commitWithin=1000)

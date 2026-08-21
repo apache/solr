@@ -46,7 +46,7 @@ public class AdminUiStreamScreenTest extends AdminUiTestBase {
     WebElement expr = waitFor(By.id("expr"));
     expr.clear();
     expr.sendKeys("search(" + COLLECTION + ",q=\"*:*\",fl=\"id\",sort=\"id asc\")");
-    waitFor(By.cssSelector("#stream button[type=submit]")).click();
+    click(By.cssSelector("#stream button[type=submit]"));
     String response = waitForTextContains(By.cssSelector("#stream #result"), "stream-doc-1");
     assertTrue("All docs should stream: " + response, response.contains("stream-doc-3"));
     assertNoSevereConsoleErrors();

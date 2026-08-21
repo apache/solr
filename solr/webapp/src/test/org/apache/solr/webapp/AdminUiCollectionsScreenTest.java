@@ -52,7 +52,7 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
     openPage("~collections", By.id("collections"));
 
     // create through the Add Collection dialog
-    waitFor(By.cssSelector("#navigation button#add")).click();
+    click(By.cssSelector("#navigation button#add"));
     WebElement nameInput = waitFor(By.id("add_name"));
     nameInput.clear();
     nameInput.sendKeys(name);
@@ -63,7 +63,7 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
     WebElement replicationFactor = waitFor(By.id("add_replicationFactor"));
     replicationFactor.clear();
     replicationFactor.sendKeys("1");
-    waitFor(By.xpath("//button[@ng-click='addCollection()']")).click();
+    click(By.xpath("//button[@ng-click='addCollection()']"));
 
     // the new collection shows up in the list, and the API confirms it
     waitForPageContains(name);
@@ -71,11 +71,11 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
 
     // delete it through the delete dialog, which requires typing the name to confirm
     openPage("~collections/" + name, By.id("collections"));
-    waitFor(By.id("delete-collection")).click();
+    click(By.id("delete-collection"));
     WebElement confirmInput = waitFor(By.id("collectionDeleteConfirm"));
     confirmInput.clear();
     confirmInput.sendKeys(name);
-    waitFor(By.xpath("//button[@ng-click='deleteCollection()']")).click();
+    click(By.xpath("//button[@ng-click='deleteCollection()']"));
 
     assertCollectionExists(name, false);
     assertNoSevereConsoleErrors();
@@ -88,14 +88,13 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
 
     // the Create Alias button stays disabled until the collection list has loaded
     waitForPageContains(COLLECTION);
-    waitFor(By.cssSelector("button#create-alias:not([disabled])")).click();
+    click(By.cssSelector("button#create-alias:not([disabled])"));
     WebElement aliasInput = waitFor(By.id("alias"));
     aliasInput.clear();
     aliasInput.sendKeys(alias);
     // the collections picker is a plain multi-select; click the option directly
-    waitFor(By.xpath("//select[@id='aliasCollections']/option[text()='" + COLLECTION + "']"))
-        .click();
-    waitFor(By.xpath("//button[@ng-click='createAlias()']")).click();
+    click(By.xpath("//select[@id='aliasCollections']/option[text()='" + COLLECTION + "']"));
+    click(By.xpath("//button[@ng-click='createAlias()']"));
 
     waitUntil(
         "alias " + alias + " should exist",
@@ -103,8 +102,8 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
 
     // aliases are listed with an alias_ route prefix
     openPage("~collections/alias_" + alias, By.id("collections"));
-    waitFor(By.id("delete-alias")).click();
-    waitFor(By.xpath("//button[@ng-click='deleteAlias()']")).click();
+    click(By.id("delete-alias"));
+    click(By.xpath("//button[@ng-click='deleteAlias()']"));
 
     waitUntil("alias " + alias + " should be gone", () -> !listAliases().containsKey(alias));
     assertNoSevereConsoleErrors();
@@ -115,15 +114,15 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
     openPage("~collections/" + COLLECTION, By.id("collections"));
 
     // expand shard1 and open the add-replica form
-    waitFor(By.xpath("//div[@id='shard-data']//a[contains(., 'shard1')]")).click();
-    waitFor(By.id("add-replica")).click();
-    waitFor(By.xpath("//button[@ng-click='addReplica(shard)']")).click();
+    click(By.xpath("//div[@id='shard-data']//a[contains(., 'shard1')]"));
+    click(By.id("add-replica"));
+    click(By.xpath("//button[@ng-click='addReplica(shard)']"));
 
     waitUntil("second replica should appear", () -> replicaCount() == 2);
 
     // delete the added replica: expand it and confirm removal within the same replica block
     driver.navigate().refresh();
-    waitFor(By.xpath("//div[@id='shard-data']//a[contains(., 'shard1')]")).click();
+    click(By.xpath("//div[@id='shard-data']//a[contains(., 'shard1')]"));
     waitFor(By.xpath("//a[@ng-click='toggleRemoveReplica(replica)']"));
     List<WebElement> removeToggles =
         driver.findElements(By.xpath("//a[@ng-click='toggleRemoveReplica(replica)']"));
@@ -149,7 +148,7 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
     Object startTimeBefore = coreStartTime(coreName);
 
     openPage("~collections/" + COLLECTION, By.id("collections"));
-    waitFor(By.id("reload")).click();
+    click(By.id("reload"));
     waitUntil(
         "core start time should change after reload",
         () -> !startTimeBefore.equals(coreStartTime(coreName)));

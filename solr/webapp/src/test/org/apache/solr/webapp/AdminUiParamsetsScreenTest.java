@@ -47,14 +47,14 @@ public class AdminUiParamsetsScreenTest extends AdminUiTestBase {
     WebElement content = waitFor(By.id("paramsetContent"));
     content.clear();
     content.sendKeys("{\"set\":{\"" + paramset + "\":{\"rows\":\"7\",\"df\":\"title_txt\"}}}");
-    waitFor(By.cssSelector("#paramsets #submit")).click();
+    click(By.cssSelector("#paramsets #submit"));
     waitForTextContains(By.cssSelector("#paramsets #result"), "success");
 
     waitUntil("paramset should exist with rows=7", () -> paramsetRows(paramset).equals("7"));
 
     // select the paramset and delete it
     openPage(COLLECTION + "/paramsets?paramset=" + paramset, By.id("paramsets"));
-    waitFor(By.cssSelector("button#delete-paramset")).click();
+    click(By.cssSelector("button#delete-paramset"));
     waitUntil("paramset should be gone", () -> paramsetRows(paramset).isEmpty());
     assertNoSevereConsoleErrors();
   }

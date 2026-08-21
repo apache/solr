@@ -48,7 +48,7 @@ public class AdminUiCoreAdminScreenTest extends AdminUiTestBase {
   public void testReloadCoreViaUi() {
     String coreName = coreNameOnNode0(COLLECTION);
     openPage("~cores/" + coreName, By.id("cores"));
-    waitFor(By.cssSelector("#cores #reload")).click();
+    click(By.cssSelector("#cores #reload"));
     // the button is marked with the success class when the reload succeeded
     waitFor(By.cssSelector("#cores #reload.success"));
     assertNoSevereConsoleErrors();

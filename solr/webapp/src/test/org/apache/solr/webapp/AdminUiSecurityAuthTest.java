@@ -67,7 +67,7 @@ public class AdminUiSecurityAuthTest extends AdminUiTestBase {
     WebElement password = waitFor(By.id("password"));
     password.clear();
     password.sendKeys(PASS);
-    waitFor(By.xpath("//div[@id='login']//button[@type='submit']")).click();
+    click(By.xpath("//div[@id='login']//button[@type='submit']"));
 
     // after login the dashboard loads and shows the authenticated security info
     waitFor(By.id("index"));

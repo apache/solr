@@ -85,7 +85,7 @@ public class AdminUiReplicationStandaloneTest extends AdminUiStandaloneTestBase 
         () -> followerDetail("leaderUrl").contains(":" + leaderJetty.getLocalPort()));
 
     // disable polling so replication only happens on demand
-    waitFor(By.cssSelector("#replication button.disable-polling")).click();
+    click(By.cssSelector("#replication button.disable-polling"));
     waitUntil(
         "polling should be disabled", () -> "true".equals(followerDetail("isPollingDisabled")));
 
@@ -101,11 +101,11 @@ public class AdminUiReplicationStandaloneTest extends AdminUiStandaloneTestBase 
     }
 
     // replicate on demand and watch the docs arrive on the follower
-    waitFor(By.cssSelector("#replication button.replicate-now")).click();
+    click(By.cssSelector("#replication button.replicate-now"));
     waitUntil("follower should receive the docs after replicate-now", () -> followerNumDocs() == 2);
 
     // re-enable polling
-    waitFor(By.cssSelector("#replication button.enable-polling")).click();
+    click(By.cssSelector("#replication button.enable-polling"));
     waitUntil(
         "polling should be enabled again",
         () -> "false".equals(followerDetail("isPollingDisabled")));

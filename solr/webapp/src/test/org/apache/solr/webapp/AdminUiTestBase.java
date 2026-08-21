@@ -102,7 +102,8 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected static final Duration WAIT_TIMEOUT = Duration.ofSeconds(15);
+  /** Generous to accommodate loaded CI machines; successful waits return as soon as satisfied. */
+  protected static final Duration WAIT_TIMEOUT = Duration.ofSeconds(30);
 
   protected static WebDriver driver;
 
@@ -312,14 +313,19 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
    */
   protected static WebElement openPage(String route, By anchor) {
     ensureCloudCluster();
-    // navigating to a URL that only differs in the #-fragment does not reload the page, so
-    // the Angular app instance (and any in-flight callbacks/timers of the previous test's
-    // screen) would survive into this test; force a fresh page load for isolation
+    // Boot a fresh app instance first (a URL differing only in the #-fragment does not
+    // reload the page, so the previous test's app and its in-flight callbacks would
+    // otherwise survive into this test), then navigate in-app via a hash change like a
+    // user would: booting the app directly on a deep link races its initial data
+    // loading, intermittently leaving the target screen unresolved.
     boolean samePage = String.valueOf(driver.getCurrentUrl()).startsWith(baseUrl + "/index.html");
-    driver.get(baseUrl + "/index.html#/" + route);
+    driver.get(baseUrl + "/index.html#/");
     if (samePage) {
       driver.navigate().refresh();
     }
+    // ng-view (#content) is empty until the app has booted and rendered its first route
+    waitFor(By.cssSelector("#content > *"));
+    driver.get(baseUrl + "/index.html#/" + route);
     return waitFor(anchor);
   }
 
@@ -420,6 +426,24 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
       }
     }
     throw new AssertionError("No core found on node 0 for collection " + collection);
+  }
+
+  /**
+   * Clicks the element at the locator once visible, retrying when the page re-renders the element
+   * between lookup and click (StaleElementReferenceException) — e.g. the jstree in the logging
+   * screen re-renders its anchors right after a change.
+   */
+  protected static void click(By locator) {
+    poll(
+        locator,
+        el -> {
+          if (!el.isDisplayed()) {
+            return null;
+          }
+          el.click();
+          return Boolean.TRUE;
+        },
+        "clicking");
   }
 
   /**

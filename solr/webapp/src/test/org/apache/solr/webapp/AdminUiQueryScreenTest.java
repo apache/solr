@@ -51,14 +51,14 @@ public class AdminUiQueryScreenTest extends AdminUiTestBase {
     openPage(COLLECTION + "/query", By.id("query"));
 
     // default *:* query finds all documents
-    waitFor(By.cssSelector("#query button[type=submit]")).click();
+    click(By.cssSelector("#query button[type=submit]"));
     waitForTextContains(By.cssSelector("#query #response"), "\"numFound\":" + NUM_DOCS);
 
     // a specific id query finds exactly one document
     WebElement queryInput = waitFor(By.id("q"));
     queryInput.clear();
     queryInput.sendKeys("id:1");
-    waitFor(By.cssSelector("#query button[type=submit]")).click();
+    click(By.cssSelector("#query button[type=submit]"));
     waitForTextContains(By.cssSelector("#query #response"), "\"numFound\":1");
     assertNoSevereConsoleErrors();
   }
@@ -73,7 +73,7 @@ public class AdminUiQueryScreenTest extends AdminUiTestBase {
     WebElement fl = waitFor(By.id("fl"));
     fl.clear();
     fl.sendKeys("id");
-    waitFor(By.cssSelector("#query button[type=submit]")).click();
+    click(By.cssSelector("#query button[type=submit]"));
 
     String response =
         waitForTextContains(By.cssSelector("#query #response"), "\"numFound\":" + NUM_DOCS);
@@ -99,7 +99,7 @@ public class AdminUiQueryScreenTest extends AdminUiTestBase {
 
     openPage(COLLECTION + "/query", By.id("query"));
     chosenSelect("useParams", paramset);
-    waitFor(By.cssSelector("#query button[type=submit]")).click();
+    click(By.cssSelector("#query button[type=submit]"));
 
     String response =
         waitForTextContains(By.cssSelector("#query #response"), "\"numFound\":" + NUM_DOCS);
@@ -124,7 +124,7 @@ public class AdminUiQueryScreenTest extends AdminUiTestBase {
     WebElement queryInput = waitFor(By.id("q"));
     queryInput.clear();
     queryInput.sendKeys("number");
-    waitFor(By.cssSelector("#query button[type=submit]")).click();
+    click(By.cssSelector("#query button[type=submit]"));
 
     // all fixture docs match "number" in title_txt via the edismax qf
     String response =
@@ -143,7 +143,7 @@ public class AdminUiQueryScreenTest extends AdminUiTestBase {
     openPage(COLLECTION + "/query", By.id("query"));
 
     waitFor(By.cssSelector("#custom_parameters input[name=rawParamQuery]")).sendKeys("fq=id:2");
-    waitFor(By.cssSelector("#query button[type=submit]")).click();
+    click(By.cssSelector("#query button[type=submit]"));
 
     String response = waitForTextContains(By.cssSelector("#query #response"), "\"numFound\":1");
     assertTrue("The raw fq param should be echoed: " + response, response.contains("id:2"));

@@ -72,7 +72,7 @@ public class AdminUiSchemaScreenTest extends AdminUiTestBase {
     waitForPageContains("Stored");
 
     // term info for the populated id field shows the indexed terms
-    waitFor(By.xpath("//button[@ng-click='toggleTerms()']")).click();
+    click(By.xpath("//button[@ng-click='toggleTerms()']"));
     waitForPageContains("doc1");
     assertNoSevereConsoleErrors();
   }
@@ -82,20 +82,20 @@ public class AdminUiSchemaScreenTest extends AdminUiTestBase {
     String fieldName = "ui_added_field";
     openPage(COLLECTION + "/schema", By.id("schema"));
 
-    waitFor(By.id("addField")).click();
+    click(By.id("addField"));
     WebElement nameInput = waitFor(By.id("add_name"));
     nameInput.clear();
     nameInput.sendKeys(fieldName);
     chosenSelect("add_type", "string");
-    waitFor(By.xpath("//button[@ng-click='addField()']")).click();
+    click(By.xpath("//button[@ng-click='addField()']"));
 
     waitUntil("field " + fieldName + " should exist in schema", () -> fieldExists(fieldName));
 
     // delete it again from the field detail view
     openPage(COLLECTION + "/schema?field=" + fieldName, By.id("schema"));
     waitForTextContains(By.cssSelector("#schema span.name"), fieldName);
-    waitFor(By.xpath("//dd[contains(@class,'delete-field')]/button")).click();
-    waitFor(By.xpath("//div[contains(@class,'delete')]//button[@ng-click='delete()']")).click();
+    click(By.xpath("//dd[contains(@class,'delete-field')]/button"));
+    click(By.xpath("//div[contains(@class,'delete')]//button[@ng-click='delete()']"));
 
     waitUntil("field " + fieldName + " should be gone", () -> !fieldExists(fieldName));
     assertNoSevereConsoleErrors();

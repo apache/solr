@@ -53,7 +53,7 @@ public class AdminUiCollectionScreensTest extends AdminUiTestBase {
     WebElement indexText = waitFor(By.id("analysis_fieldvalue_index"));
     indexText.clear();
     indexText.sendKeys("Running QUICKLY");
-    waitFor(By.cssSelector("#field-analysis button[type=submit]")).click();
+    click(By.cssSelector("#field-analysis button[type=submit]"));
     // text_general tokenizes and lowercases
     waitForPageContains("running");
     waitForPageContains("quickly");

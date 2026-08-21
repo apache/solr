@@ -83,12 +83,12 @@ public class AdminUiLoggingScreenTest extends AdminUiTestBase {
     WebElement anchor =
         waitFor(By.cssSelector("#loggingtree a.jstree-anchor[title='" + logger + "']"));
     anchor.click();
-    waitFor(By.xpath("//li[a/@title='" + logger + "']//a[normalize-space()='WARN']")).click();
+    click(By.xpath("//li[a/@title='" + logger + "']//a[normalize-space()='WARN']"));
     assertLoggerLevel(logger, "WARN");
 
     // revert to unset; the logger then reports the inherited level with set=false
-    waitFor(By.cssSelector("#loggingtree a.jstree-anchor[title='" + logger + "']")).click();
-    waitFor(By.xpath("//li[a/@title='" + logger + "']//a[normalize-space()='UNSET']")).click();
+    click(By.cssSelector("#loggingtree a.jstree-anchor[title='" + logger + "']"));
+    click(By.xpath("//li[a/@title='" + logger + "']//a[normalize-space()='UNSET']"));
     assertLoggerLevel(logger, null);
     assertNoSevereConsoleErrors();
   }

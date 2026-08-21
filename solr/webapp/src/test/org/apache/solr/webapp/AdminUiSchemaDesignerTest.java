@@ -37,17 +37,17 @@ public class AdminUiSchemaDesignerTest extends AdminUiTestBase {
     openPage("~schema-designer", By.id("designer"));
 
     // create a new schema via the dialog
-    waitFor(By.cssSelector("#designer #add")).click();
+    click(By.cssSelector("#designer #add"));
     WebElement schemaName = waitFor(By.id("add_schema"));
     schemaName.clear();
     schemaName.sendKeys("uidesigned");
-    waitFor(By.xpath("//button[@ng-click='addSchema()']")).click();
+    click(By.xpath("//button[@ng-click='addSchema()']"));
 
     // paste a sample document and analyze it
     WebElement sampleDocs = waitFor(By.cssSelector("#sample-docs textarea#document"));
     sampleDocs.clear();
     sampleDocs.sendKeys("[{\"id\":\"1\",\"designer_title\":\"Hello Designer\"}]");
-    waitFor(By.id("analyze")).click();
+    click(By.id("analyze"));
 
     // the analyzed schema lists the field derived from the sample doc. The designer
     // backend transiently fails its own calls ("version mismatch, retry", "Error

@@ -70,10 +70,10 @@ public class AdminUiCoreAdminStandaloneTest extends AdminUiStandaloneTestBase {
   @Test
   public void testAddCoreViaUi() throws Exception {
     openPage("~cores", By.id("cores"));
-    waitFor(By.cssSelector("#cores #add")).click();
+    click(By.cssSelector("#cores #add"));
     setText(By.id("add_name"), "addedcore");
     setText(By.id("add_instanceDir"), "addedcore");
-    waitFor(By.xpath("//button[@ng-click='addCore()']")).click();
+    click(By.xpath("//button[@ng-click='addCore()']"));
 
     waitUntil("core addedcore should exist", () -> coreExists("addedcore"));
     waitForPageContains("addedcore");
@@ -83,9 +83,9 @@ public class AdminUiCoreAdminStandaloneTest extends AdminUiStandaloneTestBase {
   @Test
   public void testRenameCoreViaUi() throws Exception {
     openPage("~cores/renamecore", By.id("cores"));
-    waitFor(By.cssSelector("#cores #rename")).click();
+    click(By.cssSelector("#cores #rename"));
     setText(By.id("rename_other"), "renamedcore");
-    waitFor(By.xpath("//button[@ng-click='renameCore()']")).click();
+    click(By.xpath("//button[@ng-click='renameCore()']"));
 
     waitUntil(
         "core should be renamed", () -> coreExists("renamedcore") && !coreExists("renamecore"));
@@ -105,10 +105,10 @@ public class AdminUiCoreAdminStandaloneTest extends AdminUiStandaloneTestBase {
     assertEquals(0, numDocs("swapb"));
 
     openPage("~cores/swapa", By.id("cores"));
-    waitFor(By.cssSelector("#cores #swap")).click();
+    click(By.cssSelector("#cores #swap"));
     // pick the other core in the swap-with dropdown (plain select)
     waitFor(By.id("swap_other")).sendKeys("swapb");
-    waitFor(By.xpath("//button[@ng-click='swapCores()']")).click();
+    click(By.xpath("//button[@ng-click='swapCores()']"));
 
     waitUntil("swap should exchange the cores' indexes", () -> numDocs("swapb") == 1);
     assertEquals(0, numDocs("swapa"));
@@ -118,7 +118,7 @@ public class AdminUiCoreAdminStandaloneTest extends AdminUiStandaloneTestBase {
   @Test
   public void testUnloadCoreViaUi() throws Exception {
     openPage("~cores/unloadcore", By.id("cores"));
-    waitFor(By.cssSelector("#cores #unload")).click();
+    click(By.cssSelector("#cores #unload"));
     // unload asks for confirmation via a native browser dialog
     driver.switchTo().alert().accept();
 

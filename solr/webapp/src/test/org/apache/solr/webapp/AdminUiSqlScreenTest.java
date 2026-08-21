@@ -49,7 +49,7 @@ public class AdminUiSqlScreenTest extends AdminUiTestBase {
     WebElement stmt = waitFor(By.id("sqlexp"));
     stmt.clear();
     stmt.sendKeys("SELECT id FROM " + COLLECTION + " LIMIT 10");
-    waitFor(By.xpath("//div[@id='sqlquery']//button[@type='submit']")).click();
+    click(By.xpath("//div[@id='sqlquery']//button[@type='submit']"));
 
     // the result grid lists all documents
     for (int i = 1; i <= 3; i++) {
