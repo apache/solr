@@ -60,5 +60,7 @@ deliberately does not do.
   with "version mismatch, retry" and recovers via its retry dialog; its API
   errors are excluded from the console-error assertion.
 - ASF Jenkins has no Chrome and does not pass `-Ptests.selenium=true`, so
-  these tests do not run there; they run on developer machines and in CI
-  environments with Chrome available (e.g. GitHub Actions `ubuntu-latest`).
+  these tests do not run there. In CI they run via the GitHub Actions workflow
+  `.github/workflows/admin-ui-test.yml`, on pull requests that touch the
+  webapp, the v2 API contract (`solr/api`) or the v2 API implementations
+  (`solr/core/.../handler/admin/api`).
