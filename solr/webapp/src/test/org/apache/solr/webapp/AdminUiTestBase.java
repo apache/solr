@@ -154,13 +154,20 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
   }
 
-  /** The generated js-client bundle handed to us by the build, or null when unavailable. */
+  /**
+   * The generated js-client bundle: handed to us by the build in {@code tests.ui.jsclient.bundle},
+   * with the js-client build's output location as a fallback so tests can also run from an IDE
+   * (after a Gradle build has produced the bundle). Null when unavailable.
+   */
   private static Path jsClientBundlePath() {
     String path = EnvUtils.getProperty("tests.ui.jsclient.bundle");
-    if (path == null) {
+    if (path == null && ExternalPaths.SOURCE_HOME == null) {
       return null;
     }
-    Path bundle = Path.of(path);
+    Path bundle =
+        path != null
+            ? Path.of(path)
+            : ExternalPaths.SOURCE_HOME.resolve("webapp/js-client/build/jsClientBundle/index.js");
     return Files.isReadable(bundle) ? bundle : null;
   }
 
@@ -194,7 +201,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
     if (jsClientBundlePath() == null) {
       fail(
-          "No generated js-client bundle available; the build should have set"
+          "No generated js-client bundle available; the Gradle build wires it via"
               + " tests.ui.jsclient.bundle (is -PdisableJsClient=true set?)");
     }
 

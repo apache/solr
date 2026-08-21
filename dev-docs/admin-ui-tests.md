@@ -29,6 +29,9 @@ deliberately does not do.
 - On failure, a screenshot, the page source and the browser console log are
   saved into the test temp dir.
 - Run with: `./gradlew :solr:webapp:test -Ptests.selenium=true`
+- From an IDE, set `-Dtests.selenium=true` on the run configuration; the
+  js-client bundle is picked up from the js-client build output, so run a
+  Gradle build once first.
 
 ## Deliberately skipped (effort vs value)
 
@@ -53,9 +56,11 @@ deliberately does not do.
 - The shared menu code logs a benign
   `TypeError: Cannot read properties of null (reading 'name')` from
   `$scope.showCore` while the per-collection menu resolves (filtered in the
-  console-error assertion; candidate for a JIRA).
+  console-error assertion; tracked in
+  [SOLR-18347](https://issues.apache.org/jira/browse/SOLR-18347)).
 - The core overview ping widget answers 503 when the configset has no
-  healthcheck file (allowed in the affected tests).
+  healthcheck file (allowed in the affected tests; tracked in
+  [SOLR-18347](https://issues.apache.org/jira/browse/SOLR-18347)).
 - The Schema Designer's backend transiently fails its own prep/analyze calls
   with "version mismatch, retry" and recovers via its retry dialog; its API
   errors are excluded from the console-error assertion.
