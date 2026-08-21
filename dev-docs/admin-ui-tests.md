@@ -16,7 +16,7 @@ deliberately does not do.
 - A locally installed Chrome/Chromium is required; since the tests only run
   when explicitly enabled, a missing browser fails the tests rather than
   skipping them. Override discovery with
-  `-Dtests.ui.chrome.binary=/path/to/chrome`. The matching chromedriver is
+  `-Dtests.selenium.chrome.binary=/path/to/chrome`. The matching chromedriver is
   provisioned (and cached) by Selenium Manager.
 - Display assertions compare UI text against live JSON from the same node's
   admin APIs — never hardcoded values.

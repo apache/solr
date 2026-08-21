@@ -83,9 +83,9 @@ dependencies {
 tasks.withType(Test).configureEach {
   testClassesDirs = sourceSets.test.output.classesDirs
   classpath = sourceSets.test.runtimeClasspath
-  def chromeBinary = providers.systemProperty('tests.ui.chrome.binary').orNull
+  def chromeBinary = providers.systemProperty('tests.selenium.chrome.binary').orNull
   if (chromeBinary != null) {
-    systemProperty 'tests.ui.chrome.binary', chromeBinary
+    systemProperty 'tests.selenium.chrome.binary', chromeBinary
   }
 
   // the Admin UI tests exercise the generated js-client bundle; a stub would only grow

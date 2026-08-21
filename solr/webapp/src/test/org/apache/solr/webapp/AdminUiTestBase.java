@@ -81,11 +81,11 @@ import org.slf4j.LoggerFactory;
  * headless Chrome via Selenium WebDriver.
  *
  * <p>The tests are opt-in via {@code -Ptests.selenium=true} (see {@link SeleniumTest}) and require
- * a locally installed Chrome/Chromium browser. Discovery order: the {@code tests.ui.chrome.binary}
- * system property, the {@code CHROME_BIN} environment variable, then a list of well-known install
- * locations. Since the tests only run when explicitly enabled, a missing browser is a test failure,
- * not a skip. The matching chromedriver is provisioned by Selenium Manager, which may download it
- * on first use (cached under {@code ~/.cache/selenium}).
+ * a locally installed Chrome/Chromium browser. Discovery order: the {@code
+ * tests.selenium.chrome.binary} system property, the {@code CHROME_BIN} environment variable, then
+ * a list of well-known install locations. Since the tests only run when explicitly enabled, a
+ * missing browser is a test failure, not a skip. The matching chromedriver is provisioned by
+ * Selenium Manager, which may download it on first use (cached under {@code ~/.cache/selenium}).
  */
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "Admin UI browser tests drive plain http")
 @ThreadLeakFilters(
@@ -197,7 +197,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     if (chrome == null) {
       fail(
           "Selenium tests are enabled (-Ptests.selenium=true) but no Chrome/Chromium binary was"
-              + " found; install one or point -Dtests.ui.chrome.binary at it");
+              + " found; install one or point -Dtests.selenium.chrome.binary at it");
     }
     if (jsClientBundlePath() == null) {
       fail(
@@ -516,8 +516,8 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   /** Locates a Chrome/Chromium binary, or returns null if none can be found. */
   @SuppressForbidden(reason = "Reading CHROME_BIN/PATH from the environment to locate a browser")
   protected static Path findChromeBinary() {
-    String sysProp = EnvUtils.getProperty("tests.ui.chrome.binary");
-    if (sysProp != null) {
+    String sysProp = EnvUtils.getProperty("tests.selenium.chrome.binary");
+    if (sysProp != null && !sysProp.isBlank()) {
       Path path = Path.of(sysProp);
       return Files.isExecutable(path) ? path : null;
     }
