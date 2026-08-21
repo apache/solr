@@ -66,8 +66,9 @@ deliberately does not do.
 - The Schema Designer's backend transiently fails its own prep/analyze calls
   with "version mismatch, retry" and recovers via its retry dialog; its API
   errors are excluded from the console-error assertion.
-- ASF Jenkins has no Chrome and does not pass `-Ptests.selenium=true`, so
-  these tests do not run there. In CI they run via the GitHub Actions workflow
+- ASF Jenkins jobs do not pass `-Ptests.selenium=true`, so these tests do
+  not run there (a nightly job could opt in if its build nodes have a
+  browser). In CI they run via the GitHub Actions workflow
   `.github/workflows/admin-ui-test.yml`, on pull requests that touch the
   webapp, the v2 API contract (`solr/api`) or the v2 API implementations
   (`solr/core/.../handler/admin/api`).
