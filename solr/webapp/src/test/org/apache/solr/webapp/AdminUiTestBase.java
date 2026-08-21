@@ -135,22 +135,10 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
    * serve from.
    */
   public static class JsClientServlet extends HttpServlet {
-
-    private static volatile byte[] bundle;
-
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
       resp.setContentType("text/javascript");
-      resp.getOutputStream().write(bundle());
-    }
-
-    private static byte[] bundle() throws IOException {
-      byte[] cached = bundle;
-      if (cached == null) {
-        cached = Files.readAllBytes(jsClientBundlePath());
-        bundle = cached;
-      }
-      return cached;
+      Files.copy(jsClientBundlePath(), resp.getOutputStream());
     }
   }
 
