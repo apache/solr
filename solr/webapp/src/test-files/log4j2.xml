@@ -15,7 +15,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-<!-- We're configuring testing to be synchronous due to "logging polution", see SOLR-13268 -->
+<!-- We're configuring testing to be synchronous due to "logging pollution", see SOLR-13268 -->
 <Configuration>
   <Appenders>
     <Console name="STDERR" target="SYSTEM_ERR">
