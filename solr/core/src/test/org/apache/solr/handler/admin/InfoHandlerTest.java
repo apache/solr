@@ -111,7 +111,7 @@ public class InfoHandlerTest extends SolrTestCaseJ4 {
     private int requestCount = 0;
 
     @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
       ++requestCount;
       super.handleRequestBody(req, rsp);
     }
