@@ -1893,6 +1893,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   TopDocsCollector<? extends ScoreDoc> buildTopDocsCollector(int len, QueryCommand cmd)
       throws IOException {
+    final TopDocsCollector<? extends ScoreDoc> custom = cmd.buildCustomTopDocsCollector(len);
+    if (custom != null) {
+      return custom;
+    }
     int minNumFound = cmd.getMinExactCount();
     Query q = cmd.getQuery();
     if (q instanceof RankQuery rq) {
