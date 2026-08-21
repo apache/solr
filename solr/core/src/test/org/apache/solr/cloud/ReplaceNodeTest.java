@@ -133,7 +133,6 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     // let's do it back - this time wait for recoveries
     CollectionAdminRequest.AsyncCollectionAdminRequest replaceNodeRequest =
         createReplaceNodeRequest(emptyNode, nodeToBeDecommissioned, Boolean.TRUE);
-    replaceNodeRequest.setWaitForFinalState(true);
     replaceNodeRequest.processAndWait("001", cloudClient, 10);
 
     try (SolrClient coreClient =

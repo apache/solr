@@ -146,7 +146,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       extends CollectionAdminRequest<CollectionAdminResponse> {
 
     protected String asyncId = null;
-    protected boolean waitForFinalState = false;
+    protected boolean waitForFinalState = true;
 
     public AsyncCollectionAdminRequest(CollectionAction action) {
       super(action);
@@ -163,11 +163,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
     public String getAsyncId() {
       return asyncId;
-    }
-
-    @Deprecated(since = "9.10")
-    public void setWaitForFinalState(boolean waitForFinalState) {
-      this.waitForFinalState = waitForFinalState;
     }
 
     public void setAsyncId(String asyncId) {
