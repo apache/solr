@@ -608,9 +608,14 @@ class ToLeafJoinContext {
     for (JoinTask task : joinCells) {
       if (task.joinSegmentRef != null) {
         resolveTarget.add(task);
-      } else {
+      } else if (!task.isResolved()) {
         needIndex.put(task.pairFieldName, task);
       }
+      // else: resolved from the indexer -- the in-memory model needs no searcher, so there's
+      // nothing to refresh, and re-claiming would recompute a pair that's already persisted;
+      // worse, the claim's absence-shortcut could then be fed a searcher that actually
+      // contains the pair, which is exactly the duplicate-write case the double-check contract
+      // forbids
     }
     // refresh old refs, pass 1: same ord, same segment name -> the leaf is already in hand, so
     // resolve straight into joinSegments instead of adding to loadReference just to re-fetch the
@@ -698,6 +703,10 @@ class ToLeafJoinContext {
               this.toReader,
               this.toField,
               this.ctxId,
+              // null refs trace back to the weight-age extract, so that's the searcher these
+              // pairs were last seen absent in; still lastSeenJoinSearcher at this point --
+              // it advances to newJoinIndexSearcher only after this method
+              this.lastSeenJoinSearcher,
               fromColumnFutures);
       this.joinIndexBuildNanos += System.nanoTime() - buildStartNanos;
       assert written.keySet().containsAll(missingPairs.keySet());
