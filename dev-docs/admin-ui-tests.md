@@ -40,8 +40,8 @@ deliberately does not do.
 - The generated js-client bundle (`libs/solr/index.js`) only exists inside the
   built WAR, not in the source tree tests serve from, so the build hands its
   location to the test JVM in `tests.ui.jsclient.bundle`. With the js-client
-  build turned off (`-PdisableJsClient=true`) a stub of the one API the
-  AngularJS UI calls is served instead.
+  build turned off (`-PdisableJsClient=true`) it is unavailable and the tests
+  skip themselves.
 - Every test cluster in the JVM registers a log-watcher appender under the same
   name in the shared log4j config, so a later cluster's watcher can be blind;
   the events-viewer test detects this via the API and skips itself.

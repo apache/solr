@@ -25,7 +25,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -127,31 +126,14 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   protected static JettySolrRunner standaloneJetty;
 
   /**
-   * Serves the js-client bundle the AngularJS UI expects at {@code libs/solr/index.js}: its {@code
-   * CollectionsV2} service fails to instantiate without the {@code solrApi} global, taking the
-   * whole Collections screen down with it. The real bundle is built by {@code
+   * Serves the generated js-client bundle the AngularJS UI expects at {@code libs/solr/index.js}:
+   * its {@code CollectionsV2} service fails to instantiate without the {@code solrApi} global,
+   * taking the whole Collections screen down with it. The bundle is built by {@code
    * :solr:webapp:js-client} and its location handed to the test JVM in {@code
-   * tests.ui.jsclient.bundle}; when that build is disabled ({@code -PdisableJsClient=true}) the
-   * stub below is served instead, covering the only call the AngularJS UI makes.
+   * tests.ui.jsclient.bundle}; it only exists inside the built webapp, not in the source tree tests
+   * serve from.
    */
   public static class JsClientServlet extends HttpServlet {
-
-    private static final String STUB =
-        """
-        var solrApi = {
-          ApiClient: { instance: { basePath: '/api', defaultHeaders: {} } },
-          CollectionsApi: function() {
-            this.reloadCollection = function(name, callback) {
-              var xhr = new XMLHttpRequest();
-              xhr.open('POST', '/api/collections/' + name + '/reload');
-              xhr.setRequestHeader('Content-Type', 'application/json');
-              xhr.onload = function() { callback(null, null, {status: xhr.status}); };
-              xhr.onerror = function() { callback(new Error('reload failed'), null, {status: xhr.status}); };
-              xhr.send('{}');
-            };
-          }
-        };
-        """;
 
     private static volatile byte[] bundle;
 
@@ -164,17 +146,21 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     private static byte[] bundle() throws IOException {
       byte[] cached = bundle;
       if (cached == null) {
-        String path = EnvUtils.getProperty("tests.ui.jsclient.bundle");
-        if (path != null && Files.isReadable(Path.of(path))) {
-          cached = Files.readAllBytes(Path.of(path));
-        } else {
-          log.info("Generated js-client bundle unavailable, serving the stub instead");
-          cached = STUB.getBytes(StandardCharsets.UTF_8);
-        }
+        cached = Files.readAllBytes(jsClientBundlePath());
         bundle = cached;
       }
       return cached;
     }
+  }
+
+  /** The generated js-client bundle handed to us by the build, or null when unavailable. */
+  private static Path jsClientBundlePath() {
+    String path = EnvUtils.getProperty("tests.ui.jsclient.bundle");
+    if (path == null) {
+      return null;
+    }
+    Path bundle = Path.of(path);
+    return Files.isReadable(bundle) ? bundle : null;
   }
 
   /** Ignores threads spawned by Selenium and the JDK http client it uses. */
@@ -203,6 +189,9 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     Assume.assumeTrue(
         "No Chrome/Chromium binary found (set -Dtests.ui.chrome.binary=...), skipping UI tests",
         chrome != null);
+    Assume.assumeTrue(
+        "No generated js-client bundle available (js-client build disabled?), skipping UI tests",
+        jsClientBundlePath() != null);
 
     // metrics are off by default in test clusters, but UI screens (e.g. Plugins) need them;
     // restored after the class by SolrTestCase's SystemPropertiesRestoreRule
