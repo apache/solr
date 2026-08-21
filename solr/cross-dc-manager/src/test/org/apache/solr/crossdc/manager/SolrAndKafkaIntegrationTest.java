@@ -586,14 +586,14 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
               (InputStream) rsp.get(InputStreamResponseParser.STREAM_KEY), StandardCharsets.UTF_8);
       assertTrue(content, content.contains("solr_crossdc_consumer_output_total"));
 
-      // test the healtcheck endpoint
+      // test the healthcheck endpoint
       req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/health");
       req.setResponseParser(new InputStreamResponseParser(null));
       rsp = httpJettySolrClient.request(req);
       content =
           IOUtils.toString(
               (InputStream) rsp.get(InputStreamResponseParser.STREAM_KEY), StandardCharsets.UTF_8);
-      assertEquals(Integer.valueOf(200), rsp.get("responseStatus"));
+      assertEquals(200, rsp.get("responseStatus"));
       Map<String, Object> map = (Map<String, Object>) ObjectBuilder.fromJSON(content);
       assertEquals(Boolean.TRUE, map.get("kafka"));
       assertEquals(Boolean.TRUE, map.get("solr"));
@@ -607,7 +607,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
       content =
           IOUtils.toString(
               (InputStream) rsp.get(InputStreamResponseParser.STREAM_KEY), StandardCharsets.UTF_8);
-      assertEquals(Integer.valueOf(503), rsp.get("responseStatus"));
+      assertEquals(503, rsp.get("responseStatus"));
       map = (Map<String, Object>) ObjectBuilder.fromJSON(content);
       assertEquals(Boolean.TRUE, map.get("kafka"));
       assertEquals(Boolean.FALSE, map.get("solr"));

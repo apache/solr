@@ -60,8 +60,6 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final String VERSION_FIELD = "_version_";
-
   private static final int NUM_BROKERS = 1;
   public static EmbeddedKafkaCluster kafkaCluster;
 
@@ -127,10 +125,8 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
       zkTestServer2.run();
     }
 
-    solrCluster1 = startCluster(solrCluster1, zkTestServer1, baseDir1);
-    solrCluster2 = startCluster(solrCluster2, zkTestServer2, baseDir2);
-
-    CloudSolrClient client = solrCluster1.getSolrClient(COLLECTION);
+    solrCluster1 = startCluster(zkTestServer1, baseDir1);
+    solrCluster2 = startCluster(zkTestServer2, baseDir2);
 
     String bootstrapServers = kafkaCluster.bootstrapServers();
     log.info("bootstrapServers={}", bootstrapServers);
@@ -144,8 +140,8 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
     consumer.start(properties);
   }
 
-  private static MiniSolrCloudCluster startCluster(
-      MiniSolrCloudCluster solrCluster, ZkTestServer zkTestServer, Path baseDir) throws Exception {
+  private static MiniSolrCloudCluster startCluster(ZkTestServer zkTestServer, Path baseDir)
+      throws Exception {
     MiniSolrCloudCluster cluster =
         new MiniSolrCloudCluster(
             1,

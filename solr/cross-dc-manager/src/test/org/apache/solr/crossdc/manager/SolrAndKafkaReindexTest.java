@@ -47,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ThreadLeakFilters(
-    defaultFilters = true,
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
@@ -57,8 +56,6 @@ import org.slf4j.LoggerFactory;
 public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  static final String VERSION_FIELD = "_version_";
 
   private static final int NUM_BROKERS = 1;
   public static EmbeddedKafkaCluster kafkaCluster;
@@ -126,7 +123,7 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void afterSolrAndKafkaIntegrationTest() throws Exception {
+  public static void afterSolrAndKafkaIntegrationTest() {
     ObjectReleaseTracker.clear();
 
     if (solrCluster1 != null) {
@@ -267,7 +264,7 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
     doc2.addField("id", id2);
     doc2.addField("text", "some test two " + tag);
 
-    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(2);
+    List<SolrInputDocument> docs = new ArrayList<>(2);
     docs.add(doc1);
     docs.add(doc2);
 
