@@ -18,7 +18,6 @@ package org.apache.solr.cloud.api.collections;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
@@ -254,7 +253,10 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   }
 
   private List<String> getAllNodeNames(String collectionName) {
-    DocCollection state = getCollectionState(collectionName);
-    return state.replicaStream().map(Replica::getNodeName).distinct().collect(Collectors.toList());
+    return getCollectionState(collectionName)
+        .replicaStream()
+        .map(Replica::getNodeName)
+        .distinct()
+        .toList();
   }
 }
