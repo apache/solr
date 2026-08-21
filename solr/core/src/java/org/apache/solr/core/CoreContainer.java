@@ -58,6 +58,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -1381,18 +1382,30 @@ public class CoreContainer {
     metricManager.closeAllRegistries(); // Close all OTEL meter providers and metrics
   }
 
-  public void cancelCoreRecoveries() {
-    // we must cancel without holding the cores sync
-    // make sure we wait for any recoveries to stop
+  /**
+   * Applies the given action to each currently loaded core, reserving and releasing each one
+   * without triggering a lazy load. A core unloaded concurrently after {@link
+   * #getLoadedCoreNames()} was called is skipped.
+   */
+  public void forEachLoadedCore(Consumer<SolrCore> action) {
     for (String coreName : solrCores.getLoadedCoreNames()) {
-      // getCoreFromAnyList, not getCore: never loads, safe during shutdown
+      // getCoreFromAnyList, not getCore: never loads
       try (SolrCore core = solrCores.getCoreFromAnyList(coreName, true)) {
         if (core == null) continue; // unloaded since getLoadedCoreNames
-        core.getSolrCoreState().cancelRecovery();
-      } catch (Exception e) {
-        log.error("Error canceling recovery for core", e);
+        action.accept(core);
       }
     }
+  }
+
+  public void cancelCoreRecoveries() {
+    forEachLoadedCore(
+        core -> {
+          try {
+            core.getSolrCoreState().cancelRecovery();
+          } catch (Exception e) {
+            log.error("Error canceling recovery for core", e);
+          }
+        });
   }
 
   /**
