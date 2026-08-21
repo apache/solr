@@ -17,6 +17,7 @@
 package org.apache.solr.embedded;
 
 import jakarta.servlet.Filter;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -47,8 +48,8 @@ public class JettyConfig {
     this.portRetryTime = builder.portRetryTime;
     this.stopAtShutdown = builder.stopAtShutdown;
     this.waitForLoadingCoresToFinishMs = builder.waitForLoadingCoresToFinishMs;
-    this.extraServlets = builder.extraServlets;
-    this.extraFilters = builder.extraFilters;
+    this.extraServlets = Collections.unmodifiableMap(builder.extraServlets);
+    this.extraFilters = Collections.unmodifiableMap(builder.extraFilters);
     this.sslConfig = builder.sslConfig;
     this.enableV2 = builder.enableV2;
     this.enableGracefulShutdown = builder.enableGracefulShutdown;
@@ -136,11 +137,14 @@ public class JettyConfig {
       return this;
     }
 
-    /** Shallow copy; maps are shared with the original, matching historic copy semantics. */
+    /** Copies the maps too, so the clone is fully independent; the SSLConfig is shared. */
     @Override
     public Builder clone() {
       try {
-        return (Builder) super.clone();
+        Builder clone = (Builder) super.clone();
+        clone.extraServlets = new TreeMap<>(extraServlets);
+        clone.extraFilters = new LinkedHashMap<>(extraFilters);
+        return clone;
       } catch (CloneNotSupportedException e) {
         throw new AssertionError(e);
       }
