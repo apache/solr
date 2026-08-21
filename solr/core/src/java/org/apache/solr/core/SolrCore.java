@@ -850,24 +850,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   // protect via synchronized(SolrCore.class)
   private static Set<String> dirs = new HashSet<>();
 
-  /**
-   * Returns <code>true</code> iff the index in the named directory is currently locked.
-   *
-   * @param directory the directory to check for a lock
-   * @throws IOException if there is a low-level IO error
-   * @deprecated Use of this method can only lead to race conditions. Try to actually obtain a lock
-   *     instead.
-   */
-  @Deprecated
-  private static boolean isWriterLocked(Directory directory) throws IOException {
-    try {
-      directory.obtainLock(IndexWriter.WRITE_LOCK_NAME).close();
-      return false;
-    } catch (LockObtainFailedException failed) {
-      return true;
-    }
-  }
-
   void initIndex(boolean passOnPreviousState, boolean reload) throws IOException {
     String indexDir = getNewIndexDir();
     boolean indexExists = getDirectoryFactory().exists(indexDir);
@@ -882,7 +864,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
       final String lockType = getSolrConfig().indexConfig.lockType;
       Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT, lockType);
       try {
-        if (isWriterLocked(dir)) {
+        boolean writerLocked;
+        try {
+          dir.obtainLock(IndexWriter.WRITE_LOCK_NAME).close();
+          writerLocked = false;
+        } catch (LockObtainFailedException failed) {
+          writerLocked = true;
+        }
+        if (writerLocked) {
           log.error(
               "Solr index directory '{}' is locked (lockType={}).  Throwing exception.",
               indexDir,
