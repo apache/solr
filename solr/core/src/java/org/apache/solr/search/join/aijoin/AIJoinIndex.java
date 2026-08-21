@@ -23,7 +23,6 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -89,19 +88,6 @@ public final class AIJoinIndex implements Closeable {
   static final AIJoinWriter INSTANCE = new AIJoinDocWriter(); // new AIJoinColumnWriter();
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  /** Why a build was triggered; reported as {@code cause=} on the {@code AIJOIN evt=build} line. */
-  enum BuildCause {
-    /** {nolink #ensureJoinSegments}, i.e. eagerly at {@link AIJoinQuery#createWeight} time. */
-    EAGER_CREATE_WEIGHT,
-    /** {@link ToLeafJoinContext}, i.e. lazily for a gap the eager pass did not cover. */
-    LAZY_TO_SEGMENT;
-
-    @Override
-    public String toString() {
-      return name().toLowerCase(Locale.ROOT).replace('_', '-');
-    }
-  }
 
   /** A pair's (from-segment, to-segment) leaf ordinals. */
   record SegmentsTuple(int fromLeafOrd, int toLeafOrd) {}
@@ -244,11 +230,9 @@ public final class AIJoinIndex implements Closeable {
   Map<String, JoinColumnModel> writeJoinSegments(
       Map<String, SegmentsTuple> missingPairs,
       IndexReader fromReader,
-      String fromField,
       IndexReader toReader,
       String toField,
-      BuildCause buildCause,
-      String ctxId,
+      String traceCtxId,
       Future<FromLeafJoinContext>[] fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
     long startNanos = System.nanoTime();
@@ -282,7 +266,9 @@ public final class AIJoinIndex implements Closeable {
               AIJoinUtil.computeDocMapping(
                   toContext,
                   toField, // new ForeignKeyColumn(fromContext, fromField)
-                  fromColumnFutures[fromContext.ord].get().fkColumn);
+                  fromColumnFutures[fromContext.ord].get().fkColumn,
+                  AIJoinUtil.ToDocInvertor.standard()); // TODO we need lazily calculate mapping
+          // then cache it in a map by toCtx.ord
           batchNumDocs = Math.max(batchNumDocs, fromContext.reader().maxDoc());
           loadedMappings.put(pairFieldName, mapping);
         }
@@ -333,10 +319,9 @@ public final class AIJoinIndex implements Closeable {
       // the two together would attribute another thread's build work to this query
       AIJoinUtil.logDiagnostic(
           log,
-          "AIJOIN evt=build ctx={} cause={} pairsRequested={} pairsBuilt={} pairsAwaited={}"
+          "AIJOIN evt=build ctx={} pairsRequested={} pairsBuilt={} pairsAwaited={}"
               + " builtMs={} awaitedMs={} toCount={} batchNumDocs={} writtenPairs={}",
-          ctxId == null ? "-" : ctxId,
-          buildCause,
+          traceCtxId == null ? "-" : traceCtxId,
           missingPairs.size(),
           loadedMappings.size(),
           awaited.size(),

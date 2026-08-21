@@ -695,10 +695,8 @@ class ToLeafJoinContext {
           this.joinIndex.writeJoinSegments(
               Collections.unmodifiableMap(missingPairs),
               this.fromSearcher.getIndexReader(),
-              this.fromField,
               this.toReader,
               this.toField,
-              AIJoinIndex.BuildCause.LAZY_TO_SEGMENT,
               this.ctxId,
               fromColumnFutures);
       this.joinIndexBuildNanos += System.nanoTime() - buildStartNanos;
