@@ -113,7 +113,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
           "Collection: " + collectionName + " shard: " + shard + " does not exist");
     }
 
-    boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
+    boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, true);
     boolean skipCreateReplicaInClusterState =
         message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 
