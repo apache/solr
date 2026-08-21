@@ -67,7 +67,7 @@ benmanes-versions = "0.54.0"
 bouncycastle = "1.84"
 # @keep Browserify version used in ref-guide
 browserify = "17.0.0"
-bytebuddy = "1.18.9"
+bytebuddy = "1.18.11"
 carrot2-core = "4.8.6"
 carrotsearch-hppc = "0.10.0"
 carrotsearch-randomizedtesting = "2.9.1"
@@ -110,7 +110,7 @@ google-javaformat = "1.35.0"
 # @keep for version alignment
 google-protobuf = "4.35.1"
 # @keep Gradle version to run the build
-gradle = "9.6.0"
+gradle = "9.7.0"
 grpc = "1.82.0"
 # @keep Gulp version used in ref-guide
 gulp-cli = "3.1.0"
@@ -152,7 +152,7 @@ kotlinx-datetime = "0.8.0-0.6.x-compat"
 kotlinx-serialization = "1.11.0"
 # @keep used by spotless
 ktlint = "1.8.0"
-ktor = "3.5.0"
+ktor = "3.5.1"
 langchain4j-bom = "1.17.0"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
@@ -182,11 +182,12 @@ opentelemetry-runtime-telemetry = "2.27.0-alpha"
 oshai-logging = "8.0.4"
 # @keep for version alignment
 ow2-asm = "9.10.1"
-owasp-dependencycheck = "12.2.2"
+owasp-dependencycheck = "13.0.0"
 # @keep for version alignment
 perfmark = "0.27.0"
 prometheus-metrics = "1.8.0"
 quicktheories = "0.26"
+selenium = "4.47.0"
 semver4j = "6.0.0"
 slf4j = "2.0.17"
 spatial4j = "0.8"
@@ -512,6 +513,7 @@ perfmark-api = { module = "io.perfmark:perfmark-api", version.ref = "perfmark" }
 prometheus-metrics-expositionformats = { module = "io.prometheus:prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
 prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus-metrics" }
 quicktheories-quicktheories = { module = "org.quicktheories:quicktheories", version.ref = "quicktheories" }
+selenium-chromedriver = { module = "org.seleniumhq.selenium:selenium-chrome-driver", version.ref = "selenium" }
 semver4j-semver4j = { module = "org.semver4j:semver4j", version.ref = "semver4j" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jcloverslf4j = { module = "org.slf4j:jcl-over-slf4j", version.ref = "slf4j" }

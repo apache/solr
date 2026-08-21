@@ -151,8 +151,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
         "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}");
 
     assertJQ(
-        req(
-            "qt",
+        reqWithPath(
             "/export",
             "q",
             joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev",

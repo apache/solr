@@ -728,12 +728,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     assertQ(
         "defaults handler returns fewer matches",
-        req("q", "id:[42 TO 47]", "qt", "/defaults"),
+        reqWithPath("/defaults", "q", "id:[42 TO 47]"),
         "*[count(//doc)=4]");
 
     assertQ(
         "defaults handler includes highlighting",
-        req("q", "name:Zapp OR title:General", "qt", "/defaults"),
+        reqWithPath("/defaults", "q", "name:Zapp OR title:General"),
         "//lst[@name='highlighting']");
   }
 
