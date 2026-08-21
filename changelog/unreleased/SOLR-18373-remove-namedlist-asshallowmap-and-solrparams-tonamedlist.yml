@@ -1,8 +1,0 @@
-# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Remove the deprecated NamedList.asShallowMap(), asShallowMap(boolean) and get(String, int) methods, and SolrParams.toNamedList(). Use the SimpleOrderedMap(MapWriter) constructor where a Map is needed - note it copies rather than returning a live view - and indexOf(String, int) with getVal(int) to scan from an index.
-type: removed
-authors:
-  - name: Serhiy Bzhezytskyy
-links:
-  - name: SOLR-18373
-    url: https://issues.apache.org/jira/browse/SOLR-18373
