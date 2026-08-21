@@ -78,9 +78,11 @@ public final class AIJoinIndex implements Closeable {
    * Dedups concurrent builders per pair field name: the thread that installs the future writes the
    * pair, others wait on it. A future completes as soon as the pair's in-memory {@link
    * JoinColumnModel} is ready -- before the owning thread persists and refreshes -- so completion
-   * does not imply the column is visible through {@link #manager} yet. Completed futures stay put
-   * so a builder that raced a not-yet-visible refresh cannot write a duplicate pair column; that
-   * dedup is what keeps handing out models ahead of the commit safe.
+   * does not imply the column is visible through {@link #manager} yet. Entries are transient: the
+   * owner removes its claims once the pair is persisted and refreshed (and on build failure), so
+   * the map only ever holds in-flight builds and never pins models in heap. A builder that races a
+   * not-yet-visible refresh and re-claims an already-persisted pair is stopped from writing a
+   * duplicate column by {@link #writeJoinSegments}'s fresh-searcher double-check, not by this map.
    */
   private final ConcurrentHashMap<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>>
       pairBuilds = new ConcurrentHashMap<>();
@@ -199,10 +201,10 @@ public final class AIJoinIndex implements Closeable {
   }
 
   /**
-   * How many of the given pair field names already have a build claimed (in-flight or completed) in
-   * {@link #pairBuilds}. Diagnostic only: a pair counted here but still reported missing by {@link
-   * #extractExistingJoinColumns} means the caller is about to redo from-side work for a pair that
-   * was already built -- its column just isn't visible through the searcher it consulted.
+   * How many of the given pair field names have a build currently in flight in {@link #pairBuilds}
+   * (claims are removed once persisted). Diagnostic only: a pair counted here but still reported
+   * missing by {@link #extractExistingJoinColumns} means the caller is about to redo from-side work
+   * for a pair some other thread is building right now.
    */
   int countClaimedBuilds(Set<String> pairFieldNames) {
     int claimed = 0;
@@ -229,6 +231,20 @@ public final class AIJoinIndex implements Closeable {
    * possibly before the builder has committed it, so on return pairs built by this thread are
    * refreshed into the internal searcher manager, while awaited ones may not be visible there yet.
    *
+   * <p>Claims in {@link #pairBuilds} are transient -- the owner removes them once its pairs are
+   * persisted and refreshed, keeping the map bounded by in-flight builds. That makes re-claiming an
+   * already-persisted pair an expected event: the caller decided "missing" against {@code
+   * observedAbsentSearcher}, which may predate another thread's completed build. So after claiming,
+   * this method re-checks a fresh searcher and skips persisting any pair that turns out already
+   * written. Since only the claim owner ever writes a pair, absence in a post-claim fresh searcher
+   * is conclusive, so no duplicate pair column can be written; rediscovered pairs still cost their
+   * in-memory recompute, which the caller gets back in the result like any built pair. As a
+   * shortcut, when {@link #acquire()} returns {@code observedAbsentSearcher} itself, nothing was
+   * committed since that searcher was current, and the re-check scan is skipped.
+   *
+   * @param observedAbsentSearcher the join-index searcher in which the caller established that
+   *     {@code missingPairs} are absent; possibly stale by now. Pass {@code null} when absence
+   *     wasn't verified against a live searcher -- that forces the re-check scan.
    * @return in memory data for just written segemts
    */
   Map<String, JoinColumnModel> writeJoinSegments(
@@ -237,10 +253,12 @@ public final class AIJoinIndex implements Closeable {
       IndexReader toReader,
       String toField,
       String traceCtxId,
+      IndexSearcher observedAbsentSearcher,
       Future<FromLeafJoinContext>[] fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
     long startNanos = System.nanoTime();
     int batchNumDocsLogged = 0;
+    Set<String> writtenPairsLogged = Set.of();
     Map<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> owned =
         new LinkedHashMap<>();
     List<CompletableFuture<Map.Entry<String, JoinColumnModel>>> awaited = new ArrayList<>();
@@ -257,10 +275,6 @@ public final class AIJoinIndex implements Closeable {
     Map<String, JoinColumnModel> loadedMappings = new LinkedHashMap<>();
     try {
       if (!owned.isEmpty()) {
-        // all owned pairs go into a single batch: pair columns are addressed by from-side doc id,
-        // so a batch must start at doc 0 of its sidecar segment, which writeBatch guarantees by
-        // flushing one batch per commit
-        int batchNumDocs = 0;
         AIJoinUtil.ToDocInvertor toInvertor = new AIJoinUtil.ToDocInvertor(toField);
         for (String pairFieldName : owned.keySet()) {
           SegmentsTuple position = missingPairs.get(pairFieldName);
@@ -273,7 +287,6 @@ public final class AIJoinIndex implements Closeable {
                   toField,
                   fromColumnFutures[fromContext.ord].get().fkColumn,
                   toInvertor);
-          batchNumDocs = Math.max(batchNumDocs, fromContext.reader().maxDoc());
           loadedMappings.put(pairFieldName, mapping);
         }
         // complete before writeBatch: waiters only need the in-memory model, so they don't
@@ -287,9 +300,53 @@ public final class AIJoinIndex implements Closeable {
                   new AbstractMap.SimpleImmutableEntry<>(
                       entry.getKey(), loadedMappings.get(entry.getKey())));
         }
-        writeBatch(batchNumDocs, loadedMappings);
-        batchNumDocsLogged = batchNumDocs;
+        // double-check against a fresh searcher: claims are dropped once persisted, so a caller
+        // deciding "missing" on a stale searcher can re-claim an already-persisted pair; owning
+        // the claim means no one else can write it concurrently, so what the fresh searcher
+        // lacks is conclusively unwritten
+        Map<String, JoinColumnModel> unwrittenMappings = loadedMappings;
+        IndexSearcher freshJoinSearcher = acquire();
+        try {
+          if (freshJoinSearcher != observedAbsentSearcher) {
+            Map<String, JoinSegmentReference> alreadyPersisted =
+                extractExistingJoinColumns(freshJoinSearcher, owned.keySet()::contains);
+            if (!alreadyPersisted.isEmpty()) {
+              unwrittenMappings = new LinkedHashMap<>(loadedMappings);
+              unwrittenMappings.keySet().removeAll(alreadyPersisted.keySet());
+            }
+          } // else: same searcher instance the caller saw the pairs absent in -- nothing was
+          // committed since, so the pairs are provably unwritten and the scan is redundant
+        } finally {
+          release(freshJoinSearcher);
+        }
+        if (!unwrittenMappings.isEmpty()) {
+          // all pairs of a batch go in together: pair columns are addressed by from-side doc id,
+          // so a batch must start at doc 0 of its sidecar segment, which writeBatch guarantees by
+          // flushing one batch per commit
+          int batchNumDocs = 0;
+          for (String pairFieldName : unwrittenMappings.keySet()) {
+            int fromLeafOrd = missingPairs.get(pairFieldName).fromLeafOrd();
+            batchNumDocs =
+                Math.max(batchNumDocs, fromReader.leaves().get(fromLeafOrd).reader().maxDoc());
+          }// TODO it can be more asynchronous,
+          // besides of pairBuilds removal - and it's a problem
+          // would be great if many concurrent threads merge lists and write it at once,
+          // since it's synchronized bottleneck for now.
+          // and the thread don't even need to wait until writeBatch() is done (beside of pairBuilds removal, you know)
+          writeBatch(batchNumDocs, unwrittenMappings);
+          batchNumDocsLogged = batchNumDocs;
+        }
+        writtenPairsLogged = unwrittenMappings.keySet();
         // TODO flush every single field to get single field segments
+        // the claims have served their purpose: every owned pair is now persisted (just
+        // written, or found persisted by the double-check) and visible to any searcher
+        // acquired from here on, and duplicate writes are prevented by the double-check, not
+        // by retained entries -- dropping them keeps pairBuilds bounded by in-flight builds
+        // and unpins the models from heap. Waiters already holding the futures are unaffected.
+        for (Map.Entry<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> entry :
+            owned.entrySet()) {
+          pairBuilds.remove(entry.getKey(), entry.getValue());
+        }
       }
     } catch (Throwable t) {
       // withdraw the claims so a later query can retry the build; completeExceptionally only
@@ -326,7 +383,9 @@ public final class AIJoinIndex implements Closeable {
         toCount += model.edges().toCount();
       }
       // built/awaited split matters: an awaited pair cost this thread only the wait, so folding
-      // the two together would attribute another thread's build work to this query
+      // the two together would attribute another thread's build work to this query; pairsBuilt
+      // counts models computed by this thread, writtenPairs what actually reached the sidecar --
+      // the difference is pairs the double-check found already persisted
       AIJoinUtil.logDiagnostic(
           log,
           "AIJOIN evt=build ctx={} pairsRequested={} pairsBuilt={} pairsAwaited={}"
@@ -339,7 +398,7 @@ public final class AIJoinIndex implements Closeable {
           (System.nanoTime() - startNanos - builtNanos) / 1_000_000L,
           toCount,
           batchNumDocsLogged,
-          loadedMappings.keySet());
+          writtenPairsLogged);
     }
     return result;
   }

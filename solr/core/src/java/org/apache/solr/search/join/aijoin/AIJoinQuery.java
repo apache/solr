@@ -132,8 +132,8 @@ class AIJoinQuery extends Query {
     if (AIJoinUtil.diagnosticsEnabled(log)) {
       // pairsMissing > 0 on a repeat query means those pairs were never persisted by a previous
       // run (writeBatch never captured them), so their from-segments' FK columns get reloaded
-      // here; pairsClaimed counts missing pairs some build already claimed/completed in-process,
-      // i.e. reloads that are pure waste
+      // here; pairsClaimed counts missing pairs another thread is building right now (claims are
+      // dropped once persisted), i.e. reloads that are pure waste
       AIJoinUtil.logDiagnostic(
           log,
           "AIJOIN evt=weight pairsNeeded={} pairsExisting={} pairsMissing={} pairsClaimed={}"
