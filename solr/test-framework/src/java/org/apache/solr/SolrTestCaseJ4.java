@@ -1066,32 +1066,28 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /** Makes sure a query throws a SolrException with the listed response code */
+  @SuppressWarnings("try")
   public static void assertQEx(String message, SolrQueryRequest req, int code) {
-    try {
-      ignoreException(".");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".")) {
       h.query(req);
       fail(message);
     } catch (SolrException sex) {
       assertEquals(code, sex.code());
     } catch (Exception e2) {
       throw new RuntimeException("Exception during query", e2);
-    } finally {
-      unIgnoreException(".");
     }
   }
 
   /** Makes sure a query throws a SolrException with the listed response code */
+  @SuppressWarnings("try")
   public static void assertQEx(String message, SolrQueryRequest req, SolrException.ErrorCode code) {
-    try {
-      ignoreException(".");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".")) {
       h.query(req);
       fail(message);
     } catch (SolrException e) {
       assertEquals(code.code, e.code());
     } catch (Exception e2) {
       throw new RuntimeException("Exception during query", e2);
-    } finally {
-      unIgnoreException(".");
     }
   }
 
@@ -1104,13 +1100,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param req Solr request
    * @param code expected error code for the query
    */
+  @SuppressWarnings("try")
   public static void assertQEx(
       String failMessage,
       String exceptionMessage,
       SolrQueryRequest req,
       SolrException.ErrorCode code) {
-    try {
-      ignoreException(".");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".")) {
       h.query(req);
       fail(failMessage);
     } catch (SolrException e) {
@@ -1124,8 +1120,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           e.getMessage() != null && e.getMessage().contains(exceptionMessage));
     } catch (Exception e2) {
       throw new RuntimeException("Exception during query", e2);
-    } finally {
-      unIgnoreException(".");
     }
   }
 
