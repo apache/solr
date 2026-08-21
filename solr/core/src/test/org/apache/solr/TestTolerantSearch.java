@@ -114,7 +114,6 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
   public static void destroyThings() throws Exception {
     collection1 = null;
     collection2 = null;
-    resetExceptionIgnores();
     systemClearPropertySolrEnableUrlAllowList();
   }
 

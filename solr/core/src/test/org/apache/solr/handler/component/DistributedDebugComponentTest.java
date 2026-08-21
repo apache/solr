@@ -94,7 +94,6 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   public static void destroyThings() {
     collection1 = null;
     collection2 = null;
-    resetExceptionIgnores();
     systemClearPropertySolrEnableUrlAllowList();
   }
 

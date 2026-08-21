@@ -62,7 +62,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -97,7 +96,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
@@ -239,7 +237,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   @BeforeClass
   public static void setupTestCases() {
-    resetExceptionIgnores();
+    if (ignoreExceptionMuter != null) {
+      // defensive: a previous test class may have failed to tear down cleanly
+      ignoreExceptionMuter.close();
+      ignoreExceptionMuter = null;
+    }
 
     testExecutor =
         new ExecutorUtil.MDCAwareThreadPoolExecutor(
@@ -274,7 +276,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.metrics.otlpExporterInterval", "1000");
 
     startTrackingSearchers();
-    ignoreException("ignore_exception");
+    ignoreExceptionMuter = ErrorLogMuter.regex("ignore_exception");
     newRandomConfig();
 
     sslConfig = buildSSLConfig();
@@ -303,7 +305,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         testExecutor = null;
       }
 
-      resetExceptionIgnores();
+      if (ignoreExceptionMuter != null) {
+        ignoreExceptionMuter.close();
+        ignoreExceptionMuter = null;
+      }
 
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
@@ -574,51 +579,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  private static final Map<String, ErrorLogMuter> errorMuters = new ConcurrentHashMap<>();
-
   /**
-   * Causes any ERROR log messages matching with a substring matching the regex pattern to be
-   * filtered out by the ROOT logger
-   *
-   * @see #resetExceptionIgnores
-   * @deprecated use a {@link ErrorLogMuter} instead
+   * Registered by {@link #setupTestCases} / {@link #initCore()}, closed by {@link
+   * #teardownTestCases}.
    */
-  @Deprecated
-  public static void ignoreException(String pattern) {
-    errorMuters.computeIfAbsent(pattern, (pat) -> ErrorLogMuter.regex(pat));
-  }
-
-  /**
-   * @see #ignoreException
-   * @deprecated use a {@link ErrorLogMuter} instead
-   */
-  @Deprecated
-  public static void unIgnoreException(String pattern) {
-    errorMuters.computeIfPresent(
-        pattern,
-        (pat, muter) -> {
-          IOUtils.closeQuietly(muter);
-          return null;
-        });
-  }
-
-  /**
-   * Clears all exception patterns, immediately re-registering {@code "ignore_exception"}. {@link
-   * SolrTestCaseJ4} calls this in both {@link BeforeClass} {@link AfterClass} so usually tests
-   * don't need to call this.
-   *
-   * @see #ignoreException
-   * @deprecated use a {@link ErrorLogMuter} instead
-   */
-  @Deprecated
-  public static void resetExceptionIgnores() {
-    errorMuters.forEach(
-        (k, muter) -> {
-          IOUtils.closeQuietly(muter);
-          errorMuters.remove(k);
-        });
-    ignoreException("ignore_exception");
-  }
+  private static ErrorLogMuter ignoreExceptionMuter;
 
   protected static String getClassName() {
     return getTestClass().getName();
@@ -681,7 +646,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static void initCore() throws Exception {
     log.info("####initCore");
 
-    ignoreException("ignore_exception");
+    if (ignoreExceptionMuter == null) {
+      ignoreExceptionMuter = ErrorLogMuter.regex("ignore_exception");
+    }
 
     String configFile = getSolrConfigFile();
     if (configFile != null) {
