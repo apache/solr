@@ -38,6 +38,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.AfterClass;
@@ -56,7 +57,7 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void createThings() throws Exception {
-    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr();
@@ -94,7 +95,6 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
     collection1 = null;
     collection2 = null;
     resetExceptionIgnores();
-    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @Test
