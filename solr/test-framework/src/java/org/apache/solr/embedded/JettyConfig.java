@@ -38,6 +38,9 @@ public class JettyConfig {
   public final boolean enableV2;
   public final boolean enableGracefulShutdown;
 
+  /** If true, serve the Admin UI static files and index.html like the production web.xml does. */
+  public final boolean enableAdminUi;
+
   /** Snapshot of the builder that built this config; enables {@link #builder(JettyConfig)}. */
   private final Builder builder;
 
@@ -53,6 +56,7 @@ public class JettyConfig {
     this.sslConfig = builder.sslConfig;
     this.enableV2 = builder.enableV2;
     this.enableGracefulShutdown = builder.enableGracefulShutdown;
+    this.enableAdminUi = builder.enableAdminUi;
   }
 
   public static Builder builder() {
@@ -69,6 +73,7 @@ public class JettyConfig {
     int port = 0;
     boolean enableV2 = true;
     boolean enableGracefulShutdown = false;
+    boolean enableAdminUi = false;
     boolean stopAtShutdown = true;
     Long waitForLoadingCoresToFinishMs = 300000L;
     Map<ServletHolder, String> extraServlets = new TreeMap<>();
@@ -89,6 +94,11 @@ public class JettyConfig {
 
     public Builder enableGracefulShutdown(boolean flag) {
       this.enableGracefulShutdown = flag;
+      return this;
+    }
+
+    public Builder enableAdminUi(boolean flag) {
+      this.enableAdminUi = flag;
       return this;
     }
 
