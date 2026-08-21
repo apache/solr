@@ -171,13 +171,15 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 2, 2));
 
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
+    Replica shard1Leader = docCol.getSlice("shard1").getLeader();
+    Replica shard2Leader = docCol.getSlice("shard2").getLeader();
     try (SolrClient shard1 =
-            new HttpJettySolrClient.Builder(docCol.getSlice("shard1").getLeader().getBaseUrl())
-                .withDefaultCollection(docCol.getSlice("shard1").getLeader().getCoreName())
+            new HttpJettySolrClient.Builder(shard1Leader.getBaseUrl())
+                .withDefaultCollection(shard1Leader.getCoreName())
                 .build();
         SolrClient shard2 =
-            new HttpJettySolrClient.Builder(docCol.getSlice("shard2").getLeader().getBaseUrl())
-                .withDefaultCollection(docCol.getSlice("shard2").getLeader().getCoreName())
+            new HttpJettySolrClient.Builder(shard2Leader.getBaseUrl())
+                .withDefaultCollection(shard2Leader.getCoreName())
                 .build()) {
 
       // Add three documents to shard1
@@ -332,13 +334,15 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 2, 2));
 
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
+    Replica shard1Leader = docCol.getSlice("shard1").getLeader();
+    Replica shard2Leader = docCol.getSlice("shard2").getLeader();
     try (SolrClient shard1 =
-            new HttpJettySolrClient.Builder(docCol.getSlice("shard1").getLeader().getBaseUrl())
-                .withDefaultCollection(docCol.getSlice("shard1").getLeader().getCoreName())
+            new HttpJettySolrClient.Builder(shard1Leader.getBaseUrl())
+                .withDefaultCollection(shard1Leader.getCoreName())
                 .build();
         SolrClient shard2 =
-            new HttpJettySolrClient.Builder(docCol.getSlice("shard2").getLeader().getBaseUrl())
-                .withDefaultCollection(docCol.getSlice("shard2").getLeader().getCoreName())
+            new HttpJettySolrClient.Builder(shard2Leader.getBaseUrl())
+                .withDefaultCollection(shard2Leader.getCoreName())
                 .build()) {
 
       // Add six documents w/diff routes (all sent to shard1 leader's core)

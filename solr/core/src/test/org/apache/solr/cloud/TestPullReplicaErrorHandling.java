@@ -140,9 +140,10 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       proxy.close();
       for (int i = 1; i <= 10; i++) {
         addDocs(10 + i);
+        Replica leader = s.getLeader();
         try (SolrClient leaderClient =
-            new HttpJettySolrClient.Builder(s.getLeader().getBaseUrl())
-                .withDefaultCollection(s.getLeader().getCoreName())
+            new HttpJettySolrClient.Builder(leader.getBaseUrl())
+                .withDefaultCollection(leader.getCoreName())
                 .build()) {
           assertNumDocs(10 + i, leaderClient);
         }

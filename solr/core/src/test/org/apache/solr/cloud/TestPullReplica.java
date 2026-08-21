@@ -297,9 +297,10 @@ public class TestPullReplica extends SolrCloudTestCase {
       log.info("Committed doc {} to leader", numDocs);
 
       Slice s = docCollection.getSlices().iterator().next();
+      Replica sliceLeader = s.getLeader();
       try (SolrClient leaderClient =
-          new HttpJettySolrClient.Builder(s.getLeader().getBaseUrl())
-              .withDefaultCollection(s.getLeader().getCoreName())
+          new HttpJettySolrClient.Builder(sliceLeader.getBaseUrl())
+              .withDefaultCollection(sliceLeader.getCoreName())
               .build()) {
         assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
       }
@@ -592,9 +593,10 @@ public class TestPullReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
+    Replica sliceLeader = s.getLeader();
     try (SolrClient leaderClient =
-        new HttpJettySolrClient.Builder(s.getLeader().getBaseUrl())
-            .withDefaultCollection(s.getLeader().getCoreName())
+        new HttpJettySolrClient.Builder(sliceLeader.getBaseUrl())
+            .withDefaultCollection(sliceLeader.getCoreName())
             .build()) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
@@ -701,9 +703,10 @@ public class TestPullReplica extends SolrCloudTestCase {
     // add docs agin
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
     s = docCollection.getSlices().iterator().next();
+    sliceLeader = s.getLeader();
     try (SolrClient leaderClient =
-        new HttpJettySolrClient.Builder(s.getLeader().getBaseUrl())
-            .withDefaultCollection(s.getLeader().getCoreName())
+        new HttpJettySolrClient.Builder(sliceLeader.getBaseUrl())
+            .withDefaultCollection(sliceLeader.getCoreName())
             .build()) {
       leaderClient.commit();
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
