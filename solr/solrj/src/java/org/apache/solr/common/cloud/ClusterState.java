@@ -208,7 +208,7 @@ public class ClusterState implements MapWriter {
     return createFromCollectionMap(version, stateMap, liveNodes, creationTime, prsSupplier);
   }
 
-  /** Still used by {@link #createFromJson}, which is deprecated but not yet removed. */
+  /** Still used by {@link #createFromJson}. */
   public static ClusterState createFromCollectionMap(
       int version,
       Map<String, Object> stateMap,
