@@ -76,8 +76,11 @@ public final class AIJoinIndex implements Closeable {
 
   /**
    * Dedups concurrent builders per pair field name: the thread that installs the future writes the
-   * pair, others wait on it. Completed futures stay put so a builder that raced a not-yet-visible
-   * refresh cannot write a duplicate pair column.
+   * pair, others wait on it. A future completes as soon as the pair's in-memory {@link
+   * JoinColumnModel} is ready -- before the owning thread persists and refreshes -- so completion
+   * does not imply the column is visible through {@link #manager} yet. Completed futures stay put
+   * so a builder that raced a not-yet-visible refresh cannot write a duplicate pair column; that
+   * dedup is what keeps handing out models ahead of the commit safe.
    */
   private final ConcurrentHashMap<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>>
       pairBuilds = new ConcurrentHashMap<>();
@@ -222,8 +225,9 @@ public final class AIJoinIndex implements Closeable {
   /**
    * Builds and persists the given missing pair columns, keyed by pair field name to their
    * (from-segment, to-segment) leaf ordinals. Pairs concurrently built by another thread are
-   * awaited, not rebuilt. On return the internal searcher manager is refreshed past every requested
-   * pair.
+   * awaited, not rebuilt; awaiting yields the builder's in-memory model as soon as it is computed,
+   * possibly before the builder has committed it, so on return pairs built by this thread are
+   * refreshed into the internal searcher manager, while awaited ones may not be visible there yet.
    *
    * @return in memory data for just written segemts
    */
@@ -257,6 +261,7 @@ public final class AIJoinIndex implements Closeable {
         // so a batch must start at doc 0 of its sidecar segment, which writeBatch guarantees by
         // flushing one batch per commit
         int batchNumDocs = 0;
+        AIJoinUtil.ToDocInvertor toInvertor = new AIJoinUtil.ToDocInvertor(toField);
         for (String pairFieldName : owned.keySet()) {
           SegmentsTuple position = missingPairs.get(pairFieldName);
           LeafReaderContext toContext = toReader.leaves().get(position.toLeafOrd());
@@ -265,16 +270,15 @@ public final class AIJoinIndex implements Closeable {
           AIJoinUtil.JoinColumnModel mapping =
               AIJoinUtil.computeDocMapping(
                   toContext,
-                  toField, // new ForeignKeyColumn(fromContext, fromField)
+                  toField,
                   fromColumnFutures[fromContext.ord].get().fkColumn,
-                  AIJoinUtil.ToDocInvertor.standard()); // TODO we need lazily calculate mapping
-          // then cache it in a map by toCtx.ord
+                  toInvertor);
           batchNumDocs = Math.max(batchNumDocs, fromContext.reader().maxDoc());
           loadedMappings.put(pairFieldName, mapping);
         }
-        writeBatch(batchNumDocs, loadedMappings);
-        batchNumDocsLogged = batchNumDocs;
-        // TODO flush every single field to get single field segments
+        // complete before writeBatch: waiters only need the in-memory model, so they don't
+        // pay for this thread's commit + refresh; completion does NOT imply the column is
+        // visible through the searcher manager yet
         for (Map.Entry<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> entry :
             owned.entrySet()) {
           entry
@@ -283,9 +287,15 @@ public final class AIJoinIndex implements Closeable {
                   new AbstractMap.SimpleImmutableEntry<>(
                       entry.getKey(), loadedMappings.get(entry.getKey())));
         }
+        writeBatch(batchNumDocs, loadedMappings);
+        batchNumDocsLogged = batchNumDocs;
+        // TODO flush every single field to get single field segments
       }
     } catch (Throwable t) {
-      // withdraw the claims so a later query can retry the build
+      // withdraw the claims so a later query can retry the build; completeExceptionally only
+      // takes effect when the failure happened before the completion loop above -- if writeBatch
+      // failed, waiters have already observed success with a valid in-memory model, and only the
+      // withdrawn claim (and this rethrow) records that the column was never persisted
       for (Map.Entry<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> entry :
           owned.entrySet()) {
         pairBuilds.remove(entry.getKey(), entry.getValue());
@@ -388,8 +398,9 @@ public final class AIJoinIndex implements Closeable {
 
   /**
    * Serializes sidecar writes: one batch per commit keeps every batch at doc 0 of its own segment,
-   * preserving pair-column doc number == from-side doc id. Completing builders' futures after this
-   * returns guarantees waiters observe the refreshed reader.
+   * preserving pair-column doc number == from-side doc id. Builders' futures are completed before
+   * this runs, so waiters consume the in-memory models without paying for the commit and refresh
+   * here -- a completed future does not mean the reader already exposes the column.
    *
    * <p>It should be plain simple synchronized. As alternatives
    *

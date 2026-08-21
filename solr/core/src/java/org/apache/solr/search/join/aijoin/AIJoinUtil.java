@@ -17,9 +17,13 @@
 package org.apache.solr.search.join.aijoin;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.index.DirectoryReader;
@@ -198,17 +202,29 @@ final class AIJoinUtil {
     }
   }
 
-  /** Maps to-side ordinals to the live to-side doc that carries them, as an int[ordinal]. */
-  @FunctionalInterface
-  interface ToDocInvertor {
-    int[] invert(SortedSetDocValues toDV, Bits toLiveDocs) throws IOException;
+  /**
+   * Maps a to-side {@link LeafReaderContext} to an int array of to-side doc ids by ordinal for a
+   * fixed {@code toField}, for those docs that are live.
+   * this is quite local lifecycle class, thus we can cache it so.
+   * the trick is that, there always single entry in this cache.
+   */
+  static class ToDocInvertor implements Function<LeafReaderContext, int[]> {
+    private final String toField;
+    private final Map<Integer, int[]> cache = new HashMap<>();
 
-    /**
-     * Default builder: for each live to-side doc, records every ordinal of the field into the
-     * returned array. Slots for ordinals with no live doc stay {@code -1}.
-     */
-    static ToDocInvertor standard() {
-      return (toDV, toLiveDocs) -> {
+    ToDocInvertor(String toField) {
+      this.toField = toField;
+    }
+
+    @Override
+    public int[] apply(LeafReaderContext toContext) {
+      return cache.computeIfAbsent(toContext.ord, (i)->computeToDoc(toContext));
+    }
+
+    private int[] computeToDoc(LeafReaderContext toContext) {
+      try {
+        SortedSetDocValues toDV = DocValues.getSortedSet(toContext.reader(), toField);
+        Bits toLiveDocs = toContext.reader().getLiveDocs();
         int[] toDocByToOrd = new int[Math.toIntExact(toDV.getValueCount())];
         Arrays.fill(toDocByToOrd, -1);
         for (int toDoc = toDV.nextDoc();
@@ -222,7 +238,9 @@ final class AIJoinUtil {
           }
         }
         return toDocByToOrd;
-      };
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
     }
   }
 
@@ -267,7 +285,7 @@ final class AIJoinUtil {
     // docValueCount() values per doc, so only this writer needs to learn to emit multiple
     // to docs per fromSideData doc.
     if (!termsAreDisjoint) {
-      int[] toDocByToOrd = toDocInvertor.invert(toDV, toLiveDocs);
+      int[] toDocByToOrd = toDocInvertor.apply(toContext);
 
       // resolve every fromSideData doc to its to-side doc. Docs without the field, or whose term
       // has
