@@ -28,6 +28,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -264,10 +265,22 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
   }
 
-  /** Captures a screenshot and the page source when a test fails, for post-mortem debugging. */
+  /**
+   * Browser console entries drained from the driver so far in the current test. Fetching the log
+   * from ChromeDriver empties its buffer, so {@link #assertNoSevereConsoleErrors} accumulates what
+   * it consumed here for the failure watcher to include in the {@code console.log} artifact.
+   */
+  private static final List<LogEntry> consoleEntries = new ArrayList<>();
+
+  /** Captures a screenshot, page source and console log when a test fails, for post-mortem. */
   @Rule
-  public final TestRule screenshotOnFailure =
+  public final TestRule failureArtifacts =
       new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+          consoleEntries.clear();
+        }
+
         @Override
         protected void failed(Throwable e, Description description) {
           if (driver == null) return;
@@ -276,8 +289,9 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
             byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
             Files.write(dir.resolve("screenshot.png"), png);
             Files.writeString(dir.resolve("page.html"), driver.getPageSource());
+            consoleEntries.addAll(driver.manage().logs().get(LogType.BROWSER).getAll());
             StringBuilder console = new StringBuilder();
-            for (LogEntry entry : driver.manage().logs().get(LogType.BROWSER).getAll()) {
+            for (LogEntry entry : consoleEntries) {
               console.append(entry.getLevel()).append(' ').append(entry.getMessage()).append('\n');
             }
             Files.writeString(dir.resolve("console.log"), console.toString());
@@ -487,6 +501,7 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   @SuppressForbidden(reason = "Selenium's log API reports java.util.logging levels")
   protected static void assertNoSevereConsoleErrors(String... allowedSubstrings) {
     List<LogEntry> entries = driver.manage().logs().get(LogType.BROWSER).getAll();
+    consoleEntries.addAll(entries);
     List<LogEntry> severe =
         entries.stream()
             .filter(entry -> entry.getLevel().intValue() >= Level.SEVERE.intValue())
