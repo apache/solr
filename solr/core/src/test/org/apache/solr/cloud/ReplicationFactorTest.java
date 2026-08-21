@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -50,7 +49,6 @@ import org.slf4j.LoggerFactory;
  * after an add or update.
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18295") // 28-Jun-2026 flaky
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -492,10 +490,23 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     return runAndGetAchievedRf(collectionName, up);
   }
 
-  private int runAndGetAchievedRf(String collectionName, UpdateRequest up)
-      throws SolrServerException, IOException {
-    NamedList<Object> response = cloudClient.request(up, collectionName);
-    return cloudClient.getMinAchievedReplicationFactor(collectionName, response);
+  private int runAndGetAchievedRf(String collectionName, UpdateRequest up) throws Exception {
+    // This test may fail due to http proxy port manipulation, make sure we retry like
+    // sendDocsWithRetry/doDelete
+    final int maxRetries = 5;
+    int numRetries = 0;
+    while (true) {
+      try {
+        NamedList<Object> response = cloudClient.request(up, collectionName);
+        return cloudClient.getMinAchievedReplicationFactor(collectionName, response);
+      } catch (SolrServerException | IOException exc) {
+        if (++numRetries > maxRetries) {
+          throw exc;
+        }
+        log.warn("Update failed, retrying ({}/{}) ...", numRetries, maxRetries, exc);
+        Thread.sleep(1000);
+      }
+    }
   }
 
   protected void assertRf(int expected, String explain, int actual) throws Exception {
