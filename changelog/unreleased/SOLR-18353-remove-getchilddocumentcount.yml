@@ -1,0 +1,10 @@
+title: >
+  Removed the deprecated `SolrDocumentBase.getChildDocumentCount()` method (and its `SolrDocument`/
+  `SolrInputDocument` overrides). Use `getChildDocuments().size()` instead (null-check first, since
+  `getChildDocuments()` may return `null` when there are no anonymous child documents).
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18353
+    url: https://issues.apache.org/jira/browse/SOLR-18353
