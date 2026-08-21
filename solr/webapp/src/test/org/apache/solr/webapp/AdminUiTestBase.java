@@ -310,7 +310,14 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
    */
   protected static WebElement openPage(String route, By anchor) {
     ensureCloudCluster();
+    // navigating to a URL that only differs in the #-fragment does not reload the page, so
+    // the Angular app instance (and any in-flight callbacks/timers of the previous test's
+    // screen) would survive into this test; force a fresh page load for isolation
+    boolean samePage = String.valueOf(driver.getCurrentUrl()).startsWith(baseUrl + "/index.html");
     driver.get(baseUrl + "/index.html#/" + route);
+    if (samePage) {
+      driver.navigate().refresh();
+    }
     return waitFor(anchor);
   }
 
