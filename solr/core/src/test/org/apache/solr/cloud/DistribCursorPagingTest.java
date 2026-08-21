@@ -48,6 +48,7 @@ import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.CursorMark;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Test;
 
 /**
@@ -694,10 +695,10 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   }
 
   /** execute a request, verify that we get an expected error */
+  @SuppressWarnings("try")
   public void assertFail(SolrParams p, ErrorCode expCode, String expSubstr) throws Exception {
 
-    try {
-      ignoreException(expSubstr);
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expSubstr)) {
       query(p);
       fail("no exception matching expected: " + expCode.code + ": " + expSubstr);
     } catch (SolrException e) {
@@ -705,8 +706,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
       assertTrue(
           "Expected substr not found: " + expSubstr + " <!< " + e.getMessage(),
           e.getMessage().contains(expSubstr));
-    } finally {
-      unIgnoreException(expSubstr);
     }
   }
 
