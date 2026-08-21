@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -167,22 +166,6 @@ public class ClusterState implements MapWriter {
     return liveNodes;
   }
 
-  @Deprecated
-  public Map<String, List<Replica>> getReplicaNamesPerCollectionOnNode(final String nodeName) {
-    Map<String, List<Replica>> replicaNamesPerCollectionOnNode = new HashMap<>();
-    collectionStates.values().stream()
-        .map(CollectionRef::get)
-        .filter(Objects::nonNull)
-        .forEach(
-            col -> {
-              List<Replica> replicas = col.getReplicasOnNode(nodeName);
-              if (!replicas.isEmpty()) {
-                replicaNamesPerCollectionOnNode.put(col.getName(), replicas);
-              }
-            });
-    return replicaNamesPerCollectionOnNode;
-  }
-
   /** Check if node is alive. */
   public boolean liveNodesContain(String name) {
     return liveNodes.contains(name);
@@ -225,7 +208,7 @@ public class ClusterState implements MapWriter {
     return createFromCollectionMap(version, stateMap, liveNodes, creationTime, prsSupplier);
   }
 
-  @Deprecated
+  /** Still used by {@link #createFromJson}. */
   public static ClusterState createFromCollectionMap(
       int version,
       Map<String, Object> stateMap,
