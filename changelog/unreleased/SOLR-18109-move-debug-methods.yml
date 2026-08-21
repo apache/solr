@@ -1,0 +1,7 @@
+title: Move the deprecated SolrPluginUtils.doStandardDebug, doStandardQueryDebug, doStandardResultsDebug, and doSimpleQuery to DebugComponent, where they now live as public static methods with the same signatures.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18109
+    url: https://issues.apache.org/jira/browse/SOLR-18109
