@@ -88,7 +88,8 @@ import org.slf4j.LoggerFactory;
  * @see PointField
  */
 @Deprecated
-public class TrieField extends NumericFieldType {
+public class TrieField extends NumericFieldType
+    implements FieldType.ExternalizeStoredValuesAsObjects {
   public static final int DEFAULT_PRECISION_STEP = 8;
 
   protected int precisionStepArg =

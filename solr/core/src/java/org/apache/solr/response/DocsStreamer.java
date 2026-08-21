@@ -16,11 +16,8 @@
  */
 package org.apache.solr.response;
 
-import static org.apache.solr.schema.FieldType.ExternalizeStoredValuesAsObjects;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -30,25 +27,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.transform.DocTransformer;
-import org.apache.solr.schema.BinaryField;
-import org.apache.solr.schema.BoolField;
-import org.apache.solr.schema.DatePointField;
-import org.apache.solr.schema.DenseVectorField;
-import org.apache.solr.schema.DoublePointField;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.FloatPointField;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.IntPointField;
-import org.apache.solr.schema.LongPointField;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TextField;
-import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.schema.TrieDoubleField;
-import org.apache.solr.schema.TrieField;
-import org.apache.solr.schema.TrieFloatField;
-import org.apache.solr.schema.TrieIntField;
-import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
@@ -57,22 +38,6 @@ import org.apache.solr.search.SolrReturnFields;
 
 /** This streams SolrDocuments from a DocList and applies transformer */
 public class DocsStreamer implements Iterator<SolrDocument> {
-  /**
-   * A hardcoded list of known Solr field types that will be trusted to control their own conversion
-   * of stored field values into external Objects (via {@link FieldType#toObject}) when returning
-   * {@link SolrDocument} instances to clients.
-   *
-   * <p>For historic reasons, this Set is consulted using an <em>equality</em> basis, so subclasses
-   * of these "known" types are not given the same level of trust.
-   *
-   * <p>Any field type not found in this list will have stored values externalized as
-   * <em>Strings</em> using {@link FieldType#toExternal} unless they implement {@link
-   * ExternalizeStoredValuesAsObjects}
-   *
-   * @deprecated new field types should not be added to this list, instead use {@link
-   *     ExternalizeStoredValuesAsObjects}
-   */
-  @Deprecated public static final Set<Class<? extends FieldType>> KNOWN_TYPES = new HashSet<>();
 
   private final ResultContext rctx;
   private final SolrDocumentFetcher docFetcher; // a collaborator of SolrIndexSearcher
@@ -217,41 +182,11 @@ public class DocsStreamer implements Iterator<SolrDocument> {
         return f.stringValue();
       }
     } else {
-      if (KNOWN_TYPES.contains(ft.getClass())
-          || ft instanceof FieldType.ExternalizeStoredValuesAsObjects) {
+      if (ft instanceof FieldType.ExternalizeStoredValuesAsObjects) {
         return ft.toObject(f);
       } else {
         return ft.toExternal(f);
       }
     }
-  }
-
-  static {
-    // DO NOT ADD TO THIS SET ! ! ! !
-    // SEE JAVADOCS FOR KNOWN_TYPES !
-
-    KNOWN_TYPES.add(BoolField.class);
-    KNOWN_TYPES.add(StrField.class);
-    KNOWN_TYPES.add(TextField.class);
-    KNOWN_TYPES.add(TrieField.class);
-    KNOWN_TYPES.add(TrieIntField.class);
-    KNOWN_TYPES.add(TrieLongField.class);
-    KNOWN_TYPES.add(TrieFloatField.class);
-    KNOWN_TYPES.add(TrieDoubleField.class);
-    KNOWN_TYPES.add(TrieDateField.class);
-    KNOWN_TYPES.add(BinaryField.class);
-    KNOWN_TYPES.add(IntPointField.class);
-    KNOWN_TYPES.add(LongPointField.class);
-    KNOWN_TYPES.add(DoublePointField.class);
-    KNOWN_TYPES.add(FloatPointField.class);
-    // DenseVectorField extends FloatPointField but here we list DenseVectorField
-    // explicitly due to KNOWN_TYPES.contains use of the KNOWN_TYPES set
-    KNOWN_TYPES.add(DenseVectorField.class);
-    KNOWN_TYPES.add(DatePointField.class);
-    // We do not add UUIDField because UUID object is not a supported type in JavaBinCodec
-    // and if we write UUIDField.toObject, we wouldn't know how to handle it in the client side
-
-    // DO NOT ADD TO THIS SET ! ! ! !
-    // SEE JAVADOCS FOR KNOWN_TYPES !
   }
 }
