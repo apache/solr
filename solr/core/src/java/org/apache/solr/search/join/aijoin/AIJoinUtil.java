@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.index.DirectoryReader;
@@ -199,6 +198,34 @@ final class AIJoinUtil {
     }
   }
 
+  /** Maps to-side ordinals to the live to-side doc that carries them, as an int[ordinal]. */
+  @FunctionalInterface
+  interface ToDocInvertor {
+    int[] invert(SortedSetDocValues toDV, Bits toLiveDocs) throws IOException;
+
+    /**
+     * Default builder: for each live to-side doc, records every ordinal of the field into the
+     * returned array. Slots for ordinals with no live doc stay {@code -1}.
+     */
+    static ToDocInvertor standard() {
+      return (toDV, toLiveDocs) -> {
+        int[] toDocByToOrd = new int[Math.toIntExact(toDV.getValueCount())];
+        Arrays.fill(toDocByToOrd, -1);
+        for (int toDoc = toDV.nextDoc();
+            toDoc != DocIdSetIterator.NO_MORE_DOCS;
+            toDoc = toDV.nextDoc()) {
+          if (toLiveDocs != null && !toLiveDocs.get(toDoc)) {
+            continue;
+          }
+          for (int i = 0; i < toDV.docValueCount(); i++) {
+            toDocByToOrd[(int) toDV.nextOrd()] = toDoc;
+          }
+        }
+        return toDocByToOrd;
+      };
+    }
+  }
+
   /**
    * Builds the join column for one (from-segment, to-segment) pair: resolves every from-side doc to
    * its matching to-side doc id, along with the pair's from-doc and to-doc bounds. From-side terms
@@ -211,7 +238,10 @@ final class AIJoinUtil {
    * mapping outlives whatever gets deleted after it was built.
    */
   static JoinColumnModel computeDocMapping(
-      LeafReaderContext toContext, String toField, ForeignKeyColumn fromSideData)
+      LeafReaderContext toContext,
+      String toField,
+      ForeignKeyColumn fromSideData,
+      ToDocInvertor toDocInvertor)
       throws IOException {
     assert fromSideData != null;
 
@@ -237,21 +267,7 @@ final class AIJoinUtil {
     // docValueCount() values per doc, so only this writer needs to learn to emit multiple
     // to docs per fromSideData doc.
     if (!termsAreDisjoint) {
-      int[] toDocByToOrd = new int[Math.toIntExact(toDV.getValueCount())];
-      Arrays.fill(toDocByToOrd, -1);
-      for (int toDoc = toDV.nextDoc();
-          toDoc != DocIdSetIterator.NO_MORE_DOCS;
-          toDoc = toDV.nextDoc()) {
-        if (toLiveDocs != null && !toLiveDocs.get(toDoc)) {
-          continue;
-        }
-        for (int i = 0; i < toDV.docValueCount(); i++) {
-          long toOrd = toDV.nextOrd();
-          toDocByToOrd[(int) toOrd] = toDoc;
-          // TODO we can apply toOrdByFromOrd right here
-          // and get toDocByFromOrd[]
-        }
-      }
+      int[] toDocByToOrd = toDocInvertor.invert(toDV, toLiveDocs);
 
       // resolve every fromSideData doc to its to-side doc. Docs without the field, or whose term
       // has
