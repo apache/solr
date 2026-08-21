@@ -27,8 +27,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
- * HTTP tests for {@code GET /api/node/properties} via the generated SolrJ client class {@code
- * NodeApi.GetNodeProperties}.
+ * HTTP tests for {@code GET /api/node/properties} and {@code GET
+ * /api/node/properties/{propertyName}} via the generated SolrJ client classes.
  */
 public class GetNodePropertiesTest extends SolrTestCase {
 
@@ -51,8 +51,7 @@ public class GetNodePropertiesTest extends SolrTestCase {
 
   @Test
   public void testNamedProperty() throws Exception {
-    var req = new NodeApi.GetNodeProperties();
-    req.setName("java.version");
+    var req = new NodeApi.GetNodeProperty("java.version");
     var rsp = req.process(solrTestRule.getAdminClient());
 
     assertNotNull(rsp);
@@ -87,11 +86,10 @@ public class GetNodePropertiesTest extends SolrTestCase {
   }
 
   private NodePropertiesResponse fetchProperties(String name) throws Exception {
-    var req = new NodeApi.GetNodeProperties();
-    if (name != null) {
-      req.setName(name);
-    }
-    NodePropertiesResponse rsp = req.process(solrTestRule.getAdminClient());
+    NodePropertiesResponse rsp =
+        name == null
+            ? new NodeApi.GetNodeProperties().process(solrTestRule.getAdminClient())
+            : new NodeApi.GetNodeProperty(name).process(solrTestRule.getAdminClient());
     assertNotNull(rsp);
     assertNull(rsp.error);
     assertNotNull(rsp.systemProperties);

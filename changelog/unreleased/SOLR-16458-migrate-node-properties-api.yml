@@ -1,4 +1,4 @@
-title: "SolrJ now offers a SolrRequest class allowing users to fetch node system properties: NodeApi.GetNodeProperties"
+title: "v2 GET /api/node/properties is now a JAX-RS API; a single property is fetched at /api/node/properties/{propertyName} (SolrJ: NodeApi.GetNodeProperties / GetNodeProperty)"
 type: added
 authors:
   - name: Prithvi S

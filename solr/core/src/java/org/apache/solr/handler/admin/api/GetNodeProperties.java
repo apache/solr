@@ -31,7 +31,9 @@ import org.apache.solr.security.PermissionNameProvider;
 /**
  * V2 API for listing system properties on the receiving node.
  *
- * <p>This API (GET /v2/node/properties) is analogous to the v1 /admin/info/properties.
+ * <p>GET /api/node/properties lists all properties. GET /api/node/properties/{propertyName} returns
+ * a single property. Both are analogous to v1 /admin/info/properties, which still uses a {@code
+ * name} query parameter for the single-property form.
  *
  * <p>The v1 {@link org.apache.solr.handler.admin.PropertiesRequestHandler} delegates to this class.
  */
@@ -46,7 +48,17 @@ public class GetNodeProperties extends JerseyResource implements NodePropertiesA
 
   @Override
   @PermissionName(PermissionNameProvider.Name.CONFIG_READ_PERM)
-  public NodePropertiesResponse getNodeProperties(String name) {
+  public NodePropertiesResponse getNodeProperties() {
+    return buildResponse(null);
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.CONFIG_READ_PERM)
+  public NodePropertiesResponse getNodeProperty(String propertyName) {
+    return buildResponse(propertyName);
+  }
+
+  private NodePropertiesResponse buildResponse(String name) {
     final NodePropertiesResponse response = instantiateJerseyResponse(NodePropertiesResponse.class);
     response.systemProperties = collectProperties(name);
     return response;

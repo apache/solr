@@ -20,7 +20,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Map;
 
-/** Response body for the {@code GET /api/node/properties} endpoint. */
+/**
+ * Response body for {@code GET /api/node/properties} and {@code GET
+ * /api/node/properties/{propertyName}}.
+ */
 public class NodePropertiesResponse extends SolrJerseyResponse {
 
   public static final String SYSTEM_PROPERTIES = "system.properties";
