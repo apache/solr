@@ -36,6 +36,7 @@ import org.apache.solr.CursorPagingTest;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -594,7 +595,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
             assertFullWalkNoDupsElevated(
                 wrapDefaults(
                     params(
-                        "qt", "/elevate",
                         "fl", "id,[elevated]",
                         "forceElevation", "true",
                         "elevateIds", "50,20,80"),
@@ -648,8 +648,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
           assertFullWalkNoDupsElevated(
               wrapDefaults(
                   params(
-                      "qt",
-                      "/elevate",
                       "fl",
                       fl + ",[elevated]",
                       // HACK: work around SOLR-15307... same results should match, just not same
@@ -781,6 +779,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     final SentinelIntSet idsElevated = new SentinelIntSet(32, -1);
 
     assertFullWalkNoDups(
+        "/elevate",
         params,
         (doc) -> {
           final int id = Integer.parseInt(doc.get("id").toString());
@@ -882,12 +881,21 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
    */
   public void assertFullWalkNoDups(SolrParams params, Consumer<SolrDocument> consumer)
       throws Exception {
+    assertFullWalkNoDups("/select", params, consumer);
+  }
+
+  /**
+   * Identical to {@link #assertFullWalkNoDups(SolrParams,Consumer)}, but dispatches the query to
+   * the specified request handler path.
+   */
+  public void assertFullWalkNoDups(
+      String requestHandler, SolrParams params, Consumer<SolrDocument> consumer) throws Exception {
 
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
     while (0 < docsOnThisPage) {
       final SolrParams p = p(params, CURSOR_MARK_PARAM, cursorMark);
-      QueryResponse rsp = cloudClient.query(p);
+      QueryResponse rsp = new QueryRequest(requestHandler, p).process(cloudClient);
       String nextCursorMark = assertHashNextCursorMark(rsp);
       SolrDocumentList docs = extractDocList(rsp);
       docsOnThisPage = docs.size();

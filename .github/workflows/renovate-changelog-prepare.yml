@@ -4,6 +4,11 @@ name: Generate Renovate Changelog (Stage 1 - Prepare)
 # Checks out BASE repo code only, runs the trusted Python script,
 # and saves the generated changelog file + PR metadata as an artifact
 # for Stage 2 to pick up and push to the fork branch.
+#
+# Generation is skipped (SKIP=true in the artifact metadata) when the PR
+# carries the 'no-changelog' label, or when a user other than solrbot has
+# manually edited changelog/unreleased/ in the PR — in that case the bot
+# must not overwrite the manual changes.
 on:
   pull_request:
     types:
@@ -21,6 +26,7 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read # Needed to list PR commits for the manual-edit check
 
 jobs:
   generate:
@@ -37,15 +43,51 @@ jobs:
           ref: ${{ github.event.pull_request.base.ref }}
           repository: ${{ github.repository }}
 
+      - name: Check whether changelog generation should be skipped
+        id: skip-check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          HAS_NO_CHANGELOG_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+        run: |
+          set -euo pipefail
+          skip=false
+
+          if [ "$HAS_NO_CHANGELOG_LABEL" = "true" ]; then
+            skip=true
+            echo "::notice::Skipping changelog generation for PR#${PR_NUMBER}: PR has the 'no-changelog' label"
+          else
+            # Skip if any PR commit from a user other than solrbot touched
+            # changelog/unreleased/ — a human has taken over the changelog
+            # entry and the bot must not overwrite it. Commits with an
+            # unresolvable login are treated as manual edits (fail safe).
+            while read -r sha login; do
+              if [ "$login" != "solrbot" ]; then
+                if gh api "repos/${REPO}/commits/${sha}" --jq '.files[].filename' | grep -q '^changelog/unreleased/'; then
+                  skip=true
+                  echo "::notice::Skipping changelog generation for PR#${PR_NUMBER}: changelog/unreleased/ was manually edited by '${login}' in commit ${sha}"
+                  break
+                fi
+              fi
+            done < <(gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/commits" \
+                       --jq '.[] | "\(.sha) \(.author.login // "unknown")"')
+          fi
+
+          echo "skip=${skip}" >> "$GITHUB_OUTPUT"
+
       - name: Set up Python
+        if: steps.skip-check.outputs.skip != 'true'
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.x'
 
       - name: Install dependencies
+        if: steps.skip-check.outputs.skip != 'true'
         run: python3 -m pip install --quiet pyyaml
 
       - name: Generate changelog entry
+        if: steps.skip-check.outputs.skip != 'true'
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
@@ -59,15 +101,16 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          SKIP: ${{ steps.skip-check.outputs.skip }}
         run: |
           set -euo pipefail
           mkdir -p artifact
-          if [ -d changelog/unreleased ]; then
+          if [ "$SKIP" != "true" ] && [ -d changelog/unreleased ]; then
             cp -r changelog/unreleased artifact/changelog-unreleased
           fi
           # Use printf + env vars to avoid shell injection from PR metadata values
-          printf 'PR_NUMBER=%s\nHEAD_REF=%s\nHEAD_REPO=%s\n' \
-            "$PR_NUMBER" "$HEAD_REF" "$HEAD_REPO" \
+          printf 'PR_NUMBER=%s\nHEAD_REF=%s\nHEAD_REPO=%s\nSKIP=%s\n' \
+            "$PR_NUMBER" "$HEAD_REF" "$HEAD_REPO" "$SKIP" \
             > artifact/pr-metadata.env
           echo "Artifact contents:"; find artifact/ -type f
 

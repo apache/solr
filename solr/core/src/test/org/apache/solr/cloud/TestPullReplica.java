@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -67,6 +68,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Nightly
 @LogLevel(
     "org.apache.solr.handler.ReplicationHandler=DEBUG;org.apache.solr.handler.IndexFetcher=DEBUG")
 public class TestPullReplica extends SolrCloudTestCase {
@@ -130,9 +132,9 @@ public class TestPullReplica extends SolrCloudTestCase {
     try {
       switch (random().nextInt(3)) {
         case 0 ->
-        // Sometimes use SolrJ
-        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
-            .process(cluster.getSolrClient());
+            // Sometimes use SolrJ
+            CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
+                .process(cluster.getSolrClient());
         case 1 -> {
           // Sometimes use v1 API
           var jetty = cluster.getRandomJetty(random());

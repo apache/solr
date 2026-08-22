@@ -1,5 +1,3 @@
-import org.apache.tools.ant.taskdefs.condition.Os
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,8 +23,6 @@ description = 'Cross-DC Manager'
 dependencies {
   implementation platform(project(':platform'))
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
-  implementation project(':solr:solrj-zookeeper')
   implementation project(':solr:modules:cross-dc')
   implementation project(':solr:modules:opentelemetry')
 
@@ -42,8 +38,6 @@ dependencies {
   runtimeOnly libs.commonscodec.commonscodec
 
   implementation libs.apache.kafka.clients
-  runtimeOnly libs.apache.kafka.kafka213
-  runtimeOnly libs.apache.kafka.streams
 
   runtimeOnly libs.apache.log4j.api
   runtimeOnly libs.apache.log4j.core
@@ -67,34 +61,17 @@ dependencies {
   testRuntimeOnly libs.bytebuddy
   testRuntimeOnly libs.bytebuddy.agent
 
-  testImplementation(libs.apache.kafka.streams) {
-    artifact {
-      classifier = "test"
-    }
-  }
-  testImplementation(libs.apache.kafka.clients) {
-    artifact {
-      classifier = "test"
-    }
-  }
-  testRuntimeOnly(libs.apache.kafka.kafka213) {
-    artifact {
-      classifier = "test"
-    }
-  }
-  testRuntimeOnly(libs.apache.kafka.server.common) {
-    artifact {
-      classifier = "test"
-    }
-  }
+  testImplementation libs.testcontainers.kafka
 }
 
 ext {
   mainClass = 'org.apache.solr.crossdc.manager.consumer.Consumer'
 
-  // Use of the security manager is not supported on windows.
-  // Mockito does not work with it enabled.
-  useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
+  // Docker/Testcontainers integration tests (KafkaContainerRule) do PATH scanning,
+  // spawn processes, and talk to the Docker daemon over a Unix socket -- none of
+  // which play well with a static SecurityManager policy. Same rationale as
+  // solr:modules:extraction, Solr's other Testcontainers consumer.
+  useSecurityManager = false
 }
 
 task run(type: JavaExec) {

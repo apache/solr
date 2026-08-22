@@ -778,8 +778,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                   .setLen(nDocs)
                   .setSupersetMaxDoc(nDocs)
                   .setFlags(flags);
-              QueryResult qr = new QueryResult();
-              newSearcher.getDocListC(qr, qc);
+              // called for its cache side effect; the returned QueryResult is unused
+              newSearcher.getDocListC(qc);
               return true;
             }
           });
@@ -788,13 +788,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   /** Primary entrypoint for searching, using a {@link QueryCommand}. */
   public QueryResult search(QueryCommand cmd) throws IOException {
-    return search(new QueryResult(), cmd);
-  }
-
-  @Deprecated
-  public QueryResult search(QueryResult qr, QueryCommand cmd) throws IOException {
-    getDocListC(qr, cmd);
-    return qr;
+    return getDocListC(cmd);
   }
 
   /**
@@ -834,46 +828,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }.searchWithTimeout();
     }
   }
-
-  /**
-   * Retrieve the {@link Document} instance corresponding to the document id.
-   *
-   * @see SolrDocumentFetcher
-   */
-  /* @Override
-  @Deprecated
-  public Document doc(int docId) throws IOException {
-    return doc(docId, (Set<String>) null);
-  }*/
-
-  /**
-   * Visit a document's fields using a {@link StoredFieldVisitor}. This method does not currently
-   * add to the Solr document cache.
-   *
-   * @see IndexReader#document(int, StoredFieldVisitor)
-   * @see SolrDocumentFetcher
-   */
-  /*@Override
-  @Deprecated
-  public final void doc(int docId, StoredFieldVisitor visitor) throws IOException {
-    getDocFetcher().doc(docId, visitor);
-  }*/
-
-  /**
-   * Retrieve the {@link Document} instance corresponding to the document id.
-   *
-   * <p><b>NOTE</b>: the document will have all fields accessible, but if a field filter is
-   * provided, only the provided fields will be loaded (the remainder will be available lazily).
-   *
-   * @see SolrDocumentFetcher
-   */
-  /*
-    @Override
-    @Deprecated
-    public final Document doc(int i, Set<String> fields) throws IOException {
-      return getDocFetcher().doc(i, fields);
-    }
-  */
 
   /** expert: internal API, subject to change */
   public SolrCache<String, UnInvertedField> getFieldValueCache() {
@@ -1529,66 +1483,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
-  /**
-   * Returns documents matching both <code>query</code> and <code>filter</code> and sorted by <code>
-   * sort</code>.
-   *
-   * <p>This method is cache aware and may retrieve <code>filter</code> from the cache or make an
-   * insertion into the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * @param filter may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocList getDocList(Query query, Query filter, Sort lsort, int offset, int len)
-      throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filter)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .search(this)
-        .getDocList();
-  }
-
-  /**
-   * Returns documents matching both <code>query</code> and the intersection of the <code>filterList
-   * </code>, sorted by <code>sort</code>.
-   *
-   * <p>This method is cache aware and may retrieve <code>filter</code> from the cache or make an
-   * insertion into the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * @param filterList may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocList getDocList(
-      Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags)
-      throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filterList)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setFlags(flags)
-        .search(this)
-        .getDocList();
-  }
-
   public static final int NO_CHECK_QCACHE = 0x80000000;
   public static final int GET_DOCSET = 0x40000000;
   static final int NO_CHECK_FILTERCACHE = 0x20000000;
@@ -1630,8 +1524,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * getDocList version that uses+populates query and filter caches. In the event of a timeout, the
    * cache is not populated.
    */
-  private QueryResult getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
-    // TODO don't take QueryResult as arg; create one here
+  private QueryResult getDocListC(QueryCommand cmd) throws IOException {
+    QueryResult qr = new QueryResult();
     if (cmd.getSegmentTerminateEarly()) {
       qr.setSegmentTerminatedEarly(Boolean.FALSE);
     }
@@ -1982,7 +1876,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd)) {
+      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, getTaskExecutor())) {
         log.trace("SINGLE THREADED search, skipping collector manager in getDocListNC");
         final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
         MaxScoreCollector maxScoreCollector = null;
@@ -2093,7 +1987,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final TopDocs topDocs;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd)) {
+      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, getTaskExecutor())) {
         log.trace("SINGLE THREADED search, skipping collector manager in getDocListAndSetNC");
 
         @SuppressWarnings({"rawtypes"})
@@ -2150,197 +2044,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // TODO: currently we don't generate the DocSet for the base query,
     // but the QueryDocSet == CompleteDocSet if filter==null.
     return pf.filter == null && pf.postFilter == null ? qr.getDocSet() : null;
-  }
-
-  /**
-   * Returns documents matching <code>query</code>, sorted by <code>sort</code>.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocList getDocList(Query query, Sort lsort, int offset, int len) throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .search(this)
-        .getDocList();
-  }
-
-  /**
-   * Returns documents matching both <code>query</code> and <code>filter</code> and sorted by <code>
-   * sort</code>. Also returns the complete set of documents matching <code>query</code> and <code>
-   * filter</code> (regardless of <code>offset</code> and <code>len</code>).
-   *
-   * <p>This method is cache aware and may retrieve <code>filter</code> from the cache or make an
-   * insertion into the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * <p>The DocList and DocSet returned should <b>not</b> be modified.
-   *
-   * @param filter may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
-   *     caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len)
-      throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filter)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setNeedDocSet(true)
-        .search(this)
-        .getDocListAndSet();
-  }
-
-  /**
-   * Returns documents matching both <code>query</code> and <code>filter</code> and sorted by <code>
-   * sort</code>. Also returns the compete set of documents matching <code>query</code> and <code>
-   * filter</code> (regardless of <code>offset</code> and <code>len</code>).
-   *
-   * <p>This method is cache aware and may retrieve <code>filter</code> from the cache or make an
-   * insertion into the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * <p>The DocList and DocSet returned should <b>not</b> be modified.
-   *
-   * @param filter may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @param flags user supplied flags for the result set
-   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
-   *     caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocListAndSet getDocListAndSet(
-      Query query, Query filter, Sort lsort, int offset, int len, int flags) throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filter)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setFlags(flags)
-        .setNeedDocSet(true)
-        .search(this)
-        .getDocListAndSet();
-  }
-
-  /**
-   * Returns documents matching both <code>query</code> and the intersection of <code>filterList
-   * </code>, sorted by <code>sort</code>. Also returns the compete set of documents matching <code>
-   * query</code> and <code>filter</code> (regardless of <code>offset</code> and <code>len</code>).
-   *
-   * <p>This method is cache aware and may retrieve <code>filter</code> from the cache or make an
-   * insertion into the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * <p>The DocList and DocSet returned should <b>not</b> be modified.
-   *
-   * @param filterList may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
-   *     caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocListAndSet getDocListAndSet(
-      Query query, List<Query> filterList, Sort lsort, int offset, int len) throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filterList)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setNeedDocSet(true)
-        .search(this)
-        .getDocListAndSet();
-  }
-
-  /**
-   * Returns documents matching both <code>query</code> and the intersection of <code>filterList
-   * </code>, sorted by <code>sort</code>. Also returns the complete set of documents matching
-   * <code>query</code> and <code>filter</code> (regardless of <code>offset</code> and <code>len
-   * </code>).
-   *
-   * <p>This method is cache aware and may retrieve filters from the cache or make an insertion into
-   * the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * <p>The DocList and DocSet returned should <b>not</b> be modified.
-   *
-   * @param filterList may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @param flags user supplied flags for the result set
-   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
-   *     caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocListAndSet getDocListAndSet(
-      Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags)
-      throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filterList)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setFlags(flags)
-        .setNeedDocSet(true)
-        .search(this)
-        .getDocListAndSet();
-  }
-
-  /**
-   * Returns the top documents matching the <code>query</code> and sorted by <code>
-   * sort</code>, limited by <code>offset</code> and <code>len</code>. Also returns compete set of
-   * matching documents as a {@link DocSet}.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
-   *     caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocListAndSet getDocListAndSet(Query query, Sort lsort, int offset, int len)
-      throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setNeedDocSet(true)
-        .search(this)
-        .getDocListAndSet();
   }
 
   private DocList constantScoreDocList(int offset, int length, DocSet docs) {

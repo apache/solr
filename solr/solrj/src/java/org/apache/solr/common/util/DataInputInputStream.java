@@ -26,7 +26,7 @@ public abstract class DataInputInputStream extends InputStream implements DataIn
   /**
    * If possible, read UTF8 bytes directly from the underlying buffer
    *
-   * @param utf8 the utf8 ubject to read into
+   * @param utf8 the utf8 subject to read into
    * @param len length of the utf8 stream
    * @return whether it is possible to do a direct read or not
    */
@@ -42,5 +42,4 @@ public abstract class DataInputInputStream extends InputStream implements DataIn
   public ByteBuffer readDirectByteBuffer(int sz) {
     return null;
   }
-  ;
 }

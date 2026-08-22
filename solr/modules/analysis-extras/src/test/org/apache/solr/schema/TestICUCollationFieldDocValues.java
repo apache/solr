@@ -100,7 +100,7 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
   }
 
   /**
-   * Test rangequery again with the DIN 5007-1 collator. We do a range query of tone .. tp, in
+   * Test rangequery again with the DIN 5007-1 collator. We do a range query of "tone" to "tp", in
    * binary order this would retrieve nothing due to case and accent differences.
    */
   public void testBasicRangeQuery() {
@@ -148,7 +148,7 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
 
   /**
    * Test canonical decomposition with turkish primary strength. With this sort order, İ is the
-   * uppercase form of i, and I is the uppercase form of ı. We index a decomposed form of İ.
+   * uppercase form of i, and "I" is the uppercase form of ı. We index a decomposed form of İ.
    */
   public void testCanonicalDecomposition() {
     assertQ(

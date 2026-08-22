@@ -74,10 +74,6 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
               throws Exception {
             QueryRequest query = new QueryRequest(args);
             query.setResponseParser(new SmileResponseParser());
-            String path = args.get("qt");
-            if (path != null) {
-              query.setPath(path);
-            }
             NamedList<Object> rsp = client.request(query);
             @SuppressWarnings({"rawtypes"})
             Map m = rsp.asMap(5);

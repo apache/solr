@@ -183,11 +183,10 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=group_s sort='term_s desc, test_l asc'}");
     params.add("sort", "test_l asc");
-    params.add("qt", "/elevate");
     params.add("forceElevation", "true");
     params.add("elevateIds", "4");
     assertQ(
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='5']");
@@ -196,11 +195,10 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=group_s sort='term_s desc, test_l asc'}");
     params.add("sort", "test_l asc");
-    params.add("qt", "/elevate");
     params.add("forceElevation", "true");
     params.add("elevateIds", "7");
     assertQ(
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='7']",
         "//result/doc[2]/str[@name='id'][.='1']");
@@ -567,9 +565,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
     params.add("qf", "term_s");
-    params.add("qt", "/elevate");
     assertQ(
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=4]",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']",
@@ -586,10 +583,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       params.add("defType", "edismax");
       params.add("bf", "field(test_i)");
       params.add("qf", "term_s");
-      params.add("qt", "/elevate");
       params.add("elevateIds", "1,5");
       assertQ(
-          req(params),
+          reqWithPath("/elevate", params),
           "*[count(//doc)=3]",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='5']",
@@ -605,10 +601,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       params.add("defType", "edismax");
       params.add("bf", "field(test_i)");
       params.add("qf", "term_s");
-      params.add("qt", "/elevate");
       params.add("elevateIds", "1,5");
       assertQ(
-          req(params),
+          reqWithPath("/elevate", params),
           "*[count(//doc)=3]",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='5']",
@@ -624,10 +619,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       params.add("defType", "edismax");
       params.add("bf", "field(test_i)");
       params.add("qf", "term_s");
-      params.add("qt", "/elevate");
       params.add("elevateIds", "1,5");
       assertQ(
-          req(params),
+          reqWithPath("/elevate", params),
           "*[count(//doc)=3]",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='5']",
@@ -641,10 +635,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
     params.add("qf", "term_s");
-    params.add("qt", "/elevate");
     params.add("elevateIds", "3,4");
     assertQ(
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=4]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[2]/str[@name='id'][.='4']",
@@ -975,9 +968,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
     params.add("qf", "term_s");
-    params.add("qt", "/elevate");
     assertQ(
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=3]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[2]/str[@name='id'][.='6']",
@@ -1124,23 +1116,23 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         () -> GroupHeadSelector.build(params("sort", "foo_s asc", "min", "bar_s")));
 
     s = GroupHeadSelector.build(params("min", "foo_s"));
-    assertEquals(GroupHeadSelectorType.MIN, s.type);
-    assertEquals("foo_s", s.selectorText);
+    assertEquals(GroupHeadSelectorType.MIN, s.type());
+    assertEquals("foo_s", s.selectorText());
 
     s = GroupHeadSelector.build(params("max", "foo_s"));
-    assertEquals(GroupHeadSelectorType.MAX, s.type);
-    assertEquals("foo_s", s.selectorText);
+    assertEquals(GroupHeadSelectorType.MAX, s.type());
+    assertEquals("foo_s", s.selectorText());
     assertNotEquals(s, GroupHeadSelector.build(params("min", "foo_s", "other", "stuff")));
 
     s = GroupHeadSelector.build(params());
-    assertEquals(GroupHeadSelectorType.SCORE, s.type);
-    assertNotNull(s.selectorText);
+    assertEquals(GroupHeadSelectorType.SCORE, s.type());
+    assertNotNull(s.selectorText());
     assertEquals(GroupHeadSelector.build(params()), s);
     assertNotEquals(s, GroupHeadSelector.build(params("min", "BAR_s")));
 
     s = GroupHeadSelector.build(params("sort", "foo_s asc"));
-    assertEquals(GroupHeadSelectorType.SORT, s.type);
-    assertEquals("foo_s asc", s.selectorText);
+    assertEquals(GroupHeadSelectorType.SORT, s.type());
+    assertEquals("foo_s asc", s.selectorText());
     assertEquals(GroupHeadSelector.build(params("sort", "foo_s asc")), s);
     assertNotEquals(s, GroupHeadSelector.build(params("sort", "BAR_s asc")));
     assertNotEquals(s, GroupHeadSelector.build(params("min", "BAR_s")));
@@ -1380,10 +1372,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[3]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
-                      "qt",
-                      "/elevate",
                       "elevateIds",
                       "1,5",
                       "q",
@@ -1397,10 +1388,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[4]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
-                      "qt",
-                      "/elevate",
                       "elevateIds",
                       "0,7",
                       "q",
@@ -1415,10 +1405,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[5]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
-                      "qt",
-                      "/elevate",
                       "elevateIds",
                       "6,0",
                       "q",
@@ -1447,10 +1436,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[4]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
-                      "qt",
-                      "/elevate",
                       "elevateIds",
                       "1,5",
                       "q",
@@ -1465,10 +1453,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[5]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
-                      "qt",
-                      "/elevate",
                       "elevateIds",
                       "0,7",
                       "q",
@@ -1483,10 +1470,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[5]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
-                      "qt",
-                      "/elevate",
                       "elevateIds",
                       "6,0",
                       "q",
@@ -1517,10 +1503,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[6]/str[@name='id'][.='0']" // null
               );
           assertQ(
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
-                      "qt",
-                      "/elevate",
                       "elevateIds",
                       "1,5",
                       "q",
@@ -1537,10 +1522,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[7]/str[@name='id'][.='0']" // null
               );
           assertQ(
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
-                      "qt",
-                      "/elevate",
                       "elevateIds",
                       "0,7",
                       "q",
@@ -1556,10 +1540,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               "//result/doc[6]/str[@name='id'][.='3']" // group B
               );
           assertQ(
-              req(
+              reqWithPath(
+                  "/elevate",
                   params(
-                      "qt",
-                      "/elevate",
                       "elevateIds",
                       "6,0",
                       "q",
@@ -1577,5 +1560,151 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         }
       }
     }
+  }
+
+  @Test
+  public void testCollapseStringSortLazyLoadingTieDoesNotEvictGroupHead() {
+    // Group A: id=1 and id=2 both have term_s_dv=AAA → tie on the sort field.
+    // Group B: id=3 (BBB) and id=4 (CCC) → no tie, id=3 is the winner on asc.
+    assertU(adoc("id", "1", "group_s_dv", "A", "term_s_dv", "AAA"));
+    assertU(adoc("id", "2", "group_s_dv", "A", "term_s_dv", "AAA"));
+    assertU(adoc("id", "3", "group_s_dv", "B", "term_s_dv", "BBB"));
+    assertU(adoc("id", "4", "group_s_dv", "B", "term_s_dv", "CCC"));
+    assertU(commit());
+
+    // Single segment: ordinal fast path, tie → first doc (id=1) stays as group head.
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv asc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='3']");
+
+    // Multi-segment: slow path, same tie expectation.
+    assertU(adoc("id", "5", "group_s_dv", "A", "term_s_dv", "AAA"));
+    assertU(commit());
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv asc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='3']");
+  }
+
+  @Test
+  public void testCollapseStringSortOrdinalFastPathMultiClauseTieBreaking() {
+    // Group A: id=1 (AAA, ZZZ) vs id=2 (AAA, MMM) → clause-1 ties (both AAA),
+    //          clause-2 decides: MMM < ZZZ → id=2 wins on 'term_s_dv asc, term2_s_dv asc'.
+    // Group B: id=3 (BBB, X) vs id=4 (CCC, X) → clause-1 decides, no tie.
+    assertU(adoc("id", "1", "group_s_dv", "A", "term_s_dv", "AAA", "term2_s_dv", "ZZZ"));
+    assertU(adoc("id", "2", "group_s_dv", "A", "term_s_dv", "AAA", "term2_s_dv", "MMM"));
+    assertU(adoc("id", "3", "group_s_dv", "B", "term_s_dv", "BBB", "term2_s_dv", "X"));
+    assertU(adoc("id", "4", "group_s_dv", "B", "term_s_dv", "CCC", "term2_s_dv", "X"));
+    assertU(commit());
+
+    // Single segment: ordinal fast path on clause-1 (tie), then clause-2 decides.
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv asc,term2_s_dv asc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='3']");
+
+    // Add a cross-segment competitor for group A to exercise the slow path too.
+    assertU(adoc("id", "5", "group_s_dv", "A", "term_s_dv", "AAA", "term2_s_dv", "AAA"));
+    assertU(commit());
+
+    // id=5 (AAA, AAA) beats id=2 (AAA, MMM) because AAA < MMM on clause-2.
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv asc,term2_s_dv asc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[2]/str[@name='id'][.='5']");
+  }
+
+  @Test
+  public void testCollapseStringSortWithoutDocValuesSkipsLazyLoadingAndOrdinalFastPath() {
+    // term_s is a *_s field: indexed but no docValues → stringSortDVs[0] will be null.
+    // Group A: id=1 (ZZZ) vs id=2 (AAA) → id=2 wins on asc.
+    // Group B: id=3 (MMM) vs id=4 (BBB) → id=4 wins on asc.
+    assertU(adoc("id", "1", "group_s_dv", "A", "term_s", "ZZZ"));
+    assertU(adoc("id", "2", "group_s_dv", "A", "term_s", "AAA"));
+    assertU(adoc("id", "3", "group_s_dv", "B", "term_s", "MMM"));
+    assertU(adoc("id", "4", "group_s_dv", "B", "term_s", "BBB"));
+    assertU(commit());
+    assertU(adoc("id", "5", "group_s_dv", "A", "term_s", "BBB"));
+    assertU(commit());
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s asc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='4']");
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s desc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='3']");
+  }
+
+  @Test
+  public void testCollapseStringSortOrdinalFastPathDescendingWithMissingValues() {
+    // Group A: id=1 (ZZZ), id=2 (AAA), id=3 (no term_s_dv → missing, sorts last).
+    // On 'term_s_dv desc': ZZZ > AAA > missing → winner is id=1.
+    // Group B: id=4 (MMM), id=5 (no term_s_dv → missing).
+    // On 'term_s_dv desc': MMM > missing → winner is id=4.
+    assertU(adoc("id", "1", "group_s_dv", "A", "term_s_dv", "ZZZ"));
+    assertU(adoc("id", "4", "group_s_dv", "B", "term_s_dv", "MMM"));
+    assertU(commit());
+    assertU(adoc("id", "2", "group_s_dv", "A", "term_s_dv", "AAA"));
+    assertU(adoc("id", "5", "group_s_dv", "B"));
+    assertU(commit());
+    assertU(adoc("id", "3", "group_s_dv", "A"));
+    assertU(commit());
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv desc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='4']");
+
+    assertU(optimize("maxSegments", "1"));
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s_dv sort='term_s_dv desc'}",
+            "sort", "id_i asc",
+            "fl", "id"),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='4']");
   }
 }

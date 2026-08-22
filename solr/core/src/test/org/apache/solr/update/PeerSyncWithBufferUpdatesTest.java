@@ -193,13 +193,8 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
       throws IOException, SolrServerException {
     QueryRequest qr =
         new QueryRequest(
-            params(
-                "qt",
-                "/get",
-                "getVersions",
-                Integer.toString(numVersions),
-                "syncWithLeader",
-                syncWith));
+            "/get",
+            params("getVersions", Integer.toString(numVersions), "syncWithLeader", syncWith));
     NamedList<?> rsp = client.request(qr);
     assertEquals(true, rsp.get("syncWithLeader"));
   }

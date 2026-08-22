@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.params.SolrParams;
@@ -261,11 +262,12 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
       throws IOException, SolrServerException {
     SolrClient client = cluster.getSolrClient();
     // create a daemon
-    QueryResponse resp = client.query(CHECKPOINT_COLL, params("expr", daemonDef, "qt", "/stream"));
+    QueryResponse resp =
+        new QueryRequest("/stream", params("expr", daemonDef)).process(client, CHECKPOINT_COLL);
     assertEquals(errMsg, 0, resp.getStatus());
 
     // This should close and replace the current daemon and NOT leak threads.
-    resp = client.query(CHECKPOINT_COLL, params("expr", daemonDef, "qt", "/stream"));
+    resp = new QueryRequest("/stream", params("expr", daemonDef)).process(client, CHECKPOINT_COLL);
     assertEquals(errMsg, 0, resp.getStatus());
   }
 

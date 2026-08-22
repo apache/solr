@@ -21,18 +21,13 @@ public interface SchemaDesignerConstants {
   String CONFIG_SET_PARAM = "configSet";
   String COPY_FROM_PARAM = "copyFrom";
   String SCHEMA_VERSION_PARAM = "schemaVersion";
-  String RELOAD_COLLECTIONS_PARAM = "reloadCollections";
-  String INDEX_TO_COLLECTION_PARAM = "indexToCollection";
   String NEW_COLLECTION_PARAM = "newCollection";
-  String CLEANUP_TEMP_PARAM = "cleanupTemp";
   String ENABLE_DYNAMIC_FIELDS_PARAM = "enableDynamicFields";
   String ENABLE_FIELD_GUESSING_PARAM = "enableFieldGuessing";
   String ENABLE_NESTED_DOCS_PARAM = "enableNestedDocs";
   String TEMP_COLLECTION_PARAM = "tempCollection";
   String PUBLISHED_VERSION = "publishedVersion";
-  String DISABLE_DESIGNER_PARAM = "disableDesigner";
   String DISABLED = "disabled";
-  String DOC_ID_PARAM = "docId";
   String FIELD_PARAM = "field";
   String UNIQUE_KEY_FIELD_PARAM = "uniqueKeyField";
   String AUTO_CREATE_FIELDS = "update.autoCreateFields";
@@ -40,6 +35,8 @@ public interface SchemaDesignerConstants {
   String DESIGNER_KEY = "_designer.";
   String LANGUAGES_PARAM = "languages";
   String CONFIGOVERLAY_JSON = "configoverlay.json";
+  // Separate from configoverlay.json so writes here don't trigger a collection reload.
+  String INDEXED_VERSION_ZNODE = "_designer_indexed_version";
   String UPDATE_ERROR = "updateError";
   String ANALYSIS_ERROR = "analysisError";
   String ERROR_DETAILS = "errorDetails";
