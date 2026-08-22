@@ -1,0 +1,92 @@
+= AIJoin Query Parser
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License
+
+The AIJoin (which stands for Auxiliary Index Join) Query Parser is similar to xref:join-query-parser.adoc[], but uses a lazily written sidecar index for faster joins.
+
+Instead of using Lucene's join utilities directly, the parser matches documents through a dedicated join index that is maintained alongside the core's main index.
+The join index is populated lazily: if the inner (`from`-side) query doesn't hit a certain segment, the join index isn't written for it; and if `{!aijoin}` is intersected (`AND`/`+`) with a query that doesn't hit a certain segment on the outer (`to`) side, the corresponding join index columns aren't written either.
+
+Like the Join query parser, Solr runs a subquery (the `v` parameter), gathers the values that matching documents have in a `from` field, and returns documents where those values are contained in a `to` field.
+
+For example:
+
+[source,text]
+----
+q={!aijoin from=manu_id_s to=id}title:ipod
+----
+
+== Parameters
+
+This query parser takes the following parameters:
+
+`from`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The "foreign key" field name, collected while enumerating the subordinate query.
+So far, it should be single value string field with docValues enabled.
+
+`to`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The "primary key" field name looked up in the local core's index.
+So far, it should be single value string field with docValues enabled.
+
+`fromIndex`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: processing core
+|===
++
+The name of the core to run the "from" query (`v` parameter) on and where "from" values are gathered.
+If this parameter is not defined, it defaults to the processing core.
+Cross-core joins are the primary use case for the AIJoin index, so this is useful when the "from" values live in a different core on the same node.
+
+== Configuration
+
+The AIJoin query parser must be registered in `solrconfig.xml` as a `<queryParser>`.
+A sidecar join index is opened per core when the core loads, in a directory under the core's `dataDir`, and closed when the core closes.
+
+`dir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `aijoin`
+|===
++
+The init parameter for the directory holding the sidecar join index.
+Resolved relative to the core's `dataDir` unless an absolute path is given.
+
+[source,xml]
+----
+<queryParser name="aijoin" class="org.apache.solr.search.join.AIJoinQParserPlugin">
+  <str name="dir">aijoin</str>
+</queryParser>
+----
+
+== Segment-level Parallelism
+
+The algorithm utilizes multiple threads on _both_ sides if multiple threads are available. So, set xref:configuration-guide:configuring-solr-xml.adoc#indexSearcherExecutorThreads[indexSearcherExecutorThreads] to `-1` or `>0` in the `solr.xml` file. Note the emphasis on _both_ above: using the xref:common-query-parameters.adoc#multithreaded-parameter[`multiThreaded`] request parameter confines the inner (`from`-side) query to a single thread, limiting performance.
