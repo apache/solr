@@ -16,7 +16,7 @@
  */
 package org.apache.solr.s3;
 
-import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,14 +30,13 @@ import org.junit.Test;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 
+@ThreadLeakFilters(filters = {S3MockTestcontainersThreadFilter.class})
 public class S3OutputStreamTest extends SolrTestCaseJ4 {
 
   private static final String BUCKET = S3OutputStreamTest.class.getSimpleName();
 
   @ClassRule
-  @SuppressWarnings("removal")
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET).withSecureConnection(false).build();
+  public static final S3MockContainerRule S3_MOCK_RULE = new S3MockContainerRule(BUCKET);
 
   private S3Client s3;
 

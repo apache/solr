@@ -17,7 +17,7 @@
 
 package org.apache.solr.s3;
 
-import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
@@ -36,6 +36,7 @@ import software.amazon.awssdk.regions.Region;
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 @ThreadLeakLingering(linger = 10)
+@ThreadLeakFilters(filters = {S3MockTestcontainersThreadFilter.class})
 public class S3InstallShardTest extends AbstractInstallShardTest {
 
   private static final String BUCKET_NAME = S3InstallShardTest.class.getSimpleName();
@@ -61,9 +62,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
       AbstractInstallShardTest.defaultSolrXmlTextWithBackupRepository(BACKUP_REPOSITORY_XML);
 
   @ClassRule
-  @SuppressWarnings("removal")
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
+  public static final S3MockContainerRule S3_MOCK_RULE = new S3MockContainerRule(BUCKET_NAME);
 
   @BeforeClass
   public static void setupClass() throws Exception {

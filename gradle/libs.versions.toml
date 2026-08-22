@@ -221,8 +221,7 @@ swagger3-core = { id = "io.swagger.core.v3.swagger-gradle-plugin", version.ref =
 thetaphi-forbiddenapis = { id = "de.thetaphi.forbiddenapis", version.ref = "thetaphi-forbiddenapis" }
 
 [libraries]
-adobe-testing-s3mock-junit4 = { module = "com.adobe.testing:s3mock-junit4", version.ref = "adobe-testing-s3mock" }
-adobe-testing-s3mock-testsupportcommon = { module = "com.adobe.testing:s3mock-testsupport-common", version.ref = "adobe-testing-s3mock" }
+adobe-testing-s3mock-testcontainers = { module = "com.adobe.testing:s3mock-testcontainers", version.ref = "adobe-testing-s3mock" }
 amazon-awssdk-apacheclient = { module = "software.amazon.awssdk:apache-client", version.ref = "amazon-awssdk" }
 amazon-awssdk-auth = { module = "software.amazon.awssdk:auth", version.ref = "amazon-awssdk" }
 amazon-awssdk-awscore = { module = "software.amazon.awssdk:aws-core", version.ref = "amazon-awssdk" }

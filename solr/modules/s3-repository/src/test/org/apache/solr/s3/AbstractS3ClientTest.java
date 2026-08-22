@@ -16,7 +16,7 @@
  */
 package org.apache.solr.s3;
 
-import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -31,14 +31,13 @@ import org.junit.ClassRule;
 import software.amazon.awssdk.profiles.ProfileFileSystemSetting;
 
 /** Abstract class for test with S3Mock. */
+@ThreadLeakFilters(filters = {S3MockTestcontainersThreadFilter.class})
 public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
   protected static final String BUCKET_NAME = "test-bucket";
 
   @ClassRule
-  @SuppressWarnings("removal")
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
+  public static final S3MockContainerRule S3_MOCK_RULE = new S3MockContainerRule(BUCKET_NAME);
 
   S3StorageClient client;
   private SocketProxy proxy;

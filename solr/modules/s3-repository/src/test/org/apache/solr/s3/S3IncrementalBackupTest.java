@@ -17,7 +17,7 @@
 
 package org.apache.solr.s3;
 
-import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -33,6 +33,7 @@ import software.amazon.awssdk.regions.Region;
 @LuceneTestCase.Nightly
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 @ThreadLeakLingering(linger = 10)
+@ThreadLeakFilters(filters = {S3MockTestcontainersThreadFilter.class})
 @LogLevel(
     value =
         "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
@@ -42,9 +43,7 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   private static final String BUCKET_NAME = S3IncrementalBackupTest.class.getSimpleName();
 
   @ClassRule
-  @SuppressWarnings("removal")
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
+  public static final S3MockContainerRule S3_MOCK_RULE = new S3MockContainerRule(BUCKET_NAME);
 
   public static final String SOLR_XML =
       "<solr>\n"

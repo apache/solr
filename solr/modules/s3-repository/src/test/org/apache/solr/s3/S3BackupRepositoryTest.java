@@ -18,7 +18,7 @@ package org.apache.solr.s3;
 
 import static org.apache.solr.s3.S3BackupRepository.S3_SCHEME;
 
-import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -48,6 +48,7 @@ import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
+@ThreadLeakFilters(filters = {S3MockTestcontainersThreadFilter.class})
 public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   private static final String BUCKET_NAME = S3BackupRepositoryTest.class.getSimpleName();
@@ -55,13 +56,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   public Path temporaryFolder;
 
   @ClassRule
-  @SuppressWarnings("removal")
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder()
-          .silent()
-          .withInitialBuckets(BUCKET_NAME)
-          .withSecureConnection(false)
-          .build();
+  public static final S3MockContainerRule S3_MOCK_RULE = new S3MockContainerRule(BUCKET_NAME);
 
   @Before
   @Override
