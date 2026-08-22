@@ -373,7 +373,11 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
             CoreAdminParams.NAME,
             newCoreName,
             ZkStateReader.REPLICA_TYPE,
-            replica.getType().name());
+            replica.getType().name(),
+            // this method has its own watcher/latch below, conditioned on waitForFinalState;
+            // don't let AddReplicaCmd's own wait run (and block on) first.
+            WAIT_FOR_FINAL_STATE,
+            "false");
 
     NamedList<Object> addResult = new NamedList<>();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ccc.getCloseableToLatchOn());
