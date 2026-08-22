@@ -44,6 +44,11 @@
       "description": "Pin com.carrotsearch:hppc to 0.10.0; 0.11.0+ is compiled for Java 21 but branch_9x builds with Java 11",
       "matchPackageNames": ["com.carrotsearch:hppc"],
       "allowedVersions": "0.10.0"
+    },
+    {
+      "description": "Keep the Jetty 10.x line on branch_9x; Jetty 11 moves the Servlet API from javax.servlet to jakarta.servlet (branch_9x is still on javax.servlet throughout), and Jetty 12 additionally requires Java 17 but branch_9x builds with Java 11",
+      "matchPackageNames": ["org.eclipse.jetty*:**"],
+      "allowedVersions": "<11.0.0"
     }
   ],
   "schedule": ["before 9am on the first day of the month"],
