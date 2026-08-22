@@ -25,8 +25,8 @@ import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
  * Isolates every write-side representation of a join batch behind this one write-only surface, so
  * {@link AIJoinIndex} and {@link AIJoinUtil} deal only in {@link JoinColumnModel} and never need to
  * import a particular field-writing API themselves. Two sibling package-private implementations
- * exist, selected by {@link AIJoinIndex#INSTANCE}: {@code AIJoinColumnWriter}, built on {@code
- * org.apache.lucene.document.column}, and {@link AIJoinDocWriter}, built on the plain {@link
+ * exist, selected by {@link AIJoinIndex#DOC_WRITER_DELEGATE}: {@code AIJoinColumnWriter}, built on
+ * {@code org.apache.lucene.document.column}, and {@link AIJoinDocWriter}, built on the plain {@link
  * org.apache.lucene.document.Document} / {@link IndexWriter#addDocuments} API.
  */
 abstract class AIJoinWriter {
@@ -38,7 +38,6 @@ abstract class AIJoinWriter {
    * field name) and writes them as a single indexing call + commit, so a batch's columns all land
    * at doc 0 of their own sidecar segment.
    */
-  abstract void writeJoinColumns(
-      IndexWriter writer, int batchNumDocs, Map<String, JoinColumnModel> mappings)
+  abstract void writeJoinColumns(IndexWriter writer, Map<String, JoinColumnModel> mappings)
       throws IOException;
 }

@@ -86,11 +86,11 @@ final class AIJoinUtil {
   private AIJoinUtil() {}
 
   /**
-   * Configurable level for the {@code AIJOIN evt=...} diagnostic logs; defaults to {@code INFO},
-   * override with the {@code solr.aijoin.log.level} system property (or {@code
-   * SOLR_AIJOIN_LOG_LEVEL} env var).
+   * Level the {@code AIJOIN evt=...} diagnostic logs emit at; kept in one place so all diagnostics
+   * can be raised or lowered together. To see them, enable {@code TRACE} for the emitting loggers
+   * in log4j config.
    */
-  static final Level AIJOIN_LOG_LEVEL = Level.TRACE;
+  private static final Level AIJOIN_LOG_LEVEL = Level.TRACE;
 
   /** Whether the AIJOIN diagnostic logs would emit at the configured level. */
   static boolean diagnosticsEnabled(Logger log) {
@@ -145,6 +145,11 @@ final class AIJoinUtil {
 
     DocEdges edges() {
       return edges;
+    }
+
+    /** Returns one greater than the largest possible document number. */
+    public int maxDoc() {
+      return toDocByFromDoc.length;
     }
   }
 

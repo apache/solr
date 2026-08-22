@@ -42,8 +42,12 @@ final class AIJoinDocWriter extends AIJoinWriter {
   AIJoinDocWriter() {}
 
   @Override
-  void writeJoinColumns(IndexWriter writer, int batchNumDocs, Map<String, JoinColumnModel> mappings)
+  void writeJoinColumns(IndexWriter writer, Map<String, JoinColumnModel> mappings)
       throws IOException {
+    int batchNumDocs = 0;
+    for (Map.Entry<String, JoinColumnModel> entry : mappings.entrySet()) {
+      batchNumDocs = Math.max(batchNumDocs, entry.getValue().maxDoc());
+    }
     List<Document> docs = new ArrayList<>(batchNumDocs);
     for (int i = 0; i < batchNumDocs; i++) {
       docs.add(new Document());
