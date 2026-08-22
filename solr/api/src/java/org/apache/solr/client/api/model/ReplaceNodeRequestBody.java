@@ -43,7 +43,7 @@ public class ReplaceNodeRequestBody {
               + "before the new replica is online and active.")
   @JsonProperty("waitForFinalState")
   @Deprecated(since = "9.10")
-  public Boolean waitForFinalState = false;
+  public Boolean waitForFinalState = true;
 
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")
   @JsonProperty("async")

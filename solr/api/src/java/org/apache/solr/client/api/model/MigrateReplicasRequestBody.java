@@ -49,7 +49,7 @@ public class MigrateReplicasRequestBody {
               + "before the new replicas are online and active.")
   @JsonProperty
   @Deprecated(since = "9.10")
-  public Boolean waitForFinalState = false;
+  public Boolean waitForFinalState = true;
 
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")
   @JsonProperty

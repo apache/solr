@@ -133,7 +133,7 @@ public class CreateCollectionAPITest extends MockV2APITest {
     requestBody.shardNames = List.of("shard1", "shard2");
     requestBody.pullReplicas = 789;
     requestBody.tlogReplicas = 987;
-    requestBody.waitForFinalState = false;
+    requestBody.waitForFinalState = true;
     requestBody.perReplicaState = true;
     requestBody.alias = "someAliasName";
     requestBody.properties = Map.of("propName", "propValue");
@@ -160,7 +160,7 @@ public class CreateCollectionAPITest extends MockV2APITest {
           assertEquals(789, message.get(PULL_REPLICAS));
           assertEquals(987, message.get(TLOG_REPLICAS));
           assertEquals(123, message.get(NRT_REPLICAS)); // replicationFactor value used
-          assertEquals(false, message.get(WAIT_FOR_FINAL_STATE));
+          assertEquals(true, message.get(WAIT_FOR_FINAL_STATE));
           assertEquals(true, message.get(PER_REPLICA_STATE));
           assertEquals("someAliasName", message.get(ALIAS));
           assertEquals("propValue", message.get("property.propName"));
