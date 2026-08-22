@@ -178,7 +178,6 @@ public class SolrProcessManager {
    */
   enum ProcessProperty {
     PROCESSID,
-    NAME,
     COMMANDLINE
   }
 
@@ -191,14 +190,12 @@ public class SolrProcessManager {
   private static Map<Long, String> commandLinesWindows() {
     COMUtils.checkRC(Ole32.INSTANCE.CoInitializeEx(null, Ole32.COINIT_MULTITHREADED));
     try {
+      // Filter to java processes in the WQL query itself; LIKE is case-insensitive in WMI, so this
+      // matches processes named e.g. "java.exe" while letting WMI do the filtering.
       WmiResult<ProcessProperty> result =
-          new WmiQuery<>("Win32_Process", ProcessProperty.class).execute();
+          new WmiQuery<>("Win32_Process WHERE Name LIKE '%java%'", ProcessProperty.class).execute();
       Map<Long, String> pidToCommandLine = new HashMap<>();
       for (int i = 0; i < result.getResultCount(); i++) {
-        Object name = result.getValue(ProcessProperty.NAME, i);
-        if (name == null || !name.toString().toLowerCase(Locale.ROOT).contains("java")) {
-          continue;
-        }
         Object commandLine = result.getValue(ProcessProperty.COMMANDLINE, i);
         Object processId = result.getValue(ProcessProperty.PROCESSID, i);
         // CommandLine can be null if the current user cannot read it for that process
