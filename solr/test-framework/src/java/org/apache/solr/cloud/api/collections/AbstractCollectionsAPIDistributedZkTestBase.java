@@ -363,16 +363,18 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         .process(cluster.getSolrClient());
 
     DocCollection collectionState = getCollectionState("nodeset_collection");
-    for (Replica replica : collectionState.getReplicas()) {
-      String replicaUrl = replica.getCoreUrl();
-      boolean matchingJetty = false;
-      for (String jettyUrl : baseUrls) {
-        if (replicaUrl.startsWith(jettyUrl)) {
-          matchingJetty = true;
+    for (Slice slice : collectionState) {
+      for (Replica replica : slice.getReplicas()) {
+        String replicaUrl = replica.getCoreUrl();
+        boolean matchingJetty = false;
+        for (String jettyUrl : baseUrls) {
+          if (replicaUrl.startsWith(jettyUrl)) {
+            matchingJetty = true;
+          }
         }
-      }
-      if (matchingJetty == false) {
-        fail("Expected replica to be on " + baseUrls + " but was on " + replicaUrl);
+        if (matchingJetty == false) {
+          fail("Expected replica to be on " + baseUrls + " but was on " + replicaUrl);
+        }
       }
     }
   }
@@ -682,7 +684,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
     String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
     Optional<Replica> optional =
-        docCollection.getReplicas().stream()
+        docCollection
+            .replicaStream()
             .filter(replica -> replicaName.equals(replica.getCoreName()))
             .findAny();
     if (optional.isPresent()) {

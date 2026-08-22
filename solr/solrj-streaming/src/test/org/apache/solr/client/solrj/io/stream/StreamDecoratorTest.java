@@ -4425,7 +4425,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     // find a node with a replica
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection coll = clusterState.getCollection(COLLECTIONORALIAS);
-    String node = coll.getReplicas().iterator().next().getNodeName();
+    String node = coll.replicaStream().findFirst().orElseThrow().getNodeName();
     String url = null;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       if (jetty.getNodeName().equals(node)) {
