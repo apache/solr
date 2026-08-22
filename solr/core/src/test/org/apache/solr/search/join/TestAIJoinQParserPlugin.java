@@ -75,7 +75,7 @@ public class TestAIJoinQParserPlugin extends SolrTestCase {
     solrRule.newCollection().withConfigSet(aijoinConfigSet).create();
 
     // "minimal" uses ClassicIndexSchemaFactory, which never writes, so it's safe to use in place
-    solrRule.newCollection(FROM_CORE).withConfigSet(configset("minimal").toString()).create();
+    solrRule.newCollection(FROM_CORE).withConfigSet(configset("minimal")).create();
 
     SolrClient toSide = solrRule.getSolrClient();
 
