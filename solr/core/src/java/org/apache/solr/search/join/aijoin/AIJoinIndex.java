@@ -304,6 +304,14 @@ public final class AIJoinIndex implements Closeable {
         // deciding "missing" on a stale searcher can re-claim an already-persisted pair; owning
         // the claim means no one else can write it concurrently, so what the fresh searcher
         // lacks is conclusively unwritten
+        //
+        // it's a race condition tradeoff:
+        // 1. this thread didn't see a column and decided to compete for it.
+        // 2. another thread might have persisted it in the meantime, and removed it's claim from pairBuilds.
+        // 3. thread 1. calculate a join column model, and ready to write it
+        // 4. if a column occur in already persisted: it skip wtiting it, but returns the calculated memory model to the caller
+        // overall, under high concurrency we waste some computation for sweeping pairBuilds
+        // alternatively we need to invent a way to remove entries from it somewhere later without a race
         Map<String, JoinColumnModel> unwrittenMappings = loadedMappings;
         IndexSearcher freshJoinSearcher = acquire();
         try {
