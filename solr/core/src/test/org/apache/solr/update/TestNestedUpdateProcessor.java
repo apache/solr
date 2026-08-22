@@ -236,6 +236,36 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
         singularChild.toString());
   }
 
+  /** Children extend a nest path the root doc already carries. */
+  @Test
+  public void testRootPathIsHonored() throws Exception {
+    SolrInputDocument doc =
+        sdoc(
+            "id",
+            "1",
+            "children",
+            sdocs(
+                sdoc("id", "2", "name_s", "Yaz", "grandChild", sdoc("id", "3", "name_s", "Gaz"))));
+    doc.setField(IndexSchema.NEST_PATH_FIELD_NAME, "/myRoot");
+
+    AddUpdateCommand cmd = new AddUpdateCommand(req());
+    cmd.solrDoc = doc;
+    new NestedUpdateProcessorFactory().getInstance(req(), null, null).processAdd(cmd);
+
+    assertEquals(
+        "the root's own path is left alone",
+        "/myRoot",
+        doc.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME));
+
+    SolrInputDocument child = (SolrInputDocument) doc.get("children").getFirstValue();
+    assertEquals("/myRoot/children#0", child.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME));
+
+    SolrInputDocument grandChild = (SolrInputDocument) child.get("grandChild").getValue();
+    assertEquals(
+        "/myRoot/children#0/grandChild#",
+        grandChild.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME));
+  }
+
   @Test
   public void testDeeplyNestedURPChildrenWoId() throws Exception {
     final String rootId = "1";
@@ -275,6 +305,25 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   private void indexSampleData(String cmd) throws Exception {
     updateJ(cmd, null);
     assertU(commit());
+  }
+
+  /** Adding a doc deletes every existing doc sharing its {@code _root_}, not just its own id. */
+  @Test
+  public void testAddDeletesEntireRootBlock() {
+    SolrInputDocument first = sdoc("id", "1", "name_s", "first");
+    first.setField(IndexSchema.ROOT_FIELD_NAME, "77");
+    assertU(adoc(first));
+
+    SolrInputDocument second = sdoc("id", "2", "name_s", "second");
+    second.setField(IndexSchema.ROOT_FIELD_NAME, "77");
+    assertU(adoc(second));
+    assertU(commit());
+
+    assertQ(
+        "adding doc 2 deleted doc 1, since they share a _root_",
+        req("q", IndexSchema.ROOT_FIELD_NAME + ":77", "fl", "id"),
+        "//*[@numFound='1']",
+        "//doc/str[@name='id']='2'");
   }
 
   /** Test the {@code filters} local-param works with {@code parentPath}. */
