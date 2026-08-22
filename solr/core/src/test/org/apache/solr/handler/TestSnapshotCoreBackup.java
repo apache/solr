@@ -18,12 +18,12 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
@@ -469,7 +469,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
         totalFileCount,
         ((Number) lastRunning.get("finishedFileCount")).intValue());
 
-    simpleBackupCheck(backupDir.resolve("snapshot.progress_backup"), 50);
+    simpleBackupCheck(backupDir.resolve("snapshot.progress_backup").toFile(), 50);
   }
 
   /**
