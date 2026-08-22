@@ -18,16 +18,8 @@ package org.apache.solr.search.join.aijoin;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -47,8 +39,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The auxiliary join index: a self-maintaining sidecar persisting per (from-segment, to-segment)
@@ -73,27 +63,13 @@ public final class AIJoinIndex implements Closeable {
 
   private final IndexWriter writer;
   private final SearcherManager manager;
-
-  /**
-   * Dedups concurrent builders per pair field name: the thread that installs the future writes the
-   * pair, others wait on it. A future completes as soon as the pair's in-memory {@link
-   * JoinColumnModel} is ready -- before the owning thread persists and refreshes -- so completion
-   * does not imply the column is visible through {@link #manager} yet. Entries are transient: the
-   * owner removes its claims once the pair is persisted and refreshed (and on build failure), so
-   * the map only ever holds in-flight builds and never pins models in heap. A builder that races a
-   * not-yet-visible refresh and re-claims an already-persisted pair is stopped from writing a
-   * duplicate column by {@link #writeJoinSegments}'s fresh-searcher double-check, not by this map.
-   */
-  private final ConcurrentHashMap<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>>
-      pairBuilds = new ConcurrentHashMap<>();
+  private final JoinColumnIndexer pairBuilder = new JoinColumnIndexer(this);
 
   // package-private (not private): tests reach in directly to observe the reaper's state
   final AIJoinMergePolicy mergePolicy;
   private final MergeScheduler mergeScheduler;
   private final AIJoinWriter writerDelegate;
   private final boolean blockingRefresh;
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** A pair's (from-segment, to-segment) leaf ordinals. */
   record SegmentsTuple(int fromLeafOrd, int toLeafOrd) {}
@@ -216,19 +192,11 @@ public final class AIJoinIndex implements Closeable {
   }
 
   /**
-   * How many of the given pair field names have a build currently in flight in {@link #pairBuilds}
-   * (claims are removed once persisted). Diagnostic only: a pair counted here but still reported
-   * missing by {@link #extractExistingJoinColumns} means the caller is about to redo from-side work
-   * for a pair some other thread is building right now.
+   * How many of the given pair field names have a build currently in flight (claims are removed
+   * once persisted). Diagnostic only; see {@link JoinColumnIndexer#countClaimedBuilds}.
    */
   int countClaimedBuilds(Set<String> pairFieldNames) {
-    int claimed = 0;
-    for (String pairFieldName : pairFieldNames) {
-      if (pairBuilds.containsKey(pairFieldName)) {
-        claimed++;
-      }
-    }
-    return claimed;
+    return pairBuilder.countClaimedBuilds(pairFieldNames);
   }
 
   IndexSearcher acquire() throws IOException {
@@ -241,28 +209,16 @@ public final class AIJoinIndex implements Closeable {
 
   /**
    * Builds and persists the given missing pair columns, keyed by pair field name to their
-   * (from-segment, to-segment) leaf ordinals. Pairs concurrently built by another thread are
-   * awaited, not rebuilt; awaiting yields the builder's in-memory model as soon as it is computed,
-   * possibly before the builder has committed it, so on return pairs built by this thread are
-   * refreshed into the internal searcher manager, while awaited ones may not be visible there yet.
-   *
-   * <p>Claims in {@link #pairBuilds} are transient -- the owner removes them once its pairs are
-   * persisted and refreshed, keeping the map bounded by in-flight builds. That makes re-claiming an
-   * already-persisted pair an expected event: the caller decided "missing" against {@code
-   * observedAbsentSearcher}, which may predate another thread's completed build. So after claiming,
-   * this method re-checks a fresh searcher and skips persisting any pair that turns out already
-   * written. Since only the claim owner ever writes a pair, absence in a post-claim fresh searcher
-   * is conclusive, so no duplicate pair column can be written; rediscovered pairs still cost their
-   * in-memory recompute, which the caller gets back in the result like any built pair. As a
-   * shortcut, when {@link #acquire()} returns {@code observedAbsentSearcher} itself, nothing was
-   * committed since that searcher was current, and the re-check scan is skipped.
+   * (from-segment, to-segment) leaf ordinals. Delegates to {@link
+   * JoinColumnIndexer#writeJoinSegments}, which documents the claim/await dedup and the
+   * fresh-searcher double-check in detail.
    *
    * @param observedAbsentSearcher the join-index searcher in which the caller established that
    *     {@code missingPairs} are absent; possibly stale by now. Pass {@code null} when absence
    *     wasn't verified against a live searcher -- that forces the re-check scan.
    * @return in memory data for just written segemts
    */
-  Map<String, JoinColumnModel> writeJoinSegments(
+  Map<String, JoinColumnModel> buildAndPersistJoinColumns(
       Map<String, SegmentsTuple> missingPairs,
       IndexReader fromReader,
       IndexReader toReader,
@@ -271,157 +227,14 @@ public final class AIJoinIndex implements Closeable {
       IndexSearcher observedAbsentSearcher,
       Future<FromLeafJoinContext>[] fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
-    long startNanos = System.nanoTime();
-    Set<String> writtenPairsLogged = Set.of();
-    Map<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> owned =
-        new LinkedHashMap<>();
-    List<CompletableFuture<Map.Entry<String, JoinColumnModel>>> awaited = new ArrayList<>();
-    for (String pairFieldName : missingPairs.keySet()) {
-      CompletableFuture<Map.Entry<String, JoinColumnModel>> created = new CompletableFuture<>();
-      CompletableFuture<Map.Entry<String, JoinColumnModel>> existing =
-          pairBuilds.putIfAbsent(pairFieldName, created);
-      if (existing == null) {
-        owned.put(pairFieldName, created);
-      } else {
-        awaited.add(existing);
-      }
-    }
-    Map<String, JoinColumnModel> loadedMappings = new LinkedHashMap<>();
-    try {
-      if (!owned.isEmpty()) {
-        AIJoinUtil.ToDocInvertor toInvertor = new AIJoinUtil.ToDocInvertor(toField);
-        for (String pairFieldName : owned.keySet()) {
-          SegmentsTuple position = missingPairs.get(pairFieldName);
-          LeafReaderContext toContext = toReader.leaves().get(position.toLeafOrd());
-          LeafReaderContext fromContext = fromReader.leaves().get(position.fromLeafOrd());
-          assert fromColumnFutures[fromContext.ord] != null;
-          AIJoinUtil.JoinColumnModel mapping =
-              AIJoinUtil.computeDocMapping(
-                  toContext,
-                  toField,
-                  fromColumnFutures[fromContext.ord].get().fkColumn,
-                  toInvertor);
-          loadedMappings.put(pairFieldName, mapping);
-        }
-        // complete before writeBatch: waiters only need the in-memory model, so they don't
-        // pay for this thread's commit + refresh; completion does NOT imply the column is
-        // visible through the searcher manager yet
-        for (Map.Entry<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> entry :
-            owned.entrySet()) {
-          entry
-              .getValue()
-              .complete(
-                  new AbstractMap.SimpleImmutableEntry<>(
-                      entry.getKey(), loadedMappings.get(entry.getKey())));
-        }
-        // double-check against a fresh searcher: claims are dropped once persisted, so a caller
-        // deciding "missing" on a stale searcher can re-claim an already-persisted pair; owning
-        // the claim means no one else can write it concurrently, so what the fresh searcher
-        // lacks is conclusively unwritten
-        //
-        // it's a race condition tradeoff:
-        // 1. this thread didn't see a column and decided to compete for it.
-        // 2. another thread might have persisted it in the meantime, and removed it's claim from
-        // pairBuilds.
-        // 3. thread 1. calculate a join column model, and ready to write it
-        // 4. if a column occur in already persisted: it skip wtiting it, but returns the calculated
-        // memory model to the caller
-        // overall, under high concurrency we waste some computation for sweeping pairBuilds
-        // alternatively we need to invent a way to remove entries from it somewhere later without a
-        // race
-        Map<String, JoinColumnModel> unwrittenMappings = loadedMappings;
-        IndexSearcher freshJoinSearcher = acquire();
-        try {
-          if (freshJoinSearcher != observedAbsentSearcher) {
-            Map<String, JoinSegmentReference> alreadyPersisted =
-                extractExistingJoinColumns(freshJoinSearcher, owned.keySet()::contains);
-            if (!alreadyPersisted.isEmpty()) {
-              unwrittenMappings = new LinkedHashMap<>(loadedMappings);
-              unwrittenMappings.keySet().removeAll(alreadyPersisted.keySet());
-            }
-          } // else: same searcher instance the caller saw the pairs absent in -- nothing was
-          // committed since, so the pairs are provably unwritten and the scan is redundant
-        } finally {
-          release(freshJoinSearcher);
-        }
-        if (!unwrittenMappings.isEmpty()) {
-          // all pairs of a batch go in together: pair columns are addressed by from-side doc id,
-          // so a batch must start at doc 0 of its sidecar segment, which writeBatch guarantees by
-          // flushing one batch per commit
-          for (String pairFieldName : unwrittenMappings.keySet()) {
-            int fromLeafOrd = missingPairs.get(pairFieldName).fromLeafOrd();
-          } // TODO it can be more asynchronous,
-          // besides of pairBuilds removal - and it's a problem
-          // would be great if many concurrent threads merge lists and write it at once,
-          // since it's synchronized bottleneck for now.
-          // and the thread don't even need to wait until writeBatch() is done (beside of pairBuilds
-          // removal, you know)
-          writeBatch(unwrittenMappings);
-        }
-        writtenPairsLogged = unwrittenMappings.keySet();
-        // TODO flush every single field to get single field segments
-        // the claims have served their purpose: every owned pair is now persisted (just
-        // written, or found persisted by the double-check) and visible to any searcher
-        // acquired from here on, and duplicate writes are prevented by the double-check, not
-        // by retained entries -- dropping them keeps pairBuilds bounded by in-flight builds
-        // and unpins the models from heap. Waiters already holding the futures are unaffected.
-        for (Map.Entry<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> entry :
-            owned.entrySet()) {
-          pairBuilds.remove(entry.getKey(), entry.getValue());
-        }
-      }
-    } catch (Throwable t) {
-      // withdraw the claims so a later query can retry the build; completeExceptionally only
-      // takes effect when the failure happened before the completion loop above -- if writeBatch
-      // failed, waiters have already observed success with a valid in-memory model, and only the
-      // withdrawn claim (and this rethrow) records that the column was never persisted
-      for (Map.Entry<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> entry :
-          owned.entrySet()) {
-        pairBuilds.remove(entry.getKey(), entry.getValue());
-        entry.getValue().completeExceptionally(t);
-      }
-      throw t;
-    }
-    long builtNanos = System.nanoTime() - startNanos;
-    Map<String, JoinColumnModel> result = new LinkedHashMap<>(loadedMappings);
-    for (CompletableFuture<Map.Entry<String, JoinColumnModel>> future : awaited) {
-      try {
-        Map.Entry<String, JoinColumnModel> entry = future.join();
-        result.put(entry.getKey(), entry.getValue());
-      } catch (CompletionException e) {
-        Throwable cause = e.getCause();
-        if (cause instanceof IOException ioe) {
-          throw ioe;
-        }
-        if (cause instanceof RuntimeException re) {
-          throw re;
-        }
-        throw new IOException(cause);
-      }
-    }
-    if (AIJoinUtil.diagnosticsEnabled(log) && !missingPairs.isEmpty()) {
-      long toCount = 0;
-      for (JoinColumnModel model : loadedMappings.values()) {
-        toCount += model.edges().toCount();
-      }
-      // built/awaited split matters: an awaited pair cost this thread only the wait, so folding
-      // the two together would attribute another thread's build work to this query; pairsBuilt
-      // counts models computed by this thread, writtenPairs what actually reached the sidecar --
-      // the difference is pairs the double-check found already persisted
-      AIJoinUtil.logDiagnostic(
-          log,
-          "AIJOIN evt=build ctx={} pairsRequested={} pairsBuilt={} pairsAwaited={}"
-              + " builtMs={} awaitedMs={} toCount={} writtenPairs={}",
-          traceCtxId == null ? "-" : traceCtxId,
-          missingPairs.size(),
-          loadedMappings.size(),
-          awaited.size(),
-          builtNanos / 1_000_000L,
-          (System.nanoTime() - startNanos - builtNanos) / 1_000_000L,
-          toCount,
-          writtenPairsLogged);
-    }
-    return result;
+    return pairBuilder.buildAndPersistJoinColumns(
+        missingPairs,
+        fromReader,
+        toReader,
+        toField,
+        traceCtxId,
+        observedAbsentSearcher,
+        fromColumnFutures);
   }
 
   /**
@@ -433,7 +246,7 @@ public final class AIJoinIndex implements Closeable {
    * to-segment at a time -- in {@link ToLeafJoinContext}. Missing pairs are resolved to their
    * (from-segment, to-segment) leaf ordinals by crossing {@code fromSearcher}'s leaves against
    * {@code toSearcher}'s leaves; pairs concurrently built by another thread are awaited, not
-   * rebuilt (see {@link #writeJoinSegments}).
+   * rebuilt (see {@link #buildAndPersistJoinColumns}).
    */
   //  @Deprecated
   //  void ensureJoinSegments(
@@ -491,7 +304,7 @@ public final class AIJoinIndex implements Closeable {
    *       one. But such segment might contain many parallel columns, since they have distinguishing
    *       names.
    */
-  private synchronized void writeBatch(Map<String, JoinColumnModel> mappings) throws IOException {
+  synchronized void writeBatch(Map<String, JoinColumnModel> mappings) throws IOException {
     this.writerDelegate.writeJoinColumns(writer, mappings);
     if (this.blockingRefresh) {
       manager.maybeRefreshBlocking();

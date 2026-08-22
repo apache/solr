@@ -270,7 +270,6 @@ final class AIJoinUtil {
     long[] toOrdByFromOrd = new long[fromSideData.getFromValuesCount()];
     Arrays.fill(toOrdByFromOrd, -1L);
     SortedSetDocValues toDV = DocValues.getSortedSet(toContext.reader(), toField);
-    Bits toLiveDocs = toContext.reader().getLiveDocs();
     TermsEnum toTerms = toDV.termsEnum();
     // resolve from-side ords to to-side ords: look each to-side term up in the from-side hash.
     boolean termsAreDisjoint = true;
