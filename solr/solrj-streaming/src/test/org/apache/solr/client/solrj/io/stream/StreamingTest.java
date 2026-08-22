@@ -2038,7 +2038,7 @@ public class StreamingTest extends SolrCloudTestCase {
     int count = 0;
     while (count == 0) {
       SolrStream solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/" + COLLECTIONORALIAS, "/get", sParams1);
+          new SolrStream(jetty.getBaseUrl().toString(), COLLECTIONORALIAS, "/get", sParams1);
       solrStream.setStreamContext(context);
       List<Tuple> tuples = getTuples(solrStream);
       count = tuples.size();

@@ -251,8 +251,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
   public void testEchoStream() throws Exception {
     final SolrStream solrStream =
-        new SolrStream(
-            solrUrl + "/" + COLLECTION_X, "/stream", params("expr", "echo(hello world)"));
+        new SolrStream(solrUrl, COLLECTION_X, "/stream", params("expr", "echo(hello world)"));
     solrStream.setCredentials(READ_ONLY_USER, passwordFor(READ_ONLY_USER));
     final List<Tuple> tuples = getTuples(solrStream);
     assertEquals(1, tuples.size());
@@ -261,8 +260,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
   public void testEchoStreamNoCredentials() {
     final SolrStream solrStream =
-        new SolrStream(
-            solrUrl + "/" + COLLECTION_X, "/stream", params("expr", "echo(hello world)"));
+        new SolrStream(solrUrl, COLLECTION_X, "/stream", params("expr", "echo(hello world)"));
     // NOTE: no credentials
 
     // NOTE: Can't make any assertions about Exception: SOLR-14226
@@ -275,8 +273,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
   public void testEchoStreamInvalidCredentials() {
     final SolrStream solrStream =
-        new SolrStream(
-            solrUrl + "/" + COLLECTION_X, "/stream", params("expr", "echo(hello world)"));
+        new SolrStream(solrUrl, COLLECTION_X, "/stream", params("expr", "echo(hello world)"));
     solrStream.setCredentials(READ_ONLY_USER, "BOGUS_PASSWORD");
 
     // NOTE: Can't make any assertions about Exception: SOLR-14226
@@ -290,7 +287,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   public void testSimpleUpdateStream() throws Exception {
     final SolrStream solrStream =
         new SolrStream(
-            solrUrl + "/" + COLLECTION_X,
+            solrUrl,
+            COLLECTION_X,
             "/stream",
             params(
                 "expr", "update(" + COLLECTION_X + ",batchSize=1," + "tuple(id=42,a_i=1,b_i=5))"));
@@ -305,7 +303,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   public void testSimpleUpdateStreamInvalidCredentials() throws Exception {
     final SolrStream solrStream =
         new SolrStream(
-            solrUrl + "/" + COLLECTION_X,
+            solrUrl,
+            COLLECTION_X,
             "/stream",
             params(
                 "expr", "update(" + COLLECTION_X + ",batchSize=1," + "tuple(id=42,a_i=1,b_i=5))"));
@@ -328,7 +327,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     for (String user : Arrays.asList(READ_ONLY_USER, WRITE_Y_USER)) {
       final SolrStream solrStream =
           new SolrStream(
-              solrUrl + "/" + COLLECTION_X,
+              solrUrl,
+              COLLECTION_X,
               "/stream",
               params(
                   "expr",
@@ -404,7 +404,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
       final SolrStream solrStream =
           new SolrStream(
-              solrUrl + "/" + COLLECTION_X,
+              solrUrl,
+              COLLECTION_X,
               "/stream", // NOTE: X route
               params("expr", expr));
       solrStream.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
@@ -454,7 +455,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
             + COLLECTION_X
             + ", batchSize=5, tuple(id=42,a_i=1,b_i=5))\"))";
     final SolrStream solrStream =
-        new SolrStream(solrUrl + "/" + COLLECTION_X, "/stream", params("expr", expr));
+        new SolrStream(solrUrl, COLLECTION_X, "/stream", params("expr", expr));
     solrStream.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
     final List<Tuple> tuples = getTuples(solrStream);
     assertEquals(0, tuples.size());
@@ -633,7 +634,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
     final SolrStream solrStream =
         new SolrStream(
-            solrUrl + "/" + COLLECTION_X,
+            solrUrl,
+            COLLECTION_X,
             "/stream",
             params("expr", "delete(" + COLLECTION_X + ",batchSize=1," + "tuple(id=42))"));
     solrStream.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
@@ -669,7 +671,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
               + ", q=\"foo_i:[* TO 10]\", rows=100, fl=\"id,foo_i,_version_\", sort=\"foo_i desc\"))";
 
       final SolrStream solrStream =
-          new SolrStream(solrUrl + "/" + COLLECTION_X, "/stream", params("expr", expr));
+          new SolrStream(solrUrl, COLLECTION_X, "/stream", params("expr", expr));
       solrStream.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
       final List<Tuple> tuples = getTuples(solrStream);
       assertEquals(2, tuples.size());
@@ -691,7 +693,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
     final SolrStream solrStream =
         new SolrStream(
-            solrUrl + "/" + COLLECTION_X,
+            solrUrl,
+            COLLECTION_X,
             "/stream",
             params("expr", "update(" + COLLECTION_X + ",batchSize=1," + "tuple(id=42))"));
     // "WRITE" credentials should be required for 'update(...)'
@@ -721,7 +724,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     for (String user : Arrays.asList(READ_ONLY_USER, WRITE_Y_USER)) {
       final SolrStream solrStream =
           new SolrStream(
-              solrUrl + "/" + COLLECTION_X,
+              solrUrl,
+              COLLECTION_X,
               "/stream",
               params("expr", "update(" + COLLECTION_X + ",batchSize=1," + "tuple(id=42))"));
 
@@ -812,7 +816,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
       final SolrStream solrStream =
           new SolrStream(
-              solrUrl + "/" + COLLECTION_X,
+              solrUrl,
+              COLLECTION_X,
               "/stream", // NOTE: X route
               params("expr", expr));
       solrStream.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));

@@ -750,7 +750,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "expr", "random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"1\", fl=\"id, a_i\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/collection1", "/stream", sParams);
+          new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       List<Tuple> tuples4 = getTuples(solrStream);
       assertEquals(1, tuples4.size());
       // Assert no x-axis
@@ -759,8 +759,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       sParams = new ModifiableSolrParams(params());
       sParams.add("expr", "random(" + COLLECTIONORALIAS + ")");
       jetty = cluster.getJettySolrRunner(0);
-      solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/collection1", "/stream", sParams);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       tuples4 = getTuples(solrStream);
       assertEquals(500, tuples4.size());
       @SuppressWarnings({"rawtypes"})
@@ -801,7 +800,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
               + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", mindf=\"0\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/collection1", "/stream", sParams);
+          new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       List<Tuple> tuples = getTuples(solrStream);
       assertEquals(3, tuples.size());
       assertOrder(tuples, 2, 3, 4);
@@ -812,8 +811,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "knnSearch("
               + COLLECTIONORALIAS
               + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\", mindf=\"0\")");
-      solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/collection1", "/stream", sParams);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       tuples = getTuples(solrStream);
       assertEquals(2, tuples.size());
       assertOrder(tuples, 2, 3);
@@ -824,8 +822,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "knnSearch("
               + COLLECTIONORALIAS
               + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxdf=\"0\")");
-      solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/collection1", "/stream", sParams);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       tuples = getTuples(solrStream);
       assertEquals(0, tuples.size());
 
@@ -835,8 +832,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "knnSearch("
               + COLLECTIONORALIAS
               + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxwl=\"1\")");
-      solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/collection1", "/stream", sParams);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       tuples = getTuples(solrStream);
       assertEquals(0, tuples.size());
 
@@ -846,8 +842,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "knnSearch("
               + COLLECTIONORALIAS
               + ", id=\"1\", qf=\"a_t\", rows=\"2\", fl=\"id, score\", mintf=\"1\", minwl=\"20\")");
-      solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/collection1", "/stream", sParams);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       tuples = getTuples(solrStream);
       assertEquals(0, tuples.size());
 

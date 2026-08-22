@@ -3582,7 +3582,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         INNER:
         while (iterations == 0) {
           SolrStream solrStream =
-              new SolrStream(jetty.getBaseUrl().toString() + "/collection1", "/stream", sParams);
+              new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
           solrStream.setStreamContext(streamContext);
           solrStream.open();
           Tuple tupleResponse = solrStream.read();
@@ -3616,7 +3616,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       sParams.set("id", "test");
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
         SolrStream solrStream =
-            new SolrStream(jetty.getBaseUrl() + "/collection1", "/stream", sParams);
+            new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
         solrStream.setStreamContext(streamContext);
         solrStream.open();
         Tuple tupleResponse = solrStream.read();
@@ -3632,7 +3632,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         INNER:
         while (stopTime == 0) {
           SolrStream solrStream =
-              new SolrStream(jetty.getBaseUrl() + "/collection1", "/stream", sParams);
+              new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
           solrStream.setStreamContext(streamContext);
           solrStream.open();
           Tuple tupleResponse = solrStream.read();
@@ -3778,7 +3778,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         INNER:
         while (true) {
           SolrStream solrStream =
-              new SolrStream(jetty.getBaseUrl().toString() + "/collection1", "/stream", sParams);
+              new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
           solrStream.setStreamContext(streamContext);
           solrStream.open();
           Tuple tupleResponse = solrStream.read();
@@ -4216,7 +4216,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         INNER:
         while (iterations == 0) {
           SolrStream solrStream =
-              new SolrStream(jetty.getBaseUrl().toString() + "/collection1", "/stream", sParams);
+              new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
           solrStream.setStreamContext(streamContext);
           solrStream.open();
           Tuple tupleResponse = solrStream.read();
@@ -4247,7 +4247,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       sParams.set("id", "test");
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
         SolrStream solrStream =
-            new SolrStream(jetty.getBaseUrl() + "/collection1", "/stream", sParams);
+            new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
         solrStream.setStreamContext(streamContext);
         solrStream.open();
         Tuple tupleResponse = solrStream.read();
@@ -4263,7 +4263,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         INNER:
         while (stopTime == 0) {
           SolrStream solrStream =
-              new SolrStream(jetty.getBaseUrl() + "/collection1", "/stream", sParams);
+              new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
           solrStream.setStreamContext(streamContext);
           solrStream.open();
           Tuple tupleResponse = solrStream.read();

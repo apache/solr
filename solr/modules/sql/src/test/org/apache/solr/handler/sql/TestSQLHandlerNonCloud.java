@@ -53,9 +53,9 @@ public class TestSQLHandlerNonCloud extends SolrTestCaseJ4 {
   public void testSQLHandler() throws Exception {
     String sql = "select id, field_i, str_s from " + DEFAULT_TEST_COLLECTION_NAME + " limit 10";
     SolrParams sParams = params("stmt", sql);
-    String url = solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
+    String url = solrTestRule.getBaseUrl();
 
-    SolrStream solrStream = new SolrStream(url, "/sql", sParams);
+    SolrStream solrStream = new SolrStream(url, DEFAULT_TEST_COLLECTION_NAME, "/sql", sParams);
     IOException ex = expectThrows(IOException.class, () -> getTuples(solrStream));
     assertTrue(ex.getMessage().contains(SQLHandler.sqlNonCloudErrorMsg));
   }

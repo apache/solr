@@ -210,8 +210,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "stmt",
             "select id, field_i, str_s, field_f, field_d, field_l from collection1 where (text_t='(XXXX)' OR text_t='XXXX') AND text_t='XXXX' order by field_i desc");
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     List<Tuple> tuples = getTuples(sParams, baseUrl);
 
     assertEquals(8, tuples.size());
@@ -471,15 +470,14 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "1", "text_t", "XXXX XXXX", "str_s", "a", "field_i", "7")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     SolrParams sParams =
         params("caseSensitive", "true", "stmt", "select id, FIELD_I from collection1 limit 1");
 
     // caseSensitive is forwarded to Calcite by default, making column names case-sensitive,
     // unlike the default MySQL dialect behavior
-    SolrStream solrStream = new SolrStream(baseUrl, "/sql", sParams);
+    SolrStream solrStream = new SolrStream(baseUrl, COLLECTIONORALIAS, "/sql", sParams);
     Tuple tuple = getTuple(new ExceptionStream(solrStream));
     assertTrue(tuple.EOF);
     assertTrue(tuple.EXCEPTION);
@@ -549,8 +547,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "witha\"quote")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     // Equals
     SolrParams sParams = params("stmt", "select id from collection1 where id = 1 order by id asc");
@@ -676,8 +673,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "8", "Text_t", "XXXX XXXX", "Str_s", "c", "Field_i", "60")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     SolrParams sParams =
         params(
@@ -784,8 +780,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     SolrParams sParams =
         params(
@@ -990,8 +985,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     SolrParams sParams =
         params(
@@ -1188,8 +1182,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     SolrParams sParams =
         params(
             "numWorkers",
@@ -1403,8 +1396,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "9", "text_t", "XXXX XXXY", "str_s", "d", "field_i", "70")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     SolrParams sParams =
         params(
@@ -1640,8 +1632,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     SolrParams sParams =
         params(
@@ -1838,8 +1829,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add(id, "8", "year_i", "2014", "month_i", "4", "day_i", "2", "item_i", "1")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     SolrParams sParams =
         params(
@@ -1948,8 +1938,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add(id, "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     SolrParams sParams =
         params(
@@ -1958,7 +1947,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "stmt",
             "select id, str_s from collection1 where text_t='XXXX' order by field_iff desc");
 
-    SolrStream solrStream = new SolrStream(baseUrl, "/sql", sParams);
+    SolrStream solrStream = new SolrStream(baseUrl, COLLECTIONORALIAS, "/sql", sParams);
     Tuple tuple = getTuple(new ExceptionStream(solrStream));
     assertTrue(tuple.EOF);
     assertTrue(tuple.EXCEPTION);
@@ -1969,7 +1958,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "stmt",
             "select id, field_iff, str_s from collection1 where text_t='XXXX' order by field_iff desc");
 
-    solrStream = new SolrStream(baseUrl, "/sql", sParams);
+    solrStream = new SolrStream(baseUrl, COLLECTIONORALIAS, "/sql", sParams);
     tuple = getTuple(new ExceptionStream(solrStream));
     assertTrue(tuple.EOF);
     assertTrue(tuple.EXCEPTION);
@@ -1983,7 +1972,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "stmt",
             "select str_s, count(*), sum(field_iff), min(field_i), max(field_i), cast(avg(1.0 * field_i) as float) from collection1 where text_t='XXXX' group by str_s having ((sum(field_iff) = 19) AND (min(field_i) = 8))");
 
-    solrStream = new SolrStream(baseUrl, "/sql", sParams);
+    solrStream = new SolrStream(baseUrl, COLLECTIONORALIAS, "/sql", sParams);
     tuple = getTuple(new ExceptionStream(solrStream));
     assertTrue(tuple.EOF);
     assertTrue(tuple.EXCEPTION);
@@ -1996,7 +1985,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "stmt",
             "select str_s, count(*), blah(field_i), min(field_i), max(field_i), cast(avg(1.0 * field_i) as float) from collection1 where text_t='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
 
-    solrStream = new SolrStream(baseUrl, "/sql", sParams);
+    solrStream = new SolrStream(baseUrl, COLLECTIONORALIAS, "/sql", sParams);
     tuple = getTuple(new ExceptionStream(solrStream));
     assertTrue(tuple.EOF);
     assertTrue(tuple.EXCEPTION);
@@ -2010,7 +1999,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
             "stmt",
             "select str_s from collection1 where not_a_field LIKE 'foo%'");
 
-    solrStream = new SolrStream(baseUrl, "/sql", sParams);
+    solrStream = new SolrStream(baseUrl, COLLECTIONORALIAS, "/sql", sParams);
     tuple = getTuple(new ExceptionStream(solrStream));
     assertTrue(tuple.EOF);
     assertTrue(tuple.EXCEPTION);
@@ -2031,8 +2020,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add(id, "8", "year_i", "2014", "month_i", "4", "day_i", "2", "item_i", "1")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     SolrParams sParams =
         params(
@@ -2145,8 +2133,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add(id, "8", "year_i", "2014", "month_i", "4", "day_i", "2", "item_i", "1")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     SolrParams sParams =
         params(
@@ -2259,7 +2246,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
   protected List<Tuple> getTuples(final SolrParams params, String baseUrl) throws IOException {
     List<Tuple> tuples = new ArrayList<>();
-    try (TupleStream tupleStream = new SolrStream(baseUrl, "/sql", params)) {
+    try (TupleStream tupleStream = new SolrStream(baseUrl, COLLECTIONORALIAS, "/sql", params)) {
       tupleStream.open();
       for (; ; ) {
         Tuple t = tupleStream.read();
@@ -2291,14 +2278,13 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     SolrParams sParams = params("stmt", "select id from collection1 where str_s IN ('a','b','c')");
 
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     List<Tuple> tuples = getTuples(sParams, baseUrl);
     assertEquals(3, tuples.size());
   }
 
   private String sqlUrl() {
-    return cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    return cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
   }
 
   private List<Tuple> expectResults(String sql, final int expectedCount) throws Exception {

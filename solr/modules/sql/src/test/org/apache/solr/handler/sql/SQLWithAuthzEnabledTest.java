@@ -108,16 +108,15 @@ public class SQLWithAuthzEnabledTest extends SolrCloudTestCase {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("stmt", "select id from " + collectionName);
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + collectionName;
-    SolrStream solrStream = new SolrStream(baseUrl, "/sql", params);
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    SolrStream solrStream = new SolrStream(baseUrl, collectionName, "/sql", params);
     solrStream.setCredentials(SAD_USER, PASS);
 
     // sad user is not authorized to access /sql endpoints
     expectThrows(IOException.class, () -> countTuples(solrStream));
 
     // sql user has access
-    SolrStream solrStream2 = new SolrStream(baseUrl, "/sql", params);
+    SolrStream solrStream2 = new SolrStream(baseUrl, collectionName, "/sql", params);
     solrStream2.setCredentials(SQL_USER, PASS);
     assertEquals(8, countTuples(solrStream2));
   }

@@ -69,7 +69,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     super.setUp();
     cluster = new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
 
-    url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + CHECKPOINT_COLL;
+    url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
     cluster.uploadConfigSet(configset("cloud-minimal"), CONF_NAME);
     // create a single shard, single replica collection. This is necessary until SOLR-13245 since
@@ -294,7 +294,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
 
   private List<Tuple> getTuples(final SolrParams params, String ofInterest) throws IOException {
     // log.info("Tuples from params: {}", params);
-    TupleStream tupleStream = new SolrStream(url, "/stream", params);
+    TupleStream tupleStream = new SolrStream(url, CHECKPOINT_COLL, "/stream", params);
 
     tupleStream.open();
     List<Tuple> tuples = new ArrayList<>();

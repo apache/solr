@@ -69,41 +69,52 @@ public class SolrStream extends TupleStream {
   private transient SolrClientCache clientCache;
   private transient boolean doCloseCache;
 
+  // TODO SOLR-17995 proposes that we should deprecate this constructor in favor of one of the other
+  // constructors that requires users to provide the core as an explicit parameter
   /**
-   * @param baseUrl URL of the Solr instance to query. May be either a Solr node's "base" URL (i.e.
-   *     ending in "/solr", with no collection or core in the path) or a URL that already includes
-   *     the target collection or core name (e.g. "http://host:8983/solr/myCollection"). See {@link
-   *     org.apache.solr.client.solrj.io.SolrClientCache#getHttpSolrClient(String)}.
-   * @param params Map&lt;String, String&gt; of parameters
+   * @param baseUrl URL of the Solr core or collection to query, typically of the form
+   *     "http://host:8983/solr/myCore".
+   * @param params query-parameters sent with the streaming request
    */
   public SolrStream(String baseUrl, SolrParams params) {
     this.baseUrl = baseUrl;
     this.params = params;
   }
 
+  // TODO SOLR-17995 proposes that we should deprecate this constructor in favor of one of the other
+  // constructors that requires users to provide the core as an explicit parameter
   /**
-   * @param baseUrl URL of the Solr instance to query. As with {@link #SolrStream(String,
-   *     SolrParams)}, this may be either a bare node "base" URL or one that already includes the
-   *     target collection/core name.
+   * @param baseUrl URL of the Solr core or collection to query, typically of the form
+   *     "http://host:8983/solr/myCore".
    * @param path the request handler path to query (e.g. "/export"). If not provided, defaults to
    *     "/select".
-   * @param params Map&lt;String, String&gt; of parameters
+   * @param params query-parameters sent with the streaming request
    */
   public SolrStream(String baseUrl, String path, SolrParams params) {
-    this(baseUrl, params);
-    this.path = path;
+    this(baseUrl, null, path, params);
   }
 
   /**
-   * @param baseUrl the Solr node's "base" URL (i.e. ending in "/solr", with no collection or core
-   *     in the path) — unlike {@link #SolrStream(String, SolrParams)}, this constructor always
-   *     expects the bare node URL, since {@code core} is supplied separately.
-   * @param params Map&lt;String, String&gt; of parameters
-   * @param core the name of the collection or core to query on the node at {@code baseUrl}
+   * @param baseUrl the Solr node's "base" URL (i.e. no core or collection in the path
+   * @param params query-parameters sent with the streaming request
+   * @param core the name of the collection or core to query; must be hosted at {@code baseUrl}
    */
-  SolrStream(String baseUrl, SolrParams params, String core) {
-    this(baseUrl, params);
+  public SolrStream(String baseUrl, SolrParams params, String core) {
+    this(baseUrl, core, null, params);
+  }
+
+  /**
+   * @param baseUrl the Solr node's "base" URL (i.e. no core or collection in the path
+   * @param core the name of the collection or core to query; must be hosted at {@code baseUrl}
+   * @param path the request handler path to query (e.g. "/export"). If not provided, defaults to
+   *     "/select".
+   * @param params query-parameters sent with the streaming request
+   */
+  public SolrStream(String baseUrl, String core, String path, SolrParams params) {
+    this.baseUrl = baseUrl;
     this.core = core;
+    this.params = params;
+    this.path = path != null ? path : "/select";
   }
 
   public void setFieldMappings(Map<String, String> fieldMappings) {
