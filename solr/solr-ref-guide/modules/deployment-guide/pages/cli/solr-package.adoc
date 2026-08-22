@@ -116,7 +116,7 @@ _COMMAND_::
 
 [%hardbreaks]
   # Add a package repository
-  bin/solr package add-repo myrepo https://my.repo.example/bin/solr packages
+  bin/solr package add-repo myrepo https://my.repo.example/repo
 
 [%hardbreaks]
   # Install a package and deploy it to a collection

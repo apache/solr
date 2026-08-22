@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
     footerHeading = "%nExamples:%n",
     footer = {
       "  # Add a package repository",
-      "  bin/solr package add-repo myrepo https://my.repo.example/solr-packages",
+      "  bin/solr package add-repo myrepo https://my.repo.example/repo",
       "",
       "  # Install a package and deploy it to a collection",
       "  bin/solr package install mypkg:1.0.0",
