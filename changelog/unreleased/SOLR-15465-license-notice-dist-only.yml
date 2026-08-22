@@ -1,7 +1,7 @@
 title: >
   LICENSE and NOTICE files are now only required for dependencies shipped in the
   binary distribution. Checksum (.sha1) files are still required for all dependencies.
-type: changed
+type: other
 authors:
   - name: Jan Høydahl
 links:
