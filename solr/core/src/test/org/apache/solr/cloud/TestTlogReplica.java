@@ -59,6 +59,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.SolrIndexWriter;
@@ -1113,15 +1114,20 @@ public class TestTlogReplica extends SolrCloudTestCase {
     DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);
 
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
-      if (solrRunner.getCoreContainer() == null) continue;
-      for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
-        CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
-        Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
-        Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
-        if (Objects.equals(slice.getLeader(), replica) && isLeader) {
-          rs.add(solrCore);
-        } else if (!Objects.equals(slice.getLeader(), replica) && !isLeader) {
-          rs.add(solrCore);
+      CoreContainer coreContainer = solrRunner.getCoreContainer();
+      if (coreContainer == null) continue;
+      for (String coreName : coreContainer.getLoadedCoreNames()) {
+        // returns unreserved cores, same contract as the removed getCores()
+        try (SolrCore solrCore = coreContainer.getCore(coreName)) {
+          if (solrCore == null) continue; // unloaded since getLoadedCoreNames
+          CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
+          Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
+          Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
+          if (Objects.equals(slice.getLeader(), replica) && isLeader) {
+            rs.add(solrCore);
+          } else if (!Objects.equals(slice.getLeader(), replica) && !isLeader) {
+            rs.add(solrCore);
+          }
         }
       }
     }
@@ -1150,15 +1156,19 @@ public class TestTlogReplica extends SolrCloudTestCase {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
-      if (solrRunner.getCoreContainer() == null) continue;
-      for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
-        CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
-        Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
-        Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
-        if (Objects.equals(slice.getLeader(), replica) && isLeader) {
-          rs.add(solrRunner);
-        } else if (!Objects.equals(slice.getLeader(), replica) && !isLeader) {
-          rs.add(solrRunner);
+      CoreContainer coreContainer = solrRunner.getCoreContainer();
+      if (coreContainer == null) continue;
+      for (String coreName : coreContainer.getLoadedCoreNames()) {
+        try (SolrCore solrCore = coreContainer.getCore(coreName)) {
+          if (solrCore == null) continue; // unloaded since getLoadedCoreNames
+          CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
+          Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
+          Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
+          if (Objects.equals(slice.getLeader(), replica) && isLeader) {
+            rs.add(solrRunner);
+          } else if (!Objects.equals(slice.getLeader(), replica) && !isLeader) {
+            rs.add(solrRunner);
+          }
         }
       }
     }
