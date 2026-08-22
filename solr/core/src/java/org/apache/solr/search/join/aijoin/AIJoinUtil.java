@@ -19,8 +19,8 @@ package org.apache.solr.search.join.aijoin;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -204,9 +204,8 @@ final class AIJoinUtil {
 
   /**
    * Maps a to-side {@link LeafReaderContext} to an int array of to-side doc ids by ordinal for a
-   * fixed {@code toField}, for those docs that are live.
-   * this is quite local lifecycle class, thus we can cache it so.
-   * the trick is that, there always single entry in this cache.
+   * fixed {@code toField}, for those docs that are live. this is quite local lifecycle class, thus
+   * we can cache it so. the trick is that, there always single entry in this cache.
    */
   static class ToDocInvertor implements Function<LeafReaderContext, int[]> {
     private final String toField;
@@ -218,7 +217,7 @@ final class AIJoinUtil {
 
     @Override
     public int[] apply(LeafReaderContext toContext) {
-      return cache.computeIfAbsent(toContext.ord, (i)->computeToDoc(toContext));
+      return cache.computeIfAbsent(toContext.ord, (i) -> computeToDoc(toContext));
     }
 
     private int[] computeToDoc(LeafReaderContext toContext) {
