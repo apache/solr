@@ -90,7 +90,8 @@ public final class AIJoinIndex implements Closeable {
   // package-private (not private): tests reach in directly to observe the reaper's state
   final AIJoinMergePolicy mergePolicy;
   private final MergeScheduler mergeScheduler;
-  static final AIJoinWriter INSTANCE = new AIJoinDocWriter(); // new AIJoinColumnWriter();
+  private final AIJoinWriter writerDelegate;
+  private final boolean blockingRefresh;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -170,6 +171,20 @@ public final class AIJoinIndex implements Closeable {
             directory,
             new IndexWriterConfig().setMergePolicy(mergePolicy).setMergeScheduler(mergeScheduler));
     this.manager = new SearcherManager(writer, null);
+    AIJoinWriter bulkWriter = new AIJoinDocWriter(); // new AIJoinColumnWriter()
+    this.writerDelegate =
+        config.getSingleFieldPerSegment()
+            ? new AIJoinWriter() {
+              @Override
+              void writeJoinColumns(IndexWriter writer, Map<String, JoinColumnModel> mappings)
+                  throws IOException {
+                for (Map.Entry<String, JoinColumnModel> entry : mappings.entrySet()) {
+                  bulkWriter.writeJoinColumns(writer, Map.of(entry.getKey(), entry.getValue()));
+                }
+              }
+            }
+            : bulkWriter;
+    this.blockingRefresh = config.getBlockingRefresh();
   }
 
   /**
@@ -257,7 +272,6 @@ public final class AIJoinIndex implements Closeable {
       Future<FromLeafJoinContext>[] fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
     long startNanos = System.nanoTime();
-    int batchNumDocsLogged = 0;
     Set<String> writtenPairsLogged = Set.of();
     Map<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>> owned =
         new LinkedHashMap<>();
@@ -334,19 +348,15 @@ public final class AIJoinIndex implements Closeable {
           // all pairs of a batch go in together: pair columns are addressed by from-side doc id,
           // so a batch must start at doc 0 of its sidecar segment, which writeBatch guarantees by
           // flushing one batch per commit
-          int batchNumDocs = 0;
           for (String pairFieldName : unwrittenMappings.keySet()) {
             int fromLeafOrd = missingPairs.get(pairFieldName).fromLeafOrd();
-            batchNumDocs =
-                Math.max(batchNumDocs, fromReader.leaves().get(fromLeafOrd).reader().maxDoc());
           } // TODO it can be more asynchronous,
           // besides of pairBuilds removal - and it's a problem
           // would be great if many concurrent threads merge lists and write it at once,
           // since it's synchronized bottleneck for now.
           // and the thread don't even need to wait until writeBatch() is done (beside of pairBuilds
           // removal, you know)
-          writeBatch(batchNumDocs, unwrittenMappings);
-          batchNumDocsLogged = batchNumDocs;
+          writeBatch(unwrittenMappings);
         }
         writtenPairsLogged = unwrittenMappings.keySet();
         // TODO flush every single field to get single field segments
@@ -401,7 +411,7 @@ public final class AIJoinIndex implements Closeable {
       AIJoinUtil.logDiagnostic(
           log,
           "AIJOIN evt=build ctx={} pairsRequested={} pairsBuilt={} pairsAwaited={}"
-              + " builtMs={} awaitedMs={} toCount={} batchNumDocs={} writtenPairs={}",
+              + " builtMs={} awaitedMs={} toCount={} writtenPairs={}",
           traceCtxId == null ? "-" : traceCtxId,
           missingPairs.size(),
           loadedMappings.size(),
@@ -409,7 +419,6 @@ public final class AIJoinIndex implements Closeable {
           builtNanos / 1_000_000L,
           (System.nanoTime() - startNanos - builtNanos) / 1_000_000L,
           toCount,
-          batchNumDocsLogged,
           writtenPairsLogged);
     }
     return result;
@@ -482,10 +491,13 @@ public final class AIJoinIndex implements Closeable {
    *       one. But such segment might contain many parallel columns, since they have distinguishing
    *       names.
    */
-  private synchronized void writeBatch(int batchNumDocs, Map<String, JoinColumnModel> mappings)
-      throws IOException {
-    AIJoinIndex.INSTANCE.writeJoinColumns(writer, batchNumDocs, mappings);
-    manager.maybeRefreshBlocking(); // consider using the non-blocking maybeRefresh().
+  private synchronized void writeBatch(Map<String, JoinColumnModel> mappings) throws IOException {
+    this.writerDelegate.writeJoinColumns(writer, mappings);
+    if (this.blockingRefresh) {
+      manager.maybeRefreshBlocking();
+    } else {
+      manager.maybeRefresh(); // perhaps it should be carried out the enclosing synchronize
+    }
   }
 
   @Override
