@@ -1497,16 +1497,6 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  @Deprecated // see DocCollection
-  public static String getCollectionPathRoot(String coll) {
-    return DocCollection.getCollectionPathRoot(coll);
-  }
-
-  @Deprecated // see DocCollection
-  public static String getCollectionPath(String coll) {
-    return DocCollection.getCollectionPath(coll);
-  }
-
   /**
    * Notify this reader that a local Core is a member of a collection, and so that collection state
    * should be watched.
