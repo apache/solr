@@ -17,6 +17,7 @@
 
 package org.apache.solr.s3;
 
+import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -35,9 +36,29 @@ import software.amazon.awssdk.regions.Region;
  */
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
-@ThreadLeakLingering(linger = 10)
-@ThreadLeakFilters(filters = {S3MockTestcontainersThreadFilter.class})
+@ThreadLeakLingering(linger = 1000)
+@ThreadLeakFilters(
+    filters = {
+      S3MockTestcontainersThreadFilter.class,
+      S3InstallShardTest.AwsCredentialsBackgroundThreadFilter.class
+    })
 public class S3InstallShardTest extends AbstractInstallShardTest {
+
+  /**
+   * S3StorageClient's {@code DefaultCredentialsProvider} runs its credential chain resolution /
+   * background refresh on the common ForkJoinPool. This test's concurrent, multi-node install
+   * requests (see {@code testParallelInstallToMultiShardCollection}) make it far more likely than
+   * other S3 tests to still have a worker parked there when the class finishes.
+   */
+  @SuppressWarnings("NewClassNamingConvention")
+  public static class AwsCredentialsBackgroundThreadFilter implements ThreadFilter {
+    @Override
+    public boolean reject(Thread t) {
+      return t != null
+          && t.getName() != null
+          && t.getName().startsWith("ForkJoinPool.commonPool-worker-");
+    }
+  }
 
   private static final String BUCKET_NAME = S3InstallShardTest.class.getSimpleName();
 
