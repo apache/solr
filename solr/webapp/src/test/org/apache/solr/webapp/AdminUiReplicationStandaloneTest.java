@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -90,7 +91,8 @@ public class AdminUiReplicationStandaloneTest extends AdminUiStandaloneTestBase 
         "polling should be disabled", () -> "true".equals(followerDetail("isPollingDisabled")));
 
     // index documents on the leader; the follower does not poll them
-    try (var client = leaderJetty.newClient()) {
+    try (var client =
+        new HttpJettySolrClient.Builder(leaderJetty.getBaseUrl().toString()).build()) {
       for (int i = 1; i <= 2; i++) {
         SolrInputDocument doc = new SolrInputDocument();
         doc.addField("id", "repl-doc-" + i);
@@ -150,7 +152,8 @@ public class AdminUiReplicationStandaloneTest extends AdminUiStandaloneTestBase 
   }
 
   private long followerNumDocs() {
-    try (var client = standaloneJetty.newClient()) {
+    try (var client =
+        new HttpJettySolrClient.Builder(standaloneJetty.getBaseUrl().toString()).build()) {
       return client.query(CORE, new SolrQuery("*:*")).getResults().getNumFound();
     } catch (Exception e) {
       throw new RuntimeException(e);
