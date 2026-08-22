@@ -697,7 +697,7 @@ class ToLeafJoinContext {
       // here we only accumulate what it cost this context, for the evt=ctx / evt=done lines
       long buildStartNanos = System.nanoTime();
       Map<String, JoinColumnModel> written =
-          this.joinIndex.writeJoinSegments(
+          this.joinIndex.buildAndPersistJoinColumns(
               Collections.unmodifiableMap(missingPairs),
               this.fromSearcher.getIndexReader(),
               this.toReader,
