@@ -1,0 +1,7 @@
+title: Field tpe that has key-value pairs as field value (i.e. mapping field)
+type: added
+authors:
+- name: Isabelle Giguere
+links:
+- name: SOLR-18023
+  url: https://issues.apache.org/jira/browse/SOLR-18023
