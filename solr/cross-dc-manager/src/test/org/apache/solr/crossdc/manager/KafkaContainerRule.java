@@ -22,11 +22,12 @@ import org.junit.Assume;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * JUnit rule that manages a single Kafka broker testcontainer. Declare as a {@code @ClassRule} so
+ * JUnit rule that manages a single Kafka broker Testcontainer. Declare as a {@code @ClassRule} so
  * the (expensive to start) broker is shared across all {@code @Test} methods in a class instead of
  * being restarted for each one; JUnit starts it before, and stops it after, the whole class runs.
  *
@@ -45,7 +46,7 @@ public class KafkaContainerRule extends ExternalResource {
   protected void before() {
     Assume.assumeTrue(
         "Docker/Testcontainers not available; skipping test",
-        org.testcontainers.DockerClientFactory.instance().isDockerAvailable());
+        DockerClientFactory.instance().isDockerAvailable());
     kafkaContainer = new KafkaContainer(DockerImageName.parse(KAFKA_DOCKER_IMAGE));
     kafkaContainer.start();
   }
