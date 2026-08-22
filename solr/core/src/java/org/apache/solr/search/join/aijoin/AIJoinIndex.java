@@ -307,11 +307,14 @@ public final class AIJoinIndex implements Closeable {
         //
         // it's a race condition tradeoff:
         // 1. this thread didn't see a column and decided to compete for it.
-        // 2. another thread might have persisted it in the meantime, and removed it's claim from pairBuilds.
+        // 2. another thread might have persisted it in the meantime, and removed it's claim from
+        // pairBuilds.
         // 3. thread 1. calculate a join column model, and ready to write it
-        // 4. if a column occur in already persisted: it skip wtiting it, but returns the calculated memory model to the caller
+        // 4. if a column occur in already persisted: it skip wtiting it, but returns the calculated
+        // memory model to the caller
         // overall, under high concurrency we waste some computation for sweeping pairBuilds
-        // alternatively we need to invent a way to remove entries from it somewhere later without a race
+        // alternatively we need to invent a way to remove entries from it somewhere later without a
+        // race
         Map<String, JoinColumnModel> unwrittenMappings = loadedMappings;
         IndexSearcher freshJoinSearcher = acquire();
         try {
@@ -336,11 +339,12 @@ public final class AIJoinIndex implements Closeable {
             int fromLeafOrd = missingPairs.get(pairFieldName).fromLeafOrd();
             batchNumDocs =
                 Math.max(batchNumDocs, fromReader.leaves().get(fromLeafOrd).reader().maxDoc());
-          }// TODO it can be more asynchronous,
+          } // TODO it can be more asynchronous,
           // besides of pairBuilds removal - and it's a problem
           // would be great if many concurrent threads merge lists and write it at once,
           // since it's synchronized bottleneck for now.
-          // and the thread don't even need to wait until writeBatch() is done (beside of pairBuilds removal, you know)
+          // and the thread don't even need to wait until writeBatch() is done (beside of pairBuilds
+          // removal, you know)
           writeBatch(batchNumDocs, unwrittenMappings);
           batchNumDocsLogged = batchNumDocs;
         }
