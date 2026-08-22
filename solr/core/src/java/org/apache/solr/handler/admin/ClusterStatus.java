@@ -51,9 +51,6 @@ public class ClusterStatus {
   public static final String LIVENODES_PROP = "liveNodes";
   public static final String CLUSTER_PROP = "clusterProperties";
 
-  @Deprecated(since = "10.1")
-  public static final String ROLES_PROP = "roles";
-
   public static final String ALIASES_PROP = "aliases";
 
   /** Shard / collection health state. */
@@ -111,7 +108,6 @@ public class ClusterStatus {
     boolean includeAll = solrParams.getBool(INCLUDE_ALL, true);
     boolean withLiveNodes = solrParams.getBool(LIVENODES_PROP, includeAll);
     boolean withClusterProperties = solrParams.getBool(CLUSTER_PROP, includeAll);
-    boolean withRoles = solrParams.getBool(ROLES_PROP, includeAll);
     boolean withCollection = includeAll || (collection != null);
     boolean withAliases = solrParams.getBool(ALIASES_PROP, includeAll);
 
@@ -142,18 +138,6 @@ public class ClusterStatus {
         clusterProps = Map.of();
       }
       clusterStatus.add("properties", clusterProps);
-    }
-
-    // add the roles map
-    if (withRoles) {
-      Map<?, ?> roles = Map.of();
-      if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES)) {
-        roles =
-            (Map<?, ?>)
-                Utils.fromJSON(
-                    zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null));
-      }
-      clusterStatus.add("roles", roles);
     }
 
     results.add("cluster", clusterStatus);

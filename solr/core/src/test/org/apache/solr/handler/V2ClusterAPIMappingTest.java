@@ -101,32 +101,6 @@ public class V2ClusterAPIMappingTest extends SolrTestCaseJ4 {
     assertEquals("someId", v1Params.get(REQUESTID));
   }
 
-  @Test
-  public void testAddRoleAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cluster",
-            "POST",
-            "{'add-role': {" + "'node': 'some_node_name', " + "'role':'some_role'}}");
-
-    assertEquals(CollectionParams.CollectionAction.ADDROLE.toString(), v1Params.get(ACTION));
-    assertEquals("some_node_name", v1Params.get("node"));
-    assertEquals("some_role", v1Params.get("role"));
-  }
-
-  @Test
-  public void testRemoveRoleAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cluster",
-            "POST",
-            "{'remove-role': {" + "'node': 'some_node_name', " + "'role':'some_role'}}");
-
-    assertEquals(CollectionParams.CollectionAction.REMOVEROLE.toString(), v1Params.get(ACTION));
-    assertEquals("some_node_name", v1Params.get("node"));
-    assertEquals("some_role", v1Params.get("role"));
-  }
-
   private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody)
       throws Exception {
     return doCaptureParams(path, method, v2RequestBody, mockCollectionsHandler);

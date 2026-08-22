@@ -75,16 +75,6 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
         CollectionAdminParams.PROPERTY_VALUE);
   }
 
-  public void testAddRole() {
-    CollectionAdminRequest.AddRole request = CollectionAdminRequest.addRole("node", "role");
-    assertContainsParams(request.getParams(), ACTION, "node", "role");
-  }
-
-  public void testRemoveRole() {
-    CollectionAdminRequest.RemoveRole request = CollectionAdminRequest.removeRole("node", "role");
-    assertContainsParams(request.getParams(), ACTION, "node", "role");
-  }
-
   public void testAddReplica() {
     // with shard parameter and "client side" implicit type param
     CollectionAdminRequest.AddReplica request =
