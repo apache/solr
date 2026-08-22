@@ -619,7 +619,7 @@ Note that properties `"parent"`, `"shard_parent_zk_session"` and `"shard_parent_
 
 deleteShard() (implementing `CollectionAction.DELETESHARD`) removes a slice (shard) from a collection.
 
-modifyCollection() (implementing `CollectionAction.MODIFYCOLLECTION`) modifies a given collection by setting new values for (or removing) specified properties, ignoring changes to properties that are not considered modifiable (those listed in `CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES` and those starting with `CollectionAdminRequest.PROPERTY_PREFIX="property."`).
+modifyCollection() (implementing `CollectionAction.MODIFYCOLLECTION`) modifies a given collection by setting new values for (or removing) specified properties, ignoring changes to properties that are not considered modifiable (those listed in `CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES` and those starting with `CollectionAdminParams.PROPERTY_PREFIX="property."`).
 
 updateSlice() replaces a `Slice` on an existing `DocCollection` or creates a new `DocCollection` with the provided slice.
 
