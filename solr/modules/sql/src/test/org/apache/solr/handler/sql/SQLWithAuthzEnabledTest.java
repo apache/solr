@@ -111,7 +111,7 @@ public class SQLWithAuthzEnabledTest extends SolrCloudTestCase {
     params.set(CommonParams.QT, "/sql");
     params.set("stmt", "select id from " + collectionName);
     String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + collectionName;
+        cluster.getJettySolrRunners().getFirst().getBaseUrl().toString() + "/" + collectionName;
     SolrStream solrStream = new SolrStream(baseUrl, params);
     solrStream.setCredentials(SAD_USER, PASS);
 

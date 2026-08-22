@@ -182,9 +182,8 @@ public class GCSBackupRepository extends AbstractBackupRepository {
     if (path.endsWith("/")) {
       return storage.get(bucketName, path, Storage.BlobGetOption.fields()) != null;
     } else {
-      final String filePath = path;
       final String directoryPath = path + "/";
-      return storage.get(bucketName, filePath, Storage.BlobGetOption.fields()) != null
+      return storage.get(bucketName, path, Storage.BlobGetOption.fields()) != null
           || storage.get(bucketName, directoryPath, Storage.BlobGetOption.fields()) != null;
     }
   }
@@ -201,9 +200,7 @@ public class GCSBackupRepository extends AbstractBackupRepository {
 
   @Override
   public String[] listAll(URI path) throws IOException {
-    final String blobName = appendTrailingSeparatorIfNecessary(path.toString());
-
-    final String pathStr = blobName;
+    final String pathStr = appendTrailingSeparatorIfNecessary(path.toString());
     final List<String> result = new ArrayList<>();
     storage
         .list(
@@ -231,10 +228,10 @@ public class GCSBackupRepository extends AbstractBackupRepository {
 
   @Override
   public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) throws IOException {
-    return openInput(dirPath, fileName, ctx, readBufferSizeBytes);
+    return openInput(dirPath, fileName, readBufferSizeBytes);
   }
 
-  private IndexInput openInput(URI dirPath, String fileName, IOContext ctx, int bufferSize) {
+  private IndexInput openInput(URI dirPath, String fileName, int bufferSize) {
     String blobName = resolve(dirPath, fileName).toString();
 
     final BlobId blobId = BlobId.of(bucketName, blobName);
@@ -309,10 +306,9 @@ public class GCSBackupRepository extends AbstractBackupRepository {
   }
 
   protected List<BlobId> allBlobsAtDir(URI path) throws IOException {
-    final String blobName = appendTrailingSeparatorIfNecessary(path.toString());
+    final String pathStr = appendTrailingSeparatorIfNecessary(path.toString());
 
     final List<BlobId> result = new ArrayList<>();
-    final String pathStr = blobName;
     storage
         .list(bucketName, Storage.BlobListOption.prefix(pathStr), Storage.BlobListOption.fields())
         .iterateAll()

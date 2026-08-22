@@ -129,7 +129,7 @@ public class TestExternalFeatures extends TestRerankBase {
     query.add("fl", "score,fvalias:[fv store=fstore3 efi.myOcc=2.3]");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='" + docs0fv_csv + "'");
 
-    // Adding efi in transformer + rq should still returns features
+    // Adding efi in transformer + rq should still return features
     query.remove("fl");
     query.add("fl", "score,fvalias:[fv store=fstore3 efi.myOcc=2.3]");
     query.add("rq", "{!ltr reRankDocs=10 model=externalmodel efi.user_query=w3}");

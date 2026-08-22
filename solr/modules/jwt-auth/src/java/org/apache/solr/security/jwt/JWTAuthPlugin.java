@@ -73,7 +73,7 @@ import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Authentication plugin that finds logged in user by validating the signature of a JWT token */
+/** Authentication plugin that finds logged-in user by validating the signature of a JWT token */
 public class JWTAuthPlugin extends AuthenticationPlugin
     implements SpecProvider, ConfigEditablePlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -689,7 +689,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
           } catch (InvalidJwtSignatureException ise) {
             return new JWTAuthenticationResponse(AuthCode.SIGNATURE_INVALID, ise);
           } catch (InvalidJwtException e) {
-            // Whether or not the JWT has expired being one common reason for invalidity
+            // Whether the JWT has expired being one common reason for invalidity
             if (e.hasExpired()) {
               return new JWTAuthenticationResponse(
                   AuthCode.JWT_EXPIRED,

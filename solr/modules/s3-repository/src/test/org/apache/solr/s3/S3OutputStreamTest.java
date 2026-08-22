@@ -97,7 +97,7 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
     }
   }
 
-  /** Write a byte array larger than S3 part size. Simulate a real multi-part upload. */
+  /** Write a byte array larger than S3 part size. Simulate a real multipart upload. */
   @Test
   public void testWriteLargeBuffer() throws IOException {
     // must be larger than S3 part size

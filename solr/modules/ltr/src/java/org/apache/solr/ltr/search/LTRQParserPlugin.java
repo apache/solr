@@ -99,9 +99,9 @@ public class LTRQParserPlugin extends QParserPlugin
   }
 
   /**
-   * Given a set of local SolrParams, extract all of the efi.key=value params into a map
+   * Given a set of local SolrParams, extract all the efi.key=value params into a map
    *
-   * @param localParams Local request parameters that might conatin efi params
+   * @param localParams Local request parameters that might contain efi params
    * @return Map of efi params, where the key is the name of the efi param, and the value is the
    *     value of the efi param
    */
