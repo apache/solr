@@ -53,6 +53,7 @@ public class SolrStream extends TupleStream {
 
   private String baseUrl;
   private SolrParams params;
+  private String path;
   private int numWorkers;
   private int workerID;
   private boolean trace;
@@ -69,7 +70,10 @@ public class SolrStream extends TupleStream {
   private transient boolean doCloseCache;
 
   /**
-   * @param baseUrl Base URL of the stream.
+   * @param baseUrl URL of the Solr instance to query. May be either a Solr node's "base" URL (i.e.
+   *     ending in "/solr", with no collection or core in the path) or a URL that already includes
+   *     the target collection or core name (e.g. "http://host:8983/solr/myCollection"). See {@link
+   *     org.apache.solr.client.solrj.io.SolrClientCache#getHttpSolrClient(String)}.
    * @param params Map&lt;String, String&gt; of parameters
    */
   public SolrStream(String baseUrl, SolrParams params) {
@@ -77,6 +81,26 @@ public class SolrStream extends TupleStream {
     this.params = params;
   }
 
+  /**
+   * @param baseUrl URL of the Solr instance to query. As with {@link #SolrStream(String,
+   *     SolrParams)}, this may be either a bare node "base" URL or one that already includes the
+   *     target collection/core name.
+   * @param path the request handler path to query (e.g. "/export"). If not provided, defaults to
+   *     "/select".
+   * @param params Map&lt;String, String&gt; of parameters
+   */
+  public SolrStream(String baseUrl, String path, SolrParams params) {
+    this(baseUrl, params);
+    this.path = path;
+  }
+
+  /**
+   * @param baseUrl the Solr node's "base" URL (i.e. ending in "/solr", with no collection or core
+   *     in the path) — unlike {@link #SolrStream(String, SolrParams)}, this constructor always
+   *     expects the bare node URL, since {@code core} is supplied separately.
+   * @param params Map&lt;String, String&gt; of parameters
+   * @param core the name of the collection or core to query on the node at {@code baseUrl}
+   */
   SolrStream(String baseUrl, SolrParams params, String core) {
     this(baseUrl, params);
     this.core = core;
@@ -273,7 +297,10 @@ public class SolrStream extends TupleStream {
     // performance optimization - remove extra whitespace when streaming
     requestParams = SolrParams.wrapDefaults(requestParams, SolrParams.of("indent", "off"));
 
-    QueryRequest query = new QueryRequest(requestParams, SolrRequest.METHOD.POST);
+    QueryRequest query =
+        path == null
+            ? new QueryRequest(requestParams, SolrRequest.METHOD.POST)
+            : new QueryRequest(path, requestParams, SolrRequest.METHOD.POST);
     String wt = requestParams.get(CommonParams.WT, "json");
     query.setResponseParser(new InputStreamResponseParser(wt));
 
