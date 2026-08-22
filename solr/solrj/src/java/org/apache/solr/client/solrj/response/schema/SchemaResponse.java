@@ -157,7 +157,8 @@ public class SchemaResponse extends SolrResponseBase {
   }
 
   private static Float getSchemaVersion(@SuppressWarnings({"rawtypes"}) Map schemaNamedList) {
-    return (Float) schemaNamedList.get("version");
+    Object v = schemaNamedList.get("version");
+    return v == null ? null : ((Number) v).floatValue();
   }
 
   private static String getSchemaUniqueKey(@SuppressWarnings({"rawtypes"}) Map schemaNamedList) {

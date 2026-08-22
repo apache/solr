@@ -784,12 +784,12 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     SolrDocument out2 = out.get(1);
     assertEquals("111", out1.getFieldValue("id"));
     assertEquals("222", out2.getFieldValue("id"));
-    assertEquals(1.0f, out1.getFieldValue("score"));
-    assertEquals(1.0f, out2.getFieldValue("score"));
+    assertEquals(1.0, ((Number) out1.getFieldValue("score")).doubleValue(), 0.0);
+    assertEquals(1.0, ((Number) out2.getFieldValue("score")).doubleValue(), 0.0);
 
     // check that the docid is one bigger
-    int id1 = (Integer) out1.getFieldValue("[docid]");
-    int id2 = (Integer) out2.getFieldValue("[docid]");
+    int id1 = ((Number) out1.getFieldValue("[docid]")).intValue();
+    int id2 = ((Number) out2.getFieldValue("[docid]")).intValue();
     assertTrue("should be bigger [" + id1 + "," + id2 + "]", id2 > id1);
 
     // The score from explain should be the same as the score
@@ -798,7 +798,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     // Augmented _value_ with alias
     assertEquals("aaa", out1.get("aaa"));
-    assertEquals(10, ((Integer) out1.get("ten")).intValue());
+    assertEquals(10, ((Number) out1.get("ten")).intValue());
   }
 
   @Test
@@ -1916,7 +1916,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     List<RangeFacet> list = rsp.getFacetRanges();
     assertEquals(2, list.size());
     @SuppressWarnings("unchecked")
-    RangeFacet<Float, Float> range1 = list.get(0);
+    RangeFacet<Number, Number> range1 = list.get(0);
     assertEquals("price1", range1.getName());
     assertEquals(0, range1.getStart().intValue());
     assertEquals(200, range1.getEnd().intValue());
@@ -1932,7 +1932,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, counts1.get(3).getCount());
     assertEquals("150.0", counts1.get(3).getValue());
     @SuppressWarnings("unchecked")
-    RangeFacet<Float, Float> range2 = list.get(1);
+    RangeFacet<Number, Number> range2 = list.get(1);
     assertEquals("price2", range2.getName());
     assertEquals(0, range2.getStart().intValue());
     assertEquals(200, range2.getEnd().intValue());
@@ -1959,9 +1959,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     for (RangeFacet range : featuresBBBRanges) {
       if (range.getName().equals("price1")) {
         assertNotNull(range);
-        assertEquals(0, ((Float) range.getStart()).intValue());
-        assertEquals(200, ((Float) range.getEnd()).intValue());
-        assertEquals(50, ((Float) range.getGap()).intValue());
+        assertEquals(0, ((Number) range.getStart()).intValue());
+        assertEquals(200, ((Number) range.getEnd()).intValue());
+        assertEquals(50, ((Number) range.getGap()).intValue());
         @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
@@ -1983,9 +1983,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
         }
       } else if (range.getName().equals("price2")) {
         assertNotNull(range);
-        assertEquals(0, ((Float) range.getStart()).intValue());
-        assertEquals(200, ((Float) range.getEnd()).intValue());
-        assertEquals(50, ((Float) range.getGap()).intValue());
+        assertEquals(0, ((Number) range.getStart()).intValue());
+        assertEquals(200, ((Number) range.getEnd()).intValue());
+        assertEquals(50, ((Number) range.getGap()).intValue());
         @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
@@ -2015,9 +2015,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     for (RangeFacet range : facetRanges) {
       if (range.getName().equals("price1")) {
         assertNotNull(range);
-        assertEquals(0, ((Float) range.getStart()).intValue());
-        assertEquals(200, ((Float) range.getEnd()).intValue());
-        assertEquals(50, ((Float) range.getGap()).intValue());
+        assertEquals(0, ((Number) range.getStart()).intValue());
+        assertEquals(200, ((Number) range.getEnd()).intValue());
+        assertEquals(50, ((Number) range.getGap()).intValue());
         @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
@@ -2039,9 +2039,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
         }
       } else if (range.getName().equals("price2")) {
         assertNotNull(range);
-        assertEquals(0, ((Float) range.getStart()).intValue());
-        assertEquals(200, ((Float) range.getEnd()).intValue());
-        assertEquals(50, ((Float) range.getGap()).intValue());
+        assertEquals(0, ((Number) range.getStart()).intValue());
+        assertEquals(200, ((Number) range.getEnd()).intValue());
+        assertEquals(50, ((Number) range.getGap()).intValue());
         @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
@@ -2374,7 +2374,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
     Long version = (Long) resp.getResults().get(0).getFirstValue("_version_");
     assertNotNull("no version returned", version);
-    assertEquals(1.0f, resp.getResults().get(0).getFirstValue(field));
+    assertEquals(1.0, ((Number) resp.getResults().get(0).getFirstValue(field)).doubleValue(), 0.0);
 
     // update "price" with incorrect version (optimistic locking)
     HashMap<String, Object> oper = new HashMap<>(); // need better api for this???
@@ -2420,7 +2420,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue(field));
+    assertEquals(
+        "price was not updated?",
+        100.0,
+        ((Number) resp.getResults().get(0).getFirstValue(field)).doubleValue(),
+        0.0);
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
 
     // update "price", no version
@@ -2432,7 +2436,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue(field));
+    assertEquals(
+        "price was not updated?",
+        200.0,
+        ((Number) resp.getResults().get(0).getFirstValue(field)).doubleValue(),
+        0.0);
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
   }
 
@@ -2611,7 +2619,10 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
           for (SolrDocument kid : outDoc.getChildDocuments()) {
             String kidId = (String) kid.getFieldValue("id");
-            assertEquals("kid is the wrong level", kidLevel, (int) kid.getFieldValue("level_i"));
+            assertEquals(
+                "kid is the wrong level",
+                kidLevel,
+                ((Number) kid.getFieldValue("level_i")).intValue());
             SolrInputDocument origChild = findDescendant(origDoc, kidId);
             assertNotNull(docId + " doesn't have descendant " + kidId, origChild);
           }
@@ -2694,7 +2705,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
           assertTrue("orig doc had no kids at all", origDoc.hasChildDocuments());
           for (SolrDocument kid : outDoc.getChildDocuments()) {
             String kidId = (String) kid.getFieldValue("id");
-            int kidLevel = (int) kid.getFieldValue("level_i");
+            int kidLevel = ((Number) kid.getFieldValue("level_i")).intValue();
             assertTrue(
                 "kid level to high: " + kidLevelMax + "<" + kidLevel, kidLevel <= kidLevelMax);
             assertTrue(

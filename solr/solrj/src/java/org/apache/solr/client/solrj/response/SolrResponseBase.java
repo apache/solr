@@ -92,7 +92,9 @@ public class SolrResponseBase extends SolrResponse implements MapWriter {
   public int getStatus() {
     NamedList<?> header = getResponseHeader();
     if (header != null) {
-      return (Integer) header.get("status");
+      // ResponseParsers vary in the numeric type they produce (e.g. JSON yields Long), so widen
+      // via Number rather than casting to Integer.  See SOLR-17316.
+      return ((Number) header.get("status")).intValue();
     } else {
       return 0;
     }
@@ -101,7 +103,7 @@ public class SolrResponseBase extends SolrResponse implements MapWriter {
   public int getQTime() {
     NamedList<?> header = getResponseHeader();
     if (header != null) {
-      return (Integer) header.get("QTime");
+      return ((Number) header.get("QTime")).intValue();
     } else {
       return 0;
     }
