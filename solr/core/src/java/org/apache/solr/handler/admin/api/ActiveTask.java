@@ -29,6 +29,7 @@ import org.apache.solr.client.api.endpoint.TasksApi;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.client.api.model.TaskStatusResponse;
+import org.apache.solr.handler.component.ActiveTaskQuerySupport;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -45,7 +46,7 @@ public class ActiveTask extends JerseyResource implements TasksApi {
   @PermissionName(READ_PERM)
   public ListActiveTaskResponse listAllActiveTasks() throws Exception {
     final ListActiveTaskResponse response = instantiateJerseyResponse(ListActiveTaskResponse.class);
-    response.taskList = extractActiveTaskLists();
+    response.tasks = ActiveTaskQuerySupport.listActiveTasks(solrQueryRequest);
     return response;
   }
 
@@ -54,10 +55,9 @@ public class ActiveTask extends JerseyResource implements TasksApi {
   public TaskStatusResponse getTaskStatus(String taskID) throws Exception {
     final TaskStatusResponse response = instantiateJerseyResponse(TaskStatusResponse.class);
 
-    boolean isTaskActive =
-        solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskID);
+    boolean isTaskActive = ActiveTaskQuerySupport.isTaskActive(solrQueryRequest, taskID);
 
-    response.taskStatus =
+    response.status =
         (isTaskActive)
             ? TaskStatusResponse.TaskStatus.ACTIVE
             : TaskStatusResponse.TaskStatus.INACTIVE;
@@ -65,7 +65,8 @@ public class ActiveTask extends JerseyResource implements TasksApi {
     return response;
   }
 
-  private List<ActiveTaskDetails> extractActiveTaskLists() {
+  public static List<ActiveTaskDetails> getActiveTasksOnThisShard(
+      SolrQueryRequest solrQueryRequest) {
     Iterator<Map.Entry<String, String>> iterator =
         solrQueryRequest.getCore().getCancellableQueryTracker().getActiveQueriesGenerated();
 
@@ -76,5 +77,9 @@ public class ActiveTask extends JerseyResource implements TasksApi {
     }
 
     return activeTaskDetails;
+  }
+
+  public static boolean isTaskActiveOnThisShard(SolrQueryRequest solrQueryRequest, String taskId) {
+    return solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskId);
   }
 }

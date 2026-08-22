@@ -10,7 +10,7 @@ organized in versioned folders and collated into a human-readable *CHANGELOG.md*
 
 This document walks you through the workflow, explains the Gradle helpers
 available, and finishes with a concrete example fragment. We use a tool called
-[logchange](https://logchange.dev/tools/logchange/) as a gradle plugin to manage
+https://logchange.dev/tools/logchange/[logchange] as a gradle plugin to manage
 the changelog.
 
 == 1. Workflow Overview
@@ -38,6 +38,7 @@ solr/
 == 3. The YAML format
 
 Below is an example of a changelog yaml fragment. The full yaml format is https://logchange.dev/tools/logchange/reference/#yaml-entry-format[documented here], but we normally only need `title`, `type`, `authors` and `links`. For a change without a JIRA, you can add the PR number in `issues`:
+For the author section, the `name` key is the only one required. You may optionally want to link to either your github user (`nick`) or e.g. your ASF user (`url`) as shown below.
 
 [source, yaml]
 ----
@@ -45,12 +46,12 @@ title: Fix nasty bug in CoreContainer shutdown
 # added, changed, fixed, deprecated, removed, dependency_update, security, other
 type: fixed
 authors:
-  - name: John Contributor
-    nick: johngithub
-    url: https://home.apache.org/phonebook.html?uid=johnasfid
+  - name: Alex Doe
+    nick: alex_githubid
+    url: https://home.apache.org/phonebook.html?uid=alex_asfid
 links:
-  - name: SOLR-3333
-    url: https://issues.apache.org/jira/browse/SOLR-3333
+  - name: SOLR-12345
+    url: https://issues.apache.org/jira/browse/SOLR-12345
 ----
 
 === Changelog Types Reference
@@ -90,8 +91,10 @@ links:
 
 === 3.1 Tool to draft a YAML for your change
 
-We have a gradle task that bootstraps a YAML file in the `changelog/unreleased/` directory. The task will use your current branch name as a file name and also title, and will
-try to parse JIRA id from the branch name if it exists to add the `links`.
+We have two gradle tasks that bootstraps a YAML file in the `changelog/unreleased/` directory.
+`writeChangeLog` will infer the JIRA id from the current branch if possible, otherwise you'll need to add the JIRA link manually.
+If the change isn't worth a JIRA yet a changelog would still be nice, use `writeChangelogPr` after you've created the PR.  It will incorporate a link to the PR in the entry.
+If `writeChangelogPr` can't auto-detect the PR for your current branch (e.g. `gh` can't correlate a differently-named local branch to it), pass the PR explicitly: `./gradlew writeChangelogPr -Ppr=4677` or `-Ppr=https://github.com/apache/solr/pull/4677`.
 
 Invoke the task with:
 
@@ -108,9 +111,9 @@ use that information. Example:
 [source, properties]
 ----
 # Changelog generator settings (./gradlew writeChangelog)
-user.name=John Doe
-user.githubid=johngithub
-user.asfid=johnapache
+user.name=Alex Doe
+user.githubid=alex_githubid
+user.asfid=alex_asfid
 ----
 
 The changelog has comments to help you fill it out.  Remove them after filling out the form.

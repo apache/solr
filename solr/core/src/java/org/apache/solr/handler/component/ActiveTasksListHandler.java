@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.client.api.model.TaskStatusResponse.TaskStatus.ACTIVE;
 import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
 
 import java.util.Collection;
@@ -24,7 +23,7 @@ import java.util.List;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
-import org.apache.solr.client.api.model.TaskStatusResponse;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.api.ActiveTask;
@@ -41,20 +40,25 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    String taskStatusCheckUUID = req.getParams().get(TASK_CHECK_UUID, null);
+    String taskStatusCheckID = req.getParams().get(TASK_CHECK_UUID, null);
+    boolean isShardedRequest = req.getParams().getBool(ShardParams.IS_SHARD, false);
 
-    if (taskStatusCheckUUID != null) {
-      TaskStatusResponse taskStatusResponse =
-          new ActiveTask(req).getTaskStatus(taskStatusCheckUUID);
-      boolean taskStatus = taskStatusResponse.taskStatus.equals(ACTIVE);
-      rsp.add("taskStatus", taskStatus);
+    if (taskStatusCheckID != null) {
+      boolean taskStatus = ActiveTaskQuerySupport.isTaskActive(req, taskStatusCheckID);
+      if (isShardedRequest) {
+        rsp.add("taskStatus", taskStatus);
+      } else {
+        rsp.add(
+            "taskStatus",
+            "id: " + taskStatusCheckID + ", status: " + (taskStatus ? "active" : "inactive"));
+      }
 
     } else {
       NamedList<String> tasks = new SimpleOrderedMap<>();
-      List<ActiveTaskDetails> taskList = new ActiveTask(req).listAllActiveTasks().taskList;
+      List<ActiveTaskDetails> taskList = ActiveTaskQuerySupport.listActiveTasks(req);
       if (taskList != null) {
         for (ActiveTaskDetails task : taskList) {
-          tasks.add(task.taskID, task.taskQuery);
+          tasks.add(task.id, task.query);
         }
       }
       rsp.add("taskList", tasks);

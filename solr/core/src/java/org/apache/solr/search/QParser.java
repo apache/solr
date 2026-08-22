@@ -28,6 +28,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -65,6 +66,7 @@ public abstract class QParser {
       stringIncludingLocalParams; // the original query string including any local params
   protected boolean valFollowedParams; // true if the value "qstr" followed the localParams
   protected int localParamsEnd; // the position one past where the localParams ended
+  protected boolean autoFixPureNegative;
 
   /**
    * Constructor for the QParser
@@ -107,6 +109,13 @@ public abstract class QParser {
 
     this.params = Objects.requireNonNull(params);
     this.req = req;
+
+    if (req != null && req.getCore() != null && req.getCore().getSolrConfig() != null) {
+      this.autoFixPureNegative =
+          req.getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_10_2_0);
+    } else {
+      this.autoFixPureNegative = true;
+    }
   }
 
   /**
@@ -185,6 +194,14 @@ public abstract class QParser {
 
   public void setString(String s) {
     this.qstr = s;
+  }
+
+  public boolean isAutoFixPureNegative() {
+    return autoFixPureNegative;
+  }
+
+  public void setAutoFixPureNegative(boolean autoFixPureNegative) {
+    this.autoFixPureNegative = autoFixPureNegative;
   }
 
   /**
@@ -267,6 +284,7 @@ public abstract class QParser {
     // TODO: this would be better passed in to the constructor... change to a ParserContext object?
     nestedParser.flags = this.flags;
     nestedParser.recurseCount = recurseCount;
+    nestedParser.autoFixPureNegative = this.autoFixPureNegative;
     recurseCount--;
     return nestedParser;
   }
@@ -349,8 +367,8 @@ public abstract class QParser {
     return switch (q) {
       case null -> new LongConstValueSource(0);
       case FunctionQuery functionQuery -> functionQuery.getValueSource();
-      case FunctionScoreQuery functionQuery -> ValueSource.fromDoubleValuesSource(
-          functionQuery.getSource());
+      case FunctionScoreQuery functionQuery ->
+          ValueSource.fromDoubleValuesSource(functionQuery.getSource());
       default -> new QueryValueSource(q, 0.0f);
     };
   }

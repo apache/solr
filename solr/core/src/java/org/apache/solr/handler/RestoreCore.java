@@ -195,8 +195,9 @@ public class RestoreCore implements Callable<Boolean> {
           case Error err -> throw err;
           case IOException ioe -> throw ioe;
           case RuntimeException re -> throw re;
-          default -> throw new SolrException(
-              SolrException.ErrorCode.UNKNOWN, "Error during parallel restore download", cause);
+          default ->
+              throw new SolrException(
+                  SolrException.ErrorCode.UNKNOWN, "Error during parallel restore download", cause);
         }
       } catch (InterruptedException e) {
         downloadFutures.forEach(f -> f.cancel(true));

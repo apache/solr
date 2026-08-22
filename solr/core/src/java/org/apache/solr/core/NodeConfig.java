@@ -294,7 +294,7 @@ public class NodeConfig {
    * @return path to install dir or null if solr.install.dir not set.
    */
   public static Path getSolrInstallDir() {
-    String prop = System.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
+    String prop = EnvUtils.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
     if (prop == null || prop.isBlank()) {
       log.debug("solr.install.dir property not initialized.");
       return null;
@@ -644,7 +644,7 @@ public class NodeConfig {
       this.solrHome = solrHome.toAbsolutePath();
       this.coreRootDirectory = solrHome;
       // always init from sysprop because <solrDataHome> config element may be missing
-      setSolrDataHome(System.getProperty(SolrXmlConfig.SOLR_DATA_HOME));
+      setSolrDataHome(EnvUtils.getProperty(SolrXmlConfig.SOLR_DATA_HOME));
       setConfigSetBaseDirectory("configsets");
       this.metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     }

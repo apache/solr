@@ -102,7 +102,9 @@ public interface CollectionParams {
     DELETEREPLICA(true, LockLevel.SHARD),
     FORCELEADER(true, LockLevel.SHARD),
     MIGRATE(true, LockLevel.COLLECTION),
+    @Deprecated(since = "10.1")
     ADDROLE(true, LockLevel.NONE),
+    @Deprecated(since = "10.1")
     REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
     COLLECTIONPROP(true, LockLevel.NONE), // atomic; no lock

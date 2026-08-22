@@ -22,18 +22,23 @@ plugins {
 
 description = 'Solr webapp'
 
+ext {
+  // The Selenium-based Admin UI tests execute external binaries (selenium-manager,
+  // chromedriver) and probe well-known browser install locations plus $PATH and
+  // $CHROME_BIN for a Chrome binary. Expressing this in the shared solr-tests.policy
+  // would require FilePermission execute grants on arbitrary, machine-dependent paths
+  // (effectively <<ALL FILES>> execute), weakening the sandbox for every test module.
+  // Following the precedent of the extraction and s3-repository modules, the security
+  // manager is disabled for this module's tests instead.
+  useSecurityManager = false
+}
+
 configurations {
   war {}
   serverLib
   solrCore
-  generatedJSClient
   generatedJSClientBundle
-}
-
-ext {
-  jsClientWorkspace = layout.buildDirectory.dir("jsClientWorkspace").get()
-  jsClientBuildDir = layout.buildDirectory.dir("jsClientBuild").get()
-  jsClientBundleDir = layout.buildDirectory.dir("jsClientBundle").get()
+  generatedUIBundle
 }
 
 dependencies {
@@ -42,127 +47,82 @@ dependencies {
   solrCore project(":solr:core")
   implementation(configurations.solrCore - configurations.serverLib)
 
-  generatedJSClient project(path: ":solr:api", configuration: "jsClient")
-  generatedJSClientBundle files(jsClientBundleDir) {
-    builtBy "finalizeJsBundleDir"
-  }
-}
-
-task syncJSClientSourceCode(type: Sync) {
-  group = 'Solr JS Client'
-  from configurations.generatedJSClient
-
-  into jsClientWorkspace
-
-  // Keep the node modules, so that they don't need to be re-downloaded
-  preserve {
-    include "node_modules/**"
-  }
-}
-
-task jsClientDownloadDeps(type: NpmTask) {
-  group = 'Solr JS Client'
-  dependsOn tasks.syncJSClientSourceCode
-
-  args = ["install"]
-  workingDir = file(jsClientWorkspace)
-
-  inputs.dir("${jsClientWorkspace}/src")
-  inputs.file("${jsClientWorkspace}/package.json")
-  outputs.dir("${jsClientWorkspace}/node_modules")
-}
-
-task jsClientBuild(type: NpmTask) {
-  group = 'Solr JS Client'
-  dependsOn tasks.jsClientDownloadDeps
-
-  args = ["run", "build"]
-  workingDir = file(jsClientWorkspace)
-
-  inputs.dir("${jsClientWorkspace}/src")
-  inputs.file("${jsClientWorkspace}/package.json")
-  inputs.dir("${jsClientWorkspace}/node_modules")
-  outputs.dir("${jsClientWorkspace}/dist")
-}
-
-task downloadBrowserify(type: NpmTask) {
-  group = 'Build Dependency Download'
-  args = ["install", "browserify@${libs.versions.browserify.get()}"]
-
-  inputs.property("browserify version", libs.versions.browserify.get())
-  outputs.dir("${nodeProjectDir}/node_modules/browserify")
-}
-
-if (gradle.ext.withUiModule) {
-  tasks.register("generateUiDevFiles") {
-    description = "Generate new UI for development and add files to outputs for later referencing."
-    group = "build"
-    dependsOn project(":solr:ui").tasks.wasmJsBrowserDevelopmentExecutableDistribution
-    outputs.dir(project(":solr:ui").file("build/dist/wasmJs/developmentExecutable/"))
-  }
-}
-
-if (gradle.ext.withUiModule) {
-  tasks.register("generateUiProdFiles") {
-    description = "Generate new UI for production and add files to outputs for later referencing"
-    group = "build"
-
-    // Production files are smaller in size but have longer compile times.
-    dependsOn project(":solr:ui").tasks.wasmJsBrowserDistribution
-    outputs.dir(project(":solr:ui").file("build/dist/wasmJs/productionExecutable/"))
-  }
-}
-
-task generateJsClientBundle(type: NpxTask) {
-  group = 'Solr JS Client'
-  dependsOn tasks.downloadBrowserify
-  dependsOn tasks.jsClientBuild
-
-  command = 'browserify'
-  args = ['dist/index.js', '-s', 'solrApi', '-o', "${jsClientBuildDir}/index.js"]
-  workingDir = file(jsClientWorkspace)
-
-  inputs.dir(jsClientWorkspace)
-  inputs.property("browserify version", libs.versions.browserify.get())
-
-  outputs.file("${jsClientBuildDir}/index.js")
-}
-
-task finalizeJsBundleDir(type: Sync) {
-  group = 'Solr JS Client'
-
-  from configurations.generatedJSClient {
-    include "README.md"
-    include "docs/**"
+  if (gradle.ext.withJsClient) {
+    generatedJSClientBundle project(path: ":solr:webapp:js-client", configuration: "jsClientBundle")
   }
 
-  from tasks.generateJsClientBundle {
-    include "index.js"
+  if (gradle.ext.withUiModule) {
+    generatedUIBundle project(path: ":solr:ui", configuration: "wasmJsUIBundle")
   }
 
-  into jsClientBundleDir
+  // Browser-based tests of the AngularJS Admin UI (see src/test)
+  testImplementation project(':solr:core')
+  testImplementation project(':solr:solrj')
+  testImplementation project(':solr:test-framework')
+  // puts the /sql handler on the in-JVM server classpath so the SQL screen works
+  testRuntimeOnly project(':solr:modules:sql')
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.eclipse.jetty.ee10.servlet
+  testImplementation libs.jakarta.servlet.api
+  testImplementation libs.junit.junit
+  testImplementation(libs.selenium.chromedriver, {
+    // solr-core already provides the opentelemetry api/sdk that selenium's optional
+    // tracing uses; the remaining excludes are compile-time-only annotation jars
+    exclude group: 'io.opentelemetry'
+    exclude group: 'io.opentelemetry.instrumentation'
+    exclude group: 'io.opentelemetry.semconv'
+    exclude group: 'com.google.auto.service'
+    exclude group: 'org.jspecify'
+  })
+}
+
+// Configure all Test tasks (including the generated beast test_N tasks, which do not
+// inherit the default test suite wiring in this war project):
+// - test classes/classpath so `gradlew -p solr/webapp beast -Ptests.dups=N` works
+// - forward the browser-binary override for the Admin UI tests to the forked test JVM
+tasks.withType(Test).configureEach {
+  testClassesDirs = sourceSets.test.output.classesDirs
+  classpath = sourceSets.test.runtimeClasspath
+  def chromeBinary = providers.systemProperty('tests.selenium.chrome.binary').orNull
+  if (chromeBinary != null) {
+    systemProperty 'tests.selenium.chrome.binary', chromeBinary
+  }
+
+  // the Admin UI tests exercise the generated js-client bundle; a stub would only grow
+  // stale as the UI adopts more of the v2 API, so without the bundle the tests cannot
+  // run at all. The bundle (and thereby its node/npm toolchain) is only wired in when
+  // the tests are explicitly enabled, keeping node off the default test build chain.
+  def seleniumEnabled = Boolean.parseBoolean(Objects.toString(propertyOrDefault('tests.selenium', 'false')))
+  if (seleniumEnabled && gradle.ext.withJsClient) {
+    def jsClientBundle = configurations.generatedJSClientBundle
+    inputs.files(jsClientBundle).withPropertyName('jsClientBundle')
+    doFirst {
+      systemProperty 'tests.ui.jsclient.bundle', new File(jsClientBundle.singleFile, 'index.js')
+    }
+  } else if (seleniumEnabled) {
+    doFirst {
+      throw new GradleException('Cannot run the Admin UI tests (-Ptests.selenium=true): ' +
+          '-PdisableJsClient=true excludes the js-client bundle they need. Drop one of the two flags.')
+    }
+  } else if (!gradle.ext.withJsClient) {
+    enabled = false
+    logger.warn('NOTE: :solr:webapp tests are disabled because -PdisableJsClient=true ' +
+        'excludes the js-client bundle the Admin UI tests need.')
+  }
 }
 
 war {
   from("web")
 
+  // note: nonetheless may be disabled, copying nothing
   from(configurations.generatedJSClientBundle, {
     into "libs/solr"
   })
 
-  // Include new Admin UI files in webapp
-  // By default, we always build dev that does not optimize generated files for release to reduce build times.
-  if (gradle.ext.withUiModule) {
-    if (rootProject.ext.development) {
-      from(tasks.generateUiDevFiles) {
-        into "ui"
-      }
-    } else {
-      from(tasks.generateUiProdFiles) {
-        into "ui"
-      }
-    }
-  }
+  // note: nonetheless may be disabled, copying nothing
+  from(configurations.generatedUIBundle, {
+    into "ui"
+  })
 }
 
 // Expose 'war' archive as an artifact so that it can be packaged in the distribution.

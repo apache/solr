@@ -55,6 +55,7 @@ import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.ReplicationApi;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -64,7 +65,6 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
@@ -732,15 +732,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private NamedList<Object> getFollowerDetails() throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.QT, "/replication");
     params.set("command", "details");
     params.set("follower", "true");
 
-    QueryResponse response = followerClient.query(params);
+    final var getDetails = new GenericSolrRequest(SolrRequest.METHOD.GET, "/replication", params);
+    getDetails.setRequiresCollection(true);
+    final var getDetailsResponse = getDetails.process(followerClient);
 
     // details/follower/timesIndexReplicated
     @SuppressWarnings({"unchecked"})
-    NamedList<Object> details = (NamedList<Object>) response.getResponse().get("details");
+    NamedList<Object> details = (NamedList<Object>) getDetailsResponse.getResponse().get("details");
     @SuppressWarnings({"unchecked"})
     NamedList<Object> follower = (NamedList<Object>) details.get("follower");
     return follower;
@@ -1481,14 +1482,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   @Test
   public void testFileListShouldReportErrorsWhenTheyOccur() throws Exception {
-    SolrQuery q = new SolrQuery();
-    q.add("qt", "/replication")
-        .add("wt", "json")
-        .add("command", "filelist")
-        .add(
-            "generation",
-            "-2"); // A 'generation' value not matching any commit point should cause error.
-    QueryResponse response = followerClient.query(q);
+    // A 'generation' value not matching any commit point should cause error.
+    final var params = params("wt", "json", "command", "filelist", "generation", "-2");
+    final var filelistReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/replication", params);
+    filelistReq.setRequiresCollection(true);
+    final var response = filelistReq.process(followerClient);
     NamedList<Object> resp = response.getResponse();
     assertNotNull(resp);
     assertEquals("ERROR", resp.get("status"));
@@ -1500,12 +1498,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     int leaderPort = leaderJetty.getLocalPort();
     leaderJetty.stop();
     SolrQuery q = new SolrQuery();
-    q.add("qt", "/replication")
-        .add("wt", "json")
+    q.add("wt", "json")
         .add("wait", "true")
         .add("command", "fetchindex")
         .add("leaderUrl", buildUrl(leaderPort));
-    QueryResponse response = followerClient.query(q);
+    QueryResponse response = new QueryRequest("/replication", q).process(followerClient);
     NamedList<Object> resp = response.getResponse();
     assertNotNull(resp);
     assertEquals(
@@ -1517,12 +1514,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @Test
   public void testShouldReportErrorWhenRequiredCommandArgMissing() {
     SolrQuery q = new SolrQuery();
-    q.add("qt", "/replication").add("wt", "json");
+    q.add("wt", "json");
     SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              followerClient.query(q);
+              new QueryRequest("/replication", q).process(followerClient);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: command"));
@@ -1531,12 +1528,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @Test
   public void testShouldReportErrorWhenDeletingBackupButNameMissing() {
     SolrQuery q = new SolrQuery();
-    q.add("qt", "/replication").add("wt", "json").add("command", "deletebackup");
+    q.add("wt", "json").add("command", "deletebackup");
     SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              followerClient.query(q);
+              new QueryRequest("/replication", q).process(followerClient);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: name"));

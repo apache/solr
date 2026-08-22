@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
@@ -170,7 +171,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -523,7 +523,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       return withSearcher(
           solrIndexSearcher -> solrIndexSearcher.getRawReader().getIndexCommit().getSegmentCount());
     } catch (IOException e) {
-      throw new RuntimeIOException(e);
+      throw new UncheckedIOException(e);
     }
   }
 
@@ -1993,6 +1993,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
   /**
    * Get the request handler registered to a given name.
    *
+   * <p>A {@code null} handlerName resolves to the core's default request handler (whichever handler
+   * is aliased to the empty string, normally the one registered at "/select", or "standard" for
+   * legacy configs) rather than returning {@code null}; see {@link
+   * RequestHandlers#initHandlersFromConfig}.
+   *
    * <p>This function is thread safe.
    */
   public SolrRequestHandler getRequestHandler(String handlerName) {
@@ -3053,18 +3058,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     void write(OutputStream os) throws IOException;
-  }
-
-  /**
-   * Gets a response writer suitable for node/container-level requests.
-   *
-   * @param writerName the writer name, or null for default
-   * @return the response writer, never null
-   * @deprecated Use {@link ResponseWritersRegistry#getWriter(String)} instead.
-   */
-  @Deprecated
-  public static QueryResponseWriter getAdminResponseWriter(String writerName) {
-    return ResponseWritersRegistry.getWriter(writerName);
   }
 
   /**
