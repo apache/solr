@@ -127,6 +127,8 @@ public class PackageTool extends ToolBase {
 
   // --- picocli fields ---
 
+  @picocli.CommandLine.Mixin private HelpMixin helpMixin;
+
   @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
   private ConnectionOptions connectionOptions;
 
