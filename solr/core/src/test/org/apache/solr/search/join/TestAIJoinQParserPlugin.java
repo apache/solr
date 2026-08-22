@@ -72,7 +72,7 @@ public class TestAIJoinQParserPlugin extends SolrTestCase {
     // default managed-schema factory rewrite the source-tree conf dir; work on a temp copy
     Path aijoinConfigSet = createTempDir("aijoin");
     PathUtils.copyDirectory(configset("aijoin"), aijoinConfigSet.resolve("conf"));
-    solrRule.newCollection().withConfigSet(aijoinConfigSet.toString()).create();
+    solrRule.newCollection().withConfigSet(aijoinConfigSet).create();
 
     // "minimal" uses ClassicIndexSchemaFactory, which never writes, so it's safe to use in place
     solrRule.newCollection(FROM_CORE).withConfigSet(configset("minimal").toString()).create();
