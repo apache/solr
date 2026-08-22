@@ -179,7 +179,8 @@ public abstract class CoreAdminParams {
     CREATESNAPSHOT,
     DELETESNAPSHOT,
     LISTSNAPSHOTS,
-    UPGRADEINDEX;
+    UPGRADEINDEX,
+    RESORTINDEX;
 
     public final boolean isRead;
 

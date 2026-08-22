@@ -269,6 +269,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
   }
 
   @Override
+  @SuppressWarnings("deprecation") // still reads the sort from a (deprecated) SortingMergePolicy
   public Sort getMergePolicySort() throws IOException {
     lock(iwLock.readLock());
     try {

@@ -69,6 +69,7 @@ import org.apache.solr.handler.admin.api.RequestApplyCoreUpdatesAPI;
 import org.apache.solr.handler.admin.api.RequestBufferUpdatesAPI;
 import org.apache.solr.handler.admin.api.RequestCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RequestSyncShardAPI;
+import org.apache.solr.handler.admin.api.ResortCoreIndex;
 import org.apache.solr.handler.admin.api.RestoreCore;
 import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCores;
@@ -339,6 +340,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         SwapCores.class,
         RenameCore.class,
         MergeIndexes.class,
+        ResortCoreIndex.class,
         GetNodeCommandStatus.class);
   }
 
