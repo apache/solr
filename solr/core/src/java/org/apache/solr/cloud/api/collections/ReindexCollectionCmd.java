@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -98,7 +97,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   public static final String TARGET = "target";
   public static final String TARGET_COL_PREFIX = ".rx_";
   public static final String CHK_COL_PREFIX = ".rx_ck_";
-  public static final String REINDEXING_STATE = CollectionAdminRequest.PROPERTY_PREFIX + "rx";
+  public static final String REINDEXING_STATE = CollectionAdminParams.PROPERTY_PREFIX + "rx";
 
   public static final String STATE = "state";
   public static final String PHASE = "phase";

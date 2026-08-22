@@ -681,7 +681,8 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
         "//*[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='High']]");
 
     try (SolrQueryRequest req =
-        req(
+        reqWithPath(
+            "/select",
             "fl",
             "" + FIELD_NAME,
             "q",
@@ -690,7 +691,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
             jsonFacetParam,
             "wt",
             "json")) {
-      SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
+      SolrQueryResponse rsp = h.queryAndResponse(req);
       List<NamedList<?>> buckets =
           (List<NamedList<?>>)
               ((NamedList<?>) ((NamedList<?>) rsp.getValues().get("facets")).get("severity"))
