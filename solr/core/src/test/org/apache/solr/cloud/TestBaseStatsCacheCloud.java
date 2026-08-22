@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -131,7 +132,8 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     // check cache metrics
     StatsCache.StatsCacheMetrics statsCacheMetrics = new StatsCache.StatsCacheMetrics();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      try (SolrClient client = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
+      try (SolrClient client =
+          new HttpJettySolrClient.Builder(jettySolrRunner.getBaseUrl().toString()).build()) {
         var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
 
         NamedList<Object> resp = client.request(req);

@@ -53,6 +53,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -243,7 +244,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   private SolrClient adminClient(JettySolrRunner client) {
-    return getHttpSolrClient(client.getBaseUrl().toString());
+    return new HttpJettySolrClient.Builder(client.getBaseUrl().toString()).build();
   }
 
   @Test

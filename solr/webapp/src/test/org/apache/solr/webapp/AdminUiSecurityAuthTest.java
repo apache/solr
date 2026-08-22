@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
@@ -139,7 +140,9 @@ public class AdminUiSecurityAuthTest extends AdminUiTestBase {
 
   /** Returns the authorization config as fetched with credentials. */
   private NamedList<Object> authorizationApi() {
-    try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
+    try (SolrClient client =
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+            .build()) {
       GenericSolrRequest req =
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/authorization", params());
       req.setBasicAuthCredentials(USER, PASS);
@@ -163,7 +166,9 @@ public class AdminUiSecurityAuthTest extends AdminUiTestBase {
 
   /** Checks via the authentication API (with credentials) whether the user exists. */
   private boolean userExists(String user) {
-    try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
+    try (SolrClient client =
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+            .build()) {
       GenericSolrRequest req =
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/authentication", params());
       req.setBasicAuthCredentials(USER, PASS);

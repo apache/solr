@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
@@ -913,7 +914,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (Slice slice : dColl.getActiveSlices()) {
       long sliceDocCount = -1;
       for (Replica rep : slice.getReplicas()) {
-        try (SolrClient one = getHttpSolrClient(rep)) {
+        try (SolrClient one =
+            new HttpJettySolrClient.Builder(rep.getBaseUrl())
+                .withDefaultCollection(rep.getCoreName())
+                .build()) {
           SolrQuery query = new SolrQuery("*:*");
           query.setDistrib(false);
           QueryResponse resp = one.query(query);
@@ -1503,7 +1507,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       final String shardId) {
     Callable<Object> call =
         () -> {
-          try (SolrClient client = getHttpSolrClient(baseUrl)) {
+          try (SolrClient client = new HttpJettySolrClient.Builder(baseUrl).build()) {
             // client.setConnectionTimeout(15000);
             Create createCmd = new Create();
             createCmd.setCoreName(collection + num);

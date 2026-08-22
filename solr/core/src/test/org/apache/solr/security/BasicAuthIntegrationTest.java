@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -210,7 +211,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
     CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
 
-    try (var solrClient2 = getHttpSolrClient(baseUrl)) {
+    try (var solrClient2 = new HttpJettySolrClient.Builder(baseUrl).build()) {
       expectThrows(RemoteSolrException.class, () -> solrClient2.request(reload));
       reload.setMethod(SolrRequest.METHOD.POST);
       expectThrows(RemoteSolrException.class, () -> solrClient2.request(reload));
@@ -247,7 +248,8 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     // Test for SOLR-12514. Create a new jetty . This jetty does not have the collection.
     // Make a request to that jetty and it should fail
     JettySolrRunner aNewJetty = cluster.startJettySolrRunner();
-    SolrClient aNewClient = aNewJetty.newClient();
+    SolrClient aNewClient =
+        new HttpJettySolrClient.Builder(aNewJetty.getBaseUrl().toString()).build();
     UpdateRequest delQuery = null;
     delQuery = new UpdateRequest().deleteByQuery("*:*");
     delQuery.setBasicAuthCredentials("harry", "HarryIsUberCool");

@@ -29,6 +29,7 @@ import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -365,7 +366,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       CloudSolrClient cloudClient, String nodeName, String collectionName, String replicaType)
       throws IOException, SolrServerException {
     try (SolrClient coreclient =
-        getHttpSolrClient(ZkStateReader.from(cloudClient).getBaseUrlForNodeName(nodeName))) {
+        new HttpJettySolrClient.Builder(
+                ZkStateReader.from(cloudClient).getBaseUrlForNodeName(nodeName))
+            .build()) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       if (status.getCoreStatus().size() == 0) {
         return 0;

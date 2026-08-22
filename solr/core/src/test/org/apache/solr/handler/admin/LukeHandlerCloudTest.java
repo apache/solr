@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -137,7 +138,10 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
       String targetSliceName = null;
       for (Slice slice : docColl.getSlices()) {
         Replica leader = slice.getLeader();
-        try (SolrClient client = getHttpSolrClient(leader)) {
+        try (SolrClient client =
+            new HttpJettySolrClient.Builder(leader.getBaseUrl())
+                .withDefaultCollection(leader.getCoreName())
+                .build()) {
           SolrQuery q = new SolrQuery("id:target");
           q.set(DISTRIB, "false");
           QueryResponse qr = client.query(q);
@@ -153,7 +157,10 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
       for (Slice slice : docColl.getSlices()) {
         if (!slice.getName().equals(targetSliceName)) {
           Replica leader = slice.getLeader();
-          try (SolrClient client = getHttpSolrClient(leader)) {
+          try (SolrClient client =
+              new HttpJettySolrClient.Builder(leader.getBaseUrl())
+                  .withDefaultCollection(leader.getCoreName())
+                  .build()) {
             SolrQuery q = new SolrQuery("*:*");
             q.setRows(1);
             q.set(DISTRIB, "false");

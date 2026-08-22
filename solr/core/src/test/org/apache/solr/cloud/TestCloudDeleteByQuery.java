@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
@@ -166,17 +167,32 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
       assertNotNull("could not find URL for " + shardName + " replica", passiveUrl);
 
       if (shardName.equals("shard1")) {
-        S_ONE_LEADER_CLIENT = getHttpSolrClient(leaderUrl, COLLECTION_NAME);
-        S_ONE_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl, COLLECTION_NAME);
+        S_ONE_LEADER_CLIENT =
+            new HttpJettySolrClient.Builder(leaderUrl)
+                .withDefaultCollection(COLLECTION_NAME)
+                .build();
+        S_ONE_NON_LEADER_CLIENT =
+            new HttpJettySolrClient.Builder(passiveUrl)
+                .withDefaultCollection(COLLECTION_NAME)
+                .build();
       } else if (shardName.equals("shard2")) {
-        S_TWO_LEADER_CLIENT = getHttpSolrClient(leaderUrl, COLLECTION_NAME);
-        S_TWO_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl, COLLECTION_NAME);
+        S_TWO_LEADER_CLIENT =
+            new HttpJettySolrClient.Builder(leaderUrl)
+                .withDefaultCollection(COLLECTION_NAME)
+                .build();
+        S_TWO_NON_LEADER_CLIENT =
+            new HttpJettySolrClient.Builder(passiveUrl)
+                .withDefaultCollection(COLLECTION_NAME)
+                .build();
       } else {
         fail("unexpected shard: " + shardName);
       }
     }
     assertEquals("Should be exactly one server left (not hosting either shard)", 1, urlMap.size());
-    NO_COLLECTION_CLIENT = getHttpSolrClient(urlMap.values().iterator().next(), COLLECTION_NAME);
+    NO_COLLECTION_CLIENT =
+        new HttpJettySolrClient.Builder(urlMap.values().iterator().next())
+            .withDefaultCollection(COLLECTION_NAME)
+            .build();
 
     assertNotNull(S_ONE_LEADER_CLIENT);
     assertNotNull(S_TWO_LEADER_CLIENT);

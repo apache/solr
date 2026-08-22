@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -81,7 +82,9 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     clusterBuilder.configure();
 
     // pick an arbitrary node to use for our requests
-    client = cluster.getRandomJetty(random()).newClient();
+    client =
+        new HttpJettySolrClient.Builder(cluster.getRandomJetty(random()).getBaseUrl().toString())
+            .build();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);

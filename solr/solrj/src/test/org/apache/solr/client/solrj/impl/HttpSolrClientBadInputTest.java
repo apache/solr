@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -50,7 +51,10 @@ public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client = getHttpSolrClient(solrTestRule.getBaseUrl(), ANY_COLLECTION)) {
+    try (SolrClient client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl())
+            .withDefaultCollection(ANY_COLLECTION)
+            .build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),
@@ -77,7 +81,7 @@ public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
           });
     }
 
-    try (SolrClient client = getHttpSolrClient(solrTestRule.getBaseUrl())) {
+    try (SolrClient client = new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl()).build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),

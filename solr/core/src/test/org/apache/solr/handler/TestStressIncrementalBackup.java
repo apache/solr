@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -62,7 +63,10 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
         (CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
             .process(cluster.getSolrClient())
             .getStatus()));
-    adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    adminClient =
+        new HttpJettySolrClient.Builder(
+                cluster.getJettySolrRunners().get(0).getBaseUrl().toString())
+            .build();
     initCoreNameAndSolrCoreClient();
   }
 
@@ -80,7 +84,10 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
             .iterator()
             .next();
     coreName = r.getCoreName();
-    coreClient = getHttpSolrClient(r);
+    coreClient =
+        new HttpJettySolrClient.Builder(r.getBaseUrl())
+            .withDefaultCollection(r.getCoreName())
+            .build();
   }
 
   @After

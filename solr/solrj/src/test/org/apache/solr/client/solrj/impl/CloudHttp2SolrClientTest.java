@@ -406,7 +406,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       params.add("distrib", "false");
       QueryRequest queryRequest = new QueryRequest(params);
 
-      try (SolrClient solrClient = getHttpSolrClient(baseUrl, coreName)) {
+      try (SolrClient solrClient =
+          new HttpJettySolrClient.Builder(baseUrl).withDefaultCollection(coreName).build()) {
         QueryResponse queryResponse = queryRequest.process(solrClient);
         SolrDocumentList docList = queryResponse.getResults();
         assertEquals(1, docList.getNumFound());
@@ -455,7 +456,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         params.add("q", "id:" + id);
         params.add("distrib", "false");
         QueryRequest queryRequest = new QueryRequest(params);
-        try (SolrClient solrClient = getHttpSolrClient(baseUrl, coreName)) {
+        try (SolrClient solrClient =
+            new HttpJettySolrClient.Builder(baseUrl).withDefaultCollection(coreName).build()) {
           QueryResponse queryResponse = queryRequest.process(solrClient);
           SolrDocumentList docList = queryResponse.getResults();
           assertEquals(1, docList.getNumFound());
@@ -847,7 +849,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     SolrQuery q = new SolrQuery().setQuery("*:*");
     RemoteSolrException sse = null;
 
-    try (SolrClient solrClient = getHttpSolrClient(r.getBaseUrl(), COLLECTION)) {
+    try (SolrClient solrClient =
+        new HttpJettySolrClient.Builder(r.getBaseUrl()).withDefaultCollection(COLLECTION).build()) {
 
       if (log.isInfoEnabled()) {
         log.info("should work query, result {}", solrClient.query(q));
@@ -893,7 +896,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     log.info("the node which does not serve this collection{} ", theNode);
     assertNotNull(theNode);
 
-    try (SolrClient solrClient = getHttpSolrClient(theNode, COLLECTION)) {
+    try (SolrClient solrClient =
+        new HttpJettySolrClient.Builder(theNode).withDefaultCollection(COLLECTION).build()) {
 
       q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion() - 1));
       try {

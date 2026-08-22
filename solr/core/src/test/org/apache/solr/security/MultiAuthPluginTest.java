@@ -39,6 +39,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -90,7 +91,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
@@ -266,7 +267,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
@@ -308,7 +309,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
@@ -354,7 +355,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
@@ -395,7 +396,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
@@ -432,7 +433,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       var httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 

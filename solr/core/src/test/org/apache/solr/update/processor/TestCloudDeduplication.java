@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
@@ -59,7 +60,7 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
 
     CLIENTS.add(cluster.getSolrClient());
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      final SolrClient c = getHttpSolrClient(jetty.getBaseUrl().toString());
+      final SolrClient c = new HttpJettySolrClient.Builder(jetty.getBaseUrl().toString()).build();
       NODE_CLIENTS.add(c);
       CLIENTS.add(c);
     }

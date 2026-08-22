@@ -2838,7 +2838,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
     String coreName = replica.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = getHttpSolrClient(replica.getBaseUrl())) {
+    try (SolrClient client = new HttpJettySolrClient.Builder(replica.getBaseUrl()).build()) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

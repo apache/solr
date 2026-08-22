@@ -41,6 +41,7 @@ import org.apache.lucene.tests.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -96,7 +97,10 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         (CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
             .process(cluster.getSolrClient())
             .getStatus()));
-    adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    adminClient =
+        new HttpJettySolrClient.Builder(
+                cluster.getJettySolrRunners().get(0).getBaseUrl().toString())
+            .build();
     initCoreNameAndSolrCoreClient();
   }
 
@@ -371,7 +375,10 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
             .iterator()
             .next();
     coreName = r.getCoreName();
-    coreClient = getHttpSolrClient(r);
+    coreClient =
+        new HttpJettySolrClient.Builder(r.getBaseUrl())
+            .withDefaultCollection(r.getCoreName())
+            .build();
   }
 
   /**

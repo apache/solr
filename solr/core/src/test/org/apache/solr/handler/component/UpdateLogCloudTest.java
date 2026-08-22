@@ -22,6 +22,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -90,7 +91,8 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
           .equals(getCollectionState(COLLECTION).getLeader("shard1").getBaseUrl())) {
         specialIdx = solrClients.size();
       }
-      solrClients.add(jettySolrRunner.newClient());
+      solrClients.add(
+          new HttpJettySolrClient.Builder(jettySolrRunner.getBaseUrl().toString()).build());
     }
 
     new UpdateRequest()
