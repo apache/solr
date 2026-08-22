@@ -26,8 +26,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -40,6 +41,8 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.servlet.CoordinatorHttpSolrCall;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -56,14 +59,13 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
   //    resetExceptionIgnores();
   private static String toColl = "to_2x2";
   private static String fromColl = "from_1x4";
-
+  private static String configName = "solrCloudCollectionConfig";
   private static String toDocId;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     final Path configDir = TEST_COLL1_CONF();
 
-    String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
     configureCluster(nodeCount).addConfig(configName, configDir).configure();
 
@@ -136,7 +138,8 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
       throws SolrServerException, IOException {
     // verify the join with fromIndex works
     final String fromQ = "match_s:c^2";
-    CloudSolrClient client = cluster.getSolrClient();
+    SolrClient cloudClient = cluster.getSolrClient();
+    SolrClient client = buildCoordNodeClient(); // TODO random().nextBoolean()
     {
       final String joinQ =
           "{!join "
@@ -161,7 +164,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
 
     // create an alias for the fromIndex and then query through the alias
     String alias = fromColl + "Alias";
-    CollectionAdminRequest.createAlias(alias, fromColl).process(client);
+    CollectionAdminRequest.createAlias(alias, fromColl).process(cloudClient);
 
     {
       final String joinQ =
@@ -199,6 +202,51 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
       final SolrDocumentList hits = rsp.getResults();
       assertEquals("Expected no hits", 0, hits.getNumFound());
     }
+    client.close();
+  }
+
+  private SolrClient buildCoordNodeClient() {
+    ClusterState cs = cluster.getZkStateReader().getClusterState();
+
+    // Get nodes WITH shards
+    Set<String> nodesWithShards = new HashSet<>();
+    for (Slice slice : cs.getCollection(toColl).getActiveSlices()) {
+      for (Replica replica : slice.getReplicas()) {
+        nodesWithShards.add(replica.getNodeName());
+      }
+    }
+    // Get ALL live nodes
+    Set<String> allLiveNodes = cs.getLiveNodes();
+
+    // Find nodes WITHOUT shards
+    Set<String> nodesWithoutShards = new HashSet<>(allLiveNodes);
+    nodesWithoutShards.removeAll(nodesWithShards);
+
+    if (nodesWithoutShards.isEmpty()) {
+      throw new IllegalStateException("All nodes have shards for collection: " + toColl);
+    }
+
+    // Pick one
+    String targetNode = nodesWithoutShards.iterator().next();
+    String anynodeScheme =
+        cs.collectionStream()
+            .findFirst()
+            .get()
+            .getActiveSlices()
+            .iterator()
+            .next()
+            .iterator()
+            .next()
+            .getBaseUrl()
+            .split(":")[0];
+    String baseUrl = URLUtil.getBaseUrlForNodeName(targetNode, anynodeScheme);
+    String SYNTHETIC_COLLECTION =
+        CoordinatorHttpSolrCall.getSyntheticCollectionNameFromConfig(configName);
+    // Build direct client
+    return new HttpSolrClient.Builder(baseUrl + "/" + SYNTHETIC_COLLECTION)
+        .withConnectionTimeout(15000)
+        .withSocketTimeout(90000)
+        .build();
   }
 
   private void assertScore(boolean isScoresTest, SolrDocument doc) {
