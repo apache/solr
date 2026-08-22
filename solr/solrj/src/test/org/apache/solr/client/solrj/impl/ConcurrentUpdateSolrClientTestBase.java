@@ -400,6 +400,90 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
   }
 
   /**
+   * A connection failure surfaces the target URL so the failing server is identifiable, rather than
+   * a bare socket error with no context.
+   */
+  @Test
+  public void testConnectionErrorIncludesUrl() throws Exception {
+    String unreachable = "http://127.0.0.1:1/solr"; // nothing listening -> connect failure
+    List<Throwable> errors = new CopyOnWriteArrayList<>();
+    ConcurrentUpdateBaseSolrClient.UpdateErrorHandler handler =
+        new ConcurrentUpdateBaseSolrClient.UpdateErrorHandler() {
+          @Override
+          public void onError(Throwable ex, List<String> ids, String collection) {
+            errors.add(ex);
+          }
+
+          @Override
+          public void onError(Throwable ex) {
+            errors.add(ex);
+          }
+        };
+
+    try (var httpClient = solrClient(null);
+        var concurrentClient =
+            errorHandlerConcurrentClient(unreachable, 10, 2, httpClient, handler)) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "doc-1");
+      concurrentClient.add("collection1", doc);
+      concurrentClient.blockUntilFinished();
+    }
+
+    assertFalse("expected a connection error to be reported", errors.isEmpty());
+    boolean anyMentionsUrl =
+        errors.stream()
+            .anyMatch(
+                e -> {
+                  for (Throwable t = e; t != null; t = t.getCause()) {
+                    if (t.getMessage() != null && t.getMessage().contains("127.0.0.1:1")) {
+                      return true;
+                    }
+                  }
+                  return false;
+                });
+    assertTrue(
+        "connection error should identify the target server; got: " + errors, anyMentionsUrl);
+  }
+
+  /**
+   * A connection error is reported as a SolrServerException that preserves the original cause, so
+   * SolrCmdDistributor's checkRetry can unwrap it via getRootCause to decide whether to retry.
+   */
+  @Test
+  public void testConnectionErrorIsSolrServerExceptionPreservingCause() throws Exception {
+    String unreachable = "http://127.0.0.1:1/solr";
+    List<Throwable> errors = new CopyOnWriteArrayList<>();
+    ConcurrentUpdateBaseSolrClient.UpdateErrorHandler handler =
+        new ConcurrentUpdateBaseSolrClient.UpdateErrorHandler() {
+          @Override
+          public void onError(Throwable ex, List<String> ids, String collection) {
+            errors.add(ex);
+          }
+
+          @Override
+          public void onError(Throwable ex) {
+            errors.add(ex);
+          }
+        };
+
+    try (var httpClient = solrClient(null);
+        var concurrentClient =
+            errorHandlerConcurrentClient(unreachable, 10, 2, httpClient, handler)) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "doc-1");
+      concurrentClient.add("collection1", doc);
+      concurrentClient.blockUntilFinished();
+    }
+
+    assertFalse("expected a connection error to be reported", errors.isEmpty());
+    Throwable reported = errors.get(0);
+    assertTrue(
+        "connection error should be wrapped as SolrServerException; got: " + reported,
+        reported instanceof SolrServerException);
+    assertNotNull("the original cause must be preserved", reported.getCause());
+  }
+
+  /**
    * A naive lambda handler only registers for per-id failures; an error not tied to identifiable
    * documents is logged by the default general callback and does not stop the client.
    */
