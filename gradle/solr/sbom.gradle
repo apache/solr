@@ -1,0 +1,557 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+
+// CycloneDX SBOM generation for the Solr binary distributions.
+//
+// The ":solr:packaging" project assembles the distributions; this script adds the BOM
+// configurations they are computed from, the two generator tasks and the post-processing
+// that turns the raw plugin output into the "bom.json" shipped inside each archive.
+//
+// The child SBOMs merged in below are produced by ":solr:webapp:js-client" (cyclonedx-npm)
+// and ":solr:ui" (the CycloneDX Gradle plugin), each in its own build file.
+
+final APACHE_SNAPSHOTS_QUALIFIER = '&repository_url=https:%2F%2Frepository.apache.org%2Fcontent%2Fgroups%2Fsnapshots%2F'
+
+configure(project(':solr:packaging')) {
+  // The CycloneDX plugin is declared in the root plugins block, whose classpath a script
+  // plugin is not compiled against, so its types are looked up by name instead of imported.
+  def cyclonedxDirectTaskType = buildscript.classLoader.loadClass('org.cyclonedx.gradle.CyclonedxDirectTask')
+  def applicationComponentType = buildscript.classLoader.loadClass('org.cyclonedx.model.Component$Type').APPLICATION
+
+  ext {
+    cyclonedxDir = layout.buildDirectory.dir("cyclonedx")
+    // The same BOMs under the name of the archive each describes, for publishing next to the
+    // archives in the release folder. See the "cyclonedxReleaseArtifacts" task below.
+    cyclonedxReleaseDir = layout.buildDirectory.dir("cyclonedx-release")
+  }
+
+  // Hand-maintained CycloneDX components for the third-party JavaScript checked into
+  // solr/webapp/web/libs, merged in by step 5 of the post-processing below.
+  def vendoredLibsManifest = rootProject.file('solr/webapp/vendored-libs.json')
+
+  // For the CycloneDX BOM generation
+  configurations {
+    bomSlim {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    bomFull {
+        canBeResolved = true
+        canBeConsumed = false
+        extendsFrom bomSlim
+    }
+    // Child SBOMs of the UI bundles, merged into the distribution SBOMs by postProcessBom
+    jsClientSbom {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    uiSbom {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    // The distribution SBOMs as separate release artifacts, consumed by ':solr:distribution'
+    sbom {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+  }
+
+  // Request the standard JVM runtime variants, like runtimeClasspath does.
+  //
+  // The CycloneDX plugin resolves configurations leniently. Without these attributes,
+  // variant-aware dependencies (e.g. Guava) and platform constraints (e.g. the Jersey BOM) fail to resolve
+  // and silently disappear.
+  [configurations.bomSlim, configurations.bomFull].each { conf ->
+      conf.attributes {
+          attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
+          attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+          attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+          attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling, Bundling.EXTERNAL))
+          attribute(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE, objects.named(TargetJvmEnvironment, TargetJvmEnvironment.STANDARD_JVM))
+      }
+  }
+
+  // The distribution keeps the server versions of the libraries shared between the
+  // server and the modules, so align the full BOM with the versions of the slim one
+  // (e.g. a module may pull in a newer slf4j-api than the one in server/lib/ext).
+  configurations.bomFull.shouldResolveConsistentlyWith(configurations.bomSlim)
+
+  dependencies {
+    rootProject.project(":solr:modules").childProjects.values().each { module ->
+      // No "configuration:" here on purpose.
+      //
+      // Gradle then selects the variant of the module that matches the attributes declared on the bom configurations above,
+      // just like it does for a runtime classpath ("variant-aware" resolution).
+      // Naming a configuration would bypass attribute matching, and imported Maven BOMs (e.g. Jersey's) would no
+      // longer provide the versions of their managed dependencies.
+      bomFull project(path: module.path)
+    }
+
+    bomFull project(path: ':solr:cross-dc-manager')
+
+    bomSlim project(path: ':solr:server', configuration: 'startJar')
+    bomSlim project(path: ':solr:server', configuration: 'serverLib')
+    bomSlim project(path: ':solr:server', configuration: 'libExt')
+    // Variant-aware dependency instead of server's by-name 'solrCore'
+    // configuration, see the comment on the modules above.
+    bomSlim project(path: ':solr:core')
+    bomSlim project(path: ':solr:server', configuration: 'webapp')
+
+    // Child SBOMs of the UI bundles; empty when the projects are disabled
+    if (gradle.ext.withJsClient) {
+      jsClientSbom project(path: ':solr:webapp:js-client', configuration: 'jsClientSbom')
+    }
+    if (gradle.ext.withUiModule) {
+      uiSbom project(path: ':solr:ui', configuration: 'uiSbom')
+    }
+  }
+
+  // Post-processing of the SBOMs generated by the CycloneDX plugin:
+  //
+  // 1. Metadata:
+  //    The "build" lifecycle phase is recorded (this is a "Build SBOM" in CISA's classification)
+  //    and this post-processing step is listed in the tools, next to the CycloneDX plugin.
+  // 2. Main component:
+  //    The Solr binary archive published on downloads.apache.org is identified by a "sid" purl
+  //    (a draft purl type for software distributed outside package registries,
+  //    see https://github.com/package-url/purl-spec/issues/516) and by the Solr CPE.
+  // 3. Removed components:
+  //    Maven BOM/platform dependencies (purl qualifier "type=pom") and the internal ":platform"
+  //    project are stripped: they are not part of the binary distribution and the plugin has no
+  //    option to exclude them.
+  // 4. Solr components:
+  //    The plugin emits invalid purls for Solr projects, built from the Gradle project name and a
+  //    non-standard "project_path" qualifier (e.g. pkg:maven/org.apache.solr/core@11.0.0?project_path=:solr:core).
+  //    They are replaced with the Maven artifactId (base.archivesName) and a "type=jar" qualifier
+  //    (e.g. pkg:maven/org.apache.solr/solr-core@11.0.0?type=jar).
+  //    The project description and the Apache-2.0 license are also added.
+  // 5. Vendored JavaScript libraries:
+  //    The AngularJS admin UI ships third-party JavaScript files checked into solr/webapp/web/libs.
+  //    Their components are maintained by hand in solr/webapp/vendored-libs.json: each identifies
+  //    the upstream package by purl, with any deviation of the shipped bytes under "pedigree".
+  // 6. JavaScript client bundle:
+  //    The npm packages bundled by browserify into the OpenAPI JS client
+  //    (server/solr-webapp/webapp/libs/solr/index.js) are nested as subassemblies of a first-party
+  //    "solr-js-client" component, using the SBOM generated by cyclonedx-npm in :solr:webapp:js-client.
+  // 7. New UI bundle:
+  //    The Maven dependencies compiled into the wasmJs UI (server/solr-webapp/webapp/ui) are nested
+  //    as subassemblies of a first-party "solr-ui" component, using the SBOM generated in :solr:ui,
+  //    together with the npm package bundled by the Kotlin toolchain (see kotlin-js-store/wasm/yarn.lock).
+  // 8. Archive locations:
+  //    The location of each JAR and JavaScript file within the distribution is recorded as
+  //    "evidence.occurrences": the directories assembled for the distribution are scanned and
+  //    their files are matched to the components by SHA-256 hash.
+  //    A JAR that matches no component is a build error: the distribution then ships a version
+  //    that the BOM configurations do not resolve, so it is described by neither the SBOM nor
+  //    the license checks.
+  // 9. Hashes:
+  //    Only the SHA-256 hash of each component is kept: the plugin emits eight algorithms
+  //    per artifact, which only adds bulk.
+  def postProcessBom = { File bomFile, String edition, Map scanDirs, File jsClientSbomFile, File uiSbomFile ->
+      def json = new JsonSlurper().parse(bomFile)
+
+      def sha256Of = { File file ->
+          def digest = MessageDigest.getInstance('SHA-256')
+          file.eachByte(8192) { buffer, length -> digest.update(buffer, 0, length) }
+          digest.digest().encodeHex().toString()
+      }
+
+      // Copies a child SBOM's dependency graph into this one: the child root is replaced
+      // by the given bundle ref, dropped refs are skipped and entries for refs that
+      // already exist (the same artifact in both graphs) are merged.
+      def mergeChildGraph = { List childDeps, String childRootRef, String bundleRef, Set droppedRefs ->
+          childDeps.each { dep ->
+              if (dep.ref in droppedRefs) {
+                  return
+              }
+              def ref = dep.ref == childRootRef ? bundleRef : dep.ref
+              def dependsOn = (dep.dependsOn ?: []).findAll { !(it in droppedRefs) }
+                      .collect { it == childRootRef ? bundleRef : it }
+              def existing = json.dependencies.find { it.ref == ref }
+              if (existing == null) {
+                  json.dependencies << [ref: ref, dependsOn: dependsOn]
+              } else {
+                  existing.dependsOn = ((existing.dependsOn ?: []) + dependsOn).unique()
+              }
+          }
+      }
+
+      // 1. Metadata
+      json.metadata.lifecycles = [[phase: 'build']]
+
+      // Record this post-processing step next to the CycloneDX plugin
+      if (json.metadata.tools == null) {
+        json.metadata.tools = [components: []]
+      }
+      json.metadata.tools.components << [
+          type: 'application',
+          author: 'The Apache Software Foundation',
+          name: 'solr-sbom-post-processing',
+          version: project.version,
+          description: 'Post-processing of the generated SBOM by the Solr Gradle build (:solr:packaging)',
+      ]
+
+      // 2. Main component
+      // Old bom-ref -> new purl, applied to the dependency graph below
+      def rewrittenRefs = [:]
+
+      Map<String, Object> mainComponent = json.metadata.component
+      def mainPurl = "pkg:sid/apache.org/solr/solr@${mainComponent.version}?edition=${edition}".toString()
+      rewrittenRefs[mainComponent.'bom-ref'] = mainPurl
+      mainComponent.remove('group')
+      mainComponent.name = 'Apache Solr binary release'
+      mainComponent.cpe = "cpe:2.3:a:apache:solr:${mainComponent.version}:*:*:*:*:*:*:*".toString()
+      mainComponent.purl = mainPurl
+      mainComponent.'bom-ref' = mainPurl
+
+      // Gradle project path encoded in the purls the plugin generates for Solr projects
+      def projectPathOf = { purl ->
+          def matcher = purl =~ /[?&]project_path=([^&]+)(&|$)/
+          matcher ? URLDecoder.decode(matcher.group(1), 'UTF-8') : null
+      }
+
+      // 3. Removed components
+      def removedRefs = json.components.findAll {
+          it.purl =~ /[?&]type=pom(&|$)/ || projectPathOf(it.purl) == ':platform'
+      }.collect { it.'bom-ref' } as Set
+
+      // 4. Solr components
+      Map<String, String> artifactIdByPath = rootProject.allprojects.collectEntries {
+          [(it.path): it.base.archivesName.get()]
+      }
+      json.components = json.components.collect { Map<String, Object> component ->
+          def projectPath = projectPathOf(component.purl)
+          // Skip external components and those about to be removed
+          if (projectPath == null || component.'bom-ref' in removedRefs) {
+              return component
+          }
+          def artifactId = artifactIdByPath[projectPath]
+          def repositoryUrlQualifier = component.version.endsWith("-SNAPSHOT") ? APACHE_SNAPSHOTS_QUALIFIER : ''
+          def purl = "pkg:maven/${component.group}/${artifactId}@${component.version}?type=jar${repositoryUrlQualifier}".toString()
+          rewrittenRefs[component.'bom-ref'] = purl
+          component.name = artifactId
+          component.purl = purl
+          component.'bom-ref' = purl
+          component.description = rootProject.project(projectPath).description
+          component.licenses = [[license: [id: 'Apache-2.0', url: 'https://www.apache.org/licenses/LICENSE-2.0']]]
+          // Restore the field order the plugin uses for external components
+          def ordered = [:]
+          ['type', 'bom-ref', 'group', 'name', 'version', 'description', 'hashes',
+           'licenses', 'purl', 'modified', 'properties'].each { key ->
+              if (component.containsKey(key)) {
+                  ordered[key] = component[key]
+              }
+          }
+          component.forEach { key, value ->
+              if (!ordered.containsKey(key)) {
+                  ordered[key] = value
+              }
+          }
+          return ordered
+      }
+
+      // Apply the removals (3) and the ref rewrites (2, 4) to the dependency graph
+      json.components.removeAll { it.'bom-ref' in removedRefs }
+      json.dependencies?.removeAll { it.ref in removedRefs }
+      json.dependencies?.each { dep ->
+          dep.ref = rewrittenRefs.getOrDefault(dep.ref, dep.ref)
+          dep.dependsOn?.removeAll { it in removedRefs }
+          if (dep.dependsOn != null) {
+              dep.dependsOn = dep.dependsOn.collect { rewrittenRefs.getOrDefault(it, it) }
+          }
+      }
+
+      // The UI artifacts of steps 5 to 7 all ship inside the webapp
+      def webappRef = json.components.find {
+          it.purl?.startsWith('pkg:maven/org.apache.solr/solr-webapp@')
+      }?.'bom-ref' ?: mainComponent.'bom-ref'
+      def webappDependsOn = json.dependencies.find { it.ref == webappRef }.dependsOn
+
+      // 5. Vendored JavaScript libraries
+      // Ready-made components; validateVendoredLibs guarantees the hashes match the files.
+      new JsonSlurper().parse(vendoredLibsManifest).each { fileName, component ->
+          json.components << component
+          json.dependencies << [ref: component.'bom-ref', dependsOn: []]
+          webappDependsOn << component.'bom-ref'
+      }
+
+      // 6. JavaScript client bundle
+      if (jsClientSbomFile != null) {
+          def jsClientBom = new JsonSlurper().parse(jsClientSbomFile)
+          def bundleRef = "solr-js-client@${project.version}".toString()
+          json.components << [
+              type: 'library',
+              'bom-ref': bundleRef,
+              name: 'solr-js-client',
+              version: project.version.toString(),
+              description: 'JavaScript client for the Solr v2 API, generated from its OpenAPI specification',
+              licenses: [[license: [id: 'Apache-2.0', url: 'https://www.apache.org/licenses/LICENSE-2.0']]],
+              // The npm packages bundled into the single shipped file by browserify
+              components: jsClientBom.components,
+              evidence: [occurrences: [[location: 'server/solr-webapp/webapp/libs/solr/index.js']]],
+          ]
+          mergeChildGraph(jsClientBom.dependencies ?: [], jsClientBom.metadata.component.'bom-ref', bundleRef, [] as Set)
+          webappDependsOn << bundleRef
+          // Record cyclonedx-npm next to the other tools
+          jsClientBom.metadata?.tools?.components?.each { tool ->
+              if (!json.metadata.tools.components.any { it.name == tool.name && it.version == tool.version }) {
+                  json.metadata.tools.components << tool
+              }
+          }
+      }
+
+      // 7. New UI bundle
+      def uiBundle = null
+      if (uiSbomFile != null) {
+          def uiBom = new JsonSlurper().parse(uiSbomFile)
+          // The ":platform" project and Maven BOMs are on the UI classpath too, see step 3
+          def uiDroppedRefs = uiBom.components.findAll {
+              it.purl =~ /[?&]type=pom(&|$)/ || projectPathOf(it.purl) == ':platform'
+          }.collect { it.'bom-ref' } as Set
+          // An artifact present in the Java graph too keeps its top-level component only
+          def existingRefs = json.components.collect { it.'bom-ref' } as Set
+          def nested = uiBom.components.findAll {
+              !(it.'bom-ref' in uiDroppedRefs) && !(it.'bom-ref' in existingRefs)
+          }
+          // Bundled by the Kotlin toolchain, see kotlin-js-store/wasm/yarn.lock
+          nested << [
+              type: 'library',
+              'bom-ref': 'pkg:npm/%40js-joda/core@3.2.0',
+              name: '@js-joda/core',
+              version: '3.2.0',
+              licenses: [[license: [id: 'BSD-3-Clause']]],
+              purl: 'pkg:npm/%40js-joda/core@3.2.0',
+          ]
+          def bundleRef = "solr-ui@${project.version}".toString()
+          uiBundle = [
+              type: 'library',
+              'bom-ref': bundleRef,
+              name: 'solr-ui',
+              version: project.version.toString(),
+              description: 'New Solr admin UI, compiled to WebAssembly',
+              licenses: [[license: [id: 'Apache-2.0', url: 'https://www.apache.org/licenses/LICENSE-2.0']]],
+              // The Maven artifacts compiled into the bundle and the npm package above
+              components: nested,
+              // Occurrences are filled by the scan of step 8, the bundle file names are content-hashed
+          ]
+          json.components << uiBundle
+          mergeChildGraph(uiBom.dependencies ?: [], uiBom.metadata.component.'bom-ref', bundleRef, uiDroppedRefs)
+          def uiEntry = json.dependencies.find { it.ref == bundleRef }
+          uiEntry.dependsOn << 'pkg:npm/%40js-joda/core@3.2.0'
+          json.dependencies << [ref: 'pkg:npm/%40js-joda/core@3.2.0', dependsOn: []]
+          webappDependsOn << bundleRef
+      }
+
+      // 8. Archive locations
+      // Distribution files indexed by SHA-256 hash; UI bundle files collected on the way
+      def locationsByHash = [:].withDefault { [] }
+      def uiLocations = []
+      scanDirs.each { prefix, configuration ->
+          configuration.files.each { root ->
+              fileTree(root).matching {
+                  include '**/*.jar'
+                  include '**/*.js'
+                  include 'solr-webapp/webapp/ui/**'
+              }.visit { entry ->
+                  if (!entry.directory) {
+                      def location = "${prefix}/${entry.relativePath}".toString()
+                      locationsByHash[sha256Of(entry.file)] << location
+                      if (entry.relativePath.pathString.startsWith('solr-webapp/webapp/ui/')) {
+                          uiLocations << location
+                      }
+                  }
+              }
+          }
+      }
+      def describedHashes = [] as Set
+      json.components.each { component ->
+          def sha256 = component.hashes?.find { it.alg == 'SHA-256' }?.content
+          if (sha256 != null && locationsByHash.containsKey(sha256)) {
+              component.evidence = [occurrences: locationsByHash[sha256].sort().collect { [location: it] }]
+              describedHashes << sha256
+          }
+      }
+      // Only JARs are checked: the JavaScript bundles are single files assembled from many
+      // components, so their occurrences are recorded by hand in steps 6 and 7 instead.
+      def undescribedJars = locationsByHash.findAll { hash, locations -> !(hash in describedHashes) }
+              .values().flatten().findAll { it.endsWith('.jar') }.sort()
+      if (undescribedJars) {
+          throw new GradleException("The ${edition} distribution ships JARs that no component of " +
+              "${bomFile.name} describes:\n  " + undescribedJars.join("\n  ") + "\n" +
+              "The packaged versions have drifted from the ones the 'bom${edition.capitalize()}' " +
+              "configuration resolves, which also means they are not covered by solr/licenses.")
+      }
+      if (uiBundle != null) {
+          uiBundle.evidence = [occurrences: uiLocations.sort().collect { [location: it] }]
+      }
+
+      // 9. Hashes
+      // The npm integrity hashes on "externalReferences" are kept, they describe
+      // the registry tarballs and have no SHA-256 equivalent.
+      def keepSha256Only
+      keepSha256Only = { List components ->
+          components.each { component ->
+              if (component.hashes != null) {
+                  component.hashes = component.hashes.findAll { it.alg == 'SHA-256' }
+                  if (component.hashes.isEmpty()) {
+                      component.remove('hashes')
+                  }
+              }
+              keepSha256Only(component.components ?: [])
+          }
+      }
+      keepSha256Only(json.components)
+
+      bomFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(json))
+  }
+
+  tasks.register('cyclonedxFull', cyclonedxDirectTaskType) {
+      group = 'Bill of Materials'
+      description = 'Generates CycloneDX BOM for the full Solr distribution'
+
+      includeConfigs = ['bomFull']
+      projectType = applicationComponentType
+
+      // The plugin resolves the configuration leniently and without depending on it,
+      // so the jars of Solr projects must be built first or their hashes are missing.
+      inputs.files(configurations.bomFull)
+          .withPropertyName('bomFullArtifacts')
+          .withNormalizer(ClasspathNormalizer)
+
+      // Distribution directories scanned for the archive location of each artifact
+      inputs.files(configurations.server, configurations.modules, configurations.crossDcManager)
+          .withPropertyName('distributionDirs')
+          .withPathSensitivity(PathSensitivity.RELATIVE)
+
+      // Child SBOMs of the UI bundles; empty when the projects are disabled
+      inputs.files(configurations.jsClientSbom, configurations.uiSbom)
+          .withPropertyName('childSboms')
+          .withPathSensitivity(PathSensitivity.NONE)
+
+      // The vendored JavaScript components and the files they describe
+      dependsOn ':solr:webapp:validateVendoredLibs'
+      inputs.file(vendoredLibsManifest)
+          .withPropertyName('vendoredLibsManifest')
+          .withPathSensitivity(PathSensitivity.NONE)
+      inputs.dir(rootProject.file('solr/webapp/web/libs'))
+          .withPropertyName('vendoredJsLibs')
+          .withPathSensitivity(PathSensitivity.RELATIVE)
+      inputs.file(rootProject.file('kotlin-js-store/wasm/yarn.lock'))
+          .withPropertyName('uiYarnLock')
+          .withPathSensitivity(PathSensitivity.NONE)
+
+      jsonOutput = cyclonedxDir.get().file("bom-full.json").asFile
+
+      doLast {
+          postProcessBom(jsonOutput.get().asFile, 'full', [
+              'server': configurations.server,
+              'modules': configurations.modules,
+              'cross-dc-manager': configurations.crossDcManager,
+          ], configurations.jsClientSbom.files.find(), configurations.uiSbom.files.find())
+      }
+  }
+
+  tasks.register('cyclonedxSlim', cyclonedxDirectTaskType) {
+      group = 'Bill of Materials'
+      description = 'Generates CycloneDX BOM for the slim Solr distribution'
+
+      includeConfigs = ['bomSlim']
+      projectType = applicationComponentType
+
+      // The plugin resolves the configuration leniently and without depending on it,
+      // so the jars of Solr projects must be built first or their hashes are missing.
+      inputs.files(configurations.bomSlim)
+          .withPropertyName('bomSlimArtifacts')
+          .withNormalizer(ClasspathNormalizer)
+
+      // Distribution directories scanned for the archive location of each artifact
+      inputs.files(configurations.server)
+          .withPropertyName('distributionDirs')
+          .withPathSensitivity(PathSensitivity.RELATIVE)
+
+      // Child SBOMs of the UI bundles; empty when the projects are disabled
+      inputs.files(configurations.jsClientSbom, configurations.uiSbom)
+          .withPropertyName('childSboms')
+          .withPathSensitivity(PathSensitivity.NONE)
+
+      // The vendored JavaScript components and the files they describe
+      dependsOn ':solr:webapp:validateVendoredLibs'
+      inputs.file(vendoredLibsManifest)
+          .withPropertyName('vendoredLibsManifest')
+          .withPathSensitivity(PathSensitivity.NONE)
+      inputs.dir(rootProject.file('solr/webapp/web/libs'))
+          .withPropertyName('vendoredJsLibs')
+          .withPathSensitivity(PathSensitivity.RELATIVE)
+      inputs.file(rootProject.file('kotlin-js-store/wasm/yarn.lock'))
+          .withPropertyName('uiYarnLock')
+          .withPathSensitivity(PathSensitivity.NONE)
+
+      jsonOutput = cyclonedxDir.get().file("bom-slim.json").asFile
+
+      doLast {
+          postProcessBom(jsonOutput.get().asFile, 'slim', [
+              'server': configurations.server,
+          ], configurations.jsClientSbom.files.find(), configurations.uiSbom.files.find())
+      }
+  }
+
+  tasks.register('cyclonedx') {
+      group = 'Bill of Materials'
+      description = 'Generates CycloneDX BOMs for Solr distributions'
+
+      dependsOn 'cyclonedxFull'
+      dependsOn 'cyclonedxSlim'
+  }
+
+  // Each distribution carries its BOM as "bom.json" in the archive root, so that it travels with
+  // the artifact it describes. The same file is also published next to the archive in the release
+  // folder, named after it, so that it can be fetched without downloading the whole distribution.
+  // The archive names are spelled out here as they are for the signatures in build.gradle.
+  def fullBomFileName = "solr-${version}.tgz.cdx.json".toString()
+  def slimBomFileName = "solr-${version}-slim.tgz.cdx.json".toString()
+
+  tasks.register('cyclonedxReleaseArtifacts', Sync) {
+      group = 'Bill of Materials'
+      description = 'Copies the CycloneDX BOMs to the file names they are published under'
+
+      dependsOn 'cyclonedx'
+
+      from(cyclonedxDir) {
+          include 'bom-full.json'
+          rename 'bom-full.json', fullBomFileName
+      }
+      from(cyclonedxDir) {
+          include 'bom-slim.json'
+          rename 'bom-slim.json', slimBomFileName
+      }
+      into cyclonedxReleaseDir
+  }
+
+  // Published as separate artifacts rather than as the directory, so that ':solr:distribution'
+  // computes a checksum and a signature for each BOM.
+  artifacts {
+      [fullBomFileName, slimBomFileName].each { fileName ->
+          sbom(cyclonedxReleaseDir.map {it.file(fileName)}) {
+              builtBy tasks.named('cyclonedxReleaseArtifacts')
+          }
+      }
+  }
+}
