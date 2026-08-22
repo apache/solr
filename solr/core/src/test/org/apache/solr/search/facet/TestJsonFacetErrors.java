@@ -23,18 +23,14 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestJsonFacetErrors extends SolrTestCaseHS {
 
-  private static SolrInstances servers; // for distributed testing
-
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     JSONTestUtil.failRepeatedKeys = true;
 
     // we need DVs on point fields to compute stats & facets
@@ -44,20 +40,9 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }
 
-  /** Start all servers for cluster if they don't already exist */
-  public static void initServers() throws Exception {
-    if (servers == null) {
-      servers = new SolrInstances(3, "solrconfig-tlog.xml", "schema_latest.xml");
-    }
-  }
-
   @AfterClass
   public static void afterTests() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
-    if (servers != null) {
-      servers.stop();
-      servers = null;
-    }
   }
 
   public void indexSimple(Client client) throws Exception {
