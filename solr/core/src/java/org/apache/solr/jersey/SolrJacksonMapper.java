@@ -70,7 +70,8 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
     @Override
     public void serialize(NamedList value, JsonGenerator gen, SerializerProvider provider)
         throws IOException {
-      gen.writeObject(value.asShallowMap());
+      // Not SimpleOrderedMap: it IS a NamedList, so this serializer would recurse on it.
+      gen.writeObject(value.asMap(0));
     }
   }
 }
