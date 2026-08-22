@@ -580,10 +580,16 @@ public abstract class HttpSolrClient extends SolrClient {
       return (B) this;
     }
 
+    /**
+     * Returns the request timeout in milliseconds.
+     *
+     * <p>If no request timeout is configured or if the configured value is non-positive, this
+     * method returns {@code 0}, indicating that requests will wait infinitely for a response.
+     *
+     * @return request timeout in milliseconds or {@code 0} if no valid timeout is configured.
+     */
     public long getRequestTimeoutMillis() {
-      return requestTimeoutMillis != null && requestTimeoutMillis > 0
-          ? requestTimeoutMillis
-          : getIdleTimeoutMillis();
+      return requestTimeoutMillis != null && requestTimeoutMillis > 0 ? requestTimeoutMillis : 0;
     }
 
     /**

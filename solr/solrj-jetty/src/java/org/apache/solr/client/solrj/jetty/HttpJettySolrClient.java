@@ -297,7 +297,10 @@ public class HttpJettySolrClient extends HttpSolrClient {
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
     httpClient.setConnectTimeout(builder.getConnectionTimeoutMillis());
-    httpClient.setIdleTimeout(-1); // don't enforce an idle timeout at this level
+    // Sets the global default idle timeout. The idle timeout governs HTTP/2 preface/SETTINGS
+    // handshakes, pool keep-alive and read/write inactivity during data transfers (unless
+    // overridden via Request.idleTimeout)
+    httpClient.setIdleTimeout(SolrHttpConstants.DEFAULT_SO_TIMEOUT);
     // note: idle & request timeouts are set per request
 
     var cookieStore = builder.getCookieStore();
@@ -627,7 +630,9 @@ public class HttpJettySolrClient extends HttpSolrClient {
           h.add(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
         });
 
+    // idle timeout between data transfers in a request
     req.idleTimeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
+    // hard limit on total execution time of a request
     req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
 
     if (solrRequest.getUserPrincipal() != null) {
