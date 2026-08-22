@@ -245,4 +245,73 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue(p.matcher(resp).find());
     assertTrue(p_bool.matcher(resp).find());
   }
+
+  // SOLR-18314: the pf phrase boost is dropped for single-term queries, decided from the analyzed
+  // query. A single input term whose analysis yields multiple tokens must keep its phrase boost,
+  // whether from WordDelimiter splitting "wi-fi" into "wi fi" or a multi-word synonym expanding
+  // "usa" into "united states of america". Unlike eDisMax, the classic DisMax parser has no
+  // minClauseSize gate, so this is enforced by inspecting the parsed phrase query.
+  //
+  // CJK is an important example of a query with no spaces that can still parse to multiple terms.
+  // However, we don't add a dedicated CJK test: CJK analysis of a single input term produces the
+  // same multi-term PhraseQuery that the "wi-fi" case already exercises, so it would cover no new
+  // code path while requiring a CJK analyzer to be configured in the test schema.
+  @Test
+  public void testSingleTermPhraseBoost() throws Exception {
+    // Single analyzed token: the pf phrase boost is redundant with the qf term boost, so no phrase
+    // query should appear in the parsed query.
+    Pattern phrase = Pattern.compile("subword:\"");
+    String resp =
+        h.query(
+            req(
+                "q",
+                "wireless",
+                "qt",
+                "/dismax",
+                "qf",
+                "subword",
+                "pf",
+                "subword^10",
+                CommonParams.DEBUG_QUERY,
+                "true"));
+    assertFalse("single-term query should not produce a phrase boost", phrase.matcher(resp).find());
+
+    // Whitespace-free query that analyzes into multiple tokens: the phrase boost is meaningful and
+    // must be retained.
+    resp =
+        h.query(
+            req(
+                "q",
+                "wi-fi",
+                "qt",
+                "/dismax",
+                "qf",
+                "subword",
+                "pf",
+                "subword^10",
+                CommonParams.DEBUG_QUERY,
+                "true"));
+    assertTrue(
+        "multi-token query should retain its phrase boost",
+        Pattern.compile("subword:\"wi fi\"").matcher(resp).find());
+
+    // A single input term expanded by a multi-word synonym ("usa" => "united states of america")
+    // likewise analyzes into multiple tokens, so its phrase boost must be retained.
+    resp =
+        h.query(
+            req(
+                "q",
+                "usa",
+                "qt",
+                "/dismax",
+                "qf",
+                "text_syn",
+                "pf",
+                "text_syn^10",
+                CommonParams.DEBUG_QUERY,
+                "true"));
+    assertTrue(
+        "multi-word synonym query should retain its phrase boost",
+        Pattern.compile("text_syn:\"united states of america\"").matcher(resp).find());
+  }
 }

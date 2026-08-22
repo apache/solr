@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.isA;
+import static org.hamcrest.Matchers.not;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -1195,6 +1196,61 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//*[@numFound='2']",
         "//str[@name='id'][.='145']",
         "//str[@name='id'][.='146']");
+  }
+
+  // SOLR-18314: the single-term pf boost is dropped, but only for genuinely single-token queries.
+  // A single input term whose analysis yields multiple tokens (WordDelimiter splitting "wi-fi", or
+  // a multi-word synonym expanding "usa") must keep its phrase boost.
+  //
+  // CJK is an important example of a query with no spaces that can still parse to multiple terms.
+  // However, we don't add a dedicated CJK test: CJK analysis of a single input term produces the
+  // same multi-term PhraseQuery that the "wi-fi" and "usa" cases already exercise, so it covers no
+  // new code path while requiring a CJK analyzer to be configured in the test schema.
+  public void testSingleTermPhraseBoost() throws Exception {
+    // Plain single-token query: the pf phrase boost adds nothing over the qf term boost, so no
+    // phrase clause should be present. minClauseSize already discards it regardless of this change.
+    String singleTokenParsed =
+        getParsedQuery(
+            req(
+                "q", "wireless",
+                "qf", "subject",
+                "pf", "subject^10",
+                "defType", "edismax",
+                "debugQuery", "true"));
+    assertThat(singleTokenParsed, not(containsString("subject:\"")));
+
+    // Whitespace-free query that analyzes into multiple tokens: the phrase boost is meaningful
+    // (imposes adjacency that the qf clause does not) and must survive.
+    String multiTokenParsed =
+        getParsedQuery(
+            req(
+                "q", "wi-fi",
+                "qf", "subject",
+                "pf", "subject^10",
+                "defType", "edismax",
+                "debugQuery", "true"));
+    assertThat(multiTokenParsed, containsString("(subject:\"wi fi\")^10.0"));
+
+    // A single raw token that a multi-word synonym expands into several analyzed tokens (here
+    // "usa" => "united states of america") also warrants a real phrase boost and must be retained.
+    // This covers the same "no whitespace in, multiple tokens out" case as CJK and ngram analyzers,
+    // without needing to configure those analyzers in the test schema.
+    String synonymParsed =
+        getParsedQuery(
+            req(
+                "q", "usa",
+                "qf", "subject",
+                "pf", "subject^10",
+                "defType", "edismax",
+                "debugQuery", "true"));
+    // "of" is a stopword (the "?" gap) and Porter stemming yields unit/state/america.
+    assertThat(synonymParsed, containsString("(subject:\"unit state ? america\")^10.0"));
+
+    // A clause-less query (q=*:*) must not add an empty "" phrase clause that would defeat the
+    // MatchAllDocsQuery optimization.
+    Query matchAll =
+        QParser.getParser("*:*", "edismax", req("qf", "subject", "pf", "subject^10")).getQuery();
+    assertThat(matchAll, isA(MatchAllDocsQuery.class));
   }
 
   // test phrase fields including pf2 pf3 and phrase slop
