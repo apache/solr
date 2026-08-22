@@ -198,8 +198,7 @@ public class ClusterState implements MapWriter {
   }
 
   /**
-   * Create a ClusterState from Json. This method doesn't support legacy configName location and
-   * thus don't call it where that's important
+   * Create a ClusterState from Json.
    *
    * @param bytes a byte array of a Json representation of a mapping from collection name to the
    *     Json representation of a {@link DocCollection} as written by {@link #write(JSONWriter)}. It
@@ -209,7 +208,6 @@ public class ClusterState implements MapWriter {
    *     {@link ClusterState}
    * @return the ClusterState
    */
-  @Deprecated
   public static ClusterState createFromJson(
       int version,
       byte[] bytes,
