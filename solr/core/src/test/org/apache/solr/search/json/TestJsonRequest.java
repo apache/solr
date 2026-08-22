@@ -30,6 +30,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,10 +47,9 @@ public class TestJsonRequest extends SolrTestCaseHS {
 
   private static SolrInstances servers; // for distributed testing
 
-  @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }
@@ -60,7 +60,6 @@ public class TestJsonRequest extends SolrTestCaseHS {
     }
   }
 
-  @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
@@ -68,7 +67,6 @@ public class TestJsonRequest extends SolrTestCaseHS {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @Test

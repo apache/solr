@@ -1,0 +1,11 @@
+title: >
+  Removed the deprecated `SolrTestCaseJ4.systemSetPropertyEnableUrlAllowList(boolean)` and
+  `systemClearPropertySolrEnableUrlAllowList()` methods (the latter was already a no-op). Use
+  `System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, ...)` directly instead. This
+  affects test code written against the `solr-test-framework` artifact.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18357
+    url: https://issues.apache.org/jira/browse/SOLR-18357
