@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -120,17 +119,15 @@ public class UpdateShardHandler implements SolrInfoBean {
 
     recoveryOnlyClient = recoveryOnlyClientBuilder.build();
 
-    ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
-    if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
-      if (log.isDebugEnabled()) {
-        log.debug("Creating recoveryExecutor with pool size {}", cfg.getMaxRecoveryThreads());
-      }
+    int maxRecoveryThreads = cfg == null ? -1 : cfg.getMaxRecoveryThreads();
+    if (maxRecoveryThreads > 0) {
+      log.debug("Creating recoveryExecutor with pool size {}", maxRecoveryThreads);
       recoveryExecutor =
           ExecutorUtil.newMDCAwareFixedThreadPool(
-              cfg.getMaxRecoveryThreads(), recoveryThreadFactory);
+              maxRecoveryThreads, new SolrNamedThreadFactory("recoveryExecutor"));
     } else {
       log.debug("Creating recoveryExecutor with unbounded pool");
-      recoveryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(recoveryThreadFactory);
+      recoveryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("recoveryExecutor");
     }
   }
 

@@ -25,10 +25,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.TimeOut;
@@ -115,8 +116,7 @@ public class ExecutorUtilTest extends SolrTestCase {
   public void testCMDCAwareCachedThreadPool() throws Exception {
     // 5 threads max, unbounded queue
     ExecutorService executor =
-        ExecutorUtil.newMDCAwareCachedThreadPool(
-            5, Integer.MAX_VALUE, new NamedThreadFactory("test"));
+        ExecutorUtil.newMDCAwareFixedThreadPool(5, Integer.MAX_VALUE, "test");
 
     AtomicInteger concurrentTasks = new AtomicInteger();
     AtomicInteger maxConcurrentTasks = new AtomicInteger();
@@ -274,6 +274,35 @@ public class ExecutorUtilTest extends SolrTestCase {
     } finally {
       ExecutorUtil.shutdownNowAndAwaitTermination(service);
     }
+  }
+
+  @Test
+  public void poolThatGrowsOnlyWhenQueueFullIsRejected() {
+    // threads beyond corePoolSize are only created once the queue is full, so the pool stays at
+    // corePoolSize until 1024 tasks are backlogged -- and forever, with an unbounded queue
+    expectThrows(
+        IllegalArgumentException.class,
+        () ->
+            new ExecutorUtil.MDCAwareThreadPoolExecutor(
+                4, 256, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1024)));
+    expectThrows(
+        IllegalArgumentException.class,
+        () ->
+            new ExecutorUtil.MDCAwareThreadPoolExecutor(
+                4, 256, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>()));
+
+    // a SynchronousQueue never holds a task, so maximumPoolSize is reachable
+    new ExecutorUtil.MDCAwareThreadPoolExecutor(
+            4, 256, 60, TimeUnit.SECONDS, new SynchronousQueue<>())
+        .shutdown();
+    // core == max needs no growth beyond core
+    new ExecutorUtil.MDCAwareThreadPoolExecutor(
+            256, 256, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1024))
+        .shutdown();
+    // a queued task is always rescued by one thread, so a maximum of 1 is reachable
+    ExecutorUtil.shutdownNowAndAwaitTermination(
+        ExecutorUtil.newMDCAwareSingleLazyThreadExecutor(
+            new SolrNamedThreadFactory("test"), 1, TimeUnit.SECONDS));
   }
 
   @Test
