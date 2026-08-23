@@ -219,226 +219,224 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       }
       assertNotNull(nrtJetty);
       assertNotNull(pullJetty);
-      {
-        SolrClient client = pullJetty.getSolrClient();
-        client.add(COLL, sid);
-        client.commit(COLL);
-        assertEquals(
-            nrtCore,
-            getHostCoreName(
-                COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")));
-        assertEquals(
-            pullCore,
-            getHostCoreName(
-                COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:PULL")));
-        // Now , kill NRT jetty
-        JettySolrRunner nrtJettyF = nrtJetty;
-        JettySolrRunner pullJettyF = pullJetty;
-        Random r = random();
-        final long establishBaselineMs = r.nextInt(1000);
-        final long nrtDowntimeMs = r.nextInt(10000);
-        // NOTE: for `pullServiceTimeMs`, it can't be super-short. This is just to simplify our
-        // indexing code,
-        // based on the fact that our indexing is based on a PULL-node client.
-        final long pullServiceTimeMs = 1000 + (long) r.nextInt(9000);
-        Future<?> jettyManipulationFuture =
-            executor.submit(
-                () -> {
-                  // we manipulate the jetty instances in a separate thread to more closely mimic
-                  // the behavior we'd see irl.
+      SolrClient client = pullJetty.getSolrClient();
+      client.add(COLL, sid);
+      client.commit(COLL);
+      assertEquals(
+          nrtCore,
+          getHostCoreName(
+              COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")));
+      assertEquals(
+          pullCore,
+          getHostCoreName(
+              COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:PULL")));
+      // Now , kill NRT jetty
+      JettySolrRunner nrtJettyF = nrtJetty;
+      JettySolrRunner pullJettyF = pullJetty;
+      Random r = random();
+      final long establishBaselineMs = r.nextInt(1000);
+      final long nrtDowntimeMs = r.nextInt(10000);
+      // NOTE: for `pullServiceTimeMs`, it can't be super-short. This is just to simplify our
+      // indexing code,
+      // based on the fact that our indexing is based on a PULL-node client.
+      final long pullServiceTimeMs = 1000 + (long) r.nextInt(9000);
+      Future<?> jettyManipulationFuture =
+          executor.submit(
+              () -> {
+                // we manipulate the jetty instances in a separate thread to more closely mimic
+                // the behavior we'd see irl.
+                try {
+                  Thread.sleep(establishBaselineMs);
+                  log.info("stopping NRT jetty ...");
+                  nrtJettyF.stop();
+                  log.info("NRT jetty stopped.");
+                  Thread.sleep(nrtDowntimeMs); // let NRT be down for a while
+                  log.info("restarting NRT jetty ...");
+                  nrtJettyF.start(true);
+                  log.info("NRT jetty restarted.");
+                  // once NRT is back up, we expect PULL to continue serving until the TTL on ZK
+                  // state used for query request routing has expired (60s). But here we force a
+                  // return to NRT by stopping the PULL replica after a brief delay ...
+                  Thread.sleep(pullServiceTimeMs);
+                  log.info("stopping PULL jetty ...");
+                  pullJettyF.stop();
+                  log.info("PULL jetty stopped.");
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
+                }
+              });
+      String hostCore;
+      long start = new Date().getTime();
+      long individualRequestStart = start;
+      int count = 0;
+      while (nrtCore.equals(
+          hostCore =
+              getHostCoreName(
+                  COLL,
+                  qaJettyBase,
+                  p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")))) {
+        count++;
+        Thread.sleep(100);
+        individualRequestStart = new Date().getTime();
+      }
+      long now = new Date().getTime();
+      log.info(
+          "phase1 NRT queries count={}, overall_duration={}, baseline_expected_overall_duration={}, switch-to-pull_duration={}",
+          count,
+          now - start,
+          establishBaselineMs,
+          now - individualRequestStart);
+      // default tolerance of 500ms below should suffice. Failover to PULL for this case should be
+      // very fast, because our QA-based client already knows both replicas are active, the index
+      // is stable, so the moment the client finds NRT is down it should be able to failover
+      // immediately and transparently to PULL.
+      assertEquals(
+          "when we break out of the NRT query loop, should be b/c routed to PULL",
+          pullCore,
+          hostCore);
+      SolrInputDocument d = new SolrInputDocument();
+      d.addField("id", "345");
+      d.addField("desc_s", "Another Document");
+      // attempts to add another doc while NRT is down should fail, then eventually succeed when
+      // NRT comes back up
+      count = 0;
+      start = new Date().getTime();
+      individualRequestStart = start;
+      for (; ; ) {
+        try {
+          client.add(COLL, d);
+          client.commit(COLL);
+          break;
+        } catch (SolrException ex) {
+          // we expect these until nrtJetty is back up.
+          count++;
+          Thread.sleep(100);
+        }
+        individualRequestStart = new Date().getTime();
+      }
+      now = new Date().getTime();
+      log.info(
+          "successfully added another doc; duration: {}, overall_duration={}, baseline_expected_overall_duration={}, exception_count={}",
+          now - individualRequestStart,
+          now - start,
+          nrtDowntimeMs,
+          count);
+      // NRT replica is back up, registered as available with Zk, and availability info has been
+      // pulled down by our PULL-replica-based `client`, forwarded indexing command to NRT,
+      // index/commit completed. All of this accounts for the 3000ms tolerance allowed for below.
+      // This is not a strict value, and if it causes failures regularly we should feel free to
+      // increase the tolerance; but it's meant to provide a stable baseline from which to detect
+      // regressions.
+      count = 0;
+      start = new Date().getTime();
+      individualRequestStart = start;
+      while (pullCore.equals(
+          hostCore =
+              getHostCoreName(
+                  COLL,
+                  qaJettyBase,
+                  p -> {
+                    p.set(CommonParams.Q, "id:345");
+                    p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
+                  }))) {
+        count++;
+        Thread.sleep(100);
+        individualRequestStart = new Date().getTime();
+      }
+      now = new Date().getTime();
+      log.info(
+          "query retries between NRT index-ready and query-ready: {}; overall_duration={}; baseline_expected_overall_duration={}; failover-request_duration={}",
+          count,
+          now - start,
+          pullServiceTimeMs,
+          now - individualRequestStart);
+      assertEquals(nrtCore, hostCore);
+      // allow any exceptions to propagate
+      jettyManipulationFuture.get();
+
+      // next phase: just toggle a bunch
+      // TODO: could separate this out into a different test method, but this should suffice for
+      // now
+      pullJetty.start(true);
+      waitForState(
+          "Pull jetty replicas didn't become active in time",
+          COLL,
+          ((liveNodes, collectionState) ->
+              collectionState.getReplicasOnNode(pullJettyF.getNodeName()).stream()
+                  .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
+      AtomicBoolean done = new AtomicBoolean();
+      long runMinutes = 1;
+      long finishTimeMs =
+          new Date().getTime() + TimeUnit.MILLISECONDS.convert(runMinutes, TimeUnit.MINUTES);
+      JettySolrRunner[] jettys = new JettySolrRunner[] {pullJettyF, nrtJettyF};
+      Random threadRandom = new Random(r.nextInt());
+      Future<Integer> f =
+          executor.submit(
+              () -> {
+                int iteration = 0;
+                while (new Date().getTime() < finishTimeMs && !done.get()) {
+                  int idx = iteration++ % jettys.length;
+                  JettySolrRunner toManipulate = jettys[idx];
                   try {
-                    Thread.sleep(establishBaselineMs);
-                    log.info("stopping NRT jetty ...");
-                    nrtJettyF.stop();
-                    log.info("NRT jetty stopped.");
-                    Thread.sleep(nrtDowntimeMs); // let NRT be down for a while
-                    log.info("restarting NRT jetty ...");
-                    nrtJettyF.start(true);
-                    log.info("NRT jetty restarted.");
-                    // once NRT is back up, we expect PULL to continue serving until the TTL on ZK
-                    // state used for query request routing has expired (60s). But here we force a
-                    // return to NRT by stopping the PULL replica after a brief delay ...
-                    Thread.sleep(pullServiceTimeMs);
-                    log.info("stopping PULL jetty ...");
-                    pullJettyF.stop();
-                    log.info("PULL jetty stopped.");
+                    int serveTogetherTime = threadRandom.nextInt(7000);
+                    int downTime = threadRandom.nextInt(7000);
+                    log.info("serving together for {}ms", serveTogetherTime);
+                    Thread.sleep(serveTogetherTime);
+                    log.info("stopping {} ...", idx);
+                    toManipulate.stop();
+                    log.info("stopped {}.", idx);
+                    Thread.sleep(downTime);
+                    log.info("restarting {} ...", idx);
+                    toManipulate.start(true);
+                    log.info("restarted {}.", idx);
+                    waitForState(
+                        toManipulate.getNodeName() + " replicas didn't become active in time",
+                        COLL,
+                        ((liveNodes, collectionState) ->
+                            collectionState.getReplicasOnNode(toManipulate.getNodeName()).stream()
+                                .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
                   } catch (Exception e) {
                     throw new RuntimeException(e);
                   }
-                });
-        String hostCore;
-        long start = new Date().getTime();
-        long individualRequestStart = start;
-        int count = 0;
-        while (nrtCore.equals(
-            hostCore =
-                getHostCoreName(
-                    COLL,
-                    qaJettyBase,
-                    p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")))) {
+                }
+                done.set(true);
+                return iteration;
+              });
+      count = 0;
+      start = new Date().getTime();
+      try {
+        do {
+          if (pullCore.equals(
+              getHostCoreName(
+                  COLL,
+                  qaJettyBase,
+                  p -> {
+                    p.set(CommonParams.Q, "id:345");
+                    p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
+                  }))) {
+            done.set(true);
+          }
           count++;
           Thread.sleep(100);
-          individualRequestStart = new Date().getTime();
+        } while (!done.get());
+      } finally {
+        final String result;
+        if (done.getAndSet(true)) {
+          result = "Success";
+        } else {
+          // not yet set to done, completed abnormally (exception will be thrown beyond `finally`
+          // block)
+          result = "Failure";
         }
-        long now = new Date().getTime();
+        Integer toggleCount = f.get();
+        long secondsDuration =
+            TimeUnit.SECONDS.convert(new Date().getTime() - start, TimeUnit.MILLISECONDS);
         log.info(
-            "phase1 NRT queries count={}, overall_duration={}, baseline_expected_overall_duration={}, switch-to-pull_duration={}",
-            count,
-            now - start,
-            establishBaselineMs,
-            now - individualRequestStart);
-        // default tolerance of 500ms below should suffice. Failover to PULL for this case should be
-        // very fast, because our QA-based client already knows both replicas are active, the index
-        // is stable, so the moment the client finds NRT is down it should be able to failover
-        // immediately and transparently to PULL.
-        assertEquals(
-            "when we break out of the NRT query loop, should be b/c routed to PULL",
-            pullCore,
-            hostCore);
-        SolrInputDocument d = new SolrInputDocument();
-        d.addField("id", "345");
-        d.addField("desc_s", "Another Document");
-        // attempts to add another doc while NRT is down should fail, then eventually succeed when
-        // NRT comes back up
-        count = 0;
-        start = new Date().getTime();
-        individualRequestStart = start;
-        for (; ; ) {
-          try {
-            client.add(COLL, d);
-            client.commit(COLL);
-            break;
-          } catch (SolrException ex) {
-            // we expect these until nrtJetty is back up.
-            count++;
-            Thread.sleep(100);
-          }
-          individualRequestStart = new Date().getTime();
-        }
-        now = new Date().getTime();
-        log.info(
-            "successfully added another doc; duration: {}, overall_duration={}, baseline_expected_overall_duration={}, exception_count={}",
-            now - individualRequestStart,
-            now - start,
-            nrtDowntimeMs,
+            "{}! {} seconds, {} toggles, {} requests served",
+            result,
+            secondsDuration,
+            toggleCount,
             count);
-        // NRT replica is back up, registered as available with Zk, and availability info has been
-        // pulled down by our PULL-replica-based `client`, forwarded indexing command to NRT,
-        // index/commit completed. All of this accounts for the 3000ms tolerance allowed for below.
-        // This is not a strict value, and if it causes failures regularly we should feel free to
-        // increase the tolerance; but it's meant to provide a stable baseline from which to detect
-        // regressions.
-        count = 0;
-        start = new Date().getTime();
-        individualRequestStart = start;
-        while (pullCore.equals(
-            hostCore =
-                getHostCoreName(
-                    COLL,
-                    qaJettyBase,
-                    p -> {
-                      p.set(CommonParams.Q, "id:345");
-                      p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
-                    }))) {
-          count++;
-          Thread.sleep(100);
-          individualRequestStart = new Date().getTime();
-        }
-        now = new Date().getTime();
-        log.info(
-            "query retries between NRT index-ready and query-ready: {}; overall_duration={}; baseline_expected_overall_duration={}; failover-request_duration={}",
-            count,
-            now - start,
-            pullServiceTimeMs,
-            now - individualRequestStart);
-        assertEquals(nrtCore, hostCore);
-        // allow any exceptions to propagate
-        jettyManipulationFuture.get();
-
-        // next phase: just toggle a bunch
-        // TODO: could separate this out into a different test method, but this should suffice for
-        // now
-        pullJetty.start(true);
-        waitForState(
-            "Pull jetty replicas didn't become active in time",
-            COLL,
-            ((liveNodes, collectionState) ->
-                collectionState.getReplicasOnNode(pullJettyF.getNodeName()).stream()
-                    .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
-        AtomicBoolean done = new AtomicBoolean();
-        long runMinutes = 1;
-        long finishTimeMs =
-            new Date().getTime() + TimeUnit.MILLISECONDS.convert(runMinutes, TimeUnit.MINUTES);
-        JettySolrRunner[] jettys = new JettySolrRunner[] {pullJettyF, nrtJettyF};
-        Random threadRandom = new Random(r.nextInt());
-        Future<Integer> f =
-            executor.submit(
-                () -> {
-                  int iteration = 0;
-                  while (new Date().getTime() < finishTimeMs && !done.get()) {
-                    int idx = iteration++ % jettys.length;
-                    JettySolrRunner toManipulate = jettys[idx];
-                    try {
-                      int serveTogetherTime = threadRandom.nextInt(7000);
-                      int downTime = threadRandom.nextInt(7000);
-                      log.info("serving together for {}ms", serveTogetherTime);
-                      Thread.sleep(serveTogetherTime);
-                      log.info("stopping {} ...", idx);
-                      toManipulate.stop();
-                      log.info("stopped {}.", idx);
-                      Thread.sleep(downTime);
-                      log.info("restarting {} ...", idx);
-                      toManipulate.start(true);
-                      log.info("restarted {}.", idx);
-                      waitForState(
-                          toManipulate.getNodeName() + " replicas didn't become active in time",
-                          COLL,
-                          ((liveNodes, collectionState) ->
-                              collectionState.getReplicasOnNode(toManipulate.getNodeName()).stream()
-                                  .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
-                    } catch (Exception e) {
-                      throw new RuntimeException(e);
-                    }
-                  }
-                  done.set(true);
-                  return iteration;
-                });
-        count = 0;
-        start = new Date().getTime();
-        try {
-          do {
-            if (pullCore.equals(
-                getHostCoreName(
-                    COLL,
-                    qaJettyBase,
-                    p -> {
-                      p.set(CommonParams.Q, "id:345");
-                      p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
-                    }))) {
-              done.set(true);
-            }
-            count++;
-            Thread.sleep(100);
-          } while (!done.get());
-        } finally {
-          final String result;
-          if (done.getAndSet(true)) {
-            result = "Success";
-          } else {
-            // not yet set to done, completed abnormally (exception will be thrown beyond `finally`
-            // block)
-            result = "Failure";
-          }
-          Integer toggleCount = f.get();
-          long secondsDuration =
-              TimeUnit.SECONDS.convert(new Date().getTime() - start, TimeUnit.MILLISECONDS);
-          log.info(
-              "{}! {} seconds, {} toggles, {} requests served",
-              result,
-              secondsDuration,
-              toggleCount,
-              count);
-        }
       }
     } finally {
       try {
