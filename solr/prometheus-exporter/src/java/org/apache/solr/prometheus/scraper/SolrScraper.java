@@ -32,7 +32,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import net.thisptr.jackson.jq.BuiltinFunctionLoader;
 import net.thisptr.jackson.jq.JsonQuery;
+import net.thisptr.jackson.jq.Scope;
+import net.thisptr.jackson.jq.Version;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -62,6 +65,15 @@ public abstract class SolrScraper implements Closeable {
           .register(SolrExporter.defaultRegistry);
 
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  // Root scope with jq's built-in functions (select, to_entries, startswith, etc.) registered
+  // once; a fresh child scope is created per jsonQuery.apply() call below so concurrent scrapes
+  // (see sendRequestsInParallel) don't share mutable per-evaluation variable bindings.
+  private static final Scope ROOT_SCOPE = Scope.newEmptyScope();
+
+  static {
+    BuiltinFunctionLoader.getInstance().loadFunctions(Version.LATEST, ROOT_SCOPE);
+  }
 
   protected final String clusterId;
 
@@ -156,7 +168,8 @@ public abstract class SolrScraper implements Closeable {
 
     for (JsonQuery jsonQuery : query.getJsonQueries()) {
       try {
-        List<JsonNode> results = jsonQuery.apply(jsonNode);
+        List<JsonNode> results = new ArrayList<>();
+        jsonQuery.apply(Scope.newChildScope(ROOT_SCOPE), jsonNode, results::add);
         for (JsonNode result : results) {
           String type = result.get("type").textValue();
           String name = result.get("name").textValue();
