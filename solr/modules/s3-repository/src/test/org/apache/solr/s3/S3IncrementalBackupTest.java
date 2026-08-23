@@ -21,6 +21,8 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
@@ -33,7 +35,12 @@ import software.amazon.awssdk.regions.Region;
 @LuceneTestCase.Nightly
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 @ThreadLeakLingering(linger = 10)
-@ThreadLeakFilters(filters = {S3MockTestcontainersThreadFilter.class})
+@ThreadLeakFilters(
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      S3MockTestcontainersThreadFilter.class
+    })
 @LogLevel(
     value =
         "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
@@ -127,7 +134,9 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
                 .replace("BAD_BUCKET", BUCKET_NAME)
                 .replace("BUCKET", BUCKET_NAME)
                 .replace("REGION", Region.US_EAST_1.id())
-                .replace("ENDPOINT", "http://localhost:" + S3_MOCK_RULE.getHttpPort()))
+                .replace(
+                    "ENDPOINT",
+                    "http://" + S3_MOCK_RULE.getHost() + ":" + S3_MOCK_RULE.getHttpPort()))
         .configure();
   }
 

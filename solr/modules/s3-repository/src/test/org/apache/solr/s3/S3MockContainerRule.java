@@ -33,9 +33,8 @@ import software.amazon.awssdk.services.s3.S3Configuration;
 
 /**
  * JUnit rule that manages a single S3Mock testcontainer. Declare as a {@code @ClassRule} so the
- * (expensive to start) mock server is shared across all {@code @Test} methods in a class instead
- * of being restarted for each one; JUnit starts it before, and stops it after, the whole class
- * runs.
+ * (expensive to start) mock server is shared across all {@code @Test} methods in a class instead of
+ * being restarted for each one; JUnit starts it before, and stops it after, the whole class runs.
  *
  * <p>Skips the calling test (via {@link Assume}) instead of failing outright if
  * Docker/Testcontainers isn't available in this environment.
@@ -81,6 +80,16 @@ public class S3MockContainerRule extends ExternalResource {
 
   public int getHttpPort() {
     return s3MockContainer.getHttpServerPort();
+  }
+
+  /**
+   * The host the container's mapped port is actually reachable at. Not guaranteed to be {@code
+   * localhost} (e.g. a remote Docker daemon, DOCKER_HOST, or Docker Desktop's VM gateway) --
+   * callers building a URL from {@link #getHttpPort()} must use this rather than hardcoding {@code
+   * localhost}.
+   */
+  public String getHost() {
+    return s3MockContainer.getHost();
   }
 
   public S3Client createS3ClientV2() {

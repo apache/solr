@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
@@ -30,13 +32,17 @@ import org.junit.Test;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 
-@ThreadLeakFilters(filters = {S3MockTestcontainersThreadFilter.class})
+@ThreadLeakFilters(
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      S3MockTestcontainersThreadFilter.class
+    })
 public class S3OutputStreamTest extends SolrTestCaseJ4 {
 
   private static final String BUCKET = S3OutputStreamTest.class.getSimpleName();
 
-  @ClassRule
-  public static final S3MockContainerRule S3_MOCK_RULE = new S3MockContainerRule(BUCKET);
+  @ClassRule public static final S3MockContainerRule S3_MOCK_RULE = new S3MockContainerRule(BUCKET);
 
   private S3Client s3;
 

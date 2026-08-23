@@ -17,10 +17,10 @@
 
 package org.apache.solr.s3;
 
-import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.apache.solr.cloud.api.collections.AbstractInstallShardTest;
 import org.apache.solr.handler.admin.api.InstallShardData;
@@ -36,29 +36,13 @@ import software.amazon.awssdk.regions.Region;
  */
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
-@ThreadLeakLingering(linger = 1000)
 @ThreadLeakFilters(
     filters = {
-      S3MockTestcontainersThreadFilter.class,
-      S3InstallShardTest.AwsCredentialsBackgroundThreadFilter.class
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      S3MockTestcontainersThreadFilter.class
     })
 public class S3InstallShardTest extends AbstractInstallShardTest {
-
-  /**
-   * S3StorageClient's {@code DefaultCredentialsProvider} runs its credential chain resolution /
-   * background refresh on the common ForkJoinPool. This test's concurrent, multi-node install
-   * requests (see {@code testParallelInstallToMultiShardCollection}) make it far more likely than
-   * other S3 tests to still have a worker parked there when the class finishes.
-   */
-  @SuppressWarnings("NewClassNamingConvention")
-  public static class AwsCredentialsBackgroundThreadFilter implements ThreadFilter {
-    @Override
-    public boolean reject(Thread t) {
-      return t != null
-          && t.getName() != null
-          && t.getName().startsWith("ForkJoinPool.commonPool-worker-");
-    }
-  }
 
   private static final String BUCKET_NAME = S3InstallShardTest.class.getSimpleName();
 
@@ -98,7 +82,9 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
             SOLR_XML
                 .replace("BUCKET", BUCKET_NAME)
                 .replace("REGION", Region.US_EAST_1.id())
-                .replace("ENDPOINT", "http://localhost:" + S3_MOCK_RULE.getHttpPort()))
+                .replace(
+                    "ENDPOINT",
+                    "http://" + S3_MOCK_RULE.getHost() + ":" + S3_MOCK_RULE.getHttpPort()))
         .configure();
 
     bootstrapBackupRepositoryData("/");

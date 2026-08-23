@@ -23,6 +23,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.SocketProxy;
 import org.junit.After;
@@ -31,7 +33,12 @@ import org.junit.ClassRule;
 import software.amazon.awssdk.profiles.ProfileFileSystemSetting;
 
 /** Abstract class for test with S3Mock. */
-@ThreadLeakFilters(filters = {S3MockTestcontainersThreadFilter.class})
+@ThreadLeakFilters(
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      S3MockTestcontainersThreadFilter.class
+    })
 public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
   protected static final String BUCKET_NAME = "test-bucket";
@@ -51,7 +58,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
     // We are using a proxy in front of S3Mock to be able to test connection loss
     proxy = new SocketProxy();
-    proxy.open(URI.create("http://localhost:" + S3_MOCK_RULE.getHttpPort()));
+    proxy.open(URI.create("http://" + S3_MOCK_RULE.getHost() + ":" + S3_MOCK_RULE.getHttpPort()));
     client =
         new S3StorageClient(
             BUCKET_NAME,

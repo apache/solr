@@ -37,6 +37,8 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.OutputStreamIndexOutput;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -48,7 +50,12 @@ import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
-@ThreadLeakFilters(filters = {S3MockTestcontainersThreadFilter.class})
+@ThreadLeakFilters(
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      S3MockTestcontainersThreadFilter.class
+    })
 public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   private static final String BUCKET_NAME = S3BackupRepositoryTest.class.getSimpleName();
@@ -331,7 +338,9 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     NamedList<Object> args = new NamedList<>();
     args.add(S3BackupRepositoryConfig.REGION, Region.US_EAST_1.id());
     args.add(S3BackupRepositoryConfig.BUCKET_NAME, BUCKET_NAME);
-    args.add(S3BackupRepositoryConfig.ENDPOINT, "http://localhost:" + S3_MOCK_RULE.getHttpPort());
+    args.add(
+        S3BackupRepositoryConfig.ENDPOINT,
+        "http://" + S3_MOCK_RULE.getHost() + ":" + S3_MOCK_RULE.getHttpPort());
     return args;
   }
 
