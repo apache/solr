@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ServletFixtures;
 import org.junit.BeforeClass;
@@ -351,7 +352,9 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
   }
 
   void doRTG(String ids) throws Exception {
-    doQuery(ids, "qt", "/get", "ids", ids);
+    final var expectedIds = StrUtils.splitSmart(ids, ",", true);
+    final var request = new QueryRequest("/get", params("ids", ids));
+    doQuery(expectedIds, request);
   }
 
   // TODO: refactor some of this stuff into the SolrJ client... it should be easier to use
