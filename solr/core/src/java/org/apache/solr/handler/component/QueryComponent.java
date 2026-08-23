@@ -1237,9 +1237,8 @@ public class QueryComponent extends SearchComponent {
     populateNextCursorMarkFromMergedShards(rb);
 
     if (thereArePartialResults) {
-      NamedList<Object> header = rb.rsp.getResponseHeader();
-      header.remove(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
-      header.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      ((SimpleOrderedMap<Object>) rb.rsp.getResponseHeader())
+          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
     }
     if (segmentTerminatedEarly != null) {
       final Object existingSegmentTerminatedEarly =
