@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj;
 
 import static org.apache.solr.common.params.CollectionAdminParams.FLUSH;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
@@ -45,17 +46,30 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
   public void testBalanceShardUnique() {
     CollectionAdminRequest.BalanceShardUnique request =
         CollectionAdminRequest.balanceReplicaProperty("foo", "prop");
-    assertContainsParams(request.getParams(), ACTION, COLLECTION, "property");
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, "property", WAIT_FOR_FINAL_STATE);
 
     request.setShardUnique(true);
-    assertContainsParams(request.getParams(), ACTION, COLLECTION, "property", "shardUnique");
+    assertContainsParams(
+        request.getParams(), ACTION, COLLECTION, "property", "shardUnique", WAIT_FOR_FINAL_STATE);
 
     request.setOnlyActiveNodes(false);
     assertContainsParams(
-        request.getParams(), ACTION, COLLECTION, "property", "shardUnique", "onlyactivenodes");
+        request.getParams(),
+        ACTION,
+        COLLECTION,
+        "property",
+        "shardUnique",
+        "onlyactivenodes",
+        WAIT_FOR_FINAL_STATE);
 
     request.setShardUnique(null);
-    assertContainsParams(request.getParams(), ACTION, COLLECTION, "property", "onlyactivenodes");
+    assertContainsParams(
+        request.getParams(),
+        ACTION,
+        COLLECTION,
+        "property",
+        "onlyactivenodes",
+        WAIT_FOR_FINAL_STATE);
   }
 
   public void testClusterProp() {
@@ -72,17 +86,18 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
         ACTION,
         CoreAdminParams.NAME,
         CollectionAdminParams.PROPERTY_NAME,
-        CollectionAdminParams.PROPERTY_VALUE);
+        CollectionAdminParams.PROPERTY_VALUE,
+        WAIT_FOR_FINAL_STATE);
   }
 
   public void testAddRole() {
     CollectionAdminRequest.AddRole request = CollectionAdminRequest.addRole("node", "role");
-    assertContainsParams(request.getParams(), ACTION, "node", "role");
+    assertContainsParams(request.getParams(), ACTION, "node", "role", WAIT_FOR_FINAL_STATE);
   }
 
   public void testRemoveRole() {
     CollectionAdminRequest.RemoveRole request = CollectionAdminRequest.removeRole("node", "role");
-    assertContainsParams(request.getParams(), ACTION, "node", "role");
+    assertContainsParams(request.getParams(), ACTION, "node", "role", WAIT_FOR_FINAL_STATE);
   }
 
   public void testAddReplica() {
@@ -90,20 +105,31 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
     CollectionAdminRequest.AddReplica request =
         CollectionAdminRequest.addReplicaToShard("collection", "shard");
     assertContainsParams(
-        request.getParams(), ACTION, COLLECTION, SHARD, ZkStateReader.REPLICA_TYPE);
+        request.getParams(),
+        ACTION,
+        COLLECTION,
+        SHARD,
+        ZkStateReader.REPLICA_TYPE,
+        WAIT_FOR_FINAL_STATE);
 
     // with only shard parameter and "server side" implicit type, so no param
     request = CollectionAdminRequest.addReplicaToShard("collection", "shard", null);
-    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD);
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, WAIT_FOR_FINAL_STATE);
 
     // with route parameter
     request = CollectionAdminRequest.addReplicaByRouteKey("collection", "route");
-    assertContainsParams(request.getParams(), ACTION, COLLECTION, ShardParams._ROUTE_);
+    assertContainsParams(
+        request.getParams(), ACTION, COLLECTION, ShardParams._ROUTE_, WAIT_FOR_FINAL_STATE);
 
     // with explicit type parameter
     request = CollectionAdminRequest.addReplicaToShard("collection", "shard", Replica.Type.NRT);
     assertContainsParams(
-        request.getParams(), ACTION, COLLECTION, SHARD, ZkStateReader.REPLICA_TYPE);
+        request.getParams(),
+        ACTION,
+        COLLECTION,
+        SHARD,
+        ZkStateReader.REPLICA_TYPE,
+        WAIT_FOR_FINAL_STATE);
   }
 
   public void testAddReplicaProp() {
@@ -111,7 +137,14 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
         CollectionAdminRequest.addReplicaProperty(
             "collection", "shard", "replica", "prop", "value");
     assertContainsParams(
-        request.getParams(), ACTION, COLLECTION, SHARD, REPLICA, "property", "property.value");
+        request.getParams(),
+        ACTION,
+        COLLECTION,
+        SHARD,
+        REPLICA,
+        "property",
+        "property.value",
+        WAIT_FOR_FINAL_STATE);
   }
 
   public void testClusterStatus() {
@@ -132,31 +165,33 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
   public void testCreateShard() {
     final CollectionAdminRequest.CreateShard request =
         CollectionAdminRequest.createShard("collection", "shard");
-    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD);
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, WAIT_FOR_FINAL_STATE);
   }
 
   public void testDeleteReplica() {
     final CollectionAdminRequest.DeleteReplica request =
         CollectionAdminRequest.deleteReplica("collection", "shard", "replica");
-    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, REPLICA);
+    assertContainsParams(
+        request.getParams(), ACTION, COLLECTION, SHARD, REPLICA, WAIT_FOR_FINAL_STATE);
   }
 
   public void testDeleteReplicaProp() {
     final CollectionAdminRequest.DeleteReplicaProp request =
         CollectionAdminRequest.deleteReplicaProperty("collection", "shard", "replica", "foo");
-    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, REPLICA, "property");
+    assertContainsParams(
+        request.getParams(), ACTION, COLLECTION, SHARD, REPLICA, "property", WAIT_FOR_FINAL_STATE);
   }
 
   public void testDeleteShard() {
     final CollectionAdminRequest.DeleteShard request =
         CollectionAdminRequest.deleteShard("collection", "shard");
-    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD);
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, WAIT_FOR_FINAL_STATE);
   }
 
   public void testSplitShard() {
     final CollectionAdminRequest.SplitShard request =
         CollectionAdminRequest.splitShard("collection").setShardName("shard");
-    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD);
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, WAIT_FOR_FINAL_STATE);
   }
 
   public void testCreateCollection() {
@@ -166,7 +201,8 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
         ACTION,
         NAME,
         ZkStateReader.NUM_SHARDS_PROP,
-        ZkStateReader.NRT_REPLICAS);
+        ZkStateReader.NRT_REPLICAS,
+        WAIT_FOR_FINAL_STATE);
     // shortest form w/ "explicitly" choosing "implicit" router
     assertContainsParams(
         CollectionAdminRequest.createCollectionWithImplicitRouter("foo", null, "bar", 1)
@@ -175,30 +211,31 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
         NAME,
         "shards",
         "router.name",
-        ZkStateReader.NRT_REPLICAS);
+        ZkStateReader.NRT_REPLICAS,
+        WAIT_FOR_FINAL_STATE);
   }
 
   public void testReloadCollection() {
     final CollectionAdminRequest.Reload request =
         CollectionAdminRequest.reloadCollection("collection");
-    assertContainsParams(request.getParams(), ACTION, NAME);
+    assertContainsParams(request.getParams(), ACTION, NAME, WAIT_FOR_FINAL_STATE);
   }
 
   public void testDeleteCollection() {
     final CollectionAdminRequest.Delete request =
         CollectionAdminRequest.deleteCollection("collection");
-    assertContainsParams(request.getParams(), ACTION, NAME);
+    assertContainsParams(request.getParams(), ACTION, NAME, WAIT_FOR_FINAL_STATE);
   }
 
   public void testCreateAlias() {
     final CollectionAdminRequest.CreateAlias request =
         CollectionAdminRequest.createAlias("name", "collections");
-    assertContainsParams(request.getParams(), ACTION, NAME, "collections");
+    assertContainsParams(request.getParams(), ACTION, NAME, "collections", WAIT_FOR_FINAL_STATE);
   }
 
   public void testDeleteAlias() {
     final CollectionAdminRequest.DeleteAlias request = CollectionAdminRequest.deleteAlias("name");
-    assertContainsParams(request.getParams(), ACTION, NAME);
+    assertContainsParams(request.getParams(), ACTION, NAME, WAIT_FOR_FINAL_STATE);
   }
 
   public void testListCollections() {
@@ -209,13 +246,19 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
   public void testMigrate() {
     final CollectionAdminRequest.Migrate request =
         CollectionAdminRequest.migrateData("collection", "target", "splitKey");
-    assertContainsParams(request.getParams(), ACTION, COLLECTION, "target.collection", "split.key");
+    assertContainsParams(
+        request.getParams(),
+        ACTION,
+        COLLECTION,
+        "target.collection",
+        "split.key",
+        WAIT_FOR_FINAL_STATE);
   }
 
   public void testOverseerStatus() {
     final CollectionAdminRequest.OverseerStatus request =
         new CollectionAdminRequest.OverseerStatus();
-    assertContainsParams(request.getParams(), ACTION);
+    assertContainsParams(request.getParams(), ACTION, WAIT_FOR_FINAL_STATE);
   }
 
   public void testRequestStatus() {
