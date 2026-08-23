@@ -854,10 +854,11 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
         }
 
         $scope.togglePermDialog();
-        // avoids a weird race with not getting the latest config after an update
-        Security.get({path: "authorization"}, function (ignore) {
-          $scope.refreshSecurityPanel();
-        });
+        whenReflected("authorization", function (data2) {
+          var have = permissionRoles(data2, setPermJson.name);
+          var want = asList(setPermJson.role);
+          return have != null && have.length === want.length && want.every(r => have.includes(r));
+        }, $scope.refreshSecurityPanel);
       });
     }
   };
