@@ -19,6 +19,7 @@ package org.apache.solr.response;
 import static org.apache.solr.client.solrj.response.InputStreamResponseParser.STREAM_KEY;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -183,6 +184,17 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
             output.trim().endsWith("# EOF"));
       }
     }
+  }
+
+  @Test
+  public void testDisabledMetricsWritesErrorComment() throws Exception {
+    // SOLR-18400: when metrics collection is disabled, MetricsHandler responds with an "error"
+    // entry instead of "metrics"; the writer must emit it as a comment rather than fail with a 500
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.add("error", "metrics collection is disabled");
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    new PrometheusResponseWriter().write(out, null, rsp, null);
+    assertEquals("# metrics collection is disabled\n", out.toString(StandardCharsets.UTF_8));
   }
 
   @Test
