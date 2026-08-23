@@ -1238,12 +1238,8 @@ public class QueryComponent extends SearchComponent {
 
     if (thereArePartialResults) {
       NamedList<Object> header = rb.rsp.getResponseHeader();
-      int idx = header.indexOf(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
-      if (idx == -1) {
-        header.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-      } else {
-        header.setVal(idx, Boolean.TRUE);
-      }
+      header.remove(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
+      header.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
     }
     if (segmentTerminatedEarly != null) {
       final Object existingSegmentTerminatedEarly =

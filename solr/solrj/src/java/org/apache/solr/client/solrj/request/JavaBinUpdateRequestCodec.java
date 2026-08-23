@@ -57,7 +57,8 @@ public class JavaBinUpdateRequestCodec {
   public void marshal(UpdateRequest updateRequest, OutputStream os) throws IOException {
     NamedList<Object> nl = new NamedList<>();
 
-    // SimpleOrderedMap serializes with the same JavaBin ORDERED_MAP tag as before.
+    // Must be SimpleOrderedMap, not a plain NamedList: JavaBinCodec picks the wire tag
+    // (ORDERED_MAP vs NAMED_LST) from the runtime type, and receivers expect ORDERED_MAP here.
     NamedList<Object> params = new SimpleOrderedMap<>(updateRequest.getParams());
     if (updateRequest.getCommitWithin() != -1) {
       params.add("commitWithin", updateRequest.getCommitWithin());

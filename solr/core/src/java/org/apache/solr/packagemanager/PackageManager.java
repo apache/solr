@@ -59,7 +59,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.DistribFileStore;
@@ -279,7 +278,7 @@ public class PackageManager implements Closeable {
     Map<String, String> packageVersions = new HashMap<>();
     // map of package name to multiple values of pluginMeta(Map<String, String>)
     Map<String, Set<PluginMeta>> packagePlugins = new HashMap<>();
-    Map<String, Object> result;
+    Object pluginsValue;
     try {
       NamedList<Object> response =
           solrClient.request(
@@ -287,16 +286,16 @@ public class PackageManager implements Closeable {
       Integer statusCode = (Integer) response._get(List.of("responseHeader", "status"), null);
       if (statusCode == null || statusCode == ErrorCode.NOT_FOUND.code) {
         // Cluster props doesn't exist, that means there are no cluster level plugins installed.
-        result = Map.of();
+        pluginsValue = null;
       } else {
-        result = new SimpleOrderedMap<>(response);
+        pluginsValue = response.get(ContainerPluginsApi.PLUGIN);
       }
     } catch (SolrServerException | IOException ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, ex);
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> clusterPlugins =
-        (Map<String, Object>) result.getOrDefault(ContainerPluginsApi.PLUGIN, Map.of());
+        pluginsValue != null ? (Map<String, Object>) pluginsValue : Map.of();
     for (Map.Entry<String, Object> entry : clusterPlugins.entrySet()) {
       PluginMeta pluginMeta;
       try {
@@ -429,7 +428,7 @@ public class PackageManager implements Closeable {
                         PackageUtils.getCollectionParamsPath(collection) + "/packages")
                     .setRequiresCollection(
                         false) /* Making a collection-request, but already baked into path */);
-        boolean packageParamsExist = new SimpleOrderedMap<>(collectionParams).containsKey("params");
+        boolean packageParamsExist = collectionParams.get("params") != null;
         SolrCLI.postJsonToSolr(
             solrClient,
             PackageUtils.getCollectionParamsPath(collection),

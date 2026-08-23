@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -45,7 +46,6 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
@@ -127,12 +127,11 @@ public class SolrXmlConfig {
 
     // It should go inside the fillSolrSection method but
     // since it is arranged as a separate section it is placed here
-    Map<String, String> coreAdminHandlerActions =
-        new SimpleOrderedMap<>(
-                readNodeListAsNamedList(
-                    root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>"))
-            .entrySet().stream()
-                .collect(Collectors.toMap(Entry::getKey, item -> item.getValue().toString()));
+    Map<String, String> coreAdminHandlerActions = new LinkedHashMap<>();
+    for (Entry<String, Object> entry :
+        readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")) {
+      coreAdminHandlerActions.put(entry.getKey(), entry.getValue().toString());
+    }
 
     UpdateShardHandlerConfig updateConfig;
     if (deprecatedUpdateConfig == null) {
