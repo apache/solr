@@ -32,10 +32,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import net.thisptr.jackson.jq.BuiltinFunctionLoader;
 import net.thisptr.jackson.jq.JsonQuery;
-import net.thisptr.jackson.jq.Scope;
-import net.thisptr.jackson.jq.Version;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -44,6 +41,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.prometheus.collector.MetricSamples;
+import org.apache.solr.prometheus.exporter.JqSupport;
 import org.apache.solr.prometheus.exporter.MetricsQuery;
 import org.apache.solr.prometheus.exporter.SolrExporter;
 import org.slf4j.Logger;
@@ -65,15 +63,6 @@ public abstract class SolrScraper implements Closeable {
           .register(SolrExporter.defaultRegistry);
 
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-  // Root scope with jq's built-in functions (select, to_entries, startswith, etc.) registered
-  // once; a fresh child scope is created per jsonQuery.apply() call below so concurrent scrapes
-  // (see sendRequestsInParallel) don't share mutable per-evaluation variable bindings.
-  private static final Scope ROOT_SCOPE = Scope.newEmptyScope();
-
-  static {
-    BuiltinFunctionLoader.getInstance().loadFunctions(Version.LATEST, ROOT_SCOPE);
-  }
 
   protected final String clusterId;
 
@@ -134,13 +123,18 @@ public abstract class SolrScraper implements Closeable {
   protected MetricSamples request(SolrClient client, MetricsQuery query) throws IOException {
     MetricSamples samples = new MetricSamples();
 
-    String baseUrlLabelValue = "";
-    String zkHostLabelValue = "";
+    String initialBaseUrlLabelValue = "";
+    String initialZkHostLabelValue = "";
     if (client instanceof Http2SolrClient) {
-      baseUrlLabelValue = ((Http2SolrClient) client).getBaseURL();
+      initialBaseUrlLabelValue = ((Http2SolrClient) client).getBaseURL();
     } else if (client instanceof CloudSolrClient) {
-      zkHostLabelValue = ((CloudSolrClient) client).getClusterStateProvider().getQuorumHosts();
+      initialZkHostLabelValue =
+          ((CloudSolrClient) client).getClusterStateProvider().getQuorumHosts();
     }
+    // effectively-final copies so the per-result lambda below (see jsonQuery.apply) can close
+    // over them
+    final String baseUrlLabelValue = initialBaseUrlLabelValue;
+    final String zkHostLabelValue = initialZkHostLabelValue;
 
     QueryRequest queryRequest = new QueryRequest(query.getParameters());
     queryRequest.setPath(query.getPath());
@@ -168,62 +162,64 @@ public abstract class SolrScraper implements Closeable {
 
     for (JsonQuery jsonQuery : query.getJsonQueries()) {
       try {
-        List<JsonNode> results = new ArrayList<>();
-        jsonQuery.apply(Scope.newChildScope(ROOT_SCOPE), jsonNode, results::add);
-        for (JsonNode result : results) {
-          String type = result.get("type").textValue();
-          String name = result.get("name").textValue();
-          String help = result.get("help").textValue();
-          double value = result.get("value").doubleValue();
+        jsonQuery.apply(
+            JqSupport.ROOT_SCOPE,
+            jsonNode,
+            result -> {
+              String type = result.get("type").textValue();
+              String name = result.get("name").textValue();
+              String help = result.get("help").textValue();
+              double value = result.get("value").doubleValue();
 
-          List<String> labelNames = new ArrayList<>();
-          List<String> labelValues = new ArrayList<>();
+              List<String> labelNames = new ArrayList<>();
+              List<String> labelValues = new ArrayList<>();
 
-          /* Labels in response */
-          for (JsonNode item : result.get("label_names")) {
-            labelNames.add(item.textValue());
-          }
+              /* Labels in response */
+              for (JsonNode item : result.get("label_names")) {
+                labelNames.add(item.textValue());
+              }
 
-          for (JsonNode item : result.get("label_values")) {
-            labelValues.add(item.textValue());
-          }
+              for (JsonNode item : result.get("label_values")) {
+                labelValues.add(item.textValue());
+              }
 
-          /* Labels due to client */
-          if (!baseUrlLabelValue.isEmpty()) {
-            labelNames.add(BASE_URL_LABEL);
-            labelValues.add(baseUrlLabelValue);
-          } else if (!zkHostLabelValue.isEmpty()) {
-            labelNames.add(ZK_HOST_LABEL);
-            labelValues.add(zkHostLabelValue);
-          }
+              /* Labels due to client */
+              if (!baseUrlLabelValue.isEmpty()) {
+                labelNames.add(BASE_URL_LABEL);
+                labelValues.add(baseUrlLabelValue);
+              } else if (!zkHostLabelValue.isEmpty()) {
+                labelNames.add(ZK_HOST_LABEL);
+                labelValues.add(zkHostLabelValue);
+              }
 
-          // Add the unique cluster ID, either as specified on cmdline --cluster-id or
-          // baseUrl/zkHost
-          labelNames.add(CLUSTER_ID_LABEL);
-          labelValues.add(clusterId);
+              // Add the unique cluster ID, either as specified on cmdline --cluster-id or
+              // baseUrl/zkHost
+              labelNames.add(CLUSTER_ID_LABEL);
+              labelValues.add(clusterId);
 
-          // Deduce core if not there
-          if (labelNames.indexOf("core") < 0
-              && labelNames.indexOf("collection") >= 0
-              && labelNames.indexOf("shard") >= 0
-              && labelNames.indexOf("replica") >= 0) {
-            labelNames.add("core");
+              // Deduce core if not there
+              if (labelNames.indexOf("core") < 0
+                  && labelNames.indexOf("collection") >= 0
+                  && labelNames.indexOf("shard") >= 0
+                  && labelNames.indexOf("replica") >= 0) {
+                labelNames.add("core");
 
-            String collection = labelValues.get(labelNames.indexOf("collection"));
-            String shard = labelValues.get(labelNames.indexOf("shard"));
-            String replica = labelValues.get(labelNames.indexOf("replica"));
+                String collection = labelValues.get(labelNames.indexOf("collection"));
+                String shard = labelValues.get(labelNames.indexOf("shard"));
+                String replica = labelValues.get(labelNames.indexOf("replica"));
 
-            labelValues.add(collection + "_" + shard + "_" + replica);
-          }
+                labelValues.add(collection + "_" + shard + "_" + replica);
+              }
 
-          samples.addSamplesIfNotPresent(
-              name,
-              new Collector.MetricFamilySamples(
-                  name, Collector.Type.valueOf(type), help, new ArrayList<>()));
+              samples.addSamplesIfNotPresent(
+                  name,
+                  new Collector.MetricFamilySamples(
+                      name, Collector.Type.valueOf(type), help, new ArrayList<>()));
 
-          samples.addSampleIfMetricExists(
-              name, new Collector.MetricFamilySamples.Sample(name, labelNames, labelValues, value));
-        }
+              samples.addSampleIfMetricExists(
+                  name,
+                  new Collector.MetricFamilySamples.Sample(name, labelNames, labelValues, value));
+            });
       } catch (JsonQueryException e) {
         log.error("Error apply JSON query={} to result", jsonQuery, e);
         scrapeErrorTotal.labels(zkHostLabelValue, baseUrlLabelValue, clusterId).inc();

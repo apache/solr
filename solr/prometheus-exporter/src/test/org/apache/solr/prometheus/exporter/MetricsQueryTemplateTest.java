@@ -27,10 +27,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPathConstants;
-import net.thisptr.jackson.jq.BuiltinFunctionLoader;
 import net.thisptr.jackson.jq.JsonQuery;
-import net.thisptr.jackson.jq.Scope;
-import net.thisptr.jackson.jq.Version;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.prometheus.utils.Helpers;
 import org.junit.Test;
@@ -126,12 +123,9 @@ public class MetricsQueryTemplateTest extends SolrTestCaseJ4 {
       Optional<Matcher> maybe = MetricsQueryTemplate.matches(queryMetrics[m]);
       assertTrue(maybe.isPresent());
       Matcher matcher = maybe.get();
-      JsonQuery jsonQuery =
-          JsonQuery.compile(coreQueryTemplate.applyTemplate(matcher), Version.LATEST);
-      Scope scope = Scope.newEmptyScope();
-      BuiltinFunctionLoader.getInstance().loadFunctions(Version.LATEST, scope);
+      JsonQuery jsonQuery = JqSupport.compile(coreQueryTemplate.applyTemplate(matcher));
       List<JsonNode> results = new ArrayList<>();
-      jsonQuery.apply(scope, parsedMetrics, results::add);
+      jsonQuery.apply(JqSupport.ROOT_SCOPE, parsedMetrics, results::add);
       assertNotNull(results);
       assertEquals(1, results.size());
       double value = results.get(0).get("value").doubleValue();
