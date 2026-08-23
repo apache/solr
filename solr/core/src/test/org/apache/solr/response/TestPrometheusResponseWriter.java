@@ -188,13 +188,12 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @Test
   public void testDisabledMetricsWritesErrorComment() throws Exception {
-    // SOLR-18400: when metrics collection is disabled, MetricsHandler responds with an "error"
-    // entry instead of "metrics"; the writer must emit it as a comment rather than fail with a 500
+    // SOLR-18400: disabled metrics must yield a graceful comment, not a 500
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.add("error", "metrics collection is disabled");
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     new PrometheusResponseWriter().write(out, null, rsp, null);
-    assertEquals("# metrics collection is disabled\n", out.toString(StandardCharsets.UTF_8));
+    assertEquals("# metrics collection is disabled\n# EOF\n", out.toString(StandardCharsets.UTF_8));
   }
 
   @Test

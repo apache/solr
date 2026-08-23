@@ -63,11 +63,11 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
     // Otherwise handle MetricSnapshots
     var metrics = response.getValues().get("metrics");
     if (metrics == null) {
-      // No snapshots available, e.g. when metrics collection is disabled. Emit the reason as a
-      // comment so the response is still a valid Prometheus exposition
+      // e.g. metrics collection disabled: emit the reason as a comment; the EOF marker required
+      // by OpenMetrics is harmless in Prometheus format
       var error = response.getValues().get("error");
       if (error != null) {
-        out.write(("# " + error + "\n").getBytes(StandardCharsets.UTF_8));
+        out.write(("# " + error + "\n# EOF\n").getBytes(StandardCharsets.UTF_8));
         return;
       }
       throw new IOException("No metrics found in response");
