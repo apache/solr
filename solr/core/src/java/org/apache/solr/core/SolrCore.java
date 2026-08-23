@@ -1982,6 +1982,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
   /**
    * Get the request handler registered to a given name.
    *
+   * <p>A {@code null} handlerName resolves to the core's default request handler (whichever handler
+   * is aliased to the empty string, normally the one registered at "/select", or "standard" for
+   * legacy configs) rather than returning {@code null}; see {@link
+   * RequestHandlers#initHandlersFromConfig}.
+   *
    * <p>This function is thread safe.
    */
   public SolrRequestHandler getRequestHandler(String handlerName) {

@@ -125,18 +125,6 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   }
 
   /**
-   * This method is less efficient then the 3 arg version because it may convert some fields that
-   * are not needed
-   *
-   * @see #convertLuceneDocToSolrDoc(Document, IndexSchema, ReturnFields)
-   * @deprecated use the 3 arg version for better performance
-   */
-  @Deprecated
-  public static SolrDocument convertLuceneDocToSolrDoc(Document doc, final IndexSchema schema) {
-    return convertLuceneDocToSolrDoc(doc, schema, new SolrReturnFields());
-  }
-
-  /**
    * Converts the specified <code>Document</code> into a <code>SolrDocument</code>.
    *
    * <p>The use of {@link ReturnFields} can be important even when it was already used to retrieve
