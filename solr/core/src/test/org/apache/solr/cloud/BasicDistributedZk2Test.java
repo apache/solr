@@ -445,29 +445,25 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     checkShardConsistency(true, false);
 
     // try a backup command
-    try (final SolrClient client =
-        new HttpJettySolrClient.Builder(
-                (String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))
-            .build()) {
-      final String backupName = "the_backup";
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("command", "backup");
-      params.set("name", backupName);
-      final Path location = FilterPath.unwrap(createTempDir()).toRealPath();
-      // Allow non-standard location outside SOLR_HOME
-      jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(location));
-      params.set("location", location.toString());
+    final SolrClient client = shardToJetty.get(SHARD2).get(0).jetty.getSolrClient();
+    final String backupName = "the_backup";
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("command", "backup");
+    params.set("name", backupName);
+    final Path location = FilterPath.unwrap(createTempDir()).toRealPath();
+    // Allow non-standard location outside SOLR_HOME
+    jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(location));
+    params.set("location", location.toString());
 
-      QueryRequest request = new QueryRequest(ReplicationHandler.PATH, params);
-      client.request(request, DEFAULT_TEST_COLLECTION_NAME);
+    QueryRequest request = new QueryRequest(ReplicationHandler.PATH, params);
+    client.request(request, DEFAULT_TEST_COLLECTION_NAME);
 
-      final BackupStatusChecker backupStatus =
-          new BackupStatusChecker(client, "/" + DEFAULT_TEST_COLLECTION_NAME + "/replication");
-      final String backupDirName = backupStatus.waitForBackupSuccess(backupName, 30);
-      assertTrue(
-          "Backup dir does not exist: " + backupDirName,
-          Files.exists(location.resolve(backupDirName)));
-    }
+    final BackupStatusChecker backupStatus =
+        new BackupStatusChecker(client, "/" + DEFAULT_TEST_COLLECTION_NAME + "/replication");
+    final String backupDirName = backupStatus.waitForBackupSuccess(backupName, 30);
+    assertTrue(
+        "Backup dir does not exist: " + backupDirName,
+        Files.exists(location.resolve(backupDirName)));
   }
 
   private void addNewReplica() throws Exception {
