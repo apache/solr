@@ -746,23 +746,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     return 0;
   }
 
-  /**
-   * Total number of replicas for all shards as indicated by the cluster state, regardless of
-   * status.
-   *
-   * @deprecated This method is virtually useless as it does not consider the status of either the
-   *     shard or replica, nor whether the node hosting each replica is alive.
-   */
-  @Deprecated
-  protected int getTotalReplicas(DocCollection c, String collection) {
-    if (c == null) return 0; // support for when collection hasn't been created yet
-    int cnt = 0;
-    for (Slice slices : c.getSlices()) {
-      cnt += slices.getReplicas().size();
-    }
-    return cnt;
-  }
-
   public JettySolrRunner createJetty(
       String dataDir, String ulogDir, String shardList, String solrConfigOverride)
       throws Exception {
