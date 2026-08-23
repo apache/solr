@@ -219,8 +219,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       }
       assertNotNull(nrtJetty);
       assertNotNull(pullJetty);
-      try (SolrClient client =
-          new HttpJettySolrClient.Builder(pullJetty.getBaseUrl().toString()).build()) {
+      {
+        SolrClient client = pullJetty.getSolrClient();
         client.add(COLL, sid);
         client.commit(COLL);
         assertEquals(

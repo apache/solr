@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -84,43 +83,33 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
         new QueryRequest(new SolrQuery("*:*").setRows(0))
             .setBasicAuthCredentials(USERNAME, PASSWORD);
 
-    try (SolrClient client =
-        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
-            .build()) {
-      // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the
-      // nodes run out of serviceable threads, and they crash, even for other collections hosted on
-      // the
-      // nodes).
-      SolrException error =
-          expectThrows(
-              SolrException.class,
-              "Request should fail after trying all replica nodes once",
-              () -> client.request(req, COLLECTION_NAME));
+    SolrClient client = cluster.getJettySolrRunner(0).getSolrClient();
+    // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the
+    // nodes run out of serviceable threads, and they crash, even for other collections hosted on
+    // the
+    // nodes).
+    SolrException error =
+        expectThrows(
+            SolrException.class,
+            "Request should fail after trying all replica nodes once",
+            () -> client.request(req, COLLECTION_NAME));
 
-      assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
-      assertTrue(
-          error
-              .getMessage()
-              .contains("No active replicas found for collection: " + COLLECTION_NAME));
-    }
+    assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
+    assertTrue(
+        error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
 
     // run same set of tests on v2 client which uses V2HttpCall
-    try (SolrClient v2Client =
-        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
-            .build()) {
+    SolrClient v2Client = cluster.getJettySolrRunner(0).getSolrClient();
 
-      SolrException error =
-          expectThrows(
-              SolrException.class,
-              "Request should fail after trying all replica nodes once",
-              () -> v2Client.request(req, COLLECTION_NAME));
+    error =
+        expectThrows(
+            SolrException.class,
+            "Request should fail after trying all replica nodes once",
+            () -> v2Client.request(req, COLLECTION_NAME));
 
-      assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
-      assertTrue(
-          error
-              .getMessage()
-              .contains("No active replicas found for collection: " + COLLECTION_NAME));
-    }
+    assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
+    assertTrue(
+        error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
   }
 
   @SuppressWarnings({"unchecked"})

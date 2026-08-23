@@ -38,10 +38,8 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -383,10 +381,9 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
       throws IOException, SolrServerException {
     ensureCloudCluster();
     JettySolrRunner jetty = standaloneMode ? standaloneJetty : cluster.getJettySolrRunner(0);
-    try (SolrClient client =
-        new HttpJettySolrClient.Builder(jetty.getBaseUrl().toString()).build()) {
-      return client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, path, params));
-    }
+    return jetty
+        .getSolrClient()
+        .request(new GenericSolrRequest(SolrRequest.METHOD.GET, path, params));
   }
 
   /**

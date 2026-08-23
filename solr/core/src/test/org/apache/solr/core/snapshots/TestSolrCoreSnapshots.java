@@ -98,14 +98,11 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
     String duplicateName = commitName.concat("_duplicate");
 
-    try (SolrClient adminClient =
-            new HttpJettySolrClient.Builder(
-                    cluster.getJettySolrRunners().get(0).getBaseUrl().toString())
-                .build();
-        SolrClient leaderClient =
-            new HttpJettySolrClient.Builder(replica.getBaseUrl())
-                .withDefaultCollection(replica.getCoreName())
-                .build()) {
+    SolrClient adminClient = cluster.getJettySolrRunners().get(0).getSolrClient();
+    try (SolrClient leaderClient =
+        new HttpJettySolrClient.Builder(replica.getBaseUrl())
+            .withDefaultCollection(replica.getCoreName())
+            .build()) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
       // Create another snapshot referring to the same index commit to verify the
@@ -194,14 +191,11 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
 
-    try (SolrClient adminClient =
-            new HttpJettySolrClient.Builder(
-                    cluster.getJettySolrRunners().get(0).getBaseUrl().toString())
-                .build();
-        SolrClient leaderClient =
-            new HttpJettySolrClient.Builder(replica.getBaseUrl())
-                .withDefaultCollection(replica.getCoreName())
-                .build()) {
+    SolrClient adminClient = cluster.getJettySolrRunners().get(0).getSolrClient();
+    try (SolrClient leaderClient =
+        new HttpJettySolrClient.Builder(replica.getBaseUrl())
+            .withDefaultCollection(replica.getCoreName())
+            .build()) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
 

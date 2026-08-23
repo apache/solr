@@ -26,7 +26,6 @@ import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -132,47 +131,45 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     // check cache metrics
     StatsCache.StatsCacheMetrics statsCacheMetrics = new StatsCache.StatsCacheMetrics();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      try (SolrClient client =
-          new HttpJettySolrClient.Builder(jettySolrRunner.getBaseUrl().toString()).build()) {
-        var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
+      SolrClient client = jettySolrRunner.getSolrClient();
+      var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
 
-        NamedList<Object> resp = client.request(req);
-        try (InputStream in = (InputStream) resp.get("stream")) {
-          String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      NamedList<Object> resp = client.request(req);
+      try (InputStream in = (InputStream) resp.get("stream")) {
+        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
 
-          for (String line : output.lines().toList()) {
-            if (line.startsWith("solr_core_indexsearcher_termstats_cache")) {
-              String type = extractTypeAttribute(line);
-              long value = extractMetricValue(line);
-              switch (type) {
-                case "lookups":
-                  statsCacheMetrics.lookups.add(value);
-                  break;
-                case "return_local":
-                  statsCacheMetrics.returnLocalStats.add(value);
-                  break;
-                case "merge_to_global":
-                  statsCacheMetrics.mergeToGlobalStats.add(value);
-                  break;
-                case "missing_global_field":
-                  statsCacheMetrics.missingGlobalFieldStats.add(value);
-                  break;
-                case "missing_global_term":
-                  statsCacheMetrics.missingGlobalTermStats.add(value);
-                  break;
-                case "receive_global":
-                  statsCacheMetrics.receiveGlobalStats.add(value);
-                  break;
-                case "retrieve":
-                  statsCacheMetrics.retrieveStats.add(value);
-                  break;
-                case "send_global":
-                  statsCacheMetrics.sendGlobalStats.add(value);
-                  break;
-                case "use_cached_global":
-                  statsCacheMetrics.useCachedGlobalStats.add(value);
-                  break;
-              }
+        for (String line : output.lines().toList()) {
+          if (line.startsWith("solr_core_indexsearcher_termstats_cache")) {
+            String type = extractTypeAttribute(line);
+            long value = extractMetricValue(line);
+            switch (type) {
+              case "lookups":
+                statsCacheMetrics.lookups.add(value);
+                break;
+              case "return_local":
+                statsCacheMetrics.returnLocalStats.add(value);
+                break;
+              case "merge_to_global":
+                statsCacheMetrics.mergeToGlobalStats.add(value);
+                break;
+              case "missing_global_field":
+                statsCacheMetrics.missingGlobalFieldStats.add(value);
+                break;
+              case "missing_global_term":
+                statsCacheMetrics.missingGlobalTermStats.add(value);
+                break;
+              case "receive_global":
+                statsCacheMetrics.receiveGlobalStats.add(value);
+                break;
+              case "retrieve":
+                statsCacheMetrics.retrieveStats.add(value);
+                break;
+              case "send_global":
+                statsCacheMetrics.sendGlobalStats.add(value);
+                break;
+              case "use_cached_global":
+                statsCacheMetrics.useCachedGlobalStats.add(value);
+                break;
             }
           }
         }

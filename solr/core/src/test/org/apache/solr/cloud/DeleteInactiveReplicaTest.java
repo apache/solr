@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
@@ -109,21 +108,19 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
                 && !FileUtils.fileExists(replicaCd.getDataDir()));
 
     // Check that we can't create a core with no coreNodeName
-    try (SolrClient queryClient =
-        new HttpJettySolrClient.Builder(jetty.getBaseUrl().toString()).build()) {
-      Exception e =
-          expectThrows(
-              Exception.class,
-              () -> {
-                CoreAdminRequest.Create createRequest = new CoreAdminRequest.Create();
-                createRequest.setCoreName("testcore");
-                createRequest.setCollection(collectionName);
-                createRequest.setShardId("shard2");
-                queryClient.request(createRequest);
-              });
-      assertTrue(
-          "Unexpected error message: " + e.getMessage(),
-          e.getMessage().contains("coreNodeName missing"));
-    }
+    SolrClient queryClient = jetty.getSolrClient();
+    Exception e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CoreAdminRequest.Create createRequest = new CoreAdminRequest.Create();
+              createRequest.setCoreName("testcore");
+              createRequest.setCollection(collectionName);
+              createRequest.setShardId("shard2");
+              queryClient.request(createRequest);
+            });
+    assertTrue(
+        "Unexpected error message: " + e.getMessage(),
+        e.getMessage().contains("coreNodeName missing"));
   }
 }

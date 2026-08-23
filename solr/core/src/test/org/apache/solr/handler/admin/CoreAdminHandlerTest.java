@@ -34,7 +34,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
@@ -419,13 +418,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     runner.getSolrClient().commit("corex");
 
     Path dataDir = null;
-    try (SolrClient client =
-        new HttpJettySolrClient.Builder(runner.getBaseUrl().toString()).build()) {
-      final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
-      String dataDirectory = status.dataDir;
-      dataDir = Path.of(dataDirectory);
-      assertTrue(Files.exists(dataDir));
-    }
+    SolrClient client = runner.getSolrClient();
+    final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
+    String dataDirectory = status.dataDir;
+    dataDir = Path.of(dataDirectory);
+    assertTrue(Files.exists(dataDir));
 
     Path subHome = solrHomeDirectory.resolve("corex").resolve("conf");
     Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");

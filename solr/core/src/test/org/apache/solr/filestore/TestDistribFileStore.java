@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -174,19 +173,17 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
         final var fetchReq = new FileStoreApi.FetchFile("/package/mypkg/v1.0/runtimelibs.jar2");
         fetchReq.setGetFrom("someFakeSolrNode:8983_solr");
-        try (final var solrClient =
-            new HttpJettySolrClient.Builder(jettySolrRunner.getBaseUrl().toString()).build()) {
-          final var expectedExc =
-              expectThrows(
-                  RemoteSolrException.class,
-                  () -> {
-                    fetchReq.process(solrClient);
-                  });
-          assertEquals(400, expectedExc.code());
-          assertThat(
-              expectedExc.getMessage(), containsString("File store cannot fetch from source node"));
-          assertThat(expectedExc.getMessage(), containsString("does not appear in live-nodes"));
-        }
+        final var solrClient = jettySolrRunner.getSolrClient();
+        final var expectedExc =
+            expectThrows(
+                RemoteSolrException.class,
+                () -> {
+                  fetchReq.process(solrClient);
+                });
+        assertEquals(400, expectedExc.code());
+        assertThat(
+            expectedExc.getMessage(), containsString("File store cannot fetch from source node"));
+        assertThat(expectedExc.getMessage(), containsString("does not appear in live-nodes"));
       }
 
       // Delete Jars

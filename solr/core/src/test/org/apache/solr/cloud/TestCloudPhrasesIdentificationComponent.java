@@ -27,7 +27,6 @@ import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -81,10 +80,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(
-          new HttpJettySolrClient.Builder(jetty.getBaseUrl().toString())
-              .withDefaultCollection(COLLECTION_NAME)
-              .build());
+      CLIENTS.add(jetty.newSolrClient(COLLECTION_NAME));
     }
 
     // index some docs...

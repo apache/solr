@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.embedded.JettyConfig;
@@ -79,11 +78,9 @@ public class SolrStartup {
 
       solrRunner = new JettySolrRunner(tmpSolrHome.toString(), buildJettyConfig());
       solrRunner.start(false);
-      try (SolrClient client =
-          new HttpJettySolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
-        for (int i = 0; i < NUM_CORES; i++) {
-          createCore(client, "core-prefix-" + i);
-        }
+      SolrClient client = solrRunner.getSolrClient();
+      for (int i = 0; i < NUM_CORES; i++) {
+        createCore(client, "core-prefix-" + i);
       }
       solrRunner.stop();
     }

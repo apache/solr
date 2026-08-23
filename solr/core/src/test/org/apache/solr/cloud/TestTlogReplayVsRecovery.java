@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -244,12 +243,10 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     }
     // For simplicity, we always add out docs directly to NODE0
     // (where the leader should be) and bypass the proxy...
-    try (SolrClient client =
-        new HttpJettySolrClient.Builder(NODE0.getBaseUrl().toString()).build()) {
-      assertEquals(0, client.add(COLLECTION, docs).getStatus());
-      if (commit) {
-        assertEquals(0, client.commit(COLLECTION).getStatus());
-      }
+    SolrClient client = NODE0.getSolrClient();
+    assertEquals(0, client.add(COLLECTION, docs).getStatus());
+    if (commit) {
+      assertEquals(0, client.commit(COLLECTION).getStatus());
     }
   }
 
@@ -258,15 +255,12 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    * (inclusive) can be found on both the leader and the replica
    */
   private void assertDocsExistInBothReplicas(int firstDocId, int lastDocId) throws Exception {
-    try (SolrClient leaderSolr =
-            new HttpJettySolrClient.Builder(NODE0.getBaseUrl().toString()).build();
-        SolrClient replicaSolr =
-            new HttpJettySolrClient.Builder(NODE1.getBaseUrl().toString()).build()) {
-      for (int d = firstDocId; d <= lastDocId; d++) {
-        String docId = String.valueOf(d);
-        assertDocExists("leader", leaderSolr, docId);
-        assertDocExists("replica", replicaSolr, docId);
-      }
+    SolrClient leaderSolr = NODE0.getSolrClient();
+    SolrClient replicaSolr = NODE1.getSolrClient();
+    for (int d = firstDocId; d <= lastDocId; d++) {
+      String docId = String.valueOf(d);
+      assertDocExists("leader", leaderSolr, docId);
+      assertDocExists("replica", replicaSolr, docId);
     }
   }
 

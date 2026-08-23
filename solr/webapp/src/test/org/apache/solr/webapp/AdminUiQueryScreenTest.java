@@ -18,7 +18,6 @@ package org.apache.solr.webapp;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrInputDocument;
@@ -94,11 +93,7 @@ public class AdminUiQueryScreenTest extends AdminUiTestBase {
     setParams.setContentWriter(
         new RequestWriter.StringPayloadContentWriter(
             "{\"set\":{\"" + paramset + "\":{\"rows\":\"2\"}}}", CommonParams.JSON_MIME));
-    try (SolrClient client =
-        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
-            .build()) {
-      client.request(setParams);
-    }
+    cluster.getJettySolrRunner(0).getSolrClient().request(setParams);
 
     openPage(COLLECTION + "/query", By.id("query"));
     chosenSelect("useParams", paramset);

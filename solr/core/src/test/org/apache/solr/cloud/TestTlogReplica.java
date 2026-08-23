@@ -903,11 +903,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
     updates.add(simulatedDBQ("inplace_updatable_int:5", 3L));
     updates.add(simulatedUpdateRequest(1L, "id", 1, "inplace_updatable_int", 6, "_version_", 2L));
     for (JettySolrRunner solrRunner : getSolrRunner(false)) {
-      try (SolrClient client =
-          new HttpJettySolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
-        for (UpdateRequest up : updates) {
-          up.process(client, collectionName);
-        }
+      SolrClient client = solrRunner.getSolrClient();
+      for (UpdateRequest up : updates) {
+        up.process(client, collectionName);
       }
     }
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
@@ -1146,18 +1144,16 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private void checkRTG(int from, int to, List<JettySolrRunner> solrRunners) throws Exception {
     for (JettySolrRunner solrRunner : solrRunners) {
-      try (SolrClient client =
-          new HttpJettySolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
-        for (int i = from; i <= to; i++) {
-          SolrQuery query = new SolrQuery();
-          query.set("distrib", false);
-          query.setRequestHandler("/get");
-          query.set("id", i);
-          QueryResponse res = client.query(collectionName, query);
-          assertNotNull(
-              "Can not find doc " + i + " in " + solrRunner.getBaseUrl(),
-              res.getResponse().get("doc"));
-        }
+      SolrClient client = solrRunner.getSolrClient();
+      for (int i = from; i <= to; i++) {
+        SolrQuery query = new SolrQuery();
+        query.set("distrib", false);
+        query.setRequestHandler("/get");
+        query.set("id", i);
+        QueryResponse res = client.query(collectionName, query);
+        assertNotNull(
+            "Can not find doc " + i + " in " + solrRunner.getBaseUrl(),
+            res.getResponse().get("doc"));
       }
     }
   }

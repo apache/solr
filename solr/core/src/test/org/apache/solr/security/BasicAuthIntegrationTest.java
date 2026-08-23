@@ -248,8 +248,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     // Test for SOLR-12514. Create a new jetty . This jetty does not have the collection.
     // Make a request to that jetty and it should fail
     JettySolrRunner aNewJetty = cluster.startJettySolrRunner();
-    SolrClient aNewClient =
-        new HttpJettySolrClient.Builder(aNewJetty.getBaseUrl().toString()).build();
+    SolrClient aNewClient = aNewJetty.getSolrClient();
     UpdateRequest delQuery = null;
     delQuery = new UpdateRequest().deleteByQuery("*:*");
     delQuery.setBasicAuthCredentials("harry", "HarryIsUberCool");
@@ -263,7 +262,6 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
               });
       assertEquals(401, e.code()); // Authentication failed
     } finally {
-      aNewClient.close();
       cluster.stopJettySolrRunner(aNewJetty);
     }
 

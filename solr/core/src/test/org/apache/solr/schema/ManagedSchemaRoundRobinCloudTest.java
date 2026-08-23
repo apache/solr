@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
@@ -56,25 +55,16 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
   @Test
   public void testAddFieldsRoundRobin() throws Exception {
     List<SolrClient> clients = new ArrayList<>(NUM_SHARDS);
-    try {
-      for (int shardNum = 0; shardNum < NUM_SHARDS; ++shardNum) {
-        clients.add(
-            new HttpJettySolrClient.Builder(
-                    cluster.getJettySolrRunners().get(shardNum).getBaseUrl().toString())
-                .build());
-      }
-      int shardNum = 0;
-      for (int fieldNum = 0; fieldNum < NUM_FIELDS_TO_ADD; ++fieldNum) {
-        addField(
-            clients.get(shardNum),
-            keyValueArrayToMap("name", FIELD_PREFIX + fieldNum, "type", "string"));
-        if (++shardNum == NUM_SHARDS) {
-          shardNum = 0;
-        }
-      }
-    } finally {
-      for (int shardNum = 0; shardNum < NUM_SHARDS; ++shardNum) {
-        clients.get(shardNum).close();
+    for (int shardNum = 0; shardNum < NUM_SHARDS; ++shardNum) {
+      clients.add(cluster.getJettySolrRunners().get(shardNum).getSolrClient());
+    }
+    int shardNum = 0;
+    for (int fieldNum = 0; fieldNum < NUM_FIELDS_TO_ADD; ++fieldNum) {
+      addField(
+          clients.get(shardNum),
+          keyValueArrayToMap("name", FIELD_PREFIX + fieldNum, "type", "string"));
+      if (++shardNum == NUM_SHARDS) {
+        shardNum = 0;
       }
     }
   }
