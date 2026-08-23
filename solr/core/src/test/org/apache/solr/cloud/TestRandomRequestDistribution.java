@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrMetricTestUtils;
@@ -83,16 +84,13 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     ZkStateReader.from(cloudClient).forceUpdateCollection("b1x1");
 
-    // name + container, not the SolrCore itself: reserved only long enough to read it below
+    // build a map of "a1x2"'s core names to corresponding CoreContainer
     final Map<String, CoreContainer> cores = new LinkedHashMap<>();
     for (JettySolrRunner runner : jettys) {
       CoreContainer container = runner.getCoreContainer();
-      for (String coreName : container.getLoadedCoreNames()) {
-        try (SolrCore core = container.getCore(coreName)) {
-          if (core == null) continue; // unloaded since getLoadedCoreNames
-          if ("a1x2".equals(core.getCoreDescriptor().getCollectionName())) {
-            cores.put(core.getName(), container);
-          }
+      for (CoreDescriptor coreDescriptor : container.getCoreDescriptors()) {
+        if ("a1x2".equals(coreDescriptor.getCollectionName())) {
+          cores.put(coreDescriptor.getName(), container);
         }
       }
     }
@@ -232,7 +230,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       CoreContainer leaderContainer = null;
       for (JettySolrRunner jetty : jettys) {
         CoreContainer container = jetty.getCoreContainer();
-        if (container.getLoadedCoreNames().contains(leaderCoreName)) {
+        if (container.getCoreDescriptor(leaderCoreName) != null) {
           leaderContainer = container;
           break;
         }

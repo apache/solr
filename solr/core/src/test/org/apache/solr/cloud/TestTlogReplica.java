@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.client.solrj.SolrClient;
@@ -60,6 +61,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.SolrIndexWriter;
@@ -1107,30 +1109,38 @@ public class TestTlogReplica extends SolrCloudTestCase {
     };
   }
 
-  private List<SolrCore> getSolrCore(boolean isLeader) {
-    List<SolrCore> rs = new ArrayList<>();
-
+  /**
+   * Invokes {@code consumer} for each core, across the cluster, whose leader/replica status matches
+   * {@code isLeader}.
+   */
+  private void forEachMatchingCloudDescriptor(
+      boolean isLeader, BiConsumer<JettySolrRunner, CoreDescriptor> consumer) {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);
-
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       CoreContainer coreContainer = solrRunner.getCoreContainer();
       if (coreContainer == null) continue;
-      for (String coreName : coreContainer.getLoadedCoreNames()) {
-        // returns unreserved cores, same contract as the removed getCores()
-        try (SolrCore solrCore = coreContainer.getCore(coreName)) {
-          if (solrCore == null) continue; // unloaded since getLoadedCoreNames
-          CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
-          Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
-          Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
-          if (Objects.equals(slice.getLeader(), replica) && isLeader) {
-            rs.add(solrCore);
-          } else if (!Objects.equals(slice.getLeader(), replica) && !isLeader) {
-            rs.add(solrCore);
-          }
+      for (CoreDescriptor coreDescriptor : coreContainer.getCoreDescriptors()) {
+        CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
+        Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
+        Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
+        if (Objects.equals(slice.getLeader(), replica) == isLeader) {
+          consumer.accept(solrRunner, coreDescriptor);
         }
       }
     }
+  }
+
+  /** NOT INC-REF'ED. Assumption: the returned cores are not closed or going to be closed yet. */
+  private List<SolrCore> getSolrCore(boolean isLeader) {
+    List<SolrCore> rs = new ArrayList<>();
+    forEachMatchingCloudDescriptor(
+        isLeader,
+        (solrRunner, coreDescriptor) -> {
+          SolrCore solrCore = solrRunner.getCoreContainer().getCore(coreDescriptor.getName());
+          solrCore.close(); // dec-ref.
+          rs.add(solrCore);
+        });
     return rs;
   }
 
@@ -1153,25 +1163,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private List<JettySolrRunner> getSolrRunner(boolean isLeader) {
     List<JettySolrRunner> rs = new ArrayList<>();
-    CloudSolrClient cloudClient = cluster.getSolrClient();
-    DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);
-    for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
-      CoreContainer coreContainer = solrRunner.getCoreContainer();
-      if (coreContainer == null) continue;
-      for (String coreName : coreContainer.getLoadedCoreNames()) {
-        try (SolrCore solrCore = coreContainer.getCore(coreName)) {
-          if (solrCore == null) continue; // unloaded since getLoadedCoreNames
-          CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
-          Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
-          Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
-          if (Objects.equals(slice.getLeader(), replica) && isLeader) {
-            rs.add(solrRunner);
-          } else if (!Objects.equals(slice.getLeader(), replica) && !isLeader) {
-            rs.add(solrRunner);
-          }
-        }
-      }
-    }
+    forEachMatchingCloudDescriptor(isLeader, (solrRunner, coreDescriptor) -> rs.add(solrRunner));
     return rs;
   }
 

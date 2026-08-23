@@ -991,43 +991,43 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     checkForSingleIndex(jetty, false);
   }
 
-  private void checkForSingleIndex(JettySolrRunner jetty, boolean afterReload) throws IOException {
+  private void checkForSingleIndex(JettySolrRunner jetty, boolean afterReload) {
     CoreContainer cores = jetty.getCoreContainer();
-    for (String coreName : cores.getLoadedCoreNames()) {
-      try (SolrCore core = cores.getCore(coreName)) {
-        if (core == null) continue; // unloaded since getLoadedCoreNames
-        String ddir = core.getDataDir();
-        CachingDirectoryFactory dirFactory = getCachingDirectoryFactory(core);
-        synchronized (dirFactory) {
-          Set<String> livePaths = dirFactory.getLivePaths();
-          // one for data, one for the index under data and one for the snapshot metadata.
-          // we also allow one extra index dir - it may not be removed until the core is closed
-          if (afterReload) {
-            assertTrue(
-                livePaths.toString() + ":" + livePaths.size(),
-                3 == livePaths.size() || 4 == livePaths.size());
-          } else {
-            assertEquals(livePaths.toString() + ":" + livePaths.size(), 3, livePaths.size());
-          }
-
-          // :TODO: assert that one of the paths is a subpath of hte other
-        }
-        if (dirFactory instanceof StandardDirectoryFactory) {
-          try (Stream<Path> files = Files.list(Path.of(ddir))) {
-            List<Path> filesList = files.toList();
-            System.out.println(filesList);
+    cores.forEachLoadedCore(
+        core -> {
+          String ddir = core.getDataDir();
+          CachingDirectoryFactory dirFactory = getCachingDirectoryFactory(core);
+          synchronized (dirFactory) {
+            Set<String> livePaths = dirFactory.getLivePaths();
+            // one for data, one for the index under data and one for the snapshot metadata.
             // we also allow one extra index dir - it may not be removed until the core is closed
-            int cnt = indexDirCount(ddir);
-            // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
             if (afterReload) {
-              assertTrue("found:" + cnt + filesList, 1 == cnt || 2 == cnt);
+              assertTrue(
+                  livePaths.toString() + ":" + livePaths.size(),
+                  3 == livePaths.size() || 4 == livePaths.size());
             } else {
-              assertEquals("found:" + cnt + filesList, 1, cnt);
+              assertEquals(livePaths.toString() + ":" + livePaths.size(), 3, livePaths.size());
+            }
+
+            // :TODO: assert that one of the paths is a subpath of hte other
+          }
+          if (dirFactory instanceof StandardDirectoryFactory) {
+            try (Stream<Path> files = Files.list(Path.of(ddir))) {
+              List<Path> filesList = files.toList();
+              System.out.println(filesList);
+              // we also allow one extra index dir - it may not be removed until the core is closed
+              int cnt = indexDirCount(ddir);
+              // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
+              if (afterReload) {
+                assertTrue("found:" + cnt + filesList, 1 == cnt || 2 == cnt);
+              } else {
+                assertEquals("found:" + cnt + filesList, 1, cnt);
+              }
+            } catch (IOException e) {
+              throw new RuntimeException(e);
             }
           }
-        }
-      }
-    }
+        });
   }
 
   private int indexDirCount(String ddir) throws IOException {

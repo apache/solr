@@ -52,7 +52,6 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.filestore.ClusterFileStore;
@@ -133,12 +132,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       CoreContainer cc = jetty.getCoreContainer();
       cc.getContainerPluginsRegistry().setPhaser(phaser);
-      for (String coreName : cc.getLoadedCoreNames()) {
-        try (SolrCore c = cc.getCore(coreName)) {
-          if (c == null) continue; // unloaded since getLoadedCoreNames
-          c.getPackageListeners().addListener(listener);
-        }
-      }
+      cc.forEachLoadedCore(c -> c.getPackageListeners().addListener(listener));
     }
   }
 
