@@ -107,6 +107,54 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     return cause;
   }
 
+  /**
+   * Security config updates are persisted to ZooKeeper and reloaded by the nodes
+   * asynchronously, so a GET issued right after an update may still return the
+   * previous config. Polls the given endpoint until check(data) sees the update
+   * (giving up after ~10s), then invokes done.
+   */
+  function whenReflected(path, check, done) {
+    var attemptsLeft = 40;
+    function poll() {
+      Security.get({path: path}, function (data) {
+        if (--attemptsLeft <= 0 || check(data)) {
+          done();
+        } else {
+          $timeout(poll, 250);
+        }
+      }, function (e) {
+        $scope.errorHandler(e);
+        done();
+      });
+    }
+    poll();
+  }
+
+  /** Returns the basic-auth section of an authentication response, unwrapping multi-auth schemes. */
+  function findBasicAuthn(data) {
+    var authn = data.authentication;
+    if (authn && "schemes" in authn) {
+      for (var a in authn.schemes) {
+        if (authn.schemes[a]["scheme"] === "basic") {
+          return authn.schemes[a];
+        }
+      }
+    }
+    return authn;
+  }
+
+  function hasCredential(data, username) {
+    var authn = findBasicAuthn(data);
+    return authn != null && authn.credentials != null && username in authn.credentials;
+  }
+
+  /** Returns the roles of the named permission as a list, or null when the permission is absent. */
+  function permissionRoles(data, permName) {
+    var perms = data.authorization ? asList(data.authorization["permissions"]) : [];
+    var perm = perms.find(p => p.name === permName);
+    return perm ? asList(perm.role) : null;
+  }
+
   function truncateTo(str, maxLen, delim) {
     // allow for a little on either side of maxLen for better display
     var varLen = Math.min(Math.round(maxLen * 0.1), 15);
@@ -375,16 +423,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
           }
 
           // find the "basic" scheme if using multi-auth
-          var authn = data.authentication;
-          if ("schemes" in data.authentication) {
-            for (var a in data.authentication.schemes) {
-              if (data.authentication.schemes[a]["scheme"] === "basic") {
-                authn = data.authentication.schemes[a];
-                $scope.multiAuthWithBasic = true;
-                break;
-              }
-            }
-          }
+          var authn = findBasicAuthn(data);
+          $scope.multiAuthWithBasic = authn !== data.authentication;
 
           //console.log(">> authn: "+JSON.stringify(authn));
 
@@ -445,11 +485,17 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       } // else, no new role for you!
     }
     var userRoles = Array.from(new Set(roles));
-    setUserRoles[$scope.upsertUser.username] = userRoles.length > 0 ? userRoles : null;
+    var username = $scope.upsertUser.username;
+    setUserRoles[username] = userRoles.length > 0 ? userRoles : null;
     var cmdJson = $scope.wrapSchemeCmd("set-user-role", setUserRoles);
     Security.post({path: "authorization"}, cmdJson, function (data) {
       $scope.toggleUserDialog();
-      $scope.refreshSecurityPanel();
+      whenReflected("authorization", function (data2) {
+        var authz = $scope.findEditableAuthz(data2);
+        if (!authz) return true;
+        var current = asList(authz["user-role"][username]);
+        return current.length === userRoles.length && userRoles.every(r => current.includes(r));
+      }, $scope.refreshSecurityPanel);
     });
   };
 
@@ -522,9 +568,9 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
           $scope.securityAPIErrorDetails = JSON.stringify(data);
           return;
         }
-        // TODO: shouldn't need this extra GET, but sometimes the config back from the server doesn't have our new user
-        // and doing this seems to avoid what looks like a race?
-        Security.get({path: "authentication"}, function (data2) {
+        whenReflected("authentication", function (data2) {
+          return hasCredential(data2, username);
+        }, function () {
           $scope.updateUserRoles();
         });
       });
@@ -534,16 +580,19 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   };
 
   $scope.confirmDeleteUser = function() {
-    if (window.confirm("Confirm delete the '"+$scope.upsertUser.username+"' user?")) {
+    var username = $scope.upsertUser.username;
+    if (window.confirm("Confirm delete the '"+username+"' user?")) {
       // remove all roles for the user and the delete the user
       var removeRoles = {};
-      removeRoles[$scope.upsertUser.username] = null;
+      removeRoles[username] = null;
       var cmdJson = $scope.wrapSchemeCmd("set-user-role", removeRoles);
       Security.post({path: "authorization"}, cmdJson, function (data) {
-        var deleteUserCmd = $scope.wrapSchemeCmd("delete-user", [$scope.upsertUser.username]);
+        var deleteUserCmd = $scope.wrapSchemeCmd("delete-user", [username]);
         Security.post({path: "authentication"}, deleteUserCmd, function (data2) {
           $scope.toggleUserDialog();
-          $scope.refreshSecurityPanel();
+          whenReflected("authentication", function (data3) {
+            return !hasCredential(data3, username);
+          }, $scope.refreshSecurityPanel);
         });
       });
     }
@@ -650,7 +699,9 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       var index = parseInt($scope.upsertPerm.index);
       Security.post({path: "authorization"}, { "delete-permission": index }, function (data) {
         $scope.togglePermDialog();
-        $scope.refreshSecurityPanel();
+        whenReflected("authorization", function (data2) {
+          return permissionRoles(data2, permName) == null;
+        }, $scope.refreshSecurityPanel);
       });
     }
   };
@@ -734,12 +785,12 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       if ($scope.params && $scope.params.length > 0) {
         for (i in $scope.params) {
           var p = $scope.params[i];
-          var name = p.name.trim();
-          if (name !== "" && p.value) {
-            if (name in params) {
-              params[name].push(p.value);
+          var paramName = p.name.trim();
+          if (paramName !== "" && p.value) {
+            if (paramName in params) {
+              params[paramName].push(p.value);
             } else {
-              params[name] = [p.value];
+              params[paramName] = [p.value];
             }
           }
         }
@@ -777,10 +828,11 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
             return;
           }
           $scope.togglePermDialog();
-          // avoids a weird race with not getting the latest config after an update
-          Security.get({path: "authorization"}, function (ignore) {
-            $scope.refreshSecurityPanel();
-          });
+          whenReflected("authorization", function (data2) {
+            var have = permissionRoles(data2, setPermJson.name);
+            var want = asList(setPermJson.role);
+            return have != null && have.length === want.length && want.every(r => have.includes(r));
+          }, $scope.refreshSecurityPanel);
         });
       });
     } else {
@@ -1167,21 +1219,27 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
 
         var errorCause = checkError(data2);
         if (errorCause != null) {
-          $scope.securityAPIError = "set-user-role for "+username+" failed due to: "+errorCause;
+          $scope.securityAPIError = "set-user-role for role "+name+" failed due to: "+errorCause;
           $scope.securityAPIErrorDetails = JSON.stringify(data2);
           return;
+        }
+
+        function roleReflected(data3) {
+          var authz3 = $scope.findEditableAuthz(data3);
+          if (!authz3) return true;
+          return usersForRole.every(u => asList(authz3["user-role"][u]).includes(name));
         }
 
         if (perms.length === 0) {
           // close dialog and refresh the tables ...
           $scope.toggleRoleDialog();
-          $scope.refreshSecurityPanel();
+          whenReflected("authorization", roleReflected, $scope.refreshSecurityPanel);
           return;
         }
 
         var currentPerms = data.authorization["permissions"];
         for (i in perms) {
-          var permName = perms[i];
+          let permName = perms[i];
           var existingPerm = currentPerms.find(p => p.name === permName);
 
           if (existingPerm) {
@@ -1198,14 +1256,20 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
             }
             existingPerm.role = roleList;
             Security.post({path: "authorization"}, { "update-permission": existingPerm }, function (data3) {
-              $scope.refreshSecurityPanel();
+              whenReflected("authorization", function (data4) {
+                var have = permissionRoles(data4, permName);
+                return roleReflected(data4) && have != null && have.includes(name);
+              }, $scope.refreshSecurityPanel);
             });
           } else {
             // new perm ... must be a predefined ...
             if ($scope.predefinedPermissions.includes(permName)) {
               var setPermission = {name: permName, role:[name]};
               Security.post({path: "authorization"}, { "set-permission": setPermission }, function (data3) {
-                $scope.refreshSecurityPanel();
+                whenReflected("authorization", function (data4) {
+                  var have = permissionRoles(data4, permName);
+                  return roleReflected(data4) && have != null && have.includes(name);
+                }, $scope.refreshSecurityPanel);
               });
             } // else ignore it
           }
@@ -1234,16 +1298,26 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   };
 
   $scope.onBlockUnknownChange = function() {
-    var cmdJson = $scope.wrapSchemeCmd("set-property", { "blockUnknown": $scope.blockUnknown === "true" });
+    var blockUnknown = $scope.blockUnknown === "true";
+    var cmdJson = $scope.wrapSchemeCmd("set-property", { "blockUnknown": blockUnknown });
     Security.post({path: "authentication"}, cmdJson, function (data) {
-      $scope.refreshSecurityPanel();
+      whenReflected("authentication", function (data2) {
+        var authn = findBasicAuthn(data2);
+        if (authn == null) return true;
+        var v = authn["blockUnknown"];
+        return (v !== false && v !== "false") === blockUnknown;
+      }, $scope.refreshSecurityPanel);
     });
   };
 
   $scope.onForwardCredsChange = function() {
-    var cmdJson = $scope.wrapSchemeCmd("set-property", { "forwardCredentials": $scope.forwardCredentials === "true" });
+    var forwardCredentials = $scope.forwardCredentials === "true";
+    var cmdJson = $scope.wrapSchemeCmd("set-property", { "forwardCredentials": forwardCredentials });
     Security.post({path: "authentication"}, cmdJson, function (data) {
-      $scope.refreshSecurityPanel();
+      whenReflected("authentication", function (data2) {
+        var authn = findBasicAuthn(data2);
+        return authn != null && (authn["forwardCredentials"] === true) === forwardCredentials;
+      }, $scope.refreshSecurityPanel);
     });
   };
 
