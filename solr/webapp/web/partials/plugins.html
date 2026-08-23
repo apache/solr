@@ -18,7 +18,7 @@ limitations under the License.
 
   <div id="frame">
       <div class="message-container" ng-show="metricsDisabled">
-        <div class="message">Metrics collection is disabled on this node, so no plugin information is available. Start Solr with metricsEnabled=true to enable it.</div>
+        <div class="message">Metrics collection is disabled in this node's solr.xml (&lt;metrics enabled="false"&gt;), so no plugin information is available.</div>
       </div>
       <ul>
       <li class="entry" ng-class="{changed: plugin.changed}" ng-repeat="plugin in type.plugins">
