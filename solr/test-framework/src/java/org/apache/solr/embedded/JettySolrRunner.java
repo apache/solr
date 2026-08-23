@@ -785,13 +785,6 @@ public class JettySolrRunner implements SolrBackend {
     }
   }
 
-  public HttpJettySolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
-    return new HttpJettySolrClient.Builder(getBaseUrl().toString())
-        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
-        .withIdleTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
-        .build();
-  }
-
   // --------------------------------------------------------------
   // --------------------------------------------------------------
 

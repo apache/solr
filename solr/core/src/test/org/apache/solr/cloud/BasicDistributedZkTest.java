@@ -1046,26 +1046,25 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testStopAndStartCoresInOneInstance() throws Exception {
     JettySolrRunner jetty = jettys.get(0);
-    try (final var httpSolrClient = jetty.newClient(15000, 60000)) {
-      ThreadPoolExecutor executor = null;
-      try {
-        executor =
-            new ExecutorUtil.MDCAwareThreadPoolExecutor(
-                0,
-                Integer.MAX_VALUE,
-                5,
-                TimeUnit.SECONDS,
-                new SynchronousQueue<Runnable>(),
-                new SolrNamedThreadFactory("testExecutor"));
-        int cnt = 3;
+    var httpSolrClient = jetty.getSolrClient();
+    ThreadPoolExecutor executor = null;
+    try {
+      executor =
+          new ExecutorUtil.MDCAwareThreadPoolExecutor(
+              0,
+              Integer.MAX_VALUE,
+              5,
+              TimeUnit.SECONDS,
+              new SynchronousQueue<Runnable>(),
+              new SolrNamedThreadFactory("testExecutor"));
+      int cnt = 3;
 
-        // create the cores
-        createCollectionInOneInstance(
-            httpSolrClient, jetty.getNodeName(), executor, "multiunload2", 1, cnt);
-      } finally {
-        if (executor != null) {
-          ExecutorUtil.shutdownAndAwaitTermination(executor);
-        }
+      // create the cores
+      createCollectionInOneInstance(
+          httpSolrClient, jetty.getNodeName(), executor, "multiunload2", 1, cnt);
+    } finally {
+      if (executor != null) {
+        ExecutorUtil.shutdownAndAwaitTermination(executor);
       }
     }
 
@@ -1381,47 +1380,46 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             .getLeader("shard1");
 
     // now test that unloading a core gets us a new leader
-    try (SolrClient unloadClient = jettys.getFirst().newClient(15000, 60000)) {
-      Unload unloadCmd = new Unload(true);
-      unloadCmd.setCoreName(leader.getCoreName());
+    SolrClient unloadClient = jettys.getFirst().getSolrClient();
+    Unload unloadCmd = new Unload(true);
+    unloadCmd.setCoreName(leader.getCoreName());
 
-      String leaderUrl = leader.getCoreUrl();
+    String leaderUrl = leader.getCoreUrl();
 
-      testExecutor.execute(
-          new Runnable() {
+    testExecutor.execute(
+        new Runnable() {
 
-            @Override
-            public void run() {
-              try {
-                unloadClient.request(unloadCmd);
-              } catch (SolrServerException e) {
-                throw new RuntimeException(e);
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
+          @Override
+          public void run() {
+            try {
+              unloadClient.request(unloadCmd);
+            } catch (SolrServerException e) {
+              throw new RuntimeException(e);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
             }
-          });
+          }
+        });
 
-      try {
-        ZkStateReader.from(getCommonCloudSolrClient())
-            .waitForState(
-                oneInstanceCollection2,
-                20000,
-                TimeUnit.MILLISECONDS,
-                (n, c) -> {
-                  try {
-                    if (leaderUrl.equals(
-                        zkStateReader.getLeaderUrl(oneInstanceCollection2, "shard1", 10000))) {
-                      return false;
-                    }
-                  } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+    try {
+      ZkStateReader.from(getCommonCloudSolrClient())
+          .waitForState(
+              oneInstanceCollection2,
+              20000,
+              TimeUnit.MILLISECONDS,
+              (n, c) -> {
+                try {
+                  if (leaderUrl.equals(
+                      zkStateReader.getLeaderUrl(oneInstanceCollection2, "shard1", 10000))) {
+                    return false;
                   }
-                  return true;
-                });
-      } catch (TimeoutException | InterruptedException e) {
-        fail("Leader never changed");
-      }
+                } catch (InterruptedException e) {
+                  throw new RuntimeException(e);
+                }
+                return true;
+              });
+    } catch (TimeoutException | InterruptedException e) {
+      fail("Leader never changed");
     }
 
     IOUtils.close(collectionClients);

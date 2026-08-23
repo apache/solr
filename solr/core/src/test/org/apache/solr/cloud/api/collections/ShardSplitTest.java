@@ -1285,11 +1285,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         new GenericSolrRequest(METHOD.POST, "/admin/collections", SolrRequestType.ADMIN, params);
 
     JettySolrRunner jetty = shardToJetty.get(SHARD1).getFirst().jetty;
-    try (SolrClient baseServer = jetty.newClient(30_000, 300_000)) {
-      NamedList<Object> rsp = baseServer.request(request);
-      if (log.isInfoEnabled()) {
-        log.info("Shard split response: {}", Utils.toJSONString(rsp));
-      }
+    NamedList<Object> rsp = jetty.getSolrClient().request(request);
+    if (log.isInfoEnabled()) {
+      log.info("Shard split response: {}", Utils.toJSONString(rsp));
     }
   }
 

@@ -388,56 +388,55 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void testUnloadLotsOfCores() throws Exception {
     JettySolrRunner jetty = jettys.get(0);
     int shards = TEST_NIGHTLY ? 2 : 1;
-    try (final SolrClient adminClient = jetty.newClient(15000, 60000)) {
-      int numReplicas = atLeast(3);
-      ThreadPoolExecutor executor =
-          new ExecutorUtil.MDCAwareThreadPoolExecutor(
-              0,
-              Integer.MAX_VALUE,
-              5,
-              TimeUnit.SECONDS,
-              new SynchronousQueue<>(),
-              new SolrNamedThreadFactory("testExecutor"));
-      try {
-        // create the cores
-        BasicDistributedZkTest.createCollectionInOneInstance(
-            adminClient, jetty.getNodeName(), executor, "multiunload", shards, numReplicas);
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(executor);
-      }
+    final SolrClient adminClient = jetty.getSolrClient();
+    int numReplicas = atLeast(3);
+    ThreadPoolExecutor executor =
+        new ExecutorUtil.MDCAwareThreadPoolExecutor(
+            0,
+            Integer.MAX_VALUE,
+            5,
+            TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            new SolrNamedThreadFactory("testExecutor"));
+    try {
+      // create the cores
+      BasicDistributedZkTest.createCollectionInOneInstance(
+          adminClient, jetty.getNodeName(), executor, "multiunload", shards, numReplicas);
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
 
-      if (TEST_NIGHTLY == false) {
-        // with nightly tests, we can try doing the unloads before the creates are done
-        // it still works, but takes much longer since we end up waiting for a timeout
-        waitForRecoveriesToFinish("multiunload", false);
-      }
+    if (TEST_NIGHTLY == false) {
+      // with nightly tests, we can try doing the unloads before the creates are done
+      // it still works, but takes much longer since we end up waiting for a timeout
+      waitForRecoveriesToFinish("multiunload", false);
+    }
 
-      executor =
-          new ExecutorUtil.MDCAwareThreadPoolExecutor(
-              0,
-              Integer.MAX_VALUE,
-              5,
-              TimeUnit.SECONDS,
-              new SynchronousQueue<>(),
-              new SolrNamedThreadFactory("testExecutor"));
-      try {
-        for (int j = 0; j < numReplicas; j++) {
-          final int freezeJ = j;
-          executor.execute(
-              () -> {
-                Unload unloadCmd = new Unload(true);
-                unloadCmd.setCoreName("multiunload" + freezeJ);
-                try {
-                  adminClient.request(unloadCmd);
-                } catch (SolrServerException | IOException e) {
-                  throw new RuntimeException(e);
-                }
-              });
-          Thread.sleep(random().nextInt(50));
-        }
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(executor);
+    executor =
+        new ExecutorUtil.MDCAwareThreadPoolExecutor(
+            0,
+            Integer.MAX_VALUE,
+            5,
+            TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            new SolrNamedThreadFactory("testExecutor"));
+    try {
+      for (int j = 0; j < numReplicas; j++) {
+        final int freezeJ = j;
+        executor.execute(
+            () -> {
+              Unload unloadCmd = new Unload(true);
+              unloadCmd.setCoreName("multiunload" + freezeJ);
+              try {
+                adminClient.request(unloadCmd);
+              } catch (SolrServerException | IOException e) {
+                throw new RuntimeException(e);
+              }
+            });
+        Thread.sleep(random().nextInt(50));
       }
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
     }
   }
 }
