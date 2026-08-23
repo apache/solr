@@ -224,7 +224,11 @@ public class BackupManager {
       is.readBytes(arr, 0, (int) is.length());
       // set a default created date, we don't aim at reading actual zookeeper state. The restored
       // collection will have a new creation date when persisted in zookeeper.
-      ClusterState c_state = ClusterState.createFromJson(-1, arr, Set.of(), Instant.EPOCH, null);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> stateMap =
+          arr.length == 0 ? Map.of() : (Map<String, Object>) Utils.fromJSON(arr, 0, arr.length);
+      ClusterState c_state =
+          ClusterState.createFromCollectionMap(-1, stateMap, Set.of(), Instant.EPOCH, null);
       return c_state.getCollection(collectionName);
     }
   }
