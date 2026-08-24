@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.SolrTestCaseJ4.withPath;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -343,13 +345,25 @@ public class TestHarness extends BaseTestHarness {
   /**
    * It is the users responsibility to close the request object when done with it. This method does
    * not set/clear SolrRequestInfo
+   *
+   * @deprecated use {@link #queryAndResponse(SolrQueryRequest)} instead, ensuring that
+   *     SolrQueryRequest has a valid path
    */
+  @Deprecated
   public SolrQueryResponse queryAndResponse(String handler, SolrQueryRequest req) throws Exception {
+    return queryAndResponse(withPath(handler, req));
+  }
+
+  /**
+   * It is the users responsibility to close the request object when done with it. This method does
+   * not set/clear SolrRequestInfo
+   */
+  public SolrQueryResponse queryAndResponse(SolrQueryRequest req) throws Exception {
     try (var mdcSnap = MDCSnapshot.create();
         SolrCore core = getCoreInc()) {
       assert null != mdcSnap; // prevent compiler warning of unused var
       SolrQueryResponse rsp = new SolrQueryResponse();
-      core.execute(core.getRequestHandler(handler), req, rsp);
+      core.execute(core.getRequestHandler(req.getPath()), req, rsp);
       if (rsp.getException() != null) {
         throw rsp.getException();
       }
