@@ -52,8 +52,9 @@ public class SolrStream extends TupleStream {
   private static final long serialVersionUID = 1;
 
   private String baseUrl;
-  private SolrParams params;
+  private String core;
   private String path;
+  private SolrParams params;
   private int numWorkers;
   private int workerID;
   private boolean trace;
@@ -64,7 +65,6 @@ public class SolrStream extends TupleStream {
   private boolean distrib = true;
   private String user;
   private String password;
-  private String core;
 
   private transient SolrClientCache clientCache;
   private transient boolean doCloseCache;
@@ -72,26 +72,26 @@ public class SolrStream extends TupleStream {
   // TODO SOLR-17995 proposes that we should deprecate this constructor in favor of one of the other
   // constructors that requires users to provide the core as an explicit parameter
   /**
-   * @param baseUrl URL of the Solr core or collection to query, typically of the form
+   * @param collectionOrCoreUrl URL of the Solr core or collection to query, typically of the form
    *     "http://host:8983/solr/myCore".
    * @param params query-parameters sent with the streaming request
    */
-  public SolrStream(String baseUrl, SolrParams params) {
-    this.baseUrl = baseUrl;
+  public SolrStream(String collectionOrCoreUrl, SolrParams params) {
+    this.baseUrl = collectionOrCoreUrl;
     this.params = params;
   }
 
   // TODO SOLR-17995 proposes that we should deprecate this constructor in favor of one of the other
   // constructors that requires users to provide the core as an explicit parameter
   /**
-   * @param baseUrl URL of the Solr core or collection to query, typically of the form
+   * @param collectionOrCoreUrl URL of the Solr core or collection to query, typically of the form
    *     "http://host:8983/solr/myCore".
    * @param path the request handler path to query (e.g. "/export"). If not provided, defaults to
    *     "/select".
    * @param params query-parameters sent with the streaming request
    */
-  public SolrStream(String baseUrl, String path, SolrParams params) {
-    this(baseUrl, null, path, params);
+  public SolrStream(String collectionOrCoreUrl, String path, SolrParams params) {
+    this(collectionOrCoreUrl, null, path, params);
   }
 
   /**
@@ -113,8 +113,8 @@ public class SolrStream extends TupleStream {
   public SolrStream(String baseUrl, String core, String path, SolrParams params) {
     this.baseUrl = baseUrl;
     this.core = core;
-    this.params = params;
     this.path = path != null ? path : "/select";
+    this.params = params;
   }
 
   public void setFieldMappings(Map<String, String> fieldMappings) {

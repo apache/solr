@@ -383,8 +383,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
       final SolrStream solrStream =
           new SolrStream(
-              solrUrl + "/" + COLLECTION_Y,
-              "/stream", // NOTE: Y route
+              solrUrl,
+              COLLECTION_Y, // NOTE: Y route
+              "/stream",
               params("expr", expr));
       solrStream.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
       final List<Tuple> tuples = getTuples(solrStream);
@@ -405,8 +406,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final SolrStream solrStream =
           new SolrStream(
               solrUrl,
-              COLLECTION_X,
-              "/stream", // NOTE: X route
+              COLLECTION_X, // NOTE: X route
+              "/stream",
               params("expr", expr));
       solrStream.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
       final List<Tuple> tuples = getTuples(solrStream);
@@ -469,8 +470,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     // authz to write to X...
     for (String user : Arrays.asList(READ_ONLY_USER, WRITE_Y_USER)) {
       // ... regardless of how the request is routed...
-      for (String path : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
-        final String trace = user + ":" + path;
+      for (String coll : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
+        final String trace = user + ":" + coll;
         final String expr =
             "executor(threads=1,tuple(expr_s=\"update("
                 + COLLECTION_X
@@ -481,9 +482,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
                 + "'))\"))";
         final SolrStream solrStream =
             new SolrStream(
-                solrUrl + "/" + path,
-                "/stream",
-                params("_trace", "executor_via_" + trace, "expr", expr));
+                solrUrl, coll, "/stream", params("_trace", "executor_via_" + trace, "expr", expr));
         solrStream.setCredentials(user, passwordFor(user));
 
         // NOTE: Because of the background threads, no failures will to be returned to client...
@@ -791,8 +790,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
       final SolrStream solrStream =
           new SolrStream(
-              solrUrl + "/" + COLLECTION_Y,
-              "/stream", // NOTE: Y route
+              solrUrl,
+              COLLECTION_Y, // NOTE: Y route
+              "/stream",
               params("expr", expr));
       solrStream.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
       final List<Tuple> tuples = getTuples(solrStream);
@@ -817,8 +817,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final SolrStream solrStream =
           new SolrStream(
               solrUrl,
-              COLLECTION_X,
-              "/stream", // NOTE: X route
+              COLLECTION_X, // NOTE: X route
+              "/stream",
               params("expr", expr));
       solrStream.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
       final List<Tuple> tuples = getTuples(solrStream);
@@ -850,10 +850,11 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
 
     // regardless of how it's routed, WRITE_Y should NOT have authz to delete from X...
-    for (String path : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
+    for (String coll : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
       final SolrStream solrStream =
           new SolrStream(
-              solrUrl + "/" + path,
+              solrUrl,
+              coll,
               "/stream",
               params("expr", "delete(" + COLLECTION_X + ",batchSize=1," + "tuple(id=42))"));
       solrStream.setCredentials(WRITE_Y_USER, passwordFor(WRITE_Y_USER));
