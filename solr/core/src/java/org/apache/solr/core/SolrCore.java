@@ -2384,6 +2384,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
                   true,
                   directoryFactory);
         } else {
+          // Also the only thing that makes core load fail fast on a locked index directory
+          // (initIndex() no longer checks this itself) -- see SolrCoreCheckLockOnStartupTest.
           RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this, false);
           DirectoryReader newReader = null;
           try {
