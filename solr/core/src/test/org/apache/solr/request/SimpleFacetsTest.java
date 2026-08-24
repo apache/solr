@@ -39,6 +39,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.TimeZoneUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -4546,10 +4547,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     assertTrue(ex.getMessage().contains("Interval Faceting can't be used with group.facet"));
   }
 
+  @SuppressWarnings("try")
   public void testRangeFacetingBadRequest() {
     String field = "range_facet_l";
-    ignoreException(".");
-    try {
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".")) {
       for (FacetRangeMethod method : FacetRangeMethod.values()) {
         assertQEx(
             "Test facet.range bad requests",
@@ -4723,8 +4724,6 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 "foo"),
             ErrorCode.BAD_REQUEST);
       }
-    } finally {
-      resetExceptionIgnores();
     }
   }
 

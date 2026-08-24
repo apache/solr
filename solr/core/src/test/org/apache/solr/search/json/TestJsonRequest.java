@@ -30,6 +30,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -89,17 +90,18 @@ public class TestJsonRequest extends SolrTestCaseHS {
     doJsonRequest(client, true);
   }
 
+  @SuppressWarnings("try")
   public static void doJsonRequest(Client client, boolean isDistrib) throws Exception {
     addDocs(client);
-
-    ignoreException("Expected JSON");
 
     // test json param
     client.testJQ(params("json", "{query:'cat_s:A'}"), "response/numFound==2");
 
     // invalid value
-    SolrException ex =
-        expectThrows(SolrException.class, () -> client.testJQ(params("q", "*:*", "json", "5")));
+    SolrException ex;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Expected JSON")) {
+      ex = expectThrows(SolrException.class, () -> client.testJQ(params("q", "*:*", "json", "5")));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertThat(ex.getMessage(), containsString("Expected JSON Object but got Long=5"));
 
@@ -559,8 +561,6 @@ public class TestJsonRequest extends SolrTestCaseHS {
                   "response/numFound==2");
             });
     assertThat(e.getMessage(), containsString("foobar"));
-
-    resetExceptionIgnores();
   }
 
   private static void doParamRefDslTest(Client client) throws Exception {
