@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -65,7 +66,7 @@ import org.slf4j.LoggerFactory;
  *
  * <ul>
  *   <li>{@code evt=build} -- a join-index write happened; carries the wall time it cost. Emitted by
- *       {@link AIJoinIndex#writeJoinSegments}, the chokepoint both build paths share: {@code
+ *       {@code AIJoinIndex#writeJoinSegments}, the chokepoint both build paths share: {@code
  *       cause=eager-create-weight} for the bulk build {nolink AIJoinIndex#ensureJoinSegments} does
  *       at {@link AIJoinQuery#createWeight} time, and {@code cause=lazy-to-segment} for the
  *       per-context fallback below. In a steady run the eager path does all the work and the lazy
@@ -124,7 +125,7 @@ class ToLeafJoinContext {
   private final List<JoinTask> joinCells = new ArrayList<>();
 
   // ---- instrumentation, best effort; see the class javadoc for the emitted format ----
-  /** nanos spent inside {@link AIJoinIndex#writeJoinSegments} on behalf of this context */
+  /** nanos spent inside {@code AIJoinIndex#writeJoinSegments} on behalf of this context */
   private long joinIndexBuildNanos;
 
   /** pairs that had a from-side match before the a-priori from-edge check ran */
@@ -355,10 +356,15 @@ class ToLeafJoinContext {
       LeafReaderContext joinContext =
           lastSeenJoinSearcher.getLeafContexts().get(joinSegmentRef.joinSegmentLeafOrd());
       assert AIJoinUtil.segmentName(joinContext).equals(joinSegmentRef.joinSegmentName());
-      return joinContext
-          .reader()
-          .getSortedNumericDocValues(
-              AIJoinUtil.TO_DOC_VAL_BY_FROM_DOCNUM + joinSegmentRef.pairFieldName());
+      //      NumericDocValues numDV = joinContext
+      //          .reader()
+      //          .getNumericDocValues(
+      //              );
+      // read multivalue numerics for future extension
+      // despite it's written as singlevalue numeric as current  limitation
+      return DocValues.getSortedNumeric(
+          joinContext.reader(),
+          AIJoinUtil.TO_DOC_VAL_BY_FROM_DOCNUM + joinSegmentRef.pairFieldName());
     }
 
     /**

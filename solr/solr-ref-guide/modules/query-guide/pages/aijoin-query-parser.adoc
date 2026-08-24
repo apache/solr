@@ -16,10 +16,10 @@
 // specific language governing permissions and limitations
 // under the License
 
-The AIJoin (which stands for Auxiliary Index Join) Query Parser is similar to xref:join-query-parser.adoc[], but uses a lazily written sidecar index for faster joins.
+`auxIndexJoin` (which stands for Auxiliary Index Join) Query Parser is similar to xref:join-query-parser.adoc[], but uses a lazily written sidecar index for faster joins.
 
 Instead of using Lucene's join utilities directly, the parser matches documents through a dedicated join index that is maintained alongside the core's main index.
-The join index is populated lazily: if the inner (`from`-side) query doesn't hit a certain segment, the join index isn't written for it; and if `{!aijoin}` is intersected (`AND`/`+`) with a query that doesn't hit a certain segment on the outer (`to`) side, the corresponding join index columns aren't written either.
+The join index is populated lazily: if the inner (`from`-side) query doesn't hit a certain segment, the join index isn't written for it; and if `{!auxIndexJoin}` is intersected (`AND`/`+`) with a query that doesn't hit a certain segment on the outer (`to`) side, the corresponding join index columns aren't written either.
 
 Like the Join query parser, Solr runs a subquery (the `v` parameter), gathers the values that matching documents have in a `from` field, and returns documents where those values are contained in a `to` field.
 
@@ -27,7 +27,7 @@ For example:
 
 [source,text]
 ----
-q={!aijoin from=manu_id_s to=id}title:ipod
+q={!auxIndexJoin from=manu_id_s to=id}title:ipod
 ----
 
 == Parameters
@@ -67,7 +67,7 @@ Cross-core joins are the primary use case for the AIJoin index, so this is usefu
 
 == Configuration
 
-The AIJoin query parser must be registered in `solrconfig.xml` as a `<queryParser>`.
+The AIJoin query parser *must be* registered in `solrconfig.xml` as a `<queryParser>`.
 A sidecar join index is opened per core when the core loads, in a directory under the core's `dataDir`, and closed when the core closes.
 
 `dir`::
@@ -82,7 +82,7 @@ Resolved relative to the core's `dataDir` unless an absolute path is given.
 
 [source,xml]
 ----
-<queryParser name="aijoin" class="org.apache.solr.search.join.AIJoinQParserPlugin">
+<queryParser name="auxIndexJoin" class="org.apache.solr.search.join.AIJoinQParserPlugin">
   <str name="dir">aijoin</str>
 </queryParser>
 ----
@@ -90,3 +90,7 @@ Resolved relative to the core's `dataDir` unless an absolute path is given.
 == Segment-level Parallelism
 
 The algorithm utilizes multiple threads on _both_ sides if multiple threads are available. So, set xref:configuration-guide:configuring-solr-xml.adoc#indexSearcherExecutorThreads[indexSearcherExecutorThreads] to `-1` or `>0` in the `solr.xml` file. Note the emphasis on _both_ above: using the xref:common-query-parameters.adoc#multithreaded-parameter[`multiThreaded`] request parameter confines the inner (`from`-side) query to a single thread, limiting performance.
+
+== Disclaimer
+
+`auxIndexJoin` is completely experimental. It even might not guarantee compatibility with future versions.

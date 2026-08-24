@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -95,7 +96,7 @@ final class AIJoinDocWriter extends AIJoinWriter {
       throws IOException {
     SortedNumericDocValues values = mapping.toDocByFromDoc();
     for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
-      docs.get(doc).add(new SortedNumericDocValuesField(fieldName, values.nextValue()));
+      docs.get(doc).add(new NumericDocValuesField(fieldName, values.nextValue()));
     }
   }
 }

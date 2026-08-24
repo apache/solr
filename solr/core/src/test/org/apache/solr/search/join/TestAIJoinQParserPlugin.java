@@ -122,7 +122,7 @@ public class TestAIJoinQParserPlugin extends SolrTestCase {
     SolrException e =
         expectThrows(
             SolrException.class,
-            () -> solrRule.getSolrClient().query(params("q", "{!aijoin to=dept_id_s}*:*")));
+            () -> solrRule.getSolrClient().query(params("q", "{!auxIndexJoin to=dept_id_s}*:*")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertTrue(e.getMessage(), e.getMessage().contains("requires"));
   }
@@ -131,22 +131,24 @@ public class TestAIJoinQParserPlugin extends SolrTestCase {
   public void testSameCoreJoin() throws Exception {
     // nancy and dave (title MTS) each belong to exactly one dept: Sales and Support
     assertJoin(
-        params("q", "{!aijoin from=dept_s to=dept_id_s}title_s:MTS", "fl", "id"), "12", "13");
+        params("q", "{!auxIndexJoin from=dept_s to=dept_id_s}title_s:MTS", "fl", "id"), "12", "13");
 
     // from-side subordinate query matches nothing
-    assertJoin(params("q", "{!aijoin from=dept_s to=dept_id_s}name_s:nosuchperson", "fl", "id"));
+    assertJoin(
+        params("q", "{!auxIndexJoin from=dept_s to=dept_id_s}name_s:nosuchperson", "fl", "id"));
 
     // to-side field has real values, but none equal to any matched from-side value
     // ("Engineering" is a dept_s value, but no title_s is ever "Engineering")
-    assertJoin(params("q", "{!aijoin from=dept_s to=title_s}name_s:john", "fl", "id"));
+    assertJoin(params("q", "{!auxIndexJoin from=dept_s to=title_s}name_s:john", "fl", "id"));
 
     // a single from-doc resolves to exactly its one department
-    assertJoin(params("q", "{!aijoin from=dept_s to=dept_id_s}name_s:john", "fl", "id"), "10");
+    assertJoin(
+        params("q", "{!auxIndexJoin from=dept_s to=dept_id_s}name_s:john", "fl", "id"), "10");
 
     // variable deref for sub-query parsing, plus defType local param
     assertJoin(
         params(
-            "q", "{!aijoin from=dept_s to=dept_id_s v=$qq}",
+            "q", "{!auxIndexJoin from=dept_s to=dept_id_s v=$qq}",
             "qq", "{!dismax qf=name_s}dave",
             "fl", "id"),
         "13");
@@ -155,7 +157,7 @@ public class TestAIJoinQParserPlugin extends SolrTestCase {
     // {!join}: john and tina (title VP) join to Engineering and Marketing, fq narrows to just one
     assertJoin(
         params(
-            "q", "{!aijoin from=dept_s to=dept_id_s}title_s:VP",
+            "q", "{!auxIndexJoin from=dept_s to=dept_id_s}title_s:VP",
             "fl", "id",
             "fq", "dept_id_s:Engineering"),
         "10");
@@ -167,7 +169,7 @@ public class TestAIJoinQParserPlugin extends SolrTestCase {
     assertJoin(
         params(
             "q",
-            "{!aijoin from=dept_s to=dept_id_s fromIndex=" + FROM_CORE + "}title_s:MTS",
+            "{!auxIndexJoin from=dept_s to=dept_id_s fromIndex=" + FROM_CORE + "}title_s:MTS",
             "fl",
             "id"),
         "12",
@@ -177,7 +179,7 @@ public class TestAIJoinQParserPlugin extends SolrTestCase {
     assertJoin(
         params(
             "q",
-            "{!aijoin from=dept_s to=dept_id_s fromIndex=" + FROM_CORE + "}title_s:VP",
+            "{!auxIndexJoin from=dept_s to=dept_id_s fromIndex=" + FROM_CORE + "}title_s:VP",
             "fl",
             "id",
             "fq",
