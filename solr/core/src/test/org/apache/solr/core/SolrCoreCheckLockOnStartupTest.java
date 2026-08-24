@@ -32,11 +32,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * The fail-fast behavior this tests comes from {@code SolrCore#openNewSearcher}, not {@code
- * SolrCore#initIndex} -- opening the first searcher for a non-reload core always goes through the
- * real {@code IndexWriter}, so a lock conflict surfaces there.
- */
 public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

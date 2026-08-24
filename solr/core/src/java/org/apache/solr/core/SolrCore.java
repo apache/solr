@@ -846,11 +846,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
     this.indexReaderFactory = indexReaderFactory;
   }
 
+  /** Also fails fast (LockObtainFailedException) if an existing index directory is locked. */
   void initIndex(boolean reload) throws IOException {
     String indexDir = getNewIndexDir();
     boolean indexExists = getDirectoryFactory().exists(indexDir);
 
     initIndexReaderFactory();
+
+    if (indexExists) {
+      // Fails fast on a lock conflict (LUCENE-6507/6508); solrCoreState caches the writer.
+      solrCoreState.getIndexWriter(this, false).decref();
+    }
 
     // Create the index if it doesn't exist.
     if (!indexExists) {
@@ -2384,8 +2390,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
                   true,
                   directoryFactory);
         } else {
-          // Also the only thing that makes core load fail fast on a locked index directory
-          // (initIndex() no longer checks this itself) -- see SolrCoreCheckLockOnStartupTest.
           RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this, false);
           DirectoryReader newReader = null;
           try {
