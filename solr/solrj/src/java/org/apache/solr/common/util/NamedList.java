@@ -18,7 +18,6 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -499,17 +498,6 @@ public class NamedList<T>
     }
     // always use MultiMap for easier processing further down the chain
     return new MultiMapSolrParams(map);
-  }
-
-  /**
-   * Helper class implementing Map.Entry&lt;String, T&gt; to store the key-value relationship in
-   * NamedList (the keys of which are String-s)
-   */
-  @Deprecated // use AbstractMap.SimpleEntry or Map.entry() (albeit no nulls)
-  public static final class NamedListEntry<T> extends AbstractMap.SimpleEntry<String, T> {
-    public NamedListEntry(String _key, T _value) {
-      super(_key, _value);
-    }
   }
 
   /** Iterates over the Map and sequentially adds its key/value pairs */
