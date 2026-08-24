@@ -211,10 +211,14 @@ public class QueryCommand {
     }
   }
 
+  /** @deprecated see {@link org.apache.solr.common.params.CommonParams#SEGMENT_TERMINATE_EARLY} */
+  @Deprecated(since = "11.0")
   public boolean getSegmentTerminateEarly() {
     return (flags & SolrIndexSearcher.SEGMENT_TERMINATE_EARLY) != 0;
   }
 
+  /** @deprecated see {@link org.apache.solr.common.params.CommonParams#SEGMENT_TERMINATE_EARLY} */
+  @Deprecated(since = "11.0")
   public QueryCommand setSegmentTerminateEarly(boolean segmentSegmentTerminateEarly) {
     if (segmentSegmentTerminateEarly) {
       return setFlags(SolrIndexSearcher.SEGMENT_TERMINATE_EARLY);

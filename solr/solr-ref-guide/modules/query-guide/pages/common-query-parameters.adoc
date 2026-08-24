@@ -435,6 +435,9 @@ of the distributed query processing.
 
 == segmentTerminateEarly Parameter
 
+WARNING: Deprecated since 11.0. Its implementation relies on internal Lucene behavior that cannot
+currently be replicated using Lucene's own public early-termination support (see SOLR-18363).
+
 [%autowidth,frame=none]
 |===
 |Optional |Default: `false`

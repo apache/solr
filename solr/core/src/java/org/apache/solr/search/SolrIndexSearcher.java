@@ -33,6 +33,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
@@ -54,10 +55,13 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
+import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.FilterCollector;
+import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -284,28 +288,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       DelegatingCollector postFilter)
       throws IOException {
 
-    EarlyTerminatingSortingCollector earlyTerminatingSortingCollector = null;
-    if (cmd.getSegmentTerminateEarly()) {
-      final Sort cmdSort = cmd.getSort();
-      final int cmdLen = cmd.getLen();
-      final Sort mergeSort = core.getSolrCoreState().getMergePolicySort();
-
-      if (cmdSort == null
-          || cmdLen <= 0
-          || mergeSort == null
-          || !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, mergeSort)) {
-        log.warn(
-            "unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} mergeSort={}",
-            cmdSort,
-            cmdLen,
-            mergeSort);
-      } else {
-        collector =
-            earlyTerminatingSortingCollector =
-                new EarlyTerminatingSortingCollector(collector, cmdSort, cmd.getLen());
-      }
-    }
-
     if (cmd.shouldEarlyTerminateSearch()) {
       collector = new EarlyTerminatingCollector(collector, cmd.getMaxHitsAllowed());
     }
@@ -343,9 +325,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setPartialResultsDetails(etce.getMessage());
       qr.setApproximateTotalHits(etce.getApproximateTotalHits(reader.maxDoc()));
     } finally {
-      if (earlyTerminatingSortingCollector != null) {
-        qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
-      }
       if (cmd.isQueryCancellable()) {
         core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
       }
@@ -1787,6 +1766,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   TopDocsCollector<? extends ScoreDoc> buildTopDocsCollector(int len, QueryCommand cmd)
       throws IOException {
+    return buildTopDocsCollector(len, cmd, false);
+  }
+
+  /**
+   * @param allowNativeSegmentTerminateEarly if true and {@code cmd} has a sort, forces {@link
+   *     TopFieldCollectorManager}'s totalHitsThreshold down to {@code len} so {@link
+   *     TopFieldCollector} early-terminates a segment itself once its index sort matches the
+   *     search sort (the same effect {@code segmentTerminateEarly=true} used to get from the now-
+   *     removed {@code EarlyTerminatingSortingCollector} wrapper). Callers that pass {@code true}
+   *     must not further wrap the returned collector together with a sibling collector that
+   *     doesn't itself early-terminate (e.g. via {@code MultiCollector}) -- see SOLR-18363: {@code
+   *     MultiCollector} only propagates {@code CollectionTerminatedException} once *every* wrapped
+   *     collector has thrown it, so an early-terminating {@link TopFieldCollector} paired with a
+   *     non-terminating sibling collector would silently stop counting hits early while the
+   *     sibling kept counting, desyncing the two.
+   */
+  private TopDocsCollector<? extends ScoreDoc> buildTopDocsCollector(
+      int len, QueryCommand cmd, boolean allowNativeSegmentTerminateEarly) throws IOException {
     int minNumFound = cmd.getMinExactCount();
     Query q = cmd.getQuery();
     if (q instanceof RankQuery rq) {
@@ -1802,8 +1799,71 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final CursorMark cursor = cmd.getCursorMark();
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
+      if (allowNativeSegmentTerminateEarly) {
+        minNumFound = 0;
+      }
       return new TopFieldCollectorManager(weightedSort, len, searchAfter, minNumFound)
           .newCollector();
+    }
+  }
+
+  /**
+   * Whether {@link #buildTopDocsCollector(int, QueryCommand, boolean)} should be asked to force
+   * native per-segment early termination for this command. Also logs the same "unsupported
+   * combination" warning the old wrapper-based check used to log.
+   */
+  private boolean allowNativeSegmentTerminateEarly(QueryCommand cmd, int len) {
+    if (!cmd.getSegmentTerminateEarly()) {
+      return false;
+    }
+    final Sort cmdSort = cmd.getSort();
+    if (cmdSort == null || len <= 0 || cmd.getQuery() instanceof RankQuery) {
+      log.warn(
+          "unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} query={}",
+          cmdSort,
+          len,
+          cmd.getQuery().getClass().getSimpleName());
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Records whether a wrapped collector's per-segment collection was actually cut short by a
+   * {@link CollectionTerminatedException}. Used with {@link #buildTopDocsCollector(int,
+   * QueryCommand, boolean)}'s {@code allowNativeSegmentTerminateEarly=true} path: {@link
+   * TopFieldCollector} only ever throws that exception from its sort-compatibility-gated fast
+   * path (see {@code TopFieldCollector.TopFieldLeafCollector#thresholdCheck}), never from the
+   * routine "totalHits exceeded totalHitsThreshold" bookkeeping alone -- so observing the
+   * exception itself gives the same precise "a segment was actually skipped" signal the removed
+   * {@code EarlyTerminatingSortingCollector} tracked directly, without needing
+   * TopFieldCollector#isEarlyTerminated() (which conflates that signal with the routine case) or
+   * any of Lucene's package-private sort-compatibility check.
+   */
+  private static final class SegmentTerminatedEarlyObserver extends FilterCollector {
+    private final AtomicBoolean terminatedEarly = new AtomicBoolean(false);
+
+    SegmentTerminatedEarlyObserver(Collector in) {
+      super(in);
+    }
+
+    boolean terminatedEarly() {
+      return terminatedEarly.get();
+    }
+
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      return new FilterLeafCollector(super.getLeafCollector(context)) {
+        @Override
+        public void collect(int doc) throws IOException {
+          try {
+            super.collect(doc);
+          } catch (CollectionTerminatedException e) {
+            terminatedEarly.set(true);
+            throw e;
+          }
+        }
+      };
     }
   }
 
@@ -1878,15 +1938,27 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final ScoreMode scoreModeUsed;
       if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, getTaskExecutor())) {
         log.trace("SINGLE THREADED search, skipping collector manager in getDocListNC");
-        final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
+        final boolean nativeSegmentTerminateEarly = allowNativeSegmentTerminateEarly(cmd, len);
+        final TopDocsCollector<?> topCollector =
+            buildTopDocsCollector(len, cmd, nativeSegmentTerminateEarly);
+        SegmentTerminatedEarlyObserver terminatedEarlyObserver = null;
+        Collector observedTopCollector = topCollector;
+        if (nativeSegmentTerminateEarly) {
+          observedTopCollector =
+              terminatedEarlyObserver = new SegmentTerminatedEarlyObserver(topCollector);
+        }
         MaxScoreCollector maxScoreCollector = null;
-        Collector collector = topCollector;
+        Collector collector = observedTopCollector;
         if (needScores) {
           maxScoreCollector = new MaxScoreCollector();
-          collector = MultiCollector.wrap(topCollector, maxScoreCollector);
+          collector = MultiCollector.wrap(observedTopCollector, maxScoreCollector);
         }
         scoreModeUsed =
             buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter).scoreMode();
+
+        if (terminatedEarlyObserver != null) {
+          qr.setSegmentTerminatedEarly(terminatedEarlyObserver.terminatedEarly());
+        }
 
         totalHits = topCollector.getTotalHits();
         topDocs = topCollector.topDocs(0, len);

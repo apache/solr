@@ -136,9 +136,19 @@ public interface CommonParams {
   /** another query to explain against */
   String EXPLAIN_OTHER = "explainOther";
 
-  /** Whether the search may be terminated early within a segment. */
+  /**
+   * Whether the search may be terminated early within a segment.
+   *
+   * @deprecated relies on the internal, package-private {@code
+   *     org.apache.solr.search.EarlyTerminatingSortingCollector}, which cannot be replaced by
+   *     Lucene's own {@code TopFieldCollector} early-termination support without losing the
+   *     specific "segment skipped due to matching sort" signal (see SOLR-18363).
+   */
+  @Deprecated(since = "11.0")
   String SEGMENT_TERMINATE_EARLY = "segmentTerminateEarly";
 
+  /** @deprecated see {@link #SEGMENT_TERMINATE_EARLY} */
+  @Deprecated(since = "11.0")
   boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
 
   /**
