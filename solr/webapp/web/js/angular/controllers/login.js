@@ -149,6 +149,9 @@ solrAdminApp.controller('LoginController',
               if (errorText === "") {
                 sessionStorage.setItem("auth.username", payload['sub']);
                 sessionStorage.setItem("auth.header", "Bearer " + accessToken);
+                // V2 API calls (superagent-based solrApi client) bypass $http's requestInterceptor,
+                // so they need the Authorization header set here directly too.
+                solrApi.ApiClient.instance.defaultHeaders['Authorization'] = "Bearer " + accessToken;
                 sessionStorage.removeItem("auth.statusText");
                 sessionStorage.removeItem("auth.stateRandom");
                 sessionStorage.removeItem("auth.wwwAuthHeader");

@@ -175,8 +175,6 @@ solrAdminServices.factory('Metrics',
       }
     };
  }])
-    });
-  }])
 .factory('Logging',
   ['$resource', function($resource) {
     // This v1 factory only covers "setLevel", which needs the "nodes=all" broadcast-to-every-node
@@ -458,9 +456,14 @@ solrAdminServices.factory('Metrics',
 
           sessionStorage.setItem("auth.header", "Basic " + authdata);
           sessionStorage.setItem("auth.username", username);
+          // V2 API calls go through the superagent-based solrApi client, which never passes
+          // through $http's requestInterceptor (see httpInterceptor.started in app.js), so it
+          // won't pick up the Authorization header from sessionStorage on its own -- set it here too.
+          solrApi.ApiClient.instance.defaultHeaders['Authorization'] = "Basic " + authdata;
         };
 
         service.ClearCredentials = function () {
+          delete solrApi.ApiClient.instance.defaultHeaders['Authorization'];
           sessionStorage.removeItem("auth.header");
           sessionStorage.removeItem("auth.scheme");
           sessionStorage.removeItem("auth.realm");
