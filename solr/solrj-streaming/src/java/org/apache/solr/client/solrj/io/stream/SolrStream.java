@@ -106,14 +106,15 @@ public class SolrStream extends TupleStream {
   /**
    * @param baseUrl the Solr node's "base" URL (i.e. no core or collection in the path
    * @param core the name of the collection or core to query; must be hosted at {@code baseUrl}
-   * @param path the request handler path to query (e.g. "/export"). If not provided, defaults to
-   *     "/select".
+   * @param path the request handler path to query (e.g. "/export"). If not provided (i.e. {@code
+   *     null}), the handler is instead resolved from a "qt" param embedded in {@code params}, or
+   *     defaults to "/select" if no such param is present.
    * @param params query-parameters sent with the streaming request
    */
   public SolrStream(String baseUrl, String core, String path, SolrParams params) {
     this.baseUrl = baseUrl;
     this.core = core;
-    this.path = path != null ? path : "/select";
+    this.path = path;
     this.params = params;
   }
 
