@@ -35,6 +35,10 @@ Apache Kafka:: A distributed queue system that links the Module and Manager.
 Implementing the Solr CrossDC involves the following steps:
 
 . **Apache Kafka Cluster**: Ensure the availability of an Apache Kafka cluster. This acts as the distributed queue interconnecting data centers.
++
+The CrossDC Solr Module and CrossDC Manager bundle Kafka client library version 4.3.1.
+Kafka 4.x clients are fully compatible with Kafka 3.x brokers, but only partially compatible with brokers in the 2.1-2.8 range, and are not compatible with brokers older than 2.1.
+A Kafka 3.x or newer broker cluster is recommended.
 . **CrossDC Solr Module**: Install this xref:configuration-guide:solr-modules.adoc[Solr Module] on each node in your Solr cluster (in both primary and backup data centers).
     * Configure xref:configuration-guide:configuring-solrconfig-xml.adoc[solrconfig.xml] to reference the new `MirroringUpdateProcessor` and set it up with the Kafka cluster.
     * Optionally configure the `solr.xml` to use `MirroringCollectionsHandler` and `MirroringConfigSetsHandler` if necessary.

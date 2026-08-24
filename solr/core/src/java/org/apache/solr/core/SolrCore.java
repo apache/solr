@@ -1993,6 +1993,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
   /**
    * Get the request handler registered to a given name.
    *
+   * <p>A {@code null} handlerName resolves to the core's default request handler (whichever handler
+   * is aliased to the empty string, normally the one registered at "/select", or "standard" for
+   * legacy configs) rather than returning {@code null}; see {@link
+   * RequestHandlers#initHandlersFromConfig}.
+   *
    * <p>This function is thread safe.
    */
   public SolrRequestHandler getRequestHandler(String handlerName) {
@@ -3053,18 +3058,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     void write(OutputStream os) throws IOException;
-  }
-
-  /**
-   * Gets a response writer suitable for node/container-level requests.
-   *
-   * @param writerName the writer name, or null for default
-   * @return the response writer, never null
-   * @deprecated Use {@link ResponseWritersRegistry#getWriter(String)} instead.
-   */
-  @Deprecated
-  public static QueryResponseWriter getAdminResponseWriter(String writerName) {
-    return ResponseWritersRegistry.getWriter(writerName);
   }
 
   /**
