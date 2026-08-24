@@ -37,8 +37,8 @@ apache-curator = "5.9.0"
 apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
-apache-kafka = "3.9.2"
-apache-log4j = "2.26.0"
+apache-kafka = "4.3.1"
+apache-log4j = "2.26.1"
 apache-lucene = "10.4.0"
 apache-opennlp = "2.5.10"
 apache-rat = "0.18"
@@ -67,7 +67,7 @@ benmanes-versions = "0.54.0"
 bouncycastle = "1.84"
 # @keep Browserify version used in ref-guide
 browserify = "17.0.0"
-bytebuddy = "1.18.9"
+bytebuddy = "1.18.11"
 carrot2-core = "4.8.6"
 carrotsearch-hppc = "0.10.0"
 carrotsearch-randomizedtesting = "2.9.1"
@@ -95,10 +95,10 @@ fasterxml-woodstox = "7.2.1"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
 # @keep for version alignment
-google-api-grpc-proto = "2.61.1"
+google-api-grpc-proto = "2.74.0"
 # @keep for version alignment
 google-autovalue = "1.11.1"
-google-cloud-bom = "0.265.0"
+google-cloud-bom = "0.267.0"
 google-errorprone = "2.41.0"
 # @keep for version alignment
 google-gson = "2.14.0"
@@ -111,7 +111,7 @@ google-javaformat = "1.35.0"
 google-protobuf = "4.35.1"
 # @keep Gradle version to run the build
 gradle = "9.7.0"
-grpc = "1.82.0"
+grpc = "1.83.1"
 # @keep Gulp version used in ref-guide
 gulp-cli = "3.1.0"
 hamcrest = "3.0"
@@ -165,9 +165,9 @@ mockito = "5.23.0"
 morethan-jmhreport = "0.9.6"
 mvikotlin = "4.4.0"
 navsecurity = "5.0.1"
-netty = "4.2.15.Final"
+netty = "4.2.17.Final"
 # @keep for version alignment
-netty-tcnative = "2.0.79.Final"
+netty-tcnative = "2.0.81.Final"
 nimbusds-josejwt = "10.9.1"
 nlopez-compose = "0.6.2"
 nodegradle-node = "7.1.0"
@@ -187,8 +187,9 @@ owasp-dependencycheck = "13.0.0"
 perfmark = "0.27.0"
 prometheus-metrics = "1.8.0"
 quicktheories = "0.26"
+selenium = "4.47.0"
 semver4j = "6.0.0"
-slf4j = "2.0.17"
+slf4j = "2.0.18"
 spatial4j = "0.8"
 spotbugs = "4.10.2"
 squareup-okhttp3-okhttp = "5.4.0"
@@ -256,8 +257,6 @@ apache-httpcomponents-httpclient = { module = "org.apache.httpcomponents:httpcli
 apache-httpcomponents-httpcore = { module = "org.apache.httpcomponents:httpcore", version.ref = "apache-httpcomponents-httpcore" }
 apache-httpcomponents-httpmime = { module = "org.apache.httpcomponents:httpmime", version.ref = "apache-httpcomponents-httpmime" }
 apache-kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "apache-kafka" }
-apache-kafka-kafka213 = { module = "org.apache.kafka:kafka_2.13", version.ref = "apache-kafka" }
-apache-kafka-server-common = { module = "org.apache.kafka:kafka-server-common", version.ref = "apache-kafka" }
 apache-kafka-streams = { module = "org.apache.kafka:kafka-streams", version.ref = "apache-kafka" }
 apache-log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "apache-log4j" }
 apache-log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "apache-log4j" }
@@ -512,6 +511,7 @@ perfmark-api = { module = "io.perfmark:perfmark-api", version.ref = "perfmark" }
 prometheus-metrics-expositionformats = { module = "io.prometheus:prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
 prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus-metrics" }
 quicktheories-quicktheories = { module = "org.quicktheories:quicktheories", version.ref = "quicktheories" }
+selenium-chromedriver = { module = "org.seleniumhq.selenium:selenium-chrome-driver", version.ref = "selenium" }
 semver4j-semver4j = { module = "org.semver4j:semver4j", version.ref = "semver4j" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jcloverslf4j = { module = "org.slf4j:jcl-over-slf4j", version.ref = "slf4j" }
@@ -527,5 +527,6 @@ swagger3-annotations-jakarta = { module = "io.swagger.core.v3:swagger-annotation
 swagger3-jaxrs2-jakarta = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger3" }
 tdunning-tdigest = { module = "com.tdunning:t-digest", version.ref = "tdunning-tdigest" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainers-kafka = { module = "org.testcontainers:testcontainers-kafka", version.ref = "testcontainers" }
 threeten-bp = { module = "org.threeten:threetenbp", version.ref = "threeten-bp" }
 xerial-snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "xerial-snappy" }

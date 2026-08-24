@@ -22,6 +22,7 @@ import static org.apache.solr.common.params.CommonParams.JSON;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -225,7 +226,7 @@ public class DebugComponent extends SearchComponent {
 
       Map.Entry<String, Object>[] arr =
           (Map.Entry<String, Object>[])
-              Array.newInstance(NamedList.NamedListEntry.class, rb.resultIds.size());
+              Array.newInstance(AbstractMap.SimpleEntry.class, rb.resultIds.size());
       // Will be set to true if there is at least one response with PURPOSE_GET_DEBUG
       boolean hasGetDebugResponses = false;
 
