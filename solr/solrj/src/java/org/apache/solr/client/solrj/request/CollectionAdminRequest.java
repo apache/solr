@@ -146,7 +146,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       extends CollectionAdminRequest<CollectionAdminResponse> {
 
     protected String asyncId = null;
-    protected boolean waitForFinalState = true;
 
     public AsyncCollectionAdminRequest(CollectionAction action) {
       super(action);
@@ -231,9 +230,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
       if (asyncId != null) {
         params.set(CommonAdminParams.ASYNC, asyncId);
-      }
-      if (waitForFinalState) {
-        params.set(CommonAdminParams.WAIT_FOR_FINAL_STATE, waitForFinalState);
       }
       return params;
     }

@@ -1,0 +1,16 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: >
+  `waitForFinalState` now defaults to `true` for CREATE, ADDREPLICA, CREATESHARD, SPLITSHARD, and
+  MOVEREPLICA, so these Collections API commands wait for affected replicas to become active before
+  returning. BALANCE_REPLICAS, MIGRATE_REPLICAS, and REPLACENODE keep the previous `false` default,
+  since they can each affect an arbitrary number of replicas cluster-wide. Set the system property
+  `solr.cloud.waitForFinalState.enabled` on a Solr node to override the default (either direction)
+  cluster-wide, for all 8 commands.
+type: changed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18367
+    url: https://issues.apache.org/jira/browse/SOLR-18367
+  - name: SOLR-17712
+    url: https://issues.apache.org/jira/browse/SOLR-17712

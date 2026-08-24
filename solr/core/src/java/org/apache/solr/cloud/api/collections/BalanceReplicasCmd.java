@@ -55,7 +55,12 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
           "'nodes' was not passed as a correct type (Set/List/String): "
               + nodesRaw.getClass().getName());
     }
-    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, true);
+    boolean waitForFinalState =
+        CollectionHandlingUtils.getBoolWithEnvFallback(
+            message,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE_DEFAULT_PROP,
+            false);
     int timeout = message.getInt("timeout", 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
 

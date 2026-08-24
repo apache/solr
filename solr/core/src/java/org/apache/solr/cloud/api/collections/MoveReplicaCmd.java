@@ -25,6 +25,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
 import static org.apache.solr.common.params.CommonAdminParams.TIMEOUT;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE_DEFAULT_PROP;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -72,7 +73,9 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
     CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, CollectionParams.TARGET_NODE);
     String extCollection = message.getStr(COLLECTION_PROP);
     String targetNode = message.getStr(CollectionParams.TARGET_NODE);
-    boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, true);
+    boolean waitForFinalState =
+        CollectionHandlingUtils.getBoolWithEnvFallback(
+            message, WAIT_FOR_FINAL_STATE, WAIT_FOR_FINAL_STATE_DEFAULT_PROP, true);
     boolean inPlaceMove = message.getBool(IN_PLACE_MOVE, true);
     int timeout = message.getInt(TIMEOUT, 10 * 60); // 10 minutes
 

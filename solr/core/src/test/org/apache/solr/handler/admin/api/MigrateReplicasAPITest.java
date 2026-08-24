@@ -43,7 +43,7 @@ public class MigrateReplicasAPITest extends MockV2APITest {
   public void testCreatesValidOverseerMessage() throws Exception {
     MigrateReplicasRequestBody requestBody =
         new MigrateReplicasRequestBody(
-            Set.of("demoSourceNode"), Set.of("demoTargetNode"), false, "async");
+            Set.of("demoSourceNode"), Set.of("demoTargetNode"), "async");
 
     api.migrateReplicas(requestBody);
 
@@ -51,17 +51,16 @@ public class MigrateReplicasAPITest extends MockV2APITest {
         CollectionParams.CollectionAction.MIGRATE_REPLICAS,
         "async",
         message -> {
-          assertEquals(3, message.size());
+          assertEquals(2, message.size());
           assertEquals(Set.of("demoSourceNode"), message.get("sourceNodes"));
           assertEquals(Set.of("demoTargetNode"), message.get("targetNodes"));
-          assertEquals(false, message.get("waitForFinalState"));
         });
   }
 
   @Test
   public void testNoTargetNodes() throws Exception {
     MigrateReplicasRequestBody requestBody =
-        new MigrateReplicasRequestBody(Set.of("demoSourceNode"), null, null, null);
+        new MigrateReplicasRequestBody(Set.of("demoSourceNode"), null, null);
 
     api.migrateReplicas(requestBody);
 
@@ -76,10 +75,10 @@ public class MigrateReplicasAPITest extends MockV2APITest {
   @Test
   public void testNoSourceNodesThrowsError() {
     MigrateReplicasRequestBody requestBody1 =
-        new MigrateReplicasRequestBody(Set.of(), Set.of("demoTargetNode"), null, null);
+        new MigrateReplicasRequestBody(Set.of(), Set.of("demoTargetNode"), null);
     assertThrows(SolrException.class, () -> api.migrateReplicas(requestBody1));
     MigrateReplicasRequestBody requestBody2 =
-        new MigrateReplicasRequestBody(null, Set.of("demoTargetNode"), null, null);
+        new MigrateReplicasRequestBody(null, Set.of("demoTargetNode"), null);
     assertThrows(SolrException.class, () -> api.migrateReplicas(requestBody2));
   }
 }

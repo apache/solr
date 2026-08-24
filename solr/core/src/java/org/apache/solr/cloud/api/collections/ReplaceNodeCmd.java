@@ -47,7 +47,12 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     String source = message.getStr(CollectionParams.SOURCE_NODE);
     String target = message.getStr(CollectionParams.TARGET_NODE);
-    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, true);
+    boolean waitForFinalState =
+        CollectionHandlingUtils.getBoolWithEnvFallback(
+            message,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE_DEFAULT_PROP,
+            false);
     if (source == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "sourceNode is a required param");

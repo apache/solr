@@ -50,7 +50,12 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
       throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
-    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, true);
+    boolean waitForFinalState =
+        CollectionHandlingUtils.getBoolWithEnvFallback(
+            message,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE_DEFAULT_PROP,
+            true);
 
     log.info("Create shard invoked: {}", message);
     if (extCollectionName == null || sliceName == null)

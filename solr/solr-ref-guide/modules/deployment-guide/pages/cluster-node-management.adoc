@@ -535,6 +535,7 @@ If this parameter is not provided, all live data nodes will be used.
 +
 If `true`, the request will complete only when all affected replicas become active.
 If `false`, the API will return when the bare minimum replicas are active, such as the affected leader replicas.
+This command can affect an arbitrary number of replicas cluster-wide, so unlike other Collections API commands it keeps the pre-SOLR-18367 default; an operator can opt in cluster-wide without changing any client by setting the system property `solr.cloud.waitForFinalState.enabled=true` on each Solr node.
 
 `async`::
 +
@@ -724,6 +725,7 @@ If there is more than one node to migrate the replicas to, then the configured P
 +
 If `true`, the request will complete only when all affected replicas become active.
 If `false`, the API will return when the bare minimum replicas are active, such as the affected leader replicas.
+This command can affect an arbitrary number of replicas cluster-wide, so unlike other Collections API commands it keeps the pre-SOLR-18367 default; an operator can opt in cluster-wide without changing any client by setting the system property `solr.cloud.waitForFinalState.enabled=true` on each Solr node.
 
 `async`::
 +
@@ -783,7 +785,6 @@ V2 API::
 curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/replace" -H 'Content-Type: application/json' -d '
     {
       "targetNodeName": "localhost:8983_solr",
-      "waitForFinalState": "false",
       "async": "async"
     }
 '
@@ -833,6 +834,7 @@ Keep in mind that this can lead to very high network and disk I/O if the replica
 +
 If `true`, the request will complete only when all affected replicas become active.
 If `false`, the API will return when the bare minimum replicas are active, such as the affected leader replicas.
+This command can affect an arbitrary number of replicas cluster-wide, so unlike other Collections API commands it keeps the pre-SOLR-18367 default; an operator can opt in cluster-wide without changing any client by setting the system property `solr.cloud.waitForFinalState.enabled=true` on each Solr node.
 
 `async`::
 +

@@ -136,7 +136,12 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   public boolean split(
       AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
-    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, true);
+    boolean waitForFinalState =
+        CollectionHandlingUtils.getBoolWithEnvFallback(
+            message,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE_DEFAULT_PROP,
+            true);
     String methodStr =
         message.getStr(
             CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());

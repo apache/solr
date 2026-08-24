@@ -50,7 +50,12 @@ public class MigrateReplicasCmd implements CollApiCmds.CollectionApiCommand {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     Set<String> sourceNodes = getNodesFromParam(message, CollectionParams.SOURCE_NODES);
     Set<String> targetNodes = getNodesFromParam(message, CollectionParams.TARGET_NODES);
-    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, true);
+    boolean waitForFinalState =
+        CollectionHandlingUtils.getBoolWithEnvFallback(
+            message,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE_DEFAULT_PROP,
+            false);
     if (sourceNodes.isEmpty()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "sourceNodes is a required param");

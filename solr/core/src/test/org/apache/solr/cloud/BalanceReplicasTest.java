@@ -139,8 +139,15 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
 
     postDataAndGetResponse(
         "/api/cluster/replicas/balance",
-        Utils.getReflectWriter(
-            new BalanceReplicasRequestBody(new HashSet<>(l.subList(1, 4)), true, null)));
+        Utils.getReflectWriter(new BalanceReplicasRequestBody(new HashSet<>(l.subList(1, 4)), null)));
+
+    waitForState(
+        "Timed out waiting for replicas to be balanced across the target nodes",
+        coll,
+        (state) ->
+            state.getReplicas().stream().map(Replica::getNodeName).collect(Collectors.toSet())
+                    .size()
+                == 4);
 
     collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     log.debug("### After balancing: {}", collection);

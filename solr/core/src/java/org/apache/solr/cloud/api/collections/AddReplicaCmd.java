@@ -27,6 +27,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CommonAdminParams.TIMEOUT;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE_DEFAULT_PROP;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -113,7 +114,9 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
           "Collection: " + collectionName + " shard: " + shard + " does not exist");
     }
 
-    boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, true);
+    boolean waitForFinalState =
+        CollectionHandlingUtils.getBoolWithEnvFallback(
+            message, WAIT_FOR_FINAL_STATE, WAIT_FOR_FINAL_STATE_DEFAULT_PROP, true);
     boolean skipCreateReplicaInClusterState =
         message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 

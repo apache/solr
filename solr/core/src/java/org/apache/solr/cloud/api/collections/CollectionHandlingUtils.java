@@ -61,6 +61,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -138,6 +139,17 @@ public class CollectionHandlingUtils {
     return Arrays.stream(Replica.Type.values())
         .filter(t -> t.leaderEligible)
         .collect(Collectors.toCollection(() -> EnumSet.noneOf(Replica.Type.class)));
+  }
+
+  /**
+   * Reads a boolean request param, falling back to a node-level system property when the request
+   * doesn't specify one, and finally to {@code defaultValue} when neither is set. Lets an operator
+   * override a per-request default cluster-wide (e.g. via {@code -D<envProp>=false} at node
+   * startup) without a client change -- same shape as {@code CreateCollectionCmd.PRS_DEFAULT_PROP}.
+   */
+  static boolean getBoolWithEnvFallback(
+      ZkNodeProps message, String messageParam, String envProp, boolean defaultValue) {
+    return message.getBool(messageParam, EnvUtils.getPropertyAsBool(envProp, defaultValue));
   }
 
   static boolean waitForCoreNodeGone(

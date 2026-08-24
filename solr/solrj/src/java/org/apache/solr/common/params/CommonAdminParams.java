@@ -25,6 +25,16 @@ public interface CommonAdminParams {
   @Deprecated(since = "9.10")
   String WAIT_FOR_FINAL_STATE = "waitForFinalState";
 
+  /**
+   * Node-level system property controlling the default value of {@link #WAIT_FOR_FINAL_STATE} when
+   * a request omits it. The per-command literal default it overrides differs by command: CREATE,
+   * CREATESHARD, SPLITSHARD, ADDREPLICA and MOVEREPLICA default to {@code true}; BALANCE_REPLICAS,
+   * MIGRATE_REPLICAS and REPLACENODE keep the pre-10.1 {@code false} default, since each can affect
+   * an arbitrary number of replicas cluster-wide. Setting this property (either value) overrides the
+   * per-command default uniformly for all 8, mirroring {@code CreateCollectionCmd.PRS_DEFAULT_PROP}.
+   */
+  String WAIT_FOR_FINAL_STATE_DEFAULT_PROP = "solr.cloud.waitForFinalState.enabled";
+
   /** Allow in-place move of replicas that use shared filesystems. */
   String IN_PLACE_MOVE = "inPlaceMove";
 
