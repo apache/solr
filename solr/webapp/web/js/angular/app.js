@@ -478,14 +478,12 @@ solrAdminApp.config([
   $httpProvider.interceptors.push("httpInterceptor");
   // Force BasicAuth plugin to serve us a 'Authorization: xBasic xxxx' header so browser will not pop up login dialogue
   $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-  // Same trick for the V2 superagent-based solrApi client, which never goes through $httpProvider:
-  // without this, an unauthenticated V2 call gets a real 'WWW-Authenticate: Basic' challenge and
-  // triggers the browser's native login popup instead of a JS-catchable 401.
+  // The V2 solrApi client (superagent-based) never goes through $httpProvider, so it needs its own
+  // copy of both headers: X-Requested-With for the same popup-suppression trick, and Authorization
+  // because -- unlike $http, which re-reads sessionStorage per request in httpInterceptor.started
+  // below -- solrApi only gets Authorization set in-memory (AuthenticationService.SetCredentials/
+  // ClearCredentials, login.js), which a page reload wipes; re-seed it here on every app bootstrap.
   solrApi.ApiClient.instance.defaultHeaders['X-Requested-With'] = 'XMLHttpRequest';
-  // $http re-reads sessionStorage.auth.header fresh on every request (see httpInterceptor.started
-  // below), so it survives a page reload once a user is logged in. The V2 client has no equivalent
-  // per-request hook -- AuthenticationService.SetCredentials/ClearCredentials keep it in sync going
-  // forward, but that in-memory header is lost on reload, so re-seed it here on every app bootstrap.
   if (sessionStorage.getItem("auth.header")) {
     solrApi.ApiClient.instance.defaultHeaders['Authorization'] = sessionStorage.getItem("auth.header");
   }
