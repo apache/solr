@@ -74,7 +74,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertU(commit());
 
     String resp =
-        h.query(req("q", "*:*", "qt", "/export", "fl", "id,field2_i_p", "sort", "field2_i_p asc"));
+        h.query(
+            reqWithPath("/export", "q", "*:*", "fl", "id,field2_i_p", "sort", "field2_i_p asc"));
     assertJsonEquals(
         resp,
         "{\n"
@@ -113,15 +114,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     for (String sortField : fieldNames) {
       String resp =
           h.query(
-              req(
-                  "q",
-                  "*:*",
-                  "qt",
-                  "/export",
-                  "fl",
-                  "id," + sortField,
-                  "sort",
-                  sortField + " desc"));
+              reqWithPath(
+                  "/export", "q", "*:*", "fl", "id," + sortField, "sort", sortField + " desc"));
       assertJsonEquals(
           resp,
           "{\n"
@@ -368,7 +362,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Expected for asc sort doc3 -> doc2 -> doc1
     String s =
         h.query(
-            req("q", "*:*", "qt", "/export", "fl", "id", "sort", "field1_i_p asc,field2_i_p asc"));
+            reqWithPath(
+                "/export", "q", "*:*", "fl", "id", "sort", "field1_i_p asc,field2_i_p asc"));
     assertJsonEquals(
         s,
         "{\n"
@@ -456,11 +451,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "*:*",
-                "qt",
-                "/export",
                 "fl",
                 "id",
                 "sort",
@@ -507,10 +501,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             + "      ,{\n"
             + "        \"id\":\"4\"}]}}";
 
-    String s = h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv asc"));
+    String s = h.query(reqWithPath("/export", "q", "*:*", "fl", "id", "sort", "stringdv asc"));
     assertJsonEquals(s, expectedResult);
 
-    s = h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv desc"));
+    s = h.query(reqWithPath("/export", "q", "*:*", "fl", "id", "sort", "stringdv desc"));
     assertJsonEquals(s, expectedResult);
   }
 
@@ -528,7 +522,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    String s = h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv desc"));
+    String s = h.query(reqWithPath("/export", "q", "*:*", "fl", "id", "sort", "stringdv desc"));
     assertJsonEquals(
         s,
         "{\n"
@@ -555,7 +549,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertU(adoc("id", "2", "booleandv", "false"));
     assertU(commit());
 
-    String s = h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "booleandv asc"));
+    String s = h.query(reqWithPath("/export", "q", "*:*", "fl", "id", "sort", "booleandv asc"));
     assertJsonEquals(
         s,
         "{\n"
@@ -567,7 +561,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             + "      ,{\n"
             + "        \"id\":\"1\"}]}}");
 
-    s = h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "booleandv desc"));
+    s = h.query(reqWithPath("/export", "q", "*:*", "fl", "id", "sort", "booleandv desc"));
     assertJsonEquals(
         s,
         "{\n"
@@ -585,11 +579,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test single value DocValue output
     String s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:1",
-                "qt",
-                "/export",
                 "fl",
                 "floatdv,intdv,stringdv,longdv,doubledv",
                 "sort",
@@ -602,11 +595,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test null value string:
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:7",
-                "qt",
-                "/export",
                 "fl",
                 "floatdv,intdv,stringdv,longdv,doubledv",
                 "sort",
@@ -619,11 +611,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test multiValue docValues output
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:1",
-                "qt",
-                "/export",
                 "fl",
                 "intdv_m,floatdv_m,doubledv_m,longdv_m,stringdv_m",
                 "sort",
@@ -635,11 +626,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test multiValues docValues output with nulls
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:7",
-                "qt",
-                "/export",
                 "fl",
                 "intdv_m,floatdv_m,doubledv_m,longdv_m,stringdv_m",
                 "sort",
@@ -649,24 +639,24 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"floatdv_m\":[123.321,345.123],\"doubledv_m\":[3444.222,23232.2],\"longdv_m\":[343332,43434343434]}]}}");
 
     // Test single sort param is working
-    s = h.query(req("q", "id:(1 2)", "qt", "/export", "fl", "intdv", "sort", "intdv desc"));
+    s = h.query(reqWithPath("/export", "q", "id:(1 2)", "fl", "intdv", "sort", "intdv desc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":2, \"docs\":[{\"intdv\":2},{\"intdv\":1}]}}");
 
-    s = h.query(req("q", "id:(1 2)", "qt", "/export", "fl", "intdv", "sort", "intdv asc"));
+    s = h.query(reqWithPath("/export", "q", "id:(1 2)", "fl", "intdv", "sort", "intdv asc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":2, \"docs\":[{\"intdv\":1},{\"intdv\":2}]}}");
 
     // Test sort on String will null value. Null value should sort last on desc and first on asc.
 
-    s = h.query(req("q", "id:(1 7)", "qt", "/export", "fl", "intdv", "sort", "stringdv desc"));
+    s = h.query(reqWithPath("/export", "q", "id:(1 7)", "fl", "intdv", "sort", "stringdv desc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":2, \"docs\":[{\"intdv\":1},{\"intdv\":7}]}}");
 
-    s = h.query(req("q", "id:(1 7)", "qt", "/export", "fl", "intdv", "sort", "stringdv asc"));
+    s = h.query(reqWithPath("/export", "q", "id:(1 7)", "fl", "intdv", "sort", "stringdv asc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":2, \"docs\":[{\"intdv\":7},{\"intdv\":1}]}}");
@@ -674,14 +664,16 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test multi-sort params
     s =
         h.query(
-            req("q", "id:(1 2)", "qt", "/export", "fl", "intdv", "sort", "floatdv asc,intdv desc"));
+            reqWithPath(
+                "/export", "q", "id:(1 2)", "fl", "intdv", "sort", "floatdv asc,intdv desc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":2, \"docs\":[{\"intdv\":2},{\"intdv\":1}]}}");
 
     s =
         h.query(
-            req("q", "id:(1 2)", "qt", "/export", "fl", "intdv", "sort", "floatdv desc,intdv asc"));
+            reqWithPath(
+                "/export", "q", "id:(1 2)", "fl", "intdv", "sort", "floatdv desc,intdv asc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":2, \"docs\":[{\"intdv\":1},{\"intdv\":2}]}}");
@@ -689,11 +681,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test three sort fields
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -705,11 +696,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test three sort fields
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -721,11 +711,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test four sort fields
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -737,11 +726,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test five sort fields
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -751,11 +739,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":2},{\"intdv\":1}]}}");
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -767,11 +754,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test six sort fields
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -783,11 +769,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test seven sort fields
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -799,11 +784,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test eight sort fields
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -813,11 +797,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":2},{\"intdv\":1}]}}");
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -829,11 +812,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test nine sort fields
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -843,11 +825,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":1},{\"intdv\":2},{\"intdv\":3}]}}");
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -859,11 +840,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test ten sort fields
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -873,11 +853,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":1},{\"intdv\":2},{\"intdv\":3}]}}");
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 2 3)",
-                "qt",
-                "/export",
                 "fl",
                 "intdv",
                 "sort",
@@ -886,23 +865,26 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":2},{\"intdv\":1}]}}");
 
-    s = h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "doubledv desc"));
+    s = h.query(reqWithPath("/export", "q", "id:(1 2 3)", "fl", "intdv", "sort", "doubledv desc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":1},{\"intdv\":2}]}}");
 
     s =
         h.query(
-            req("q", "intdv:[2 TO 1000]", "qt", "/export", "fl", "intdv", "sort", "doubledv desc"));
+            reqWithPath(
+                "/export", "q", "intdv:[2 TO 1000]", "fl", "intdv", "sort", "doubledv desc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":7},{\"intdv\":2}]}}");
 
-    s = h.query(req("q", "stringdv:blah", "qt", "/export", "fl", "intdv", "sort", "doubledv desc"));
+    s =
+        h.query(
+            reqWithPath("/export", "q", "stringdv:blah", "fl", "intdv", "sort", "doubledv desc"));
     assertJsonEquals(
         s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":0, \"docs\":[]}}");
 
-    s = h.query(req("q", "id:8", "qt", "/export", "fl", "stringdv", "sort", "intdv asc"));
+    s = h.query(reqWithPath("/export", "q", "id:8", "fl", "stringdv", "sort", "intdv asc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"stringdv\":\"chello \\\"world\\\"\"}]}}");
@@ -910,11 +892,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Test sortable text fields:
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 OR 3 OR 8)",
-                "qt",
-                "/export",
                 "fl",
                 "sortabledv_m_udvas,sortabledv_udvas",
                 "sort",
@@ -939,11 +920,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 OR 3 OR 8)",
-                "qt",
-                "/export",
                 "fl",
                 "sortabledv_m",
                 "sort",
@@ -957,11 +937,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     s =
         h.query(
-            req(
+            reqWithPath(
+                "/export",
                 "q",
                 "id:(1 OR 3 OR 8)",
-                "qt",
-                "/export",
                 "fl",
                 "sortabledv",
                 "sort",
@@ -987,21 +966,21 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // String s =  h.query(req("q", "id:1", "qt", "/export", "fl",
     // "floatdv,intdv,stringdv,longdv,doubledv", "sort", "intdv asc"));
     String s;
-    s = h.query(req("qt", "/export"));
+    s = h.query(reqWithPath("/export"));
     assertTrue("Should have had a sort error", s.contains("No sort criteria"));
-    s = h.query(req("sort", "intdv asc", "qt", "/export"));
+    s = h.query(reqWithPath("/export", "sort", "intdv asc"));
     assertTrue("Should have had fl error", s.contains("export field list (fl) must be specified"));
-    s = h.query(req("sort", "intdv asc", "qt", "/export", "fl", "stringdv"));
+    s = h.query(reqWithPath("/export", "sort", "intdv asc", "fl", "stringdv"));
     // Interesting you don't even need to specify a "q" parameter.
 
   }
 
   private void testDates() throws Exception {
-    String s = h.query(req("q", "id:1", "qt", "/export", "fl", "datedv", "sort", "datedv asc"));
+    String s = h.query(reqWithPath("/export", "q", "id:1", "fl", "datedv", "sort", "datedv asc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"datedv\":\"2017-06-16T07:00:00Z\"}]}}");
-    s = h.query(req("q", "id:1", "qt", "/export", "fl", "datedv_m", "sort", "datedv asc"));
+    s = h.query(reqWithPath("/export", "q", "id:1", "fl", "datedv_m", "sort", "datedv asc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"datedv_m\":[\"2017-06-16T01:00:00Z\",\"2017-06-16T02:00:00Z\",\"2017-06-16T03:00:00Z\",\"2017-06-16T04:00:00Z\"]}]}}");
@@ -1013,7 +992,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         h.getCore().getLatestSchema().getField("int_is_t").getType().isPointField()
             ? "1,1,1,1"
             : "1";
-    String s = h.query(req("q", "id:3", "qt", "/export", "fl", "int_is_t", "sort", "intdv asc"));
+    String s = h.query(reqWithPath("/export", "q", "id:3", "fl", "int_is_t", "sort", "intdv asc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"int_is_t\":["
@@ -1023,7 +1002,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         h.getCore().getLatestSchema().getField("int_is_p").getType().isPointField()
             ? "1,1,1,1"
             : "1";
-    s = h.query(req("q", "id:8", "qt", "/export", "fl", "int_is_p", "sort", "intdv asc"));
+    s = h.query(reqWithPath("/export", "q", "id:8", "fl", "int_is_p", "sort", "intdv asc"));
     assertJsonEquals(
         s,
         "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"int_is_p\":[1,1,1,1]}]}}");
@@ -1198,11 +1177,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertU(commit());
     createLargeIndex();
     SolrQueryRequest req =
-        req(
+        reqWithPath(
+            "/export",
             "q",
             "*:*",
-            "qt",
-            "/export",
             "fl",
             "id",
             "sort",
@@ -1215,11 +1193,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "response/docs/[0]/id=='99999'",
         "response/docs/[1]/id=='99998'");
     req =
-        req(
+        reqWithPath(
+            "/export",
             "q",
             "*:*",
-            "qt",
-            "/export",
             "fl",
             "id,sortabledv_udvas",
             "sort",
@@ -1244,11 +1221,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
       assertTrue("missing value " + i + " in results", found);
     }
     req =
-        req(
+        reqWithPath(
+            "/export",
             "q",
             "*:*",
-            "qt",
-            "/export",
             "fl",
             "id,sortabledv_udvas,small_i_p",
             "sort",
@@ -1270,11 +1246,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     }
     // try invalid field types
     req =
-        req(
+        reqWithPath(
+            "/export",
             "q",
             "*:*",
-            "qt",
-            "/export",
             "fl",
             "id,sortabledv,small_i_p",
             "sort",
@@ -1302,7 +1277,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertU(commit());
     createLargeIndex();
     SolrQueryRequest req =
-        req("q", "*:*", "qt", "/export", "fl", "id,*_udvas,*_i_p", "sort", "id asc");
+        reqWithPath("/export", "q", "*:*", "fl", "id,*_udvas,*_i_p", "sort", "id asc");
     assertJQ(
         req,
         "response/numFound==100000",
@@ -1316,7 +1291,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertU(delQ("*:*"));
     assertU(commit());
     createLargeIndex();
-    req = req("q", "*:*", "qt", "/export", "fl", "*", "sort", "id asc");
+    req = reqWithPath("/export", "q", "*:*", "fl", "*", "sort", "id asc");
     assertJQ(
         req,
         "response/numFound==100000",
@@ -1368,17 +1343,16 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     List<?> exportDocs =
         queryJsonReturnDocs(
-            req("q", "*:*", "qt", "/export", "fl", "id," + fieldsStr, "sort", sortStr));
+            reqWithPath("/export", "q", "*:*", "fl", "id," + fieldsStr, "sort", sortStr));
     assertEquals(exportDocs.size(), numDocs);
 
     // equivalent for /select
     List<?> selectDocs =
         queryJsonReturnDocs(
-            req(
+            reqWithPath(
+                "/select",
                 "q",
                 "*:*",
-                "qt",
-                "/select",
                 "fl",
                 "id," + fieldsStr,
                 "sort",
@@ -1443,9 +1417,9 @@ public class TestExportWriter extends SolrTestCaseJ4 {
                 .replace("s_", "_")
             + pickRandom(" asc", " desc");
     String resultPoints =
-        h.query(req("q", query, "qt", "/export", "fl", pointFieldsFl, "sort", sort));
+        h.query(reqWithPath("/export", "q", query, "fl", pointFieldsFl, "sort", sort));
     String resultTries =
-        h.query(req("q", query, "qt", "/export", "fl", trieFieldsFl, "sort", sort));
+        h.query(reqWithPath("/export", "q", query, "fl", trieFieldsFl, "sort", sort));
     assertJsonEquals(resultPoints.replace("_p", ""), resultTries.replace("_t", ""));
   }
 
@@ -1496,13 +1470,16 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     String resp =
         h.query(
-            req(
-                "qt", "/export",
-                "q", "*:*",
+            reqWithPath(
+                "/export",
+                "q",
+                "*:*",
                 "fl",
-                    "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
-                "sort", "intdv asc",
-                "includeStoredFields", "true"));
+                "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
+                "sort",
+                "intdv asc",
+                "includeStoredFields",
+                "true"));
 
     assertJsonEquals(
         resp,
@@ -1534,12 +1511,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     // Request stored-only field without includeStoredFields=true should error
     String resp =
-        h.query(
-            req(
-                "qt", "/export",
-                "q", "*:*",
-                "fl", "id,str_s_stored",
-                "sort", "intdv asc"));
+        h.query(reqWithPath("/export", "q", "*:*", "fl", "id,str_s_stored", "sort", "intdv asc"));
 
     assertTrue(
         "Expected error message to contain hint about includeStoredFields",
@@ -1563,11 +1535,14 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Explicit fl with stored-only field should error
     String resp =
         h.query(
-            req(
-                "qt", "/export",
-                "q", "*:*",
-                "fl", "id,intdv,stringdv,str_s_stored",
-                "sort", "intdv asc"));
+            reqWithPath(
+                "/export",
+                "q",
+                "*:*",
+                "fl",
+                "id,intdv,stringdv,str_s_stored",
+                "sort",
+                "intdv asc"));
 
     // Should error because str_s_stored is explicitly requested
     assertTrue(
@@ -1576,13 +1551,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "Expected hint about includeStoredFields", resp.contains("includeStoredFields=true"));
 
     // Now test with glob - should silently skip stored-only fields and succeed
-    resp =
-        h.query(
-            req(
-                "qt", "/export",
-                "q", "*:*",
-                "fl", "intdv,*",
-                "sort", "intdv asc"));
+    resp = h.query(reqWithPath("/export", "q", "*:*", "fl", "intdv,*", "sort", "intdv asc"));
 
     assertJsonEquals(
         resp,
@@ -1614,12 +1583,16 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Glob fl=* with includeStoredFields=true should include stored-only fields
     String resp =
         h.query(
-            req(
-                "qt", "/export",
-                "q", "*:*",
-                "fl", "*",
-                "sort", "intdv asc",
-                "includeStoredFields", "true"));
+            reqWithPath(
+                "/export",
+                "q",
+                "*:*",
+                "fl",
+                "*",
+                "sort",
+                "intdv asc",
+                "includeStoredFields",
+                "true"));
 
     assertJsonEquals(
         resp,
@@ -1655,12 +1628,16 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     String resp =
         h.query(
-            req(
-                "qt", "/export",
-                "q", "*:*",
-                "fl", "id,strs_ss_stored,nums_is_stored",
-                "sort", "intdv asc",
-                "includeStoredFields", "true"));
+            reqWithPath(
+                "/export",
+                "q",
+                "*:*",
+                "fl",
+                "id,strs_ss_stored,nums_is_stored",
+                "sort",
+                "intdv asc",
+                "includeStoredFields",
+                "true"));
 
     assertJsonEquals(
         resp,
@@ -1707,13 +1684,16 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     String resp =
         h.query(
-            req(
-                "qt", "/export",
-                "q", "*:*",
+            reqWithPath(
+                "/export",
+                "q",
+                "*:*",
                 "fl",
-                    "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
-                "sort", "intdv asc",
-                "includeStoredFields", "true"));
+                "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
+                "sort",
+                "intdv asc",
+                "includeStoredFields",
+                "true"));
 
     assertJsonEquals(
         resp,
@@ -1759,12 +1739,16 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             IOException.class,
             () ->
                 h.query(
-                    req(
-                        "qt", "/export",
-                        "q", "*:*",
-                        "fl", "id",
-                        "sort", "sorted_i_stored asc",
-                        "includeStoredFields", "true")));
+                    reqWithPath(
+                        "/export",
+                        "q",
+                        "*:*",
+                        "fl",
+                        "id",
+                        "sort",
+                        "sorted_i_stored asc",
+                        "includeStoredFields",
+                        "true")));
 
     assertTrue(
         "Error message should mention DocValues requirement",

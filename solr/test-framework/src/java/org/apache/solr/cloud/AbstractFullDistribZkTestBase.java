@@ -64,12 +64,14 @@ import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrDocument;
@@ -745,23 +747,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     return 0;
   }
 
-  /**
-   * Total number of replicas for all shards as indicated by the cluster state, regardless of
-   * status.
-   *
-   * @deprecated This method is virtually useless as it does not consider the status of either the
-   *     shard or replica, nor whether the node hosting each replica is alive.
-   */
-  @Deprecated
-  protected int getTotalReplicas(DocCollection c, String collection) {
-    if (c == null) return 0; // support for when collection hasn't been created yet
-    int cnt = 0;
-    for (Slice slices : c.getSlices()) {
-      cnt += slices.getReplicas().size();
-    }
-    return cnt;
-  }
-
   public JettySolrRunner createJetty(
       String dataDir, String ulogDir, String shardList, String solrConfigOverride)
       throws Exception {
@@ -1408,10 +1393,10 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     handle.put("response", UNORDERED); // get?ids=a,b,c requests are unordered
     String ids = "987654";
     for (int i = 0; i < 20; i++) {
-      query("qt", "/get", "id", Integer.toString(i));
-      query("qt", "/get", "ids", Integer.toString(i));
+      query("/get", params("id", Integer.toString(i)));
+      query("/get", params("ids", Integer.toString(i)));
       ids = ids + ',' + Integer.toString(i);
-      query("qt", "/get", "ids", ids);
+      query("/get", params("ids", ids));
     }
     handle.remove("response");
 
@@ -2076,12 +2061,12 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   }
 
   @Override
-  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
+  protected QueryResponse queryRandomShard(String requestHandler, ModifiableSolrParams params)
       throws SolrServerException, IOException {
 
     if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
 
-    return cloudClient.query(params);
+    return new QueryRequest(requestHandler, params).process(cloudClient);
   }
 
   abstract static class StoppableThread extends Thread {
@@ -2176,6 +2161,18 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     }
 
     assertEquals(expectedIds, obtainedIds);
+  }
+
+  void doQuery(Collection<String> expectedIds, QueryRequest request) throws Exception {
+    Set<String> expectedIdSet = new HashSet<>(expectedIds);
+
+    QueryResponse rsp = request.process(cloudClient);
+    Set<String> obtainedIds = new HashSet<>();
+    for (SolrDocument doc : rsp.getResults()) {
+      obtainedIds.add((String) doc.get("id"));
+    }
+
+    assertEquals(expectedIdSet, obtainedIds);
   }
 
   @Override
@@ -2837,7 +2834,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       params.set("name", testCollectionName);
       var request =
           new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
-      request.setPath("/admin/collections");
       client.request(request);
       Thread.sleep(2000); // reload can take a short while
 
@@ -3002,10 +2998,12 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
             .withDefaultCollection(replica.getCoreName())
             .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("qt", "/replication");
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_SHOW_COMMITS);
       try {
-        QueryResponse response = client.query(params);
+        SimpleSolrResponse response =
+            new GenericSolrRequest(METHOD.GET, "/replication", params)
+                .setRequiresCollection(true)
+                .process(client);
         @SuppressWarnings("unchecked")
         List<NamedList<Object>> commits =
             (List<NamedList<Object>>)
@@ -3052,10 +3050,12 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
             .withDefaultCollection(replica.getCoreName())
             .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("qt", "/replication");
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_DETAILS);
       try {
-        QueryResponse response = client.query(params);
+        SimpleSolrResponse response =
+            new GenericSolrRequest(METHOD.GET, "/replication", params)
+                .setRequiresCollection(true)
+                .process(client);
         builder.append(
             String.format(
                 Locale.ROOT,

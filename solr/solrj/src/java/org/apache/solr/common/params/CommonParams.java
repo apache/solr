@@ -92,9 +92,6 @@ public interface CommonParams {
 
   // SOLR-4228 end
 
-  /** stylesheet to apply to XML results */
-  String XSL = "xsl";
-
   /** query and init param for field list */
   String FL = "fl";
 
@@ -313,7 +310,6 @@ public interface CommonParams {
   String JAVABIN_MIME = "application/javabin";
 
   String FILE = "file";
-  String FILES = "files";
 
   String CHILDDOC = "_childDocuments_";
 }

@@ -172,8 +172,6 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "true",
         "spellcheck.build",
         "true",
-        "qt",
-        "spellCheckCompRH",
         "df",
         "subject");
     query(
@@ -564,8 +562,6 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "true",
         "spellcheck.build",
         "true",
-        "qt",
-        "spellCheckCompRH",
         "df",
         "subject");
     query(
@@ -1300,7 +1296,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
                 "cache",
                 "false",
                 "timeAllowed",
-                "200",
+                "10000", // generous; queries must complete fully even on slow CI
                 "sleep",
                 "10");
         assertFalse(

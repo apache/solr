@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.regions.Region;
 
 // Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.Nightly
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 @ThreadLeakLingering(linger = 10)
 @LogLevel(

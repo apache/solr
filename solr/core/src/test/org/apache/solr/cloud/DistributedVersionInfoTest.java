@@ -359,8 +359,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
    */
   protected Long assertDocExists(SolrClient solr, String docId, Long expVers) throws Exception {
     QueryRequest qr =
-        new QueryRequest(
-            params("qt", "/get", "id", docId, "distrib", "false", "fl", "id,_version_"));
+        new QueryRequest("/get", params("id", docId, "distrib", "false", "fl", "id,_version_"));
     NamedList<?> rsp = solr.request(qr);
     SolrDocument doc = (SolrDocument) rsp.get("doc");
     String match = JSONTestUtil.matchObj("/id", doc, docId);

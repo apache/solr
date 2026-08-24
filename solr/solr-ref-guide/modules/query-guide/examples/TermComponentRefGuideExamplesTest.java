@@ -87,8 +87,7 @@ public class TermComponentRefGuideExamplesTest extends SolrCloudTestCase {
     termsQuery.addTermsField("name");
     termsQuery.setTermsMinCount(1);
 
-    final QueryRequest request = new QueryRequest(termsQuery);
-    request.setPath("/terms");
+    final QueryRequest request = new QueryRequest("/terms", termsQuery);
     final List<Term> terms =
         request
             .process(cluster.getSolrClient(), COLLECTION_NAME)

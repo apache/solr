@@ -150,13 +150,31 @@ solrAdminServices.factory('Metrics',
     })
 .factory('Collections',
   ['$resource', function ($resource) {
-    // ERIC: NOT SURE ABOUT THIS CHUNK...
     // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
     // that v1's CLUSTERSTATUS action used, so the response shape is byte-identical -- no
     // generated solrApi client class exists for it (old-style @EndPoint API, predates the
     // OpenAPI-based v2 framework), so this stays a plain $resource, like Threads/ParamSet.
     return $resource('/api/cluster', {'wt':'json', '_':Date.now()}, {
       "status": {}
+    });
+  }])
+.factory('ConfigSetFiles',
+ ['$http', function ($http) {
+    // Fetches a single file from a configset via V2 /api/configsets/{name}/files/{path}.
+    // Each path segment is encoded separately so subdirectory paths like "lang/stopwords.txt"
+    // preserve their slashes (encoding them as %2F gets rejected by Jetty).
+    // transformResponse is overridden to skip JSON parsing since files are raw text.
+    return {
+      get: function (params, successFn, errorFn) {
+        var url = "/api/configsets/" + encodeURIComponent(params.configSet) +
+                  "/files/" + params.filePath.split("/").map(encodeURIComponent).join("/");
+        $http.get(url, {transformResponse: [function (data) { return data; }]}).then(
+          function (response) { if (successFn) successFn({content: response.data}); },
+          function (response) { if (errorFn) errorFn(response); }
+        );
+      }
+    };
+ }])
     });
   }])
 .factory('Logging',
@@ -348,10 +366,11 @@ solrAdminServices.factory('Metrics',
 }])
 .factory('SchemaDesigner',
    ['$resource', function($resource) {
-     return $resource('/api/schema-designer/:path', {wt: 'json', path: '@path', _:Date.now()}, {
+     return $resource('/api/schema-designer/:configSet/:path', {wt: 'json', path: '@path', configSet: '@configSet', filePath: '@filePath', _:Date.now()}, {
        get: {method: "GET"},
        post: {method: "POST", timeout: 90000},
        put: {method: "PUT"},
+       delete: {method: "DELETE"},
        postXml: {headers: {'Content-type': 'text/xml'}, method: "POST", timeout: 90000},
        postCsv: {headers: {'Content-type': 'application/csv'}, method: "POST", timeout: 90000},
        upload: {method: "POST", transformRequest: angular.identity, headers: {'Content-Type': undefined}, timeout: 90000}
