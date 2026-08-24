@@ -3433,7 +3433,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < values.length; i++) {
         assertQ(
-            req("qt", "/get", "id", String.valueOf(i)),
+            reqWithPath("/get", "id", String.valueOf(i)),
             "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
       }
     }
@@ -3458,7 +3458,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < values.length; i++) {
         assertQ(
-            req("qt", "/get", "id", String.valueOf(i)),
+            reqWithPath("/get", "id", String.valueOf(i)),
             "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
       }
     }
@@ -4080,7 +4080,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < 10; i++) {
         assertQ(
-            req("qt", "/get", "id", String.valueOf(i)),
+            reqWithPath("/get", "id", String.valueOf(i)),
             "//doc/arr[@name='" + fieldName + "']/" + type + "[.='" + numbers[i] + "']",
             "//doc/arr[@name='" + fieldName + "']/" + type + "[.='" + numbers[i + 10] + "']",
             "count(//doc/arr[@name='" + fieldName + "']/" + type + ")=2");
@@ -4091,7 +4091,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < 10; i++) {
         assertQ(
-            req("qt", "/get", "id", String.valueOf(i)),
+            reqWithPath("/get", "id", String.valueOf(i)),
             "//doc/arr[@name='" + fieldName + "']/" + type + "[.='" + numbers[i] + "']",
             "//doc/arr[@name='" + fieldName + "']/" + type + "[.='" + numbers[i + 10] + "']",
             "count(//doc/arr[@name='" + fieldName + "']/" + type + ")=2");

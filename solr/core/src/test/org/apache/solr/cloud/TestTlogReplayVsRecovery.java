@@ -277,7 +277,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
                     SolrRequest.METHOD.GET,
                     "/get",
                     SolrRequestType.QUERY,
-                    params("qt", "/get", "id", docId, "_trace", clientName, "distrib", "false"))
+                    params("id", docId, "_trace", clientName, "distrib", "false"))
                 .setRequiresCollection(true))
             .process(client, COLLECTION);
 
