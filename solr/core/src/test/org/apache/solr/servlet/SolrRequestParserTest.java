@@ -111,7 +111,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
 
   @Test
   public void testStandardParseParamsAndFillStreams() throws Exception {
-    final String getParams = "qt=%C3%BC&dup=foo", postParams = "q=hello&d%75p=bar";
+    final String getParams = "misc=%C3%BC&dup=foo", postParams = "q=hello&d%75p=bar";
     final byte[] postBytes = postParams.getBytes(StandardCharsets.US_ASCII);
 
     // Set up the expected behavior
@@ -137,7 +137,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       SolrParams p = standard.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
 
       assertEquals("contentType: " + contentType, "hello", p.get("q"));
-      assertEquals("contentType: " + contentType, "\u00FC", p.get("qt"));
+      assertEquals("contentType: " + contentType, "\u00FC", p.get("misc"));
       assertArrayEquals(
           "contentType: " + contentType, new String[] {"foo", "bar"}, p.getParams("dup"));
 
@@ -202,8 +202,8 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
 
   @Test
   public void testStandardParseParamsAndFillStreamsISO88591() throws Exception {
-    final String getParams = "qt=%FC&dup=foo&ie=iso-8859-1&dup=%FC",
-        postParams = "qt2=%FC&q=hello&d%75p=bar";
+    final String getParams = "misc=%FC&dup=foo&ie=iso-8859-1&dup=%FC",
+        postParams = "misc2=%FC&q=hello&d%75p=bar";
     final byte[] postBytes = postParams.getBytes(StandardCharsets.US_ASCII);
     final String contentType = "application/x-www-form-urlencoded; charset=iso-8859-1";
 
@@ -221,8 +221,8 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     SolrParams p = standard.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
 
     assertEquals("contentType: " + contentType, "hello", p.get("q"));
-    assertEquals("contentType: " + contentType, "\u00FC", p.get("qt"));
-    assertEquals("contentType: " + contentType, "\u00FC", p.get("qt2"));
+    assertEquals("contentType: " + contentType, "\u00FC", p.get("misc"));
+    assertEquals("contentType: " + contentType, "\u00FC", p.get("misc2"));
     assertArrayEquals(
         "contentType: " + contentType, new String[] {"foo", "\u00FC", "bar"}, p.getParams("dup"));
 
