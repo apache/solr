@@ -767,7 +767,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     SolrQueryRequest req = req("q", "id:7777", "fl", "id,title,test_hlt");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
+    core.execute(core.getRequestHandler(null), req, rsp);
 
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
     Document d = req.getSearcher().getDocFetcher().doc(dl.iterator().nextDoc());
@@ -794,7 +794,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // initial request
     SolrQueryRequest req = req("q", "id:7777", "fl", "id,title");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
+    core.execute(core.getRequestHandler(null), req, rsp);
 
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
     DocIterator di = dl.iterator();
@@ -816,7 +816,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // followup request, different fl
     req = req("q", "id:7777", "fl", "id,test_hlt");
     rsp = new SolrQueryResponse();
-    core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
+    core.execute(core.getRequestHandler(null), req, rsp);
 
     dl = ((ResultContext) rsp.getResponse()).getDocList();
     di = dl.iterator();
