@@ -46,6 +46,14 @@ git add solr/licenses
   * conceptually `s/org.apache.lucene.codecs.lucene10x.Lucene10x/org.apache.lucene.codecs.lucene104.Lucene104`
   * if the Lucene codec version changed, add an entry in `solr/solr-ref-guide/modules/upgrade-notes/pages/major-changes-in-solr-10.adoc` noting the codec change and warning users that downgrading to a prior Solr version after this upgrade may require a full reindex
 
+## luceneMatchVersion
+
+If this is a minor or major Lucene upgrade, the `luceneMatchVersion` in `solr/server/solr/configsets/*/conf/solrconfig.xml` will need to be updated.
+
+```
+perl -i -ple 's{<luceneMatchVersion>10.4</luceneMatchVersion>}{<luceneMatchVersion>10.5</luceneMatchVersion>}' solr/server/solr/configsets/*/conf/solrconfig.xml
+```
+
 ## Test
 
 ```
