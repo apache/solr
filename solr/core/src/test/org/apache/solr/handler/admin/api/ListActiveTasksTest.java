@@ -25,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
-import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.core.CancellableQueryTracker;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -33,13 +32,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ActiveTaskTest extends SolrTestCaseJ4 {
+public class ListActiveTasksTest extends SolrTestCaseJ4 {
 
   private SolrQueryRequest mockQueryRequest;
   private SolrCore solrCore;
   private CancellableQueryTracker cancellableQueryTracker;
 
-  private ActiveTask activeTask;
+  private ListActiveTasks listActiveTasks;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -55,7 +54,7 @@ public class ActiveTaskTest extends SolrTestCaseJ4 {
     solrCore = mock(SolrCore.class);
     cancellableQueryTracker = mock(CancellableQueryTracker.class);
 
-    activeTask = new ActiveTask(mockQueryRequest);
+    listActiveTasks = new ListActiveTasks(mockQueryRequest);
   }
 
   @Test
@@ -70,7 +69,7 @@ public class ActiveTaskTest extends SolrTestCaseJ4 {
     when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
     when(cancellableQueryTracker.getActiveQueriesGenerated()).thenReturn(mockIterator);
 
-    ListActiveTaskResponse response = activeTask.listAllActiveTasks();
+    ListActiveTaskResponse response = listActiveTasks.listAllActiveTasks();
     assertNotNull(response.tasks);
 
     assertEquals(2, response.tasks.size());
@@ -79,22 +78,5 @@ public class ActiveTaskTest extends SolrTestCaseJ4 {
     assertEquals("/search?q=h&gf=text-1", response.tasks.get(0).query);
 
     assertNull(response.error);
-  }
-
-  @Test
-  public void testGetTaskStatus() throws Exception {
-
-    when(mockQueryRequest.getCore()).thenReturn(solrCore);
-    when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
-    when(cancellableQueryTracker.isQueryIdActive("taskID_running")).thenReturn(true);
-    when(cancellableQueryTracker.isQueryIdActive("taskID_stopped")).thenReturn(false);
-
-    TaskStatusResponse responseRunningTask = activeTask.getTaskStatus("taskID_running");
-    assertEquals(TaskStatusResponse.TaskStatus.ACTIVE, responseRunningTask.status);
-    assertNull(responseRunningTask.error);
-
-    TaskStatusResponse responseStoppedTask = activeTask.getTaskStatus("taskID_stopped");
-    assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, responseStoppedTask.status);
-    assertNull(responseStoppedTask.error);
   }
 }
