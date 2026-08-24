@@ -8,7 +8,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - Always apply the Apache License to new source files
 - All versions must be delcared in `gradle/libs.versions.toml`, never build.gradle files
 - Try first declaring a dependency without a version (the version might already be in a BOM); and if fails to resolve _then_ specify a version
-- Always run `gradlew updateLicenses resolveAndLockAll collectJarInfos --write-locks` after adding or changing a dependency. See `dev-docs/gradle-help/dependencies.txt` for more info
+- Always run `gradlew updateLicenses resolveAndLockAll --write-locks` after adding or changing a dependency. See `dev-docs/gradle-help/dependencies.txt` for more info
 
 ## Build and Development Workflow
 
