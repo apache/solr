@@ -595,7 +595,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
             assertFullWalkNoDupsElevated(
                 wrapDefaults(
                     params(
-                        "qt", "/elevate",
                         "fl", "id,[elevated]",
                         "forceElevation", "true",
                         "elevateIds", "50,20,80"),
@@ -649,8 +648,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
           assertFullWalkNoDupsElevated(
               wrapDefaults(
                   params(
-                      "qt",
-                      "/elevate",
                       "fl",
                       fl + ",[elevated]",
                       // HACK: work around SOLR-15307... same results should match, just not same
@@ -782,6 +779,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     final SentinelIntSet idsElevated = new SentinelIntSet(32, -1);
 
     assertFullWalkNoDups(
+        "/elevate",
         params,
         (doc) -> {
           final int id = Integer.parseInt(doc.get("id").toString());
@@ -883,8 +881,16 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
    */
   public void assertFullWalkNoDups(SolrParams params, Consumer<SolrDocument> consumer)
       throws Exception {
+    assertFullWalkNoDups("/select", params, consumer);
+  }
 
-    final String requestHandler = params.get(CommonParams.QT, "/select");
+  /**
+   * Identical to {@link #assertFullWalkNoDups(SolrParams,Consumer)}, but dispatches the query to
+   * the specified request handler path.
+   */
+  public void assertFullWalkNoDups(
+      String requestHandler, SolrParams params, Consumer<SolrDocument> consumer) throws Exception {
+
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
     while (0 < docsOnThisPage) {
