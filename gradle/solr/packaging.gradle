@@ -35,6 +35,7 @@
 // I don't know how to untie these two cleanly.
 //
 
+// Keep in sync with isDistShippingProject in gradle/validation/jar-checks.gradle
 configure(allprojects
     .findAll {project -> project.path.startsWith(":solr:modules:") || project.path == ":solr:cross-dc-manager"}) {
   plugins.withType(JavaPlugin) {

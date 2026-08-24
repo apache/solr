@@ -281,8 +281,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     if (schema == null) schema = "schema.xml";
     zkServer.buildZooKeeper(getCloudSolrConfig(), schema);
 
-    // ignoreException(".*");
-
     cloudInit = false;
 
     if (sliceCount > 0) {
@@ -745,23 +743,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   protected int getPullReplicaCount() {
     return 0;
-  }
-
-  /**
-   * Total number of replicas for all shards as indicated by the cluster state, regardless of
-   * status.
-   *
-   * @deprecated This method is virtually useless as it does not consider the status of either the
-   *     shard or replica, nor whether the node hosting each replica is alive.
-   */
-  @Deprecated
-  protected int getTotalReplicas(DocCollection c, String collection) {
-    if (c == null) return 0; // support for when collection hasn't been created yet
-    int cnt = 0;
-    for (Slice slices : c.getSlices()) {
-      cnt += slices.getReplicas().size();
-    }
-    return cnt;
   }
 
   public JettySolrRunner createJetty(
@@ -2202,8 +2183,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       closeRestTestHarnesses(); // TODO: close here or later?
 
     } finally {
-      resetExceptionIgnores();
-
       try {
         zkServer.shutdown();
       } catch (Exception e) {
