@@ -81,7 +81,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -861,34 +860,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
     initIndexReaderFactory();
 
     if (indexExists && firstTime && !passOnPreviousState) {
-      final String lockType = getSolrConfig().indexConfig.lockType;
-      Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT, lockType);
-      try {
-        boolean writerLocked;
-        try {
-          dir.obtainLock(IndexWriter.WRITE_LOCK_NAME).close();
-          writerLocked = false;
-        } catch (LockObtainFailedException failed) {
-          writerLocked = true;
-        }
-        if (writerLocked) {
-          log.error(
-              "Solr index directory '{}' is locked (lockType={}).  Throwing exception.",
-              indexDir,
-              lockType);
-          throw new LockObtainFailedException(
-              "Index dir '"
-                  + indexDir
-                  + "' of core '"
-                  + name
-                  + "' is already locked. "
-                  + "The most likely cause is another Solr server (or another solr core in this server) "
-                  + "also configured to use this directory; other possible causes may be specific to lockType: "
-                  + lockType);
-        }
-      } finally {
-        directoryFactory.release(dir);
-      }
+      // Eagerly obtain (and keep) the real IndexWriter instead of probing with a throwaway
+      // lock (LUCENE-6507/6508 dropped that check-then-act API). solrCoreState caches it, so
+      // a real conflict fails core load right here.
+      solrCoreState.getIndexWriter(this, false).decref();
     }
 
     // Create the index if it doesn't exist.
