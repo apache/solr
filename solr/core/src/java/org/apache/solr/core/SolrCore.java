@@ -846,25 +846,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
     this.indexReaderFactory = indexReaderFactory;
   }
 
-  // protect via synchronized(SolrCore.class)
-  private static Set<String> dirs = new HashSet<>();
-
-  void initIndex(boolean passOnPreviousState, boolean reload) throws IOException {
+  void initIndex(boolean reload) throws IOException {
     String indexDir = getNewIndexDir();
     boolean indexExists = getDirectoryFactory().exists(indexDir);
-    boolean firstTime;
-    synchronized (SolrCore.class) {
-      firstTime = dirs.add(getDirectoryFactory().normalize(indexDir));
-    }
 
     initIndexReaderFactory();
-
-    if (indexExists && firstTime && !passOnPreviousState) {
-      // Eagerly obtain (and keep) the real IndexWriter instead of probing with a throwaway
-      // lock (LUCENE-6507/6508 dropped that check-then-act API). solrCoreState caches it, so
-      // a real conflict fails core load right here.
-      solrCoreState.getIndexWriter(this, false).decref();
-    }
 
     // Create the index if it doesn't exist.
     if (!indexExists) {
@@ -1094,7 +1080,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       this.solrDelPolicy = initDeletionPolicy(delPolicy);
 
       this.codec = initCodec(solrConfig, this.schema);
-      initIndex(prev != null, reload);
+      initIndex(reload);
 
       initWriters();
       qParserPlugins.init(QParserPlugin.standardPlugins, this);
