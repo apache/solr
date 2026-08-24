@@ -101,7 +101,9 @@ public class AIJoinQParserPlugin extends QParserPlugin
    */
   public static final String DIR = "dir";
 
-  private static final String DEFAULT_DIR = "aijoin";
+  public static final String NAME = "auxIndexJoin";
+
+  public static final String DEFAULT_DIR = "aux-index-join";
 
   private String configuredDir = DEFAULT_DIR;
 

@@ -48,11 +48,12 @@ import org.slf4j.LoggerFactory;
  * DistribJoinFromCollectionTest}: same collocated-replica {@code fromIndex} setup (a single-shard
  * "from" collection deployed onto every node holding a "to" replica, so {@link
  * org.apache.solr.search.join.ScoreJoinQParserPlugin#getCoreName}'s collocation lookup always finds
- * a local "from" replica), but adapted for two ways {@code {!aijoin}} differs from {@code {!join}}:
+ * a local "from" replica), but adapted for two ways {@code {!auxIndexJoin}} differs from {@code
+ * {!join}}:
  *
  * <ul>
- *   <li>no scoring -- {@code {!aijoin}} is always a constant-score match, so there's no {@code
- *       score=} local param and no scoring assertions.
+ *   <li>no scoring -- {@code {!auxIndexJoin}} is always a constant-score match, so there's no
+ *       {@code score=} local param and no scoring assertions.
  *   <li>M:1 only -- {@code AIJoinUtil#computeDocMapping} keeps exactly one to-doc per from-doc, so
  *       the join here always goes from the "from" collection's docs (each with a single-valued FK)
  *       to the "to" collection's docs by their unique key, never the reverse (one "to" doc
@@ -139,7 +140,7 @@ public class DistribAIJoinFromCollectionTest extends SolrCloudTestCase {
     // both resolve to the same single "to" doc, still M:1 since it's one to-doc per from-doc
     CloudSolrClient client = cluster.getSolrClient();
     {
-      final String joinQ = "{!aijoin from=join_s fromIndex=" + fromColl + " to=id}match_s:c";
+      final String joinQ = "{!auxIndexJoin from=join_s fromIndex=" + fromColl + " to=id}match_s:c";
       QueryRequest qr =
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
       QueryResponse rsp = qr.process(client);
@@ -148,7 +149,7 @@ public class DistribAIJoinFromCollectionTest extends SolrCloudTestCase {
       SolrDocument doc = hits.get(0);
       assertEquals(toDocId, doc.getFirstValue("id"));
       assertEquals("b", doc.getFirstValue("get_s"));
-      // {!aijoin} never scores -- always a constant-score match, like {!join score=none}
+      // {!auxIndexJoin} never scores -- always a constant-score match, like {!join score=none}
       assertEquals("1.0", doc.getFirstValue("score").toString());
     }
 
@@ -160,7 +161,7 @@ public class DistribAIJoinFromCollectionTest extends SolrCloudTestCase {
     CollectionAdminRequest.createAlias(alias, fromColl).process(client);
 
     {
-      final String joinQ = "{!aijoin from=join_s fromIndex=" + alias + " to=id}match_s:d";
+      final String joinQ = "{!auxIndexJoin from=join_s fromIndex=" + alias + " to=id}match_s:d";
       final QueryRequest qr =
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
       final QueryResponse rsp = qr.process(client);
@@ -176,7 +177,8 @@ public class DistribAIJoinFromCollectionTest extends SolrCloudTestCase {
 
     {
       // verify join doesn't work if no match in the "from" index
-      final String joinQ = "{!aijoin from=join_s fromIndex=" + fromColl + " to=id}match_s:nomatch";
+      final String joinQ =
+          "{!auxIndexJoin from=join_s fromIndex=" + fromColl + " to=id}match_s:nomatch";
       final QueryRequest qr =
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
       final QueryResponse rsp = qr.process(client);
@@ -187,7 +189,7 @@ public class DistribAIJoinFromCollectionTest extends SolrCloudTestCase {
 
   private void checkAbsentFromIndex() {
     final String wrongName = fromColl + "WrongName";
-    final String joinQ = "{!aijoin from=join_s fromIndex=" + wrongName + " to=id}match_s:c";
+    final String joinQ = "{!auxIndexJoin from=join_s fromIndex=" + wrongName + " to=id}match_s:c";
     final QueryRequest qr =
         new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
     RemoteSolrException ex =
