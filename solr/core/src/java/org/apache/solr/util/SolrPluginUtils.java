@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -825,7 +826,7 @@ public class SolrPluginUtils {
           ShardDoc sdoc = resultIds.get(id);
           if (sdoc != null) { // maybe null when rb.onePassDistributedQuery
             int idx = sdoc.positionInResponse;
-            destArr[idx] = new NamedList.NamedListEntry<>(id, val);
+            destArr[idx] = new AbstractMap.SimpleEntry<>(id, val);
           }
         });
   }
