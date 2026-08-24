@@ -1,0 +1,9 @@
+title: >
+  LICENSE and NOTICE files are now only required for dependencies shipped in the
+  binary distribution. Checksum (.sha1) files are still required for all dependencies.
+type: other
+authors:
+  - name: Jan Høydahl
+links:
+  - name: SOLR-15465
+    url: https://issues.apache.org/jira/browse/SOLR-15465
