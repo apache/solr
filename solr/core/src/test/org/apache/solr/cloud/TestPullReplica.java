@@ -185,7 +185,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       while (true) {
         DocCollection docCollection = getCollectionState(collectionName);
         assertNotNull(docCollection);
-        assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicas().size());
+        assertEquals("Expecting 4 replicas per shard", 8, docCollection.replicaStream().count());
         assertEquals(
             "Expecting 6 pull replicas, 3 per shard",
             6,
@@ -773,7 +773,9 @@ public class TestPullReplica extends SolrCloudTestCase {
 
     // index a few docs and wait to ensure everything is in sync with our expectations
     addDocs(numDocsAdded);
-    waitForNumDocsInAllReplicas(numDocsAdded, getCollectionState(collectionName).getReplicas());
+    waitForNumDocsInAllReplicas(
+        numDocsAdded,
+        getCollectionState(collectionName).replicaStream().collect(Collectors.toList()));
     waitForState(
         "Replica prop never added?",
         collectionName,
@@ -841,14 +843,16 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState(
         "Special PULL should be ACTIVE, all others should be DOWN",
         collectionName,
-        (liveNodes, colState) -> {
-          for (Replica r : colState.getReplicas()) {
-            if (r.getName().equals(pullThatSkipsRecovery)) {
-              if (!r.getState().equals(Replica.State.ACTIVE)) {
+        (liveNodes, collectionState) -> {
+          for (Slice slice : collectionState) {
+            for (Replica r : slice.getReplicas()) {
+              if (r.getName().equals(pullThatSkipsRecovery)) {
+                if (!r.getState().equals(Replica.State.ACTIVE)) {
+                  return false;
+                }
+              } else if (!r.getState().equals(Replica.State.DOWN)) {
                 return false;
               }
-            } else if (!r.getState().equals(Replica.State.DOWN)) {
-              return false;
             }
           }
           return true;
@@ -858,7 +862,9 @@ public class TestPullReplica extends SolrCloudTestCase {
     tlogLeaderyJetty.start();
     waitForState(
         "Leader should be back, all replicas active", collectionName, activeReplicaCount(0, 1, 3));
-    waitForNumDocsInAllReplicas(numDocsAdded, getCollectionState(collectionName).getReplicas());
+    waitForNumDocsInAllReplicas(
+        numDocsAdded,
+        getCollectionState(collectionName).replicaStream().collect(Collectors.toList()));
   }
 
   private void waitForNumDocsInAllActiveReplicas(int numDocs)
@@ -866,7 +872,8 @@ public class TestPullReplica extends SolrCloudTestCase {
     DocCollection docCollection = getCollectionState(collectionName);
     waitForNumDocsInAllReplicas(
         numDocs,
-        docCollection.getReplicas().stream()
+        docCollection
+            .replicaStream()
             .filter(r -> r.getState() == Replica.State.ACTIVE)
             .collect(Collectors.toList()));
   }
@@ -978,15 +985,17 @@ public class TestPullReplica extends SolrCloudTestCase {
    */
   private CollectionStatePredicate clusterStateReflectsActiveAndDownReplicas() {
     return (liveNodes, collectionState) -> {
-      for (Replica r : collectionState.getReplicas()) {
-        if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
-          return false;
-        }
-        if (r.getState() == Replica.State.DOWN && liveNodes.contains(r.getNodeName())) {
-          return false;
-        }
-        if (r.getState() == Replica.State.ACTIVE && !liveNodes.contains(r.getNodeName())) {
-          return false;
+      for (Slice slice : collectionState) {
+        for (Replica r : slice.getReplicas()) {
+          if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
+            return false;
+          }
+          if (r.getState() == Replica.State.DOWN && liveNodes.contains(r.getNodeName())) {
+            return false;
+          }
+          if (r.getState() == Replica.State.ACTIVE && !liveNodes.contains(r.getNodeName())) {
+            return false;
+          }
         }
       }
       return true;
