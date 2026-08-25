@@ -2946,7 +2946,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   public static void preDecorateResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
     // setup response header
-    final NamedList<Object> responseHeader = new SimpleOrderedMap<>();
+    final SimpleOrderedMap<Object> responseHeader = new SimpleOrderedMap<>();
     rsp.addResponseHeader(responseHeader);
 
     rsp.addToLog(PATH, req.getContext().get(PATH));
