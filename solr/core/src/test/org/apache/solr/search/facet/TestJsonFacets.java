@@ -40,6 +40,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
 import org.apache.solr.security.AllowListUrlChecker;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.hll.HLL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -445,6 +446,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testExplicitQueryDomain() throws Exception {
     Client client = Client.localClient();
     indexSimple(client);
@@ -526,24 +528,26 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
 
     { // an (effectively) empty query should produce an error
-      ignoreException("'query' domain can not be null");
-      ignoreException("'query' domain must not evaluate to an empty list");
-      for (String raw : Arrays.asList("null", "[ ]", "{param:bogus}")) {
-        expectThrows(
-            SolrException.class,
-            () -> {
-              assertJQ(
-                  req(
-                      "rows",
-                      "0",
-                      "q",
-                      "num_i:[0 TO *]",
-                      "json.facet",
-                      "{w: {type:terms, field:'where_s', "
-                          + "     facet: { c: { type:terms, field:'cat_s', domain: { query: "
-                          + raw
-                          + " }}}}}"));
-            });
+      try (ErrorLogMuter queryDomainNull = ErrorLogMuter.regex("'query' domain can not be null");
+          ErrorLogMuter queryDomainEmpty =
+              ErrorLogMuter.regex("'query' domain must not evaluate to an empty list")) {
+        for (String raw : Arrays.asList("null", "[ ]", "{param:bogus}")) {
+          expectThrows(
+              SolrException.class,
+              () -> {
+                assertJQ(
+                    req(
+                        "rows",
+                        "0",
+                        "q",
+                        "num_i:[0 TO *]",
+                        "json.facet",
+                        "{w: {type:terms, field:'where_s', "
+                            + "     facet: { c: { type:terms, field:'cat_s', domain: { query: "
+                            + raw
+                            + " }}}}}"));
+              });
+        }
       }
     }
   }

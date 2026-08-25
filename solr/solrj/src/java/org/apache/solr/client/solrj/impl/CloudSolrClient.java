@@ -1592,12 +1592,6 @@ public abstract class CloudSolrClient extends SolrClient {
       return this;
     }
 
-    @Deprecated(since = "9.10")
-    public Builder withInternalClientBuilder(
-        HttpSolrClient.BuilderBase<?, ?> internalClientBuilder) {
-      return withHttpClientBuilder(internalClientBuilder);
-    }
-
     /**
      * Sets the Zk connection timeout
      *
