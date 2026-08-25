@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 import static org.apache.solr.client.api.model.NodePropertiesResponse.SYSTEM_PROPERTIES;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,7 @@ public class PropertiesRequestHandler extends RequestHandlerBase {
   }
 
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     rsp.setHttpCaching(false);
     String name = req.getParams().get(NAME);
     Map<String, String> props =
