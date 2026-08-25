@@ -42,8 +42,7 @@ public class MigrateReplicasAPITest extends MockV2APITest {
   @Test
   public void testCreatesValidOverseerMessage() throws Exception {
     MigrateReplicasRequestBody requestBody =
-        new MigrateReplicasRequestBody(
-            Set.of("demoSourceNode"), Set.of("demoTargetNode"), "async");
+        new MigrateReplicasRequestBody(Set.of("demoSourceNode"), Set.of("demoTargetNode"), "async");
 
     api.migrateReplicas(requestBody);
 

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.util.Collections;
+import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.junit.After;
@@ -34,7 +34,7 @@ public class CollectionHandlingUtilsTest extends SolrTestCase {
 
   @Test
   public void testMessageUnsetEnvUnsetFallsBackToDefault() {
-    ZkNodeProps message = new ZkNodeProps(Collections.emptyMap());
+    ZkNodeProps message = new ZkNodeProps(Map.of());
     assertTrue(
         CollectionHandlingUtils.getBoolWithEnvFallback(message, MESSAGE_PARAM, ENV_PROP, true));
     assertFalse(
@@ -44,7 +44,7 @@ public class CollectionHandlingUtilsTest extends SolrTestCase {
   @Test
   public void testMessageUnsetEnvSetFalseOverridesDefaultTrue() {
     System.setProperty(ENV_PROP, "false");
-    ZkNodeProps message = new ZkNodeProps(Collections.emptyMap());
+    ZkNodeProps message = new ZkNodeProps(Map.of());
     assertFalse(
         CollectionHandlingUtils.getBoolWithEnvFallback(message, MESSAGE_PARAM, ENV_PROP, true));
   }
@@ -52,7 +52,7 @@ public class CollectionHandlingUtilsTest extends SolrTestCase {
   @Test
   public void testMessageUnsetEnvSetTrueOverridesDefaultFalse() {
     System.setProperty(ENV_PROP, "true");
-    ZkNodeProps message = new ZkNodeProps(Collections.emptyMap());
+    ZkNodeProps message = new ZkNodeProps(Map.of());
     assertTrue(
         CollectionHandlingUtils.getBoolWithEnvFallback(message, MESSAGE_PARAM, ENV_PROP, false));
   }
@@ -60,15 +60,14 @@ public class CollectionHandlingUtilsTest extends SolrTestCase {
   @Test
   public void testExplicitMessageParamWinsOverEnvFallback() {
     System.setProperty(ENV_PROP, "true");
-    ZkNodeProps messageFalse = new ZkNodeProps(Collections.singletonMap(MESSAGE_PARAM, "false"));
+    ZkNodeProps messageFalse = new ZkNodeProps(Map.of(MESSAGE_PARAM, "false"));
     assertFalse(
         CollectionHandlingUtils.getBoolWithEnvFallback(
             messageFalse, MESSAGE_PARAM, ENV_PROP, false));
 
     System.setProperty(ENV_PROP, "false");
-    ZkNodeProps messageTrue = new ZkNodeProps(Collections.singletonMap(MESSAGE_PARAM, "true"));
+    ZkNodeProps messageTrue = new ZkNodeProps(Map.of(MESSAGE_PARAM, "true"));
     assertTrue(
-        CollectionHandlingUtils.getBoolWithEnvFallback(
-            messageTrue, MESSAGE_PARAM, ENV_PROP, true));
+        CollectionHandlingUtils.getBoolWithEnvFallback(messageTrue, MESSAGE_PARAM, ENV_PROP, true));
   }
 }

@@ -116,7 +116,7 @@ public class WaitForFinalStateEnvFallbackTest extends SolrCloudTestCase {
       addReplicaWithTimeout(collection, "shard1", 5).process(client);
     } catch (Exception e) {
       threw = true;
-      log.info("ADDREPLICA with default (true) threw as expected: {}", e.toString());
+      log.info("ADDREPLICA with default (true) threw as expected: {}", e);
     }
     long elapsedMs = (System.nanoTime() - start) / 1_000_000;
     log.info("ADDREPLICA with default (true) returned/threw after {}ms", elapsedMs);

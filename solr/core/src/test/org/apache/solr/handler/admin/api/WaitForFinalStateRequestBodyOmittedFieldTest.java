@@ -24,11 +24,11 @@ import org.apache.solr.client.api.model.CreateShardRequestBody;
 import org.junit.Test;
 
 /**
- * AC8 (SOLR-18367): a v2 REST request body that omits {@code waitForFinalState} must deserialize
- * to {@code null}, not {@code false}, so {@code insertIfNotNull} lets the server's own
- * EnvUtils-driven default apply -- the same as SolrJ's field-omitted case. Only applies to the
- * bounded commands (CREATE, CREATESHARD, ADDREPLICA); BALANCE_REPLICAS/MIGRATE_REPLICAS/
- * REPLACENODE dropped the field entirely -- their default stays `false` unconditionally.
+ * AC8 (SOLR-18367): a v2 REST request body that omits {@code waitForFinalState} must deserialize to
+ * {@code null}, not {@code false}, so {@code insertIfNotNull} lets the server's own EnvUtils-driven
+ * default apply -- the same as SolrJ's field-omitted case. Only applies to the bounded commands
+ * (CREATE, CREATESHARD, ADDREPLICA); BALANCE_REPLICAS/MIGRATE_REPLICAS/ REPLACENODE dropped the
+ * field entirely -- their default stays `false` unconditionally.
  */
 public class WaitForFinalStateRequestBodyOmittedFieldTest extends SolrTestCase {
 
