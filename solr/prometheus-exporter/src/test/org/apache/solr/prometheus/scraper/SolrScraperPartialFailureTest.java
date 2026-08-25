@@ -19,11 +19,12 @@ package org.apache.solr.prometheus.scraper;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 import org.apache.solr.prometheus.exporter.MetricsQuery;
@@ -33,8 +34,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Verifies that {@link SolrScraper#request} discards a jsonQuery's results entirely when the
- * query throws partway through, instead of leaking whatever it already emitted before failing.
+ * Verifies that {@link SolrScraper#request} discards a jsonQuery's results entirely when the query
+ * throws partway through, instead of leaking whatever it already emitted before failing.
  */
 public class SolrScraperPartialFailureTest extends SolrTestCaseJ4 {
 
@@ -42,12 +43,14 @@ public class SolrScraperPartialFailureTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupExecutor() {
-    executor = Executors.newSingleThreadExecutor();
+    executor =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(
+            new SolrNamedThreadFactory("solr-scraper-partial-failure-tests"));
   }
 
   @AfterClass
   public static void teardownExecutor() {
-    executor.shutdownNow();
+    ExecutorUtil.shutdownNowAndAwaitTermination(executor);
     executor = null;
   }
 
