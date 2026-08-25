@@ -36,9 +36,9 @@ import org.junit.Test;
  */
 public class LBSolrClientRetryUnsentTest extends SolrTestCase {
 
-  private static final LBSolrClient.Endpoint FIRST =
+  private static final LBSolrClient.Endpoint DEAD_HOST_1 =
       new LBSolrClient.Endpoint("http://127.0.0.1:1/solr");
-  private static final LBSolrClient.Endpoint SECOND =
+  private static final LBSolrClient.Endpoint DEAD_HOST_2 =
       new LBSolrClient.Endpoint("http://127.0.0.1:2/solr");
 
   /** Fails whatever endpoint is tried first with {@code failure}; any later endpoint succeeds. */
@@ -47,7 +47,7 @@ public class LBSolrClientRetryUnsentTest extends SolrTestCase {
     private final Exception failure;
 
     FailFirstEndpoint(Exception failure) {
-      super(List.of(FIRST, SECOND));
+      super(List.of(DEAD_HOST_1, DEAD_HOST_2));
       this.failure = failure;
     }
 
@@ -73,22 +73,23 @@ public class LBSolrClientRetryUnsentTest extends SolrTestCase {
     }
   }
 
-  private static SolrServerException unsent() {
+  private static SolrServerException unsentException() {
     IOException onTheWire = new IOException("Broken pipe");
     return new SolrServerException(
-        "Connection failed before the request was sent to: " + FIRST.getUrl(),
+        "Connection failed before the request was sent to: " + DEAD_HOST_1.getUrl(),
         new RequestNotSentException(onTheWire.getMessage(), onTheWire));
   }
 
-  private static SolrServerException maybeSent() {
+  private static SolrServerException maybeSentException() {
     return new SolrServerException(
-        "IOException occurred when talking to server at: " + FIRST.getUrl(),
+        "IOException occurred when talking to server at: " + DEAD_HOST_1.getUrl(),
         new IOException("Broken pipe"));
   }
 
-  private static List<String> attempts(Exception failure, SolrRequest<?> request) throws Exception {
+  private static List<String> requestReturningAttemptedUrls(
+      Exception failure, SolrRequest<?> request) throws Exception {
     try (FailFirstEndpoint client = new FailFirstEndpoint(failure)) {
-      client.request(new LBSolrClient.Req(request, List.of(FIRST, SECOND)));
+      client.request(new LBSolrClient.Req(request, List.of(DEAD_HOST_1, DEAD_HOST_2)));
       return client.attempted;
     }
   }
@@ -96,25 +97,25 @@ public class LBSolrClientRetryUnsentTest extends SolrTestCase {
   @Test
   public void testUpdateIsRetriedWhenRequestWasNeverSent() throws Exception {
     assertEquals(
-        List.of(FIRST.getBaseUrl(), SECOND.getBaseUrl()),
-        attempts(unsent(), new UpdateRequest().add("id", "1")));
+        List.of(DEAD_HOST_1.getBaseUrl(), DEAD_HOST_2.getBaseUrl()),
+        requestReturningAttemptedUrls(unsentException(), new UpdateRequest().add("id", "1")));
   }
 
-  /** LBSolrClient classifies {@link SolrRequest.SolrRequestType#UPDATE} as non-retryable. */
+  /** LBSolrClient classifies {@link SolrRequest.SolrRequestType} UPDATE as non-retryable. */
   @Test
   public void testRequestThatMayHaveBeenReceivedIsNotRetried() {
     LBSolrClient.Req req =
-        new LBSolrClient.Req(new UpdateRequest().add("id", "1"), List.of(FIRST, SECOND));
-    try (FailFirstEndpoint client = new FailFirstEndpoint(maybeSent())) {
+        new LBSolrClient.Req(new UpdateRequest().add("id", "1"), List.of(DEAD_HOST_1, DEAD_HOST_2));
+    try (FailFirstEndpoint client = new FailFirstEndpoint(maybeSentException())) {
       expectThrows(SolrServerException.class, () -> client.request(req));
-      assertEquals(List.of(FIRST.getBaseUrl()), client.attempted);
+      assertEquals(List.of(DEAD_HOST_1.getBaseUrl()), client.attempted);
     }
   }
 
   @Test
   public void testQueryIsStillRetriedOnAnyIOException() throws Exception {
     assertEquals(
-        List.of(FIRST.getBaseUrl(), SECOND.getBaseUrl()),
-        attempts(maybeSent(), new QueryRequest()));
+        List.of(DEAD_HOST_1.getBaseUrl(), DEAD_HOST_2.getBaseUrl()),
+        requestReturningAttemptedUrls(maybeSentException(), new QueryRequest()));
   }
 }
