@@ -56,7 +56,7 @@ final class JoinColumnIndexer {
    * transient: the owner removes its claims once the pair is persisted and refreshed (and on build
    * failure), so the map only ever holds in-flight builds and never pins models in heap. A builder
    * that races a not-yet-visible refresh and re-claims an already-persisted pair is stopped from
-   * writing a duplicate column by {@link #writeJoinSegments}'s fresh-searcher double-check, not by
+   * writing a duplicate column by {@code #writeJoinSegments}'s fresh-searcher double-check, not by
    * this map.
    */
   private final ConcurrentHashMap<String, CompletableFuture<Map.Entry<String, JoinColumnModel>>>

@@ -57,7 +57,7 @@ import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
  *
  * <p>After either side reopens, the next query builds only the missing (from, to) segment pairs:
  * pair columns are addressed by both sides' persistent segment keys, which survive reopens. Pair
- * columns orphaned by merges are not reclaimed yet; see {@code README.md} in this package.
+ * columns orphaned by merges are not reclaimed yet; see package's javadoc.
  */
 public final class AIJoinIndex implements Closeable {
 
