@@ -392,8 +392,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
         List<Replica> replicas =
             clusterState.getCollection(collectionName).getReplicasOnNode(nodeName);
         assertFalse(
-            "There should be replicas for the collection on the existing node",
-            replicas.isEmpty());
+            "There should be replicas for the collection on the existing node", replicas.isEmpty());
         assertEquals(
             "Wrong number of replicas for the collection on the existing node", 1, replicas.size());
         for (Replica replica : replicas) {
