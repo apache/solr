@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 
 public class TestOmitPositions extends SolrTestCaseJ4 {
@@ -53,13 +54,13 @@ public class TestOmitPositions extends SolrTestCaseJ4 {
         "//result/doc[2]/str[@name='id'][.=1]");
   }
 
+  @SuppressWarnings("try")
   public void testPositions() {
     // no results should be found:
     // lucene 3.x: silent failure
     // lucene 4.x: illegal state exception, field was indexed without positions
 
-    ignoreException("was indexed without position data");
-    try {
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("was indexed without position data")) {
       assertQ(
           "phrase query: ",
           req("fl", "id", "q", "nopositionstext:\"test test\""),
@@ -68,6 +69,5 @@ public class TestOmitPositions extends SolrTestCaseJ4 {
       assertTrue(expected.getCause() instanceof IllegalStateException);
       // in lucene 4.0, queries don't silently fail
     }
-    resetExceptionIgnores();
   }
 }
