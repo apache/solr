@@ -116,7 +116,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
 
     boolean waitForFinalState =
         CollectionHandlingUtils.getBoolWithEnvFallback(
-            message, WAIT_FOR_FINAL_STATE, WAIT_FOR_FINAL_STATE_DEFAULT_PROP, true);
+            message, WAIT_FOR_FINAL_STATE, WAIT_FOR_FINAL_STATE_DEFAULT_PROP, false);
     boolean skipCreateReplicaInClusterState =
         message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 

@@ -65,28 +65,28 @@ public class WaitForFinalStateEnvFallbackTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testEnvFallbackFalseSkipsWaitEvenWhenRecoveryIsStuck() throws Exception {
+  public void testDefaultFalseSkipsWaitEvenWhenRecoveryIsStuck() throws Exception {
     String collection = "envfallbackfalse";
     SolrClient client = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collection, "conf", 1, 1).process(client);
     cluster.waitForActiveCollection(collection, 1, 1);
 
-    System.setProperty(CommonAdminParams.WAIT_FOR_FINAL_STATE_DEFAULT_PROP, "false");
+    // no system property set: ADDREPLICA's literal default is false (waiting on a replica's
+    // recovery is unbounded in time, unlike CREATE/CREATESHARD/SPLITSHARD's brand-new replicas)
     TestInjection.prepRecoveryOpPauseForever = "true:100";
 
     long start = System.nanoTime();
-    // message omits waitForFinalState entirely -- must resolve through the env fallback to false
     addReplicaWithTimeout(collection, "shard1", 5).process(client);
     long elapsedMs = (System.nanoTime() - start) / 1_000_000;
-    log.info("ADDREPLICA with env fallback=false returned after {}ms", elapsedMs);
+    log.info("ADDREPLICA with default (false) returned after {}ms", elapsedMs);
 
     // proves we returned without waiting on the (permanently stuck) recovery: if the
     // ActiveReplicaWatcher had been registered with the 5s timeout above, a genuine wait would
     // either finish fast (if it wasn't really stuck) or throw after ~5s -- neither of which we
     // want; we want no watcher registered at all, so this returns near-instantly.
     assertTrue(
-        "expected ADDREPLICA to return promptly since waitForFinalState should resolve to "
-            + "false via the env fallback, but it took "
+        "expected ADDREPLICA to return promptly since waitForFinalState defaults to false, "
+            + "but it took "
             + elapsedMs
             + "ms",
         elapsedMs < 5_000);
@@ -101,13 +101,13 @@ public class WaitForFinalStateEnvFallbackTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDefaultTrueActuallyWaitsAndTimesOutWhenRecoveryIsStuck() throws Exception {
+  public void testEnvFallbackTrueActuallyWaitsAndTimesOutWhenRecoveryIsStuck() throws Exception {
     String collection = "envfallbacktrue";
     SolrClient client = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collection, "conf", 1, 1).process(client);
     cluster.waitForActiveCollection(collection, 1, 1);
 
-    // no system property set: default resolves to true (the new SOLR-18367 default)
+    System.setProperty(CommonAdminParams.WAIT_FOR_FINAL_STATE_DEFAULT_PROP, "true");
     TestInjection.prepRecoveryOpPauseForever = "true:100";
 
     long start = System.nanoTime();
@@ -116,15 +116,15 @@ public class WaitForFinalStateEnvFallbackTest extends SolrCloudTestCase {
       addReplicaWithTimeout(collection, "shard1", 5).process(client);
     } catch (Exception e) {
       threw = true;
-      log.info("ADDREPLICA with default (true) threw as expected: {}", e);
+      log.info("ADDREPLICA with env fallback=true threw as expected: {}", e);
     }
     long elapsedMs = (System.nanoTime() - start) / 1_000_000;
-    log.info("ADDREPLICA with default (true) returned/threw after {}ms", elapsedMs);
+    log.info("ADDREPLICA with env fallback=true returned/threw after {}ms", elapsedMs);
 
     assertTrue(
         "expected ADDREPLICA to actually wait for final state (and time out, since recovery "
-            + "is permanently stuck) when waitForFinalState resolves to true by default, but "
-            + "it returned successfully after only "
+            + "is permanently stuck) when waitForFinalState resolves to true via the env "
+            + "fallback, but it returned successfully after only "
             + elapsedMs
             + "ms",
         threw);

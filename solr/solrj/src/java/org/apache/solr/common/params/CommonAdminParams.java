@@ -28,10 +28,12 @@ public interface CommonAdminParams {
   /**
    * Node-level system property controlling the default value of {@link #WAIT_FOR_FINAL_STATE} when
    * a request omits it. The per-command literal default it overrides differs by command: CREATE,
-   * CREATESHARD, SPLITSHARD, ADDREPLICA and MOVEREPLICA default to {@code true}; BALANCE_REPLICAS,
-   * MIGRATE_REPLICAS and REPLACENODE keep the pre-10.1 {@code false} default, since each can affect
-   * an arbitrary number of replicas cluster-wide. Setting this property (either value) overrides
-   * the per-command default uniformly for all 8, mirroring {@code
+   * CREATESHARD and SPLITSHARD default to {@code true} -- they only ever wait on brand-new, empty
+   * replicas, so activation is fast and bounded. ADDREPLICA, MOVEREPLICA, BALANCE_REPLICAS,
+   * MIGRATE_REPLICAS and REPLACENODE keep the pre-10.1 {@code false} default: each can wait on a
+   * replica catching up on an arbitrary amount of existing data (a full recovery/replication), so
+   * the wait is unbounded in time even when the replica count is small or fixed. Setting this
+   * property (either value) overrides the per-command default uniformly for all 8, mirroring {@code
    * CreateCollectionCmd.PRS_DEFAULT_PROP}.
    */
   String WAIT_FOR_FINAL_STATE_DEFAULT_PROP = "solr.cloud.waitForFinalState.enabled";

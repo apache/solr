@@ -75,7 +75,7 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
     String targetNode = message.getStr(CollectionParams.TARGET_NODE);
     boolean waitForFinalState =
         CollectionHandlingUtils.getBoolWithEnvFallback(
-            message, WAIT_FOR_FINAL_STATE, WAIT_FOR_FINAL_STATE_DEFAULT_PROP, true);
+            message, WAIT_FOR_FINAL_STATE, WAIT_FOR_FINAL_STATE_DEFAULT_PROP, false);
     boolean inPlaceMove = message.getBool(IN_PLACE_MOVE, true);
     int timeout = message.getInt(TIMEOUT, 10 * 60); // 10 minutes
 
