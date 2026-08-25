@@ -588,16 +588,15 @@ class SolrFilter extends Filter implements SolrRel {
       }
 
       if (left.getKind() == SqlKind.CAST && right.getKind() == SqlKind.CAST) {
-        return translateBinary2(
-            ((RexCall) left).getOperands().get(0), ((RexCall) right).getOperands().get(0));
+        return translateBinary2(unwrapCast(left), unwrapCast(right));
       }
 
-      // for WHERE clause like: pdatex >= '2021-07-13T15:12:10.037Z'
+      // for WHERE clause like: pdatex >= CAST('2021-07-13 15:12:10.037' AS TIMESTAMP)
+      // Calcite 1.42+ may nest multiple CASTs for timestamp coercion, so unwrap recursively
       if (left.getKind() == SqlKind.INPUT_REF && right.getKind() == SqlKind.CAST) {
-        final RexCall cast = ((RexCall) right);
-        if (cast.getOperands().size() == 1
-            && cast.getOperands().get(0).getKind() == SqlKind.LITERAL) {
-          return translateBinary2(left, cast.getOperands().get(0));
+        RexNode unwrapped = unwrapCast(right);
+        if (unwrapped.getKind() == SqlKind.LITERAL) {
+          return translateBinary2(left, unwrapped);
         }
       }
 
@@ -607,7 +606,7 @@ class SolrFilter extends Filter implements SolrRel {
         String leftLit = toSolrLiteral("", (RexLiteral) left);
         String rightLit = toSolrLiteral("", (RexLiteral) right);
         if (!leftLit.equals(rightLit)) {
-          // they are equal lits ~ match no docs
+          // unequal literals (e.g. WHERE 1=0) ~ match no docs
           return new Pair<>("", (RexLiteral) right);
         }
       }
@@ -616,6 +615,13 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     /** Translates a call to a binary operator. Returns whether successful. */
+    protected static RexNode unwrapCast(RexNode node) {
+      while (node.getKind() == SqlKind.CAST) {
+        node = ((RexCall) node).getOperands().get(0);
+      }
+      return node;
+    }
+
     protected Pair<String, RexLiteral> translateBinary2(RexNode left, RexNode right) {
       if (log.isDebugEnabled()) {
         log.debug("translateBinary2 left={} right={}", left, right);
@@ -801,8 +807,8 @@ class SolrFilter extends Filter implements SolrRel {
       if (operands.size() != 2) {
         throw new AssertionError("Invalid number of arguments - " + operands.size());
       }
-      final RexNode left = operands.get(0);
-      final RexNode right = operands.get(1);
+      final RexNode left = unwrapCast(operands.get(0));
+      final RexNode right = unwrapCast(operands.get(1));
       final Pair<String, RexLiteral> a = translateBinary2(left, right);
 
       if (a != null) {
