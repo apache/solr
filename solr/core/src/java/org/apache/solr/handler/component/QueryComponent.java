@@ -1280,9 +1280,9 @@ public class QueryComponent extends SearchComponent {
     }
   }
 
+  @SuppressWarnings("unchecked")
   protected static void updateResponseHeader(NamedList<Object> header, String key, Object value) {
-    header.remove(key);
-    header.add(key, value);
+    ((SimpleOrderedMap<Object>) header).put(key, value);
   }
 
   protected void setResultIdsAndResponseDocs(
