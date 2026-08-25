@@ -161,6 +161,10 @@ public abstract class SolrScraper implements Closeable {
     JsonNode jsonNode = OBJECT_MAPPER.readTree((String) queryResponse.get("response"));
 
     for (JsonQuery jsonQuery : query.getJsonQueries()) {
+      // Buffer results here rather than adding them to `samples` as they stream in: if the query
+      // emits some results and then throws partway through, we want to discard the partial
+      // output for this query rather than leaving it in the returned scrape.
+      List<ParsedResult> parsedResults = new ArrayList<>();
       try {
         jsonQuery.apply(
             JqSupport.ROOT_SCOPE,
@@ -211,21 +215,49 @@ public abstract class SolrScraper implements Closeable {
                 labelValues.add(collection + "_" + shard + "_" + replica);
               }
 
-              samples.addSamplesIfNotPresent(
-                  name,
-                  new Collector.MetricFamilySamples(
-                      name, Collector.Type.valueOf(type), help, new ArrayList<>()));
-
-              samples.addSampleIfMetricExists(
-                  name,
-                  new Collector.MetricFamilySamples.Sample(name, labelNames, labelValues, value));
+              parsedResults.add(
+                  new ParsedResult(
+                      name,
+                      type,
+                      help,
+                      new Collector.MetricFamilySamples.Sample(
+                          name, labelNames, labelValues, value)));
             });
       } catch (JsonQueryException e) {
         log.error("Error apply JSON query={} to result", jsonQuery, e);
         scrapeErrorTotal.labels(zkHostLabelValue, baseUrlLabelValue, clusterId).inc();
+        continue;
+      }
+
+      for (ParsedResult parsedResult : parsedResults) {
+        samples.addSamplesIfNotPresent(
+            parsedResult.name,
+            new Collector.MetricFamilySamples(
+                parsedResult.name,
+                Collector.Type.valueOf(parsedResult.type),
+                parsedResult.help,
+                new ArrayList<>()));
+
+        samples.addSampleIfMetricExists(parsedResult.name, parsedResult.sample);
       }
     }
 
     return samples;
+  }
+
+  /** One jq result, parsed but not yet merged into the scrape's {@link MetricSamples}. */
+  private static final class ParsedResult {
+    private final String name;
+    private final String type;
+    private final String help;
+    private final Collector.MetricFamilySamples.Sample sample;
+
+    private ParsedResult(
+        String name, String type, String help, Collector.MetricFamilySamples.Sample sample) {
+      this.name = name;
+      this.type = type;
+      this.help = help;
+      this.sample = sample;
+    }
   }
 }
