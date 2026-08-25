@@ -338,9 +338,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     NamedList<Object> args = new NamedList<>();
     args.add(S3BackupRepositoryConfig.REGION, Region.US_EAST_1.id());
     args.add(S3BackupRepositoryConfig.BUCKET_NAME, BUCKET_NAME);
-    args.add(
-        S3BackupRepositoryConfig.ENDPOINT,
-        "http://" + S3_MOCK_RULE.getHost() + ":" + S3_MOCK_RULE.getHttpPort());
+    args.add(S3BackupRepositoryConfig.ENDPOINT, S3_MOCK_RULE.getHttpEndpoint());
     return args;
   }
 

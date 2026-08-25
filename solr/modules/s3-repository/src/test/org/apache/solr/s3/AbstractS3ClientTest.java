@@ -58,7 +58,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
     // We are using a proxy in front of S3Mock to be able to test connection loss
     proxy = new SocketProxy();
-    proxy.open(URI.create("http://" + S3_MOCK_RULE.getHost() + ":" + S3_MOCK_RULE.getHttpPort()));
+    proxy.open(URI.create(S3_MOCK_RULE.getHttpEndpoint()));
     client =
         new S3StorageClient(
             BUCKET_NAME,

@@ -78,18 +78,9 @@ public class S3MockContainerRule extends ExternalResource {
     }
   }
 
-  public int getHttpPort() {
-    return s3MockContainer.getHttpServerPort();
-  }
-
-  /**
-   * The host the container's mapped port is actually reachable at. Not guaranteed to be {@code
-   * localhost} (e.g. a remote Docker daemon, DOCKER_HOST, or Docker Desktop's VM gateway) --
-   * callers building a URL from {@link #getHttpPort()} must use this rather than hardcoding {@code
-   * localhost}.
-   */
-  public String getHost() {
-    return s3MockContainer.getHost();
+  /** Full HTTP endpoint URL (including mapped host/port). */
+  public String getHttpEndpoint() {
+    return s3MockContainer.getHttpEndpoint();
   }
 
   public S3Client createS3ClientV2() {

@@ -134,9 +134,7 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
                 .replace("BAD_BUCKET", BUCKET_NAME)
                 .replace("BUCKET", BUCKET_NAME)
                 .replace("REGION", Region.US_EAST_1.id())
-                .replace(
-                    "ENDPOINT",
-                    "http://" + S3_MOCK_RULE.getHost() + ":" + S3_MOCK_RULE.getHttpPort()))
+                .replace("ENDPOINT", S3_MOCK_RULE.getHttpEndpoint()))
         .configure();
   }
 

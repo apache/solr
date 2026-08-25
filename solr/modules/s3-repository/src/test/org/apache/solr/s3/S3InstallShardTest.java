@@ -82,9 +82,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
             SOLR_XML
                 .replace("BUCKET", BUCKET_NAME)
                 .replace("REGION", Region.US_EAST_1.id())
-                .replace(
-                    "ENDPOINT",
-                    "http://" + S3_MOCK_RULE.getHost() + ":" + S3_MOCK_RULE.getHttpPort()))
+                .replace("ENDPOINT", S3_MOCK_RULE.getHttpEndpoint()))
         .configure();
 
     bootstrapBackupRepositoryData("/");
