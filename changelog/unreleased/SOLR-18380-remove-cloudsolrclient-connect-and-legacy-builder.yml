@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Remove the deprecated CloudSolrClient.connect() and connect(long, TimeUnit) methods, ClusterStateProvider.connect(), and the CloudSolrClient.Builder(List, Optional) constructor. Call ClusterStateProvider.getLiveNodes() to force a connection, and build with the connection-string constructor, which also honours a chroot inside the string.
+title: Remove the deprecated CloudSolrClient.connect() and connect(long, TimeUnit) methods, and ClusterStateProvider.connect(). Call ClusterStateProvider.getLiveNodes() to force a connection instead. (The also-deprecated CloudSolrClient.Builder(List, Optional) constructor is not removed here -- it was deprecated later, in 10.1, and stays until that has shipped a release.)
 type: removed
 authors:
   - name: Serhiy Bzhezytskyy
