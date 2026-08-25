@@ -37,7 +37,6 @@ import org.apache.jute.Record;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -109,8 +108,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateZkFailure() throws Exception {
-    final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
+    final SolrClient solrClient = solrCluster.getJettySolrRunners().get(0).newSolrClient(null);
     final ConfigSetService configSetService =
         solrCluster.getOpenOverseer().getCoreContainer().getConfigSetService();
 

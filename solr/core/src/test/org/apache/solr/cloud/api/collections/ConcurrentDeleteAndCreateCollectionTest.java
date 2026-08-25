@@ -24,7 +24,6 @@ import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -68,8 +67,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     for (int i = 0; i < threads.length; i++) {
       final String collectionName = "collection" + i;
       solrCluster.uploadConfigSet(configset("configset-2"), collectionName);
-      final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-      final SolrClient solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
+      final SolrClient solrClient = solrCluster.getJettySolrRunners().get(0).newSolrClient(null);
       threads[i] =
           new CreateDeleteSearchCollectionThread(
               "create-delete-search-" + i,
@@ -90,13 +88,12 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     final String configName = "testconfig";
     // upload config once, to be used by all collections
     solrCluster.uploadConfigSet(configset("configset-2"), configName);
-    final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final AtomicReference<Exception> failure = new AtomicReference<>();
     final int timeToRunSec = 30;
     final CreateDeleteCollectionThread[] threads = new CreateDeleteCollectionThread[2];
     for (int i = 0; i < threads.length; i++) {
       final String collectionName = "collection" + i;
-      final SolrClient solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
+      final SolrClient solrClient = solrCluster.getJettySolrRunners().get(0).newSolrClient(null);
       threads[i] =
           new CreateDeleteCollectionThread(
               "create-delete-" + i, collectionName, configName, timeToRunSec, solrClient, failure);

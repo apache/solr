@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.util.IOUtils;
@@ -96,8 +95,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
     int numStart = num;
     for (; num < threads.length + numStart; num++) {
       final String aliasName = "testAlias" + num;
-      final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-      final SolrClient solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
+      final SolrClient solrClient = solrCluster.getJettySolrRunners().get(0).newSolrClient(null);
 
       int i = num - numStart;
       threads[i] =
@@ -120,8 +118,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
     System.out.println("NUM ==> " + num);
     for (; num < threads.length + numStart; num++) {
       final String aliasName = "testAliasCplx" + num;
-      final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-      final SolrClient solrClient = new HttpJettySolrClient.Builder(baseUrl).build();
+      final SolrClient solrClient = solrCluster.getJettySolrRunners().get(0).newSolrClient(null);
 
       int i = num - numStart;
       threads[i] =

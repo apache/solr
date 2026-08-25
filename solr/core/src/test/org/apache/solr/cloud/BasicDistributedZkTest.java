@@ -36,7 +36,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.util.IOUtils;
@@ -50,7 +49,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
@@ -111,8 +109,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private String oneInstanceCollection = "oneInstanceCollection";
   private String oneInstanceCollection2 = "oneInstanceCollection2";
-
-  private AtomicInteger nodeCounter = new AtomicInteger();
 
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
@@ -1497,45 +1493,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     assertEquals(3, allDocs);
     IOUtils.close(collectionClients);
-  }
-
-  private void createSolrCore(
-      final String collection,
-      List<SolrClient> collectionClients,
-      final String baseUrl,
-      final int num,
-      final String shardId) {
-    Callable<Object> call =
-        () -> {
-          try (SolrClient client = new HttpJettySolrClient.Builder(baseUrl).build()) {
-            // client.setConnectionTimeout(15000);
-            Create createCmd = new Create();
-            createCmd.setCoreName(collection + num);
-            createCmd.setCollection(collection);
-
-            if (random().nextBoolean()) {
-              // sometimes we use an explicit core node name
-              createCmd.setCoreNodeName("anode" + nodeCounter.incrementAndGet());
-            }
-
-            if (shardId == null) {
-              createCmd.setNumShards(2);
-            }
-            createCmd.setDataDir(getDataDir(createTempDir(collection).toString()));
-            if (shardId != null) {
-              createCmd.setShardId(shardId);
-            }
-            client.request(createCmd);
-          } catch (Exception e) {
-            log.error("error creating core", e);
-            // fail
-          }
-          return null;
-        };
-
-    pending.add(completionService.submit(call));
-
-    collectionClients.add(createNewSolrClient(baseUrl, collection + num));
   }
 
   private void testMultipleCollections() throws Exception {

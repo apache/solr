@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -177,7 +176,8 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     executeCommand(httpClient, baseUrl + authzPrefix, command, "solr", "SolrRocks");
     assertAuthMetricsMinimums(5, 2, 3, 0, 0, 0);
 
-    baseUrl = cluster.getBaseUrl(random());
+    final JettySolrRunner secondRandomJetty = cluster.getRandomJetty(random());
+    baseUrl = secondRandomJetty.getBaseUrl().toString();
     verifySecurityStatus(
         httpClient, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
 
@@ -211,7 +211,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
     CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
 
-    try (var solrClient2 = new HttpJettySolrClient.Builder(baseUrl).build()) {
+    try (var solrClient2 = secondRandomJetty.newSolrClient(null)) {
       expectThrows(RemoteSolrException.class, () -> solrClient2.request(reload));
       reload.setMethod(SolrRequest.METHOD.POST);
       expectThrows(RemoteSolrException.class, () -> solrClient2.request(reload));

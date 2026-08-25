@@ -741,9 +741,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
             Double numRequests =
                 SolrJMetricTestUtils.getNumNodeRequestErrors(
-                    runner.getBaseUrl().toString(),
-                    SolrRequest.SolrRequestType.ADMIN.name(),
-                    adminPath);
+                    runner, SolrRequest.SolrRequestType.ADMIN.name(), adminPath);
             errorsBefore += numRequests.longValue();
             if (log.isInfoEnabled()) {
               log.info(
@@ -767,9 +765,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
             Double numRequests =
                 SolrJMetricTestUtils.getNumNodeRequestErrors(
-                    runner.getBaseUrl().toString(),
-                    SolrRequest.SolrRequestType.ADMIN.name(),
-                    adminPath);
+                    runner, SolrRequest.SolrRequestType.ADMIN.name(), adminPath);
             errorsAfter += numRequests.longValue();
             if (log.isInfoEnabled()) {
               log.info(
@@ -946,7 +942,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @Test
   public void customHttpClientTest() throws Exception {
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    try (HttpJettySolrClient httpClient = new HttpJettySolrClient.Builder(baseUrl).build()) {
+    try (HttpJettySolrClient httpClient =
+        cluster.getJettySolrRunners().get(0).newSolrClient(null)) {
       try (CloudSolrClient cloudClient =
           new CloudJettySolrClient.Builder(List.of(baseUrl)).withHttpClient(httpClient).build()) {
         // Verify the CloudJettySolrClient uses the provided HttpJettySolrClient

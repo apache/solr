@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 
 public final class SolrJMetricTestUtils {
 
@@ -72,10 +73,11 @@ public final class SolrJMetricTestUtils {
     }
   }
 
-  public static Double getNumNodeRequestErrors(String baseUrl, String category, String handler)
+  public static Double getNumNodeRequestErrors(
+      JettySolrRunner runner, String category, String handler)
       throws SolrServerException, IOException {
 
-    try (var client = new HttpJettySolrClient.Builder(baseUrl).build()) {
+    try (var client = runner.newSolrClient(null)) {
       var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
 
       NamedList<Object> resp = client.request(req);

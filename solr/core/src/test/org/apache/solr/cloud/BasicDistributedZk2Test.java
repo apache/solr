@@ -26,7 +26,6 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -211,21 +210,17 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
     int docs = 2;
     for (JettySolrRunner jetty : jettys) {
-      final String clientUrl = getBaseUrl(jetty);
-      addAndQueryDocs(clientUrl, docs);
+      addAndQueryDocs(jetty, docs);
       docs += 2;
     }
   }
 
   // 2 docs added every call
-  private void addAndQueryDocs(final String baseUrl, int docs) throws Exception {
+  private void addAndQueryDocs(final JettySolrRunner jetty, int docs) throws Exception {
 
     SolrQuery query = new SolrQuery("*:*");
 
-    try (SolrClient client =
-        new HttpJettySolrClient.Builder(baseUrl)
-            .withDefaultCollection("onenodecollection")
-            .build()) {
+    try (SolrClient client = jetty.newSolrClient("onenodecollection")) {
       // add a doc
       client.add(sdoc("id", docs));
       client.commit();
