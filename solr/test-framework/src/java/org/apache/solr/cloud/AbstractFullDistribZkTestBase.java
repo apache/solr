@@ -1871,11 +1871,11 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     for (List<CloudJettyRunner> jettyList : shardToJetty.values()) {
       for (CloudJettyRunner jetty : jettyList) {
         CoreContainer cores = jetty.jetty.getCoreContainer();
-        for (SolrCore core : cores.getCores()) {
-          ((DirectUpdateHandler2) core.getUpdateHandler())
-              .getSoftCommitTracker()
-              .setTimeUpperBound(time);
-        }
+        cores.forEachLoadedCore(
+            core ->
+                ((DirectUpdateHandler2) core.getUpdateHandler())
+                    .getSoftCommitTracker()
+                    .setTimeUpperBound(time));
       }
     }
   }
