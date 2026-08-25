@@ -25,7 +25,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebElement;
 
 /**
  * Tests the Admin UI with BasicAuth enabled: the login screen flow and the Security screen,
@@ -60,12 +59,8 @@ public class AdminUiSecurityAuthTest extends AdminUiTestBase {
   public void testLoginAndSecurityScreen() throws Exception {
     // an unauthenticated visit is redirected to the login screen
     openPage("", By.id("login"));
-    WebElement username = waitFor(By.id("username"));
-    username.clear();
-    username.sendKeys(USER);
-    WebElement password = waitFor(By.id("password"));
-    password.clear();
-    password.sendKeys(PASS);
+    setText(By.id("username"), USER);
+    setText(By.id("password"), PASS);
     click(By.xpath("//div[@id='login']//button[@type='submit']"));
 
     // after login the dashboard loads and shows the authenticated security info

@@ -34,6 +34,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -1100,6 +1101,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testRerankQueryParsingShouldFailWithoutMandatoryReRankQueryParameter() {
     assertU(delQ("*:*"));
     assertU(commit());
@@ -1132,16 +1134,16 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "2");
 
-    ignoreException("reRankQuery parameter is mandatory");
-    SolrException se =
-        expectThrows(
-            SolrException.class,
-            "A syntax error should be thrown when "
-                + ReRankQParserPlugin.RERANK_QUERY
-                + " parameter is not specified",
-            () -> h.query(req(params)));
-    assertEquals(se.code(), SolrException.ErrorCode.BAD_REQUEST.code);
-    unIgnoreException("reRankQuery parameter is mandatory");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("reRankQuery parameter is mandatory")) {
+      SolrException se =
+          expectThrows(
+              SolrException.class,
+              "A syntax error should be thrown when "
+                  + ReRankQParserPlugin.RERANK_QUERY
+                  + " parameter is not specified",
+              () -> h.query(req(params)));
+      assertEquals(se.code(), SolrException.ErrorCode.BAD_REQUEST.code);
+    }
   }
 
   @Test

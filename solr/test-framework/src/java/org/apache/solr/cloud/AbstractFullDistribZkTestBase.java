@@ -281,8 +281,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     if (schema == null) schema = "schema.xml";
     zkServer.buildZooKeeper(getCloudSolrConfig(), schema);
 
-    // ignoreException(".*");
-
     cloudInit = false;
 
     if (sliceCount > 0) {
@@ -2185,8 +2183,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       closeRestTestHarnesses(); // TODO: close here or later?
 
     } finally {
-      resetExceptionIgnores();
-
       try {
         zkServer.shutdown();
       } catch (Exception e) {

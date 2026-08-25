@@ -56,6 +56,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestInjection;
@@ -579,7 +580,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   /*
    * validate that replication still happens on a new leader
    */
-  @SuppressWarnings({"try"})
+  @SuppressWarnings("try")
   private void doTestNoLeader(boolean removeReplica) throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 1)
         .process(cluster.getSolrClient());
@@ -604,85 +605,88 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
 
     // Delete leader replica from shard1
-    ignoreException("No registered leader was found"); // These are expected
-    JettySolrRunner leaderJetty = null;
-    if (removeReplica) {
-      CollectionAdminRequest.deleteReplica(collectionName, "shard1", s.getLeader().getName())
-          .process(cluster.getSolrClient());
-    } else {
-      leaderJetty = cluster.getReplicaJetty(s.getLeader());
-      leaderJetty.stop();
-      waitForState("Leader replica not removed", collectionName, clusterShape(1, 1));
-      // Wait for cluster state to be updated
-      waitForState(
-          "Replica state not updated in cluster state",
-          collectionName,
-          clusterStateReflectsActiveAndDownReplicas());
-    }
-    docCollection = assertNumberOfReplicas(0, 0, 1, true, true);
-
-    // Check that there is no leader for the shard
-    Replica leader = docCollection.getSlice("shard1").getLeader();
-    assertTrue(
-        leader == null
-            || !leader.isActive(cluster.getSolrClient().getClusterState().getLiveNodes()));
-
-    // Pull replica on the other hand should be active
-    Replica pullReplica =
-        docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
-    assertTrue(pullReplica.isActive(cluster.getSolrClient().getClusterState().getLiveNodes()));
-
-    long highestTerm = 0L;
-    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
-      highestTerm = zkShardTerms.getHighestTerm();
-    }
-    // add document, this should fail since there is no leader. Pull replica should not accept the
-    // update
-    expectThrows(
-        SolrException.class,
-        () ->
-            cluster
-                .getSolrClient()
-                .add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo")));
-    if (removeReplica) {
-      try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
-        assertEquals(highestTerm, zkShardTerms.getHighestTerm());
+    Replica leader;
+    try (ErrorLogMuter ignored =
+        ErrorLogMuter.regex("No registered leader was found")) { // These are expected
+      JettySolrRunner leaderJetty = null;
+      if (removeReplica) {
+        CollectionAdminRequest.deleteReplica(collectionName, "shard1", s.getLeader().getName())
+            .process(cluster.getSolrClient());
+      } else {
+        leaderJetty = cluster.getReplicaJetty(s.getLeader());
+        leaderJetty.stop();
+        waitForState("Leader replica not removed", collectionName, clusterShape(1, 1));
+        // Wait for cluster state to be updated
+        waitForState(
+            "Replica state not updated in cluster state",
+            collectionName,
+            clusterStateReflectsActiveAndDownReplicas());
       }
-    }
+      docCollection = assertNumberOfReplicas(0, 0, 1, true, true);
 
-    // Also fails if I send the update to the pull replica explicitly
-    try (SolrClient pullReplicaClient =
-        new HttpJettySolrClient.Builder(
-                getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).get(0).getBaseUrl())
-            .withDefaultCollection(
-                getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).get(0).getCoreName())
-            .build()) {
+      // Check that there is no leader for the shard
+      leader = docCollection.getSlice("shard1").getLeader();
+      assertTrue(
+          leader == null
+              || !leader.isActive(cluster.getSolrClient().getClusterState().getLiveNodes()));
+
+      // Pull replica on the other hand should be active
+      Replica pullReplica =
+          docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
+      assertTrue(pullReplica.isActive(cluster.getSolrClient().getClusterState().getLiveNodes()));
+
+      long highestTerm = 0L;
+      try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
+        highestTerm = zkShardTerms.getHighestTerm();
+      }
+      // add document, this should fail since there is no leader. Pull replica should not accept the
+      // update
       expectThrows(
           SolrException.class,
           () ->
-              pullReplicaClient.add(
-                  collectionName, new SolrInputDocument("id", "2", "foo", "zoo")));
-    }
-    if (removeReplica) {
-      try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
-        assertEquals(highestTerm, zkShardTerms.getHighestTerm());
+              cluster
+                  .getSolrClient()
+                  .add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo")));
+      if (removeReplica) {
+        try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
+          assertEquals(highestTerm, zkShardTerms.getHighestTerm());
+        }
       }
-    }
 
-    // Queries should still work
-    waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
-    // Add nrt replica back. Since there is no nrt now, new nrt will have no docs. There will be
-    // data loss, since it will become the leader and pull replicas will replicate from it.
-    // Maybe we want to change this. Replicate from pull replicas is not a good idea, since they are
-    // by definition out of date.
-    if (removeReplica) {
-      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.NRT)
-          .process(cluster.getSolrClient());
-    } else {
-      leaderJetty.start();
-    }
-    waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
-    unIgnoreException("No registered leader was found"); // Should have a leader from now on
+      // Also fails if I send the update to the pull replica explicitly
+      try (SolrClient pullReplicaClient =
+          new HttpJettySolrClient.Builder(
+                  getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).get(0).getBaseUrl())
+              .withDefaultCollection(
+                  getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).get(0).getCoreName())
+              .build()) {
+        expectThrows(
+            SolrException.class,
+            () ->
+                pullReplicaClient.add(
+                    collectionName, new SolrInputDocument("id", "2", "foo", "zoo")));
+      }
+      if (removeReplica) {
+        try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
+          assertEquals(highestTerm, zkShardTerms.getHighestTerm());
+        }
+      }
+
+      // Queries should still work
+      waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
+      // Add nrt replica back. Since there is no nrt now, new nrt will have no docs. There will be
+      // data loss, since it will become the leader and pull replicas will replicate from it.
+      // Maybe we want to change this. Replicate from pull replicas is not a good idea, since they
+      // are
+      // by definition out of date.
+      if (removeReplica) {
+        CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.NRT)
+            .process(cluster.getSolrClient());
+      } else {
+        leaderJetty.start();
+      }
+      waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
+    } // Should have a leader from now on
 
     // Validate that the new nrt replica is the leader now
     cluster.getZkStateReader().forceUpdateCollection(collectionName);

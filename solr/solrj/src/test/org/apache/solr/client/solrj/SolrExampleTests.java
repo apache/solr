@@ -84,6 +84,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
@@ -1551,6 +1552,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testPivotFacetsStatsNotSupported() throws Exception {
     SolrClient client = getSolrClient();
 
@@ -1573,43 +1575,44 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       client.commit();
     }
 
-    ignoreException("is not currently supported");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("is not currently supported")) {
 
-    // boolean field
-    SolrQuery query = new SolrQuery("*:*");
-    query.addFacetPivotField("{!stats=s1}features,manu");
-    query.addGetFieldStatistics("{!key=inStock_val tag=s1}inStock");
+      // boolean field
+      SolrQuery query = new SolrQuery("*:*");
+      query.addFacetPivotField("{!stats=s1}features,manu");
+      query.addGetFieldStatistics("{!key=inStock_val tag=s1}inStock");
 
-    SolrException e = expectThrows(SolrException.class, () -> client.query(query));
-    assertEquals(
-        "Pivot facet on boolean is not currently supported, bad request returned", 400, e.code());
-    assertTrue(e.getMessage().contains("is not currently supported"));
-    assertTrue(e.getMessage().contains("boolean"));
+      SolrException e = expectThrows(SolrException.class, () -> client.query(query));
+      assertEquals(
+          "Pivot facet on boolean is not currently supported, bad request returned", 400, e.code());
+      assertTrue(e.getMessage().contains("is not currently supported"));
+      assertTrue(e.getMessage().contains("boolean"));
 
-    // asking for multiple stat tags -- see SOLR-6663
-    SolrQuery query2 = new SolrQuery("*:*");
-    query2.addFacetPivotField("{!stats=tag1,tag2}features,manu");
-    query2.addGetFieldStatistics("{!tag=tag1}price", "{!tag=tag2}popularity");
-    query2.setFacetMinCount(0);
-    query2.setRows(0);
+      // asking for multiple stat tags -- see SOLR-6663
+      SolrQuery query2 = new SolrQuery("*:*");
+      query2.addFacetPivotField("{!stats=tag1,tag2}features,manu");
+      query2.addGetFieldStatistics("{!tag=tag1}price", "{!tag=tag2}popularity");
+      query2.setFacetMinCount(0);
+      query2.setRows(0);
 
-    e = expectThrows(SolrException.class, () -> client.query(query2));
-    assertEquals(400, e.code());
-    assertTrue(e.getMessage().contains("stats"));
-    assertTrue(e.getMessage().contains("comma"));
-    assertTrue(e.getMessage().contains("tag"));
+      e = expectThrows(SolrException.class, () -> client.query(query2));
+      assertEquals(400, e.code());
+      assertTrue(e.getMessage().contains("stats"));
+      assertTrue(e.getMessage().contains("comma"));
+      assertTrue(e.getMessage().contains("tag"));
 
-    // text field
-    SolrQuery query3 = new SolrQuery("*:*");
-    query3.addFacetPivotField("{!stats=s1}features,manu");
-    query3.addGetFieldStatistics("{!tag=s1}features");
-    query3.setFacetMinCount(0);
-    query3.setRows(0);
-    e = expectThrows(SolrException.class, () -> client.query(query3));
-    assertEquals(
-        "Pivot facet on string is not currently supported, bad request returned", 400, e.code());
-    assertTrue(e.getMessage().contains("is not currently supported"));
-    assertTrue(e.getMessage().contains("text_general"));
+      // text field
+      SolrQuery query3 = new SolrQuery("*:*");
+      query3.addFacetPivotField("{!stats=s1}features,manu");
+      query3.addGetFieldStatistics("{!tag=s1}features");
+      query3.setFacetMinCount(0);
+      query3.setRows(0);
+      e = expectThrows(SolrException.class, () -> client.query(query3));
+      assertEquals(
+          "Pivot facet on string is not currently supported, bad request returned", 400, e.code());
+      assertTrue(e.getMessage().contains("is not currently supported"));
+      assertTrue(e.getMessage().contains("text_general"));
+    }
   }
 
   @Test
