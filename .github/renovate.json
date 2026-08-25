@@ -56,7 +56,7 @@
       "allowedVersions": "<11.0.0"
     },
     {
-      "description": "Pin org.semver4j:semver4j to 5.x; 6.0.0 is compiled to Java 17  but branch_9x builds with Java 11",
+      "description": "Pin org.semver4j:semver4j to 5.x; 6.0.0 is compiled to Java 17 but branch_9x builds with Java 11",
       "matchPackageNames": ["org.semver4j:semver4j"],
       "allowedVersions": "<6.0.0"
     }
