@@ -142,8 +142,10 @@ subprojects {
 
         return validationConf.extendsFrom.collect {conf ->
           if (excludeRules && excludeRules.size() > 0) {
-            conf = conf.copyRecursive()
+            def source = conf
+            conf = source.copyRecursive()
             conf.canBeResolved = true
+            pinCopyToSource(conf, source)
             excludeRuleMaps.forEach {conf.exclude(it)}
           }
           conf
