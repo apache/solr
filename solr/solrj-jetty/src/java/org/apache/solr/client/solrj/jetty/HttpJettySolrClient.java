@@ -489,12 +489,11 @@ public class HttpJettySolrClient extends HttpSolrClient {
         // pooled connection was already closed.
         abortCause = e;
         req = mrrv.request;
-        if (committed.get()) {
-          throw e;
-        }
-        throw new SolrServerException(
-            "Connection failed before the request was sent to: " + url,
-            new RequestNotSentException(e.getMessage(), e));
+        throw committed.get()
+            ? new SolrServerException("IOException occurred when talking to server at: " + url, e)
+            : new SolrServerException(
+                "Connection failed before the request was sent to: " + url,
+                new RequestNotSentException(e.getMessage(), e));
       }
       // only waits for headers, so use the idle timeout
       Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
@@ -517,21 +516,21 @@ public class HttpJettySolrClient extends HttpSolrClient {
       if (cause instanceof SolrServerException) {
         throw (SolrServerException) cause;
       } else if (cause instanceof IOException) {
-        if (!committed.get()) {
-          throw new SolrServerException(
-              "Connection failed before the request was sent to: " + url,
-              new RequestNotSentException(cause.getMessage(), cause));
-        }
-        throw new SolrServerException(
-            "IOException occurred when talking to server at: " + url, cause);
+        throw committed.get()
+            ? new SolrServerException(
+                "IOException occurred when talking to server at: " + url, cause)
+            : new SolrServerException(
+                "Connection failed before the request was sent to: " + url,
+                new RequestNotSentException(cause.getMessage(), cause));
       }
       throw new SolrServerException(cause.getMessage(), cause);
     } catch (IllegalStateException e) {
       // Jetty HTTP/2 throws IllegalStateException ("session closed") when the connection is lost.
       abortCause = e;
-      IOException cause =
-          committed.get() ? new IOException(e) : new RequestNotSentException(e.getMessage(), e);
-      throw new SolrServerException("Connection lost at: " + url, cause);
+      throw committed.get()
+          ? new SolrServerException("Connection lost at: " + url, new IOException(e))
+          : new SolrServerException(
+              "Connection lost at: " + url, new RequestNotSentException(e.getMessage(), e));
     } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;
