@@ -46,6 +46,11 @@
       <text> ; License: MIT</text>
     </license>
 
+    <!-- Inline MIT comment used by jQuery UI bundled assets -->
+    <license family="MIT" id="MIT-jqueryui" name="MIT (jQuery UI)">
+      <text>Released under the MIT license.</text>
+    </license>
+
     <!-- Machine-generated source files that carry no license header -->
     <license family="GEN" id="GEN" name="Generated">
       <any>
