@@ -21,6 +21,7 @@ import static org.apache.solr.prometheus.exporter.MetricsConfiguration.xpathFact
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -122,8 +123,9 @@ public class MetricsQueryTemplateTest extends SolrTestCaseJ4 {
       Optional<Matcher> maybe = MetricsQueryTemplate.matches(queryMetrics[m]);
       assertTrue(maybe.isPresent());
       Matcher matcher = maybe.get();
-      JsonQuery jsonQuery = JsonQuery.compile(coreQueryTemplate.applyTemplate(matcher));
-      List<JsonNode> results = jsonQuery.apply(parsedMetrics);
+      JsonQuery jsonQuery = JqSupport.compile(coreQueryTemplate.applyTemplate(matcher));
+      List<JsonNode> results = new ArrayList<>();
+      jsonQuery.apply(JqSupport.ROOT_SCOPE, parsedMetrics, results::add);
       assertNotNull(results);
       assertEquals(1, results.size());
       double value = results.get(0).get("value").doubleValue();
