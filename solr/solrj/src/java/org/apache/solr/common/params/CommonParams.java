@@ -147,7 +147,9 @@ public interface CommonParams {
   @Deprecated(since = "11.0")
   String SEGMENT_TERMINATE_EARLY = "segmentTerminateEarly";
 
-  /** @deprecated see {@link #SEGMENT_TERMINATE_EARLY} */
+  /**
+   * @deprecated see {@link #SEGMENT_TERMINATE_EARLY}
+   */
   @Deprecated(since = "11.0")
   boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
 

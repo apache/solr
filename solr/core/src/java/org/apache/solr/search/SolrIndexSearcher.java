@@ -1772,15 +1772,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /**
    * @param allowNativeSegmentTerminateEarly if true and {@code cmd} has a sort, forces {@link
    *     TopFieldCollectorManager}'s totalHitsThreshold down to {@code len} so {@link
-   *     TopFieldCollector} early-terminates a segment itself once its index sort matches the
-   *     search sort (the same effect {@code segmentTerminateEarly=true} used to get from the now-
-   *     removed {@code EarlyTerminatingSortingCollector} wrapper). Callers that pass {@code true}
-   *     must not further wrap the returned collector together with a sibling collector that
-   *     doesn't itself early-terminate (e.g. via {@code MultiCollector}) -- see SOLR-18363: {@code
-   *     MultiCollector} only propagates {@code CollectionTerminatedException} once *every* wrapped
-   *     collector has thrown it, so an early-terminating {@link TopFieldCollector} paired with a
-   *     non-terminating sibling collector would silently stop counting hits early while the
-   *     sibling kept counting, desyncing the two.
+   *     TopFieldCollector} early-terminates a segment itself once its index sort matches the search
+   *     sort (the same effect {@code segmentTerminateEarly=true} used to get from the now- removed
+   *     {@code EarlyTerminatingSortingCollector} wrapper). Callers that pass {@code true} must not
+   *     further wrap the returned collector together with a sibling collector that doesn't itself
+   *     early-terminate (e.g. via {@code MultiCollector}) -- see SOLR-18363: {@code MultiCollector}
+   *     only propagates {@code CollectionTerminatedException} once *every* wrapped collector has
+   *     thrown it, so an early-terminating {@link TopFieldCollector} paired with a non-terminating
+   *     sibling collector would silently stop counting hits early while the sibling kept counting,
+   *     desyncing the two.
    */
   private TopDocsCollector<? extends ScoreDoc> buildTopDocsCollector(
       int len, QueryCommand cmd, boolean allowNativeSegmentTerminateEarly) throws IOException {
@@ -1829,14 +1829,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
-   * Records whether a wrapped collector's per-segment collection was actually cut short by a
-   * {@link CollectionTerminatedException}. Used with {@link #buildTopDocsCollector(int,
-   * QueryCommand, boolean)}'s {@code allowNativeSegmentTerminateEarly=true} path: {@link
-   * TopFieldCollector} only ever throws that exception from its sort-compatibility-gated fast
-   * path (see {@code TopFieldCollector.TopFieldLeafCollector#thresholdCheck}), never from the
-   * routine "totalHits exceeded totalHitsThreshold" bookkeeping alone -- so observing the
-   * exception itself gives the same precise "a segment was actually skipped" signal the removed
-   * {@code EarlyTerminatingSortingCollector} tracked directly, without needing
+   * Records whether a wrapped collector's per-segment collection was actually cut short by a {@link
+   * CollectionTerminatedException}. Used with {@link #buildTopDocsCollector(int, QueryCommand,
+   * boolean)}'s {@code allowNativeSegmentTerminateEarly=true} path: {@link TopFieldCollector} only
+   * ever throws that exception from its sort-compatibility-gated fast path (see {@code
+   * TopFieldCollector.TopFieldLeafCollector#thresholdCheck}), never from the routine "totalHits
+   * exceeded totalHitsThreshold" bookkeeping alone -- so observing the exception itself gives the
+   * same precise "a segment was actually skipped" signal the removed {@code
+   * EarlyTerminatingSortingCollector} tracked directly, without needing
    * TopFieldCollector#isEarlyTerminated() (which conflates that signal with the routine case) or
    * any of Lucene's package-private sort-compatibility check.
    */

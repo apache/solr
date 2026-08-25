@@ -66,7 +66,10 @@ public class SolrQueryResponse {
   public static final String NAME = "response";
   public static final String RESPONSE_HEADER_PARTIAL_RESULTS_KEY = "partialResults";
   public static final String RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY = "partialResultsDetails";
-  /** @deprecated see {@link org.apache.solr.common.params.CommonParams#SEGMENT_TERMINATE_EARLY} */
+
+  /**
+   * @deprecated see {@link org.apache.solr.common.params.CommonParams#SEGMENT_TERMINATE_EARLY}
+   */
   @Deprecated(since = "11.0")
   public static final String RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY =
       "segmentTerminatedEarly";
