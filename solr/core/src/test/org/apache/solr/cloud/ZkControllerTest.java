@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -390,19 +389,11 @@ public class ZkControllerTest extends SolrCloudTestCase {
         zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
         ClusterState clusterState = zkController.getClusterState();
 
-        Map<String, List<Replica>> replicasOnNode = new HashMap<>();
-        clusterState
-            .collectionStream()
-            .forEach(
-                col -> {
-                  List<Replica> replicasOfCollection = col.getReplicasOnNode(nodeName);
-                  if (!replicasOfCollection.isEmpty()) {
-                    replicasOnNode.put(col.getName(), replicasOfCollection);
-                  }
-                });
-        assertFalse("There should be replicas on the existing node", replicasOnNode.isEmpty());
-        List<Replica> replicas = replicasOnNode.get(collectionName);
-        assertNotNull("There should be replicas for the collection on the existing node", replicas);
+        List<Replica> replicas =
+            clusterState.getCollection(collectionName).getReplicasOnNode(nodeName);
+        assertFalse(
+            "There should be replicas for the collection on the existing node",
+            replicas.isEmpty());
         assertEquals(
             "Wrong number of replicas for the collection on the existing node", 1, replicas.size());
         for (Replica replica : replicas) {

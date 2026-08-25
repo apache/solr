@@ -52,6 +52,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrPluginUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -976,26 +977,23 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** SOLR-13203 * */
+  @SuppressWarnings("try")
   public void testUfDynamicField() {
-    try {
-      ignoreException("dynamic field");
-
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("dynamic field")) {
       SolrException exception =
           expectThrows(
               SolrException.class, () -> h.query(req("uf", "fl=trait*,id", "defType", "edismax")));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
       assertEquals("dynamic field name must start or end with *", exception.getMessage());
-    } finally {
-      resetExceptionIgnores();
     }
 
     // simple test to validate dynamic uf parsing works
     assertQ(req("uf", "trait* id", "defType", "edismax"));
   }
 
+  @SuppressWarnings("try")
   public void testCyclicAliasing() {
-    try {
-      ignoreException(".*Field aliases lead to a cycle.*");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".*Field aliases lead to a cycle.*")) {
 
       SolrException e =
           expectThrows(
@@ -1110,8 +1108,6 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                           "f.myalias.qf",
                           "who")));
       assertCyclicDetectionErrorMessage(e);
-    } finally {
-      resetExceptionIgnores();
     }
   }
 

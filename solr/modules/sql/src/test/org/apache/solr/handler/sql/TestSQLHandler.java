@@ -3463,4 +3463,152 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults(
         "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e'))", 3);
   }
+
+  /**
+   * Calcite 1.42+ constant-folds a WHERE predicate on the exact grouped/aggregated column into a
+   * literal in the output project. These tests verify that the grouped column value is returned
+   * correctly (not null) when the WHERE filters on the same column as GROUP BY or DISTINCT.
+   */
+  @Test
+  public void testGroupByWhereOnGroupedColumn() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "str_s", "a", "field_i", "7")
+        .add("id", "2", "str_s", "b", "field_i", "8")
+        .add("id", "3", "str_s", "a", "field_i", "20")
+        .add("id", "4", "str_s", "b", "field_i", "11")
+        .add("id", "5", "str_s", "c", "field_i", "30")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String baseUrl =
+        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+
+    // WHERE on the exact grouped column (equality) — Calcite 1.42 may constant-fold str_s to 'a'
+    SolrParams sParams =
+        params(
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "facet",
+            "stmt",
+            "select str_s, count(*), sum(field_i) from collection1"
+                + " where str_s = 'a' group by str_s order by str_s asc");
+
+    List<Tuple> tuples = getTuples(sParams, baseUrl);
+    assertEquals(1, tuples.size());
+    Tuple tuple = tuples.get(0);
+    assertEquals(
+        "str_s must not be null-folded by Calcite constant folding", "a", tuple.get("str_s"));
+    assertEquals(2, tuple.getDouble("EXPR$1"), 0.0); // count(*)
+    assertEquals(27, tuple.getDouble("EXPR$2"), 0.0); // sum(field_i)
+
+    // Same query in map_reduce mode
+    sParams =
+        params(
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "map_reduce",
+            "stmt",
+            "select str_s, count(*), sum(field_i) from collection1"
+                + " where str_s = 'a' group by str_s order by str_s asc");
+
+    tuples = getTuples(sParams, baseUrl);
+    assertEquals(1, tuples.size());
+    tuple = tuples.get(0);
+    assertEquals(
+        "str_s must not be null-folded by Calcite constant folding", "a", tuple.get("str_s"));
+    assertEquals(2, tuple.getDouble("EXPR$1"), 0.0);
+    assertEquals(27, tuple.getDouble("EXPR$2"), 0.0);
+
+    // WHERE on grouped column using IN — multiple constant-folded values
+    sParams =
+        params(
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "facet",
+            "stmt",
+            "select str_s, count(*) from collection1"
+                + " where str_s in ('a', 'b') group by str_s order by str_s asc");
+
+    tuples = getTuples(sParams, baseUrl);
+    assertEquals(2, tuples.size());
+    assertEquals("a", tuples.get(0).get("str_s"));
+    assertEquals(2, tuples.get(0).getDouble("EXPR$1"), 0.0);
+    assertEquals("b", tuples.get(1).get("str_s"));
+    assertEquals(2, tuples.get(1).getDouble("EXPR$1"), 0.0);
+
+    // WHERE on a NON-grouped column — grouped column must still be present
+    sParams =
+        params(
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "facet",
+            "stmt",
+            "select str_s, count(*), sum(field_i) from collection1"
+                + " where field_i > 10 group by str_s order by str_s asc");
+
+    tuples = getTuples(sParams, baseUrl);
+    assertEquals(3, tuples.size());
+    assertEquals("a", tuples.get(0).get("str_s"));
+    assertEquals(1, tuples.get(0).getDouble("EXPR$1"), 0.0); // only id=3 (field_i=20)
+    assertEquals("b", tuples.get(1).get("str_s"));
+    assertEquals(1, tuples.get(1).getDouble("EXPR$1"), 0.0); // only id=4 (field_i=11)
+    assertEquals("c", tuples.get(2).get("str_s"));
+    assertEquals(1, tuples.get(2).getDouble("EXPR$1"), 0.0); // id=5 (field_i=30)
+  }
+
+  /**
+   * Verifies that DISTINCT queries with WHERE predicates on the distinct columns return the correct
+   * (non-null) column values — the companion test to testSelectDistinct's predicate sub-case,
+   * covering additional patterns not exercised by the existing tests.
+   */
+  @Test
+  public void testDistinctWhereOnDistinctColumn() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "str_s", "a", "field_i", "1")
+        .add("id", "2", "str_s", "b", "field_i", "2")
+        .add("id", "3", "str_s", "a", "field_i", "20")
+        .add("id", "4", "str_s", "c", "field_i", "30")
+        .add("id", "5", "str_s", "c", "field_i", "50")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String baseUrl =
+        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+
+    // WHERE on one of the DISTINCT columns (facet mode)
+    SolrParams sParams =
+        params(
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "facet",
+            "stmt",
+            "select distinct str_s, field_i from collection1"
+                + " where str_s = 'a' order by field_i asc");
+
+    List<Tuple> tuples = getTuples(sParams, baseUrl);
+    assertEquals(2, tuples.size());
+    assertEquals("a", tuples.get(0).get("str_s"));
+    assertEquals(1L, tuples.get(0).getLong("field_i").longValue());
+    assertEquals("a", tuples.get(1).get("str_s"));
+    assertEquals(20L, tuples.get(1).getLong("field_i").longValue());
+
+    // WHERE on a NON-distinct column — distinct column must still be present
+    // Data with field_i>10: id=3 (a,20), id=4 (c,30), id=5 (c,50) → DISTINCT str_s = {a, c}
+    sParams =
+        params(
+            CommonParams.QT,
+            "/sql",
+            "aggregationMode",
+            "facet",
+            "stmt",
+            "select distinct str_s from collection1 where field_i > 10 order by str_s asc");
+
+    tuples = getTuples(sParams, baseUrl);
+    assertEquals(2, tuples.size());
+    assertEquals("a", tuples.get(0).get("str_s"));
+    assertEquals("c", tuples.get(1).get("str_s"));
+  }
 }
