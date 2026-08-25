@@ -46,7 +46,7 @@
       "allowedVersions": "0.10.0"
     },
     {
-      "description": "Keep com.diffplug.spotless on the 7.x line on branch_9x; 8.0.0 bumps the required Java to 17, and since this plugin is applied across the whole build, it would break gradle itself on Java 11",
+      "description": "Keep com.diffplug.spotless on the 7.x line on branch_9x; 8.0.0 bumps the required Java to 17.",
       "matchPackageNames": ["com.diffplug.spotless"],
       "allowedVersions": "<8.0.0"
     },
