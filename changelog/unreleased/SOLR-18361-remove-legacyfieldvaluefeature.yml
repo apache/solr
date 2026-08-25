@@ -1,0 +1,9 @@
+title: >
+  Removed the deprecated `org.apache.solr.ltr.feature.LegacyFieldValueFeature` LTR feature class,
+  deprecated since 9.4 in favor of `FieldValueFeature`, which now has equivalent behavior.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18361
+    url: https://issues.apache.org/jira/browse/SOLR-18361

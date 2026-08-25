@@ -697,7 +697,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void replicaPropTest() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
-      client.connect();
       Map<String, Slice> slices =
           client.getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
@@ -1164,7 +1163,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void testShardCreationNameValidation() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
-      client.connect();
       // Create a collection w/ implicit router
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());
