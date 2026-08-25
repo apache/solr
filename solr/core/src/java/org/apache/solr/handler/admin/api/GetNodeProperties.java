@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.NodePropertiesApi;
 import org.apache.solr.client.api.model.NodePropertiesResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.jersey.PermissionName;
@@ -55,6 +56,13 @@ public class GetNodeProperties extends JerseyResource implements NodePropertiesA
   @Override
   @PermissionName(PermissionNameProvider.Name.CONFIG_READ_PERM)
   public NodePropertiesResponse getNodeProperty(String propertyName) {
+    final NodeConfig nodeConfig = coreContainer.getNodeConfig();
+    if (!System.getProperties().containsKey(propertyName)
+        && !nodeConfig.isSysPropHidden(propertyName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          "No system property named '" + propertyName + "' exists on this node.");
+    }
     return buildResponse(propertyName);
   }
 

@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin.api;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.api.model.NodePropertiesResponse;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.NodeApi;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -83,6 +84,15 @@ public class GetNodePropertiesTest extends SolrTestCase {
     NodePropertiesResponse all = fetchProperties(null);
     assertEquals(NodeConfig.REDACTED_SYS_PROP_VALUE, all.systemProperties.get(SECRET_PROP));
     assertFalse(all.systemProperties.containsValue(PASSWORD));
+  }
+
+  @Test
+  public void testUnknownPropertyReturns404() {
+    var req = new NodeApi.GetNodeProperty("GetNodePropertiesTest.doesNotExist");
+    final RemoteSolrException ex =
+        expectThrows(
+            RemoteSolrException.class, () -> req.process(solrTestRule.getAdminClient()));
+    assertEquals(404, ex.code());
   }
 
   private NodePropertiesResponse fetchProperties(String name) throws Exception {
