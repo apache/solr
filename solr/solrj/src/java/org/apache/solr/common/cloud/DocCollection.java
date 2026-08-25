@@ -23,20 +23,22 @@ import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import net.jcip.annotations.Immutable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
- */
+/** A Solr Collection; it's state/metadata. */
+@Immutable
 public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public static final String COLLECTIONS_ZKNODE = "/collections";
@@ -46,8 +48,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   private final String name;
   private final String configName;
-  private final Map<String, Slice> slices;
-  private final Map<String, Slice> activeSlices;
+  private final Map<String, Slice> slicesByName;
+  private final Map<String, Slice> activeSlicesByName;
+  private final Collection<Slice> activeSlices; // equals activeSlicesByName.values()
   private final Map<String, List<Replica>> nodeNameReplicas;
   private final DocRouter router;
   private final String znode;
@@ -57,13 +60,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Boolean readOnly;
   private final Instant creationTime;
   private final Boolean perReplicaState;
-  private final Map<String, Replica> replicaMap = new HashMap<>();
+  private final Map<String, Replica> replicaMap;
   private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
   /**
    * @param name The name of the collection
-   * @param slices The logical shards of the collection. This is used directly and a copy is not
-   *     made.
+   * @param slicesByName The logical shards of the collection. This is used directly and a copy is
+   *     not made.
    * @param props The properties of the slice. This is used directly and a copy is not made.
    * @param zkVersion The version of the Collection node in Zookeeper (used for conditional
    *     updates).
@@ -72,7 +75,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   private DocCollection(
       String name,
-      Map<String, Slice> slices,
+      Map<String, Slice> slicesByName,
       Map<String, Object> props,
       DocRouter router,
       int zkVersion,
@@ -84,11 +87,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
     this.name = name;
     this.configName = (String) props.get(CollectionStateProps.CONFIGNAME);
-    this.slices = slices;
-    this.activeSlices = new HashMap<>();
-    this.nodeNameReplicas = new HashMap<>();
+    this.slicesByName = Collections.unmodifiableMap(slicesByName);
     this.replicationFactor = (Integer) verifyProp(props, CollectionStateProps.REPLICATION_FACTOR);
     this.numReplicas = ReplicaCount.fromProps(props);
+
     this.perReplicaState =
         (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
     if (this.perReplicaState) {
@@ -98,31 +100,42 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
                 + " = true , but perReplicaStates param is not provided");
       }
       this.perReplicaStatesRef = perReplicaStatesRef;
-      for (Slice s : this.slices.values()) { // set the same reference to all slices too
-        s.setPerReplicaStatesRef(this.perReplicaStatesRef);
-      }
+      this.replicaMap =
+          slicesByName.values().stream()
+              .peek(
+                  s ->
+                      s.setPerReplicaStatesRef(
+                          this.perReplicaStatesRef)) // set the same reference to all slices too
+              .flatMap(s -> s.getReplicas().stream())
+              .collect(Collectors.toUnmodifiableMap(Replica::getName, Function.identity()));
+    } else {
+      this.replicaMap = null; // only for perReplicaState=true
     }
+
     Boolean readOnly = (Boolean) verifyProp(props, CollectionStateProps.READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
     this.creationTime = creationTime;
 
-    Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
+    this.nodeNameReplicas =
+        slicesByName.values().stream()
+            .flatMap(s -> s.getReplicas().stream())
+            .collect(
+                Collectors.collectingAndThen(
+                    Collectors.groupingBy(Replica::getNodeName, Collectors.toUnmodifiableList()),
+                    Collections::unmodifiableMap));
 
-    while (iter.hasNext()) {
-      Map.Entry<String, Slice> slice = iter.next();
-      if (slice.getValue().getState() == Slice.State.ACTIVE) {
-        this.activeSlices.put(slice.getKey(), slice.getValue());
-      }
-      for (Replica replica : slice.getValue()) {
-        addNodeNameReplica(replica);
-        if (perReplicaState) {
-          replicaMap.put(replica.getName(), replica);
-        }
-      }
+    this.activeSlices =
+        slicesByName.values().stream().filter(s -> s.getState() == Slice.State.ACTIVE).toList();
+    if (activeSlices.size() == slicesByName.size()) {
+      activeSlicesByName = this.slicesByName; // unmodifiable
+    } else {
+      activeSlicesByName =
+          activeSlices.stream()
+              .collect(Collectors.toUnmodifiableMap(Slice::getName, Function.identity()));
     }
     this.router = router;
     this.znode = getCollectionPath(name);
-    assert name != null && slices != null;
+    assert name != null;
   }
 
   /**
@@ -214,15 +227,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return this;
   }
 
-  private void addNodeNameReplica(Replica replica) {
-    List<Replica> replicas = nodeNameReplicas.get(replica.getNodeName());
-    if (replicas == null) {
-      replicas = new ArrayList<>();
-      nodeNameReplicas.put(replica.getNodeName(), replicas);
-    }
-    replicas.add(replica);
-  }
-
   /**
    * @lucene.internal
    */
@@ -268,6 +272,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return result;
   }
 
+  @Override
+  public Map<String, Object> getProperties() {
+    return Collections.unmodifiableMap(super.getProperties());
+  }
+
   /** Return collection name. */
   public String getName() {
     return name;
@@ -280,36 +289,40 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public Slice getSlice(String sliceName) {
-    return slices.get(sliceName);
+    return slicesByName.get(sliceName);
   }
 
   /**
    * @param consumer consume shardName vs. replica
    */
   public void forEachReplica(BiConsumer<String, Replica> consumer) {
-    slices.forEach(
+    slicesByName.forEach(
         (shard, slice) ->
             slice.getReplicasMap().forEach((s, replica) -> consumer.accept(shard, replica)));
   }
 
   /** Gets the list of all slices for this collection. */
   public Collection<Slice> getSlices() {
-    return slices.values();
+    if (activeSlices.size() == slicesByName.size()) {
+      return activeSlices; // optimization
+    } else {
+      return slicesByName.values();
+    }
   }
 
   /** Return the list of active slices for this collection. */
   public Collection<Slice> getActiveSlices() {
-    return activeSlices.values();
+    return activeSlices;
   }
 
   /** Get the map of all slices (sliceName-&gt;Slice) for this collection. */
   public Map<String, Slice> getSlicesMap() {
-    return slices;
+    return slicesByName;
   }
 
   /** Get the map of active slices (sliceName-&gt;Slice) for this collection. */
   public Map<String, Slice> getActiveSlicesMap() {
-    return activeSlices;
+    return activeSlicesByName;
   }
 
   /** Get the list of replicas hosted on the given node, or an empty list if none. */
@@ -375,14 +388,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     propMap.forEach(ew.getBiConsumer());
-    ew.put(CollectionStateProps.SHARDS, slices);
+    ew.put(CollectionStateProps.SHARDS, slicesByName);
   }
 
   public Replica getReplica(String coreNodeName) {
     if (perReplicaState) {
       return replicaMap.get(coreNodeName);
     }
-    for (Slice slice : slices.values()) {
+    for (Slice slice : slicesByName.values()) {
       Replica replica = slice.getReplica(coreNodeName);
       if (replica != null) return replica;
     }
@@ -397,7 +410,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public Iterator<Slice> iterator() {
-    return slices.values().iterator();
+    return getSlices().iterator();
   }
 
   @Deprecated // low usage and builds an ArrayList (surprising)
