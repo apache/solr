@@ -49,6 +49,11 @@
       "description": "Keep the Jetty 10.x line on branch_9x; Jetty 11 moves the Servlet API from javax.servlet to jakarta.servlet (branch_9x is still on javax.servlet throughout), and Jetty 12 additionally requires Java 17 but branch_9x builds with Java 11",
       "matchPackageNames": ["org.eclipse.jetty*:**"],
       "allowedVersions": "<11.0.0"
+    },
+    {
+      "description": "Pin org.semver4j:semver4j to 5.x; 6.0.0 is compiled to Java 17  but branch_9x builds with Java 11",
+      "matchPackageNames": ["org.semver4j:semver4j"],
+      "allowedVersions": "<6.0.0"
     }
   ],
   "schedule": ["before 9am on the first day of the month"],
