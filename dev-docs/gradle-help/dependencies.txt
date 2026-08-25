@@ -99,10 +99,7 @@ like when using it with "classpath [dependency]" or for version alignment.
 
 The next you want to update the lockfiles file using the following command:
 
-gradlew resolveAndLockAll collectJarInfos --write-locks
-
-The collectJarInfos task is included because it also resolves the dynamic
-"...Copy" configurations used by jar validation.
+gradlew resolveAndLockAll --write-locks
 
 Starting in Solr 10, we also have to update a kotlin-js-store lockfile
 that is used by the new Admin UI WebAssembly target. This can be done by
@@ -226,6 +223,14 @@ are in place for any new dependencies. This command will print what's
 missing and where:
 
 gradlew licenses
+
+Checksum files (.sha1) are required for every dependency, including test-only
+and compile-only ones. LICENSE and NOTICE files are only required for
+dependencies that ship in the binary distribution, i.e. the runtime
+dependencies of the server, the modules and the cross-dc-manager, plus Jetty's
+start.jar, which is packaged separately and is not on any runtime classpath
+(SOLR-15465). Files in solr/licenses that are no longer referenced by any
+dependency fail the build and must be deleted.
 
 To update JAR checksums (sha1) for licenses use:
 
