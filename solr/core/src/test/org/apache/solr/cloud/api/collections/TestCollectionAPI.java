@@ -381,7 +381,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           TimeUnit.SECONDS,
           docCollection ->
               docCollection != null
-                  && docCollection.getReplicas().stream()
+                  && docCollection
+                      .replicaStream()
                       .anyMatch(r -> r.getState().equals(Replica.State.DOWN) && !r.isLeader()));
       zkStateReader.waitForState(
           COLLECTION_NAME,
@@ -420,7 +421,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
                 TimeUnit.SECONDS,
                 (liveNodes, coll) ->
                     coll != null
-                        && coll.getReplicas().stream()
+                        && coll.replicaStream()
                             .allMatch(r -> r.getState().equals(Replica.State.ACTIVE)));
         rsp = request.process(newClient).getResponse();
         collection =

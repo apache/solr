@@ -137,7 +137,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         cloudClient
             .getClusterState()
             .getCollection(AbstractFullDistribZkTestBase.DEFAULT_COLLECTION);
-    Replica replica = defCol.getReplicas().get(0);
+    Replica replica = defCol.replicaStream().findFirst().orElseThrow();
     String nodeName = replica.getNodeName();
 
     String collectionName = "testSplitStaticIndexReplication_" + splitMethod.toLower();
