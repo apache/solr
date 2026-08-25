@@ -545,9 +545,6 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertCollectionExists(String name) {
-    solrClient.getClusterStateProvider().connect(); // TODO get rid of this
-    //  https://issues.apache.org/jira/browse/SOLR-9784?focusedCommentId=16332729
-
     assertNotNull(name + " not found", solrClient.getClusterStateProvider().getState(name));
     // note: could also do:
     // List collections = CollectionAdminRequest.listCollections(solrClient);

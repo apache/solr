@@ -2479,7 +2479,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static class RandomizingCloudSolrClientBuilder extends CloudSolrClient.Builder {
 
     public RandomizingCloudSolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
-      super(zkHosts, zkChroot);
+      // sets the protected fields directly, matching the sibling constructors below
+      super(new ArrayList<>());
+      this.zkHosts.addAll(zkHosts);
+      zkChroot.ifPresent(chroot -> this.zkChroot = chroot);
       randomizeCloudSolrClient();
     }
 

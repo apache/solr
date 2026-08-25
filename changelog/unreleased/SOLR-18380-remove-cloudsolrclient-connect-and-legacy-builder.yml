@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the deprecated CloudSolrClient.connect() and connect(long, TimeUnit) methods, ClusterStateProvider.connect(), and the CloudSolrClient.Builder(List, Optional) constructor. Call ClusterStateProvider.getLiveNodes() to force a connection, and build with the connection-string constructor, which also honours a chroot inside the string.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18380
+    url: https://issues.apache.org/jira/browse/SOLR-18380
