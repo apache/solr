@@ -118,7 +118,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
 
   private final long idleTimeoutMillis;
 
-  private List<HttpListenerFactory> listenerFactory;
+  private final List<HttpListenerFactory> listenerFactory;
   protected AsyncTracker asyncTracker = new AsyncTracker();
 
   private final boolean closeClient;
@@ -204,17 +204,6 @@ public class HttpJettySolrClient extends HttpSolrClient {
       }
       instance.setup(this);
     }
-  }
-
-  /**
-   * Registers a listener factory on an already-built client, without discarding it. Prefer {@link
-   * Builder#addListenerFactory} when constructing a new client; this instance method exists for the
-   * case where the listener isn't known yet at construction time (or may need to change later), and
-   * this client's identity may already be relied on elsewhere, so it can't simply be rebuilt and
-   * swapped out.
-   */
-  public void addListenerFactory(HttpListenerFactory factory) {
-    this.listenerFactory.add(factory);
   }
 
   /** internal use only */
