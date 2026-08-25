@@ -135,7 +135,7 @@ public class MetricsQuery {
             }
           }
 
-          JsonQuery compiledJsonQuery = JsonQuery.compile(jsonQuery);
+          JsonQuery compiledJsonQuery = JqSupport.compile(jsonQuery);
           compiledQueries.add(compiledJsonQuery);
         }
       }
