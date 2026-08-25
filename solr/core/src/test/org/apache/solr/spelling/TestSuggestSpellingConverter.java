@@ -16,7 +16,7 @@
  */
 package org.apache.solr.spelling;
 
-import java.util.Collection;
+import java.io.IOException;
 import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.TrimFilter;
 import org.apache.lucene.analysis.pattern.PatternReplaceFilter;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.tests.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
@@ -66,12 +67,20 @@ public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
   }
 
   public void assertConvertsTo(String text, String expected[]) {
-    Collection<Token> tokens = converter.convert(text);
-    assertEquals(tokens.size(), expected.length);
-    int i = 0;
-    for (Token token : tokens) {
-      assertEquals(token.toString(), expected[i]);
-      i++;
+    try {
+      TokenStream stream = converter.convert(text);
+      stream.reset();
+      CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+      int i = 0;
+      while (stream.incrementToken()) {
+        assertEquals(termAtt.toString(), expected[i]);
+        i++;
+      }
+      stream.end();
+      stream.close();
+      assertEquals(i, expected.length);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 }

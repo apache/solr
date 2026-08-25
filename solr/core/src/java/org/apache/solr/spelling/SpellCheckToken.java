@@ -16,18 +16,30 @@
  */
 package org.apache.solr.spelling;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.util.BytesRef;
 
 /**
- * @since solr 1.3
+ * One term occurrence carried through the spellchecker API. Unlike the old {@code Token} it
+ * replaces, this is a plain, immutable record -- not a Lucene {@code AttributeImpl} subclass -- and
+ * exists only because {@link SolrSpellChecker#mergeSuggestions} has to key suggestions by (text,
+ * offset) pairs deserialized from a remote shard's response, where there is no {@link
+ * org.apache.lucene.analysis.TokenStream} to read from at all.
  */
-class SimpleQueryConverter extends SpellingQueryConverter {
+public record SpellCheckToken(
+    String text,
+    int startOffset,
+    int endOffset,
+    String type,
+    int positionIncrement,
+    int flags,
+    BytesRef payload) {
 
-  private static final WhitespaceAnalyzer ANALYZER = new WhitespaceAnalyzer();
+  public SpellCheckToken(String text, int startOffset, int endOffset) {
+    this(text, startOffset, endOffset, "word", 1, 0, null);
+  }
 
   @Override
-  public TokenStream convert(String origQuery) {
-    return ANALYZER.tokenStream("", origQuery);
+  public String toString() {
+    return text;
   }
 }

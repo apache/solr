@@ -16,9 +16,16 @@
  */
 package org.apache.solr.spelling;
 
-import java.util.Collection;
-import java.util.List;
+import java.io.IOException;
 import java.util.Map;
+import java.util.function.Supplier;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
@@ -51,6 +58,57 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     queryConverter.init(new NamedList<>());
   }
 
+  /** Resets the stream and reads its first token, for tests that convert a single-word query. */
+  private static SpellCheckToken firstToken(Supplier<TokenStream> supplier) throws IOException {
+    TokenStream stream = supplier.get();
+    stream.reset();
+    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+    OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
+    PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
+    FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
+    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
+    stream.incrementToken();
+    SpellCheckToken token =
+        new SpellCheckToken(
+            termAtt.toString(),
+            offsetAtt.startOffset(),
+            offsetAtt.endOffset(),
+            typeAtt.type(),
+            posIncAtt.getPositionIncrement(),
+            flagsAtt.getFlags(),
+            payloadAtt.getPayload());
+    while (stream.incrementToken()) {
+      // drain any remaining tokens before end()
+    }
+    stream.end();
+    stream.close();
+    return token;
+  }
+
+  /** A stream that emits exactly one token whose term text is empty. */
+  private static TokenStream singleEmptyTermTokenStream() {
+    return new TokenStream() {
+      private boolean done;
+
+      @Override
+      public boolean incrementToken() {
+        if (done) {
+          return false;
+        }
+        done = true;
+        clearAttributes();
+        return true;
+      }
+
+      @Override
+      public void reset() throws IOException {
+        super.reset();
+        done = false;
+      }
+    };
+  }
+
   @Test
   public void test() throws Exception {
     DirectSolrSpellChecker checker = new DirectSolrSpellChecker();
@@ -67,11 +125,13 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
             searcher -> {
 
               // check that 'fob' is corrected to 'foo'
-              Collection<Token> tokens = queryConverter.convert("fob");
-              SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
+              Supplier<TokenStream> tokenStreamSupplier = () -> queryConverter.convert("fob");
+              SpellingOptions spellOpts =
+                  new SpellingOptions(tokenStreamSupplier, searcher.getIndexReader());
               SpellingResult result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
+              Map<String, Integer> suggestions =
+                  result.get(firstToken(spellOpts.tokenStreamSupplier));
               assertFalse("suggestions shouldn't be empty", suggestions.isEmpty());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
               assertEquals("foo", entry.getKey());
@@ -81,18 +141,18 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
                   (int) entry.getValue());
 
               // check that 'super' is *not* corrected
-              spellOpts.tokens = queryConverter.convert("super");
+              spellOpts.tokenStreamSupplier = () -> queryConverter.convert("super");
               result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              suggestions = result.get(spellOpts.tokens.iterator().next());
+              suggestions = result.get(firstToken(spellOpts.tokenStreamSupplier));
               assertNotNull("suggestions shouldn't be null", suggestions);
               assertTrue("suggestions should be empty", suggestions.isEmpty());
 
               // Check empty token due to spellcheck.q = ""
-              spellOpts.tokens = List.of(new Token("", 0, 0));
+              spellOpts.tokenStreamSupplier = () -> singleEmptyTermTokenStream();
               result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              suggestions = result.get(spellOpts.tokens.iterator().next());
+              suggestions = result.get(new SpellCheckToken("", 0, 0));
               assertNotNull("suggestions shouldn't be null", suggestions);
               assertTrue("suggestions should be empty", suggestions.isEmpty());
               return null;
@@ -143,11 +203,13 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     h.getCore()
         .withSearcher(
             searcher -> {
-              Collection<Token> tokens = queryConverter.convert("anothar");
-              SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
+              Supplier<TokenStream> tokenStreamSupplier = () -> queryConverter.convert("anothar");
+              SpellingOptions spellOpts =
+                  new SpellingOptions(tokenStreamSupplier, searcher.getIndexReader());
               SpellingResult result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
+              Map<String, Integer> suggestions =
+                  result.get(firstToken(spellOpts.tokenStreamSupplier));
               assertNotNull("suggestions shouldn't be null", suggestions);
 
               if (limitQueryLength) {

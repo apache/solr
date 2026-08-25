@@ -16,9 +16,10 @@
  */
 package org.apache.solr.spelling;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
@@ -73,29 +74,32 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
 
     {
       // Prior to SOLR-8175, the required term would cause an AIOOBE.
-      Collection<Token> tokens = qc.convert("+pine apple good ness");
-      SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
+      Supplier<TokenStream> tokenStreamSupplier = () -> qc.convert("+pine apple good ness");
+      SpellingOptions spellOpts =
+          new SpellingOptions(tokenStreamSupplier, searcher.get().getIndexReader(), 10);
       SpellingResult result = checker.getSuggestions(spellOpts);
       searcher.decref();
       assertTrue(result != null && result.getSuggestions() != null);
       assertEquals(5, result.getSuggestions().size());
     }
 
-    Collection<Token> tokens = qc.convert("paintable pine apple good ness");
-    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
+    Supplier<TokenStream> tokenStreamSupplier = () -> qc.convert("paintable pine apple good ness");
+    SpellingOptions spellOpts =
+        new SpellingOptions(tokenStreamSupplier, searcher.get().getIndexReader(), 10);
     SpellingResult result = checker.getSuggestions(spellOpts);
     searcher.decref();
 
     assertTrue(result != null && result.getSuggestions() != null);
     assertEquals(9, result.getSuggestions().size());
 
-    for (Map.Entry<Token, LinkedHashMap<String, Integer>> s : result.getSuggestions().entrySet()) {
-      Token orig = s.getKey();
+    for (Map.Entry<SpellCheckToken, LinkedHashMap<String, Integer>> s :
+        result.getSuggestions().entrySet()) {
+      SpellCheckToken orig = s.getKey();
       String[] corr = s.getValue().keySet().toArray(new String[0]);
       if (orig.toString().equals("paintable")) {
         assertEquals(0, orig.startOffset());
         assertEquals(9, orig.endOffset());
-        assertEquals(9, orig.length());
+        assertEquals(9, orig.text().length());
         assertEquals(3, corr.length);
         assertEquals("paint able", corr[0]); // 1 op ; max doc freq=5
         assertEquals("pain table", corr[1]); // 1 op ; max doc freq=2
@@ -103,53 +107,53 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
       } else if (orig.toString().equals("pine apple")) {
         assertEquals(10, orig.startOffset());
         assertEquals(20, orig.endOffset());
-        assertEquals(10, orig.length());
+        assertEquals(10, orig.text().length());
         assertEquals(1, corr.length);
         assertEquals("pineapple", corr[0]);
       } else if (orig.toString().equals("paintable pine")) {
         assertEquals(0, orig.startOffset());
         assertEquals(14, orig.endOffset());
-        assertEquals(14, orig.length());
+        assertEquals(14, orig.text().length());
         assertEquals(1, corr.length);
         assertEquals("paintablepine", corr[0]);
       } else if (orig.toString().equals("good ness")) {
         assertEquals(21, orig.startOffset());
         assertEquals(30, orig.endOffset());
-        assertEquals(9, orig.length());
+        assertEquals(9, orig.text().length());
         assertEquals(1, corr.length);
         assertEquals("goodness", corr[0]);
       } else if (orig.toString().equals("pine apple good ness")) {
         assertEquals(10, orig.startOffset());
         assertEquals(30, orig.endOffset());
-        assertEquals(20, orig.length());
+        assertEquals(20, orig.text().length());
         assertEquals(1, corr.length);
         assertEquals("pineapplegoodness", corr[0]);
       } else if (orig.toString().equals("pine")) {
         assertEquals(10, orig.startOffset());
         assertEquals(14, orig.endOffset());
-        assertEquals(4, orig.length());
+        assertEquals(4, orig.text().length());
         assertEquals(1, corr.length);
         assertEquals("pi ne", corr[0]);
       } else if (orig.toString().equals("pine")) {
         assertEquals(10, orig.startOffset());
         assertEquals(14, orig.endOffset());
-        assertEquals(4, orig.length());
+        assertEquals(4, orig.text().length());
         assertEquals(1, corr.length);
         assertEquals("pi ne", corr[0]);
       } else if (orig.toString().equals("apple")) {
         assertEquals(15, orig.startOffset());
         assertEquals(20, orig.endOffset());
-        assertEquals(5, orig.length());
+        assertEquals(5, orig.text().length());
         assertEquals(0, corr.length);
       } else if (orig.toString().equals("good")) {
         assertEquals(21, orig.startOffset());
         assertEquals(25, orig.endOffset());
-        assertEquals(4, orig.length());
+        assertEquals(4, orig.text().length());
         assertEquals(0, corr.length);
       } else if (orig.toString().equals("ness")) {
         assertEquals(26, orig.startOffset());
         assertEquals(30, orig.endOffset());
-        assertEquals(4, orig.length());
+        assertEquals(4, orig.text().length());
         assertEquals(0, corr.length);
       } else {
         fail("Unexpected original result: " + orig);

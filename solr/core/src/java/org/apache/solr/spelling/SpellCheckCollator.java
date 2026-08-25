@@ -211,10 +211,10 @@ public class SpellCheckCollator {
     String corr = "";
     for (int i = 0; i < corrections.size(); i++) {
       SpellCheckCorrection correction = corrections.get(i);
-      Token tok = correction.getOriginal();
+      SpellCheckToken tok = correction.getOriginal();
       // we are replacing the query in order, but injected terms might cause
       // illegal offsets due to previous replacements.
-      if (tok.getPositionIncrement() == 0) continue;
+      if (tok.positionIncrement() == 0) continue;
       corr = correction.getCorrection();
       boolean addParenthesis = false;
       Character requiredOrProhibited = null;
@@ -233,7 +233,7 @@ public class SpellCheckCollator {
             requiredOrProhibited = previousChar;
           }
           bump++;
-        } else if ((tok.getFlags() & QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG)
+        } else if ((tok.flags() & QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG)
             == QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG) {
           addParenthesis = true;
           corrSb.insert(indexOfSpace + bump, "AND ");
