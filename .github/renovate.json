@@ -44,6 +44,11 @@
       "description": "Pin com.carrotsearch:hppc to 0.10.0; 0.11.0+ is compiled for Java 21 but branch_9x builds with Java 11",
       "matchPackageNames": ["com.carrotsearch:hppc"],
       "allowedVersions": "0.10.0"
+    },
+    {
+      "description": "Keep com.diffplug.spotless on the 7.x line on branch_9x; 8.0.0 bumps the required Java to 17, and since this plugin is applied across the whole build, it would break gradle itself on Java 11",
+      "matchPackageNames": ["com.diffplug.spotless"],
+      "allowedVersions": "<8.0.0"
     }
   ],
   "schedule": ["before 9am on the first day of the month"],
