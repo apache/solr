@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +49,6 @@ import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -60,7 +58,6 @@ import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.Origin.Address;
@@ -648,10 +645,14 @@ public class HttpJettySolrClient extends HttpSolrClient {
     }
   }
 
+  private record PartContent(
+      RequestWriter.ContentWriter writer, OutputStreamRequestContent content) {}
+
   private static class MakeRequestReturnValue {
     final Request request;
     final RequestWriter.ContentWriter contentWriter;
     final OutputStreamRequestContent requestContent;
+    final List<PartContent> partContents;
 
     MakeRequestReturnValue(
         Request request,
@@ -660,12 +661,21 @@ public class HttpJettySolrClient extends HttpSolrClient {
       this.request = request;
       this.contentWriter = contentWriter;
       this.requestContent = requestContent;
+      this.partContents = null;
+    }
+
+    MakeRequestReturnValue(Request request, List<PartContent> partContents) {
+      this.request = request;
+      this.contentWriter = null;
+      this.requestContent = null;
+      this.partContents = partContents;
     }
 
     MakeRequestReturnValue(Request request) {
       this.request = request;
       this.contentWriter = null;
       this.requestContent = null;
+      this.partContents = null;
     }
   }
 
@@ -690,36 +700,31 @@ public class HttpJettySolrClient extends HttpSolrClient {
     if (SolrRequest.METHOD.POST == solrRequest.getMethod()
         || SolrRequest.METHOD.PUT == solrRequest.getMethod()) {
       RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
-      Collection<ContentStream> streams =
-          contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
-
-      boolean isMultipart = isMultipart(streams);
 
       HttpMethod method =
           SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
 
-      if (contentWriter != null) {
+      if (contentWriter instanceof RequestWriter.MultipartContentWriter multipartWriter) {
+        // send server list and request list as query string params
+        ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
+        queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), wparams));
+        Request req = httpClient.newRequest(url + queryParams.toQueryString()).method(method);
+        var r = fillMultipartContent(req, multipartWriter, wparams);
+        decorateRequest(r.request, solrRequest, isAsync);
+        return r;
+
+      } else if (contentWriter != null) {
         var content = new OutputStreamRequestContent(contentWriter.getContentType());
         var r = httpClient.newRequest(url + wparams.toQueryString()).method(method).body(content);
         decorateRequest(r, solrRequest, isAsync);
         return new MakeRequestReturnValue(r, contentWriter, content);
 
-      } else if (streams == null || isMultipart) {
-        // send server list and request list as query string params
+      } else {
+        // application/x-www-form-urlencoded, params only
         ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
         queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), wparams));
         Request req = httpClient.newRequest(url + queryParams.toQueryString()).method(method);
-        var r = fillContentStream(req, streams, wparams, isMultipart);
-        decorateRequest(r, solrRequest, isAsync);
-        return new MakeRequestReturnValue(r);
-
-      } else {
-        // If it has one stream, it is the post body, put the params in the URL
-        ContentStream contentStream = streams.iterator().next();
-        var content =
-            new InputStreamRequestContent(
-                contentStream.getContentType(), contentStream.getStream());
-        var r = httpClient.newRequest(url + wparams.toQueryString()).method(method).body(content);
+        var r = fillParamsOnlyBody(req, wparams);
         decorateRequest(r, solrRequest, isAsync);
         return new MakeRequestReturnValue(r);
       }
@@ -736,63 +741,62 @@ public class HttpJettySolrClient extends HttpSolrClient {
       try (var output = mrrv.requestContent.getOutputStream()) {
         mrrv.contentWriter.write(output);
       }
+    } else if (mrrv.partContents != null) {
+      for (PartContent part : mrrv.partContents) {
+        try (var output = part.content().getOutputStream()) {
+          part.writer().write(output);
+        }
+      }
     }
     return mrrv.request;
   }
 
-  private Request fillContentStream(
-      Request req,
-      Collection<ContentStream> streams,
-      ModifiableSolrParams wparams,
-      boolean isMultipart)
-      throws IOException {
-    if (isMultipart) {
-      // multipart/form-data
-      try (MultiPartRequestContent content = new MultiPartRequestContent()) {
-        Iterator<String> iter = wparams.getParameterNamesIterator();
-        while (iter.hasNext()) {
-          String key = iter.next();
-          String[] vals = wparams.getParams(key);
-          if (vals != null) {
-            for (String val : vals) {
-              content.addPart(
-                  new MultiPart.ContentSourcePart(key, null, null, new StringRequestContent(val)));
-            }
-          }
-        }
-        if (streams != null) {
-          for (ContentStream contentStream : streams) {
-            String contentType = contentStream.getContentType();
-            if (contentType == null) {
-              contentType = "multipart/form-data"; // default
-            }
-            String name = contentStream.getName();
-            if (name == null) {
-              name = "";
-            }
-            HttpFields.Mutable fields = HttpFields.build(1);
-            fields.add(HttpHeader.CONTENT_TYPE, contentType);
-            content.addPart(
-                new MultiPart.ContentSourcePart(
-                    name,
-                    contentStream.getName(),
-                    fields,
-                    new InputStreamRequestContent(contentStream.getStream())));
-          }
-        }
-        req.body(content);
-      }
-    } else {
-      // application/x-www-form-urlencoded
-      String queryString = wparams.toQueryString();
-      // remove the leading "?" if there is any
-      queryString = queryString.startsWith("?") ? queryString.substring(1) : queryString;
-      req.body(
-          new StringRequestContent(
-              "application/x-www-form-urlencoded", queryString, FALLBACK_CHARSET));
-    }
-
+  private Request fillParamsOnlyBody(Request req, ModifiableSolrParams wparams) {
+    String queryString = wparams.toQueryString();
+    // remove the leading "?" if there is any
+    queryString = queryString.startsWith("?") ? queryString.substring(1) : queryString;
+    req.body(
+        new StringRequestContent(
+            "application/x-www-form-urlencoded", queryString, FALLBACK_CHARSET));
     return req;
+  }
+
+  private MakeRequestReturnValue fillMultipartContent(
+      Request req,
+      RequestWriter.MultipartContentWriter multipartWriter,
+      ModifiableSolrParams wparams)
+      throws IOException {
+    MultiPartRequestContent content = new MultiPartRequestContent();
+    try {
+      Iterator<String> iter = wparams.getParameterNamesIterator();
+      while (iter.hasNext()) {
+        String key = iter.next();
+        String[] vals = wparams.getParams(key);
+        if (vals != null) {
+          for (String val : vals) {
+            content.addPart(
+                new MultiPart.ContentSourcePart(key, null, null, new StringRequestContent(val)));
+          }
+        }
+      }
+      List<PartContent> partContents = new ArrayList<>();
+      for (RequestWriter.NamedPart part : multipartWriter.getParts()) {
+        String contentType = part.writer.getContentType();
+        if (contentType == null) {
+          contentType = "multipart/form-data"; // default
+        }
+        String name = part.name == null ? "" : part.name;
+        HttpFields.Mutable fields = HttpFields.build(1);
+        fields.add(HttpHeader.CONTENT_TYPE, contentType);
+        var partContent = new OutputStreamRequestContent(contentType);
+        content.addPart(new MultiPart.ContentSourcePart(name, part.name, fields, partContent));
+        partContents.add(new PartContent(part.writer, partContent));
+      }
+      req.body(content);
+      return new MakeRequestReturnValue(req, partContents);
+    } finally {
+      content.close();
+    }
   }
 
   @Override

@@ -183,12 +183,6 @@ public class WrappedSolrRequestTest extends SolrTestCase {
   }
 
   @Test
-  @SuppressWarnings("UndefinedEquals") // Reference-check equality here is fine.
-  public void testGetContentStreams() throws Exception {
-    assertEquals(inner.getContentStreams(), wrapper.getContentStreams());
-  }
-
-  @Test
   public void testGetContentWriter() {
     RequestWriter.ContentWriter cw =
         inner.withContent(new byte[] {1, 2, 3}, "application/octet-stream").contentWriter;

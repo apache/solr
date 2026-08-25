@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClientTestBase;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -48,6 +49,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ServletFixtures;
 import org.apache.solr.util.ServletFixtures.DebugServlet;
@@ -86,6 +88,40 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
       fail("No exception thrown.");
     } catch (SolrServerException e) {
       assertIsTimeout(e);
+    }
+  }
+
+  @Test
+  public void testMultipartUpload() throws Exception {
+    ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
+    ContentStreamBase.StringStream first = new ContentStreamBase.StringStream("first content");
+    first.setName("firstPart");
+    first.setContentType("text/plain");
+    ContentStreamBase.StringStream second = new ContentStreamBase.StringStream("second content");
+    second.setName("secondPart");
+    second.setContentType("text/plain");
+    req.addContentStream(first);
+    req.addContentStream(second);
+    req.setParam("someParam", "someValue");
+
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    try (var client =
+        new HttpJettySolrClient.Builder(url).withDefaultCollection(DEFAULT_COLLECTION).build()) {
+      try {
+        client.request(req);
+      } catch (RemoteSolrException ignored) {
+        // DebugServlet doesn't return a real Solr response; only the captured request matters
+      }
+
+      String contentType = DebugServlet.headers.get("content-type");
+      assertTrue(contentType, contentType != null && contentType.startsWith("multipart/form-data"));
+      String body = new String(DebugServlet.requestBody, StandardCharsets.UTF_8);
+      assertTrue(body, body.contains("firstPart"));
+      assertTrue(body, body.contains("first content"));
+      assertTrue(body, body.contains("secondPart"));
+      assertTrue(body, body.contains("second content"));
+    } finally {
+      DebugServlet.clear();
     }
   }
 

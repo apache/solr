@@ -20,8 +20,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.request.RequestWriter.NamedPart;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 
@@ -44,15 +45,22 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
   }
 
   @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return contentStreams;
+  public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+    if (contentStreams == null || contentStreams.isEmpty()) return null;
+    if (contentStreams.size() == 1) {
+      return streamWriter(contentStreams.get(0));
+    }
+    return new RequestWriter.MultipartContentWriter() {
+      @Override
+      public List<NamedPart> getParts() {
+        return contentStreams.stream()
+            .map(cs -> new NamedPart(cs.getName(), streamWriter(cs)))
+            .collect(Collectors.toList());
+      }
+    };
   }
 
-  @Override
-  public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-    if (contentStreams == null || contentStreams.isEmpty() || contentStreams.size() > 1)
-      return null;
-    ContentStream stream = contentStreams.get(0);
+  private static RequestWriter.ContentWriter streamWriter(ContentStream stream) {
     return new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
@@ -73,7 +81,6 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
    *
    * @param file The File to add.
    * @throws IOException if there was an error with the file.
-   * @see #getContentStreams()
    * @see org.apache.solr.common.util.ContentStreamBase.FileStream
    */
   public void addFile(Path file, String contentType) throws IOException {
@@ -83,7 +90,7 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
   }
 
   /**
-   * Add a {@link org.apache.solr.common.util.ContentStream} to {@link #getContentStreams()}
+   * Add a {@link org.apache.solr.common.util.ContentStream} to be sent with this request.
    *
    * @param contentStream The {@link org.apache.solr.common.util.ContentStream}
    */

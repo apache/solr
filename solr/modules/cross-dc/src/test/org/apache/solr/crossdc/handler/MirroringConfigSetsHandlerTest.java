@@ -155,7 +155,9 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
       if (expectStreams) {
         List<ContentStream> sourceStreams = (List<ContentStream>) req.getContentStreams();
         assertNotNull("source streams missing", sourceStreams);
-        List<ContentStream> mirroredStreams = (List<ContentStream>) solrRequest.getContentStreams();
+        List<ContentStream> mirroredStreams =
+            (List<ContentStream>)
+                ((MirroredSolrRequest.MirroredConfigSetRequest) solrRequest).getRawContentStreams();
         assertNotNull("mirrored streams missing", mirroredStreams);
         assertEquals("number of streams", sourceStreams.size(), mirroredStreams.size());
         for (int i = 0; i < sourceStreams.size(); i++) {

@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -202,11 +201,6 @@ public abstract class ConfigSetAdminRequest<
     public final Upload setUploadStream(final ContentStream stream) {
       this.stream = stream;
       return getThis();
-    }
-
-    @Override
-    public Collection<ContentStream> getContentStreams() throws IOException {
-      return java.util.List.of(stream);
     }
 
     @Override

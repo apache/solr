@@ -20,13 +20,16 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
@@ -110,9 +113,41 @@ public class MirroredSolrRequest<T extends SolrResponse> {
       this.params = params;
     }
 
-    @Override
-    public Collection<ContentStream> getContentStreams() {
+    /** The raw streams, for serializers that need the individual name/type/bytes directly. */
+    public Collection<ContentStream> getRawContentStreams() {
       return contentStreams;
+    }
+
+    @Override
+    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+      if (contentStreams == null || contentStreams.isEmpty()) return null;
+      if (contentStreams.size() == 1) {
+        return streamWriter(contentStreams.iterator().next());
+      }
+      return new RequestWriter.MultipartContentWriter() {
+        @Override
+        public java.util.List<RequestWriter.NamedPart> getParts() {
+          return contentStreams.stream()
+              .map(cs -> new RequestWriter.NamedPart(cs.getName(), streamWriter(cs)))
+              .collect(Collectors.toList());
+        }
+      };
+    }
+
+    private static RequestWriter.ContentWriter streamWriter(ContentStream stream) {
+      return new RequestWriter.ContentWriter() {
+        @Override
+        public void write(OutputStream os) throws IOException {
+          try (var inStream = stream.getStream()) {
+            inStream.transferTo(os);
+          }
+        }
+
+        @Override
+        public String getContentType() {
+          return stream.getContentType();
+        }
+      };
     }
 
     @Override

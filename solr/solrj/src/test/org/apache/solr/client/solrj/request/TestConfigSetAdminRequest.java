@@ -43,9 +43,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
 
     upload.setUploadFile(tmpFile, "application/zip");
 
-    assertEquals(1, upload.getContentStreams().size());
-    assertEquals(
-        "application/zip", upload.getContentStreams().stream().findFirst().get().getContentType());
+    assertEquals("application/zip", upload.getContentWriter(null).getContentType());
 
     assertNull(upload.getParams().get(ConfigSetParams.FILE_PATH));
     assertNull(upload.getParams().get(ConfigSetParams.OVERWRITE));
@@ -56,9 +54,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
         .setFilePath("solrconfig.xml")
         .setOverwrite(true);
 
-    assertEquals(1, upload.getContentStreams().size());
-    assertEquals(
-        "application/xml", upload.getContentStreams().stream().findFirst().get().getContentType());
+    assertEquals("application/xml", upload.getContentWriter(null).getContentType());
 
     assertEquals("solrconfig.xml", upload.getParams().get(ConfigSetParams.FILE_PATH));
     assertEquals("true", upload.getParams().get(ConfigSetParams.OVERWRITE));
