@@ -197,7 +197,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       DocCollection docCollection = getCollectionState(collectionName);
       assertNotNull(docCollection);
       assertEquals("Expecting 2 shards", 2, docCollection.getSlices().size());
-      assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicas().size());
+      assertEquals("Expecting 4 replicas per shard", 8, docCollection.replicaStream().count());
       assertEquals(
           "Expecting 8 tlog replicas, 4 per shard",
           8,
@@ -718,7 +718,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   private List<Replica> getNonLeaderReplicas(String collectionName) {
-    return getCollectionState(collectionName).getReplicas().stream()
+    return getCollectionState(collectionName)
+        .replicaStream()
         .filter((r) -> !r.getBool("leader", false))
         .collect(Collectors.toList());
   }
@@ -976,7 +977,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     DocCollection docCollection = getCollectionState(collectionName);
     waitForNumDocsInAllReplicas(
         numDocs,
-        docCollection.getReplicas().stream()
+        docCollection
+            .replicaStream()
             .filter(r -> r.getState() == Replica.State.ACTIVE)
             .collect(Collectors.toList()),
         timeout);
@@ -1062,15 +1064,17 @@ public class TestTlogReplica extends SolrCloudTestCase {
    */
   private CollectionStatePredicate clusterStateReflectsActiveAndDownReplicas() {
     return (liveNodes, collectionState) -> {
-      for (Replica r : collectionState.getReplicas()) {
-        if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
-          return false;
-        }
-        if (r.getState() == Replica.State.DOWN && liveNodes.contains(r.getNodeName())) {
-          return false;
-        }
-        if (r.getState() == Replica.State.ACTIVE && !liveNodes.contains(r.getNodeName())) {
-          return false;
+      for (Slice slice : collectionState) {
+        for (Replica r : slice.getReplicas()) {
+          if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
+            return false;
+          }
+          if (r.getState() == Replica.State.DOWN && liveNodes.contains(r.getNodeName())) {
+            return false;
+          }
+          if (r.getState() == Replica.State.ACTIVE && !liveNodes.contains(r.getNodeName())) {
+            return false;
+          }
         }
       }
       return true;
