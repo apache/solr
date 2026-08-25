@@ -41,11 +41,8 @@ public abstract class RequestWriter {
   }
 
   /**
-   * A {@link ContentWriter} for a request body made up of several named parts (e.g. a file upload
-   * alongside form fields), sent as {@code multipart/form-data}. {@link #write} and {@link
-   * #getContentType} are unused for a multipart body -- transport clients that support multipart
-   * build it directly from {@link #getParts}; ones that don't should reject it explicitly instead
-   * of calling {@link #write}.
+   * A {@code multipart/form-data} body made of several named parts; build it from {@link
+   * #getParts}.
    */
   public interface MultipartContentWriter extends ContentWriter {
 

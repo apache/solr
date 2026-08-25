@@ -110,7 +110,6 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
       try {
         client.request(req);
       } catch (RemoteSolrException ignored) {
-        // DebugServlet doesn't return a real Solr response; only the captured request matters
       }
 
       String contentType = DebugServlet.headers.get("content-type");
