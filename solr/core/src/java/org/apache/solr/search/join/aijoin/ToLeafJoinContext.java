@@ -35,7 +35,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -356,15 +355,10 @@ class ToLeafJoinContext {
       LeafReaderContext joinContext =
           lastSeenJoinSearcher.getLeafContexts().get(joinSegmentRef.joinSegmentLeafOrd());
       assert AIJoinUtil.segmentName(joinContext).equals(joinSegmentRef.joinSegmentName());
-      //      NumericDocValues numDV = joinContext
-      //          .reader()
-      //          .getNumericDocValues(
-      //              );
-      // read multivalue numerics for future extension
-      // despite it's written as singlevalue numeric as current  limitation
-      return DocValues.getSortedNumeric(
-          joinContext.reader(),
-          AIJoinUtil.TO_DOC_VAL_BY_FROM_DOCNUM + joinSegmentRef.pairFieldName());
+      return joinContext
+          .reader()
+          .getSortedNumericDocValues(
+              AIJoinUtil.TO_DOC_VAL_BY_FROM_DOCNUM + joinSegmentRef.pairFieldName());
     }
 
     /**
