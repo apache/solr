@@ -1620,9 +1620,8 @@ Multiple collections cannot be backed up to the same location.
 
 [NOTE]
 ====
-Previous versions of Solr supported a different backup file format that lacked the incremental support described above.
-Solr can still restore from backups that use this old format, but creating new backups of this format is not recommended and is officially deprecated.
-See the `incremental` parameter below for more information.
+Previous versions of Solr supported creating a different, non-incremental backup file format that lacked the incremental support described above.
+That format can no longer be created, but Solr can still restore from backups that already use it.
 ====
 
 === BACKUP Parameters
@@ -1647,7 +1646,7 @@ s|Required |Default: none
 What to name the backup that is created.
 Provided as a query parameter for v1 requests, or as a path segment for v2 requests.
 +
-For incremental backups, the backup name should be reused to add new backup points to the existing backup. For non-incremental backups (deprecated), this name is checked to ensure it doesn't already exist, and an error message is raised if it does. 
+The backup name should be reused to add new backup points to the existing backup.
 
 `location`::
 +
@@ -1695,7 +1694,6 @@ If no repository is specified then the local filesystem repository will be used 
 +
 The upper-bound on how many backups should be retained at the backup location.
 If the current number exceeds this bound, older backups will be deleted until only `maxNumBackupPoints` backups remain.
-This parameter has no effect if `incremental=false` is specified.
 
 `backupConfigset`::
 +
@@ -1715,17 +1713,6 @@ Indicates if configset files should be included with the index backup or not. No
 +
 Allows storing additional key/value pairs for custom information related to the backup. In v2, the value is a map of key-value pairs.
 
-`incremental`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `true`
-|===
-+
-A boolean parameter allowing users to choose whether to create an incremental (`incremental=true`) or a "full" (`incremental=false`) backup.
-If unspecified, backups are done incrementally by default.
-Incremental backups are preferred in all known circumstances and "full" (i.e. non-incremental) backups are deprecated, so this parameter should only be used after much consideration.
-
 `indexBackup` (v1), `backupStrategy` (v2)::
 +
 [%autowidth,frame=none]
@@ -1735,16 +1722,6 @@ Incremental backups are preferred in all known circumstances and "full" (i.e. no
 +
 A string parameter allowing users to specify one of several different backup "strategies".
 Valid options are `copy-files` (which backs up both the collection configset and index data), and `none` (which will only backup the collection configset).
-
-`commitName` (v1), `snapshotName` (v2)::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The name of the collection "snapshot" to create a backup from.
-If not provided, Solr will create the backup from the current collection state (instead of a previous snapshotted state).
 
 [tabs#backup-response-incremental]
 ======

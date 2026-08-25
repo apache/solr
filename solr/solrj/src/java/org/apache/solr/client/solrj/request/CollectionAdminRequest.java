@@ -1091,9 +1091,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected final String name;
     protected Optional<String> repositoryName = Optional.empty();
     protected String location;
-    protected Optional<String> commitName = Optional.empty();
     protected Optional<String> indexBackupStrategy = Optional.empty();
-    protected boolean incremental = true;
     protected Optional<Integer> maxNumBackupPoints = Optional.empty();
     protected boolean backupConfigset = true;
     protected Properties extraProperties;
@@ -1122,15 +1120,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
-    public Optional<String> getCommitName() {
-      return commitName;
-    }
-
-    public Backup setCommitName(String commitName) {
-      this.commitName = Optional.ofNullable(commitName);
-      return this;
-    }
-
     public Optional<String> getIndexBackupStrategy() {
       return indexBackupStrategy;
     }
@@ -1141,32 +1130,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
 
     /**
-     * Specifies the backup method to use: the deprecated 'full-snapshot' format, or the current
-     * 'incremental' format.
-     *
-     * <p>Defaults to 'true' if unspecified.
-     *
-     * <p>Incremental backups are almost always preferable to the deprecated 'full-snapshot' format,
-     * as incremental backups can take advantage of previously backed-up files and will only upload
-     * those that aren't already stored in the repository - saving lots of time and network
-     * bandwidth. The older 'full-snapshot' format should only be used by experts with a particular
-     * reason to do so.
-     *
-     * @param incremental true to use incremental backups, false otherwise.
-     */
-    @Deprecated
-    public Backup setIncremental(boolean incremental) {
-      this.incremental = incremental;
-      return this;
-    }
-
-    /**
      * Specifies the maximum number of backup points to keep at the backup location.
      *
      * <p>If the current backup causes the number of stored backup points to exceed this value, the
      * oldest backup points are cleaned up so that only {@code #maxNumBackupPoints} are retained.
-     *
-     * <p>This parameter is ignored if the request uses a non-incremental backup.
      *
      * @param maxNumBackupPoints the number of backup points to retain after the current backup
      */
@@ -1208,16 +1175,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (repositoryName.isPresent()) {
         params.set(BACKUP_REPOSITORY, repositoryName.get());
       }
-      if (commitName.isPresent()) {
-        params.set(CoreAdminParams.COMMIT_NAME, commitName.get());
-      }
       if (indexBackupStrategy.isPresent()) {
         params.set(CollectionAdminParams.INDEX_BACKUP_STRATEGY, indexBackupStrategy.get());
       }
       if (maxNumBackupPoints.isPresent()) {
         params.set(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints.get());
       }
-      params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
       params.set(CoreAdminParams.BACKUP_CONFIGSET, backupConfigset);
       return params;
     }

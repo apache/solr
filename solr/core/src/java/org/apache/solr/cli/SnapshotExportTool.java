@@ -115,7 +115,6 @@ public class SnapshotExportTool extends ToolBase {
     try {
       CollectionAdminRequest.Backup backup =
           new CollectionAdminRequest.Backup(collectionName, snapshotName);
-      backup.setCommitName(snapshotName);
       backup.setIndexBackupStrategy(CollectionAdminParams.COPY_FILES_STRATEGY);
       backup.setLocation(destPath);
       if (backupRepo != null) {

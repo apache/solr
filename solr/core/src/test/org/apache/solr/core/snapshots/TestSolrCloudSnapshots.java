@@ -90,15 +90,6 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
     BackupRestoreUtils.verifyDocs(nDocs, solrClient, collectionName);
 
-    // Set a collection property
-    final boolean collectionPropertySet = usually();
-    if (collectionPropertySet) {
-      CollectionAdminRequest.CollectionProp setProperty =
-          CollectionAdminRequest.setCollectionProperty(
-              collectionName, "test.property", "test.value");
-      setProperty.process(solrClient);
-    }
-
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
 
     // Verify if snapshot creation works with replica failures.
@@ -166,64 +157,6 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
           assertEquals(coreSnapshot.getGenerationNumber(), metaData.get().getGenerationNumber());
         }
       }
-    }
-
-    // Delete all documents.
-    {
-      solrClient.deleteByQuery(collectionName, "*:*");
-      solrClient.commit(collectionName);
-      BackupRestoreUtils.verifyDocs(0, solrClient, collectionName);
-    }
-
-    String backupLocation = createTempDir().toString();
-    String backupName = "mytestbackup";
-    String restoreCollectionName = collectionName + "_restored";
-
-    // Create a backup using the earlier created snapshot.
-    {
-      CollectionAdminRequest.Backup backup =
-          CollectionAdminRequest.backupCollection(collectionName, backupName)
-              .setLocation(backupLocation)
-              .setCommitName(commitName)
-              .setIncremental(false);
-      if (random().nextBoolean()) {
-        assertEquals(0, backup.process(solrClient).getStatus());
-      } else {
-        assertEquals(RequestStatusState.COMPLETED, backup.processAndWait(solrClient, 30)); // async
-      }
-    }
-
-    // Restore backup.
-    {
-      CollectionAdminRequest.Restore restore =
-          CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
-              .setLocation(backupLocation);
-      //      if (replicaFailures) {
-      //        // In this case one of the Solr servers would be down. Hence, we need to increase
-      //        // max_shards_per_node property for restore command to succeed.
-      //        restore.setMaxShardsPerNode(2);
-      //      }
-      if (random().nextBoolean()) {
-        assertEquals(0, restore.process(solrClient).getStatus());
-      } else {
-        assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(solrClient, 30)); // async
-      }
-      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
-          restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), true, 30);
-      BackupRestoreUtils.verifyDocs(nDocs, solrClient, restoreCollectionName);
-    }
-
-    // Check collection property
-    Map<String, String> collectionProperties =
-        ZkStateReader.from(solrClient).getCollectionProperties(restoreCollectionName);
-    if (collectionPropertySet) {
-      assertEquals(
-          "Snapshot restore hasn't restored collection properties",
-          "test.value",
-          collectionProperties.get("test.property"));
-    } else {
-      assertNull(
-          "Collection property shouldn't be present", collectionProperties.get("test.property"));
     }
 
     // Verify if the snapshot deletion works correctly when one or more replicas containing the

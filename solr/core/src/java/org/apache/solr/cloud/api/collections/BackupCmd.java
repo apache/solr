@@ -29,15 +29,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -50,10 +47,6 @@ import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.SnapshotStatus;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +76,6 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     }
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    boolean incremental = message.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
     boolean backupConfigset = message.getBool(CoreAdminParams.BACKUP_CONFIGSET, true);
     String configName =
         ccc.getSolrCloudManager()
@@ -103,13 +95,10 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       // Backup location
       URI location = repository.createDirectoryURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
       final URI backupUri =
-          createAndValidateBackupPath(
-              repository, incremental, location, backupName, collectionName);
+          createAndValidateBackupPath(repository, location, backupName, collectionName);
 
       BackupManager backupMgr =
-          (incremental)
-              ? BackupManager.forIncrementalBackup(repository, ccc.getZkStateReader(), backupUri)
-              : BackupManager.forBackup(repository, ccc.getZkStateReader(), backupUri);
+          BackupManager.forIncrementalBackup(repository, ccc.getZkStateReader(), backupUri);
 
       String strategy =
           message.getStr(
@@ -118,27 +107,8 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       switch (strategy) {
         case CollectionAdminParams.COPY_FILES_STRATEGY:
           {
-            if (incremental) {
-              try {
-                incrementalCopyIndexFiles(
-                    adminCmdContext,
-                    backupUri,
-                    collectionName,
-                    message,
-                    results,
-                    backupProperties,
-                    backupMgr);
-              } catch (SolrException e) {
-                log.error(
-                    "Error happened during incremental backup for collection: {}",
-                    collectionName,
-                    e);
-                CollectionHandlingUtils.cleanBackup(
-                    repository, backupUri, backupMgr.getBackupId(), ccc);
-                throw e;
-              }
-            } else {
-              copyIndexFiles(
+            try {
+              incrementalCopyIndexFiles(
                   adminCmdContext,
                   backupUri,
                   collectionName,
@@ -146,6 +116,14 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
                   results,
                   backupProperties,
                   backupMgr);
+            } catch (SolrException e) {
+              log.error(
+                  "Error happened during incremental backup for collection: {}",
+                  collectionName,
+                  e);
+              CollectionHandlingUtils.cleanBackup(
+                  repository, backupUri, backupMgr.getBackupId(), ccc);
+              throw e;
             }
             break;
           }
@@ -193,30 +171,20 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       log.info("Completed backing up ZK data for backupName={}", backupName);
 
       int maxNumBackup = message.getInt(CoreAdminParams.MAX_NUM_BACKUP_POINTS, -1);
-      if (incremental && maxNumBackup != -1) {
+      if (maxNumBackup != -1) {
         CollectionHandlingUtils.deleteBackup(repository, backupUri, maxNumBackup, results, ccc);
       }
     }
   }
 
   private URI createAndValidateBackupPath(
-      BackupRepository repository,
-      boolean incremental,
-      URI location,
-      String backupName,
-      String collection)
+      BackupRepository repository, URI location, String backupName, String collection)
       throws IOException {
     final URI backupNamePath = repository.resolveDirectory(location, backupName);
 
-    if ((!incremental) && repository.exists(backupNamePath)) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "The backup directory already exists: " + backupNamePath);
-    }
-
     if (!repository.exists(backupNamePath)) {
       repository.createDirectory(backupNamePath);
-    } else if (incremental) {
+    } else {
       final String[] directoryContents = repository.listAll(backupNamePath);
       if (directoryContents.length == 1) {
         String directoryContentsName = directoryContents[0];
@@ -241,10 +209,6 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
 
-    if (!incremental) {
-      return backupNamePath;
-    }
-
     // Incremental backups have an additional directory named after the collection that needs
     // created
     final URI backupPathWithCollection = repository.resolveDirectory(backupNamePath, collection);
@@ -254,47 +218,6 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     BackupFilePaths incBackupFiles = new BackupFilePaths(repository, backupPathWithCollection);
     incBackupFiles.createIncrementalBackupFolders();
     return backupPathWithCollection;
-  }
-
-  private Replica selectReplicaWithSnapshot(CollectionSnapshotMetaData snapshotMeta, Slice slice) {
-    // The goal here is to choose the snapshot of the replica which was the leader at the time
-    // snapshot was created.
-    // If that is not possible, we choose any other replica for the given shard.
-    Collection<CoreSnapshotMetaData> snapshots =
-        snapshotMeta.getReplicaSnapshotsForShard(slice.getName());
-
-    Optional<CoreSnapshotMetaData> leaderCore =
-        snapshots.stream().filter(CoreSnapshotMetaData::isLeader).findFirst();
-    if (leaderCore.isPresent()) {
-      if (log.isInfoEnabled()) {
-        log.info(
-            "Replica {} was the leader when snapshot {} was created.",
-            leaderCore.get().getCoreName(),
-            snapshotMeta.getName());
-      }
-      Replica r = slice.getReplica(leaderCore.get().getCoreName());
-      if ((r != null) && !r.getState().equals(State.DOWN)) {
-        return r;
-      }
-    }
-
-    Optional<Replica> r =
-        slice.getReplicas().stream()
-            .filter(
-                x ->
-                    x.getState() != State.DOWN && snapshotMeta.isSnapshotExists(slice.getName(), x))
-            .findFirst();
-
-    if (r.isEmpty()) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR,
-          "Unable to find any live replica with a snapshot named "
-              + snapshotMeta.getName()
-              + " for shard "
-              + slice.getName());
-    }
-
-    return r.get();
   }
 
   private void incrementalCopyIndexFiles(
@@ -335,8 +258,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       }
       String coreName = replica.getStr(CORE_NAME_PROP);
 
-      ModifiableSolrParams params =
-          coreBackupParams(backupUri, repoName, slice, coreName, true /* incremental backup */);
+      ModifiableSolrParams params = coreBackupParams(backupUri, repoName, slice, coreName);
       params.set(CoreAdminParams.BACKUP_INCREMENTAL, true);
       previousProps
           .flatMap(bp -> bp.getShardBackupIdFor(slice.getName()))
@@ -363,7 +285,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
 
     // Aggregating result from different shards
     NamedList<Object> aggRsp =
-        aggregateResults(results, collectionName, slices, backupManager, backupProperties, true);
+        aggregateResults(results, collectionName, slices, backupManager, backupProperties);
     results.add("response", aggRsp);
   }
 
@@ -372,14 +294,11 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       String collectionName,
       Collection<Slice> slices,
       BackupManager backupManager,
-      BackupProperties backupProps,
-      boolean incremental) {
+      BackupProperties backupProps) {
     NamedList<Object> aggRsp = new SimpleOrderedMap<>();
     aggRsp.add("collection", collectionName);
     aggRsp.add("numShards", slices.size());
-    if (incremental) {
-      aggRsp.add("backupId", backupManager.getBackupId().id);
-    }
+    aggRsp.add("backupId", backupManager.getBackupId().id);
     aggRsp.add("indexVersion", backupProps.getIndexVersion());
     aggRsp.add("startTime", backupProps.getStartTime());
     if (backupProps.getExtraProperties() != null) {
@@ -431,7 +350,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   private ModifiableSolrParams coreBackupParams(
-      URI backupPath, String repoName, Slice slice, String coreName, boolean incremental) {
+      URI backupPath, String repoName, Slice slice, String coreName) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString());
     params.set(NAME, slice.getName());
@@ -439,110 +358,6 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     // note: index dir will be here then the "snapshot." + slice name
     params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
     params.set(CORE_NAME_PROP, coreName);
-    params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
     return params;
-  }
-
-  private void copyIndexFiles(
-      AdminCmdContext adminCmdContext,
-      URI backupPath,
-      String collectionName,
-      ZkNodeProps request,
-      NamedList<Object> results,
-      BackupProperties backupProperties,
-      BackupManager backupManager)
-      throws Exception {
-    String backupName = request.getStr(NAME);
-    String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    ShardHandler shardHandler = ccc.newShardHandler();
-
-    String commitName = request.getStr(CoreAdminParams.COMMIT_NAME);
-    Optional<CollectionSnapshotMetaData> snapshotMeta = Optional.empty();
-    if (commitName != null) {
-      SolrZkClient zkClient = ccc.getZkStateReader().getZkClient();
-      snapshotMeta =
-          SolrSnapshotManager.getCollectionLevelSnapshot(zkClient, collectionName, commitName);
-      if (snapshotMeta.isEmpty()) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Snapshot with name "
-                + commitName
-                + " does not exist for collection "
-                + collectionName);
-      }
-      if (snapshotMeta.get().getStatus() != SnapshotStatus.Successful) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Snapshot with name "
-                + commitName
-                + " for collection "
-                + collectionName
-                + " has not completed successfully. The status is "
-                + snapshotMeta.get().getStatus());
-      }
-    }
-
-    log.info(
-        "Starting backup of collection={} with backupName={} at location={}",
-        collectionName,
-        backupName,
-        backupPath);
-
-    Collection<String> shardsToConsider = Set.of();
-    if (snapshotMeta.isPresent()) {
-      shardsToConsider = snapshotMeta.get().getShards();
-    }
-
-    final ShardRequestTracker shardRequestTracker =
-        CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
-    Collection<Slice> slices =
-        ccc.getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices();
-    for (Slice slice : slices) {
-      Replica replica = null;
-
-      if (snapshotMeta.isPresent()) {
-        if (!shardsToConsider.contains(slice.getName())) {
-          log.warn(
-              "Skipping the backup for shard {} since it wasn't part of the collection {} when snapshot {} was created.",
-              slice.getName(),
-              collectionName,
-              snapshotMeta.get().getName());
-          continue;
-        }
-        replica = selectReplicaWithSnapshot(snapshotMeta.get(), slice);
-      } else {
-        // Note - Actually this can return a null value when there is no leader for this shard.
-        replica = slice.getLeader();
-        if (replica == null) {
-          throw new SolrException(
-              ErrorCode.SERVER_ERROR,
-              "No 'leader' replica available for shard "
-                  + slice.getName()
-                  + " of collection "
-                  + collectionName);
-        }
-      }
-
-      String coreName = replica.getStr(CORE_NAME_PROP);
-
-      ModifiableSolrParams params =
-          coreBackupParams(
-              backupPath, repoName, slice, coreName, false /*non-incremental backup */);
-      if (snapshotMeta.isPresent()) {
-        params.set(CoreAdminParams.COMMIT_NAME, snapshotMeta.get().getName());
-      }
-
-      shardRequestTracker.sendShardRequest(replica, params, shardHandler);
-      log.debug("Sent backup request to core={} for backupName={}", coreName, backupName);
-    }
-    log.debug("Sent backup requests to all shard leaders for backupName={}", backupName);
-
-    shardRequestTracker.processResponses(
-        results, shardHandler, true, "Could not backup all shards");
-
-    // Aggregating result from different shards
-    NamedList<Object> aggRsp =
-        aggregateResults(results, collectionName, slices, backupManager, backupProperties, false);
-    results.add("response", aggRsp);
   }
 }
