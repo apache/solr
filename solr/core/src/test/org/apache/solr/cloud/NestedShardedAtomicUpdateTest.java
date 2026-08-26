@@ -34,7 +34,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
@@ -72,12 +71,15 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
 
     clients = new ArrayList<>();
     ClusterState clusterState = cloudClient.getClusterState();
-    for (Replica replica : clusterState.getCollection(DEFAULT_COLLECTION).getReplicas()) {
-      clients.add(
-          new HttpJettySolrClient.Builder(replica.getBaseUrl())
-              .withDefaultCollection(replica.getCoreName())
-              .build());
-    }
+    clusterState
+        .getCollection(DEFAULT_COLLECTION)
+        .replicaStream()
+        .forEach(
+            replica ->
+                clients.add(
+                    new HttpJettySolrClient.Builder(replica.getBaseUrl())
+                        .withDefaultCollection(replica.getCoreName())
+                        .build()));
   }
 
   @AfterClass

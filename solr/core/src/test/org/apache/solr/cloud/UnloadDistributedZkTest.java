@@ -190,14 +190,17 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
         cloudClient.getClusterState().hasCollection(collection));
   }
 
+  /**
+   * A reserved core of the given collection, or null if the node hosts none; caller must close it.
+   */
   protected SolrCore getFirstCore(String collection, JettySolrRunner jetty) {
-    SolrCore solrCore = null;
-    for (SolrCore core : jetty.getCoreContainer().getCores()) {
-      if (core.getName().startsWith(collection)) {
-        solrCore = core;
+    String coreName = null;
+    for (String name : jetty.getCoreContainer().getLoadedCoreNames()) {
+      if (name.startsWith(collection)) {
+        coreName = name;
       }
     }
-    return solrCore;
+    return coreName == null ? null : jetty.getCoreContainer().getCore(coreName);
   }
 
   /**
@@ -220,8 +223,10 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
     int slices =
         zkStateReader.getClusterState().getCollection("unloadcollection").getSlices().size();
     assertEquals(1, slices);
-    SolrCore solrCore = getFirstCore("unloadcollection", jetty1);
-    String core1DataDir = solrCore.getDataDir();
+    String core1DataDir;
+    try (SolrCore solrCore = getFirstCore("unloadcollection", jetty1)) {
+      core1DataDir = solrCore.getDataDir();
+    }
 
     assertTrue(
         CollectionAdminRequest.addReplicaToShard("unloadcollection", "shard1")

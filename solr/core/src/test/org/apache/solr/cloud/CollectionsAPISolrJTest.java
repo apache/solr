@@ -409,13 +409,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expected all shards to be active and parent shard to be removed",
         collectionName,
-        (n, c) -> {
-          if (c.getSlice("shard1").getState() == Slice.State.ACTIVE) return false;
-          for (Replica r : c.getReplicas()) {
-            if (r.isActive(n) == false) return false;
-          }
-          return true;
-        });
+        (n, collectionState) ->
+            collectionState.getSlice("shard1").getState() != Slice.State.ACTIVE
+                && collectionState.replicaStream().allMatch(r -> r.isActive(n)));
 
     // Test splitting using split.key
     response =
@@ -455,7 +451,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     DocCollection testCollection = getCollectionState(collectionName);
 
-    Replica replica1 = testCollection.getReplicas().iterator().next();
+    Replica replica1 = testCollection.replicaStream().findFirst().orElseThrow();
     final var coreStatus = getCoreStatus(replica1);
 
     assertEquals(Path.of(coreStatus.dataDir).toString(), dataDir.toString());
@@ -501,7 +497,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
     String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
     Optional<Replica> optional =
-        docCollection.getReplicas().stream()
+        docCollection
+            .replicaStream()
             .filter(replica -> replicaName.equals(replica.getCoreName()))
             .findAny();
     if (optional.isPresent()) {
@@ -1334,8 +1331,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expecting 'preferredleader' property to be balanced across all shards",
         collection,
-        c -> {
-          for (Slice slice : c) {
+        collectionState -> {
+          for (Slice slice : collectionState) {
             int count = 0;
             for (Replica replica : slice) {
               if ("true".equals(replica.getProperty("preferredleader"))) count += 1;

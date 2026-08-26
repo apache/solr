@@ -573,7 +573,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
       boolean allContainersEmpty = true;
       for (JettySolrRunner jetty : jettys) {
         CoreContainer cc = jetty.getCoreContainer();
-        if (cc != null && cc.getCores().size() != 0) {
+        if (cc != null && !cc.getLoadedCoreNames().isEmpty()) {
           allContainersEmpty = false;
         }
       }
@@ -670,7 +670,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
         k -> {
           CloudSolrClient solrClient = newSolrClient(collectionName);
 
-          solrClient.connect();
+          solrClient.getClusterStateProvider().getLiveNodes(); // force the connection now
           if (log.isInfoEnabled()) {
             log.info(
                 "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",
@@ -692,6 +692,14 @@ public class MiniSolrCloudCluster implements SolrBackend {
                 .withConnectionTimeout(15, TimeUnit.SECONDS)
                 .withIdleTimeout(90, TimeUnit.SECONDS))
         .build(); // we choose 90 because we run in some harsh envs
+  }
+
+  /**
+   * Returns a new {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} pointed at this
+   * cluster.
+   */
+  public CloudSolrClient.Builder newSolrClientBuilder() {
+    return new CloudSolrClient.Builder(getZkServer().getZkAddress());
   }
 
   public SolrZkClient getZkClient() {
