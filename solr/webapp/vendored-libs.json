@@ -536,19 +536,19 @@
     },
     "jquery-ui.min.js": {
         "type": "library",
-        "bom-ref": "pkg:npm/jquery-ui@1.12.1",
+        "bom-ref": "pkg:npm/jquery-ui@1.13.3",
         "manufacturer": {
-            "name": "jQuery Foundation",
+            "name": "OpenJS Foundation",
             "url": [
                 "https://jquery.com/"
             ]
         },
         "name": "jquery-ui",
-        "version": "1.12.1",
+        "version": "1.13.3",
         "hashes": [
             {
                 "alg": "SHA-256",
-                "content": "4bc1d3b514cad98858c077a3e69f61b862e3808a732b72a4d9da3cd91908037b"
+                "content": "abe94eeee5e98f31b2cf57b41a2797c84b958f8784e6d94e2f56788b3ac58e64"
             }
         ],
         "licenses": [
@@ -558,17 +558,17 @@
                 }
             }
         ],
-        "purl": "pkg:npm/jquery-ui@1.12.1",
+        "purl": "pkg:npm/jquery-ui@1.13.3",
         "pedigree": {
             "ancestors": [
                 {
                     "type": "library",
                     "name": "jquery-ui",
-                    "version": "1.12.1",
-                    "purl": "pkg:npm/jquery-ui@1.12.1"
+                    "version": "1.13.3",
+                    "purl": "pkg:npm/jquery-ui@1.13.3"
                 }
             ],
-            "notes": "Custom subset build of 24 KB against the 253 KB full distribution, so it is not byte-comparable to any published artifact. Any jQuery UI 1.12.1 advisory applies until the affected widget is shown to be absent from this build."
+            "notes": "Custom subset build (widget, position, keycode, unique-id, tooltip) of 21 KB against the 255 KB full distribution, so it is not byte-comparable to any published artifact. Any jQuery UI 1.13.3 advisory applies until the affected widget is shown to be absent from this build."
         }
     },
     "jssha-3.3.1-sha256.min.js": {
