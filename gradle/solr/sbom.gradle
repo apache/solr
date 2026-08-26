@@ -58,6 +58,12 @@ configure(project(':solr:packaging')) {
         canBeConsumed = false
         extendsFrom bomSlim
     }
+    // The same dependency graph resolved against the compile-time (java-api) variants of the
+    // external libraries, used only as the consistency source of bomFull below.
+    bomFullApi {
+        canBeResolved = true
+        canBeConsumed = false
+    }
     // Child SBOMs of the UI bundles, merged into the distribution SBOMs by postProcessBom
     jsClientSbom {
         canBeResolved = true
@@ -79,20 +85,29 @@ configure(project(':solr:packaging')) {
   // The CycloneDX plugin resolves configurations leniently. Without these attributes,
   // variant-aware dependencies (e.g. Guava) and platform constraints (e.g. the Jersey BOM) fail to resolve
   // and silently disappear.
-  [configurations.bomSlim, configurations.bomFull].each { conf ->
+  [configurations.bomSlim, configurations.bomFull, configurations.bomFullApi].each { conf ->
       conf.attributes {
           attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
-          attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+          attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage,
+              conf.name == 'bomFullApi' ? Usage.JAVA_API : Usage.JAVA_RUNTIME))
           attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
           attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling, Bundling.EXTERNAL))
           attribute(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE, objects.named(TargetJvmEnvironment, TargetJvmEnvironment.STANDARD_JVM))
       }
   }
 
-  // The distribution keeps the server versions of the libraries shared between the
-  // server and the modules, so align the full BOM with the versions of the slim one
-  // (e.g. a module may pull in a newer slf4j-api than the one in server/lib/ext).
-  configurations.bomFull.shouldResolveConsistentlyWith(configurations.bomSlim)
+  // Every Solr project resolves its runtime classpath with useCompileClasspathVersions(), so a
+  // module ships the compile-time version of a library even when a runtime-scoped dependency asks
+  // for a newer one (e.g. avatica pins the joou-java-6 that calcite would bump). That consistency
+  // is local to each project and does not travel across project boundaries, so the full BOM
+  // reproduces it here: bomFullApi resolves the same module projects, but walks their external
+  // dependencies through the java-api variants — the compile-time view in which runtime-scoped
+  // edges do not exist — and bomFull follows its versions. bomFullApi in turn follows bomSlim,
+  // because the distribution keeps the server versions of the libraries shared between the
+  // server and the modules (e.g. a module may pull in a newer slf4j-api than the one in
+  // server/lib/ext).
+  configurations.bomFullApi.shouldResolveConsistentlyWith(configurations.bomSlim)
+  configurations.bomFull.shouldResolveConsistentlyWith(configurations.bomFullApi)
 
   dependencies {
     rootProject.project(":solr:modules").childProjects.values().each { module ->
@@ -103,9 +118,28 @@ configure(project(':solr:packaging')) {
       // Naming a configuration would bypass attribute matching, and imported Maven BOMs (e.g. Jersey's) would no
       // longer provide the versions of their managed dependencies.
       bomFull project(path: module.path)
+
+      // The runtime variant of the module itself, so that its "implementation" dependencies are
+      // visible (the java-api variant of a project hides them), while everything below the module
+      // resolves with the compile-time (java-api) attributes of the configuration. Solr's own
+      // projects are excluded: each shipping project is already requested directly by this loop,
+      // and reaching one transitively as well would request its api variant next to the runtime
+      // variant requested here, which Gradle rejects as a capability conflict.
+      bomFullApi(project(path: module.path)) {
+        attributes {
+          attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        }
+        exclude group: 'org.apache.solr'
+      }
     }
 
     bomFull project(path: ':solr:cross-dc-manager')
+    bomFullApi(project(path: ':solr:cross-dc-manager')) {
+      attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+      }
+      exclude group: 'org.apache.solr'
+    }
 
     bomSlim project(path: ':solr:server', configuration: 'startJar')
     bomSlim project(path: ':solr:server', configuration: 'serverLib')
