@@ -23,6 +23,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -101,7 +102,7 @@ public class LBSolrClientRetryUnsentTest extends SolrTestCase {
         requestReturningAttemptedUrls(unsentException(), new UpdateRequest().add("id", "1")));
   }
 
-  /** LBSolrClient classifies {@link SolrRequest.SolrRequestType} UPDATE as non-retryable. */
+  /** LBSolrClient classifies {@link SolrRequestType#UPDATE} as non-retryable. */
   @Test
   public void testRequestThatMayHaveBeenReceivedIsNotRetried() {
     LBSolrClient.Req req =
