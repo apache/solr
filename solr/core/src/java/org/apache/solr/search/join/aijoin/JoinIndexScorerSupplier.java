@@ -48,8 +48,8 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.search.join.aijoin.AIJoinIndex.JoinSegmentReference;
-import org.apache.solr.search.join.aijoin.AIJoinIndex.SegmentsTuple;
+import org.apache.solr.search.join.aijoin.AuxIndexManager.JoinSegmentReference;
+import org.apache.solr.search.join.aijoin.AuxIndexManager.SegmentsTuple;
 import org.apache.solr.search.join.aijoin.AIJoinUtil.DocEdges;
 import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
 import org.slf4j.Logger;
@@ -65,9 +65,9 @@ import org.slf4j.LoggerFactory;
  *
  * <ul>
  *   <li>{@code evt=build} -- a join-index write happened; carries the wall time it cost. Emitted by
- *       {@code AIJoinIndex#writeJoinSegments}, the chokepoint both build paths share: {@code
- *       cause=eager-create-weight} for the bulk build {nolink AIJoinIndex#ensureJoinSegments} does
- *       at {@link AIJoinQuery#createWeight} time, and {@code cause=lazy-to-segment} for the
+ *       {@code AuxIndexManager#writeJoinSegments}, the chokepoint both build paths share: {@code
+ *       cause=eager-create-weight} for the bulk build {nolink AuxIndexManager#ensureJoinSegments} does
+ *       at {@link AuxIndexJoinQuery#createWeight} time, and {@code cause=lazy-to-segment} for the
  *       per-context fallback below. In a steady run the eager path does all the work and the lazy
  *       one never fires, so a log with no {@code cause=lazy-to-segment} line is the expected shape.
  *   <li>{@code evt=ctx} -- this context finished setting up: how many (from, to) pairs contributed,
@@ -88,7 +88,7 @@ import org.slf4j.LoggerFactory;
  * converges emits no {@code evt=done} line -- absence of one is itself the signal that laziness
  * paid off for that segment, at the cost of that context's final counters going unreported.
  */
-class ToLeafJoinContext {
+class JoinIndexScorerSupplier extends ScorerSupplier {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -109,10 +109,12 @@ class ToLeafJoinContext {
   final Query fromQuery;
   final IndexSearcher fromSearcher;
   private final Future<FromLeafJoinContext>[] fromColumnFutures;
+  private final ScoreMode scoreMode;
+  private final float boost;
   private IndexSearcher lastSeenJoinSearcher;
   final String fromField;
   final String toField;
-  private final AIJoinIndex joinIndex;
+  private final AuxIndexManager joinIndex;
 
   // TODO all of these might be final since they are set in the constructor
   private int firstToDoc = DocIdSetIterator.NO_MORE_DOCS;
@@ -124,7 +126,7 @@ class ToLeafJoinContext {
   private final List<JoinTask> joinCells = new ArrayList<>();
 
   // ---- instrumentation, best effort; see the class javadoc for the emitted format ----
-  /** nanos spent inside {@code AIJoinIndex#writeJoinSegments} on behalf of this context */
+  /** nanos spent inside {@code AuxIndexManager#writeJoinSegments} on behalf of this context */
   private long joinIndexBuildNanos;
 
   /** pairs that had a from-side match before the a-priori from-edge check ran */
@@ -153,7 +155,7 @@ class ToLeafJoinContext {
   // name (sparse across the full from-segment space, so a map)
   private final JoinTask[] joinCellsByFromSegOrd;
   private final Map<String, JoinTask> joinCellsByPairFieldName = new HashMap<>();
-  private IndexReader toReader;
+  private final IndexReader toReader;
 
   // TODO kept alongside LazyRefineTwoPhIter for comparison/rollback; not currently wired up
   @SuppressWarnings("UnusedNestedClass")
@@ -225,17 +227,17 @@ class ToLeafJoinContext {
         } // otherwise we don't know if 0 is real false
       }
 
-      IndexSearcher freshSearcher = ToLeafJoinContext.this.joinIndex.acquire();
+      IndexSearcher freshSearcher = JoinIndexScorerSupplier.this.joinIndex.acquire();
       try {
         refreshJoinTasksReferences(freshSearcher);
-        assert ToLeafJoinContext.this.lastSeenJoinSearcher == freshSearcher;
+        assert JoinIndexScorerSupplier.this.lastSeenJoinSearcher == freshSearcher;
         for (JoinTask cell : new ArrayList<>(joinCells)) {
           if (falseNegToDocsBits == null) {
             this.shift = approximation.docID();
             falseNegToDocsBits = new FixedBitSet(lastToDoc + 1 - shift);
           }
           int walked = cell.dumpMatchesInto(falseNegToDocsBits, shift);
-          ToLeafJoinContext.this.removeJoinCell(cell);
+          JoinIndexScorerSupplier.this.removeJoinCell(cell);
           cellsDrained++;
           fromDocsWalked += walked;
           if (!joinCells.isEmpty()) {
@@ -251,7 +253,7 @@ class ToLeafJoinContext {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       } finally {
-        ToLeafJoinContext.this.joinIndex.release(freshSearcher);
+        JoinIndexScorerSupplier.this.joinIndex.release(freshSearcher);
       }
       // drop all to masks, got no hit - it means it's a true negative now.
 
@@ -446,13 +448,13 @@ class ToLeafJoinContext {
 
   /**
    * @param weightAgeJoinSegmentsReadOnly the join segments cached at {@link
-   *     AIJoinQuery#createWeight} time DON'T MODIFY ME!!!
-   * @param weightAgeJoinSearcher the join searcher cached at {@link AIJoinQuery#createWeight} time
+   *     AuxIndexJoinQuery#createWeight} time DON'T MODIFY ME!!!
+   * @param weightAgeJoinSearcher the join searcher cached at {@link AuxIndexJoinQuery#createWeight} time
    * @param scorerSupplierAgeJoinSearcher the join searcher used at {@link
-   *     AIJoinWeight#scorerSupplier} time
+   *     JoinIndexWeight#scorerSupplier} time
    * @param fromColumnFutures from side data by segment ord.
    */
-  ToLeafJoinContext(
+  JoinIndexScorerSupplier(
       LeafReaderContext toContext,
       String fromField,
       Query fromQuery,
@@ -462,8 +464,10 @@ class ToLeafJoinContext {
       Map<String, JoinSegmentReference> weightAgeJoinSegmentsReadOnly,
       IndexSearcher weightAgeJoinSearcher,
       IndexSearcher scorerSupplierAgeJoinSearcher,
-      AIJoinIndex joinIndex,
-      Future<FromLeafJoinContext>[] fromColumnFutures)
+      AuxIndexManager joinIndex,
+      Future<FromLeafJoinContext>[] fromColumnFutures,
+      ScoreMode scoreMode,
+      float boost)
       throws ExecutionException, InterruptedException, IOException {
     this.toContext = toContext;
     this.fromField = fromField;
@@ -473,6 +477,8 @@ class ToLeafJoinContext {
     this.toReader = toReader;
     this.fromColumnFutures = fromColumnFutures;
     this.joinIndex = joinIndex;
+    this.scoreMode = scoreMode;
+    this.boost = boost;
     this.joinCellsByFromSegOrd = new JoinTask[fromSearcher.getLeafContexts().size()];
 
     // 1. check from scorers
@@ -661,7 +667,7 @@ class ToLeafJoinContext {
       }
       // loop join segments search for fields
       Map<String, JoinSegmentReference> joinSegmentsByPairFieldName =
-          AIJoinIndex.extractExistingJoinColumns(
+          AuxIndexManager.extractExistingJoinColumns(
               lastSeenJoinSearcher, byPairFieldName::containsKey);
       // if found move to load set
       for (JoinTask task : byPairFieldName.values()) {
@@ -692,8 +698,8 @@ class ToLeafJoinContext {
       for (JoinTask cell : needIndex.values()) {
         missingPairs.put(cell.pairFieldName, cell.segmentsFromTo);
       }
-      // the build itself is timed and reported by AIJoinIndex#writeJoinSegments, which is the
-      // chokepoint both this lazy path and the eager AIJoinQuery#createWeight path go through;
+      // the build itself is timed and reported by AuxIndexManager#writeJoinSegments, which is the
+      // chokepoint both this lazy path and the eager AuxIndexJoinQuery#createWeight path go through;
       // here we only accumulate what it cost this context, for the evt=ctx / evt=done lines
       long buildStartNanos = System.nanoTime();
       Map<String, JoinColumnModel> written =
@@ -802,25 +808,24 @@ class ToLeafJoinContext {
     return tasks;
   }
 
-  public ScorerSupplier scorerSupplier(ScoreMode scoreMode, float boost) {
-    if (falsePositiveToDocsBits == null || matchedToDocsCount == 0) {
-      return null; // no matches in this to segment
-    }
-    return new ScorerSupplier() {
-      @Override
-      public Scorer get(long leadCost) throws IOException {
-        DocIdSetIterator approximation =
-            new BitSetIterator(falsePositiveToDocsBits, matchedToDocsCount);
+  /** True if this context has any candidate docs at all; used by {@code JoinIndexWeight}. */
+  boolean isEmpty() {
+    return falsePositiveToDocsBits == null || matchedToDocsCount == 0;
+  }
 
-        TwoPhaseIterator twoPhase = new LazyRefineTwoPhIter(approximation);
-        return new ConstantScoreScorer(boost, scoreMode, twoPhase);
-      }
+  @Override
+  public Scorer get(long leadCost) throws IOException {
+    assert !isEmpty();
+    DocIdSetIterator approximation =
+        new BitSetIterator(falsePositiveToDocsBits, matchedToDocsCount);
 
-      @Override
-      public long cost() {
-        return (long) lastToDoc - firstToDoc + 1;
-      }
-    };
+    TwoPhaseIterator twoPhase = new LazyRefineTwoPhIter(approximation);
+    return new ConstantScoreScorer(boost, scoreMode, twoPhase);
+  }
+
+  @Override
+  public long cost() {
+    return (long) lastToDoc - firstToDoc + 1;
   }
 
   /**

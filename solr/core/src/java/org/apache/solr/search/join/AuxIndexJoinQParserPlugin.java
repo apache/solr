@@ -41,14 +41,14 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.search.join.aijoin.AIJoinIndex;
+import org.apache.solr.search.join.aijoin.AuxIndexManager;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Query parser exercising {@link AIJoinIndex} inside a {@link SolrCore}: it mimics {@link
+ * Query parser exercising {@link AuxIndexManager} inside a {@link SolrCore}: it mimics {@link
  * ScoreJoinQParserPlugin}'s local parameters, but resolves matches through the sidecar join index
  * instead of {@link org.apache.lucene.search.join.JoinUtil}. Local parameters:
  *
@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
  *   <li>from - "foreign key" field name, collected while enumerating the subordinate query (the
  *       local parameter value).
  *   <li>fromIndex - optional core name to run the subordinate query against, when it differs from
- *       this core; cross-core joins are the reason {@link AIJoinIndex} exists in the first place,
+ *       this core; cross-core joins are the reason {@link AuxIndexManager} exists in the first place,
  *       so this mirrors {@link ScoreJoinQParserPlugin}'s <code>fromIndex</code>, including
  *       SolrCloud alias/collection resolution via {@link ScoreJoinQParserPlugin#getCoreName}.
  *   <li>to - "primary key" field name looked up in this core's index.
@@ -66,13 +66,13 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Unlike {@link ScoreJoinQParserPlugin.OtherCoreJoinQuery}, which only borrows the from-side
  * searcher long enough to build a self-contained {@code Query} in {@code createWeight}, an {@link
- * org.apache.solr.search.join.aijoin.AIJoinQuery} keeps reading the from-side searcher on every
+ * org.apache.solr.search.join.aijoin.AuxIndexJoinQuery} keeps reading the from-side searcher on every
  * {@code scorerSupplier} call (it may lazily build missing pair columns per to-segment), so a
  * cross-core from-searcher is pinned open for the whole request via {@link
  * SolrRequestInfo#addCloseHook}, the same mechanism {@link
  * org.apache.solr.search.JoinQuery.JoinQueryWeight} uses for the regular {@code {!join}}.
  *
- * <p>One {@link AIJoinIndex} is opened per core in {@link #inform(SolrCore)}, backed by a directory
+ * <p>One {@link AuxIndexManager} is opened per core in {@link #inform(SolrCore)}, backed by a directory
  * under the core's dataDir (configurable via the {@code dir} init parameter, resolved relative to
  * dataDir unless absolute), and closed when the core closes. This sidecar always belongs to the
  * "to" side core -- the one this plugin is registered in.
@@ -90,7 +90,7 @@ import org.slf4j.LoggerFactory;
  * QParser#getParser(String, SolrQueryRequest)} resolves the already registered instance via {@code
  * req.getCore().getQueryPlugin(name)}).
  */
-public class AIJoinQParserPlugin extends QParserPlugin
+public class AuxIndexJoinQParserPlugin extends QParserPlugin
     implements QueryResponseWriter, SolrCoreAware {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -107,7 +107,7 @@ public class AIJoinQParserPlugin extends QParserPlugin
 
   private String configuredDir = DEFAULT_DIR;
 
-  private volatile AIJoinIndex joinIndex;
+  private volatile AuxIndexManager joinIndex;
 
   @Override
   public void init(NamedList<?> args) {
@@ -130,7 +130,7 @@ public class AIJoinQParserPlugin extends QParserPlugin
       directory =
           core.getDirectoryFactory()
               .get(path.toString(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-      joinIndex = new AIJoinIndex(directory);
+      joinIndex = new AuxIndexManager(directory);
     } catch (IOException | RuntimeException e) {
       if (directory != null) {
         try {
@@ -140,7 +140,7 @@ public class AIJoinQParserPlugin extends QParserPlugin
         }
       }
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Failed to open AIJoinIndex at " + path, e);
+          SolrException.ErrorCode.SERVER_ERROR, "Failed to open AuxIndexManager at " + path, e);
     }
     final Directory capturedDirectory = directory;
     core.addCloseHook(
@@ -150,12 +150,12 @@ public class AIJoinQParserPlugin extends QParserPlugin
             try {
               joinIndex.close();
             } catch (IOException e) {
-              log.warn("Failed closing AIJoinIndex", e);
+              log.warn("Failed closing AuxIndexManager", e);
             } finally {
               try {
                 core.getDirectoryFactory().release(capturedDirectory);
               } catch (IOException e) {
-                log.warn("Failed releasing AIJoinIndex directory {}", capturedDirectory, e);
+                log.warn("Failed releasing AuxIndexManager directory {}", capturedDirectory, e);
               }
             }
           }
@@ -169,14 +169,14 @@ public class AIJoinQParserPlugin extends QParserPlugin
   public void write(
       OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType) {
     throw new UnsupportedOperationException(
-        AIJoinQParserPlugin.class.getSimpleName()
+        AuxIndexJoinQParserPlugin.class.getSimpleName()
             + " is a QParserPlugin, not a QueryResponseWriter");
   }
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     throw new UnsupportedOperationException(
-        AIJoinQParserPlugin.class.getSimpleName()
+        AuxIndexJoinQParserPlugin.class.getSimpleName()
             + " is a QParserPlugin, not a QueryResponseWriter");
   }
 
@@ -189,7 +189,7 @@ public class AIJoinQParserPlugin extends QParserPlugin
         if (joinIndex == null) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
-              "AIJoinQParserPlugin is not initialized; is it registered as a <queryParser>?");
+              "AuxIndexJoinQParserPlugin is not initialized; is it registered as a <queryParser>?");
         }
         final String fromField = getParam("from");
         final String toField = getParam("to");

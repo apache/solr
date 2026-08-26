@@ -82,7 +82,7 @@ Resolved relative to the core's `dataDir` unless an absolute path is given.
 
 [source,xml]
 ----
-<queryParser name="auxIndexJoin" class="org.apache.solr.search.join.AIJoinQParserPlugin">
+<queryParser name="auxIndexJoin" class="org.apache.solr.search.join.AuxIndexJoinQParserPlugin">
   <str name="dir">aijoin</str>
 </queryParser>
 ----

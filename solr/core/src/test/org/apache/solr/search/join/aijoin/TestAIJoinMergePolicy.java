@@ -46,7 +46,7 @@ import org.apache.solr.util.LogLevel;
 
 /**
  * Real (non-mocked) integration smoke test for {@link AIJoinMergePolicy}: builds a segmented
- * children/parents pair, forces {@link AIJoinQuery} to populate the sidecar join index, then mass
+ * children/parents pair, forces {@link AuxIndexJoinQuery} to populate the sidecar join index, then mass
  * deletes and force-merges both sides so the sidecar's previously-built pair columns go stale, and
  * checks the policy actually notices and reaps them -- not just that it runs without throwing.
  */
@@ -63,7 +63,7 @@ public class TestAIJoinMergePolicy extends SolrTestCase {
   private Directory joinDir;
   private RandomIndexWriter parentsWriter;
   private RandomIndexWriter childrenWriter;
-  private AIJoinIndex joinIndex;
+  private AuxIndexManager joinIndex;
 
   @Override
   public void setUp() throws Exception {
@@ -85,7 +85,7 @@ public class TestAIJoinMergePolicy extends SolrTestCase {
             newIndexWriterConfig(new MockAnalyzer(random()))
                 .setMergePolicy(NoMergePolicy.INSTANCE));
     joinDir = newDirectory();
-    joinIndex = new AIJoinIndex(joinDir);
+    joinIndex = new AuxIndexManager(joinDir);
     // this test drives many onCreateWeight calls back to back, well inside the default one-minute
     // sampling interval, and asserts on the reaper noticing every one of them
     joinIndex.mergePolicy.setSweepInterval(0, TimeUnit.NANOSECONDS);
@@ -160,7 +160,7 @@ public class TestAIJoinMergePolicy extends SolrTestCase {
 
   /**
    * Runs the join query for every child against every parent and returns the matched parent ids,
-   * forcing {@link AIJoinQuery} to fully execute (not just build its {@link
+   * forcing {@link AuxIndexJoinQuery} to fully execute (not just build its {@link
    * org.apache.lucene.search.Weight}) so missing pair columns actually get built into the sidecar.
    */
   private Set<String> searchAllParents(

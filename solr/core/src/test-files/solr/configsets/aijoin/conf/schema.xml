@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<!-- version 1.7: docValues default to true, which AIJoinIndex requires: it reads real
+<!-- version 1.7: docValues default to true, which AuxIndexManager requires: it reads real
      per-segment SortedSetDocValues directly, unlike JoinUtil-based {!join} which also tolerates
      uninverted fields. -->
 <schema name="aijoin" version="1.7">
