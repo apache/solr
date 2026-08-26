@@ -36,7 +36,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -473,9 +475,26 @@ public class HttpJettySolrClient extends HttpSolrClient {
     String url = getRequestUrl(solrRequest, collection);
     Throwable abortCause = null;
     Request req = null;
+    // Jetty notifies "commit" once the request headers have been written to the network. Until then
+    // nothing of the request has reached the server, so a failure is safe to retry elsewhere.
+    AtomicBoolean committed = new AtomicBoolean();
     try {
       InputStreamResponseListener listener = new InputStreamReleaseTrackingResponseListener();
-      req = sendRequest(makeRequest(solrRequest, url, false), listener);
+      MakeRequestReturnValue mrrv = makeRequest(solrRequest, url, false);
+      mrrv.request.onRequestCommit(r -> committed.set(true));
+      try {
+        req = sendRequest(mrrv, listener);
+      } catch (IOException e) {
+        // Writing the body can fail on this thread rather than asynchronously, typically when the
+        // pooled connection was already closed.
+        abortCause = e;
+        req = mrrv.request;
+        throw committed.get()
+            ? new SolrServerException("IOException occurred when talking to server at: " + url, e)
+            : new SolrServerException(
+                "Connection failed before the request was sent to: " + url,
+                new RequestNotSentException(e.getMessage(), e));
+      }
       // only waits for headers, so use the idle timeout
       Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
       url = req.getURI().toString();
@@ -497,14 +516,21 @@ public class HttpJettySolrClient extends HttpSolrClient {
       if (cause instanceof SolrServerException) {
         throw (SolrServerException) cause;
       } else if (cause instanceof IOException) {
-        throw new SolrServerException(
-            "IOException occurred when talking to server at: " + url, cause);
+        throw committed.get()
+            ? new SolrServerException(
+                "IOException occurred when talking to server at: " + url, cause)
+            : new SolrServerException(
+                "Connection failed before the request was sent to: " + url,
+                new RequestNotSentException(cause.getMessage(), cause));
       }
       throw new SolrServerException(cause.getMessage(), cause);
     } catch (IllegalStateException e) {
       // Jetty HTTP/2 throws IllegalStateException ("session closed") when the connection is lost.
       abortCause = e;
-      throw new SolrServerException("Connection lost at: " + url, new IOException(e));
+      throw committed.get()
+          ? new SolrServerException("Connection lost at: " + url, new IOException(e))
+          : new SolrServerException(
+              "Connection lost at: " + url, new RequestNotSentException(e.getMessage(), e));
     } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;
