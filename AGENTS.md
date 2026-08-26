@@ -8,7 +8,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - Always apply the Apache License to new source files
 - All versions must be delcared in `gradle/libs.versions.toml`, never build.gradle files
 - Try first declaring a dependency without a version (the version might already be in a BOM); and if fails to resolve _then_ specify a version
-- Always run `gradlew updateLicenses resolveAndLockAll collectJarInfos --write-locks` after adding or changing a dependency. See `dev-docs/gradle-help/dependencies.txt` for more info
+- Always run `gradlew updateLicenses resolveAndLockAll --write-locks` after adding or changing a dependency. See `dev-docs/gradle-help/dependencies.txt` for more info
 
 ## Build and Development Workflow
 
@@ -51,6 +51,26 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - Keep all documentation including javadoc concise
 - New classes should have some javadocs
 - Changes should not have code comments communicating the change, which are instead great comments to leave for code review / commentary
+
+## Developer Docs Index
+
+Before diving into code on these topics, read the matching doc in `dev-docs/`. When adding a new dev doc, add a line here.
+
+Internals:
+
+- `dev-docs/overseer/overseer.adoc` — Overseer: cluster state updates, ZkStateWriter, collection API message flow
+- `dev-docs/shard-split/shard-split.adoc` — SPLITSHARD: shard/replica states, tlog buffering during split
+- `dev-docs/distributed-update-internals.adoc` — SolrCloud update path: routing, `_version_`/optimistic concurrency, tlog durability, replication acks, shard terms (user-facing consistency model: ref-guide page `solrcloud-update-consistency.adoc`)
+- `dev-docs/plugins-modules-packages.adoc` — plugin/module/package concepts
+- `dev-docs/apis.adoc`, `dev-docs/v2-api-conventions.adoc` — API design and v2 conventions
+- `dev-docs/ui/` — new Admin UI architecture, component development, testing
+
+Process & tooling:
+
+- `dev-docs/solr-source-code.adoc`, `git.adoc`, `IDEs.adoc`, `jvms.adoc` — build and dev environment
+- `dev-docs/ref-guide/` — ref-guide authoring (AsciiDoc syntax, Antora templates)
+- `dev-docs/dependency-upgrades.adoc`, `lucene-upgrade.md`, `working-between-major-versions.adoc` — upgrades and branch management
+- `dev-docs/releasing.adoc`, `changelog.adoc`, `asf-jenkins.adoc` — release and CI process
 
 ## Changelog
 

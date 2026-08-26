@@ -116,7 +116,8 @@ public class SolrClientCache implements Closeable {
     builder = builder.withHttpClientBuilder(newHttpSolrClientBuilder(null, httpSolrClient));
     var client = builder.build();
     try {
-      client.connect();
+      // force a connection now, so a bad cluster fails here rather than on first use
+      client.getClusterStateProvider().getLiveNodes();
     } catch (Exception e) {
       IOUtils.closeQuietly(client);
       throw e;

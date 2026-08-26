@@ -30,12 +30,6 @@ public interface CollectionParams {
 
   String NAME = "name";
 
-  /**
-   * @deprecated use {@link #SOURCE_NODE} instead
-   */
-  @Deprecated(since = "10.0")
-  String FROM_NODE = "fromNode";
-
   String SOURCE_NODE = "sourceNode";
   String TARGET_NODE = "targetNode";
   String SOURCE_NODES = "sourceNodes";

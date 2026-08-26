@@ -78,15 +78,6 @@ public final class DefaultSolrCoreState extends SolrCoreState
 
   private final ReentrantLock commitLock = new ReentrantLock();
 
-  /**
-   * @deprecated Use {@link #DefaultSolrCoreState(DirectoryFactory, RecoveryStrategy.Builder)}
-   *     instead.
-   */
-  @Deprecated(since = "7.0")
-  public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
-    this(directoryFactory, new RecoveryStrategy.Builder());
-  }
-
   public DefaultSolrCoreState(
       DirectoryFactory directoryFactory, RecoveryStrategy.Builder recoveryStrategyBuilder) {
     this.directoryFactory = directoryFactory;

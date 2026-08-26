@@ -267,7 +267,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   public void distribSetUp() throws Exception {
     distribSetUpCalled = true;
-    SolrTestCaseJ4.resetExceptionIgnores(); // ignore anything with ignore_exception in it
     testDir = createTempDir();
   }
 

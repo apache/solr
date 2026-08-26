@@ -21,15 +21,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @deprecated Candidate for replacement by a {@code NavigableMap}-based wrapper, or for being made
- *     package-private; no decision has been made yet.
- */
-@Deprecated(since = "10.0") // see NavigableMap.wrap.  May keep but use package scope.
-public class MapWriterMap implements MapWriter {
+/** Wraps a {@link Map} as a {@link MapWriter}; obtain via {@link NavigableObject#wrap(Object)}. */
+class MapWriterMap implements MapWriter {
   private final Map<String, Object> delegate;
 
-  public MapWriterMap(Map<String, Object> delegate) {
+  MapWriterMap(Map<String, Object> delegate) {
     this.delegate = delegate;
   }
 

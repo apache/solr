@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -400,18 +401,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return slices.values().iterator();
   }
 
-  /**
-   * @deprecated Iterate over the collection's {@link Slice}s (this class is {@code
-   *     Iterable<Slice>}) and call {@link Slice#getReplicas()} instead; this method builds a new
-   *     {@code ArrayList} on every call.
-   */
-  @Deprecated(since = "10.0") // low usage and builds an ArrayList (surprising)
-  public List<Replica> getReplicas() {
-    List<Replica> replicas = new ArrayList<>();
-    for (Slice slice : this) {
-      replicas.addAll(slice.getReplicas());
-    }
-    return replicas;
+  /** Stream of all replicas across all slices. */
+  public Stream<Replica> replicaStream() {
+    return getSlices().stream().flatMap(slice -> slice.getReplicas().stream());
   }
 
   @Override

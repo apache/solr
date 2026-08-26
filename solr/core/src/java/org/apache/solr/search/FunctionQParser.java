@@ -59,9 +59,6 @@ public class FunctionQParser extends QParser {
    */
   public StrParser sp;
 
-  @Deprecated(since = "10.0")
-  private boolean parseMultipleSources = false;
-
   private boolean parseToEnd = true;
 
   public FunctionQParser(
@@ -69,9 +66,6 @@ public class FunctionQParser extends QParser {
     super(qstr, localParams, params, req);
     setFlags(FLAG_DEFAULT);
     setString(qstr);
-    if (localParams != null && localParams.getPrimitiveBool("multiple")) {
-      setParseMultipleSources(true);
-    }
   }
 
   /**
@@ -90,22 +84,6 @@ public class FunctionQParser extends QParser {
     if (s != null) {
       sp = new StrParser(s);
     }
-  }
-
-  @Deprecated(since = "10.0")
-  public void setParseMultipleSources(boolean parseMultipleSources) {
-    this.parseMultipleSources = parseMultipleSources;
-  }
-
-  /**
-   * Parse multiple comma separated value sources encapsulated into a {@link VectorValueSource} when
-   * {@link #getQuery()} or {@link #parseAsValueSource()} is called.
-   *
-   * @deprecated this is only needed for an unusual use-case and seems hard to support
-   */
-  @Deprecated(since = "10.0")
-  public boolean getParseMultipleSources() {
-    return parseMultipleSources;
   }
 
   public void setParseToEnd(boolean parseToEnd) {
@@ -127,17 +105,21 @@ public class FunctionQParser extends QParser {
    * ValueSourceParser#parse(FunctionQParser)}; it's intended for general code that has a {@link
    * QParser} but actually wants to parse a ValueSource.
    *
-   * @return A {@link VectorValueSource} for multiple VS, otherwise just the single VS.
+   * @return the parsed {@link ValueSource}.
    */
   @Override
   public ValueSource parseAsValueSource() throws SyntaxError {
+    return parseAsValueSource(false);
+  }
+
+  private ValueSource parseAsValueSource(boolean collectMultiple) throws SyntaxError {
     ValueSource vs = null;
     List<ValueSource> lst = null;
 
     for (; ; ) {
       ValueSource valsource = parseValueSource(getFlags() & ~FLAG_CONSUME_DELIMITER);
       sp.eatws();
-      if (!parseMultipleSources) {
+      if (!collectMultiple) {
         vs = valsource;
         break;
       } else {
@@ -464,10 +446,12 @@ public class FunctionQParser extends QParser {
       } else {
         QParser subParser = subQuery(val, "func");
         if (subParser instanceof FunctionQParser subFunc) {
-          subFunc.setParseMultipleSources(true);
           subFunc.setFlags(flags);
+          // e.g. geodist($pt) with pt=lat,lon: collect the referenced comma separated values
+          valueSource = subFunc.parseAsValueSource(true);
+        } else {
+          valueSource = subParser.parseAsValueSource();
         }
-        valueSource = subParser.parseAsValueSource();
       }
 
       /*

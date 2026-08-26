@@ -266,22 +266,6 @@ public class DenseVectorField extends FloatPointField {
     return knnAlgorithm;
   }
 
-  /**
-   * @deprecated Use {@link #getHnswM()} instead.
-   */
-  @Deprecated(since = "10.1")
-  public Integer getHnswMaxConn() {
-    return hnswM;
-  }
-
-  /**
-   * @deprecated Use {@link #getHnswEfConstruction()} instead.
-   */
-  @Deprecated(since = "10.1")
-  public Integer getHnswBeamWidth() {
-    return hnswEfConstruction;
-  }
-
   public Integer getHnswM() {
     return hnswM;
   }

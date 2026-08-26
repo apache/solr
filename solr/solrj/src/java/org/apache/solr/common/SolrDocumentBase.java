@@ -63,12 +63,4 @@ public abstract class SolrDocumentBase<T, K> implements Map<String, T>, Serializ
 
   /** Has <em>anonymous</em> children? */
   public abstract boolean hasChildDocuments();
-
-  /**
-   * The <em>anonymous</em> child document count.
-   *
-   * @deprecated Use {@link #getChildDocuments()}.size() instead.
-   */
-  @Deprecated(since = "8.0")
-  public abstract int getChildDocumentCount();
 }
