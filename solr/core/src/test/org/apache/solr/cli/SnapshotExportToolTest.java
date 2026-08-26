@@ -24,8 +24,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * SOLR-18403: SnapshotExportTool must export the state of the named snapshot, not the live index
- * at export time.
+ * SOLR-18403: SnapshotExportTool must export the state of the named snapshot, not the live index at
+ * export time.
  */
 public class SnapshotExportToolTest extends SolrCloudTestCase {
 
