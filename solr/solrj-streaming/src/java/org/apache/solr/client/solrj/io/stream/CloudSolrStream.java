@@ -177,8 +177,6 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(solrConnection, collectionName, mParams);
-
-
   }
 
   @Override
