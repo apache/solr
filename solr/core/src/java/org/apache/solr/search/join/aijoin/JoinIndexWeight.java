@@ -28,9 +28,9 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.search.join.aijoin.AIJoinIndex.JoinSegmentReference;
+import org.apache.solr.search.join.aijoin.AuxIndexManager.JoinSegmentReference;
 
-final class AIJoinWeight extends Weight {
+final class JoinIndexWeight extends Weight {
   final IndexSearcher maybeStaleJoinSearcher;
   final Map<String, JoinSegmentReference> existingJoinSegments;
   private final ScoreMode scoreMode;
@@ -46,15 +46,15 @@ final class AIJoinWeight extends Weight {
    */
   // private final PairColumn[][] pairColumnsByTo;
 
-  AIJoinWeight(
-      AIJoinQuery aiJoinQuery,
+  JoinIndexWeight(
+      AuxIndexJoinQuery auxIndexJoinQuery,
       IndexSearcher maybeStaleJoinSearcher,
       Map<String, JoinSegmentReference> existingJoinSegments,
       IndexReader toReader,
       ScoreMode scoreMode,
       float boost,
       Future<FromLeafJoinContext>[] foreignColsFutures) {
-    super(aiJoinQuery);
+    super(auxIndexJoinQuery);
     this.maybeStaleJoinSearcher = maybeStaleJoinSearcher;
     this.existingJoinSegments = existingJoinSegments;
     this.scoreMode = scoreMode;
@@ -63,8 +63,8 @@ final class AIJoinWeight extends Weight {
     this.fromColumnFutures = foreignColsFutures;
   }
 
-  private AIJoinQuery aiJQuery() {
-    return (AIJoinQuery) this.parentQuery;
+  private AuxIndexJoinQuery aiJQuery() {
+    return (AuxIndexJoinQuery) this.parentQuery;
   }
 
   @Override
@@ -90,10 +90,10 @@ final class AIJoinWeight extends Weight {
   public ScorerSupplier scorerSupplier(LeafReaderContext tolrc) throws IOException {
     IndexSearcher joinSearcher = aiJQuery().joinIndex.acquire();
     try {
-      ToLeafJoinContext ctx = null;
+      JoinIndexScorerSupplier ctx = null;
       try {
         ctx =
-            new ToLeafJoinContext(
+            new JoinIndexScorerSupplier(
                 tolrc,
                 aiJQuery().fromField,
                 aiJQuery().fromQuery,
@@ -104,13 +104,15 @@ final class AIJoinWeight extends Weight {
                 this.maybeStaleJoinSearcher,
                 joinSearcher,
                 aiJQuery().joinIndex,
-                this.fromColumnFutures);
+                this.fromColumnFutures,
+                scoreMode,
+                boost);
       } catch (ExecutionException e) { // TODO review exception
         throw new RuntimeException(e);
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
-      return ctx.scorerSupplier(scoreMode, boost);
+      return ctx.isEmpty() ? null : ctx;
     } finally {
       aiJQuery().joinIndex.release(joinSearcher);
     }

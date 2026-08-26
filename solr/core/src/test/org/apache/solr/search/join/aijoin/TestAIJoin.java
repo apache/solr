@@ -104,7 +104,7 @@ public class TestAIJoin extends SolrTestCase {
   }
 
   /** Shared per-test auxiliary join index: pair columns are built lazily by the first search. */
-  private AIJoinIndex joinIndex;
+  private AuxIndexManager joinIndex;
 
   private Directory joinDir;
 
@@ -119,7 +119,7 @@ public class TestAIJoin extends SolrTestCase {
             .setSingleFieldPerSegment(random().nextBoolean())
             .setBlockingRefresh(random().nextBoolean())
             .setSweepSamplingInterval(TestUtil.nextInt(random(), -1, 2), TimeUnit.MINUTES);
-    joinIndex = new AIJoinIndex(joinDir, config);
+    joinIndex = new AuxIndexManager(joinDir, config);
   }
 
   @Override
@@ -237,14 +237,14 @@ public class TestAIJoin extends SolrTestCase {
         searchParentIds(parentsSearcher, joinDecorator.apply(joinUtilQuery));
     Query aiJoinQuery = createAiJoinQuery(joinIndex, fromQuery, childrenSearcher);
     assertEquals(
-        "AIJoinQuery disagrees with JoinUtil",
+        "AuxIndexJoinQuery disagrees with JoinUtil",
         joinUtilParents,
         searchParentIds(parentsSearcher, joinDecorator.apply(aiJoinQuery)));
     return joinUtilParents;
   }
 
   private @NonNull Query createAiJoinQuery(
-      AIJoinIndex joinIndexParam, Query fromQuery, IndexSearcher childrenSearcher) {
+      AuxIndexManager joinIndexParam, Query fromQuery, IndexSearcher childrenSearcher) {
     return joinIndexParam.newJoinQuery(
         PARENT_ID_FK,
         fromQuery,
@@ -474,7 +474,7 @@ public class TestAIJoin extends SolrTestCase {
       try (IndexReader childrenReader = indices.childrenWriter.getReader();
           IndexReader parentsReader = indices.parentsWriter.getReader();
           Directory joinDir = newDirectory();
-          AIJoinIndex joinIndex = new AIJoinIndex(joinDir)) {
+          AuxIndexManager joinIndex = new AuxIndexManager(joinDir)) {
         Set<String> selectedChildren = randomChildrenSubset(indices);
         String color = RandomPicks.randomFrom(random(), COLORS);
 
@@ -507,7 +507,7 @@ public class TestAIJoin extends SolrTestCase {
    * parent_id=parent0}, a term present in only the first parents segment. Per to-leaf, {@code
    * BooleanWeight.scorerSupplier} asks the clauses in order and bails out with {@code null} on the
    * first required clause that has no matches -- so for every to-segment except the first one the
-   * join's scorerSupplier is never invoked, no {@code ToLeafJoinContext} is created, and the pairs
+   * join's scorerSupplier is never invoked, no {@code JoinIndexScorerSupplier} is created, and the pairs
    * (every from-segment x that to-segment) are never written to the sidecar.
    *
    * <p>Expected log shape: pass 1 loads all FK columns and builds only the first to-segment's
@@ -578,7 +578,7 @@ public class TestAIJoin extends SolrTestCase {
     }
   }
 
-  // presumably keep it in AIJoinIndex
+  // presumably keep it in AuxIndexManager
   private static IndexSearcher cachedSearcher(IndexSearcher fromSearcher) {
     IndexSearcher cachedFromSearcher =
         new IndexSearcher(

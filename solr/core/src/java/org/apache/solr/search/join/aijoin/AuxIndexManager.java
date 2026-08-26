@@ -44,11 +44,11 @@ import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
  * The auxiliary join index: a self-maintaining sidecar persisting per (from-segment, to-segment)
  * doc id mappings, so query-time joining reduces to bitset translation. It owns the sidecar's
  * {@link IndexWriter} and {@link SearcherManager}; pair columns are built lazily when an {@link
- * AIJoinQuery} first needs them, so users only construct an instance once, create queries with
+ * AuxIndexJoinQuery} first needs them, so users only construct an instance once, create queries with
  * {@link #newJoinQuery} and search them with a bare to-side {@link IndexSearcher}:
  *
  * <pre class="prettyprint">
- * AIJoinIndex joinIndex = new AIJoinIndex(joinDir);   // once per process
+ * AuxIndexManager joinIndex = new AuxIndexManager(joinDir);   // once per process
  * Query q = joinIndex.newJoinQuery(fromField, fromQuery, fromSearcher, toField);
  * TopDocs hits = toSearcher.search(q, 10);
  * ...
@@ -59,7 +59,7 @@ import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
  * pair columns are addressed by both sides' persistent segment keys, which survive reopens. Pair
  * columns orphaned by merges are not reclaimed yet; see package's javadoc.
  */
-public final class AIJoinIndex implements Closeable {
+public final class AuxIndexManager implements Closeable {
 
   private final IndexWriter writer;
   private final SearcherManager manager;
@@ -86,8 +86,8 @@ public final class AIJoinIndex implements Closeable {
 
   /**
    * Scans {@code joinSearcher}'s leaves for every pair column whose field name satisfies {@code
-   * isNeeded}, returning where each one lives. Used both to seed a fresh {@link AIJoinWeight}'s
-   * view of already-built pairs, and by {@link ToLeafJoinContext} to relocate a pair whose cached
+   * isNeeded}, returning where each one lives. Used both to seed a fresh {@link JoinIndexWeight}'s
+   * view of already-built pairs, and by {@link JoinIndexScorerSupplier} to relocate a pair whose cached
    * segment reference no longer resolves. TODO subject for in-heap caching TODO commit's userdata
    * might have a list of pairs with known segment ords and names
    */
@@ -118,7 +118,7 @@ public final class AIJoinIndex implements Closeable {
    * the default {@link AIJoinIndexConfig}. The caller retains ownership of the directory: {@link
    * #close()} does not close it.
    */
-  public AIJoinIndex(Directory directory) throws IOException {
+  public AuxIndexManager(Directory directory) throws IOException {
     this(directory, new AIJoinIndexConfig());
   }
 
@@ -127,7 +127,7 @@ public final class AIJoinIndex implements Closeable {
    * the given {@link AIJoinIndexConfig}. The caller retains ownership of the directory: {@link
    * #close()} does not close it.
    */
-  public AIJoinIndex(Directory directory, AIJoinIndexConfig config) throws IOException {
+  public AuxIndexManager(Directory directory, AIJoinIndexConfig config) throws IOException {
     this(directory, config, new ConcurrentMergeScheduler());
   }
 
@@ -137,7 +137,7 @@ public final class AIJoinIndex implements Closeable {
    * ConcurrentMergeScheduler}. The caller retains ownership of the directory: {@link #close()} does
    * not close it.
    */
-  public AIJoinIndex(Directory directory, AIJoinIndexConfig config, MergeScheduler mergeScheduler)
+  public AuxIndexManager(Directory directory, AIJoinIndexConfig config, MergeScheduler mergeScheduler)
       throws IOException {
     this.mergeScheduler = mergeScheduler;
     this.mergePolicy = new AIJoinMergePolicy();
@@ -182,7 +182,7 @@ public final class AIJoinIndex implements Closeable {
       IndexSearcher fromSearcher,
       String toField,
       ExecutorService fromExecutor) {
-    return new AIJoinQuery(
+    return new AuxIndexJoinQuery(
         this,
         fromField,
         fromQuery,
@@ -210,7 +210,7 @@ public final class AIJoinIndex implements Closeable {
   /**
    * Builds and persists the given missing pair columns, keyed by pair field name to their
    * (from-segment, to-segment) leaf ordinals. Delegates to {@link
-   * JoinColumnIndexer#writeJoinSegments}, which documents the claim/await dedup and the
+   * JoinColumnIndexer#buildAndPersistJoinColumns(Map, IndexReader, IndexReader, String, String, IndexSearcher, Future[])} writeJoinSegments}, which documents the claim/await dedup and the
    * fresh-searcher double-check in detail.
    *
    * @param observedAbsentSearcher the join-index searcher in which the caller established that
@@ -241,9 +241,9 @@ public final class AIJoinIndex implements Closeable {
    * deprecated don't write all of them upfront
    *
    * <p>Eagerly builds and persists every pair column in {@code neededPairs} not yet present in this
-   * join index, so an {@link AIJoinWeight} being constructed at {@link AIJoinQuery#createWeight}
+   * join index, so an {@link JoinIndexWeight} being constructed at {@link AuxIndexJoinQuery#createWeight}
    * already sees a complete view of the pairs it needs, instead of discovering gaps lazily -- one
-   * to-segment at a time -- in {@link ToLeafJoinContext}. Missing pairs are resolved to their
+   * to-segment at a time -- in {@link JoinIndexScorerSupplier}. Missing pairs are resolved to their
    * (from-segment, to-segment) leaf ordinals by crossing {@code fromSearcher}'s leaves against
    * {@code toSearcher}'s leaves; pairs concurrently built by another thread are awaited, not
    * rebuilt (see {@link #buildAndPersistJoinColumns}).
@@ -284,7 +284,7 @@ public final class AIJoinIndex implements Closeable {
   //          toSearcher.getIndexReader(),
   //          toField,
   //          BuildCause.EAGER_CREATE_WEIGHT,
-  //          null, fromColumnFutures); // runs before any ToLeafJoinContext exists, so there is no
+  //          null, fromColumnFutures); // runs before any JoinIndexScorerSupplier exists, so there is no
   // context to blame
   //    }
   //  }

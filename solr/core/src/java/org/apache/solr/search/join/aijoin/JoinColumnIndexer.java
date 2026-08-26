@@ -32,21 +32,21 @@ import java.util.concurrent.Future;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.solr.search.join.aijoin.AIJoinIndex.JoinSegmentReference;
-import org.apache.solr.search.join.aijoin.AIJoinIndex.SegmentsTuple;
+import org.apache.solr.search.join.aijoin.AuxIndexManager.JoinSegmentReference;
+import org.apache.solr.search.join.aijoin.AuxIndexManager.SegmentsTuple;
 import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Builds missing pair columns for an {@link AIJoinIndex}: dedups concurrent builders per pair field
+ * Builds missing pair columns for an {@link AuxIndexManager}: dedups concurrent builders per pair field
  * name, computes the in-memory {@link JoinColumnModel}s, double-checks a fresh join-index searcher
  * for pairs persisted since the caller looked, and persists what is still missing through {@link
- * AIJoinIndex#writeBatch}.
+ * AuxIndexManager#writeBatch}.
  */
 final class JoinColumnIndexer {
 
-  private final AIJoinIndex joinIndex;
+  private final AuxIndexManager joinIndex;
 
   /**
    * Dedups concurrent builders per pair field name: the thread that installs the future writes the
@@ -64,14 +64,14 @@ final class JoinColumnIndexer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  JoinColumnIndexer(AIJoinIndex joinIndex) {
+  JoinColumnIndexer(AuxIndexManager joinIndex) {
     this.joinIndex = joinIndex;
   }
 
   /**
    * How many of the given pair field names have a build currently in flight in {@link #pairBuilds}
    * (claims are removed once persisted). Diagnostic only: a pair counted here but still reported
-   * missing by {@link AIJoinIndex#extractExistingJoinColumns} means the caller is about to redo
+   * missing by {@link AuxIndexManager#extractExistingJoinColumns} means the caller is about to redo
    * from-side work for a pair some other thread is building right now.
    */
   int countClaimedBuilds(Set<String> pairFieldNames) {
@@ -99,7 +99,7 @@ final class JoinColumnIndexer {
    * written. Since only the claim owner ever writes a pair, absence in a post-claim fresh searcher
    * is conclusive, so no duplicate pair column can be written; rediscovered pairs still cost their
    * in-memory recompute, which the caller gets back in the result like any built pair. As a
-   * shortcut, when {@link AIJoinIndex#acquire()} returns {@code observedAbsentSearcher} itself,
+   * shortcut, when {@link AuxIndexManager#acquire()} returns {@code observedAbsentSearcher} itself,
    * nothing was committed since that searcher was current, and the re-check scan is skipped.
    *
    * @param observedAbsentSearcher the join-index searcher in which the caller established that
@@ -257,7 +257,7 @@ final class JoinColumnIndexer {
     try {
       if (freshJoinSearcher != observedAbsentSearcher) {
         Map<String, JoinSegmentReference> alreadyPersisted =
-            AIJoinIndex.extractExistingJoinColumns(freshJoinSearcher, ownedPairs::contains);
+            AuxIndexManager.extractExistingJoinColumns(freshJoinSearcher, ownedPairs::contains);
         if (!alreadyPersisted.isEmpty()) {
           unwrittenMappings = new LinkedHashMap<>(loadedMappings);
           unwrittenMappings.keySet().removeAll(alreadyPersisted.keySet());
@@ -273,7 +273,7 @@ final class JoinColumnIndexer {
   /**
    * Persists the still-unwritten mappings, if any. All pairs of a batch go in together: pair
    * columns are addressed by from-side doc id, so a batch must start at doc 0 of its sidecar
-   * segment, which {@link AIJoinIndex#writeBatch} guarantees by flushing one batch per commit.
+   * segment, which {@link AuxIndexManager#writeBatch} guarantees by flushing one batch per commit.
    */
   // TODO it can be more asynchronous, besides of pairBuilds removal - and it's a problem
   // would be great if many concurrent threads merge lists and write it at once,

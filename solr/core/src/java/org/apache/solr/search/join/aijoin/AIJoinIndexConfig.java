@@ -20,16 +20,16 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.store.Directory;
 
 /**
- * Holds the configuration used to create an {@link AIJoinIndex}. Every setter returns {@link
+ * Holds the configuration used to create an {@link AuxIndexManager}. Every setter returns {@link
  * AIJoinIndexConfig} to allow chaining settings conveniently, for example:
  *
  * <pre class="prettyprint">
  * AIJoinIndexConfig config = new AIJoinIndexConfig().setBlockingRefresh(false);
- * AIJoinIndex joinIndex = new AIJoinIndex(joinDir, config);
+ * AuxIndexManager joinIndex = new AuxIndexManager(joinDir, config);
  * </pre>
  *
- * <p>Once passed to {@link AIJoinIndex#AIJoinIndex(Directory, AIJoinIndexConfig)}, changes to this
- * object no longer affect the created {@link AIJoinIndex} instance.
+ * <p>Once passed to {@link AuxIndexManager#AuxIndexManager(Directory, AIJoinIndexConfig)}, changes to this
+ * object no longer affect the created {@link AuxIndexManager} instance.
  */
 public final class AIJoinIndexConfig {
 
@@ -71,7 +71,7 @@ public final class AIJoinIndexConfig {
   }
 
   /**
-   * How often {@link AIJoinIndex#onCreateWeight} actually samples searcher state for the dead-pair
+   * How often {@link AuxIndexManager#onCreateWeight} actually samples searcher state for the dead-pair
    * reaper; calls arriving sooner than this after the last accepted sample are skipped, since
    * sampling is only a heuristic hint feeding the reap decision, not a correctness requirement.
    * Default is one minute. Pass zero (or a non-positive value) to sample on every call.

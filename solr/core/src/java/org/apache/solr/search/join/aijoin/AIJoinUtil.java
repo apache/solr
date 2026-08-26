@@ -65,7 +65,7 @@ import org.slf4j.event.Level;
 
 /**
  * Column-building and addressing helpers for the auxiliary join index managed by {@link
- * AIJoinIndex}: for every (from-segment, to-segment) pair it produces a SORTED_NUMERIC column named
+ * AuxIndexManager}: for every (from-segment, to-segment) pair it produces a SORTED_NUMERIC column named
  * {@link #pairFieldName}, whose doc number is the from-side doc id and whose value is the to-side
  * doc id whose {@code toField} term equals the from doc's {@code fromField} term, plus two
  * companion edges columns persisting the pair's {min, max} from-doc and to-doc bounds.
@@ -256,7 +256,7 @@ final class AIJoinUtil {
    *
    * <p>Docs already deleted at build time are skipped, purely to avoid persisting entries nobody
    * can ever match -- deletes are otherwise re-checked live at query time (from-side in {@code
-   * ToLeafJoinContext}, to-side by the searcher's own {@code acceptDocs}), since a pair's cached
+   * JoinIndexScorerSupplier}, to-side by the searcher's own {@code acceptDocs}), since a pair's cached
    * mapping outlives whatever gets deleted after it was built.
    */
   static JoinColumnModel computeDocMapping(
@@ -284,7 +284,7 @@ final class AIJoinUtil {
     // to-side doc per slot, so when several to docs share a term (non-unique toField) or a
     // fromSideData
     // doc is multi-valued with several matching terms, later assignments overwrite earlier ones
-    // and only the last match survives. The read side (AIJoinQuery) already consumes all
+    // and only the last match survives. The read side (AuxIndexJoinQuery) already consumes all
     // docValueCount() values per doc, so only this writer needs to learn to emit multiple
     // to docs per fromSideData doc.
     if (!termsAreDisjoint) {

@@ -35,7 +35,7 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.search.join.aijoin.AIJoinIndex.JoinSegmentReference;
+import org.apache.solr.search.join.aijoin.AuxIndexManager.JoinSegmentReference;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,24 +43,24 @@ import org.slf4j.LoggerFactory;
 /**
  * Joins the from-side index to the to-side index this query is executed against, resolving
  * from-side docs matching {@code fromQuery} to to-side docs through the auxiliary join index
- * managed by {@link AIJoinIndex}: there, each (from-segment, to-segment) pair owns a SORTED_NUMERIC
+ * managed by {@link AuxIndexManager}: there, each (from-segment, to-segment) pair owns a SORTED_NUMERIC
  * column named by both sides' persistent keys, whose doc number is the from-side doc id and whose
  * value is the matching to-side doc id. Pair columns missing from the join index are built on
  * demand at weight creation, so no explicit build step exists; obtain instances via {@link
- * AIJoinIndex#newJoinQuery}. Matches score a constant.
+ * AuxIndexManager#newJoinQuery}. Matches score a constant.
  */
-class AIJoinQuery extends Query {
+class AuxIndexJoinQuery extends Query {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  final AIJoinIndex joinIndex;
+  final AuxIndexManager joinIndex;
   final String fromField;
   final Query fromQuery;
   protected final IndexSearcher fromSearcher;
   final String toField;
   private final ExecutorService fromExecutorService;
 
-  AIJoinQuery(
-      AIJoinIndex joinIndex,
+  AuxIndexJoinQuery(
+      AuxIndexManager joinIndex,
       String fromField,
       Query fromQuery,
       IndexSearcher fromSearcher,
@@ -96,7 +96,7 @@ class AIJoinQuery extends Query {
     // searcher this query is executed with
     Query rewrittenFrom = fromQuery.rewrite(fromSearcher);
     if (rewrittenFrom != fromQuery) { // TODO check MatchNoDocs ?
-      return new AIJoinQuery(
+      return new AuxIndexJoinQuery(
           joinIndex, fromField, rewrittenFrom, fromSearcher, toField, fromExecutorService);
     }
     return super.rewrite(indexSearcher);
@@ -105,7 +105,7 @@ class AIJoinQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher toSideSearcher, ScoreMode scoreMode, float boost)
       throws IOException {
-    @NonNull Map<String, AIJoinIndex.SegmentsTuple> neededPairs =
+    @NonNull Map<String, AuxIndexManager.SegmentsTuple> neededPairs =
         getRequiredColumNames(toSideSearcher);
 
     joinIndex.onCreateWeight(neededPairs.keySet(), fromSearcher, toSideSearcher); // ignoring fields
@@ -119,7 +119,7 @@ class AIJoinQuery extends Query {
     Map<String, JoinSegmentReference> existingJoinSegments;
     IndexSearcher joinSearcher = this.joinIndex.acquire();
     try {
-      existingJoinSegments = AIJoinIndex.extractExistingJoinColumns(joinSearcher, isNeeded);
+      existingJoinSegments = AuxIndexManager.extractExistingJoinColumns(joinSearcher, isNeeded);
     } finally {
       this.joinIndex.release(joinSearcher);
     }
@@ -127,7 +127,7 @@ class AIJoinQuery extends Query {
     neededPairs.keySet().removeAll(existingJoinSegments.keySet());
     IntHashSet fromOrdsToLoad = new IntHashSet(neededPairs.size());
     neededPairs.values().stream()
-        .mapToInt(AIJoinIndex.SegmentsTuple::fromLeafOrd)
+        .mapToInt(AuxIndexManager.SegmentsTuple::fromLeafOrd)
         .forEach(fromOrdsToLoad::add);
     if (AIJoinUtil.diagnosticsEnabled(log)) {
       // pairsMissing > 0 on a repeat query means those pairs were never persisted by a previous
@@ -147,7 +147,7 @@ class AIJoinQuery extends Query {
     }
     Future<FromLeafJoinContext>[] fromFutures = loadFromSide(fromOrdsToLoad);
     // TODO this might produce too many small tasks
-    return new AIJoinWeight(
+    return new JoinIndexWeight(
         this,
         joinSearcher,
         existingJoinSegments,
@@ -199,15 +199,15 @@ class AIJoinQuery extends Query {
     return futures;
   }
 
-  private @NonNull Map<String, AIJoinIndex.SegmentsTuple> getRequiredColumNames(
+  private @NonNull Map<String, AuxIndexManager.SegmentsTuple> getRequiredColumNames(
       IndexSearcher searcher) {
-    Map<String, AIJoinIndex.SegmentsTuple> neededPairs = new HashMap<>();
+    Map<String, AuxIndexManager.SegmentsTuple> neededPairs = new HashMap<>();
     for (LeafReaderContext toContext : searcher.getIndexReader().leaves()) {
       String toKey = AIJoinUtil.getSideKey(toContext, toField);
       for (LeafReaderContext fromCtx : fromSearcher.getLeafContexts()) {
         String fromKey = AIJoinUtil.getSideKey(fromCtx, fromField);
         neededPairs.put(
-            fromKey + "_" + toKey, new AIJoinIndex.SegmentsTuple(fromCtx.ord, toContext.ord));
+            fromKey + "_" + toKey, new AuxIndexManager.SegmentsTuple(fromCtx.ord, toContext.ord));
       }
     }
     return neededPairs;
@@ -215,7 +215,7 @@ class AIJoinQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return "AIJoinQuery(" + fromField + " -> " + toField + ", from: " + fromQuery + ")";
+    return "AuxIndexJoinQuery(" + fromField + " -> " + toField + ", from: " + fromQuery + ")";
   }
 
   @Override
@@ -225,10 +225,10 @@ class AIJoinQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) && equalsTo((AIJoinQuery) other);
+    return sameClassAs(other) && equalsTo((AuxIndexJoinQuery) other);
   }
 
-  private boolean equalsTo(AIJoinQuery other) {
+  private boolean equalsTo(AuxIndexJoinQuery other) {
     // the join index and the from searcher compare by identity: a reopened from reader sees
     // different ordinal spaces, so queries over different searcher instances must not be
     // considered equal

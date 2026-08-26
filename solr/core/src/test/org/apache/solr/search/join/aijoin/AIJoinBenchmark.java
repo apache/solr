@@ -47,7 +47,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 /**
  * Wall-clock comparison of {@link JoinUtil} (the term-based variant, no global ordinals) against
- * {@link AIJoinQuery} on a synthetic M:1 join: ~100K children in a few segments point to ~10K
+ * {@link AuxIndexJoinQuery} on a synthetic M:1 join: ~100K children in a few segments point to ~10K
  * unique parents in a few segments through single valued sorted string docvalues. A small
  * child-side term filter selects ~10K children that join to ~1K parents; a second case adds a
  * parent-side filter on top of the join. Results are not asserted, only timed: each search repeats
@@ -57,7 +57,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
  * the parent id boundary is raised by 10% and a tenth of the (new) parent population, with all
  * their children, is rewritten through {@code updateDocument} at random ids below the new boundary
  * — ids above the old boundary append fresh docs while ids below it clash with existing ones and
- * replace them, leaving deletes behind. The {@link AIJoinIndex} is opened once and reused by every
+ * replace them, leaving deletes behind. The {@link AuxIndexManager} is opened once and reused by every
  * round and pass: after each update the first search builds only the missing pair columns, which is
  * timed separately from the steady-state passes.
  *
@@ -111,7 +111,7 @@ public class AIJoinBenchmark {
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 Runtime.getRuntime().availableProcessors(),
                 new SolrNamedThreadFactory(MethodHandles.lookup().lookupClass().getSimpleName()));
-        AIJoinIndex joinIndex = new AIJoinIndex(joinDir)) {
+        AuxIndexManager joinIndex = new AuxIndexManager(joinDir)) {
       buildIndices(parentsDir, childrenDir);
       int numParents = NUM_PARENTS;
       for (int round = 0; round < ROUNDS; round++) {
@@ -151,7 +151,7 @@ public class AIJoinBenchmark {
       int numParents,
       Directory parentsDir,
       Directory childrenDir,
-      AIJoinIndex joinIndex,
+      AuxIndexManager joinIndex,
       ExecutorService executor)
       throws IOException {
     try (IndexReader parentsReader = DirectoryReader.open(parentsDir);
@@ -169,7 +169,7 @@ public class AIJoinBenchmark {
           childrenReader.maxDoc(),
           childrenReader.leaves().size());
 
-      // plain searchers without caching: AIJoinQuery is uncacheable anyway, so a cached
+      // plain searchers without caching: AuxIndexJoinQuery is uncacheable anyway, so a cached
       // JoinUtil query would make the comparison lopsided
       IndexSearcher childrenSearcher = new ParallelIndexSearcher(childrenReader, executor);
       childrenSearcher.setQueryCache(null);
@@ -192,7 +192,7 @@ public class AIJoinBenchmark {
           (System.nanoTime() - buildStart) / 1_000_000d);
 
       // join query creation is inside the timed task on purpose: JoinUtil runs the from-side
-      // selection eagerly in createJoinQuery, AIJoinQuery lazily in createWeight, so only
+      // selection eagerly in createJoinQuery, AuxIndexJoinQuery lazily in createWeight, so only
       // create+search is comparable
       bench(
           "JoinUtil",
@@ -231,7 +231,7 @@ public class AIJoinBenchmark {
   // private static final ExecutorService executor = Executors.newFixedThreadPool(4);
 
   private static Query aiJoinChildrenToParents(
-      AIJoinIndex joinIndex,
+      AuxIndexManager joinIndex,
       Query childFilter,
       IndexSearcher childrenSearcher,
       ExecutorService executor) {
