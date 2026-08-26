@@ -90,8 +90,7 @@ public class GetNodePropertiesTest extends SolrTestCase {
   public void testUnknownPropertyReturns404() {
     var req = new NodeApi.GetNodeProperty("GetNodePropertiesTest.doesNotExist");
     final RemoteSolrException ex =
-        expectThrows(
-            RemoteSolrException.class, () -> req.process(solrTestRule.getAdminClient()));
+        expectThrows(RemoteSolrException.class, () -> req.process(solrTestRule.getAdminClient()));
     assertEquals(404, ex.code());
   }
 
