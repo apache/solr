@@ -334,6 +334,23 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertDouble(tuples.get(4), "a_f", 4);
       assertString(tuples.get(4), "a_s", "hello4");
 
+      // SOLR-18332: the legacy 'qt' parameter must continue to select the /export-capable
+      // path server-side (SearchFacadeStream). 'partitionKeys' is only accepted on that path,
+      // so this also exercises that guard.
+      solrParams = new ModifiableSolrParams();
+      solrParams.add(
+          "expr",
+          "sort(search("
+              + COLLECTIONORALIAS
+              + ", q=\"*:*\", fl=\"id,a_i\", sort=\"a_i asc\", partitionKeys=\"id\", qt=\"/export\"), by=\"a_i asc\")");
+      solrStream = new SolrStream(shardUrls.get(0), "/stream", solrParams);
+      solrStream.setStreamContext(streamContext);
+      tuples = getTuples(solrStream);
+      assertEquals(5, tuples.size());
+      assertOrder(tuples, 0, 1, 2, 3, 4);
+      assertLong(tuples.get(0), "a_i", 0);
+      assertLong(tuples.get(4), "a_i", 4);
+
     } finally {
       solrClientCache.close();
     }
