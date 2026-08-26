@@ -17,29 +17,25 @@
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Map;
 
 /**
  * Request body for the Schema Designer add endpoint. Exactly one of the four fields should be
  * populated; the populated field's name is the action and its value carries the schema-object
  * attributes (e.g. for {@code addField}: {@code name}, {@code type}, {@code stored}, etc.).
+ *
  */
 public class SchemaDesignerAddRequestBody {
 
-  @Schema(name = "addField")
   @JsonProperty("add-field")
   public Map<String, Object> addField;
 
-  @Schema(name = "addDynamicField")
   @JsonProperty("add-dynamic-field")
   public Map<String, Object> addDynamicField;
 
-  @Schema(name = "addCopyField")
   @JsonProperty("add-copy-field")
   public Map<String, Object> addCopyField;
 
-  @Schema(name = "addFieldType")
   @JsonProperty("add-field-type")
   public Map<String, Object> addFieldType;
 }
