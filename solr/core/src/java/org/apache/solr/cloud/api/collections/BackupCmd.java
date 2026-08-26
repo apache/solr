@@ -118,9 +118,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
                   backupMgr);
             } catch (SolrException e) {
               log.error(
-                  "Error happened during incremental backup for collection: {}",
-                  collectionName,
-                  e);
+                  "Error happened during incremental backup for collection: {}", collectionName, e);
               CollectionHandlingUtils.cleanBackup(
                   repository, backupUri, backupMgr.getBackupId(), ccc);
               throw e;
