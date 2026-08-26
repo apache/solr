@@ -16,20 +16,18 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.client.api.model.NodePropertiesResponse.SYSTEM_PROPERTIES;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.client.api.model.NodePropertiesResponse;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.GetNodeProperties;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -56,12 +54,11 @@ public class PropertiesRequestHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     rsp.setHttpCaching(false);
-    String name = req.getParams().get(NAME);
-    Map<String, String> props =
-        new GetNodeProperties(getCoreContainer(req)).collectProperties(name);
-    NamedList<String> values = new SimpleOrderedMap<>();
-    props.forEach(values::add);
-    rsp.add(SYSTEM_PROPERTIES, values);
+    final GetNodeProperties api = new GetNodeProperties(getCoreContainer(req));
+    final NodePropertiesResponse response = new NodePropertiesResponse();
+    // v1 ?name= returns the key even if unset; the v2 path form 404s for unknown names.
+    response.systemProperties = api.collectProperties(req.getParams().get(NAME));
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////

@@ -57,6 +57,8 @@ public class GetNodeProperties extends JerseyResource implements NodePropertiesA
   @PermissionName(PermissionNameProvider.Name.CONFIG_READ_PERM)
   public NodePropertiesResponse getNodeProperty(String propertyName) {
     final NodeConfig nodeConfig = coreContainer.getNodeConfig();
+    // Hidden names always return 200 + a redacted value, even if unset, so callers cannot
+    // probe whether a secret is configured.
     if (!System.getProperties().containsKey(propertyName)
         && !nodeConfig.isSysPropHidden(propertyName)) {
       throw new SolrException(

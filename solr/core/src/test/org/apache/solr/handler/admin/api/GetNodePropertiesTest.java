@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import java.util.Collections;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.api.model.NodePropertiesResponse;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -67,7 +68,9 @@ public class GetNodePropertiesTest extends SolrTestCase {
 
     NodePropertiesResponse rsp = fetchProperties(null);
 
-    assertTrue("expected more than one system property", rsp.systemProperties.size() > 1);
+    assertEquals(
+        Collections.list(System.getProperties().propertyNames()).size(),
+        rsp.systemProperties.size());
     assertEquals(System.getProperty("java.version"), rsp.systemProperties.get("java.version"));
     assertEquals("hello", rsp.systemProperties.get(VISIBLE_PROP));
   }
@@ -92,6 +95,16 @@ public class GetNodePropertiesTest extends SolrTestCase {
     final RemoteSolrException ex =
         expectThrows(RemoteSolrException.class, () -> req.process(solrTestRule.getAdminClient()));
     assertEquals(404, ex.code());
+  }
+
+  @Test
+  public void testUnknownHiddenPropertyDoesNotRevealExistence() throws Exception {
+    final String hiddenUnset = "GetNodePropertiesTest.doesNotExist.password";
+    assertFalse(System.getProperties().containsKey(hiddenUnset));
+
+    NodePropertiesResponse rsp = fetchProperties(hiddenUnset);
+    assertEquals(1, rsp.systemProperties.size());
+    assertEquals(NodeConfig.REDACTED_SYS_PROP_VALUE, rsp.systemProperties.get(hiddenUnset));
   }
 
   private NodePropertiesResponse fetchProperties(String name) throws Exception {

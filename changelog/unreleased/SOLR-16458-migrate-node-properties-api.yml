@@ -1,4 +1,4 @@
-title: "v2 GET /api/node/properties is now a JAX-RS API; a single property is fetched at /api/node/properties/{propertyName} (SolrJ: NodeApi.GetNodeProperties / GetNodeProperty)"
+title: "A single node system property can be fetched at GET /api/node/properties/{propertyName} (v1 still uses ?name=). SolrJ now provides NodeApi.GetNodeProperties and NodeApi.GetNodeProperty."
 type: added
 authors:
   - name: Prithvi S
