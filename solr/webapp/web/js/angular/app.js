@@ -628,7 +628,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   $scope.showCore = function(core) {
-    $location.url("/" + core.name + "/core-overview");
+    if (core) {
+      $location.url("/" + core.name + "/core-overview");
+    }
   }
 
   $scope.showCollection = function(collection) {
