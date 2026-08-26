@@ -6239,7 +6239,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
             + COLLECTIONORALIAS
             + ", workers=2, sort=\"miles_i asc\", select(search("
             + COLLECTIONORALIAS
-            + ", q=\"*:*\", partitionKeys=miles_i, sort=\"miles_i asc\", fl=\"miles_i\", qt=\"/export\"), convert(miles, kilometers, miles_i) as kilometers))";
+            + ", q=\"*:*\", partitionKeys=miles_i, sort=\"miles_i asc\", fl=\"miles_i\", path=\"/export\"), convert(miles, kilometers, miles_i) as kilometers))";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
     solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);

@@ -580,7 +580,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           StreamExpressionParser.parse(
               "search("
                   + COLLECTIONORALIAS
-                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_i asc\")");
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", path=\"/export\", sort=\"a_i asc\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -608,7 +608,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           StreamExpressionParser.parse(
               "search("
                   + COLLECTIONORALIAS
-                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_s asc\")");
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", path=\"/export\", sort=\"a_s asc\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -621,7 +621,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           StreamExpressionParser.parse(
               "search("
                   + COLLECTIONORALIAS
-                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_s desc\")");
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", path=\"/export\", sort=\"a_s desc\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -1336,7 +1336,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     String expr =
         "rollup("
-            + "  search(collection1, q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", qt=\"/export\"),"
+            + "  search(collection1, q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", path=\"/export\"),"
             + "  over=\"a_s\", std(a_i), std(a_f), count(*)"
             + ")";
     paramsLoc.set("expr", expr);
@@ -2230,7 +2230,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       solrParams = new ModifiableSolrParams();
       solrParams.add(
           "expr",
-          "search(\"collection1, collection2\", q=\"*:*\", fl=\"id, a_i\", sort=\"a_i asc\", qt=\"/export\")");
+          "search(\"collection1, collection2\", q=\"*:*\", fl=\"id, a_i\", sort=\"a_i asc\", path=\"/export\")");
       solrStream = new SolrStream(shardUrls.get(0), "/stream", solrParams);
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
@@ -2273,7 +2273,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       solrParams = new ModifiableSolrParams();
       solrParams.add(
           "expr",
-          "parallel(collection1, sort=\"a_i asc\", workers=2, search(\"collection1, collection2\", q=\"*:*\", fl=\"id, a_i\", sort=\"a_i asc\", qt=\"/export\", partitionKeys=\"a_s\"))");
+          "parallel(collection1, sort=\"a_i asc\", workers=2, search(\"collection1, collection2\", q=\"*:*\", fl=\"id, a_i\", sort=\"a_i asc\", path=\"/export\", partitionKeys=\"a_s\"))");
       solrStream = new SolrStream(shardUrls.get(0), "/stream", solrParams);
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
