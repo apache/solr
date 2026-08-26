@@ -23,7 +23,6 @@ import java.util.Map;
  * Request body for the Schema Designer add endpoint. Exactly one of the four fields should be
  * populated; the populated field's name is the action and its value carries the schema-object
  * attributes (e.g. for {@code addField}: {@code name}, {@code type}, {@code stored}, etc.).
- *
  */
 public class SchemaDesignerAddRequestBody {
 
