@@ -21,50 +21,40 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-/** SOLR-18298: Curator RECONNECTED is not the same as Solr 9 session-expiration reconnect. */
+/** Verifies the shared Curator listener adapters retain their general-purpose behavior. */
 public class TestOnReconnectSessionExpiry extends SolrTestCase {
 
   @Test
-  public void testReconnectAfterSuspendDoesNotFire() {
+  public void testReconnectFiresForEveryReconnectedEvent() {
     AtomicInteger reconnects = new AtomicInteger();
     OnReconnect listener = () -> reconnects.incrementAndGet();
 
     listener.stateChanged(null, ConnectionState.SUSPENDED);
     listener.stateChanged(null, ConnectionState.RECONNECTED);
-
-    assertEquals(0, reconnects.get());
-  }
-
-  @Test
-  public void testReconnectAfterLostDoesFire() {
-    AtomicInteger reconnects = new AtomicInteger();
-    OnReconnect listener = () -> reconnects.incrementAndGet();
-
     listener.stateChanged(null, ConnectionState.LOST);
     listener.stateChanged(null, ConnectionState.RECONNECTED);
 
-    assertEquals(1, reconnects.get());
-  }
-
-  @Test
-  public void testReconnectWithoutPriorLostDoesNotFire() {
-    AtomicInteger reconnects = new AtomicInteger();
-    OnReconnect listener = () -> reconnects.incrementAndGet();
-
     listener.stateChanged(null, ConnectionState.RECONNECTED);
-
-    assertEquals(0, reconnects.get());
+    assertEquals(3, reconnects.get());
   }
 
   @Test
-  public void testDisconnectFiresOnlyOnLost() {
-    AtomicInteger disconnects = new AtomicInteger();
-    OnDisconnect listener = sessionExpired -> disconnects.incrementAndGet();
+  public void testDisconnectDistinguishesSuspensionFromSessionLoss() {
+    AtomicInteger suspensions = new AtomicInteger();
+    AtomicInteger expirations = new AtomicInteger();
+    OnDisconnect listener =
+        sessionExpired -> {
+          if (sessionExpired) {
+            expirations.incrementAndGet();
+          } else {
+            suspensions.incrementAndGet();
+          }
+        };
 
     listener.stateChanged(null, ConnectionState.SUSPENDED);
-    assertEquals(0, disconnects.get());
-
     listener.stateChanged(null, ConnectionState.LOST);
-    assertEquals(1, disconnects.get());
+
+    assertEquals(1, suspensions.get());
+    assertEquals(1, expirations.get());
   }
 }

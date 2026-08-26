@@ -20,21 +20,13 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 
-/**
- * Listener for ZooKeeper session loss.
- *
- * <p>When registered as a Curator {@link ConnectionStateListener}, {@link #onDisconnect(boolean)}
- * runs only after session expiration ({@link ConnectionState#LOST}). A transient {@link
- * ConnectionState#SUSPENDED} keeps the session and must not tear down SolrCloud leadership. See
- * SOLR-18298.
- */
 public interface OnDisconnect extends ConnectionStateListener {
   void onDisconnect(boolean sessionExpired);
 
   @Override
   default void stateChanged(CuratorFramework client, ConnectionState newState) {
-    if (newState == ConnectionState.LOST) {
-      onDisconnect(true);
+    if (newState == ConnectionState.LOST || newState == ConnectionState.SUSPENDED) {
+      onDisconnect(newState == ConnectionState.LOST);
     }
   }
 }

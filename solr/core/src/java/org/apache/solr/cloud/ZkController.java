@@ -54,6 +54,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -214,6 +215,7 @@ public class ZkController implements Closeable {
           new SolrNamedThreadFactory("zkConnectionListenerCallback"));
   private final OnReconnect onReconnect = this::onReconnect;
   private final OnDisconnect onDisconnect = this::onDisconnect;
+  private final AtomicBoolean zkSessionExpired = new AtomicBoolean();
 
   private final String zkServerAddress; // example: 127.0.0.1:54062/solr
 
@@ -405,6 +407,7 @@ public class ZkController implements Closeable {
     if (!sessionExpired) {
       return;
     }
+    zkSessionExpired.set(true);
     try {
       overseer.close();
     } catch (Exception e) {
@@ -434,6 +437,9 @@ public class ZkController implements Closeable {
   }
 
   private void onReconnect() {
+    if (!zkSessionExpired.compareAndSet(true, false)) {
+      return;
+    }
     // on reconnect, reload cloud info
     log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
     clearZkCollectionTerms();
