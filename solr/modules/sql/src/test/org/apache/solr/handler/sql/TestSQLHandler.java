@@ -3309,8 +3309,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // WHERE on the exact grouped column (equality) — Calcite 1.42 may constant-fold str_s to 'a'
     SolrParams sParams =
         params(
-            CommonParams.QT,
-            "/sql",
             "aggregationMode",
             "facet",
             "stmt",
@@ -3328,8 +3326,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // Same query in map_reduce mode
     sParams =
         params(
-            CommonParams.QT,
-            "/sql",
             "aggregationMode",
             "map_reduce",
             "stmt",
@@ -3347,8 +3343,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // WHERE on grouped column using IN — multiple constant-folded values
     sParams =
         params(
-            CommonParams.QT,
-            "/sql",
             "aggregationMode",
             "facet",
             "stmt",
@@ -3365,8 +3359,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // WHERE on a NON-grouped column — grouped column must still be present
     sParams =
         params(
-            CommonParams.QT,
-            "/sql",
             "aggregationMode",
             "facet",
             "stmt",
@@ -3404,8 +3396,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // WHERE on one of the DISTINCT columns (facet mode)
     SolrParams sParams =
         params(
-            CommonParams.QT,
-            "/sql",
             "aggregationMode",
             "facet",
             "stmt",
@@ -3423,8 +3413,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // Data with field_i>10: id=3 (a,20), id=4 (c,30), id=5 (c,50) → DISTINCT str_s = {a, c}
     sParams =
         params(
-            CommonParams.QT,
-            "/sql",
             "aggregationMode",
             "facet",
             "stmt",
