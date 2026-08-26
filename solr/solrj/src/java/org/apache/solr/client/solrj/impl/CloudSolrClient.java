@@ -48,6 +48,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -205,9 +206,14 @@ public abstract class CloudSolrClient extends SolrClient {
     return getClusterStateProvider().getClusterState();
   }
 
-  /** Is this a communication error? We will retry if so. */
+  /**
+   * Is this a communication error? We will retry if so. The whole cause chain is inspected, since a
+   * transport may report the underlying failure wrapped at any depth.
+   */
   protected boolean wasCommError(Throwable t) {
-    return t instanceof SocketException || t instanceof UnknownHostException;
+    return SolrException.hasCause(t, SocketException.class)
+        || SolrException.hasCause(t, UnknownHostException.class)
+        || SolrException.hasCause(t, RequestNotSentException.class);
   }
 
   @Override
@@ -712,7 +718,7 @@ public abstract class CloudSolrClient extends SolrClient {
               ? ((SolrException) rootCause).code()
               : SolrException.ErrorCode.UNKNOWN.code;
 
-      final boolean wasCommError = wasCommError(rootCause);
+      final boolean wasCommError = wasCommError(exc);
 
       if (wasCommError
           || (exc instanceof RouteException
