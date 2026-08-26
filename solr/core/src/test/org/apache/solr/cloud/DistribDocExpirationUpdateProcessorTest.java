@@ -28,7 +28,6 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -289,40 +288,36 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     for (Replica replica : collectionState.getReplicas()) {
 
       String coreName = replica.getCoreName();
-      try (SolrClient client =
-          new HttpJettySolrClient.Builder(replica.getBaseUrl())
-              .withDefaultCollection(replica.getCoreName())
-              .build()) {
+      SolrClient client = cluster.getSolrClient(replica);
 
-        ModifiableSolrParams params = new ModifiableSolrParams();
-        params.set("command", "indexversion");
-        params.set("_trace", "getIndexVersion");
-        QueryRequest req = setAuthIfNeeded(new QueryRequest(ReplicationHandler.PATH, params));
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("command", "indexversion");
+      params.set("_trace", "getIndexVersion");
+      QueryRequest req = setAuthIfNeeded(new QueryRequest(ReplicationHandler.PATH, params));
 
-        NamedList<Object> res = client.request(req);
-        assertNotNull("null response from server: " + coreName, res);
+      NamedList<Object> res = client.request(req);
+      assertNotNull("null response from server: " + coreName, res);
 
-        Object version = res.get("indexversion");
-        assertNotNull("null version from server: " + coreName, version);
-        assertTrue("version isn't a long: " + coreName, version instanceof Long);
+      Object version = res.get("indexversion");
+      assertNotNull("null version from server: " + coreName, version);
+      assertTrue("version isn't a long: " + coreName, version instanceof Long);
 
-        long numDocs =
-            setAuthIfNeeded(
-                    new QueryRequest(
-                        params(
-                            "q", "*:*",
-                            "distrib", "false",
-                            "rows", "0",
-                            "_trace", "counting_docs")))
-                .process(client)
-                .getResults()
-                .getNumFound();
+      long numDocs =
+          setAuthIfNeeded(
+                  new QueryRequest(
+                      params(
+                          "q", "*:*",
+                          "distrib", "false",
+                          "rows", "0",
+                          "_trace", "counting_docs")))
+              .process(client)
+              .getResults()
+              .getNumFound();
 
-        final ReplicaData data =
-            new ReplicaData(replica.getShard(), coreName, (Long) version, numDocs);
-        log.info("{}", data);
-        results.put(coreName, data);
-      }
+      final ReplicaData data =
+          new ReplicaData(replica.getShard(), coreName, (Long) version, numDocs);
+      log.info("{}", data);
+      results.put(coreName, data);
     }
 
     return results;

@@ -53,8 +53,10 @@ import java.util.function.Consumer;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -736,6 +738,28 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
     throw new IllegalArgumentException(
         "Cannot find Jetty for a replica with core url " + replica.getCoreUrl());
+  }
+
+  /** Return the jetty for a node, identified by either its node name or its base URL. */
+  public JettySolrRunner getJetty(String nodeNameOrUrl) {
+    for (JettySolrRunner jetty : jettys) {
+      if (jetty.isStopped()) continue;
+      if (nodeNameOrUrl.equals(jetty.getNodeName())
+          || nodeNameOrUrl.equals(jetty.getBaseUrl().toString())) {
+        return jetty;
+      }
+    }
+    throw new IllegalArgumentException("Cannot find Jetty for node " + nodeNameOrUrl);
+  }
+
+  /**
+   * Returns the jetty-owned client for the node hosting {@code replica}, scoped to that replica's
+   * core. The caller must not close the returned client -- it delegates to the jetty's own shared
+   * client, which the jetty itself owns.
+   */
+  public SolrClient getSolrClient(Replica replica) {
+    return new CollectionScopedSolrClient(
+        getReplicaJetty(replica).getSolrClient(), replica.getCoreName());
   }
 
   /** Make the zookeeper session on a particular jetty lose connection and expire */
