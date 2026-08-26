@@ -1643,10 +1643,10 @@ Provided as a query parameter for v1 requests, and as a path segment for v2 requ
 s|Required |Default: none
 |===
 +
-What to name the backup that is created.
+The name of the backup to use.
 Provided as a query parameter for v1 requests, or as a path segment for v2 requests.
 +
-The backup name should be reused to add new backup points to the existing backup.
+If a backup with this name already exists, a new backup point is added to it; otherwise a new backup is created.
 
 `location`::
 +
