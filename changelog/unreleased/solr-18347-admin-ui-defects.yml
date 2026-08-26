@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Fix five Admin UI defects found by Selenium testing
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Shrey Narayan
+    nick: NextbrickInc
+links:
+  - name: SOLR-18347
+    url: https://issues.apache.org/jira/browse/SOLR-18347

@@ -56,14 +56,16 @@ function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, 
 
   $scope.refreshPing = function() {
     Ping.status({core: $routeParams.core}, function(data) {
-      if (data.error) {
+      if (data.status == "not_configured") {
         $scope.healthcheckStatus = false;
-        if (data.error.code == 503) {
-          $scope.healthcheckMessage = 'Ping request handler is not configured with a healthcheck file.';
-        }
+        $scope.healthcheckMessage = 'Ping request handler is not configured with a healthcheck file.';
       } else {
+        delete $scope.healthcheckMessage;
         $scope.healthcheckStatus = data.status == "enabled";
       }
+    }, function(error) {
+      $scope.healthcheckStatus = false;
+      $scope.healthcheckMessage = error.data && error.data.error ? error.data.error.msg : 'Unable to read ping status.';
     });
   };
 

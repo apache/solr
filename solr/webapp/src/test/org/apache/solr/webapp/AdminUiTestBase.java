@@ -19,9 +19,6 @@ package org.apache.solr.webapp;
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -51,7 +48,6 @@ import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SeleniumTest;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -128,39 +124,6 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   /** The standalone node backing {@link #adminApi} when {@link #standaloneMode} is set. */
   protected static JettySolrRunner standaloneJetty;
 
-  /**
-   * Serves the generated js-client bundle the AngularJS UI expects at {@code libs/solr/index.js}:
-   * its {@code CollectionsV2} service fails to instantiate without the {@code solrApi} global,
-   * taking the whole Collections screen down with it. The bundle is built by {@code
-   * :solr:webapp:js-client} and its location handed to the test JVM in {@code
-   * tests.ui.jsclient.bundle}; it only exists inside the built webapp, not in the source tree tests
-   * serve from.
-   */
-  public static class JsClientServlet extends HttpServlet {
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-      resp.setContentType("text/javascript");
-      Files.copy(jsClientBundlePath(), resp.getOutputStream());
-    }
-  }
-
-  /**
-   * The generated js-client bundle: handed to us by the build in {@code tests.ui.jsclient.bundle},
-   * with the js-client build's output location as a fallback so tests can also run from an IDE
-   * (after a Gradle build has produced the bundle). Null when unavailable.
-   */
-  private static Path jsClientBundlePath() {
-    String path = EnvUtils.getProperty("tests.ui.jsclient.bundle");
-    if (path == null && ExternalPaths.SOURCE_HOME == null) {
-      return null;
-    }
-    Path bundle =
-        path != null
-            ? Path.of(path)
-            : ExternalPaths.SOURCE_HOME.resolve("webapp/js-client/build/jsClientBundle/index.js");
-    return Files.isReadable(bundle) ? bundle : null;
-  }
-
   /** Ignores threads spawned by Selenium and the JDK http client it uses. */
   public static class WebDriverThreadsFilter implements ThreadFilter {
     @Override
@@ -189,12 +152,6 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
           "Selenium tests are enabled (-Ptests.selenium=true) but no Chrome/Chromium binary was"
               + " found; install one or point -Dtests.selenium.chrome.binary at it");
     }
-    if (jsClientBundlePath() == null) {
-      fail(
-          "No generated js-client bundle available; the Gradle build wires it via"
-              + " tests.ui.jsclient.bundle (is -PdisableJsClient=true set?)");
-    }
-
     // metrics are off by default in test clusters, but UI screens (e.g. Plugins) need them;
     // restored after the class by SolrTestCase's SystemPropertiesRestoreRule
     System.setProperty("metricsEnabled", "true");
@@ -241,12 +198,9 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
   }
 
-  /** Configures a Jetty node to serve the Admin UI plus the js-client bundle. */
+  /** Configures a Jetty node to serve the Admin UI. */
   protected static void configureJettyForUi(JettyConfig.Builder jetty) {
-    jetty
-        .enableAdminUi(true)
-        // exact-path mapping takes precedence over the static /libs/* servlet
-        .withServlet(new ServletHolder(new JsClientServlet()), "/libs/solr/index.js");
+    jetty.enableAdminUi(true);
   }
 
   @AfterClass

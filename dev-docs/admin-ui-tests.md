@@ -44,28 +44,9 @@ deliberately does not do.
 
 ## Known limitations
 
-- The generated js-client bundle (`libs/solr/index.js`) only exists inside the
-  built WAR, not in the source tree tests serve from, so the build hands its
-  location to the test JVM in `tests.ui.jsclient.bundle`. The bundle (and its
-  node/npm toolchain) is only built when `-Ptests.selenium=true` enables the
-  tests, keeping node off the default test build chain. With the js-client
-  build turned off (`-PdisableJsClient=true`) the bundle cannot be built, so
-  the build disables these tests with a warning — and fails with an error if
-  `-Ptests.selenium=true` was passed as well.
 - Every test cluster in the JVM registers a log-watcher appender under the same
   name in the shared log4j config, so a later cluster's watcher can be blind;
   the events-viewer test detects this via the API and skips itself.
-- The shared menu code logs a benign
-  `TypeError: Cannot read properties of null (reading 'name')` from
-  `$scope.showCore` while the per-collection menu resolves (filtered in the
-  console-error assertion; tracked in
-  [SOLR-18347](https://issues.apache.org/jira/browse/SOLR-18347)).
-- The core overview ping widget answers 503 when the configset has no
-  healthcheck file (allowed in the affected tests; tracked in
-  [SOLR-18347](https://issues.apache.org/jira/browse/SOLR-18347)).
-- The Schema Designer's backend transiently fails its own prep/analyze calls
-  with "version mismatch, retry" and recovers via its retry dialog; its API
-  errors are excluded from the console-error assertion.
 - ASF Jenkins jobs do not pass `-Ptests.selenium=true`, so these tests do
   not run there (a nightly job could opt in if its build nodes have a
   browser). In CI they run via the GitHub Actions workflow

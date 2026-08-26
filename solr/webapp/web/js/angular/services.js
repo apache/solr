@@ -44,12 +44,6 @@ solrAdminServices.factory('System',
       }
     });
   }])
-.factory('CollectionsV2',
-    function() {
-      solrApi.ApiClient.instance.basePath = '/api';
-      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
-      return new solrApi.CollectionsApi();
-    })
 .factory('Collections',
   ['$resource', function($resource) {
     return $resource('admin/collections',
