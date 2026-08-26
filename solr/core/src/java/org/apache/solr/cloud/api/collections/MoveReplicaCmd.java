@@ -108,16 +108,11 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
             "Collection: " + collection + " replica: " + replicaName + " does not exist");
       }
     } else {
-      String sourceNode =
-          message.getStr(CollectionParams.SOURCE_NODE, message.getStr(CollectionParams.FROM_NODE));
+      String sourceNode = message.getStr(CollectionParams.SOURCE_NODE);
       if (sourceNode == null) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "'"
-                + CollectionParams.SOURCE_NODE
-                + " or '"
-                + CollectionParams.FROM_NODE
-                + "' is a required param");
+            "'" + CollectionParams.SOURCE_NODE + "' is a required param");
       }
       String shardId = message.getStr(SHARD_ID_PROP);
       if (shardId == null) {

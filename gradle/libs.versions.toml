@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 [versions]
-adobe-testing-s3mock = "4.12.4"
+adobe-testing-s3mock = "5.1.0"
 amazon-awssdk = "2.42.37"
 androidx-adaptive = "1.3.0-beta02"
 androidx-lifecycle = "2.10.0"
@@ -24,8 +24,8 @@ antora = "3.1.12"
 antora-default-ui = "782311344b54aaa734d4c86629b8cd75e4da36d6"
 # @keep Antora Lunr extensions version used in ref-guide
 antora-lunr-extension = "1.0.0-alpha.10"
-apache-calcite = "1.37.0"
-apache-calcite-avatica = "1.25.0"
+apache-calcite = "1.42.0"
+apache-calcite-avatica = "1.28.0"
 apache-commons-collections4 = "4.5.0"
 apache-commons-compress = "1.28.0"
 apache-commons-exec = "1.6.0"
@@ -221,8 +221,7 @@ swagger3-core = { id = "io.swagger.core.v3.swagger-gradle-plugin", version.ref =
 thetaphi-forbiddenapis = { id = "de.thetaphi.forbiddenapis", version.ref = "thetaphi-forbiddenapis" }
 
 [libraries]
-adobe-testing-s3mock-junit4 = { module = "com.adobe.testing:s3mock-junit4", version.ref = "adobe-testing-s3mock" }
-adobe-testing-s3mock-testsupportcommon = { module = "com.adobe.testing:s3mock-testsupport-common", version.ref = "adobe-testing-s3mock" }
+adobe-testing-s3mock-testcontainers = { module = "com.adobe.testing:s3mock-testcontainers", version.ref = "adobe-testing-s3mock" }
 amazon-awssdk-apacheclient = { module = "software.amazon.awssdk:apache-client", version.ref = "amazon-awssdk" }
 amazon-awssdk-auth = { module = "software.amazon.awssdk:auth", version.ref = "amazon-awssdk" }
 amazon-awssdk-awscore = { module = "software.amazon.awssdk:aws-core", version.ref = "amazon-awssdk" }

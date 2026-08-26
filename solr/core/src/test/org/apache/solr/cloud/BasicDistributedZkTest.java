@@ -83,6 +83,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TestInjection.Hook;
 import org.junit.BeforeClass;
@@ -1223,6 +1224,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   // cloud level test mainly needed just to make sure that versions and errors are propagated
   // correctly
+  @SuppressWarnings("try")
   private void doOptimisticLockingAndUpdating() throws Exception {
     log.info("### STARTING doOptimisticLockingAndUpdating");
     printLayout();
@@ -1230,12 +1232,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     final SolrInputDocument sd = sdoc("id", 1000, "_version_", -1);
     indexDoc(sd);
 
-    ignoreException("version conflict");
-    for (SolrClient client : clients) {
-      SolrException e = expectThrows(SolrException.class, () -> client.add(sd));
-      assertEquals(409, e.code());
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("version conflict")) {
+      for (SolrClient client : clients) {
+        SolrException e = expectThrows(SolrException.class, () -> client.add(sd));
+        assertEquals(409, e.code());
+      }
     }
-    unIgnoreException("version conflict");
 
     // TODO: test deletes.  SolrJ needs a good way to pass version for delete...
 
