@@ -147,10 +147,10 @@ solrAdminApp.controller('LoginController',
               }
 
               if (errorText === "") {
+                // The V2 solrApi client picks these up automatically via the superagent plugin
+                // registered in app.js .config()                
                 sessionStorage.setItem("auth.username", payload['sub']);
                 sessionStorage.setItem("auth.header", "Bearer " + accessToken);
-                // Keep the V2 client's copy in sync too (see app.js .config() for why it needs one).
-                solrApi.ApiClient.instance.defaultHeaders['Authorization'] = "Bearer " + accessToken;
                 sessionStorage.removeItem("auth.statusText");
                 sessionStorage.removeItem("auth.stateRandom");
                 sessionStorage.removeItem("auth.wwwAuthHeader");

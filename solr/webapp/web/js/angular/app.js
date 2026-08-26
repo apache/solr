@@ -478,15 +478,19 @@ solrAdminApp.config([
   $httpProvider.interceptors.push("httpInterceptor");
   // Force BasicAuth plugin to serve us a 'Authorization: xBasic xxxx' header so browser will not pop up login dialogue
   $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-  // The V2 solrApi client (superagent-based) never goes through $httpProvider, so it needs its own
-  // copy of both headers: X-Requested-With for the same popup-suppression trick, and Authorization
-  // because -- unlike $http, which re-reads sessionStorage per request in httpInterceptor.started
-  // below -- solrApi only gets Authorization set in-memory (AuthenticationService.SetCredentials/
-  // ClearCredentials, login.js), which a page reload wipes; re-seed it here on every app bootstrap.
+  // The V2 solrApi client (superagent-based) never goes through $httpProvider, so X-Requested-With
+  // (for the same popup-suppression trick) needs its own copy here.
   solrApi.ApiClient.instance.defaultHeaders['X-Requested-With'] = 'XMLHttpRequest';
-  if (sessionStorage.getItem("auth.header")) {
-    solrApi.ApiClient.instance.defaultHeaders['Authorization'] = sessionStorage.getItem("auth.header");
-  }
+  // Authorization is set via a superagent plugin instead of defaultHeaders, so it's re-read from
+  // sessionStorage on every request -- same as $http gets via httpInterceptor.started above -- and
+  // there's a single place to keep in sync (nowhere else should touch
+  // solrApi.ApiClient.instance.defaultHeaders['Authorization']).
+  solrApi.ApiClient.instance.plugins = [function(request) {
+    if (sessionStorage.getItem("auth.header")) {
+      request.set('Authorization', sessionStorage.getItem("auth.header"));
+    }
+    return request;
+  }];
   // Suppress AngularJS 1.6+ "Possibly unhandled rejection" console noise; errors are handled via callbacks and the security/schema-designer error dialogs
   $qProvider.errorOnUnhandledRejections(false);
 })

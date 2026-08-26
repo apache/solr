@@ -454,14 +454,13 @@ solrAdminServices.factory('Metrics',
         service.SetCredentials = function (username, password) {
           var authdata = base64.encode(username + ':' + password);
 
+          // The V2 solrApi client picks this up automatically via the superagent plugin
+          // registered in app.js .config().
           sessionStorage.setItem("auth.header", "Basic " + authdata);
           sessionStorage.setItem("auth.username", username);
-          // Keep the V2 client's copy in sync too (see app.js .config() for why it needs one).
-          solrApi.ApiClient.instance.defaultHeaders['Authorization'] = "Basic " + authdata;
         };
 
         service.ClearCredentials = function () {
-          delete solrApi.ApiClient.instance.defaultHeaders['Authorization'];
           sessionStorage.removeItem("auth.header");
           sessionStorage.removeItem("auth.scheme");
           sessionStorage.removeItem("auth.realm");
