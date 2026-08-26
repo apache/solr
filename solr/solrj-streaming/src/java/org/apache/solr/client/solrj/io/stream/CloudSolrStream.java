@@ -120,6 +120,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter aliasExpression = factory.getNamedOperand(expression, "aliases");
+    StreamExpressionNamedParameter pathExpression = factory.getNamedOperand(expression, "path");
 
     // Collection Name
     if (null == collectionName) {
@@ -147,7 +148,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        buildSolrParamsExcept(namedParams, Set.of("solrConnection", "zkHost", "aliases"));
+        buildSolrParamsExcept(namedParams, Set.of("solrConnection", "zkHost", "aliases", "path"));
 
     // Aliases, optional, if provided then need to split
     if (null != aliasExpression
@@ -168,9 +169,16 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       }
     }
 
+    // Optional "path" parameter
+    if (null != pathExpression && pathExpression.getParameter() instanceof StreamExpressionValue) {
+      this.path = ((StreamExpressionValue) pathExpression.getParameter()).getValue();
+    }
+
     var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(solrConnection, collectionName, mParams);
+
+
   }
 
   @Override
@@ -200,6 +208,10 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
     expression.addParameter(
         new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
+
+    if (null != path) {
+      expression.addParameter(new StreamExpressionNamedParameter("path", path));
+    }
 
     // aliases
     if (null != fieldMappings && 0 != fieldMappings.size()) {
