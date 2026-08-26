@@ -1,0 +1,10 @@
+title: >
+  SolrQueryResponse.getResponseHeader()/addResponseHeader() are now declared to return/accept
+  SimpleOrderedMap<Object> instead of NamedList<Object>. External code compiled against the old
+  signature will get a NoSuchMethodError at runtime and must recompile.
+type: changed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: PR#4809
+    url: https://github.com/apache/solr/pull/4809
