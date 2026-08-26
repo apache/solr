@@ -19,9 +19,11 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.HashMap;
 import java.util.Map;
 
+@Schema(additionalProperties = Schema.AdditionalPropertiesValue.TRUE)
 public class UpsertFieldTypeOperation extends SchemaChange {
   @JsonProperty public String name;
 
@@ -31,6 +33,7 @@ public class UpsertFieldTypeOperation extends SchemaChange {
   // Used for setting analyzers, index and stored settings, etc.
   private Map<String, Object> additionalProperties = new HashMap<>();
 
+  @Schema(hidden = true)
   @JsonAnyGetter
   public Map<String, Object> getAdditionalProperties() {
     return additionalProperties;
