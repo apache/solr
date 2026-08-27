@@ -27,8 +27,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
@@ -193,7 +195,10 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       streamContext.setSolrClientCache(solrClientCache);
       StreamFactory factory =
           new StreamFactory()
-              .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+              .withCollectionUseThisConnection(
+                  COLLECTIONORALIAS,
+                  CloudSolrClient.CloudSolrClientConnection.parse(
+                      cluster.getZkServer().getZkAddress()))
               .withFunctionName("search", CloudSolrStream.class)
               .withFunctionName("ubiQuery", UBIComponent.UBIQueryStream.class)
               .withFunctionName("logging", LoggingStream.class);
@@ -260,7 +265,10 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       streamContext.setSolrClientCache(solrClientCache);
       StreamFactory factory =
           new StreamFactory()
-              .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+              .withCollectionUseThisConnection(
+                  COLLECTIONORALIAS,
+                  CloudSolrClient.CloudSolrClientConnection.parse(
+                      cluster.getZkServer().getZkAddress()))
               .withFunctionName("search", CloudSolrStream.class)
               .withFunctionName("update", UpdateStream.class)
               .withFunctionName("select", SelectStream.class)
@@ -356,10 +364,10 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
   private static SolrCore findSolrCore() {
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
-      for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
-        if (solrCore != null) {
-          return solrCore;
-        }
+      AtomicReference<SolrCore> found = new AtomicReference<>();
+      solrRunner.getCoreContainer().forEachLoadedCore(found::set);
+      if (found.get() != null) {
+        return found.get();
       }
     }
     throw new RuntimeException("Didn't find any valid cores.");

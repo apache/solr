@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -224,7 +225,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     if (coreContainer.isZooKeeperAware()) {
       String defaultZkHost = core.getCoreContainer().getZkController().getZkServerAddress();
-      streamFactory.withDefaultZkHost(defaultZkHost);
+      streamFactory.withDefaultSolrConnection(
+          CloudSolrClient.CloudSolrClientConnection.parse(defaultZkHost));
     }
   }
 

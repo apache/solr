@@ -21,7 +21,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.CsvStream;
@@ -62,7 +64,8 @@ public class LoggingStreamTest extends SolrCloudTestCase {
     String zkHost = cluster.getZkServer().getZkAddress();
     factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTION, zkHost)
+            .withCollectionUseThisConnection(
+                COLLECTION, CloudSolrClient.CloudSolrClientConnection.parse(zkHost))
             .withFunctionName("logging", LoggingStream.class)
             .withFunctionName("echo", EchoStream.class)
             .withFunctionName("parseCSV", CsvStream.class)
@@ -188,10 +191,10 @@ public class LoggingStreamTest extends SolrCloudTestCase {
 
   private static SolrCore findSolrCore() {
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
-      for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
-        if (solrCore != null) {
-          return solrCore;
-        }
+      AtomicReference<SolrCore> found = new AtomicReference<>();
+      solrRunner.getCoreContainer().forEachLoadedCore(found::set);
+      if (found.get() != null) {
+        return found.get();
       }
     }
     throw new RuntimeException("Didn't find any valid cores.");
