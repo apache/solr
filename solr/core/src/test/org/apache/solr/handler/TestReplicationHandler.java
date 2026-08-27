@@ -34,6 +34,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.apache.lucene.index.DirectoryReader;
@@ -65,7 +68,9 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
@@ -1492,6 +1497,63 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertNotNull(resp);
     assertEquals("ERROR", resp.get("status"));
     assertEquals("invalid index generation", resp.get("message"));
+  }
+
+  @Test
+  public void testFollowerRestartsWhenCommitExpiresBeforeFileDownload() throws Exception {
+    invokeReplicationCommand(
+        buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "disablepoll");
+
+    index(leaderClient, "id", "1", "name", "generation-g");
+    leaderClient.commit();
+    index(leaderClient, "id", "1", "name", "generation-g-plus-one");
+
+    CountDownLatch fileListFetched = new CountDownLatch(1);
+    CountDownLatch continueDownload = new CountDownLatch(1);
+    IndexFetcher.testWait =
+        () -> {
+          fileListFetched.countDown();
+          try {
+            continueDownload.await();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+          }
+          return true;
+        };
+
+    ExecutorService workload =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(
+            new SolrNamedThreadFactory("staleGenerationWorkload"));
+    try {
+      Future<?> followerFetch =
+          workload.submit(
+              () -> {
+                pullFromTo(leaderJetty, followerJetty);
+                return null;
+              });
+
+      assertTrue(fileListFetched.await(TIMEOUT, TimeUnit.MILLISECONDS));
+
+      long reserveDuration;
+      try (SolrCore core = leaderJetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+        ReplicationHandler handler =
+            (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
+        reserveDuration = handler.getReserveCommitDuration();
+      }
+      Thread.sleep(reserveDuration + 1000);
+      leaderClient.commit();
+
+      IndexFetcher.testWait = () -> true;
+      continueDownload.countDown();
+      followerFetch.get(TIMEOUT, TimeUnit.MILLISECONDS);
+
+      assertEquals(1, numFound(rQuery(1, "name:generation-g-plus-one", followerClient)));
+    } finally {
+      IndexFetcher.testWait = () -> true;
+      continueDownload.countDown();
+      workload.shutdownNow();
+    }
   }
 
   @Test
