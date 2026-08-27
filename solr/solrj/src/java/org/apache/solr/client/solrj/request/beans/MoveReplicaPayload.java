@@ -30,8 +30,9 @@ public class MoveReplicaPayload implements ReflectMapWriter {
   @JsonProperty public String sourceNode;
 
   /**
-   * @deprecated Waiting for final state is expected to become the unconditional default behavior;
-   *     this parameter will then have no effect and will likely be removed. See SOLR-17712.
+   * @deprecated Solr is moving toward always waiting for final state, with no option to opt out;
+   *     once that happens, this parameter will have no effect and will likely be removed. See
+   *     SOLR-17712.
    */
   @JsonProperty
   @Deprecated(since = "9.10")
