@@ -1,9 +1,10 @@
 title: >
   Removed the deprecated EarlyTerminatingSortingCollector in favor of Lucene's native
   TopFieldCollector early termination. SEGMENT_TERMINATE_EARLY, its response header, and
-  QueryCommand's accessors for it are now deprecated too. Combining segmentTerminateEarly=true
-  with a RankQuery now logs an "unsupported combination" warning instead of silently doing
-  nothing.
+  QueryCommand's accessors for it are now deprecated too -- use minExactCount instead, which
+  drives the same native early termination without requiring a matching index sort. Combining
+  segmentTerminateEarly=true with a RankQuery now logs an "unsupported combination" warning
+  instead of silently doing nothing.
 type: removed
 authors:
   - name: Serhiy Bzhezytskyy

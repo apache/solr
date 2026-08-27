@@ -437,6 +437,9 @@ of the distributed query processing.
 
 WARNING: Deprecated since 11.0. Its implementation relies on internal Lucene behavior that cannot
 currently be replicated using Lucene's own public early-termination support (see SOLR-18363).
+Use <<minExactCount Parameter,the `minExactCount` Parameter>> instead -- it drives the same native,
+per-segment early termination Lucene now performs internally, and it works with any sort, not only
+one that matches the collection's `mergePolicyFactory` index sort.
 
 [%autowidth,frame=none]
 |===

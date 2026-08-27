@@ -1800,7 +1800,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
       if (allowNativeSegmentTerminateEarly) {
-        minNumFound = 0;
+        minNumFound = len;
       }
       return new TopFieldCollectorManager(weightedSort, len, searchAfter, minNumFound)
           .newCollector();
