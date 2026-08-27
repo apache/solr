@@ -26,10 +26,10 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -168,7 +168,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
         backupMgr.downloadConfigDir(configName, cc.getConfigSetService());
       }
 
-      // Save the collection's state. Can be part of the monolithic clusterstate.json or a
+      // Save the collection's state. Can be part of the monolithic clusterstate.json or an
       // individual state.json. Since we don't want to distinguish we extract the state and back it
       // up as a separate json
       DocCollection collectionState =
@@ -285,7 +285,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
                     x.getState() != State.DOWN && snapshotMeta.isSnapshotExists(slice.getName(), x))
             .findFirst();
 
-    if (!r.isPresent()) {
+    if (r.isEmpty()) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
           "Unable to find any live replica with a snapshot named "
@@ -462,7 +462,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       SolrZkClient zkClient = ccc.getZkStateReader().getZkClient();
       snapshotMeta =
           SolrSnapshotManager.getCollectionLevelSnapshot(zkClient, collectionName, commitName);
-      if (!snapshotMeta.isPresent()) {
+      if (snapshotMeta.isEmpty()) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
             "Snapshot with name "
@@ -488,7 +488,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
         backupName,
         backupPath);
 
-    Collection<String> shardsToConsider = Collections.emptySet();
+    Collection<String> shardsToConsider = Set.of();
     if (snapshotMeta.isPresent()) {
       shardsToConsider = snapshotMeta.get().getShards();
     }

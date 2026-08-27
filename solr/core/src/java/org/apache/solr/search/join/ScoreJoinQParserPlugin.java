@@ -44,8 +44,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.JoinQParserPlugin;
 import org.apache.solr.search.QParser;
@@ -284,7 +284,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
           }
 
           long fromCoreOpenTime = 0;
-          LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
+          SolrQueryRequestBase otherReq = new SolrQueryRequestBase(fromCore, params);
 
           try {
             QParser fromQueryParser = QParser.getParser(fromQueryStr, otherReq);

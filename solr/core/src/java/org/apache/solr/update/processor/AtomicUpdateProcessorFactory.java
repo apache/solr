@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import java.io.IOException;
@@ -135,7 +134,7 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory
           continue;
         }
 
-        orgdoc.setField(field, singletonMap(operation, orgdoc.get(field).getValue()));
+        orgdoc.setField(field, Map.of(operation, orgdoc.get(field).getValue()));
         isAtomicUpdateAddedByMe = true;
       }
 

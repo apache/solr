@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -97,12 +96,11 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     assertEquals(
         0,
         (CollectionAdminRequest.createCollection(COLLECTION, CONF, numShards, numReplicas)
-                .setProperties(
-                    Collections.singletonMap(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
+                .setProperties(Map.of(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
                 .process(cluster.getSolrClient()))
             .getStatus());
 
-    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION).build();
+    CLOUD_CLIENT = cluster.newSolrClient(COLLECTION);
 
     final int numDocs = atLeast(1000);
     final int maxTermId = atLeast(TERM_VALUES_RANDOMIZER);

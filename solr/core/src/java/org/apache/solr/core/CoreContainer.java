@@ -34,7 +34,6 @@ import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
-import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
@@ -58,7 +57,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.CorruptIndexException;
@@ -69,9 +68,8 @@ import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
@@ -86,7 +84,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -124,9 +121,8 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.handler.designer.SchemaDesignerAPI;
+import org.apache.solr.handler.designer.SchemaDesigner;
 import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.LogWatcher;
@@ -137,8 +133,8 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.pkg.SolrPackageLoader;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.CacheConfig;
@@ -147,6 +143,7 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
+import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
@@ -164,8 +161,6 @@ import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ApplicationHandler;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -290,7 +285,7 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
-  public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
+  public final NodeRoles nodeRoles = new NodeRoles(EnvUtils.getProperty(NodeRoles.NODE_ROLES_PROP));
 
   private final ExecutorService indexSearcherExecutor;
 
@@ -412,14 +407,13 @@ public class CoreContainer {
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
     OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader);
-    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
+    this.metricManager = new SolrMetricManager(loader);
     this.tracer = TraceUtils.getGlobalTracer();
 
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
-    setWeakStringInterner();
     this.coresLocator = locator;
     this.containerProperties = new Properties(config.getSolrProperties());
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
@@ -556,14 +550,17 @@ public class CoreContainer {
 
     if (pluginClassName != null) {
       log.debug("Authentication plugin class obtained from security.json: {}", pluginClassName);
-    } else if (System.getProperty(AUTHENTICATION_PLUGIN_PROP) != null) {
-      pluginClassName = System.getProperty(AUTHENTICATION_PLUGIN_PROP);
-      log.debug(
-          "Authentication plugin class obtained from system property '{}': {}",
-          AUTHENTICATION_PLUGIN_PROP,
-          pluginClassName);
     } else {
-      log.debug("No authentication plugin used.");
+      String authPluginProp = EnvUtils.getProperty(AUTHENTICATION_PLUGIN_PROP);
+      if (authPluginProp != null) {
+        pluginClassName = authPluginProp;
+        log.debug(
+            "Authentication plugin class obtained from system property '{}': {}",
+            AUTHENTICATION_PLUGIN_PROP,
+            pluginClassName);
+      } else {
+        log.debug("No authentication plugin used.");
+      }
     }
     SecurityPluginHolder<AuthenticationPlugin> old = authenticationPlugin;
     SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin = null;
@@ -707,7 +704,7 @@ public class CoreContainer {
    *
    * @see #getDefaultHttpSolrClient()
    * @see ZkController#getSolrClient()
-   * @see HttpSolrClientBase#requestWithBaseUrl(String, SolrRequest, String)
+   * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    * @deprecated likely to simply be moved to the ObjectCache so as to not be used
    */
   @Deprecated
@@ -720,7 +717,7 @@ public class CoreContainer {
     return objectCache;
   }
 
-  private void registerV2ApiIfEnabled(Object apiObject) {
+  private void registerV2Api(Object apiObject) {
     if (apiObject == null || containerHandlers.getApiBag() == null) {
       return;
     }
@@ -728,7 +725,7 @@ public class CoreContainer {
     containerHandlers.getApiBag().registerObject(apiObject);
   }
 
-  private void registerV2ApiIfEnabled(Class<? extends JerseyResource> clazz) {
+  private void registerV2Api(Class<? extends JerseyResource> clazz) {
     if (containerHandlers.getJerseyEndpoints() == null) {
       return;
     }
@@ -763,6 +760,10 @@ public class CoreContainer {
     }
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
+    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
+
+    initGpuMetricsService(); // Initialize GPU metrics service
+
     ClusterPluginsSource pluginsSource =
         ClusterPluginsSource.loadClusterPluginsSource(this, loader);
     containerPluginsRegistry =
@@ -779,10 +780,12 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
 
-    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
-
-    // Initialize GPU metrics service
-    initGpuMetricsService();
+    // PublicKeyHandler was added to containerHandlers in the constructor before metrics were ready
+    containerHandlers
+        .get(PublicKeyHandler.PATH)
+        .initializeMetrics(
+            solrMetricsContext,
+            Attributes.builder().put(HANDLER_ATTR, PublicKeyHandler.PATH).build());
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
@@ -798,7 +801,7 @@ public class CoreContainer {
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
-      this.caches = Collections.emptyMap();
+      this.caches = Map.of();
     } else {
       Map<String, SolrCache<?, ?>> m = CollectionUtil.newHashMap(cachesConfig.size());
       for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {
@@ -808,7 +811,7 @@ public class CoreContainer {
           caffeineCache.initializeMetrics(
               solrMetricsContext,
               Attributes.builder().put(NAME_ATTR, cacheName).build(),
-              "solr_node_cache");
+              "solr.node.cache");
         }
         m.put(cacheName, c);
       }
@@ -838,12 +841,12 @@ public class CoreContainer {
           Attributes.builder().put(HANDLER_ATTR, "/authentication/pki").build());
 
       fileStore = new DistribFileStore(this);
-      registerV2ApiIfEnabled(ClusterFileStore.class);
+      registerV2Api(ClusterFileStore.class);
 
       packageLoader = new SolrPackageLoader(this);
-      registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
-      registerV2ApiIfEnabled(packageLoader.getPackageAPI().readAPI);
-      registerV2ApiIfEnabled(ZookeeperRead.class);
+      registerV2Api(packageLoader.getPackageAPI().editAPI);
+      registerV2Api(packageLoader.getPackageAPI().readAPI);
+      registerV2Api(ZookeeperRead.class);
     }
 
     MDCLoggingContext.setNode(this);
@@ -865,11 +868,11 @@ public class CoreContainer {
         createHandler(
             CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
-    registerV2ApiIfEnabled(clusterAPI);
-    registerV2ApiIfEnabled(clusterAPI.commands);
+    registerV2Api(clusterAPI);
+    registerV2Api(clusterAPI.commands);
 
     if (isZooKeeperAware()) {
-      registerV2ApiIfEnabled(new SchemaDesignerAPI(this));
+      registerV2Api(SchemaDesigner.class);
     } // else Schema Designer not available in standalone (non-cloud) mode
 
     /*
@@ -951,7 +954,7 @@ public class CoreContainer {
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
                 new SolrNamedThreadFactory("coreLoadExecutor")),
-            "solr_node_executor",
+            "solr.node.executor",
             "coreLoadExecutor",
             SolrInfoBean.Category.CONTAINER);
 
@@ -1020,8 +1023,8 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       containerPluginsRegistry.refresh();
       getZkController().zkStateReader.registerClusterPropertiesListener(containerPluginsRegistry);
-      registerV2ApiIfEnabled(pluginsSource.getReadApi());
-      registerV2ApiIfEnabled(pluginsSource.getEditApi());
+      registerV2Api(pluginsSource.getReadApi());
+      registerV2Api(pluginsSource.getEditApi());
 
       // initialize the placement plugin factory wrapper
       // with the plugin configuration from the registry
@@ -1044,51 +1047,49 @@ public class CoreContainer {
               });
     }
 
-    if (V2ApiUtils.isEnabled()) {
-      final CoreContainer thisCCRef = this;
-      // Init the Jersey app once all CC endpoints have been registered
-      containerHandlers
-          .getJerseyEndpoints()
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
-                      .to(CoreContainer.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
-                      .to(SolrNodeKeyPair.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
-                      .to(DistribFileStore.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(
-                          new InjectionFactories.SingletonFactory<>(
-                              coreAdminHandler.getCoreAdminAsyncTracker()))
-                      .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
-                      .in(Singleton.class);
-                }
-              });
-      jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
-    }
+    final CoreContainer thisCCRef = this;
+    // Init the Jersey app once all CC endpoints have been registered
+    containerHandlers
+        .getJerseyEndpoints()
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
+                    .to(CoreContainer.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
+                    .to(SolrNodeKeyPair.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
+                    .to(DistribFileStore.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(
+                        new InjectionFactories.SingletonFactory<>(
+                            coreAdminHandler.getCoreAdminAsyncTracker()))
+                    .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
+                    .in(Singleton.class);
+              }
+            });
+    jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
 
     // Do Node setup logic after all handlers have been registered.
     if (isZooKeeperAware()) {
@@ -1137,7 +1138,7 @@ public class CoreContainer {
     }
 
     if (authenticationPlugin != null
-        && StrUtils.isNullOrEmpty(System.getProperty("solr.jetty.https.port"))) {
+        && StrUtils.isNullOrEmpty(EnvUtils.getProperty("solr.jetty.https.port"))) {
       log.warn(
           "Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and data with encryption.");
     }
@@ -1247,6 +1248,10 @@ public class CoreContainer {
         zkSys.zkController.tryCancelAllElections();
       }
 
+      // Shut down the coreZkRegister executor early so that any in-progress async reloads
+      // (triggered by ZK config watchers) complete before we close cores.
+      ExecutorUtil.shutdownAndAwaitTermination(zkSys.getCoreZkRegisterExecutorService());
+
       ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor); // actually already shutdown
 
       // Now clear all the cores that are being operated upon.
@@ -1277,14 +1282,6 @@ public class CoreContainer {
       }
 
       customThreadPool.execute(replayUpdatesExecutor::shutdownAndAwaitTermination);
-
-      // Shutdown GPU metrics service if it was initialized
-      shutdownGpuMetricsService();
-
-      if (metricManager != null) {
-        // Close all OTEL meter providers and metrics
-        metricManager.closeAllRegistries();
-      }
 
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
@@ -1339,6 +1336,14 @@ public class CoreContainer {
 
     // It should be safe to close the authentication plugin at this point.
     try {
+      if (pkiAuthenticationSecurityBuilder != null) {
+        pkiAuthenticationSecurityBuilder.close();
+      }
+    } catch (Exception e) {
+      log.warn("Exception while closing PKI authentication plugin.", e);
+    }
+
+    try {
       if (authenticationPlugin != null) {
         authenticationPlugin.plugin.close();
         authenticationPlugin = null;
@@ -1361,21 +1366,40 @@ public class CoreContainer {
       org.apache.lucene.util.IOUtils.closeWhileHandlingException(packageLoader);
     }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
+
+    containerHandlers.close();
+
+    shutdownGpuMetricsService(); // Shutdown GPU metrics service if it was initialized
+
+    IOUtils.closeQuietly(solrMetricsContext);
+
+    metricManager.closeAllRegistries(); // Close all OTEL meter providers and metrics
+  }
+
+  /**
+   * Applies the given action to each currently loaded core, reserving and releasing each one
+   * without triggering a lazy load. A core unloaded concurrently after {@link
+   * #getLoadedCoreNames()} was called is skipped.
+   */
+  public void forEachLoadedCore(Consumer<SolrCore> action) {
+    for (String coreName : solrCores.getLoadedCoreNames()) {
+      // getCoreFromAnyList, not getCore: never loads
+      try (SolrCore core = solrCores.getCoreFromAnyList(coreName, true)) {
+        if (core == null) continue; // unloaded since getLoadedCoreNames
+        action.accept(core);
+      }
+    }
   }
 
   public void cancelCoreRecoveries() {
-
-    List<SolrCore> cores = solrCores.getCores();
-
-    // we must cancel without holding the cores sync
-    // make sure we wait for any recoveries to stop
-    for (SolrCore core : cores) {
-      try {
-        core.getSolrCoreState().cancelRecovery();
-      } catch (Exception e) {
-        log.error("Error canceling recovery for core", e);
-      }
-    }
+    forEachLoadedCore(
+        core -> {
+          try {
+            core.getSolrCoreState().cancelRecovery();
+          } catch (Exception e) {
+            log.error("Error canceling recovery for core", e);
+          }
+        });
   }
 
   /**
@@ -1390,21 +1414,25 @@ public class CoreContainer {
    * <p>We do not need to unpause ever because the node is being shut down.
    */
   private void pauseUpdatesAndAwaitInflightRequests() {
-    getCores().parallelStream()
+    solrCores.getLoadedCoreNames().parallelStream()
         .forEach(
-            solrCore -> {
-              SolrCoreState solrCoreState = solrCore.getSolrCoreState();
-              try {
-                solrCoreState.pauseUpdatesAndAwaitInflightRequests();
-              } catch (TimeoutException e) {
-                log.warn(
-                    "Timed out waiting for in-flight update requests to complete for core: {}",
-                    solrCore.getName());
-              } catch (InterruptedException e) {
-                log.warn(
-                    "Interrupted while waiting for in-flight update requests to complete for core: {}",
-                    solrCore.getName());
-                Thread.currentThread().interrupt();
+            coreName -> {
+              // see cancelCoreRecoveries: reserve without loading, we are shutting down
+              try (SolrCore solrCore = solrCores.getCoreFromAnyList(coreName, true)) {
+                if (solrCore == null) return; // unloaded since getLoadedCoreNames
+                SolrCoreState solrCoreState = solrCore.getSolrCoreState();
+                try {
+                  solrCoreState.pauseUpdatesAndAwaitInflightRequests();
+                } catch (TimeoutException e) {
+                  log.warn(
+                      "Timed out waiting for in-flight update requests to complete for core: {}",
+                      solrCore.getName());
+                } catch (InterruptedException e) {
+                  log.warn(
+                      "Interrupted while waiting for in-flight update requests to complete for core: {}",
+                      solrCore.getName());
+                  Thread.currentThread().interrupt();
+                }
               }
             });
   }
@@ -1752,7 +1780,7 @@ public class CoreContainer {
 
     CoreInitFailedAction action =
         CoreInitFailedAction.valueOf(
-            System.getProperty(CoreInitFailedAction.class.getSimpleName(), "none"));
+            EnvUtils.getProperty(CoreInitFailedAction.class.getSimpleName(), "none"));
     log.debug("CorruptIndexException while creating core, will attempt to repair via {}", action);
 
     switch (action) {
@@ -1818,21 +1846,6 @@ public class CoreContainer {
         log.error("Exception releasing {}", dir, e);
       }
     }
-  }
-
-  /**
-   * Gets all loaded cores, consistent with {@link #getLoadedCoreNames()}. Caller doesn't need to
-   * close.
-   *
-   * <p>NOTE: rather dangerous API because each core is not reserved (could in theory be closed).
-   * Prefer {@link #getLoadedCoreNames()} and then call {@link #getCore(String)} then close it.
-   *
-   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it
-   *     can be sorted). Don't need to close them.
-   */
-  @Deprecated
-  public List<SolrCore> getCores() {
-    return solrCores.getCores();
   }
 
   /**
@@ -1977,7 +1990,7 @@ public class CoreContainer {
 
         // force commit on old core if the new one is readOnly and prevent any new updates
         if (newCore.readOnly) {
-          SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+          SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
           core.getUpdateHandler().commit(CommitUpdateCommand.closeOnCommit(req, false));
         }
 
@@ -2446,10 +2459,10 @@ public class CoreContainer {
    *
    * <p>The caller does not need to close the client.
    *
-   * @return the existing {@link HttpJettySolrClient}
-   * @see HttpSolrClientBase#requestWithBaseUrl(String, SolrRequest, String)
+   * @return the existing {@link HttpSolrClient}
+   * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    */
-  public HttpJettySolrClient getDefaultHttpSolrClient() {
+  public HttpSolrClient getDefaultHttpSolrClient() {
     return solrClientProvider.getSolrClient();
   }
 
@@ -2483,31 +2496,18 @@ public class CoreContainer {
     coreContainerAsyncTaskExecutor.execute(r);
   }
 
-  public static void setWeakStringInterner() {
-    boolean enable = "true".equals(System.getProperty("solr.use.str.intern", "true"));
-    if (!enable) return;
-    Interner<String> interner = Interner.newWeakInterner();
-    ClusterState.setStrInternerParser(
-        new Function<>() {
-          @Override
-          public ObjectBuilder apply(JSONParser p) {
-            try {
-              return new ObjectBuilder(p) {
-                @Override
-                public void addKeyVal(Object map, Object key, Object val) throws IOException {
-                  if (key != null) {
-                    key = interner.intern(key.toString());
-                  }
-                  if (val instanceof String) {
-                    val = interner.intern((String) val);
-                  }
-                  super.addKeyVal(map, key, val);
-                }
-              };
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
-          }
-        });
+  /**
+   * Audit an event if our audit plugin is installed and wants to audit this type of event.
+   *
+   * @param event the event to audit.
+   * @param eventType a Supplier to defer event creation and avoid gc load when auditing is not
+   *     enabled. Lambdas are preferred for this since they are easily inlined.
+   */
+  public void audit(Supplier<AuditEvent> event, AuditEvent.EventType eventType) {
+    if (getAuditLoggerPlugin() != null && getAuditLoggerPlugin().shouldLog(eventType)) {
+      // The lambda should get optimized out, and produce no GC load:
+      // https://medium.com/@reetesh043/how-lambda-expressions-work-internally-in-java-f2a6f0e0bc68
+      getAuditLoggerPlugin().doAudit(event.get());
+    }
   }
 }

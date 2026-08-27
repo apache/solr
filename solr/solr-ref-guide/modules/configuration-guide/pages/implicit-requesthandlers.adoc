@@ -40,18 +40,24 @@ This handler must have a collection name in the path to the endpoint.
 |`solr/<collection>/admin/file` |{solr-javadocs}/core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[ShowFileRequestHandler] |`_ADMIN_FILE`
 |===
 
-Health:: Report the health of the node (_available only in SolrCloud mode_)
+Health:: Report the health of the node.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
 |v1: `solr/admin/info/health`
 
-v2: `api/node/health` |{solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |
+v2: `api/node/health` |v1: {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler]
+
+v2: {solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth] |
 |===
 +
-This endpoint also accepts additional request parameters.
-Please see {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[Javadocs] for details.
+In SolrCloud mode the handler checks that the node is connected to ZooKeeper and is listed in live nodes.
+The optional `requireHealthyCores=true` parameter additionally requires that all local replicas be in an active state, which is useful for rolling-restart probes.
++
+In user-managed (leader-follower) mode the handler checks replication lag.
+The optional `maxGenerationLag=<n>` parameter specifies the maximum number of Lucene commit generations by which a follower is allowed to trail its leader; the endpoint returns HTTP 503 if any core exceeds this threshold.
+See xref:deployment-guide:user-managed-index-replication.adoc#monitoring-follower-replication-lag[Monitoring Follower Replication Lag] for details and examples.
 
 Logging:: Retrieve and modify registered loggers.
 +
@@ -103,19 +109,15 @@ Segments:: Return info on last commit generation Lucene index segments.
 |`solr/<collection>/admin/segments` |{solr-javadocs}/core/org/apache/solr/handler/admin/SegmentsInfoRequestHandler.html[SegmentsInfoRequestHandler] |`_ADMIN_SEGMENTS`
 |===
 
-System Info:: Return server statistics and settings.
+Core Info:: Return core information.
 +
-*Documentation*: xref:system-info-handler.adoc[]
+*Documentation*: xref:core-info-handler.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/system`
-
-v2: `api/node/system` |{solr-javadocs}/core/org/apache/solr/handler/admin/SystemInfoHandler.html[SystemInfoHandler] |`_ADMIN_SYSTEM`
+|v1: `solr/<collection>/admin/info`|{solr-javadocs}/core/org/apache/solr/handler/admin/CoreInfoHandler.html[CoreInfoHandler] |
 |===
-+
-This endpoint can also take the collection or core name in the path (`solr/<collection>/admin/system` or `solr/<core>/admin/system`) which will include all of the system-level information and additional information about the specific core that served the request.
 
 Threads:: Return info on all JVM threads.
 +
@@ -367,3 +369,15 @@ The response will look similar to:
 Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via the xref:request-parameters-api.adoc[] using the paramset listed in the above table.
 However, other parameters, including SearchHandler components, may not be modified.
 The invariants and appends specified in the implicit configuration cannot be overridden.
+
+== How to Disable an Implicit Handler
+
+You may want to disable the loading of an implicit handler.
+This is supported by remapping the name of the handler to the `NoOpRequestHandler` in `solrconfig.xml`, which will return a 403 FORBIDDEN status code.
+
+For example, to disable the `/update/csv` handler you would re-define it in `solrconfig.xml` as:
+
+[source,xml]
+----
+<requestHandler name="/update/csv" class="solr.NoOpRequestHandler"></requestHandler>
+----

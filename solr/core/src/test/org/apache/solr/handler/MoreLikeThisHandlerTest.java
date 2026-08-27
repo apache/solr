@@ -25,7 +25,6 @@ import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.FacetComponent;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
@@ -168,7 +167,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
 
     params.set(CommonParams.Q, "id:42");
 
-    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+    try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
       assertQ(
           "morelikethis - tom cruise",
           mltreq,
@@ -178,7 +177,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
 
     params.set(MoreLikeThisParams.BOOST, "true");
 
-    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+    try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
       assertQ(
           "morelikethis - tom cruise",
           mltreq,
@@ -187,13 +186,13 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     }
 
     params.set(CommonParams.Q, "id:44");
-    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+    try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
       assertQ("morelike this - harrison ford", mltreq, "//result/doc[1]/str[@name='id'][.='45']");
     }
 
     // test MoreLikeThis debug
     params.set(CommonParams.DEBUG_QUERY, "true");
-    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+    try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
       assertQ(
           "morelike this - harrison ford",
           mltreq,
@@ -206,13 +205,13 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     // test that qparser plugins work
     params.remove(CommonParams.DEBUG_QUERY);
     params.set(CommonParams.Q, "{!field f=id}44");
-    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+    try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
       assertQ(mltreq, "//result/doc[1]/str[@name='id'][.='45']");
     }
 
     params.set(CommonParams.Q, "id:42");
     params.set(MoreLikeThisParams.QF, "name^5.0 subword^0.1");
-    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+    try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
       assertQ(
           "morelikethis with weights",
           mltreq,
@@ -221,16 +220,14 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     }
 
     // test that qparser plugins work w/ the MoreLikeThisHandler
-    params.set(CommonParams.QT, "/mlt");
     params.set(CommonParams.Q, "{!field f=id}44");
-    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+    try (SolrQueryRequest mltreq = withPath("/mlt", new SolrQueryRequestBase(core, params))) {
       assertQ(mltreq, "//result/doc[1]/str[@name='id'][.='45']");
     }
 
     // test that debugging works (test for MoreLikeThis*Handler*)
-    params.set(CommonParams.QT, "/mlt");
     params.set(CommonParams.DEBUG_QUERY, "true");
-    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+    try (SolrQueryRequest mltreq = withPath("/mlt", new SolrQueryRequestBase(core, params))) {
       assertQ(
           mltreq,
           "//result/doc[1]/str[@name='id'][.='45']",
@@ -239,7 +236,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
 
     params.set(FacetComponent.COMPONENT_NAME, "true");
     params.set("facet.field", "name");
-    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+    try (SolrQueryRequest mltreq = withPath("/mlt", new SolrQueryRequestBase(core, params))) {
       assertQ(
           mltreq,
           "//result/doc[1]/str[@name='id'][.='45']",
@@ -247,7 +244,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     }
     params.set("facet.field", "{!ex=tg}name");
     params.set("fq", "{!tag=tg}name:George");
-    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+    try (SolrQueryRequest mltreq = withPath("/mlt", new SolrQueryRequestBase(core, params))) {
       assertQ(
           mltreq,
           "//result/doc[1]/str[@name='id'][.='45']",
@@ -266,7 +263,6 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "4", "name", "        ccc", "subword", "    bbb    "));
     assertU(commit());
 
-    params.set(CommonParams.QT, "/mlt");
     params.set(MoreLikeThisParams.MLT, "true");
     params.set(MoreLikeThisParams.SIMILARITY_FIELDS, "name,subword");
     params.set(MoreLikeThisParams.INTERESTING_TERMS, "details");
@@ -277,6 +273,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
 
     try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {}) {
       req.setContentStreams(List.of(new ContentStreamBase.StringStream("bbb", "zzz")));
+      req.getContext().put(CommonParams.PATH, "/mlt");
 
       // Make sure we have terms from both fields in the interestingTerms array and all documents
       // have been retrieved as matching.

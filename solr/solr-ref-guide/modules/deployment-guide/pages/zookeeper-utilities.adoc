@@ -57,13 +57,6 @@ bin/solr zk upconfig -z 127.0.0.1:9983 -n my_new_config -d server/solr/configset
 ./bin/solr zk cp ./my_local_file.txt zk:/my_zk_file.txt -z 127.0.0.1:9983
 ----
 
-=== Link a Collection to a Configset
-
-[source,bash]
-----
-./bin/solr zk linkconfig --conf-name my_new_config -c gettingstarted -z 127.0.0.1:9983
-----
-
 === Create a New ZooKeeper Path
 
 This can be useful to create a chroot path in ZooKeeper before first cluster start.

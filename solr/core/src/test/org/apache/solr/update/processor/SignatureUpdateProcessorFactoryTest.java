@@ -17,8 +17,8 @@
 package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
@@ -31,8 +31,8 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -292,10 +292,9 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       ureq.add(doc);
     }
 
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), mmparams);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), mmparams);
     try {
-      req.setContentStreams(
-          Collections.singletonList(ContentStreamBase.create(new JavaBinRequestWriter(), ureq)));
+      req.setContentStreams(List.of(ContentStreamBase.create(new JavaBinRequestWriter(), ureq)));
       UpdateRequestHandler h = new UpdateRequestHandler();
       h.init(new NamedList<>());
       h.handleRequestBody(req, new SolrQueryResponse());

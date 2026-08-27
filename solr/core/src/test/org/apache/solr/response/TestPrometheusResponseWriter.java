@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.MetricsRequest;
@@ -51,7 +50,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
-    solrTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrTestRule.startSolr();
     solrTestRule.newCollection("core1").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
     solrTestRule.newCollection("core2").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
 
@@ -194,6 +193,9 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
+      InputStream stream = (InputStream) res.get("stream");
+      if (stream != null) stream.close();
+      // Unknown wt parameter should return a 400 error
       assertEquals(400, res.get("responseStatus"));
     }
   }

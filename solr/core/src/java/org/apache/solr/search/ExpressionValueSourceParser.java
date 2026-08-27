@@ -21,7 +21,9 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -143,8 +145,8 @@ public class ExpressionValueSourceParser extends ValueSourceParser {
     }
 
     @Override
-    public FunctionValues getValues(
-        java.util.Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+        throws IOException {
       // Get scorer from context (may be null during setup)
       Scorable scorer = (Scorable) context.get("scorer");
       DoubleValues scores = scorer == null ? null : DoubleValuesSource.fromScorer(scorer);
@@ -221,7 +223,7 @@ public class ExpressionValueSourceParser extends ValueSourceParser {
       @Override
       public void doSetNextReader(LeafReaderContext context) throws IOException {
         // Create initial FunctionValues (may have null scorer)
-        functionValues = (ScoreAwareFunctionValues) getValues(new java.util.HashMap<>(), context);
+        functionValues = (ScoreAwareFunctionValues) getValues(new HashMap<>(), context);
       }
 
       @Override

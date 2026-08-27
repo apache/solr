@@ -433,7 +433,15 @@ limitations under the License.
           <textarea ng-model="val['facet.query']" name="facet.query" id="facet_query"></textarea>
 
           <label for="facet_field">facet.field</label>
-          <input type="text" ng-model="val['facet.field']" name="facet.field" id="facet_field">
+          <div class="multiple" id="facet_field">
+            <div class="row clearfix" ng-repeat="facetField in facetFields">
+              <input type="text" ng-model="facetField.value" name="facet.field" title="Facet field.">
+              <div class="buttons">
+                <a class="rem" ng-click="removeFacetField($index)"><span></span></a>
+                <a class="add" ng-click="addFacetField($index)"><span></span></a>
+              </div>
+            </div>
+          </div>
 
           <label for="facet_prefix">facet.prefix</label>
           <input type="text" ng-model="val['facet.prefix']" name="facet.prefix" id="facet_prefix">

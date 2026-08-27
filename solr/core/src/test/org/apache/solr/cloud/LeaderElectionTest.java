@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
-
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -37,7 +35,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
@@ -233,7 +231,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             elector, "shard2", "collection1", "dummynode1", props, zkController);
     elector.setup(context);
     elector.joinElection(context, false);
-    String urlScheme = zkStateReader.getClusterProperty(URL_SCHEME, "http");
+    String urlScheme = zkStateReader.getUrlScheme();
     assertEquals(urlScheme + "://127.0.0.1:80/solr/", getLeaderUrl("collection1", "shard2"));
   }
 
@@ -259,9 +257,9 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     Thread.sleep(1000);
 
-    String urlScheme = zkStateReader.getClusterProperty(URL_SCHEME, "http");
-    String url1 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/1/";
-    String url2 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/2/";
+    String urlScheme = zkStateReader.getUrlScheme();
+    String url1 = URLUtil.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/1/";
+    String url2 = URLUtil.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/2/";
 
     assertEquals("original leader was not registered", url1, getLeaderUrl("collection2", "slice1"));
 

@@ -36,12 +36,13 @@ public interface CommonParams {
   String TZ = "TZ";
 
   /**
-   * the Request Handler (formerly known as the Query Type) - which Request Handler should handle
-   * the request.
+   * the Request Handler (formerly known as the Query Type) to route to as seen in solrconfig.xml.
    *
-   * @deprecated route requests by path instead, not using this parameter
+   * <p>Note: in a standard request, the handler is the last path component of the URL, not this
+   * parameter. This parameter is used for special cases when there is no path like a warming query
+   * or streaming expressions or some other places.
    */
-  @Deprecated String QT = "qt";
+  String QT = "qt";
 
   /** the response writer type - the format of the response */
   String WT = "wt";
@@ -90,9 +91,6 @@ public interface CommonParams {
   String PING = "ping";
 
   // SOLR-4228 end
-
-  /** stylesheet to apply to XML results */
-  String XSL = "xsl";
 
   /** query and init param for field list */
   String FL = "fl";
@@ -205,7 +203,6 @@ public interface CommonParams {
   String ZK_STATUS_PATH = "/admin/zookeeper/status";
   String SYSTEM_INFO_PATH = "/admin/info/system";
   String METRICS_PATH = "/admin/metrics";
-  String V2_SYSTEM_INFO_PATH = "/node/system";
 
   String STATUS = "status";
 
@@ -313,7 +310,6 @@ public interface CommonParams {
   String JAVABIN_MIME = "application/javabin";
 
   String FILE = "file";
-  String FILES = "files";
 
   String CHILDDOC = "_childDocuments_";
 }

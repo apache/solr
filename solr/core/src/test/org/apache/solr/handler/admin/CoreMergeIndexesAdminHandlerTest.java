@@ -28,6 +28,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.MockFSDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -62,6 +63,7 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testMergeIndexesCoreAdminHandler() throws Exception {
     final Path workDir = createTempDir();
 
@@ -73,9 +75,8 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
       DirectoryFactory df = core.getDirectoryFactory();
       FailingDirectoryFactory dirFactory = (FailingDirectoryFactory) df;
 
-      try {
+      try (ErrorLogMuter ignored = ErrorLogMuter.regex(WRAPPED_FAILING_MSG)) {
         dirFactory.fail = true;
-        ignoreException(WRAPPED_FAILING_MSG);
         SolrException e =
             expectThrows(
                 SolrException.class,
@@ -93,8 +94,6 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
         assertEquals(
             FailingDirectoryFactory.FailingDirectoryFactoryException.class,
             e.getCause().getClass());
-      } finally {
-        unIgnoreException(WRAPPED_FAILING_MSG);
       }
       dirFactory.fail = false;
     }

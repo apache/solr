@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -28,7 +27,7 @@ import java.util.TreeSet;
 import org.apache.solr.client.api.model.GetSegmentDataResponse;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -49,7 +48,7 @@ import org.slf4j.LoggerFactory;
 public class ColStatus {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final HttpJettySolrClient solrClient;
+  private final HttpSolrClient solrClient;
   private final ClusterState clusterState;
   private final ZkNodeProps props;
 
@@ -65,7 +64,7 @@ public class ColStatus {
       SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
   public static final String SEGMENTS_PROP = "segments";
 
-  public ColStatus(HttpJettySolrClient solrClient, ClusterState clusterState, ZkNodeProps props) {
+  public ColStatus(HttpSolrClient solrClient, ClusterState clusterState, ZkNodeProps props) {
     this.solrClient = solrClient;
     this.clusterState = clusterState;
     this.props = props;
@@ -78,7 +77,7 @@ public class ColStatus {
     if (col == null) {
       collections = clusterState.getCollectionNames();
     } else {
-      collections = Collections.singleton(col);
+      collections = Set.of(col);
     }
     boolean withFieldInfo = props.getBool(FIELD_INFO_PROP, false);
     boolean withCoreInfo = props.getBool(CORE_INFO_PROP, false);

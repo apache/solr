@@ -45,8 +45,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -220,7 +220,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
     // test that our engines & scripts are valid
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
     try {
       initEngines(req, rsp);
     } catch (Exception e) {

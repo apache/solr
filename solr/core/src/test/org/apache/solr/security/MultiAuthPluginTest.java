@@ -31,22 +31,14 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.Principal;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -54,6 +46,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -75,7 +68,6 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     instance.setUp();
     jetty = createAndStartJetty(instance);
     securityConfHandler = new SecurityConfHandlerLocalForTesting(jetty.getCoreContainer());
-    HttpClientUtil.clearRequestInterceptors(); // Clear out any old Authorization headers
   }
 
   @Override
@@ -96,7 +88,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     HttpClient httpClient = null;
     SolrClient solrClient = null;
     try {
-      httpClient = HttpClientUtil.createClient(null);
+      httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
       solrClient = getHttpSolrClient(baseUrl);
 
@@ -248,11 +240,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       command = "{\n" + "'set-property': { 'mock': { 'blockUnknown':false } }\n" + "}";
 
       doHttpPostWithHeader(
-          httpClient,
-          baseUrl + authcPrefix,
-          command,
-          new BasicHeader("Authorization", "mock foo"),
-          200);
+          httpClient, baseUrl + authcPrefix, command, "Authorization", "mock foo", 200);
       verifySecurityStatus(
           httpClient,
           baseUrl + authcPrefix,
@@ -262,9 +250,6 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
           user,
           pass);
     } finally {
-      if (httpClient != null) {
-        HttpClientUtil.close(httpClient);
-      }
       if (solrClient != null) {
         solrClient.close();
       }
@@ -279,7 +264,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     HttpClient httpClient = null;
     SolrClient solrClient = null;
     try {
-      httpClient = HttpClientUtil.createClient(null);
+      httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
       solrClient = getHttpSolrClient(baseUrl);
 
@@ -306,9 +291,6 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       // verify that clients can still use "Basic" scheme with xBasic scheme configured in MultiAuth
       doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 200);
     } finally {
-      if (httpClient != null) {
-        HttpClientUtil.close(httpClient);
-      }
       if (solrClient != null) {
         solrClient.close();
       }
@@ -324,7 +306,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     HttpClient httpClient = null;
     SolrClient solrClient = null;
     try {
-      httpClient = HttpClientUtil.createClient(null);
+      httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
       solrClient = getHttpSolrClient(baseUrl);
 
@@ -356,9 +338,6 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       // configuration should return 401 as it resolves with the plugin that uses "basic" as scheme
       doHttpPost(httpClient, baseUrl + authcPrefix, command, xUser, pass, 401);
     } finally {
-      if (httpClient != null) {
-        HttpClientUtil.close(httpClient);
-      }
       if (solrClient != null) {
         solrClient.close();
       }
@@ -373,7 +352,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     HttpClient httpClient = null;
     SolrClient solrClient = null;
     try {
-      httpClient = HttpClientUtil.createClient(null);
+      httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
       solrClient = getHttpSolrClient(baseUrl);
 
@@ -400,9 +379,6 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       // verify that a single plugin configuration is allowed and works
       doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 200);
     } finally {
-      if (httpClient != null) {
-        HttpClientUtil.close(httpClient);
-      }
       if (solrClient != null) {
         solrClient.close();
       }
@@ -417,7 +393,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     HttpClient httpClient = null;
     SolrClient solrClient = null;
     try {
-      httpClient = HttpClientUtil.createClient(null);
+      httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
       solrClient = getHttpSolrClient(baseUrl);
 
@@ -444,9 +420,6 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       // verify that the basic auth plugin works and is looked up as expected
       doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 200);
     } finally {
-      if (httpClient != null) {
-        HttpClientUtil.close(httpClient);
-      }
       if (solrClient != null) {
         solrClient.close();
       }
@@ -455,10 +428,9 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiAuthWithBasicPluginAndAjax() throws Exception {
-    HttpClient httpClient = null;
     SolrClient solrClient = null;
     try {
-      httpClient = HttpClientUtil.createClient(null);
+      var httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
       solrClient = getHttpSolrClient(baseUrl);
 
@@ -475,52 +447,49 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       securityConfHandler.securityConfEdited();
 
       // Pretend to send unauthorized AJAX request
-      HttpGet httpGet = new HttpGet(baseUrl + CommonParams.SYSTEM_INFO_PATH);
-      httpGet.addHeader(new BasicHeader("X-Requested-With", "XMLHttpRequest"));
+      try {
+        var response =
+            httpClient
+                .newRequest(baseUrl + CommonParams.SYSTEM_INFO_PATH)
+                .headers(h -> h.add("X-Requested-With", "XMLHttpRequest"))
+                .send();
+        assertEquals("Unauthorized response was expected", 401, response.getStatus());
 
-      HttpResponse response = httpClient.execute(httpGet);
-      assertEquals(
-          "Unauthorized response was expected", 401, response.getStatusLine().getStatusCode());
+        // Only first plugin is expected as response, which is also xBasic if BasicAuthPlugin
+        List<String> actualSchemes = response.getHeaders().getValuesList("WWW-Authenticate");
 
-      // Only first plugin is expected as response, which is also xBasic if BasicAuthPlugin
-      Header[] headers = response.getHeaders(HttpHeaders.WWW_AUTHENTICATE);
-      List<String> actualSchemes = Arrays.stream(headers).map(Header::getValue).toList();
+        // Only the first scheme is expected for AJAX-Requests
+        assertEquals("Only one scheme was expected", 1, actualSchemes.size());
 
-      // Only the first scheme is expected for AJAX-Requests
-      assertEquals("Only one scheme was expected", 1, actualSchemes.size());
-
-      // In case of BasicAuthPlugin, xBasic should be returned if AJAX request sent and handled by
-      // BasicAuthPlugin
-      String expectedScheme = "xBasic realm=\"solr\"";
-      assertEquals(
-          "Mapped xBasic challenge expected from first plugin which is BasicAuthPlugin",
-          expectedScheme,
-          actualSchemes.getFirst());
-    } finally {
-      if (httpClient != null) {
-        HttpClientUtil.close(httpClient);
+        // In case of BasicAuthPlugin, xBasic should be returned if AJAX request sent and handled by
+        // BasicAuthPlugin
+        String expectedScheme = "xBasic realm=\"solr\"";
+        assertEquals(
+            "Mapped xBasic challenge expected from first plugin which is BasicAuthPlugin",
+            expectedScheme,
+            actualSchemes.getFirst());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
+    } finally {
       if (solrClient != null) {
         solrClient.close();
       }
     }
   }
 
-  private int doHttpGetAnonymous(HttpClient cl, String url) throws IOException {
-    HttpGet httpPost = new HttpGet(url);
-    HttpResponse r = cl.execute(httpPost);
-    int statusCode = r.getStatusLine().getStatusCode();
-    HttpClientUtil.consumeFully(r.getEntity());
-    return statusCode;
+  private int doHttpGetAnonymous(HttpClient httpClient, String url) throws IOException {
+    try {
+      return httpClient.GET(url).getStatus();
+    } catch (Exception e) {
+      throw new IOException(e);
+    }
   }
 
   private void verifyWWWAuthenticateHeaders(HttpClient httpClient, String baseUrl)
       throws Exception {
-    HttpGet httpGet = new HttpGet(baseUrl + CommonParams.SYSTEM_INFO_PATH);
-    HttpResponse response = httpClient.execute(httpGet);
-    Header[] headers = response.getHeaders(HttpHeaders.WWW_AUTHENTICATE);
-    List<String> actualSchemes =
-        Arrays.stream(headers).map(Header::getValue).collect(Collectors.toList());
+    var response = httpClient.GET(baseUrl + CommonParams.SYSTEM_INFO_PATH);
+    List<String> actualSchemes = response.getHeaders().getValuesList("WWW-Authenticate");
 
     List<String> expectedSchemes = generateExpectedSchemes();
     actualSchemes.sort(String.CASE_INSENSITIVE_ORDER);

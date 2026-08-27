@@ -19,7 +19,7 @@ package org.apache.solr.common.cloud;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -38,7 +38,7 @@ public abstract class HashBasedRouter extends DocRouter {
     if (route != null) {
       hash = sliceHash(route, sdoc, params, collection);
     } else {
-      if (id == null) id = getId(sdoc, params);
+      if (id == null) id = getId(sdoc);
       hash = sliceHash(id, sdoc, params, collection);
     }
     return hashToSlice(hash, collection);
@@ -51,7 +51,7 @@ public abstract class HashBasedRouter extends DocRouter {
       SolrParams params,
       String shardId,
       DocCollection collection) {
-    if (id == null) id = getId(sdoc, params);
+    if (id == null) id = getId(sdoc);
     int hash = sliceHash(id, sdoc, params, collection);
     Range range = collection.getSlice(shardId).getRange();
     return range != null && range.includes(hash);
@@ -62,7 +62,7 @@ public abstract class HashBasedRouter extends DocRouter {
     return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
   }
 
-  protected String getId(SolrInputDocument sdoc, SolrParams params) {
+  protected String getId(SolrInputDocument sdoc) {
     Object idObj = sdoc.getFieldValue(ID); // blech
     String id = idObj != null ? idObj.toString() : "null"; // should only happen on client side
     return id;
@@ -93,6 +93,6 @@ public abstract class HashBasedRouter extends DocRouter {
 
     // use the shardKey as an id for plain hashing
     Slice slice = getTargetSlice(shardKey, null, null, params, collection);
-    return slice == null ? Collections.<Slice>emptyList() : Collections.singletonList(slice);
+    return slice == null ? List.of() : List.of(slice);
   }
 }

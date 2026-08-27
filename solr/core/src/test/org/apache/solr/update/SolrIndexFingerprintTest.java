@@ -17,11 +17,16 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
-import java.util.stream.IntStream;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,13 +43,23 @@ public class SolrIndexFingerprintTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
 
     int numDocs = RANDOM_MULTIPLIER == 1 ? 3 : 500;
-    // Create a set of many segments (to catch race conditions, i.e. SOLR-17863)
-    IntStream.range(0, numDocs)
-        .forEach(
-            i -> {
-              assertU(adoc("id", "" + i));
-              assertU(commit());
-            });
+    // Create a set of many segments (to catch race conditions, i.e. SOLR-17863).
+    // Write directly to the IndexWriter and flush after each doc to create one segment per doc,
+    // avoiding the overhead of opening a new searcher on every Solr commit.
+    RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core);
+    try {
+      IndexWriter writer = iwRef.get();
+      for (int i = 0; i < numDocs; i++) {
+        Document doc = new Document();
+        doc.add(new StringField("id", Integer.toString(i), Field.Store.YES));
+        doc.add(new NumericDocValuesField("_version_", i + 1));
+        writer.addDocument(doc);
+        writer.flush();
+      }
+    } finally {
+      iwRef.decref();
+    }
+    assertU(commit("openSearcher", "true"));
 
     try (var searcher = core.getSearcher().get()) {
       // Compute fingerprint sequentially to compare with parallel computation

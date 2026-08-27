@@ -22,13 +22,13 @@ import java.util.EnumSet;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
-import org.apache.solr.client.solrj.apache.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.jetty.ConcurrentUpdateJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.BeforeClass;
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the HTTP1 client and the streaming update
@@ -36,20 +36,19 @@ import org.junit.BeforeClass;
  */
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
-  }
-
   @Override
   public SolrClient createNewSolrClient() {
     // smaller queue size hits locks more often
-    return new ErrorTrackingConcurrentUpdateSolrClient.Builder(getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+    var httpJettyClient =
+        new HttpJettySolrClient.Builder()
+            .withResponseParser(new XMLResponseParser())
+            .withRequestWriter(new XMLRequestWriter())
+            .build();
+    return new ErrorTrackingConcurrentUpdateSolrClient.Builder(
+            solrTestRule.getBaseUrl(), httpJettyClient, true)
+        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
         .withQueueSize(2)
         .withThreadCount(5)
-        .withResponseParser(new XMLResponseParser())
-        .withRequestWriter(new XMLRequestWriter())
         .build();
   }
 
@@ -57,9 +56,10 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     // SOLR-3903
     // TODO these failures are not the same as recorded by the client
     final List<Throwable> failures = new ArrayList<>();
-    final String serverUrl = getCoreUrl();
-    try (ConcurrentUpdateSolrClient concurrentClient =
-        new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl)
+    final String serverUrl = solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
+    try (var concurrentClient =
+        new FailureRecordingConcurrentUpdateSolrClient.Builder(
+                serverUrl, (HttpJettySolrClient) solrTestRule.getSolrClient(), false)
             .withQueueSize(2)
             .withThreadCount(2)
             .build()) {
@@ -85,7 +85,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     }
   }
 
-  static class FailureRecordingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+  static class FailureRecordingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolrClient {
     private final List<Throwable> failures = new ArrayList<>();
 
     public FailureRecordingConcurrentUpdateSolrClient(Builder builder) {
@@ -97,9 +97,9 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
       failures.add(ex);
     }
 
-    static class Builder extends ConcurrentUpdateSolrClient.Builder {
-      public Builder(String baseSolrUrl) {
-        super(baseSolrUrl);
+    static class Builder extends ConcurrentUpdateJettySolrClient.Builder {
+      public Builder(String baseSolrUrl, HttpJettySolrClient solrClient, boolean closeClient) {
+        super(baseSolrUrl, solrClient, closeClient);
       }
 
       @Override
@@ -109,7 +109,8 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     }
   }
 
-  public static class ErrorTrackingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+  public static class ErrorTrackingConcurrentUpdateSolrClient
+      extends ConcurrentUpdateJettySolrClient {
     public Throwable lastError = null;
 
     public ErrorTrackingConcurrentUpdateSolrClient(Builder builder) {
@@ -121,10 +122,10 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
       lastError = ex;
     }
 
-    public static class Builder extends ConcurrentUpdateSolrClient.Builder {
+    public static class Builder extends ConcurrentUpdateJettySolrClient.Builder {
 
-      public Builder(String baseSolrUrl) {
-        super(baseSolrUrl);
+      public Builder(String baseSolrUrl, HttpJettySolrClient solrClient, boolean closeClient) {
+        super(baseSolrUrl, solrClient, closeClient);
       }
 
       @Override

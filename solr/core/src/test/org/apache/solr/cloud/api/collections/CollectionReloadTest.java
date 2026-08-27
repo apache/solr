@@ -17,22 +17,17 @@
 package org.apache.solr.cloud.api.collections;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.RetryUtil;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -143,24 +138,25 @@ public class CollectionReloadTest extends SolrCloudTestCase {
 
   private void createCollection(
       int numShards, int nrtReplicas, int tlogReplicas, int pullReplicas, String collectionName)
-      throws SolrServerException, IOException {
+      throws Exception {
     switch (random().nextInt(3)) {
-      case 0:
+      case 0 -> {
         log.info("Creating collection with SolrJ");
         // Sometimes use SolrJ
         assertSuccessfulAdminRequest(
             CollectionAdminRequest.createCollection(
                     collectionName, "conf", numShards, nrtReplicas, tlogReplicas, pullReplicas)
                 .process(cluster.getSolrClient()));
-        break;
-      case 1:
+      }
+      case 1 -> {
         log.info("Creating collection with V1 API");
         // Sometimes use v1 API
+        var jetty = cluster.getRandomJetty(random());
         String url =
             String.format(
                 Locale.ROOT,
                 "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&maxShardsPerNode=%s&nrtReplicas=%s&tlogReplicas=%s&pullReplicas=%s",
-                cluster.getRandomJetty(random()).getBaseUrl(),
+                jetty.getBaseUrl(),
                 collectionName,
                 "conf",
                 numShards,
@@ -168,15 +164,14 @@ public class CollectionReloadTest extends SolrCloudTestCase {
                 nrtReplicas,
                 tlogReplicas,
                 pullReplicas);
-        HttpGet createCollectionGet = new HttpGet(url);
-        ((CloudLegacySolrClient) cluster.getSolrClient())
-            .getHttpClient()
-            .execute(createCollectionGet);
-        break;
-      case 2:
+        var response = jetty.getSolrClient().getHttpClient().GET(url);
+        assertEquals(200, response.getStatus());
+      }
+      case 2 -> {
         log.info("Creating collection with V2 API");
         // Sometimes use V2 API
-        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/collections";
+        var jetty = cluster.getRandomJetty(random());
+        String url = jetty.getBaseUrl().toString() + "/____v2/collections";
         String requestBody =
             String.format(
                 Locale.ROOT,
@@ -187,15 +182,17 @@ public class CollectionReloadTest extends SolrCloudTestCase {
                 nrtReplicas,
                 tlogReplicas,
                 pullReplicas);
-        HttpPost createCollectionPost = new HttpPost(url);
-        createCollectionPost.setHeader("Content-type", "application/json");
-        createCollectionPost.setEntity(new StringEntity(requestBody));
-        HttpResponse httpResponse =
-            ((CloudLegacySolrClient) cluster.getSolrClient())
+        var response =
+            jetty
+                .getSolrClient()
                 .getHttpClient()
-                .execute(createCollectionPost);
-        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
-        break;
+                .POST(url)
+                .body(
+                    new StringRequestContent(
+                        "application/json", requestBody, StandardCharsets.UTF_8))
+                .send();
+        assertEquals(200, response.getStatus());
+      }
     }
   }
 }

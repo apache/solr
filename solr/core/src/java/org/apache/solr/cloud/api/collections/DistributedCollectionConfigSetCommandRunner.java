@@ -200,7 +200,7 @@ public class DistributedCollectionConfigSetCommandRunner {
             action, (String) result.get(ConfigSetCmds.BASE_CONFIGSET));
 
     if (log.isInfoEnabled()) {
-      log.info("Running Config Set API locally for " + action + " " + configSetName); // nowarn
+      log.info("Running Config Set API locally for {} {}", action, configSetName);
     }
 
     ConfigSetCommandRunner commandRunner =
@@ -411,6 +411,7 @@ public class DistributedCollectionConfigSetCommandRunner {
 
           // Block this thread until all required locks are acquired.
           lock.waitUntilAcquired();
+          adminCmdContext.withLockId(lock.getLockId());
 
           // Got the lock so moving from submitted to running if we run for an async task (if
           // asyncId is null the asyncTaskTracker calls do nothing).

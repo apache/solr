@@ -18,7 +18,6 @@
 package org.apache.solr.search.join;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -49,9 +48,10 @@ public class FiltersQParser extends QParser {
   @Override
   public Query parse() throws SyntaxError {
     BooleanQuery query = parseImpl();
-    return !query.clauses().isEmpty() ? wrapSubordinateClause(query) : noClausesQuery();
+    return !query.clauses().isEmpty() ? query : new MatchAllDocsQuery();
   }
 
+  /** Parses the subQuery, applying filters and exclusions. Caller must check if empty. */
   protected BooleanQuery parseImpl() throws SyntaxError {
     Map<QParser, Occur> clauses = clauses();
 
@@ -73,14 +73,6 @@ public class FiltersQParser extends QParser {
     return query;
   }
 
-  protected Query wrapSubordinateClause(Query subordinate) throws SyntaxError {
-    return subordinate;
-  }
-
-  protected Query noClausesQuery() throws SyntaxError {
-    return new MatchAllDocsQuery();
-  }
-
   protected void exclude(Collection<QParser> clauses) {
     Set<String> tagsToExclude = new HashSet<>();
     String excludeTags = localParams.get("excludeTags");
@@ -92,7 +84,7 @@ public class FiltersQParser extends QParser {
     if (tagMap != null && !tagMap.isEmpty() && !tagsToExclude.isEmpty()) {
       excludeSet = excludeSet(tagMap, tagsToExclude);
     } else {
-      excludeSet = Collections.emptySet();
+      excludeSet = Set.of();
     }
     clauses.removeAll(excludeSet);
   }
@@ -127,14 +119,14 @@ public class FiltersQParser extends QParser {
 
   private Collection<QParser> excludeSet(Map<?, ?> tagMap, Set<String> tagsToExclude) {
 
-    IdentityHashMap<QParser, Boolean> excludeSet = new IdentityHashMap<>();
+    IdentityHashMap<QParser, Object> excludeSet = new IdentityHashMap<>();
     for (String excludeTag : tagsToExclude) {
       Object olst = tagMap.get(excludeTag);
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
       if (!(olst instanceof Collection)) continue;
       for (Object o : (Collection<?>) olst) {
         if (!(o instanceof QParser qp)) continue;
-        excludeSet.put(qp, Boolean.TRUE);
+        excludeSet.put(qp, null); // dummy value
       }
     }
     return excludeSet.keySet();

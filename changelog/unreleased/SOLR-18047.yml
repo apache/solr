@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Initialization of tracing spans has moved to TracingFilter
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Gus Heck
+links:
+  - name: SOLR-18047
+    url: https://issues.apache.org/jira/browse/SOLR-18047

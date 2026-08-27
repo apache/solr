@@ -24,7 +24,7 @@ package org.apache.solr.handler.tagger;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import org.apache.lucene.document.Field;
@@ -99,7 +99,7 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
     @SuppressWarnings("deprecation")
     @Override
     public Collection<ContentStream> getContentStreams() {
-      return Collections.singleton(new ContentStreamBase.StringStream(input));
+      return Set.of(new ContentStreamBase.StringStream(input));
     }
 
     //     As of 7.2.  But won't work until: https://issues.apache.org/jira/browse/SOLR-12142

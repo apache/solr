@@ -38,7 +38,6 @@ import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -46,13 +45,15 @@ import org.apache.solr.client.solrj.io.stream.PushBackStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.CatStream;
 
 /** Supports stream command in the bin/solr script. */
@@ -62,8 +63,6 @@ public class StreamTool extends ToolBase {
     super(runtime);
   }
 
-  private final SolrClientCache solrClientCache = new SolrClientCache();
-
   @Override
   public String getName() {
     return "stream";
@@ -72,8 +71,10 @@ public class StreamTool extends ToolBase {
   @Override
   public String getUsage() {
     // Specify that the last argument is the streaming expression
-    return "bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [--execution <ENVIRONMENT>] [--fields\n"
-        + "       <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]  <streaming expression OR stream_file.expr>\n";
+    return """
+        bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [--execution <ENVIRONMENT>] [--fields
+               <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]  <streaming expression OR stream_file.expr>
+        """;
   }
 
   private static final Option EXECUTION_OPTION =
@@ -83,7 +84,7 @@ public class StreamTool extends ToolBase {
           .argName("ENVIRONMENT")
           .desc(
               "Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr server. Default environment is 'remote'.")
-          .build();
+          .get();
 
   private static final Option COLLECTION_OPTION =
       Option.builder("c")
@@ -92,7 +93,7 @@ public class StreamTool extends ToolBase {
           .hasArg()
           .desc(
               "Name of the specific collection to execute expression on if the execution is set to 'remote'. Required for 'remote' execution environment.")
-          .build();
+          .get();
 
   private static final Option FIELDS_OPTION =
       Option.builder()
@@ -101,10 +102,10 @@ public class StreamTool extends ToolBase {
           .hasArg()
           .desc(
               "The fields in the tuples to output. Defaults to fields in the first tuple of result set.")
-          .build();
+          .get();
 
   private static final Option HEADER_OPTION =
-      Option.builder().longOpt("header").desc("Specify to include a header line.").build();
+      Option.builder().longOpt("header").desc("Specify to include a header line.").get();
 
   private static final Option DELIMITER_OPTION =
       Option.builder()
@@ -112,14 +113,14 @@ public class StreamTool extends ToolBase {
           .argName("CHARACTER")
           .hasArg()
           .desc("The output delimiter. Default to using three spaces.")
-          .build();
+          .get();
   private static final Option ARRAY_DELIMITER_OPTION =
       Option.builder()
           .longOpt("array-delimiter")
           .argName("CHARACTER")
           .hasArg()
           .desc("The delimiter multi-valued fields. Default to using a pipe (|) delimiter.")
-          .build();
+          .get();
 
   @Override
   public Options getOptions() {
@@ -164,14 +165,30 @@ public class StreamTool extends ToolBase {
       }
     }
 
-    PushBackStream pushBackStream;
-    if (execution.equalsIgnoreCase("local")) {
-      pushBackStream = doLocalMode(cli, expr);
-    } else {
-      pushBackStream = doRemoteMode(cli, expr);
+    // Validate inputs before opening any connection to Solr.
+    boolean local = execution.equalsIgnoreCase("local");
+    if (!local) {
+      if (!cli.hasOption(COLLECTION_OPTION)) {
+        throw new IllegalStateException(
+            "You must provide --name COLLECTION with --execution remote parameter.");
+      }
+      if (expr.toLowerCase(Locale.ROOT).contains("stdin(")) {
+        throw new IllegalStateException(
+            "The stdin() expression is only usable with --execution local.");
+      }
     }
 
+    // a stream needs a context
+    StreamContext streamContext = createStreamContext(cli);
+    // create the stream
+    PushBackStream pushBackStream = null;
     try {
+      if (local) {
+        pushBackStream = doLocalMode(expr, streamContext.getStreamFactory());
+      } else {
+        pushBackStream = doRemoteMode(expr, cli);
+      }
+      pushBackStream.setStreamContext(streamContext);
       pushBackStream.open();
 
       if (outputHeaders == null) {
@@ -224,11 +241,46 @@ public class StreamTool extends ToolBase {
         }
       }
     } finally {
-      pushBackStream.close();
-      solrClientCache.close();
+      if (pushBackStream != null) {
+        pushBackStream.close();
+      }
+      streamContext.getSolrClientCache().close();
     }
 
     echoIfVerbose("StreamTool -- Done.");
+  }
+
+  private StreamContext createStreamContext(CommandLine cli) throws Exception {
+    var jettyClientBuilder = new HttpJettySolrClient.Builder();
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
+    jettyClientBuilder.withOptionalBasicAuthCredentials(credentials);
+    HttpJettySolrClient client = jettyClientBuilder.build();
+
+    // subclass so we can ensure our client is closed when the cache is closed
+    var solrClientCache =
+        new SolrClientCache(client) {
+          @Override
+          public synchronized void close() {
+            super.close();
+            client.close();
+          }
+        };
+
+    try {
+      var solrConnection = CLIUtils.getSolrConnection(cli);
+      echoIfVerbose("Connecting to Solr at " + solrConnection);
+
+      StreamContext streamContext = new StreamContext();
+      streamContext.setSolrClientCache(solrClientCache);
+
+      StreamFactory streamFactory = new DefaultStreamFactory();
+      streamFactory.withDefaultSolrConnection(solrConnection);
+      streamContext.setStreamFactory(streamFactory);
+      return streamContext;
+    } catch (Exception e) {
+      IOUtils.closeQuietly(solrClientCache);
+      throw e;
+    }
   }
 
   /**
@@ -237,24 +289,12 @@ public class StreamTool extends ToolBase {
    * <p>Running locally means that parallelization support or those expressions requiring access to
    * internal Solr capabilities will not function.
    *
-   * @param cli The CLI invoking the call
-   * @param expr The streaming expression to be parsed and in the context of the CLI process
+   * @param expr The streaming expression to be parsed and run in the context of the CLI process
+   * @param streamFactory The factory used to construct the streaming expression
    * @return A connection to the streaming expression that receives Tuples as they are emitted
    *     locally.
    */
-  private PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {
-    String zkHost = CLIUtils.getZkHost(cli);
-
-    echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    solrClientCache.setBasicAuthCredentials(
-        cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
-    solrClientCache.getCloudSolrClient(zkHost);
-
-    TupleStream stream;
-    PushBackStream pushBackStream;
-
-    StreamExpression streamExpression = StreamExpressionParser.parse(expr);
-    StreamFactory streamFactory = new StreamFactory();
+  private PushBackStream doLocalMode(String expr, StreamFactory streamFactory) throws Exception {
 
     // stdin is ONLY available in the local mode, not in the remote mode as it
     // requires access to System.in
@@ -264,22 +304,7 @@ public class StreamTool extends ToolBase {
     // logic about where to read data from.
     streamFactory.withFunctionName("cat", LocalCatStream.class);
 
-    streamFactory.withDefaultZkHost(zkHost);
-
-    Lang.register(streamFactory);
-
-    stream = streamFactory.constructStream(streamExpression);
-
-    pushBackStream = new PushBackStream(stream);
-
-    // Now we can run the stream and return the results.
-    StreamContext streamContext = new StreamContext();
-    streamContext.setSolrClientCache(solrClientCache);
-
-    // Output the headers
-    pushBackStream.setStreamContext(streamContext);
-
-    return pushBackStream;
+    return new PushBackStream(streamFactory.constructStream(expr));
   }
 
   /**
@@ -289,35 +314,18 @@ public class StreamTool extends ToolBase {
    * <p>Running remotely allows you to use all the standard Streaming Expression capabilities as the
    * expression is running in a Solr environment.
    *
-   * @param cli The CLI invoking the call
    * @param expr The streaming expression to be parsed and run remotely
+   * @param cli The CLI invoking the call
    * @return A connection to the streaming expression that receives Tuples as they are emitted from
    *     Solr /stream.
    */
-  private PushBackStream doRemoteMode(CommandLine cli, String expr) throws Exception {
+  private PushBackStream doRemoteMode(String expr, CommandLine cli) throws Exception {
 
     String solrUrl = CLIUtils.normalizeSolrUrl(cli);
-    if (!cli.hasOption(COLLECTION_OPTION)) {
-      throw new IllegalStateException(
-          "You must provide --name COLLECTION with --execution remote parameter.");
-    }
     String collection = cli.getOptionValue(COLLECTION_OPTION);
 
-    if (expr.toLowerCase(Locale.ROOT).contains("stdin(")) {
-      throw new IllegalStateException(
-          "The stdin() expression is only usable with --worker local set up.");
-    }
-
-    final SolrStream solrStream =
-        new SolrStream(solrUrl + "/solr/" + collection, params("qt", "/stream", "expr", expr));
-
-    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
-    if (credentials != null) {
-      String username = credentials.split(":")[0];
-      String password = credentials.split(":")[1];
-      solrStream.setCredentials(username, password);
-    }
-    return new PushBackStream(solrStream);
+    return new PushBackStream(
+        new SolrStream(solrUrl + "/solr/" + collection, params("qt", "/stream", "expr", expr)));
   }
 
   private static ModifiableSolrParams params(String... params) {
@@ -467,7 +475,7 @@ public class StreamTool extends ToolBase {
   static String listToString(List values, String internalDelim) {
     StringBuilder buf = new StringBuilder();
     for (Object value : values) {
-      if (buf.length() > 0) {
+      if (!buf.isEmpty()) {
         buf.append(internalDelim);
       }
 
@@ -504,7 +512,7 @@ public class StreamTool extends ToolBase {
 
       // Substitute parameters
 
-      if (line.length() > 0) {
+      if (!line.isEmpty()) {
         for (int i = 1; i < args.length; i++) {
           String arg = args[i];
           line = line.replace("$" + i, arg);

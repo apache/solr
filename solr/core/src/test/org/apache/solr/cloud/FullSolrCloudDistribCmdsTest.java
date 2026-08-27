@@ -19,9 +19,9 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.ConcurrentUpdateJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -816,8 +816,9 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
     final int numDocs = atLeast(50);
     final JettySolrRunner nodeToUpdate = cluster.getRandomJetty(random());
-    try (ConcurrentUpdateSolrClient indexClient =
-        new ConcurrentUpdateSolrClient.Builder(nodeToUpdate.getProxyBaseUrl().toString())
+    try (var indexClient =
+        new ConcurrentUpdateJettySolrClient.Builder(
+                nodeToUpdate.getProxyBaseUrl().toString(), nodeToUpdate.getSolrClient(), false)
             .withDefaultCollection(collectionName)
             .withQueueSize(10)
             .withThreadCount(2)
@@ -877,7 +878,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             }
             assertEquals(
                 "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
-                Collections.emptySet(),
+                Set.of(),
                 CloudInspectUtil.showDiff(
                     leaderResults,
                     replicaResults,

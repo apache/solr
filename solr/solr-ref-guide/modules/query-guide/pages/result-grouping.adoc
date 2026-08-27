@@ -383,7 +383,7 @@ This is because one result for "memory" did not have a price assigned to it.
 
 == Distributed Result Grouping Caveats
 
-Grouping is supported for xref:deployment-guide:cluster-types.adoc#solrcloud-mode[distributed searches], with some caveats:
+Grouping is supported for xref:getting-started:cluster-types.adoc#solrcloud-clusters[distributed searches], with some caveats:
 
 * Currently `group.func` is not supported in any distributed searches
 * `group.ngroups` and `group.facet` require that all documents in each group must be co-located on the same shard in order for accurate counts to be returned.

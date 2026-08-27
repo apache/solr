@@ -1,0 +1,7 @@
+title: Remove dead code related to the V2 RenameCore API.  Add additional tests.
+type: removed
+authors:
+  - name: Eric Pugh
+links:
+- name: PR#4172
+  url: https://github.com/apache/solr/pull/4172

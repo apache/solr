@@ -103,11 +103,34 @@ public class EnvUtilsTest extends SolrTestCase {
   public void testDeprecated() {
     var env = Map.of("SOLR_OVERWRITE", "overwritten");
     Properties defaultProps = new Properties();
-    // Use the already converted version, not the original camelCase.
     defaultProps.setProperty("solr.config.set.forbidden.file.types", "xml,json,jar");
 
     EnvUtils.init(false, env, defaultProps);
     assertEquals("xml,json,jar", EnvUtils.getProperty("solr.configset.forbidden.file.types"));
+  }
+
+  @Test
+  public void deprecatedCamelCaseSystemPropertyIsMigratedToCurrentName() {
+    Properties sysprops = new Properties();
+    sysprops.setProperty("solr.auth.jwt.allowOutboundHttp", "true");
+    EnvUtils.init(false, Map.of(), sysprops);
+    assertTrue(EnvUtils.getPropertyAsBool("solr.auth.jwt.outbound.http.enabled"));
+  }
+
+  @Test
+  public void deprecatedCamelCaseOldNameInMappingsFileIsTranslated() {
+    Properties sysprops = new Properties();
+    sysprops.setProperty("collection.configName", "techproducts");
+    EnvUtils.init(false, Map.of(), sysprops);
+    assertEquals("techproducts", EnvUtils.getProperty("solr.configset.bootstrap.config.name"));
+  }
+
+  @Test
+  public void deprecatedCamelCaseInvertedPropertyIsTranslatedAndValueIsFlipped() {
+    Properties sysprops = new Properties();
+    sysprops.setProperty("solr.disableFingerprint", "true");
+    EnvUtils.init(true, Map.of(), sysprops);
+    assertFalse(EnvUtils.getPropertyAsBool("solr.index.replication.fingerprint.enabled"));
   }
 
   @Test

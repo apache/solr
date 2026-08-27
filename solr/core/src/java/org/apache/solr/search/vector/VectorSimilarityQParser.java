@@ -46,6 +46,14 @@ public class VectorSimilarityQParser extends AbstractVectorQParserBase {
     final String fieldName = getFieldName();
     final SchemaField schemaField = req.getCore().getLatestSchema().getField(fieldName);
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
+
+    if (DenseVectorField.FLAT_ALGORITHM.equals(denseVectorType.getKnnAlgorithm())) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "The {!vectorSimilarity} query parser is not supported for fields using knnAlgorithm=\"flat\". "
+              + "Use vectorSimilarity() function queries instead.");
+    }
+
     final String vectorToSearch = getVectorToSearch();
     final float minTraverse = localParams.getFloat(MIN_TRAVERSE, DEFAULT_MIN_TRAVERSE);
     final Float minReturn = localParams.getFloat(MIN_RETURN);

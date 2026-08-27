@@ -45,6 +45,7 @@ class HttpBasicAuthStoreClient(private val httpClient: HttpClient) : BasicAuthSt
 
         return when (response.status) {
             HttpStatusCode.OK -> Result.success(Unit)
+
             HttpStatusCode.Unauthorized -> {
                 Result.failure(UnauthorizedException(message = "Invalid Credentials"))
             }

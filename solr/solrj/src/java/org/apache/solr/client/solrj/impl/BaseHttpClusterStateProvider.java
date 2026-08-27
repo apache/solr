@@ -73,11 +73,12 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       Executors.newSingleThreadScheduledExecutor(
           new SolrNamedThreadFactory("liveNodeReloadingExecutor"));
 
-  protected void initConfiguredNodes(List<String> solrUrls) throws Exception {
+  protected void initConfiguredNodes(List<String> solrUrls) {
     this.configuredNodes =
         solrUrls.stream()
             .map(BaseHttpClusterStateProvider::stringToUrl)
             .collect(Collectors.toList());
+    this.urlScheme = this.configuredNodes.get(0).getProtocol();
   }
 
   private static URL stringToUrl(String solrUrl) {
@@ -86,11 +87,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     } catch (MalformedURLException | URISyntaxException e) {
       throw new IllegalArgumentException("Failed to parse base Solr URL " + solrUrl, e);
     }
-  }
-
-  @Override
-  public void connect() {
-    getLiveNodes();
   }
 
   /** Create a SolrClient implementation that uses the specified Solr node URL */
@@ -328,8 +324,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
                 "LISTALIASES not found, possibly using older Solr server. Aliases won't work {}",
                 "unless you upgrade Solr server",
                 e);
-            this.aliases = Collections.emptyMap();
-            this.aliasProperties = Collections.emptyMap();
+            this.aliases = Map.of();
+            this.aliasProperties = Map.of();
             this.aliasesTimestamp = System.nanoTime();
             return aliases;
           }
@@ -353,7 +349,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   @Override
   public Map<String, String> getAliasProperties(String alias) {
     getAliases(false);
-    return Collections.unmodifiableMap(aliasProperties.getOrDefault(alias, Collections.emptyMap()));
+    return Collections.unmodifiableMap(aliasProperties.getOrDefault(alias, Map.of()));
   }
 
   @Override
@@ -443,6 +439,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   @Override
   public void close() throws IOException {
     liveNodeReloadingService.shutdown();
+  }
+
+  @Override
+  public String getUrlScheme() {
+    return this.urlScheme;
   }
 
   private enum ClusterStateRequestType {

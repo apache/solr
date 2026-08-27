@@ -36,8 +36,9 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.junit.Before;
@@ -86,7 +87,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
       admin.handleRequestBody(
           req(
               CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX.toString(),
+              CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
               CoreAdminParams.CORE,
               coreName),
           resp);
@@ -131,14 +132,14 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
 
     final Set<String> segmentsBeforeUpgrade = listSegmentNames(core);
 
-    final String requestId = "upgradecoreindex_async_1";
+    final String requestId = "upgradeindex_async_1";
     CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
     try {
       SolrQueryResponse submitResp = new SolrQueryResponse();
       admin.handleRequestBody(
           req(
               CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX.toString(),
+              CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
               CoreAdminParams.CORE,
               coreName,
               CommonAdminParams.ASYNC,
@@ -212,7 +213,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
       admin.handleRequestBody(
           req(
               CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX.toString(),
+              CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
               CoreAdminParams.CORE,
               coreName),
           resp);
@@ -302,9 +303,8 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
         });
   }
 
-  private void setMinVersionForSegments(SolrCore core, Set<String> segments, Version minVersion)
-      throws Exception {
-    RefCounted<org.apache.solr.search.SolrIndexSearcher> searcherRef = core.getSearcher();
+  private void setMinVersionForSegments(SolrCore core, Set<String> segments, Version minVersion) {
+    RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
     try {
       final List<LeafReaderContext> leaves = searcherRef.get().getTopReaderContext().leaves();
       for (LeafReaderContext ctx : leaves) {
@@ -323,11 +323,11 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
   private record SegmentLayout(String coreName, String seg1, String seg2, String seg3) {}
 
   @Test
-  public void testUpgradeCoreIndexFailsWithNestedDocuments() throws Exception {
+  public void testUpgradeCoreIndexFailsWithChildDocuments() throws Exception {
     final SolrCore core = h.getCore();
     final String coreName = core.getName();
 
-    // Create a parent document with a child document (nested doc)
+    // Create a parent document with a child document
     SolrInputDocument parentDoc = new SolrInputDocument();
     parentDoc.addField("id", "100");
     parentDoc.addField("title", "Parent Document");
@@ -338,21 +338,18 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
 
     parentDoc.addChildDocument(childDoc);
 
-    // Index the nested document
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-    try {
+    // Index the parent+child document
+    try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = parentDoc;
       core.getUpdateHandler().addDoc(cmd);
-    } finally {
-      req.close();
     }
     assertU(commit("openSearcher", "true"));
 
     // Verify documents were indexed (parent + child = 2 docs)
     assertQ(req("q", "*:*"), "//result[@numFound='2']");
 
-    // Attempt to upgrade the index - should fail because of nested documents
+    // Attempt to upgrade the index - should fail because of child documents
     CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
     try {
       final SolrQueryResponse resp = new SolrQueryResponse();
@@ -363,18 +360,113 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
                   admin.handleRequestBody(
                       req(
                           CoreAdminParams.ACTION,
-                          CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX.toString(),
+                          CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
                           CoreAdminParams.CORE,
                           coreName),
                       resp));
 
-      // Verify the exception message indicates nested documents are not supported
+      // Verify the exception message indicates child documents are not supported
       assertThat(
           thrown.getMessage(),
-          containsString("does not support indexes containing nested documents"));
+          containsString("does not support indexes containing child/nested documents"));
     } finally {
       admin.shutdown();
       admin.close();
+    }
+  }
+
+  @Test
+  public void testChildDocsDetection_noChildDocs() throws Exception {
+    addDocsWithRandomUpdatesAndDeletes();
+
+    final String coreName = h.getCore().getName();
+    CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
+    try {
+      final SolrQueryResponse resp = new SolrQueryResponse();
+      admin.handleRequestBody(
+          req(
+              CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
+              CoreAdminParams.CORE,
+              coreName),
+          resp);
+      assertNull("Unexpected exception: " + resp.getException(), resp.getException());
+    } finally {
+      admin.shutdown();
+      admin.close();
+    }
+  }
+
+  @Test
+  public void testChildDocsDetection_withChildDocs() throws Exception {
+    addChildDoc("100", "101");
+    addDocsWithRandomUpdatesAndDeletes();
+
+    final String coreName = h.getCore().getName();
+    CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
+    try {
+      final SolrQueryResponse resp = new SolrQueryResponse();
+      SolrException thrown =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  admin.handleRequestBody(
+                      req(
+                          CoreAdminParams.ACTION,
+                          CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
+                          CoreAdminParams.CORE,
+                          coreName),
+                      resp));
+      assertThat(
+          thrown.getMessage(),
+          containsString("does not support indexes containing child/nested documents"));
+    } finally {
+      admin.shutdown();
+      admin.close();
+    }
+  }
+
+  /**
+   * Add non-child docs with a random number of within-commit updates and deletes. This exercises
+   * the false-positive scenario for child doc detection: updates and deletes leave behind deleted
+   * entries in the same segment, causing multiple docs to share the same {@code _root_} value.
+   *
+   * <p>With NoMergePolicy and a 100MB RAM buffer (from SolrIndexConfig defaults), no flush or merge
+   * occurs mid-batch, guaranteeing co-location in a single segment.
+   */
+  private void addDocsWithRandomUpdatesAndDeletes() {
+    int numDocs = 10;
+    for (int i = 0; i < numDocs; i++) {
+      assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
+    }
+    int numUpdates = random().nextInt(4);
+    for (int i = 0; i < numUpdates; i++) {
+      assertU(adoc("id", String.valueOf(i), "title", "updated_doc" + i));
+    }
+    int numDeletes = random().nextInt(4);
+    for (int i = 0; i < numDeletes; i++) {
+      assertU(delI(String.valueOf(numDocs - 1 - i)));
+    }
+    assertU(commit("openSearcher", "true"));
+  }
+
+  /** Index a parent document with a single child via the update handler. */
+  private void addChildDoc(String parentId, String childId) throws Exception {
+    SolrCore core = h.getCore();
+    SolrInputDocument parentDoc = new SolrInputDocument();
+    parentDoc.addField("id", parentId);
+    parentDoc.addField("title", "Parent " + parentId);
+
+    SolrInputDocument childDoc = new SolrInputDocument();
+    childDoc.addField("id", childId);
+    childDoc.addField("title", "Child " + childId);
+    parentDoc.addChildDocument(childDoc);
+
+    try (SolrQueryRequestBase solrReq =
+        new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
+      AddUpdateCommand cmd = new AddUpdateCommand(solrReq);
+      cmd.solrDoc = parentDoc;
+      core.getUpdateHandler().addDoc(cmd);
     }
   }
 }

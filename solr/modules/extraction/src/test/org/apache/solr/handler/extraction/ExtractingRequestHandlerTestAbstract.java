@@ -24,11 +24,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -313,14 +314,15 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testDefaultField() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertNotNull("handler is null and it shouldn't be", handler);
 
-    try {
-      ignoreException("unknown field 'a'");
-      ignoreException("unknown field 'meta'"); // TODO: should this exception be happening?
+    // TODO: should the "unknown field 'meta'" exception be happening?
+    try (ErrorLogMuter unknownFieldA = ErrorLogMuter.regex("unknown field 'a'");
+        ErrorLogMuter unknownFieldMeta = ErrorLogMuter.regex("unknown field 'meta'")) {
       expectThrows(
           SolrException.class,
           () ->
@@ -336,8 +338,6 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
                   "commit",
                   "true" // test immediate commit
                   ));
-    } finally {
-      resetExceptionIgnores();
     }
 
     loadLocal(
@@ -1046,7 +1046,7 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
   SolrQueryResponse loadLocalFromHandler(String handler, String filename, String... args)
       throws Exception {
 
-    try (LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args)) {
+    try (SolrQueryRequestBase req = (SolrQueryRequestBase) req(args)) {
       List<ContentStream> cs = new ArrayList<>();
       cs.add(new ContentStreamBase.FileStream(getFile(filename)));
       req.setContentStreams(cs);

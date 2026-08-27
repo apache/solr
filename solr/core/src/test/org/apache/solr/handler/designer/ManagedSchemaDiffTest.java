@@ -21,7 +21,6 @@ import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_
 import static org.apache.solr.handler.designer.ManagedSchemaDiff.mapFieldsToPropertyValues;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,11 +49,11 @@ public class ManagedSchemaDiffTest extends SolrCloudTestCase {
     ManagedIndexSchema schema = helper.loadLatestSchema(DEFAULT_CONFIGSET_NAME);
 
     Map<String, SchemaField> schema1FieldMap = new HashMap<>();
-    schema1FieldMap.put("strfield", schema.newField("strfield", "string", Collections.emptyMap()));
+    schema1FieldMap.put("strfield", schema.newField("strfield", "string", Map.of()));
     schema1FieldMap.put("boolfield", new SchemaField("boolfield", new BoolField()));
 
     Map<String, SchemaField> schema2FieldMap = new HashMap<>();
-    schema2FieldMap.put("strfield", schema.newField("strfield", "strings", Collections.emptyMap()));
+    schema2FieldMap.put("strfield", schema.newField("strfield", "strings", Map.of()));
     schema2FieldMap.put("intfield", new SchemaField("intfield", new IntPointField()));
 
     Map<String, Object> diff =
@@ -110,7 +109,7 @@ public class ManagedSchemaDiffTest extends SolrCloudTestCase {
     Map<String, Object> diff = ManagedSchemaDiff.diff(list1, list2);
     assertTrue(diff.containsKey("old"));
     assertTrue(diff.containsKey("new"));
-    assertEquals(Collections.singletonList(obj2), diff.get("old"));
+    assertEquals(List.of(obj2), diff.get("old"));
     assertEquals(Arrays.asList(obj3, obj4), diff.get("new"));
   }
 

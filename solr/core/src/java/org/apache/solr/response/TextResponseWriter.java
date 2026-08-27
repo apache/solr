@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -87,9 +86,7 @@ public abstract class TextResponseWriter implements TextWriter {
       this.rawReturnFields = NO_RAW_FIELDS;
     } else {
       this.rawFields =
-          rawFields.size() == 1
-              ? Collections.singleton(rawFields.iterator().next())
-              : new HashSet<>(rawFields);
+          rawFields.size() == 1 ? Set.of(rawFields.iterator().next()) : new HashSet<>(rawFields);
       this.rawShim = new RawShimTextResponseWriter(this);
       this.rawReturnFields = returnFields;
     }

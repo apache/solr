@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.designer;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +40,7 @@ class SchemaDesignerSettings implements SchemaDesignerConstants {
     this.isDisabled = getSettingAsBool(stored, DESIGNER_KEY + DISABLED, false);
     this.publishedVersion = null;
     this.copyFrom = (String) stored.get(DESIGNER_KEY + COPY_FROM_PARAM);
-    this.languages =
-        (List<String>) stored.getOrDefault(DESIGNER_KEY + LANGUAGES_PARAM, Collections.emptyList());
+    this.languages = (List<String>) stored.getOrDefault(DESIGNER_KEY + LANGUAGES_PARAM, List.of());
     this.dynamicFieldsEnabled =
         getSettingAsBool(stored, DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM, true);
     this.nestedDocsEnabled =
@@ -114,7 +112,7 @@ class SchemaDesignerSettings implements SchemaDesignerConstants {
   }
 
   public void setLanguages(List<String> langs) {
-    this.languages = langs != null ? langs : Collections.emptyList();
+    this.languages = langs != null ? langs : List.of();
   }
 
   public boolean dynamicFieldsEnabled() {

@@ -55,7 +55,6 @@ import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -63,13 +62,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
@@ -96,7 +92,7 @@ import org.slf4j.LoggerFactory;
  *   <li>Access to metric instruments such as {@link LongCounter}, {@link LongUpDownCounter}, {@link
  *       LongGauge}, {@link LongHistogram} and observable instruments to a specific MeterProvider
  *       instances
- *   <li>{@link FilterablePrometheusMetricReader} for reading and fitlering OpenTelemetry metrics in
+ *   <li>{@link FilterablePrometheusMetricReader} for reading and filtering OpenTelemetry metrics in
  *       Prometheus Format from all MeterProviders
  *   <li>Enablement of optional OTLP exporter
  * </ul>
@@ -117,18 +113,11 @@ public class SolrMetricManager {
    * Registry name for JVM-specific metrics. This name is also subject to overrides controlled by
    * system properties. This registry is shared between instances of {@link SolrMetricManager}.
    */
-  public static final String JVM_REGISTRY =
-      REGISTRY_NAME_PREFIX + SolrInfoBean.Group.jvm.toString();
+  public static final String JVM_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoBean.Group.jvm;
 
-  public static final String NODE_REGISTRY =
-      REGISTRY_NAME_PREFIX + SolrInfoBean.Group.node.toString();
-
-  private final Lock reportersLock = new ReentrantLock();
-  private final Lock swapLock = new ReentrantLock();
+  public static final String NODE_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoBean.Group.node;
 
   public static final int DEFAULT_CLOUD_REPORTER_PERIOD = 60;
-
-  private final MetricsConfig metricsConfig;
 
   private final ConcurrentMap<String, MeterProviderAndReaders> meterProviderAndReaders =
       new ConcurrentHashMap<>();
@@ -154,12 +143,10 @@ public class SolrMetricManager {
           1_000_000_000.0);
 
   public SolrMetricManager(MetricExporter exporter) {
-    metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     metricExporter = exporter;
   }
 
-  public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
-    this.metricsConfig = metricsConfig;
+  public SolrMetricManager(SolrResourceLoader loader) {
     this.metricExporter = loadMetricExporter(loader);
     this.otelRuntimeJvmMetrics = new OtelRuntimeJvmMetrics().initialize(this, JVM_REGISTRY);
   }
@@ -520,8 +507,7 @@ public class SolrMetricManager {
    *     to the name.
    */
   public static String mkName(String name, String... path) {
-    return makeName(
-        path == null || path.length == 0 ? Collections.emptyList() : Arrays.asList(path), name);
+    return makeName(path == null || path.length == 0 ? List.of() : Arrays.asList(path), name);
   }
 
   public static String makeName(List<String> path, String name) {

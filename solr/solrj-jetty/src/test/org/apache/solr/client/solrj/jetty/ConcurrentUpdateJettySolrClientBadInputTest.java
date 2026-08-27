@@ -17,11 +17,13 @@
 
 package org.apache.solr.client.solrj.jetty;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -39,8 +41,10 @@ public class ConcurrentUpdateJettySolrClientBadInputTest extends SolrTestCaseJ4 
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(
-        legacyExampleCollection1SolrHome(), new Properties(), JettyConfig.builder().build());
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Test

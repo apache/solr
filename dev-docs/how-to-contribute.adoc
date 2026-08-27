@@ -64,8 +64,9 @@ In order to make a new contribution to Solr you will use the fork you have creat
 
 ## Use of AI Coding Assistants
 
-AI-powered tools (like GitHub Copilot, ChatGPT, etc.) can assist with contributions, but human contributors remain fully responsible for all submitted code and documentation. See the [ASF Generative Tooling Guidance](https://www.apache.org/legal/generative-tooling.html) for the foundation's policy. If you use AI tools:
+AI-powered tools or agents (like GitHub Copilot, ChatGPT, etc.) can assist with contributions, but human contributors remain fully responsible for all submitted code and documentation. See the [ASF Generative Tooling Guidance](https://www.apache.org/legal/generative-tooling.html) for the foundation's policy. If you use AI tools:
 
+- Do include our `AGENTS.md` file in the LLM's context for best result.
 - Carefully review all generated content for correctness, security, and alignment with Solr's architecture
 - For major AI-assisted contributions, disclose the use of AI tools in your PR description
 - For documentation contributions, prefer concise, human-readable content over verbose AI-generated text

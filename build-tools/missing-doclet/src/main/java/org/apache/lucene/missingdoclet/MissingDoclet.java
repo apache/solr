@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -65,8 +64,8 @@ public class MissingDoclet extends StandardDoclet {
   DocletEnvironment docEnv;
   DocTrees docTrees;
   Elements elementUtils;
-  Set<String> ignored = Collections.emptySet();
-  Set<String> methodPackages = Collections.emptySet();
+  Set<String> ignored = Set.of();
+  Set<String> methodPackages = Set.of();
 
   @Override
   public Set<Doclet.Option> getSupportedOptions() {
@@ -231,8 +230,8 @@ public class MissingDoclet extends StandardDoclet {
       case PACKAGE:
         checkComment(element);
         break;
-        // class-like elements, check them, then recursively check their children (fields and
-        // methods)
+      // class-like elements, check them, then recursively check their children (fields and
+      // methods)
       case CLASS:
       case INTERFACE:
       case ENUM:
@@ -252,7 +251,7 @@ public class MissingDoclet extends StandardDoclet {
           }
         }
         break;
-        // method-like elements, check them if we are configured to do so
+      // method-like elements, check them if we are configured to do so
       case METHOD:
       case CONSTRUCTOR:
       case FIELD:
@@ -373,7 +372,7 @@ public class MissingDoclet extends StandardDoclet {
         clazz.getInterfaces().stream()
             .filter(tm -> tm.getKind() == TypeKind.DECLARED)
             .map(tm -> ((DeclaredType) tm).asElement())
-            .collect(Collectors.toList());
+            .toList();
 
     Stream<Element> result = interfaces.stream();
     result = Stream.concat(result, interfaces.stream().flatMap(this::superTypeForInheritDoc));

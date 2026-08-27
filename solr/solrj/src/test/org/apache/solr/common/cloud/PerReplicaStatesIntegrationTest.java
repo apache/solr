@@ -21,9 +21,10 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -40,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** This test would be faster if we simulated the zk state instead. */
+@Nightly
 @LogLevel(
     "org.apache.solr.common.cloud.ZkStateReader=DEBUG;"
         + "org.apache.solr.cloud.overseer.ZkStateWriter=DEBUG;"
@@ -95,7 +97,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       assertEquals(5, prs.states.size());
 
       // Test delete replica
-      Replica leader = c.getReplicas().stream().filter(Replica::isLeader).findFirst().orElseThrow();
+      Replica leader = c.replicaStream().filter(Replica::isLeader).findFirst().orElseThrow();
       CollectionAdminRequest.deleteReplica(testCollection, leader.shard, leader.getName())
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 2, 4);
@@ -245,8 +247,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
               DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
       log.info("prs1 : {}", prs1);
 
-      CollectionAdminRequest.modifyCollection(
-              COLL, Collections.singletonMap(PER_REPLICA_STATE, "false"))
+      CollectionAdminRequest.modifyCollection(COLL, Map.of(PER_REPLICA_STATE, "false"))
           .process(cluster.getSolrClient());
       waitForState(
           "Waiting for PRS property",
@@ -255,8 +256,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
           TimeUnit.SECONDS,
           collectionState ->
               "false".equals(collectionState.getProperties().get(PER_REPLICA_STATE)));
-      CollectionAdminRequest.modifyCollection(
-              COLL, Collections.singletonMap(PER_REPLICA_STATE, "true"))
+      CollectionAdminRequest.modifyCollection(COLL, Map.of(PER_REPLICA_STATE, "true"))
           .process(cluster.getSolrClient());
       waitForState(
           "Waiting for PRS property",

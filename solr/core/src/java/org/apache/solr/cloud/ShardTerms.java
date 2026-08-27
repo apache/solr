@@ -124,6 +124,28 @@ public class ShardTerms implements MapWriter {
     return replicasNeedingRecovery.contains(key);
   }
 
+  public ShardTerms setHighestTerms(Set<String> highestTermKeys) {
+    long newMaxTerm = maxTerm + 1;
+    boolean keyFound = false;
+    HashMap<String, Long> newValues = new HashMap<>(values);
+    long nextHighestTerm = -1;
+    for (String key : values.keySet()) {
+      if (highestTermKeys.contains(key)) {
+        newValues.put(key, newMaxTerm);
+        keyFound = true;
+      } else {
+        nextHighestTerm = Math.max(nextHighestTerm, values.get(key));
+      }
+    }
+    // We only want to update if increasing the maxTerm makes an impact.
+    // If the nextHighestTerm is already < maxTerm, then upping the maxTerm doesn't do anything.
+    if (nextHighestTerm == maxTerm && keyFound) {
+      return new ShardTerms(newValues, version);
+    } else {
+      return null;
+    }
+  }
+
   /**
    * Return a new {@link ShardTerms} in which the highest terms are not zero
    *

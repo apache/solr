@@ -21,10 +21,8 @@ description = 'Language Identifier module for extracting language from a documen
 
 dependencies {
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
 
-  implementation libs.commonsio.commonsio
-  implementation libs.cybozulabs.langdetect
+  implementation libs.azagniotov.langdetect
   implementation libs.apache.opennlp.tools
   implementation libs.slf4j.api
 

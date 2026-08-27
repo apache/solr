@@ -137,7 +137,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION_NAME).build();
+    CLOUD_CLIENT = cluster.newSolrClient(COLLECTION_NAME);
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
@@ -363,8 +363,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("mapped"));
+        assertEquals(List.of(), sweep_debug.get("accs"));
+        assertEquals(List.of(), sweep_debug.get("mapped"));
       }
       { // if we override 'dv' with 'hashdv' which doesn't sweep, our sweep debug should be empty,
         // even if the skg stat does ask for sweeping explicitly...
@@ -419,8 +419,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("mapped"));
+        assertEquals(List.of(), sweep_debug.get("accs"));
+        assertEquals(List.of(), sweep_debug.get("mapped"));
       }
     }
 
@@ -821,10 +821,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
           // it ignores the order of the keys in each bucket...
           final String pathToMismatch =
               BaseDistributedSearchTestCase.compare(
-                  expected,
-                  actual,
-                  0,
-                  Collections.singletonMap("buckets", BaseDistributedSearchTestCase.UNORDERED));
+                  expected, actual, 0, Map.of("buckets", BaseDistributedSearchTestCase.UNORDERED));
           if (null != pathToMismatch) {
             log.error("{}: expected = {}", options, expected);
             log.error("{}: actual = {}", options, actual);
@@ -921,12 +918,12 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
     /** Assumes null for fore/back queries w/no options */
     public RelatednessFacet() {
-      this(null, null, Collections.emptyMap());
+      this(null, null, Map.of());
     }
 
     /** Assumes no options */
     public RelatednessFacet(final String foreQ, final String backQ) {
-      this(foreQ, backQ, Collections.emptyMap());
+      this(foreQ, backQ, Map.of());
     }
 
     public RelatednessFacet(

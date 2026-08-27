@@ -52,8 +52,8 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -154,17 +154,17 @@ public class PeerSync implements SolrMetricProducer {
     syncErrors =
         new AttributedLongCounter(
             solrMetricsContext.longCounter(
-                "solr_core_peer_sync_errors", "Total number of sync errors with peer"),
+                "solr.core.peer_sync.errors", "Total number of sync errors with peer"),
             baseAttributes);
     syncSkipped =
         new AttributedLongCounter(
             solrMetricsContext.longCounter(
-                "solr_core_peer_sync_skipped", "Total number of skipped syncs with peer"),
+                "solr.core.peer_sync.skipped", "Total number of skipped syncs with peer"),
             baseAttributes);
     syncTime =
         new AttributedLongTimer(
             solrMetricsContext.longHistogram(
-                "solr_core_peer_sync_time", "Peer sync times", OtelUnit.MILLISECONDS),
+                "solr.core.peer_sync.time", "Peer sync times", OtelUnit.MILLISECONDS),
             baseAttributes);
   }
 
@@ -640,7 +640,7 @@ public class PeerSync implements SolrMetricProducer {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
       params.set("peersync", true); // debugging
-      SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, params);
+      SolrQueryRequest req = new SolrQueryRequestBase(solrCore, params);
       SolrQueryResponse rsp = new SolrQueryResponse();
 
       UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
