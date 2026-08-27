@@ -47,7 +47,7 @@ public class VectorSimilarityQParser extends AbstractVectorQParserBase {
     final SchemaField schemaField = req.getCore().getLatestSchema().getField(fieldName);
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
 
-    denseVectorType.checkKnnQuerySupported();
+    denseVectorType.checkKnnQueryParsersSupported();
 
     final String vectorToSearch = getVectorToSearch();
     final float minTraverse = localParams.getFloat(MIN_TRAVERSE, DEFAULT_MIN_TRAVERSE);

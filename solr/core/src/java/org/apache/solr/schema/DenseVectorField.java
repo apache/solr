@@ -499,8 +499,8 @@ public class DenseVectorField extends FloatPointField {
         SolrException.ErrorCode.BAD_REQUEST, "Vector encoding not supported for function queries.");
   }
 
-  /** Throws if this field type does not support KNN vector queries. */
-  public void checkKnnQuerySupported() {
+  /** Throws if this field type does not support the KNN query parsers. */
+  public void checkKnnQueryParsersSupported() throws SolrException {
     if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -519,7 +519,7 @@ public class DenseVectorField extends FloatPointField {
       EarlyTerminationParams earlyTermination,
       Integer filteredSearchThreshold) {
 
-    checkKnnQuerySupported();
+    checkKnnQueryParsersSupported();
 
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);

@@ -120,7 +120,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
 
-    denseVectorType.checkKnnQuerySupported();
+    denseVectorType.checkKnnQueryParsersSupported();
 
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);

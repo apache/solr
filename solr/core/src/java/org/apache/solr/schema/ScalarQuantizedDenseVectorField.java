@@ -135,7 +135,7 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
 
   // Unlike DenseVectorField, the scalar-quantized flat format supports KNN queries.
   @Override
-  public void checkKnnQuerySupported() {}
+  public void checkKnnQueryParsersSupported() throws SolrException {}
 
   @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {
