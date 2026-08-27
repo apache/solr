@@ -56,12 +56,19 @@ function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, 
 
   $scope.refreshPing = function() {
     Ping.status({core: $routeParams.core}, function(data) {
-      if (data.status == "not_configured") {
-        $scope.healthcheckStatus = false;
-        $scope.healthcheckMessage = 'Ping request handler is not configured with a healthcheck file.';
-      } else {
-        delete $scope.healthcheckMessage;
+      // Three states, and they are not interchangeable. "enabled" and "disabled" both mean a
+      // healthcheck file is configured, so toggleHealthcheck() works and the widget shows the
+      // lit / unlit control. "not_configured" means there is no healthcheck file at all, and
+      // enable/disable would answer 503 - so set a message, which hides the toggle rather than
+      // offering a control that cannot work.
+      delete $scope.healthcheckMessage;
+      if (data.status == "enabled" || data.status == "disabled") {
         $scope.healthcheckStatus = data.status == "enabled";
+      } else {
+        $scope.healthcheckStatus = false;
+        $scope.healthcheckMessage = data.status == "not_configured"
+          ? 'Ping request handler is not configured with a healthcheck file.'
+          : 'Unexpected ping status: ' + data.status;
       }
     }, function(error) {
       $scope.healthcheckStatus = false;
