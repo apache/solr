@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Map;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
@@ -71,6 +72,10 @@ public class TestMessageProcessor {
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
+
+    // handleItem() probes the cluster through the state provider, so the mock must supply one
+    ClusterStateProvider clusterStateProvider = Mockito.mock(ClusterStateProvider.class);
+    when(solrClient.getClusterStateProvider()).thenReturn(clusterStateProvider);
 
     ConsumerMetrics metrics = Mockito.mock(OtelMetrics.class);
     processor = Mockito.spy(new SolrMessageProcessor(metrics, () -> solrClient, backoffPolicy));
