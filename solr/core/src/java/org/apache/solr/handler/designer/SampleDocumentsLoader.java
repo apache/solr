@@ -23,9 +23,9 @@ import java.util.Locale;
 import java.util.UUID;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.util.ContentStream;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public interface SampleDocumentsLoader extends NamedListInitializedPlugin {

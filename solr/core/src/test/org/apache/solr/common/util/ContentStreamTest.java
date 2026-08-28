@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +28,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrResourceLoader;
 
 /** Tests {@link ContentStream}. */
@@ -45,7 +44,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
   public void testFileStream() throws IOException {
     Path file = createTempDir().resolve("README");
     try (SolrResourceLoader srl = new SolrResourceLoader(Path.of("").toAbsolutePath());
-        InputStream is = srl.openResource("README");
+        InputStream is = srl.openResource("solrj/README");
         OutputStream os = Files.newOutputStream(file)) {
       assertNotNull(is);
       is.transferTo(os);
@@ -69,7 +68,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     Path file = createTempDir().resolve("README.gz");
 
     try (SolrResourceLoader srl = new SolrResourceLoader(Path.of("").toAbsolutePath());
-        InputStream is = srl.openResource("README");
+        InputStream is = srl.openResource("solrj/README");
         OutputStream os = Files.newOutputStream(file);
         GZIPOutputStream zos = new GZIPOutputStream(os)) {
       is.transferTo(zos);
@@ -95,7 +94,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     Path file = createTempDir().resolve("README");
 
     try (SolrResourceLoader srl = new SolrResourceLoader(Path.of("").toAbsolutePath());
-        InputStream is = srl.openResource("README");
+        InputStream is = srl.openResource("solrj/README");
         OutputStream os = Files.newOutputStream(file)) {
       is.transferTo(os);
     }
@@ -125,7 +124,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     Path file = createTempDir().resolve("README.gz");
 
     try (SolrResourceLoader srl = new SolrResourceLoader(Path.of("").toAbsolutePath());
-        InputStream is = srl.openResource("README");
+        InputStream is = srl.openResource("solrj/README");
         OutputStream os = Files.newOutputStream(file);
         GZIPOutputStream zos = new GZIPOutputStream(os)) {
       is.transferTo(zos);
@@ -151,7 +150,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     Path file = createTempDir().resolve("README.CSV.gz");
 
     try (SolrResourceLoader srl = new SolrResourceLoader(Path.of("").toAbsolutePath());
-        InputStream is = srl.openResource("README");
+        InputStream is = srl.openResource("solrj/README");
         OutputStream os = Files.newOutputStream(file);
         GZIPOutputStream zos = new GZIPOutputStream(os)) {
       is.transferTo(zos);
@@ -177,7 +176,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     Path file = createTempDir().resolve("README.json.gzip");
 
     try (SolrResourceLoader srl = new SolrResourceLoader(Path.of("").toAbsolutePath());
-        InputStream is = srl.openResource("README");
+        InputStream is = srl.openResource("solrj/README");
         OutputStream os = Files.newOutputStream(file);
         GZIPOutputStream zos = new GZIPOutputStream(os)) {
       is.transferTo(zos);

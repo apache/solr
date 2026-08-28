@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.crossdc.common.ConfUtil;
 import org.apache.solr.crossdc.common.CrossDcConstants;
@@ -35,7 +36,6 @@ import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.ContentStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

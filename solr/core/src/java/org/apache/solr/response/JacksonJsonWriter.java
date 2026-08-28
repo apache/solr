@@ -29,8 +29,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
 import org.apache.solr.common.PushWriter;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.ContentStreamBase;
 
 /** A JSON ResponseWriter that uses jackson. */
 public class JacksonJsonWriter implements TextQueryResponseWriter {

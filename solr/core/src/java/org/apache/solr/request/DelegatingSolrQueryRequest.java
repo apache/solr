@@ -23,12 +23,12 @@ import java.util.Map;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.HttpSolrCall;
-import org.apache.solr.util.ContentStream;
 import org.apache.solr.util.RTimerTree;
 
 /**
