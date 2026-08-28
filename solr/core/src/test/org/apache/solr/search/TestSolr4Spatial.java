@@ -26,6 +26,7 @@ import org.apache.solr.legacy.BBoxStrategy;
 import org.apache.solr.schema.BBoxField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SpatialUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -80,6 +81,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testBadShapeParse400() {
     assertQEx(
         null,
@@ -118,14 +120,14 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
             "{!field f=" + fieldName + "}Intersectssss"),
         400);
 
-    ignoreException("NonexistentShape");
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            "should throw exception on non existent shape",
-            () -> assertU(adoc("id", "-1", fieldName, "NonexistentShape")));
-    assertEquals(400, e.code());
-    unIgnoreException("NonexistentShape");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("NonexistentShape")) {
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              "should throw exception on non existent shape",
+              () -> assertU(adoc("id", "-1", fieldName, "NonexistentShape")));
+      assertEquals(400, e.code());
+    }
   }
 
   private void setupDocs() {

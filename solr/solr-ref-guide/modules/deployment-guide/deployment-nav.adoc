@@ -33,6 +33,7 @@
 ** SolrCloud Clusters
 *** xref:solrcloud-shards-indexing.adoc[]
 *** xref:solrcloud-recoveries-and-write-tolerance.adoc[]
+*** xref:solrcloud-update-consistency.adoc[]
 *** xref:solrcloud-distributed-requests.adoc[]
 *** xref:node-roles.adoc[]
 *** xref:aliases.adoc[]

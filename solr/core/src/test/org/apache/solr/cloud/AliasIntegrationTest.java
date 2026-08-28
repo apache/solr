@@ -49,6 +49,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.client.ContentResponse;
@@ -981,6 +982,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testErrorChecks() throws Exception {
     CollectionAdminRequest.createCollection("testErrorChecks-collection", "conf", 2, 1)
         .process(cluster.getSolrClient());
@@ -991,63 +993,64 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         "testErrorChecks-collection",
         clusterShape(2, 2));
 
-    ignoreException(".");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".")) {
 
-    // Invalid Alias name
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            () ->
-                CollectionAdminRequest.createAlias("test:alias", "testErrorChecks-collection")
-                    .process(cluster.getSolrClient()));
-    assertEquals(
-        SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
+      // Invalid Alias name
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  CollectionAdminRequest.createAlias("test:alias", "testErrorChecks-collection")
+                      .process(cluster.getSolrClient()));
+      assertEquals(
+          SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
 
-    // Target collection doesn't exists
-    e =
-        expectThrows(
-            SolrException.class,
-            () ->
-                CollectionAdminRequest.createAlias("testalias", "doesnotexist")
-                    .process(cluster.getSolrClient()));
-    assertEquals(
-        SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
-    assertTrue(
-        e.getMessage()
-            .contains(
-                "Can't create collection alias for collections='doesnotexist', 'doesnotexist' is not an existing collection or alias"));
+      // Target collection doesn't exists
+      e =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  CollectionAdminRequest.createAlias("testalias", "doesnotexist")
+                      .process(cluster.getSolrClient()));
+      assertEquals(
+          SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
+      assertTrue(
+          e.getMessage()
+              .contains(
+                  "Can't create collection alias for collections='doesnotexist', 'doesnotexist' is not an existing collection or alias"));
 
-    // One of the target collections doesn't exist
-    e =
-        expectThrows(
-            SolrException.class,
-            () ->
-                CollectionAdminRequest.createAlias(
-                        "testalias", "testErrorChecks-collection,doesnotexist")
-                    .process(cluster.getSolrClient()));
-    assertEquals(
-        SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
-    assertTrue(
-        e.getMessage()
-            .contains(
-                "Can't create collection alias for collections='testErrorChecks-collection,doesnotexist', 'doesnotexist' is not an existing collection or alias"));
+      // One of the target collections doesn't exist
+      e =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  CollectionAdminRequest.createAlias(
+                          "testalias", "testErrorChecks-collection,doesnotexist")
+                      .process(cluster.getSolrClient()));
+      assertEquals(
+          SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
+      assertTrue(
+          e.getMessage()
+              .contains(
+                  "Can't create collection alias for collections='testErrorChecks-collection,doesnotexist', 'doesnotexist' is not an existing collection or alias"));
 
-    // Valid
-    CollectionAdminRequest.createAlias("testalias", "testErrorChecks-collection")
-        .process(cluster.getSolrClient());
-    // TODO dubious; remove?
-    CollectionAdminRequest.createAlias("testalias2", "testalias").process(cluster.getSolrClient());
+      // Valid
+      CollectionAdminRequest.createAlias("testalias", "testErrorChecks-collection")
+          .process(cluster.getSolrClient());
+      // TODO dubious; remove?
+      CollectionAdminRequest.createAlias("testalias2", "testalias")
+          .process(cluster.getSolrClient());
 
-    // Alias + invalid
-    e =
-        expectThrows(
-            SolrException.class,
-            () ->
-                CollectionAdminRequest.createAlias("testalias3", "testalias2,doesnotexist")
-                    .process(cluster.getSolrClient()));
-    assertEquals(
-        SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
-    unIgnoreException(".");
+      // Alias + invalid
+      e =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  CollectionAdminRequest.createAlias("testalias3", "testalias2,doesnotexist")
+                      .process(cluster.getSolrClient()));
+      assertEquals(
+          SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
+    }
 
     CollectionAdminRequest.deleteAlias("testalias").process(cluster.getSolrClient());
     CollectionAdminRequest.deleteAlias("testalias2").process(cluster.getSolrClient());
