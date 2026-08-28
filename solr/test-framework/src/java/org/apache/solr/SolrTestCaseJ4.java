@@ -2254,7 +2254,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // and copies the stock files in there.
 
   /** Copies the test collection1 config into {@code dstRoot}/{@code collection}/conf */
-  @Deprecated // Instead use a basic config + whatever is needed or default config
+  /**
+   * @deprecated Use a basic config plus whatever is needed, or the default config, instead of
+   *     copying the full collection1 test config.
+   */
+  @Deprecated(since = "10.0") // Instead use a basic config + whatever is needed or default config
   public static void copySolrHomeToTemp(Path dstRoot, String collection) throws IOException {
     Path subHome = dstRoot.resolve(collection).resolve("conf");
     Files.createDirectories(subHome);
@@ -2527,13 +2531,23 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @param url the base URL for a Solr node. Should not contain a core or collection name.
    */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
+  /**
+   * @deprecated Prefer an existing client, e.g. from a {@link
+   *     org.apache.solr.util.SolrClientTestRule} or {@link
+   *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.
+   */
+  @Deprecated(since = "10.1") // probably use an existing client like on a testRule/jettyRunner
   public static HttpJettySolrClient getHttpSolrClient(String url) {
     return new HttpJettySolrClient.Builder(url).build();
   }
 
   /** Create a basic HttpSolrClient pointed at the specified replica */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
+  /**
+   * @deprecated Prefer an existing client, e.g. from a {@link
+   *     org.apache.solr.util.SolrClientTestRule} or {@link
+   *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.
+   */
+  @Deprecated(since = "10.1") // probably use an existing client like on a testRule/jettyRunner
   public static HttpJettySolrClient getHttpSolrClient(Replica replica) {
     return getHttpSolrClient(replica.getBaseUrl(), replica.getCoreName());
   }
@@ -2547,7 +2561,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param defaultCoreName the name of a core that the created client should default to when making
    *     core-aware requests
    */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
+  /**
+   * @deprecated Prefer an existing client, e.g. from a {@link
+   *     org.apache.solr.util.SolrClientTestRule} or {@link
+   *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.
+   */
+  @Deprecated(since = "10.1") // probably use an existing client like on a testRule/jettyRunner
   public static HttpJettySolrClient getHttpSolrClient(String url, String defaultCoreName) {
     return new HttpJettySolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
   }
