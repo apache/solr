@@ -62,6 +62,7 @@
     }
   ],
   "schedule": ["before 9am on the first day of the month"],
+  "milestone": null,
   "prConcurrentLimit": 100,
   "prHourlyLimit": 10,
   "branchPrefix": "renovate-9x/",
