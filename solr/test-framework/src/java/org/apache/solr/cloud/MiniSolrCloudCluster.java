@@ -571,7 +571,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
       boolean allContainersEmpty = true;
       for (JettySolrRunner jetty : jettys) {
         CoreContainer cc = jetty.getCoreContainer();
-        if (cc != null && cc.getCores().size() != 0) {
+        if (cc != null && !cc.getLoadedCoreNames().isEmpty()) {
           allContainersEmpty = false;
         }
       }
