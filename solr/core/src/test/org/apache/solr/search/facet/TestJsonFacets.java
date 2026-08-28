@@ -39,6 +39,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.hll.HLL;
 import org.junit.AfterClass;
@@ -65,10 +66,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
   private static int origTableSize;
   private static FacetField.FacetMethod origDefaultFacetMethod;
 
-  @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     JSONTestUtil.failRepeatedKeys = true;
 
     origTableSize = FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE;
@@ -92,10 +92,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
   }
 
-  @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
-    systemClearPropertySolrEnableUrlAllowList();
     JSONTestUtil.failRepeatedKeys = false;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE = origTableSize;
     FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;

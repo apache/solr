@@ -217,9 +217,9 @@ public class BackupManager {
       // collection will have a new creation date when persisted in zookeeper.
       @SuppressWarnings("unchecked")
       Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(arr, 0, arr.length);
-      ClusterState c_state =
+      ClusterState clusterState =
           ClusterState.createFromCollectionMap(-1, stateMap, Set.of(), Instant.EPOCH, null);
-      return c_state.getCollection(collectionName);
+      return clusterState.getCollection(collectionName);
     }
   }
 
