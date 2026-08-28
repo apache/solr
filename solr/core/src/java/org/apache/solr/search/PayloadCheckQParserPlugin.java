@@ -77,7 +77,7 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'payloads' not specified");
         }
 
-        FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
+        FieldType ft = req.getSchema().getFieldType(field);
         Analyzer analyzer = ft.getQueryAnalyzer();
         SpanQuery query = null;
         try {
