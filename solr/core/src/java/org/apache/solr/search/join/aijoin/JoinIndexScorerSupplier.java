@@ -587,15 +587,10 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       } else if (!task.isResolved()) {
         needIndex.put(task.pairFieldName, task);
       }
-      // else: resolved from the indexer -- the in-memory model needs no searcher, so there's
-      // nothing to refresh, and re-claiming would recompute a pair that's already persisted;
-      // worse, the claim's absence-shortcut could then be fed a searcher that actually
-      // contains the pair, which is exactly the duplicate-write case the double-check contract
-      // forbids
+      // else: resolved from the indexer
     }
-    // refresh old refs, pass 1: same ord, same segment name -> the leaf is already in hand, so
-    // resolve straight into joinSegments instead of adding to loadReference just to re-fetch the
-    // very same leaf by ord in the "load edges for regulars" loop below
+    // refresh old refs, pass 1: same searcher, just get a segment by ord and check
+    // the segment name
     List<LeafReaderContext> newLeaves = newJoinIndexSearcher.getLeafContexts();
     for (Iterator<JoinTask> iter = refreshReference.iterator(); iter.hasNext(); ) {
       JoinTask task = iter.next();
@@ -610,7 +605,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         iter.remove();
       }
     }
-    // pass 2
+    // pass 2: searcher have changed, need to lookup segments by name in the new one
     if (!refreshReference.isEmpty()) {
       Map<String, JoinTask> byOldJoinSegName = new HashMap<>();
       for (JoinTask task : refreshReference) {
@@ -620,8 +615,6 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         String segName = AIJoinUtil.segmentName(joinLeaf);
         JoinTask task = byOldJoinSegName.get(segName);
         if (task != null) {
-          // renamed segment, found by scanning for its old name -- joinLeaf is already the
-          // resolved leaf, so resolve straight into joinSegments, same as pass 1
           task.joinSegmentRef =
               new JoinSegmentReference(task.joinSegmentRef.pairFieldName(), segName, joinLeaf.ord);
           joinSegments.add(new SimpleEntry<>(task, joinLeaf));
@@ -629,7 +622,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         }
       }
     }
-    // pass 3
+    // pass 3: search by field name
     if (!refreshReference.isEmpty()) {
       Map<String, JoinTask> byPairFieldName = new HashMap<>();
       for (JoinTask task : refreshReference) {
@@ -653,7 +646,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       throw new IllegalStateException(
           "unable to refresh segment refs " + refreshReference + " at " + lastSeenJoinSearcher);
     }
-    // load edges for regulars
+    // load edges for regulars, repeat pass 1, for those who was found at pass 3
     for (JoinTask cell : loadReference) {
       // String pairFieldName = cell.pairFieldName;
       LeafReaderContext joinLeafSeg =
@@ -668,10 +661,6 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       for (JoinTask cell : needIndex.values()) {
         missingPairs.put(cell.pairFieldName, cell.segmentsFromTo);
       }
-      // the build itself is timed and reported by AuxIndexManager#writeJoinSegments, which is the
-      // chokepoint both this lazy path and the eager AuxIndexJoinQuery#createWeight path go
-      // through;
-      // here we only accumulate what it cost this context, for the evt=ctx / evt=done lines
       long buildStartNanos = System.nanoTime();
       Map<String, JoinColumnModel> written =
           this.joinIndex.buildAndPersistJoinColumns(
