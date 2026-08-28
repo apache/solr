@@ -1,0 +1,7 @@
+title: The v2 core split (`/cores/{core}/split`) and shard split (`/collections/{collection}/shards/split`) APIs now have generated SolrJ client support (`CoresApi.SplitCore`, `ShardsApi.SplitShard`).
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+- name: PR#4179
+  url: https://github.com/apache/solr/pull/4179

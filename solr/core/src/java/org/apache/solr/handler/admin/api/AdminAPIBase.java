@@ -118,18 +118,25 @@ public abstract class AdminAPIBase extends JerseyResource {
   }
 
   protected SolrResponse submitRemoteMessageAndHandleException(
-      SolrJerseyResponse response, AdminCmdContext adminCmdContext, ZkNodeProps remoteMessage)
+      SolrJerseyResponse response,
+      AdminCmdContext adminCmdContext,
+      ZkNodeProps remoteMessage,
+      long timeoutMs)
       throws Exception {
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            adminCmdContext,
-            remoteMessage,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
+            coreContainer.getZkController(), adminCmdContext, remoteMessage, timeoutMs);
     if (remoteResponse.getException() != null) {
       throw remoteResponse.getException();
     }
     return remoteResponse;
+  }
+
+  protected SolrResponse submitRemoteMessageAndHandleException(
+      SolrJerseyResponse response, AdminCmdContext adminCmdContext, ZkNodeProps remoteMessage)
+      throws Exception {
+    return submitRemoteMessageAndHandleException(
+        response, adminCmdContext, remoteMessage, DEFAULT_COLLECTION_OP_TIMEOUT);
   }
 
   protected SolrResponse submitRemoteMessageAndHandleException(
@@ -145,11 +152,15 @@ public abstract class AdminAPIBase extends JerseyResource {
       AsyncJerseyResponse response,
       CollectionParams.CollectionAction action,
       ZkNodeProps remoteMessage,
-      String asyncId)
+      String asyncId,
+      long timeoutMs)
       throws Exception {
     var remoteResponse =
         submitRemoteMessageAndHandleException(
-            response, new AdminCmdContext(action, asyncId, solrQueryRequest), remoteMessage);
+            response,
+            new AdminCmdContext(action, asyncId, solrQueryRequest),
+            remoteMessage,
+            timeoutMs);
 
     if (asyncId != null) {
       response.requestId = asyncId;
@@ -158,14 +169,35 @@ public abstract class AdminAPIBase extends JerseyResource {
     return remoteResponse;
   }
 
+  protected SolrResponse submitRemoteMessageAndHandleAsync(
+      AsyncJerseyResponse response,
+      CollectionParams.CollectionAction action,
+      ZkNodeProps remoteMessage,
+      String asyncId)
+      throws Exception {
+    return submitRemoteMessageAndHandleAsync(
+        response, action, remoteMessage, asyncId, DEFAULT_COLLECTION_OP_TIMEOUT);
+  }
+
   protected SolrResponse submitRemoteMessageAndHandleResponse(
       SubResponseAccumulatingJerseyResponse response,
       CollectionParams.CollectionAction action,
       ZkNodeProps remoteMessage,
       String asyncId)
       throws Exception {
+    return submitRemoteMessageAndHandleResponse(
+        response, action, remoteMessage, asyncId, DEFAULT_COLLECTION_OP_TIMEOUT);
+  }
+
+  protected SolrResponse submitRemoteMessageAndHandleResponse(
+      SubResponseAccumulatingJerseyResponse response,
+      CollectionParams.CollectionAction action,
+      ZkNodeProps remoteMessage,
+      String asyncId,
+      long timeoutMs)
+      throws Exception {
     var remoteResponse =
-        submitRemoteMessageAndHandleAsync(response, action, remoteMessage, asyncId);
+        submitRemoteMessageAndHandleAsync(response, action, remoteMessage, asyncId, timeoutMs);
 
     if (asyncId != null) {
       response.requestId = asyncId;

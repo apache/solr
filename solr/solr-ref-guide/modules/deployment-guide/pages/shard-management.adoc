@@ -65,11 +65,9 @@ V2 API::
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/collections/techproducts/shards/split -H 'Content-Type: application/json' -d '
   {
-    "split":{
-      "shard":"shard1"
-    }
+    "shard":"shard1"
   }
 '
 ----
