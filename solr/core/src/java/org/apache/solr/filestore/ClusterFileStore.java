@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.api.JerseyResource;
@@ -45,6 +46,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
@@ -228,13 +230,14 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
         String parentPath = path.substring(0, path.lastIndexOf('/'));
         List<FileStore.FileDetails> l = fileStore.list(parentPath, s -> s.equals(fileName));
 
-        dirListingResponse.files =
-            Collections.singletonMap(path, l.isEmpty() ? null : convertToResponse(l.get(0)));
+        FileStoreEntryMetadata entry = l.isEmpty() ? null : convertToResponse(l.get(0));
+        dirListingResponse.files = Collections.singletonMap(path, entry);
         break;
       case DIRECTORY:
         final var directoryContents =
             fileStore.list(path, null).stream()
                 .map(details -> convertToResponse(details))
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         dirListingResponse.files = Map.of(path, directoryContents);
         break;
@@ -254,10 +257,20 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       return entryMetadata;
     }
 
-    entryMetadata.size = details.size();
-    entryMetadata.timestamp = details.getTimeStamp();
+    long size = details.size();
+    if (size < 0) {
+      // File was deleted concurrently between listing and reading its attributes.
+      return null;
+    }
+    final var timestamp = details.getTimeStamp();
+    if (timestamp == null) {
+      // File was deleted concurrently between reading its size and timestamp.
+      return null;
+    }
+    entryMetadata.size = size;
+    entryMetadata.timestamp = timestamp;
     if (details.getMetaData() != null) {
-      details.getMetaData().toMap(entryMetadata.unknownProperties());
+      Utils.convertToMap(details.getMetaData(), entryMetadata.unknownProperties());
     }
 
     return entryMetadata;
@@ -387,7 +400,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "File store does not have any keys");
     }
-    CryptoKeys cryptoKeys = null;
+    CryptoKeys cryptoKeys;
     try {
       cryptoKeys = new CryptoKeys(keys);
     } catch (Exception e) {

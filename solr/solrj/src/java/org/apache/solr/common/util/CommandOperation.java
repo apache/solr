@@ -25,7 +25,6 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -175,19 +174,6 @@ public class CommandOperation {
     errors.add(s);
   }
 
-  /** Get all the values from the metadata for the command without the specified keys */
-  public Map<String, Object> getValuesExcluding(String... keys) {
-    getMapVal(null);
-    if (hasError()) return Map.of(); // just to verify the type is Map
-    @SuppressWarnings("unchecked")
-    LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String, Object>) commandData);
-    if (keys == null) return cp;
-    for (String key : keys) {
-      cp.remove(key);
-    }
-    return cp;
-  }
-
   public List<String> getErrors() {
     return errors;
   }
@@ -258,11 +244,7 @@ public class CommandOperation {
    */
   public static List<CommandOperation> parse(Reader rdr, Set<String> singletonCommands)
       throws IOException {
-    JSONParser parser = new JSONParser(rdr);
-    parser.setFlags(
-        parser.getFlags()
-            | JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT
-            | JSONParser.OPTIONAL_OUTER_BRACES);
+    JSONParser parser = Utils.getJSONParser(rdr);
 
     ObjectBuilder ob = new ObjectBuilder(parser);
 

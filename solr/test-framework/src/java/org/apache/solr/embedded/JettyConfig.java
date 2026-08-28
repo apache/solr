@@ -35,6 +35,10 @@ public class JettyConfig {
   public final Map<Class<? extends Filter>, String> extraFilters;
   public final SSLConfig sslConfig;
   public final boolean enableV2;
+  public final boolean enableGracefulShutdown;
+
+  /** If true, serve the Admin UI static files and index.html like the production web.xml does. */
+  public final boolean enableAdminUi;
 
   private JettyConfig(
       boolean onlyHttp1,
@@ -45,7 +49,9 @@ public class JettyConfig {
       Map<ServletHolder, String> extraServlets,
       Map<Class<? extends Filter>, String> extraFilters,
       SSLConfig sslConfig,
-      boolean enableV2) {
+      boolean enableV2,
+      boolean enableGracefulShutdown,
+      boolean enableAdminUi) {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
     this.portRetryTime = portRetryTime;
@@ -55,6 +61,8 @@ public class JettyConfig {
     this.extraFilters = extraFilters;
     this.sslConfig = sslConfig;
     this.enableV2 = enableV2;
+    this.enableGracefulShutdown = enableGracefulShutdown;
+    this.enableAdminUi = enableAdminUi;
   }
 
   public static Builder builder() {
@@ -73,6 +81,8 @@ public class JettyConfig {
     builder.extraFilters = other.extraFilters;
     builder.sslConfig = other.sslConfig;
     builder.enableV2 = other.enableV2;
+    builder.enableGracefulShutdown = other.enableGracefulShutdown;
+    builder.enableAdminUi = other.enableAdminUi;
     return builder;
   }
 
@@ -81,6 +91,8 @@ public class JettyConfig {
     boolean onlyHttp1 = false;
     int port = 0;
     boolean enableV2 = true;
+    boolean enableGracefulShutdown = false;
+    boolean enableAdminUi = false;
     boolean stopAtShutdown = true;
     Long waitForLoadingCoresToFinishMs = 300000L;
     Map<ServletHolder, String> extraServlets = new TreeMap<>();
@@ -96,6 +108,16 @@ public class JettyConfig {
 
     public Builder enableV2(boolean flag) {
       this.enableV2 = flag;
+      return this;
+    }
+
+    public Builder enableGracefulShutdown(boolean flag) {
+      this.enableGracefulShutdown = flag;
+      return this;
+    }
+
+    public Builder enableAdminUi(boolean flag) {
+      this.enableAdminUi = flag;
       return this;
     }
 
@@ -154,7 +176,9 @@ public class JettyConfig {
           extraServlets,
           extraFilters,
           sslConfig,
-          enableV2);
+          enableV2,
+          enableGracefulShutdown,
+          enableAdminUi);
     }
   }
 }

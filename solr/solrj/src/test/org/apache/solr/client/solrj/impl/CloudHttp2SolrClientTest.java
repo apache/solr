@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -101,7 +102,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static CloudHttp2SolrClient httpJettyBasedCloudSolrClient = null;
   private static CloudHttp2SolrClient httpJdkBasedCloudSolrClient = null;
-  private static CloudHttp2SolrClient zkBasedCloudSolrClient = null;
   private static CloudHttp2SolrClient connectionStringZkBasedCloudSolrClient = null;
   private static CloudHttp2SolrClient connectionStringHttpBasedCloudSolrClient = null;
 
@@ -153,13 +153,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                 .getHttpClient()
             instanceof HttpJdkSolrClient);
 
-    zkBasedCloudSolrClient =
-        new CloudSolrClient.Builder(List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .build();
-    assertTrue(zkBasedCloudSolrClient.getHttpClient() instanceof HttpJettySolrClient);
-    assertTrue(
-        zkBasedCloudSolrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider);
-
     String zkConnString = cluster.getZkServer().getZkAddress();
     connectionStringZkBasedCloudSolrClient = new CloudSolrClient.Builder(zkConnString).build();
     assertTrue(
@@ -181,14 +174,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   public static void tearDownAfterClass() throws Exception {
     IOUtils.closeQuietly(httpJettyBasedCloudSolrClient);
     IOUtils.closeQuietly(httpJdkBasedCloudSolrClient);
-    IOUtils.closeQuietly(zkBasedCloudSolrClient);
     IOUtils.closeQuietly(connectionStringZkBasedCloudSolrClient);
     IOUtils.closeQuietly(connectionStringHttpBasedCloudSolrClient);
 
     shutdownCluster();
     httpJettyBasedCloudSolrClient = null;
     httpJdkBasedCloudSolrClient = null;
-    zkBasedCloudSolrClient = null;
     connectionStringZkBasedCloudSolrClient = null;
     connectionStringHttpBasedCloudSolrClient = null;
   }
@@ -196,7 +187,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   /** Randomly return the cluster's ZK based CSC, or HttpClusterProvider based CSC. */
   private CloudSolrClient getRandomClient() {
     CloudSolrClient[] clients = {
-      zkBasedCloudSolrClient,
       httpJettyBasedCloudSolrClient,
       httpJdkBasedCloudSolrClient,
       connectionStringZkBasedCloudSolrClient,
@@ -863,9 +853,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
           COLLECTION + ":" + (coll.getZNodeVersion() - 1)); // an older version expect error
 
       QueryResponse rsp = solrClient.query(q);
+      final NamedList<Object> response = rsp.getResponse();
+      final int stateVersionIdx =
+          response.indexOf(CloudSolrClient.STATE_VERSION, response.size() - 1);
       @SuppressWarnings({"rawtypes"})
-      Map m =
-          (Map) rsp.getResponse().get(CloudSolrClient.STATE_VERSION, rsp.getResponse().size() - 1);
+      Map m = stateVersionIdx == -1 ? null : (Map) response.getVal(stateVersionIdx);
       assertNotNull(
           "Expected an extra information from server with the list of invalid collection states",
           m);
@@ -914,7 +906,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
           ZkClientClusterStateProvider.from(client)) {
         zkClientClusterStateProvider.setZkConnectTimeout(100);
-        SolrException e = assertThrows(SolrException.class, client::connect);
+        SolrException e =
+            assertThrows(
+                SolrException.class, () -> client.getClusterStateProvider().getLiveNodes());
         assertTrue(e.getCause() instanceof TimeoutException);
       }
     }
@@ -929,7 +923,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
           ZkClientClusterStateProvider.from(client)) {
         zkClientClusterStateProvider.setZkClientTimeout(1000 * 60);
-        SolrException e = assertThrows(SolrException.class, client::connect);
+        SolrException e =
+            assertThrows(
+                SolrException.class, () -> client.getClusterStateProvider().getLiveNodes());
         assertTrue(e.getMessage().contains("cluster not found/not ready"));
         assertTrue(
             e.getMessage()
@@ -1062,7 +1058,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             .sendDirectUpdatesToAnyShardReplica()
             .withDefaultCollection(COL)
             // don't let collection cache entries get expired, even on a slow machine...
-            .withCollectionCacheTtl(Integer.MAX_VALUE)
+            .withCollectionCacheTtl(1, TimeUnit.DAYS)
             .build()) {
 
       // do a query to populate stale_client's cache...

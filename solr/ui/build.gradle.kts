@@ -27,8 +27,9 @@ repositories {
             includeGroupAndSubgroups("com.google")
         }
     }
-    mavenCentral()
 }
+// mavenCentral / enterprise mirror, shared with the rest of the build.
+apply(from = rootProject.file("build-tools/build-infra/declare-repositories.gradle"))
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -47,10 +48,8 @@ kotlin {
             commonWebpackConfig {
                 outputFileName = "composeApp.js"
                 devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
-                    static = (static ?: mutableListOf()).apply {
-                        // Serve sources to debug inside browser
-                        add(project.projectDir.path)
-                    }
+                    // Serve sources to debug inside browser
+                    static(directory = project.projectDir.path)
                 }
                 // Note that webpack.config.d/ contains additional configuration
             }
@@ -63,63 +62,63 @@ kotlin {
         binaries.executable()
     }
 
-    jvm("desktop")
+    jvm()
 
     sourceSets {
         // Shared multiplatform dependencies
-        val commonMain by getting {
-            dependencies {
-                implementation(project.dependencies.platform(project(":platform")))
-                implementation(libs.compose.runtime)
-                implementation(libs.compose.foundation)
-                implementation(libs.compose.material3)
-                implementation(libs.compose.ui)
-                implementation(libs.compose.components.resources)
-                implementation(libs.compose.uiToolingPreview)
+        commonMain.dependencies {
+            implementation(project.dependencies.platform(project(":platform")))
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.androidx.lifecycle.viewmodelCompose)
+            implementation(libs.androidx.lifecycle.viewModelNav3)
+            implementation(libs.androidx.navigation3.ui)
+            implementation(libs.androidx.material3.adaptive.asProvider())
+            implementation(libs.androidx.material3.adaptive.nav3)
 
-                implementation(libs.kotlinx.serialization.core)
-                implementation(libs.kotlinx.serialization.json)
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.serialization.core)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.coroutines.core)
 
-                implementation(libs.decompose.decompose)
-                implementation(libs.essenty.lifecycle)
-                implementation(libs.decompose.extensions.compose)
-                implementation(libs.mvikotlin.extensions.coroutines)
-                implementation(libs.mvikotlin.mvikotlin)
-                implementation(libs.mvikotlin.main)
-                implementation(libs.mvikotlin.logging)
+            implementation(libs.decompose.decompose)
+            implementation(libs.essenty.lifecycle)
+            implementation(libs.decompose.extensions.compose)
+            implementation(libs.mvikotlin.extensions.coroutines)
+            implementation(libs.mvikotlin.mvikotlin)
+            implementation(libs.mvikotlin.main)
 
-                implementation(project.dependencies.platform(libs.ktor.bom))
-                implementation(libs.ktor.client.auth)
-                implementation(libs.ktor.client.core)
-                implementation(libs.ktor.client.cio)
-                implementation(libs.ktor.client.contentNegotiation)
-                implementation(libs.ktor.client.serialization.json)
-                implementation(libs.squareup.okio)
+            implementation(project.dependencies.platform(libs.ktor.bom))
+            implementation(libs.ktor.client.auth)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.contentNegotiation)
+            implementation(libs.ktor.client.serialization.json)
+            implementation(libs.squareup.okio)
 
-                implementation(libs.oshai.logging)
-                implementation(libs.slf4j.api)
-            }
+            implementation(libs.oshai.logging)
         }
 
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.compose.uiTest)
-                implementation(libs.ktor.client.mock)
-            }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.compose.uiTest)
+            implementation(libs.ktor.client.mock)
         }
 
-        val desktopMain by getting {
-            dependencies {
-                implementation(libs.ktor.server.core)
-                implementation(libs.ktor.server.cio)
-                implementation(libs.ktor.server.htmlBuilder)
-                implementation(compose.desktop.currentOs)
-                implementation(libs.kotlinx.coroutines.swing)
-            }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+        }
+
+        jvmMain.dependencies {
+            implementation(libs.ktor.client.cio)
+            implementation(libs.ktor.server.core)
+            implementation(libs.ktor.server.cio)
+            implementation(libs.ktor.server.htmlBuilder)
+            implementation(compose.desktop.currentOs)
+            runtimeOnly(libs.kotlinx.coroutines.swing)
         }
     }
 }
@@ -168,10 +167,18 @@ compose.desktop {
     }
 }
 
+// Compose resource accessor generation is not reliably wired to all Kotlin
+// compile tasks (notably wasmJs), causing intermittent "source file not found"
+// for generated accessors. Wire it explicitly.
+val resourceAccessorTasks = tasks.matching { it.name.startsWith("generateResourceAccessorsFor") }
+tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
+    dependsOn(resourceAccessorTasks)
+}
+
 tasks.matching { task ->
     task.name in listOf(
         "allTests",
-        "desktopTest",
+        "jvmTest",
         "wasmJsTest",
         "wasmJsBrowserTest",
     )
@@ -201,4 +208,35 @@ tasks.matching {
     taskName.contains("wasmjs") && taskName.contains("production")
 }.configureEach {
     onlyIf { !(rootProject.ext["development"] as Boolean) }
+}
+
+val wasmJsUIBundleDir = layout.buildDirectory.dir(
+    if (rootProject.ext["development"] as Boolean) {
+        "dist/wasmJs/developmentExecutable"
+    } else {
+        "dist/wasmJs/productionExecutable"
+    },
+).get().asFile
+
+val wasmJsUIBundle = configurations.create("wasmJsUIBundle") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+}
+
+val finalizeWasmJsUIBundleDir = tasks.register<Sync>("finalizeWasmJsUIBundleDir") {
+    from(wasmJsUIBundleDir) {
+        include("**")
+    }
+}
+
+artifacts {
+    add("wasmJsUIBundle", wasmJsUIBundleDir) {
+        builtBy(
+            if (rootProject.ext["development"] as Boolean) {
+                ":solr:ui:wasmJsBrowserDevelopmentExecutableDistribution"
+            } else {
+                ":solr:ui:wasmJsBrowserDistribution"
+            },
+        )
+    }
 }

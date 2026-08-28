@@ -55,6 +55,7 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -317,9 +318,8 @@ public class HttpSolrCall {
       }
     }
 
-    String msg = "no handler, collection, or core for " + path;
-    sendError(404, msg);
-    log.info(msg); // not "error" since Solr isn't necessarily at fault
+    sendError(404, "no handler, collection, or core for " + path);
+    log.info("path={} status=404", path); // not "error" since Solr isn't necessarily at fault
     action = RETURN;
   }
 
@@ -621,7 +621,8 @@ public class HttpSolrCall {
     log.info("Proxying request to: {}", coreUrlAndPath);
     try {
       response.reset(); // clear all headers and status
-      HttpClient httpClient = cores.getDefaultHttpSolrClient().getHttpClient();
+      HttpClient httpClient =
+          ((HttpJettySolrClient) cores.getDefaultHttpSolrClient()).getHttpClient();
       HttpSolrProxy.doHttpProxy(httpClient, req, response, coreUrlAndPath + queryStr);
     } catch (Exception e) {
       // note: don't handle interruption differently; we are stopping

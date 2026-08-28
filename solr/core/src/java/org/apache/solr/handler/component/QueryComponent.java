@@ -80,6 +80,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SortableTextField;
+import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -1028,6 +1029,8 @@ public class QueryComponent extends SearchComponent {
     boolean maxHitsTerminatedEarly = false;
     long approximateTotalHits = 0;
     int failedShardCount = 0;
+    int failedShardCountForReRankCutoff = 0;
+    NamedList<Object> reRankCutoffByShard = null;
     for (ShardResponse srsp : sreq.responses) {
       SolrDocumentList docs = null;
       NamedList<?> responseHeader = null;
@@ -1113,6 +1116,23 @@ public class QueryComponent extends SearchComponent {
                 (NamedList<?>)
                     SolrResponseUtil.getSubsectionFromShardResponse(
                         rb, srsp, "responseHeader", false));
+      }
+
+      final Object shardReRankCutoffValue =
+          responseHeader.get(AbstractReRankQuery.RERANK_CUTOFF_RESPONSE_HEADER_KEY);
+      if (shardReRankCutoffValue != null) {
+        if (reRankCutoffByShard == null) {
+          reRankCutoffByShard = new SimpleOrderedMap<>();
+        }
+        String shard = srsp.getShard();
+        if (StrUtils.isNullOrEmpty(shard)) {
+          shard = srsp.getShardAddress();
+        }
+        if (StrUtils.isNullOrEmpty(shard)) {
+          failedShardCountForReRankCutoff += 1;
+          shard = "unknown_shard_" + failedShardCountForReRankCutoff;
+        }
+        reRankCutoffByShard.add(shard, shardReRankCutoffValue);
       }
 
       final boolean thisResponseIsPartial;
@@ -1217,10 +1237,10 @@ public class QueryComponent extends SearchComponent {
     populateNextCursorMarkFromMergedShards(rb);
 
     if (thereArePartialResults) {
-      rb.rsp
-          .getResponseHeader()
-          .asShallowMap()
-          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      updateResponseHeader(
+          rb.rsp.getResponseHeader(),
+          SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY,
+          Boolean.TRUE);
     }
     if (segmentTerminatedEarly != null) {
       final Object existingSegmentTerminatedEarly =
@@ -1235,14 +1255,10 @@ public class QueryComponent extends SearchComponent {
                 segmentTerminatedEarly);
       } else if (!Boolean.TRUE.equals(existingSegmentTerminatedEarly)
           && Boolean.TRUE.equals(segmentTerminatedEarly)) {
-        rb.rsp
-            .getResponseHeader()
-            .remove(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
-        rb.rsp
-            .getResponseHeader()
-            .add(
-                SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
-                segmentTerminatedEarly);
+        updateResponseHeader(
+            rb.rsp.getResponseHeader(),
+            SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
+            segmentTerminatedEarly);
       }
     }
     if (maxHitsTerminatedEarly) {
@@ -1256,6 +1272,17 @@ public class QueryComponent extends SearchComponent {
                 SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, approximateTotalHits);
       }
     }
+
+    if (reRankCutoffByShard != null) {
+      rb.rsp
+          .getResponseHeader()
+          .add(AbstractReRankQuery.RERANK_CUTOFF_BY_SHARD_RESPONSE_HEADER_KEY, reRankCutoffByShard);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  protected static void updateResponseHeader(NamedList<Object> header, String key, Object value) {
+    ((SimpleOrderedMap<Object>) header).put(key, value);
   }
 
   protected void setResultIdsAndResponseDocs(

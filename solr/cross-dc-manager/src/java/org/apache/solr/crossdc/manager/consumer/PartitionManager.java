@@ -16,6 +16,7 @@
  */
 package org.apache.solr.crossdc.manager.consumer;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
 import java.util.HashSet;
@@ -44,13 +45,16 @@ public class PartitionManager {
     final Queue<WorkUnit> partitionQueue = new ArrayDeque<>();
   }
 
-  static class WorkUnit {
-    final TopicPartition partition;
-    Set<Future<?>> workItems = new HashSet<>();
+  @VisibleForTesting
+  public static class WorkUnit {
+    final int partition;
+    final String topic;
+    final Set<Future<?>> workItems = new HashSet<>();
     long nextOffset;
 
-    public WorkUnit(TopicPartition partition) {
-      this.partition = partition;
+    WorkUnit(TopicPartition partition) {
+      this.partition = partition.partition();
+      this.topic = partition.topic();
     }
   }
 

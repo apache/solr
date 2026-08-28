@@ -47,7 +47,6 @@ import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
-import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
@@ -360,7 +359,7 @@ public class JavaBinCodec implements PushWriter {
     throw new RuntimeException("Unknown type " + tagByte);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public boolean writeKnownType(Object val) throws IOException {
     if (writePrimitive(val)) return true;
     if (val instanceof NamedList) {
@@ -426,11 +425,6 @@ public class JavaBinCodec implements PushWriter {
     }
     if (val instanceof Map.Entry) {
       writeMapEntry((Map.Entry) val);
-      return true;
-    }
-    if (val instanceof MapSerializable) {
-      // todo find a better way to reuse the map more efficiently
-      writeMap(((MapSerializable) val).toMap(new NamedList().asShallowMap()));
       return true;
     }
     if (val instanceof AtomicInteger) {
@@ -1256,16 +1250,16 @@ public class JavaBinCodec implements PushWriter {
     } else if (val instanceof Number) {
 
       if (val instanceof Integer) {
-        writeInt(((Integer) val).intValue());
+        writeInt((Integer) val);
         return true;
       } else if (val instanceof Long) {
-        writeLong(((Long) val).longValue());
+        writeLong((Long) val);
         return true;
       } else if (val instanceof Float) {
-        writeFloat(((Float) val).floatValue());
+        writeFloat((Float) val);
         return true;
       } else if (val instanceof Double) {
-        writeDouble(((Double) val).doubleValue());
+        writeDouble((Double) val);
         return true;
       } else if (val instanceof Byte) {
         daos.writeByte(BYTE);
@@ -1456,15 +1450,12 @@ public class JavaBinCodec implements PushWriter {
     boolean wantsAllFields();
   }
 
-  public static class StringCache {
-    private final Cache<StringBytes, String> cache;
-
-    public StringCache(Cache<StringBytes, String> cache) {
-      this.cache = cache;
-    }
-
+  /**
+   * @lucene.internal
+   */
+  public abstract static class StringCache {
     public String get(StringBytes b) {
-      String result = cache.get(b);
+      String result = getFromCache(b);
       if (result == null) {
         // make a copy because the buffer received may be changed later by the caller
         StringBytes copy =
@@ -1473,15 +1464,22 @@ public class JavaBinCodec implements PushWriter {
         CharArr arr = new CharArr();
         ByteUtils.UTF8toUTF16(b.bytes, b.offset, b.length, arr);
         result = arr.toString();
-        cache.put(copy, result);
+        putIntoCache(copy, result);
       }
       return result;
     }
+
+    protected abstract String getFromCache(StringBytes b);
+
+    protected abstract void putIntoCache(StringBytes b, String val);
   }
 
   @Override
   public void close() throws IOException {
-    if (daos != null) {
+    // marshal() already flushes in its own finally block, so skip the redundant flush.
+    // Flushing again after a marshal failure would re-throw the same exception from the broken
+    // stream, causing "Self-suppression not permitted" in the caller's try-with-resources.
+    if (daos != null && !alreadyMarshalled) {
       daos.flushBuffer();
     }
   }

@@ -37,42 +37,64 @@ setup() {
 teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
-    
+
 }
 
-@test "snapshot lifecycle" {  
+@test "snapshot lifecycle" {
   # the way snapshots live, if you run create twice you get an error because snapshot already exists
   run solr snapshot-create -c films --snapshot-name snapshot1 --solr-url http://localhost:${SOLR_PORT}
-  assert_output --partial "Successfully created snapshot with name snapshot1 for collection films"  
-  
+  assert_output --partial "Successfully created snapshot with name snapshot1 for collection films"
+
   run solr snapshot-delete -c films --snapshot-name snapshot1 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully deleted snapshot with name snapshot1 for collection films"
-  
+
    # make sure you can create it again!
   run solr snapshot-create -c films --snapshot-name snapshot1 -z localhost:${ZK_PORT}
   assert_output --partial "Successfully created snapshot with name snapshot1 for collection films"
-  
-  run solr snapshot-delete -c films --snapshot-name snapshot1 
+
+  run solr snapshot-delete -c films --snapshot-name snapshot1
   assert_output --partial "Successfully deleted snapshot with name snapshot1 for collection films"
 }
 
-@test "snapshot list" {  
+@test "snapshot list" {
   solr snapshot-create -c films --snapshot-name snapshot3 --solr-url http://localhost:${SOLR_PORT}
-  
+
   # Confirm that we continue to normalize away the /solr ending.
   run solr snapshot-list -c films -s http://localhost:${SOLR_PORT}/solr
   assert_output --partial "snapshot3"
-  
+
   run solr snapshot-delete -c films --snapshot-name snapshot3 -s http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully deleted snapshot with name snapshot3 for collection films"
 }
 
-@test "snapshot describe" {  
+@test "snapshot list via --solr-connection" {
+  solr snapshot-create -c films --snapshot-name snapshot3 --solr-connection http://localhost:${SOLR_PORT}/solr
+
+  # Confirm that we continue to normalize away the /solr ending.
+  run solr snapshot-list -c films --solr-connection http://localhost:${SOLR_PORT}/solr
+  assert_output --partial "snapshot3"
+
+  run solr snapshot-delete -c films --snapshot-name snapshot3 --solr-connection http://localhost:${SOLR_PORT}/solr
+  assert_output --partial "Successfully deleted snapshot with name snapshot3 for collection films"
+}
+
+@test "snapshot describe" {
   solr snapshot-create -c films --snapshot-name snapshot4 -s http://localhost:${SOLR_PORT}
-  
+
   run solr snapshot-describe -c films --snapshot-name snapshot4
   assert_output --partial "Name: snapshot4"
-  
+
   run solr snapshot-delete -c films --snapshot-name snapshot4
+  assert_output --partial "Successfully deleted snapshot with name snapshot4 for collection films"
+}
+
+
+@test "snapshot describe via --solr-connection" {
+  solr snapshot-create -c films --snapshot-name snapshot4 --solr-connection http://localhost:${SOLR_PORT}/solr
+
+  run solr snapshot-describe -c films --snapshot-name snapshot4 --solr-connection http://localhost:${SOLR_PORT}/solr
+  assert_output --partial "Name: snapshot4"
+
+  run solr snapshot-delete -c films --snapshot-name snapshot4 --solr-connection http://localhost:${SOLR_PORT}/solr
   assert_output --partial "Successfully deleted snapshot with name snapshot4 for collection films"
 }

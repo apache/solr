@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
+import org.apache.solr.client.solrj.jetty.MutableListenerFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
@@ -48,6 +49,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
@@ -85,6 +87,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
   protected volatile HttpJettySolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
+  private final MutableListenerFactory securityListenerFactory = new MutableListenerFactory();
   protected LBAsyncSolrClient loadbalancer;
   private ObservableLongGauge asyncRequestsGauge;
 
@@ -108,6 +111,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
   // URL scheme to be used in distributed search.
   static final String INIT_URL_SCHEME = "urlScheme";
+
+  // system property to enable ssl or tls for communication within Solr
+  static final String SOLR_SSL_ENABLED = "solr.ssl.enabled";
 
   // The core size of the threadpool servicing requests
   static final String INIT_CORE_POOL_SIZE = "corePoolSize";
@@ -227,12 +233,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
     NamedList<?> args = info.initArgs;
-    // note: the sys prop is only used in testing
-    this.scheme = getParameter(args, INIT_URL_SCHEME, System.getProperty(INIT_URL_SCHEME), sb);
-    if (this.scheme != null && this.scheme.endsWith("://")) {
-      this.scheme = this.scheme.replace("://", "");
-    }
-
+    this.scheme = initUrlScheme(args, sb);
     String strategy =
         getParameter(
             args, "metricNameStrategy", UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, sb);
@@ -310,8 +311,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withExecutor(commExecutor)
             .withMaxConnectionsPerHost(maxConnectionsPerHost)
+            .addListenerFactory(this.httpListenerFactory)
+            .addListenerFactory(this.securityListenerFactory)
             .build();
-    this.defaultClient.addListenerFactory(this.httpListenerFactory);
     this.loadbalancer = new LBJettySolrClient.Builder(defaultClient).build();
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
@@ -322,7 +324,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   @Override
   public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {
     if (clientBuilderPlugin != null) {
-      clientBuilderPlugin.setup(defaultClient);
+      clientBuilderPlugin.setup(securityListenerFactory);
     }
   }
 
@@ -434,6 +436,24 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     }
 
     return url;
+  }
+
+  /**
+   * Get url scheme of host
+   *
+   * @return http or https or null
+   */
+  private String initUrlScheme(NamedList<?> args, StringBuilder sb) {
+    final Boolean isSolrSslEnabled = EnvUtils.getPropertyAsBool(SOLR_SSL_ENABLED, null);
+    if (isSolrSslEnabled != null) {
+      return isSolrSslEnabled ? "https" : "http";
+    }
+    String urlScheme =
+        getParameter(args, INIT_URL_SCHEME, EnvUtils.getProperty(INIT_URL_SCHEME), sb);
+    if (urlScheme != null && urlScheme.endsWith("://")) {
+      urlScheme = urlScheme.replace("://", "");
+    }
+    return urlScheme;
   }
 
   @Override

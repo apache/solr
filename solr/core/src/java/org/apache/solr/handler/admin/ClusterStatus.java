@@ -50,7 +50,14 @@ public class ClusterStatus {
   public static final String INCLUDE_ALL = "includeAll";
   public static final String LIVENODES_PROP = "liveNodes";
   public static final String CLUSTER_PROP = "clusterProperties";
+
+  /**
+   * @deprecated This API will be removed in Solr 11. Use Node Roles ({@code -Dsolr.node.roles}) at
+   *     startup instead.
+   */
+  @Deprecated(since = "10.1")
   public static final String ROLES_PROP = "roles";
+
   public static final String ALIASES_PROP = "aliases";
 
   /** Shard / collection health state. */

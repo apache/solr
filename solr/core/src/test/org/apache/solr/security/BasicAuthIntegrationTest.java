@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -136,9 +135,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     }
 
     // avoid bad connection races due to shutdown
-    final var apacheHttpClient = ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
-    apacheHttpClient.getConnectionManager().closeExpiredConnections();
-    apacheHttpClient.getConnectionManager().closeIdleConnections(1, TimeUnit.MILLISECONDS);
+    // var apacheHttpClient = ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
+    // apacheHttpClient.getConnectionManager().closeExpiredConnections();
+    // apacheHttpClient.getConnectionManager().closeIdleConnections(1, TimeUnit.MILLISECONDS);
 
     RemoteSolrException exp =
         expectThrows(
@@ -260,7 +259,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
               () -> {
                 new UpdateRequest().deleteByQuery("*:*").process(aNewClient, COLLECTION);
               });
-      assertTrue(e.getMessage(), e.getMessage().contains("Authentication failed"));
+      assertEquals(401, e.code()); // Authentication failed
     } finally {
       aNewClient.close();
       cluster.stopJettySolrRunner(aNewJetty);

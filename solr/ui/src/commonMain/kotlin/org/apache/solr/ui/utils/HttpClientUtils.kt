@@ -26,7 +26,9 @@ import io.ktor.client.plugins.auth.providers.basic
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.http.ContentType
 import io.ktor.http.Url
+import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import org.apache.solr.ui.domain.AuthOption
@@ -41,6 +43,7 @@ fun getDefaultClient(
 ) = HttpClient {
     defaultRequest {
         url(url.toString())
+        contentType(ContentType.Application.Json)
     }
 
     install(ContentNegotiation) {

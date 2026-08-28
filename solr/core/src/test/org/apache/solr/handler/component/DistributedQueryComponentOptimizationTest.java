@@ -724,7 +724,12 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
     CollectionAdminRequest.createCollection(secondColl, "conf", 1, 1)
         .setCreateNodeSet(jettys.get(0).getNodeName())
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    cluster
+
+    // Wait on node 1's ZkStateReader (not the cluster client's) to check for ready state
+    JettySolrRunner nodeWithoutSecondColl = jettys.get(1);
+    nodeWithoutSecondColl
+        .getCoreContainer()
+        .getZkController()
         .getZkStateReader()
         .waitForState(
             secondColl,
@@ -735,7 +740,6 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
     try {
       // Node 1 hosts COLLECTION but not secondColl.
       // Send a multi-collection query to trigger LazyCollectionRef get call
-      JettySolrRunner nodeWithoutSecondColl = jettys.get(1);
       try (SolrClient client =
           new HttpJettySolrClient.Builder(nodeWithoutSecondColl.getBaseUrl().toString()).build()) {
 

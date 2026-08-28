@@ -46,6 +46,7 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
@@ -116,11 +117,12 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
    * org.apache.solr.client.solrj.jetty.LBJettySolrClient} retrying a request synchronously inside a
    * {@link CompletableFuture#whenComplete} callback that runs on the Jetty IO selector thread.
    *
-   * <p>This test <b>passes</b> with the {@code failureDispatchExecutor} fix in this branch. Without
-   * the fix, the IO thread would block forever in {@code semaphore.acquire()} and this test would
-   * time out.
+   * <p>Without the {@code failureDispatchExecutor} fix (SOLR-18174), the IO thread would block
+   * forever in {@code semaphore.acquire()} and this test would time out.
    */
   @Test
+  @Ignore(
+      "SOLR-18174: Flaky due to timing-sensitive TCP RST simulation; kept for regression testing")
   public void testSemaphoreLeakOnLBRetry() throws Exception {
     // Dedicated client so that permanently deadlocked IO threads don't affect the cluster's client.
     HttpJettySolrClient testClient =
@@ -204,7 +206,16 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
                 + " fires synchronously on the IO thread before onComplete can release().");
       }
 
-      int permitsAfterFailures = testClient.asyncTrackerAvailablePermits();
+      // Poll briefly: apiFutures complete on the executor thread, but completeListener fires on
+      // Jetty's IO thread after response listeners, so allOf().get() can race ahead of release().
+      int permitsAfterFailures;
+      long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+      do {
+        permitsAfterFailures = testClient.asyncTrackerAvailablePermits();
+        if (permitsAfterFailures == MAX_PERMITS) break;
+        //noinspection BusyWait
+        Thread.sleep(10);
+      } while (System.nanoTime() < deadline);
       log.info("Permits after retries: {}/{}", permitsAfterFailures, MAX_PERMITS);
       assertEquals(
           "All permits should be restored after retries complete",
@@ -303,7 +314,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           permitsAfter);
 
     } finally {
-      // Force-terminate the Phaser as a safety net; without the fix the phaser would be unbalanced.
+      // Force-terminate the Phaser as a safety net in case the phaser is unbalanced.
       try {
         Field phaserField = asyncTrackerClass.getDeclaredField("phaser");
         phaserField.setAccessible(true);

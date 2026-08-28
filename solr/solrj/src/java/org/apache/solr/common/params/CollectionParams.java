@@ -30,11 +30,6 @@ public interface CollectionParams {
 
   String NAME = "name";
 
-  /**
-   * @deprecated use {@link #SOURCE_NODE} instead
-   */
-  @Deprecated String FROM_NODE = "fromNode";
-
   String SOURCE_NODE = "sourceNode";
   String TARGET_NODE = "targetNode";
   String SOURCE_NODES = "sourceNodes";
@@ -102,7 +97,17 @@ public interface CollectionParams {
     DELETEREPLICA(true, LockLevel.SHARD),
     FORCELEADER(true, LockLevel.SHARD),
     MIGRATE(true, LockLevel.COLLECTION),
+    /**
+     * @deprecated This API will be removed in Solr 11. Use Node Roles ({@code -Dsolr.node.roles})
+     *     at startup instead.
+     */
+    @Deprecated(since = "10.1")
     ADDROLE(true, LockLevel.NONE),
+    /**
+     * @deprecated This API will be removed in Solr 11. Use Node Roles ({@code -Dsolr.node.roles})
+     *     at startup instead.
+     */
+    @Deprecated(since = "10.1")
     REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
     COLLECTIONPROP(true, LockLevel.NONE), // atomic; no lock

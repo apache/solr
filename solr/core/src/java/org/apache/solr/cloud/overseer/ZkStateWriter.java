@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud.overseer;
 
-import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.HashMap;
@@ -255,7 +254,6 @@ public class ZkStateWriter {
       }
       return clusterState;
     }
-    Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
     try {
       if (!updates.isEmpty()) {
@@ -347,7 +345,6 @@ public class ZkStateWriter {
       invalidState = true;
       throw bve;
     } finally {
-      timerContext.stop();
       if (success) {
         stats.success("update_state");
       } else {

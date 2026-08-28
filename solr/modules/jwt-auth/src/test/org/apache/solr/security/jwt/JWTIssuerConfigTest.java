@@ -242,4 +242,12 @@ public class JWTIssuerConfigTest extends SolrTestCase {
         "Well-known config could not be read from url https://127.0.0.1:45678/.well-known/config",
         e.getMessage());
   }
+
+  @Test
+  public void parseJwkSetSingleBareJwk() throws Exception {
+    // testJwk is a bare JWK map (no "keys" wrapper) — exercises the single-JWK branch
+    JsonWebKeySet result = JWTIssuerConfig.parseJwkSet(testJwk);
+    assertEquals(1, result.getJsonWebKeys().size());
+    assertEquals("k1", result.getJsonWebKeys().get(0).getKeyId());
+  }
 }

@@ -60,6 +60,7 @@ import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -264,7 +265,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     assertFalse(ref.isLazilyLoaded());
 
     Stat stat = new Stat();
-    fixture.zkClient.getData(ZkStateReader.getCollectionPath("c1"), null, stat);
+    fixture.zkClient.getData(DocCollection.getCollectionPath("c1"), null, stat);
     assertEquals(Instant.ofEpochMilli(stat.getCtime()), ref.get().getCreationTime());
   }
 
@@ -813,12 +814,12 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         "Timeout on waiting for c1 to show up in cluster state",
         () -> reader.getClusterState().getCollectionOrNull(collectionName) != null);
 
-    String collectionPath = ZkStateReader.getCollectionPath(collectionName);
+    String collectionPath = DocCollection.getCollectionPath(collectionName);
 
     // now create the replica, take note that this has to be done after DocCollection creation with
     // empty slice, otherwise the DocCollection ctor would fetch the PRS entries and throw
     // exceptions
-    String replicaBaseUrl = Utils.getBaseUrlForNodeName(nodeName, "http");
+    String replicaBaseUrl = URLUtil.getBaseUrlForNodeName(nodeName, "http");
 
     String replicaName = "replica1";
     Replica replica =
@@ -993,5 +994,15 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     var lowestVersion = reader.fetchLowestSolrVersion();
     assertFalse("Expected no lowest version when no live nodes exist", lowestVersion.isPresent());
+  }
+
+  public void testGetUrlScheme_validSystemProperty() {
+    String expectedUrlScheme = isSSLMode() ? "https" : "http";
+    assertEquals(expectedUrlScheme, fixture.reader.getUrlScheme());
+  }
+
+  public void testGetUrlScheme_noClusterAndSystemProperty() {
+    assumeFalse("Skip the test when ssl is enabled", isSSLMode());
+    assertEquals("http", fixture.reader.getUrlScheme());
   }
 }

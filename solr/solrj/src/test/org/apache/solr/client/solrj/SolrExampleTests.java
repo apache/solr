@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
@@ -44,10 +45,10 @@ import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
@@ -57,6 +58,7 @@ import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -82,6 +84,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
@@ -439,9 +442,8 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       String url = solrTestRule.getBaseUrl();
       try (SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
-        q.set("qt", CommonParams.SYSTEM_INFO_PATH);
 
-        QueryResponse rsp = adminClient.query(q);
+        final var rsp = new SystemInfoRequest().process(adminClient);
         assertNotNull(rsp.getResponse().get("mode"));
         assertNotNull(rsp.getResponse().get("lucene"));
       }
@@ -698,11 +700,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   public void testErrorHandling() throws Exception {
     SolrClient client = getSolrClient();
 
-    SolrQuery query = new SolrQuery();
-    query.set(CommonParams.QT, "/analysis/field");
-    query.set(AnalysisParams.FIELD_TYPE, "pint");
-    query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
-    SolrException ex = expectThrows(SolrException.class, () -> client.query(query));
+    final var params =
+        params(AnalysisParams.FIELD_TYPE, "pint", AnalysisParams.FIELD_VALUE, "ignore_exception");
+    final var req = new GenericSolrRequest(GET, "/analysis/field", params);
+    req.setRequiresCollection(true);
+    SolrException ex = expectThrows(SolrException.class, () -> req.process(client));
     assertEquals(400, ex.code());
     assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
 
@@ -722,7 +724,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     doc.addField("id", "DOCID2");
     doc.addField("name", "hello");
 
-    if (client instanceof HttpSolrClient) {
+    if (client instanceof HttpJettySolrClient) {
       ex = expectThrows(SolrException.class, () -> client.add(doc));
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().indexOf("contains multiple values for uniqueKey") > 0);
@@ -1550,6 +1552,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testPivotFacetsStatsNotSupported() throws Exception {
     SolrClient client = getSolrClient();
 
@@ -1572,43 +1575,44 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       client.commit();
     }
 
-    ignoreException("is not currently supported");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("is not currently supported")) {
 
-    // boolean field
-    SolrQuery query = new SolrQuery("*:*");
-    query.addFacetPivotField("{!stats=s1}features,manu");
-    query.addGetFieldStatistics("{!key=inStock_val tag=s1}inStock");
+      // boolean field
+      SolrQuery query = new SolrQuery("*:*");
+      query.addFacetPivotField("{!stats=s1}features,manu");
+      query.addGetFieldStatistics("{!key=inStock_val tag=s1}inStock");
 
-    SolrException e = expectThrows(SolrException.class, () -> client.query(query));
-    assertEquals(
-        "Pivot facet on boolean is not currently supported, bad request returned", 400, e.code());
-    assertTrue(e.getMessage().contains("is not currently supported"));
-    assertTrue(e.getMessage().contains("boolean"));
+      SolrException e = expectThrows(SolrException.class, () -> client.query(query));
+      assertEquals(
+          "Pivot facet on boolean is not currently supported, bad request returned", 400, e.code());
+      assertTrue(e.getMessage().contains("is not currently supported"));
+      assertTrue(e.getMessage().contains("boolean"));
 
-    // asking for multiple stat tags -- see SOLR-6663
-    SolrQuery query2 = new SolrQuery("*:*");
-    query2.addFacetPivotField("{!stats=tag1,tag2}features,manu");
-    query2.addGetFieldStatistics("{!tag=tag1}price", "{!tag=tag2}popularity");
-    query2.setFacetMinCount(0);
-    query2.setRows(0);
+      // asking for multiple stat tags -- see SOLR-6663
+      SolrQuery query2 = new SolrQuery("*:*");
+      query2.addFacetPivotField("{!stats=tag1,tag2}features,manu");
+      query2.addGetFieldStatistics("{!tag=tag1}price", "{!tag=tag2}popularity");
+      query2.setFacetMinCount(0);
+      query2.setRows(0);
 
-    e = expectThrows(SolrException.class, () -> client.query(query2));
-    assertEquals(400, e.code());
-    assertTrue(e.getMessage().contains("stats"));
-    assertTrue(e.getMessage().contains("comma"));
-    assertTrue(e.getMessage().contains("tag"));
+      e = expectThrows(SolrException.class, () -> client.query(query2));
+      assertEquals(400, e.code());
+      assertTrue(e.getMessage().contains("stats"));
+      assertTrue(e.getMessage().contains("comma"));
+      assertTrue(e.getMessage().contains("tag"));
 
-    // text field
-    SolrQuery query3 = new SolrQuery("*:*");
-    query3.addFacetPivotField("{!stats=s1}features,manu");
-    query3.addGetFieldStatistics("{!tag=s1}features");
-    query3.setFacetMinCount(0);
-    query3.setRows(0);
-    e = expectThrows(SolrException.class, () -> client.query(query3));
-    assertEquals(
-        "Pivot facet on string is not currently supported, bad request returned", 400, e.code());
-    assertTrue(e.getMessage().contains("is not currently supported"));
-    assertTrue(e.getMessage().contains("text_general"));
+      // text field
+      SolrQuery query3 = new SolrQuery("*:*");
+      query3.addFacetPivotField("{!stats=s1}features,manu");
+      query3.addGetFieldStatistics("{!tag=s1}features");
+      query3.setFacetMinCount(0);
+      query3.setRows(0);
+      e = expectThrows(SolrException.class, () -> client.query(query3));
+      assertEquals(
+          "Pivot facet on string is not currently supported, bad request returned", 400, e.code());
+      assertTrue(e.getMessage().contains("is not currently supported"));
+      assertTrue(e.getMessage().contains("text_general"));
+    }
   }
 
   @Test
@@ -2337,8 +2341,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     q.set("fl", "id,name,aaa:[value v=aaa]");
 
     // First Try with the BinaryResponseParser
-    QueryRequest req = new QueryRequest(q);
-    req.setPath("/get");
+    QueryRequest req = new QueryRequest("/get", q);
     req.setResponseParser(new JavaBinResponseParser());
     QueryResponse rsp = req.process(client);
     SolrDocument out = (SolrDocument) rsp.getResponse().get("doc");
@@ -2386,7 +2389,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     doc.addField(field, oper);
     try {
       client.add(doc);
-      if (client instanceof HttpSolrClient) {
+      if (client instanceof HttpJettySolrClient) {
         // XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
       } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
@@ -2398,8 +2401,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             concurrentClient.lastError.getMessage().contains("version conflict"));
       } else if (client
           instanceof
-          SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient
-          concurrentClient) {
+          SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
         client.commit(); // just to be sure the client has sent the doc
         assertNotNull(
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);

@@ -58,6 +58,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -476,6 +477,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testManyClauses_Solr() throws Exception {
     final String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
 
@@ -484,12 +486,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     final String too_long = "id:(" + a + a + a + a + a + ")";
 
     final String expectedMsg = "Too many clauses";
-    ignoreException(expectedMsg);
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            "expected SolrException",
-            () -> assertJQ(req("q", too_long), "/response/numFound==6"));
+    SolrException e;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expectedMsg)) {
+      e =
+          expectThrows(
+              SolrException.class,
+              "expected SolrException",
+              () -> assertJQ(req("q", too_long), "/response/numFound==6"));
+    }
     assertThat(e.getMessage(), containsString(expectedMsg));
 
     // but should still work as a filter query since TermsQuery can be used...
@@ -499,6 +503,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testManyClauses_Lucene() throws Exception {
     final int numZ = IndexSearcher.getMaxClauseCount();
 
@@ -515,12 +520,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     final String way_too_long = sb.toString();
 
     final String expectedMsg = "too many boolean clauses";
-    ignoreException(expectedMsg);
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            "expected SolrException",
-            () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
+    SolrException e;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expectedMsg)) {
+      e =
+          expectThrows(
+              SolrException.class,
+              "expected SolrException",
+              () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
+    }
     assertThat(e.getMessage(), containsString(expectedMsg));
 
     assertNotNull(e.getCause());
@@ -1899,6 +1906,68 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
           }
         }
       }
+    }
+  }
+
+  @Test
+  public void testNestedPureNegativeQuery() throws Exception {
+
+    // Standard sample data with completely unique field values to isolate matches
+    assertU(adoc("id", "9414", "v_t", "pureneg foo bar", "type_t", "negativetest"));
+    assertU(adoc("id", "9415", "v_t", "pureneg foo baz", "type_t", "negativetest"));
+    assertU(adoc("id", "9416", "v_t", "pureneg baz", "type_t", "negativetest"));
+    assertU(commit());
+
+    QParser pLatest = QParser.getParser("-foo", req());
+    assertTrue(
+        "Should default to true on latest luceneMatchVersion", pLatest.isAutoFixPureNegative());
+
+    // Top-level negative query must exclude 'bar' but successfully find our other docs
+    // Force sort by ID so the array index expectations always line up perfectly
+    assertJQ(
+        req("q", "v_t:pureneg AND -v_t:bar", "df", "v_t", "sort", "id asc"),
+        "/response/docs/[0]/id=='9415'",
+        "/response/docs/[1]/id=='9416'");
+
+    // Nested pure negative query inside a parenthesized group with AND
+    assertJQ(
+        req("q", "v_t:pureneg AND v_t:foo AND (-v_t:bar)", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9415'");
+
+    // Nested pure negative query using explicit NOT syntax
+    assertJQ(
+        req("q", "v_t:pureneg AND v_t:foo AND (NOT v_t:bar)", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9415'");
+
+    assertJQ(
+        req("q", "v_t:pureneg NOT v_t:foo", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9416'");
+
+    assertJQ(
+        req("q", "NOT v_t:pureneg", "df", "v_t", "fq", "type_t:negativetest"),
+        "/response/numFound==0");
+
+    try (SolrQueryRequest req = req("df", "v_t")) {
+      // Pure negative clause without auto-fix should NOT inject *:*
+      QParser pDisabled = QParser.getParser("-v_t:bar", req);
+      pDisabled.setAutoFixPureNegative(false);
+      assertFalse(
+          "autoFixPureNegative should be false when set explicitly",
+          pDisabled.isAutoFixPureNegative());
+
+      Query qDisabled = pDisabled.parse();
+      assertFalse(
+          "Query should NOT contain MatchAllDocsQuery when autoFixPureNegative is false",
+          qDisabled.toString().contains("*:*"));
+
+      // Sub-query propagation test: Verify subQuery inherits autoFixPureNegative = false
+      QParser subParserDisabled = pDisabled.subQuery("-v_t:bar", null);
+      assertFalse(
+          "subQuery should inherit autoFixPureNegative=false from parent parser",
+          subParserDisabled.isAutoFixPureNegative());
     }
   }
 }

@@ -26,12 +26,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
 import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.cd_clear_field
@@ -44,14 +46,32 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigsetsDropdown(
-    selectedConfigSet: String,
+    viewModel: ConfigsetsViewModel,
+    modifier: Modifier = Modifier,
+    enableReset: Boolean = false,
+) {
+    val model by viewModel.uiState.collectAsState()
+
+    ConfigsetsDropdown(
+        configsets = model.configsets,
+        selectedConfigset = model.selectedConfigset,
+        selectConfigset = viewModel::selectConfigset,
+        modifier = modifier,
+        enableReset = enableReset,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ConfigsetsDropdown(
+    selectedConfigset: String?,
+    configsets: List<Configset>,
     selectConfigset: (String) -> Unit,
-    availableConfigsets: List<Configset>,
     modifier: Modifier = Modifier,
     enableReset: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val enabled = availableConfigsets.isNotEmpty()
+    val enabled = configsets.isNotEmpty()
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -59,14 +79,14 @@ fun ConfigsetsDropdown(
         modifier = modifier,
     ) {
         OutlinedTextField(
-            value = selectedConfigSet,
+            value = selectedConfigset ?: "",
             onValueChange = {},
             readOnly = true,
             enabled = enabled,
             singleLine = true,
             label = { Text(stringResource(Res.string.nav_configsets)) },
             placeholder = {
-                if (availableConfigsets.isEmpty()) {
+                if (configsets.isEmpty()) {
                     Text(
                         modifier = Modifier.testTag("no_configsets_placeholder"),
                         text = stringResource(Res.string.no_configsets),
@@ -74,7 +94,7 @@ fun ConfigsetsDropdown(
                 }
             },
             trailingIcon = {
-                if (enableReset && selectedConfigSet.isNotEmpty()) {
+                if (enableReset && !selectedConfigset.isNullOrEmpty()) {
                     IconButton(onClick = { selectConfigset("") }) {
                         Icon(
                             painter = painterResource(Res.drawable.close),
@@ -97,7 +117,7 @@ fun ConfigsetsDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
-            availableConfigsets.forEach { configset ->
+            configsets.forEach { configset ->
                 DropdownMenuItem(
                     modifier = Modifier.testTag(tag = configset.name),
                     text = { Text(configset.name) },
