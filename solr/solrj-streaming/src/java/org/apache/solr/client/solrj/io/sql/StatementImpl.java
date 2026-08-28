@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 class StatementImpl implements Statement {
@@ -89,15 +88,13 @@ class StatementImpl implements Statement {
       Collections.shuffle(shuffler, new Random());
 
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(CommonParams.QT, "/sql");
       params.set("stmt", sql);
       for (String propertyName : this.connection.getProperties().stringPropertyNames()) {
         params.set(propertyName, this.connection.getProperties().getProperty(propertyName));
       }
 
       Replica rep = shuffler.get(0);
-      String url = rep.getCoreUrl();
-      return new SolrStream(url, params);
+      return new SolrStream(rep.getBaseUrl(), rep.getCoreName(), "/sql", params);
     } catch (Exception e) {
       throw new IOException(e);
     }
