@@ -377,9 +377,12 @@ public class SolrMessageProcessor extends MessageProcessor
     boolean connected = false;
     while (!connected) {
       try {
-        // forces a ZK round-trip, throwing if the cluster is unreachable
+        // a probe; throws if the cluster isn't reachable
         clientSupplier.get().getClusterStateProvider().getLiveNodes();
         connected = true;
+      } catch (NullPointerException | ClassCastException e) {
+        // a bug rather than an unreachable cluster; retrying it would loop forever
+        throw e;
       } catch (Exception e) {
         log.error("Unable to connect to solr server. Not consuming.", e);
         uncheckedSleep(5000);
