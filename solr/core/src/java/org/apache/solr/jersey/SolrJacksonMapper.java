@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.util.Map;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -54,10 +53,6 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
     final SimpleModule customTypeModule = new SimpleModule();
     customTypeModule.addSerializer(new NamedListSerializer(NamedList.class));
     customTypeModule.addSerializer(new SolrDocumentListSerializer(SolrDocumentList.class));
-    customTypeModule.addSerializer(
-        new ByteArrayUtf8CharSequenceSerializer(ByteArrayUtf8CharSequence.class));
-    customTypeModule.addSerializer(
-        new IndexableFieldSerializer(org.apache.lucene.index.IndexableField.class));
     customTypeModule.addSerializer(new SimpleOrderedMapSerializer(SimpleOrderedMap.class));
 
     return new ObjectMapper()
@@ -126,6 +121,10 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
    * org.apache.solr.handler.RequestHandlerBase} and copy handler results into a {@link
    * org.apache.solr.client.api.model.GetDocumentsResponse} can be serialized correctly by Jackson
    * without falling back to the legacy {@code JSONResponseWriter} path.
+   *
+   * <p>Only the outer {@code numFound}/{@code start}/{@code docs} wrapper is handled here -- each
+   * {@link SolrDocument}'s field values are serialized via Jackson's default {@link Map}
+   * handling.
    */
   public static class SolrDocumentListSerializer extends StdSerializer<SolrDocumentList> {
 
@@ -152,86 +151,10 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
       gen.writeArrayFieldStart("docs");
       for (SolrDocument doc : value) {
         // SolrDocument implements Map<String, Object>; Jackson serializes it as a JSON object.
-        // ByteArrayUtf8CharSequence field values are handled by
-        // ByteArrayUtf8CharSequenceSerializer.
         gen.writeObject(doc);
       }
       gen.writeEndArray();
       gen.writeEndObject();
-    }
-  }
-
-  /**
-   * Serializes {@link ByteArrayUtf8CharSequence} — Solr's internal efficient representation of
-   * stored string field values — as a plain JSON string via {@code toString()}.
-   *
-   * <p>Without this serializer, Jackson treats {@code ByteArrayUtf8CharSequence} as a bean and
-   * produces an object like {@code {"charSequenceValue":"1"}} instead of the string {@code "1"}.
-   */
-  public static class ByteArrayUtf8CharSequenceSerializer
-      extends StdSerializer<ByteArrayUtf8CharSequence> {
-
-    public ByteArrayUtf8CharSequenceSerializer() {
-      this(null);
-    }
-
-    public ByteArrayUtf8CharSequenceSerializer(Class<ByteArrayUtf8CharSequence> clazz) {
-      super(clazz);
-    }
-
-    @Override
-    public void serialize(
-        ByteArrayUtf8CharSequence value, JsonGenerator gen, SerializerProvider provider)
-        throws IOException {
-      gen.writeString(value.toString());
-    }
-  }
-
-  /**
-   * Serializes Lucene {@link org.apache.lucene.index.IndexableField} objects to their actual
-   * values.
-   *
-   * <p>When documents are retrieved from the index (not from the transaction log), {@link
-   * SolrDocument} may contain {@link org.apache.lucene.index.IndexableField} objects. This
-   * serializer extracts the actual field value (numeric, string, or binary) for JSON output.
-   */
-  public static class IndexableFieldSerializer
-      extends StdSerializer<org.apache.lucene.index.IndexableField> {
-
-    public IndexableFieldSerializer() {
-      this(null);
-    }
-
-    public IndexableFieldSerializer(Class<org.apache.lucene.index.IndexableField> clazz) {
-      super(clazz);
-    }
-
-    @Override
-    public void serialize(
-        org.apache.lucene.index.IndexableField value,
-        JsonGenerator gen,
-        SerializerProvider provider)
-        throws IOException {
-      // Try numeric value first
-      Number numericValue = value.numericValue();
-      if (numericValue != null) {
-        gen.writeNumber(numericValue.toString());
-        return;
-      }
-      // Fall back to string value
-      String stringValue = value.stringValue();
-      if (stringValue != null) {
-        gen.writeString(stringValue);
-        return;
-      }
-      // If neither, try binary value
-      org.apache.lucene.util.BytesRef binaryValue = value.binaryValue();
-      if (binaryValue != null) {
-        gen.writeString(binaryValue.utf8ToString());
-        return;
-      }
-      // If all else fails, write null
-      gen.writeNull();
     }
   }
 }
