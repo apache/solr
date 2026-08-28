@@ -310,7 +310,7 @@ The sample code below shows steps 1 and 2 of the recommendation:
 [source,plain]
 ----
  nodes(logs,
-       search(logs, q="userID:user1", fl="articleID", sort="articleID asc", fq="action:view", qt="/export"),
+       search(logs, q="userID:user1", fl="articleID", sort="articleID asc", fq="action:view", path="/export"),
        walk="articleID->articleID",
        gather="userID",
        fq="action:view",
@@ -505,7 +505,7 @@ top(n="5",
           top(n="30",
               sort="count(*) desc",
               nodes(logs,
-                    search(logs, q="userID:user1", fl="articleID", sort="articleID asc", fq="action:read", qt="/export"),
+                    search(logs, q="userID:user1", fl="articleID", sort="articleID asc", fq="action:read", path="/export"),
                     walk="articleID->articleID",
                     gather="userID",
                     fq="action:read",

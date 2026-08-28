@@ -25,6 +25,7 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -127,6 +128,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testSearching() {
     for (int i = 0; i < 50; i++) {
       assertU(
@@ -152,12 +154,12 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     assertQ(req("fl", "*,score", "q", "homed:[1,1000 TO 2000,35000]"), "\"//*[@numFound='2']\"");
     // bad
 
-    ignoreException("dimension");
-    assertQEx(
-        "Query should throw an exception due to incorrect dimensions",
-        req("fl", "*,score", "q", "homed:[1 TO 2000]"),
-        SolrException.ErrorCode.BAD_REQUEST);
-    resetExceptionIgnores();
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("dimension")) {
+      assertQEx(
+          "Query should throw an exception due to incorrect dimensions",
+          req("fl", "*,score", "q", "homed:[1 TO 2000]"),
+          SolrException.ErrorCode.BAD_REQUEST);
+    }
     clearIndex();
   }
 

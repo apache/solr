@@ -110,6 +110,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
@@ -1000,7 +1001,14 @@ public class IndexFetcher {
     // must get the latest solrCore object because the one we have might be closed because of a
     // reload
     // todo stop keeping solrCore around
-    try (SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName())) {
+    final CoreContainer coreContainer = solrCore.getCoreContainer();
+    if (coreContainer.isShutDown()) {
+      log.info("CoreContainer is shut down, skipping opening a new searcher");
+      // Opening a searcher now would fail anyway, and taking a reference would make this thread
+      // the one that runs the core's close -- from which a partial failure leaks directories.
+      return;
+    }
+    try (SolrCore core = coreContainer.getCore(solrCore.getName())) {
       if (core == null) {
         return; // core closed, presumably
       }

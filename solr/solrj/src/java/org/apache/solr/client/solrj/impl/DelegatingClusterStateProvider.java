@@ -119,13 +119,6 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public void connect() {
-    if (delegate != null) {
-      delegate.connect();
-    }
-  }
-
-  @Override
   public void close() throws IOException {
     if (delegate != null) {
       delegate.close();
