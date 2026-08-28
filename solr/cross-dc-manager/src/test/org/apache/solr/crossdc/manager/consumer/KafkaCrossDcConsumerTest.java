@@ -61,6 +61,7 @@ import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
+import org.apache.solr.crossdc.manager.CrossDcMockUtils;
 import org.apache.solr.crossdc.manager.messageprocessor.SolrMessageProcessor;
 import org.junit.After;
 import org.junit.Before;
@@ -91,10 +92,9 @@ public class KafkaCrossDcConsumerTest {
   @Before
   public void setUp() {
     kafkaConsumerMock = mock(KafkaConsumer.class);
-    clusterStateProviderMock = mock(ClusterStateProvider.class);
+    solrClientMock = CrossDcMockUtils.mockConnectedCloudSolrClient();
+    clusterStateProviderMock = solrClientMock.getClusterStateProvider();
     doAnswer(inv -> clusterStateProviderIsClosed).when(clusterStateProviderMock).isClosed();
-    solrClientMock = mock(CloudSolrClient.class);
-    doReturn(clusterStateProviderMock).when(solrClientMock).getClusterStateProvider();
     kafkaMirroringSinkMock = mock(KafkaMirroringSink.class);
     messageProcessorMock = mock(SolrMessageProcessor.class);
     conf = testCrossDCConf();

@@ -37,6 +37,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.ResubmitBackoffPolicy;
+import org.apache.solr.crossdc.manager.CrossDcMockUtils;
 import org.apache.solr.crossdc.manager.consumer.OtelMetrics;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -56,10 +57,8 @@ public class SolrMessageProcessorTest {
 
   @Before
   public void setUp() {
-    client = mock(CloudSolrClient.class);
-    // handleItem() probes the cluster through the state provider, so the mock must supply one
-    clusterStateProvider = mock(ClusterStateProvider.class);
-    when(client.getClusterStateProvider()).thenReturn(clusterStateProvider);
+    client = CrossDcMockUtils.mockConnectedCloudSolrClient();
+    clusterStateProvider = client.getClusterStateProvider();
     resubmitBackoffPolicy = mock(ResubmitBackoffPolicy.class);
     solrMessageProcessor =
         new SolrMessageProcessor(mock(OtelMetrics.class), () -> client, resubmitBackoffPolicy);
