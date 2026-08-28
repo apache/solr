@@ -44,6 +44,7 @@ import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.servlet.CoreContainerProvider;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.ModuleUtils;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -252,18 +253,18 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     try {
       // assert zero cores
-      assertEquals("There should not be cores", 0, cores.getCores().size());
+      assertEquals("There should not be cores", 0, cores.getLoadedCoreNames().size());
 
       // add a new core
       cores.create("core1", Map.of("configSet", "minimal"));
 
       // assert one registered core
 
-      assertEquals("There core registered", 1, cores.getCores().size());
+      assertEquals("There core registered", 1, cores.getLoadedCoreNames().size());
 
       cores.unload("core1");
       // assert cero cores
-      assertEquals("There should not be cores", 0, cores.getCores().size());
+      assertEquals("There should not be cores", 0, cores.getLoadedCoreNames().size());
 
       // try and remove a core that does not exist
       SolrException thrown =
@@ -836,6 +837,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testCoreInitFailuresFromEmptyContainer() throws Exception {
     // reused state
     Map<String, CoreContainer.CoreLoadFailure> failures = null;
@@ -858,13 +860,15 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // -----
     // try to add a collection with a configset that doesn't exist
-    ignoreException(Pattern.quote("bogus_path"));
-    SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              cc.create("bogus", Map.of("configSet", "bogus_path"));
-            });
+    SolrException thrown;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(Pattern.quote("bogus_path"))) {
+      thrown =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                cc.create("bogus", Map.of("configSet", "bogus_path"));
+              });
+    }
     Throwable rootCause = SolrException.getRootCause(thrown);
     assertTrue(
         "init exception doesn't mention bogus dir: " + rootCause.getMessage(),
@@ -903,6 +907,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testCoreInitFailuresOnReload() throws Exception {
 
     // reused state
@@ -988,13 +993,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // -----
     // try to add a collection with a path that doesn't exist
-    ignoreException(Pattern.quote("bogus_path"));
-    thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              cc.create("bogus", Map.of("configSet", "bogus_path"));
-            });
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(Pattern.quote("bogus_path"))) {
+      thrown =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                cc.create("bogus", Map.of("configSet", "bogus_path"));
+              });
+    }
     assertTrue(
         "init exception doesn't mention bogus dir: " + thrown.getCause().getCause().getMessage(),
         0 < thrown.getCause().getCause().getMessage().indexOf("bogus_path"));
@@ -1040,14 +1046,15 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         "This is giberish, not valid XML <",
         StandardCharsets.UTF_8);
 
-    ignoreException(Pattern.quote("SAX"));
-    thrown =
-        expectThrows(
-            SolrException.class,
-            "corrupt solrconfig.xml failed to trigger exception from reload",
-            () -> {
-              cc.reload("col_bad");
-            });
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(Pattern.quote("SAX"))) {
+      thrown =
+          expectThrows(
+              SolrException.class,
+              "corrupt solrconfig.xml failed to trigger exception from reload",
+              () -> {
+                cc.reload("col_bad");
+              });
+    }
     Throwable rootException = getWrappedException(thrown);
     assertTrue(
         "We're supposed to have a wrapped SAXParserException here, but we don't",

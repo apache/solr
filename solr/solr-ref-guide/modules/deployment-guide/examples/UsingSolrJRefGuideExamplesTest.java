@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -260,21 +259,14 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
   private SolrClient getZookeeperNoRootCloudSolrClient() {
     // tag::solrj-cloudsolrclient-zookeepernoroot[]
-    final List<String> zkServers = new ArrayList<>();
-    zkServers.add("zookeeper1:2181");
-    zkServers.add("zookeeper2:2181");
-    zkServers.add("zookeeper3:2181");
-    return new CloudSolrClient.Builder(zkServers, Optional.empty()).build();
+    return new CloudSolrClient.Builder("zookeeper1:2181,zookeeper2:2181,zookeeper3:2181").build();
     // end::solrj-cloudsolrclient-zookeepernoroot[]
   }
 
   private SolrClient getZookeeperRootCloudSolrClient() {
     // tag::solrj-cloudsolrclient-zookeeperroot[]
-    final List<String> zkServers = new ArrayList<>();
-    zkServers.add("zookeeper1:2181");
-    zkServers.add("zookeeper2:2181");
-    zkServers.add("zookeeper3:2181");
-    return new CloudSolrClient.Builder(zkServers, Optional.of("/solr")).build();
+    return new CloudSolrClient.Builder("zookeeper1:2181,zookeeper2:2181,zookeeper3:2181/solr")
+        .build();
     // end::solrj-cloudsolrclient-zookeeperroot[]
   }
 

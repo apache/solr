@@ -17,21 +17,21 @@
 package org.apache.solr.handler.component;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.After;
 import org.junit.Test;
 
 /** SOLR-1730, tests what happens when a component fails to initialize properly */
 public class BadComponentTest extends SolrTestCaseJ4 {
   @Test
+  @SuppressWarnings("try")
   public void testBadElevate() throws Exception {
-    try {
-      ignoreException(".*constructing.*");
-      ignoreException(".*QueryElevationComponent.*");
+    try (ErrorLogMuter constructing = ErrorLogMuter.regex(".*constructing.*");
+        ErrorLogMuter queryElevationComponent =
+            ErrorLogMuter.regex(".*QueryElevationComponent.*")) {
       System.setProperty("elevate.file", "foo.xml");
       initCore("solrconfig-elevate.xml", "schema12.xml");
       assertTrue(hasInitException("QueryElevationComponent"));
-    } finally {
-      resetExceptionIgnores();
     }
   }
 

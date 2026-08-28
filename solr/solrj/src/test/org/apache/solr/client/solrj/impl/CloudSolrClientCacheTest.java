@@ -57,6 +57,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 
 public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
@@ -106,9 +107,12 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
               }
             }.build()) {
       livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
+      byte[] coll1StateBytes = COLL1_STATE.getBytes(UTF_8);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> stateMap =
+          (Map<String, Object>) Utils.fromJSON(coll1StateBytes, 0, coll1StateBytes.length);
       ClusterState cs =
-          ClusterState.createFromJson(
-              1, COLL1_STATE.getBytes(UTF_8), Set.of(), Instant.now(), null);
+          ClusterState.createFromCollectionMap(1, stateMap, Set.of(), Instant.now(), null);
       refs.put(collName, new Ref(collName));
       colls.put(collName, cs.getCollectionOrNull(collName));
       responses.put(
@@ -346,9 +350,12 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   }
 
   private DocCollection loadCollection(String collection, int version) throws Exception {
+    byte[] coll1StateBytes = COLL1_STATE.getBytes(UTF_8);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> stateMap =
+        (Map<String, Object>) Utils.fromJSON(coll1StateBytes, 0, coll1StateBytes.length);
     ClusterState state =
-        ClusterState.createFromJson(
-            version, COLL1_STATE.getBytes(UTF_8), Set.of(), Instant.now(), null);
+        ClusterState.createFromCollectionMap(version, stateMap, Set.of(), Instant.now(), null);
     return state.getCollectionOrNull(collection);
   }
 
