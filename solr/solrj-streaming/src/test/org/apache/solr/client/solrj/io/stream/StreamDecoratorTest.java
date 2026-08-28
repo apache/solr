@@ -64,7 +64,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Assume;
@@ -3575,8 +3574,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       // Lets sleep long enough for daemon updates to run.
       // Lets stop the daemons
-      ModifiableSolrParams sParams =
-          new ModifiableSolrParams(params(CommonParams.QT, "/stream", "action", "list"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params("action", "list"));
 
       int workersComplete = 0;
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -3584,7 +3582,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         INNER:
         while (iterations == 0) {
           SolrStream solrStream =
-              new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+              new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
           solrStream.setStreamContext(streamContext);
           solrStream.open();
           Tuple tupleResponse = solrStream.read();
@@ -3614,11 +3612,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       // Lets stop the daemons
       sParams = new ModifiableSolrParams();
-      sParams.set(CommonParams.QT, "/stream");
       sParams.set("action", "stop");
       sParams.set("id", "test");
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-        SolrStream solrStream = new SolrStream(jetty.getBaseUrl() + "/collection1", sParams);
+        SolrStream solrStream =
+            new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
         solrStream.setStreamContext(streamContext);
         solrStream.open();
         Tuple tupleResponse = solrStream.read();
@@ -3626,7 +3624,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       }
 
       sParams = new ModifiableSolrParams();
-      sParams.set(CommonParams.QT, "/stream");
       sParams.set("action", "list");
 
       workersComplete = 0;
@@ -3634,7 +3631,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         long stopTime = 0;
         INNER:
         while (stopTime == 0) {
-          SolrStream solrStream = new SolrStream(jetty.getBaseUrl() + "/collection1", sParams);
+          SolrStream solrStream =
+              new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
           solrStream.setStreamContext(streamContext);
           solrStream.open();
           Tuple tupleResponse = solrStream.read();
@@ -3770,8 +3768,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       List<Tuple> tuples = getTuples(parallelUpdateStream);
       assertEquals(2, tuples.size());
 
-      ModifiableSolrParams sParams =
-          new ModifiableSolrParams(params(CommonParams.QT, "/stream", "action", "list"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params("action", "list"));
 
       int workersComplete = 0;
 
@@ -3781,7 +3778,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         INNER:
         while (true) {
           SolrStream solrStream =
-              new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+              new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
           solrStream.setStreamContext(streamContext);
           solrStream.open();
           Tuple tupleResponse = solrStream.read();
@@ -3865,11 +3862,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
             + "                        tuple(file=\"file2\", line=\"8,9,\")))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -3898,11 +3893,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
             + "                        tuple(file=\"file2\", line=\"8\t\t9\")))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4213,8 +4206,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       // Lets sleep long enough for daemon updates to run.
       // Lets stop the daemons
-      ModifiableSolrParams sParams =
-          new ModifiableSolrParams(params(CommonParams.QT, "/stream", "action", "list"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params("action", "list"));
 
       int workersComplete = 0;
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -4222,7 +4214,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         INNER:
         while (iterations == 0) {
           SolrStream solrStream =
-              new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+              new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
           solrStream.setStreamContext(streamContext);
           solrStream.open();
           Tuple tupleResponse = solrStream.read();
@@ -4249,11 +4241,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       // Lets stop the daemons
       sParams = new ModifiableSolrParams();
-      sParams.set(CommonParams.QT, "/stream");
       sParams.set("action", "stop");
       sParams.set("id", "test");
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-        SolrStream solrStream = new SolrStream(jetty.getBaseUrl() + "/collection1", sParams);
+        SolrStream solrStream =
+            new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
         solrStream.setStreamContext(streamContext);
         solrStream.open();
         Tuple tupleResponse = solrStream.read();
@@ -4261,7 +4253,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       }
 
       sParams = new ModifiableSolrParams();
-      sParams.set(CommonParams.QT, "/stream");
       sParams.set("action", "list");
 
       workersComplete = 0;
@@ -4269,7 +4260,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         long stopTime = 0;
         INNER:
         while (stopTime == 0) {
-          SolrStream solrStream = new SolrStream(jetty.getBaseUrl() + "/collection1", sParams);
+          SolrStream solrStream =
+              new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
           solrStream.setStreamContext(streamContext);
           solrStream.open();
           Tuple tupleResponse = solrStream.read();
@@ -4425,11 +4417,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     // find a node with a replica
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection coll = clusterState.getCollection(COLLECTIONORALIAS);
-    String node = coll.getReplicas().iterator().next().getNodeName();
+    String node = coll.replicaStream().findFirst().orElseThrow().getNodeName();
     String url = null;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       if (jetty.getNodeName().equals(node)) {
-        url = jetty.getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+        url = jetty.getBaseUrl().toString();
         break;
       }
     }
@@ -4479,8 +4471,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
-    SolrStream classifyStream = new SolrStream(url, paramsLoc);
+    SolrStream classifyStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
     Map<String, Double> idToLabel = getIdToLabel(classifyStream, "probability_d");
     assertEquals(idToLabel.size(), 2);
     assertEquals(1.0, idToLabel.get("0"), 0.001);
@@ -4492,7 +4483,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     updateRequest.add(id, String.valueOf(3), "text_s", "a b e e f");
     updateRequest.commit(cluster.getSolrClient(), "uknownCollection");
 
-    classifyStream = new SolrStream(url, paramsLoc);
+    classifyStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
     idToLabel = getIdToLabel(classifyStream, "probability_d");
     assertEquals(idToLabel.size(), 2);
     assertEquals(1.0, idToLabel.get("2"), 0.001);
@@ -4521,7 +4512,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     updateRequest.add(id, String.valueOf(5), "text_s", "a b e e f");
     updateRequest.commit(cluster.getSolrClient(), "uknownCollection");
 
-    classifyStream = new SolrStream(url, paramsLoc);
+    classifyStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
     idToLabel = getIdToLabel(classifyStream, "probability_d");
     assertEquals(idToLabel.size(), 2);
     assertEquals(0, idToLabel.get("4"), 0.001);
@@ -4539,7 +4530,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
             + "analyzerField=\"tv_text\"))";
 
     paramsLoc.set("expr", expr);
-    classifyStream = new SolrStream(url, paramsLoc);
+    classifyStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
     idToLabel = getIdToLabel(classifyStream, "probability_d");
     assertEquals(idToLabel.size(), 2);
     assertEquals(0, idToLabel.get("4"), 0.001);
@@ -4567,11 +4558,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
             + ", b = add(1,3), c=col(d, test_i), tuple(test = add(1,1), test1=b, results=d, test2=add(c)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cat);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4606,11 +4595,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     String cat = "let(a =" + expr + ",get(a))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cat);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4633,11 +4620,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     String cat = "let(a =" + expr + ",stream(a))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cat);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4675,7 +4660,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     workRequest.commit(cluster.getSolrClient(), "workQueue");
     dataRequest.commit(cluster.getSolrClient(), "mainCorpus");
 
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/destination";
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     TupleStream executorStream;
     ModifiableSolrParams paramsLoc;
 
@@ -4703,9 +4688,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     paramsLoc.set(
         "expr",
         "search(destination, q=\"*:*\", fl=\"id, body_t, field_i\", rows=1000, sort=\"field_i asc\")");
-    paramsLoc.set("qt", "/stream");
 
-    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    SolrStream solrStream = new SolrStream(url, "destination", "/stream", paramsLoc);
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(500, tuples.size());
     for (int i = 0; i < 500; i++) {
@@ -4757,7 +4741,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     workRequest.commit(cluster.getSolrClient(), "workQueue1");
     dataRequest.commit(cluster.getSolrClient(), "mainCorpus1");
 
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/destination1";
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     TupleStream executorStream;
     ModifiableSolrParams paramsLoc;
 
@@ -4786,9 +4770,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     paramsLoc.set(
         "expr",
         "search(destination1, q=\"*:*\", fl=\"id, body_t, field_i\", rows=1000, sort=\"field_i asc\")");
-    paramsLoc.set("qt", "/stream");
 
-    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    SolrStream solrStream = new SolrStream(url, "destination1", "/stream", paramsLoc);
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(), cnt);
     for (int i = 0; i < cnt; i++) {
@@ -5116,8 +5099,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   public void testDeleteStream() throws Exception {
-    final String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    final String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient client = cluster.getSolrClient();
 
     {
@@ -5152,7 +5134,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
               + COLLECTIONORALIAS
               + ",batchSize=10,   "
               + "              tuple(id=doc_2)))                     ";
-      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      final SolrStream stream =
+          new SolrStream(url, COLLECTIONORALIAS, "/stream", params("expr", expr));
 
       final List<Tuple> tuples = getTuples(stream);
       assertEquals(1, tuples.size());
@@ -5180,7 +5163,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
               + "               tuple(id=doc_17),                         "
               + "               tuple(id=doc_15),                         "
               + "              ) ) )                                      ";
-      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      final SolrStream stream =
+          new SolrStream(url, COLLECTIONORALIAS, "/stream", params("expr", expr));
 
       final List<Tuple> tuples = getTuples(stream);
       assertEquals(3, tuples.size());
@@ -5219,7 +5203,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
               + v13_ok
               + "),      "
               + "              ) ) )                                        ";
-      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      final SolrStream stream =
+          new SolrStream(url, COLLECTIONORALIAS, "/stream", params("expr", expr));
 
       final List<Tuple> tuples = getTuples(stream);
       assertEquals(1, tuples.size());
@@ -5257,7 +5242,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
               + v10_bad
               + "),     "
               + "              ) ) )                                        ";
-      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      final SolrStream stream =
+          new SolrStream(url, COLLECTIONORALIAS, "/stream", params("expr", expr));
 
       final List<Tuple> tuples = getTuples(stream);
       assertEquals(1, tuples.size());
@@ -5289,7 +5275,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
               + "                     q=\"deletable_s:yup\",                    "
               + "                     sort=\"id asc\",fl=\"id,_version_\"       "
               + "              ) ) )                                            ";
-      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      final SolrStream stream =
+          new SolrStream(url, COLLECTIONORALIAS, "/stream", params("expr", expr));
 
       final List<Tuple> tuples = getTuples(stream);
       assertEquals(1, tuples.size());

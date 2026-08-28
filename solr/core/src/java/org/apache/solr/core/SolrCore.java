@@ -335,7 +335,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /**
-   * @return the latest snapshot of the schema used by this core instance.
+   * Returns the latest snapshot of the schema used by this core instance.
+   *
+   * <p>Request processing code should normally use {@link SolrQueryRequest#getSchema()} so that the
+   * schema remains stable for the lifetime of the request. Code operating on a {@link
+   * SolrIndexSearcher} should normally use {@link SolrIndexSearcher#getSchema()} so that the schema
+   * matches the searcher.
+   *
+   * @return the latest schema snapshot
    * @see #setLatestSchema
    */
   public IndexSchema getLatestSchema() {
@@ -1993,6 +2000,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
   /**
    * Get the request handler registered to a given name.
    *
+   * <p>A {@code null} handlerName resolves to the core's default request handler (whichever handler
+   * is aliased to the empty string, normally the one registered at "/select", or "standard" for
+   * legacy configs) rather than returning {@code null}; see {@link
+   * RequestHandlers#initHandlersFromConfig}.
+   *
    * <p>This function is thread safe.
    */
   public SolrRequestHandler getRequestHandler(String handlerName) {
@@ -3028,9 +3040,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
                 + "'");
       }
       if (echoParams == EchoParamStyle.EXPLICIT) {
-        responseHeader.add("params", req.getOriginalParams().toNamedList());
+        responseHeader.add("params", new SimpleOrderedMap<>(req.getOriginalParams()));
       } else if (echoParams == EchoParamStyle.ALL) {
-        responseHeader.add("params", req.getParams().toNamedList());
+        responseHeader.add("params", new SimpleOrderedMap<>(req.getParams()));
       }
     }
   }
@@ -3053,18 +3065,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     void write(OutputStream os) throws IOException;
-  }
-
-  /**
-   * Gets a response writer suitable for node/container-level requests.
-   *
-   * @param writerName the writer name, or null for default
-   * @return the response writer, never null
-   * @deprecated Use {@link ResponseWritersRegistry#getWriter(String)} instead.
-   */
-  @Deprecated
-  public static QueryResponseWriter getAdminResponseWriter(String writerName) {
-    return ResponseWritersRegistry.getWriter(writerName);
   }
 
   /**
