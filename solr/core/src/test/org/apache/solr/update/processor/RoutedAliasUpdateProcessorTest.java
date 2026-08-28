@@ -221,7 +221,6 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   void assertRouting(int numShards, List<UpdateCommand> updateCommands) throws IOException {
     CloudSolrClient cloudSolrClient = cluster.getSolrClient();
     ClusterStateProvider clusterStateProvider = cloudSolrClient.getClusterStateProvider();
-    clusterStateProvider.connect();
     Set<String> leaders = getLeaderCoreNames(clusterStateProvider.getClusterState());
     assertEquals(
         "should have " + 3 * numShards + " leaders, " + numShards + " per collection",

@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics, MetricsExtractor, ZookeeperStatus) {
+    function($scope, $location, $timeout, Zookeeper, Constants, Collections, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
 
         $scope.showDebug = false;
 
@@ -37,7 +37,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, Zookeeper, false);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, Collections, System, Metrics, MetricsExtractor);
+            nodesSubController($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
         } else if (view === "zkstatus") {
             $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
             zkStatusSubController($scope, ZookeeperStatus, false);
@@ -107,7 +107,7 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-var nodesSubController = function($scope, Collections, System, Metrics, MetricsExtractor) {
+var nodesSubController = function($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -353,43 +353,51 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
      Fetch system info for all selected nodes
      Pick the data we want to display and add it to the node-centric data structure
       */
-    System.get({"nodes": liveNodesToShow.join(',')}, function (systemResponse) {
-      for (var node in systemResponse) {
-        if (node in nodes) {
-          var s = systemResponse[node];
-          nodes[node]['system'] = s;
-          var memTotal = s.system.totalPhysicalMemorySize;
-          var memFree = s.system.freePhysicalMemorySize;
-          var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
-          nodes[node]['memUsedPct'] = memPercentage;
-          nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
-          nodes[node]['memTotal'] = bytesToSize(memTotal);
-          nodes[node]['memFree'] = bytesToSize(memFree);
-          nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
-
-          var heapMax = s.jvm.memory.raw.max;
-          var heapTotal = s.jvm.memory.raw.total;
-          var heapFree = s.jvm.memory.raw.free;
-          var heapPercentage = Math.floor((heapTotal - heapFree) / heapMax * 100);
-          nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
-          nodes[node]['heapUsedPct'] = heapPercentage;
-          nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
-          nodes[node]['heapMax'] = bytesToSize(heapMax);
-          nodes[node]['heapTotal'] = bytesToSize(heapTotal);
-          nodes[node]['heapFree'] = bytesToSize(heapFree);
-
-          var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
-          nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
-          nodes[node]['jvmUptimeSec'] = jvmUptime;
-
-          nodes[node]['uptime'] = (s.system.uptime || "unknown").replace(/.*up (.*?,.*?),.*/, "$1");
-          nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
-          nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad * 100);
-          nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
-          nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
-          nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
-        }
+    SystemV2.getNodeSystemInfo({"nodes": liveNodesToShow.join(',')}, function (error, data, response) {
+      if (error) {
+        console.error('Failed to fetch node system info:', error);
+        ApiErrorHandler.handle(response);
+        return;
       }
+      $timeout(function() {
+        var systemResponse = response.body;
+        for (var node in systemResponse) {
+          if (node in nodes) {
+            var s = systemResponse[node];
+            nodes[node]['system'] = s;
+            var memTotal = s.system.totalPhysicalMemorySize;
+            var memFree = s.system.freePhysicalMemorySize;
+            var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
+            nodes[node]['memUsedPct'] = memPercentage;
+            nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
+            nodes[node]['memTotal'] = bytesToSize(memTotal);
+            nodes[node]['memFree'] = bytesToSize(memFree);
+            nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
+
+            var heapMax = s.jvm.memory.raw.max;
+            var heapTotal = s.jvm.memory.raw.total;
+            var heapFree = s.jvm.memory.raw.free;
+            var heapPercentage = Math.floor((heapTotal - heapFree) / heapMax * 100);
+            nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
+            nodes[node]['heapUsedPct'] = heapPercentage;
+            nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
+            nodes[node]['heapMax'] = bytesToSize(heapMax);
+            nodes[node]['heapTotal'] = bytesToSize(heapTotal);
+            nodes[node]['heapFree'] = bytesToSize(heapFree);
+
+            var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
+            nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
+            nodes[node]['jvmUptimeSec'] = jvmUptime;
+
+            nodes[node]['uptime'] = (s.system.uptime || "unknown").replace(/.*up (.*?,.*?),.*/, "$1");
+            nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
+            nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad * 100);
+            nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
+            nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
+            nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
+          }
+        }
+      });
     });
 
     /*
@@ -563,7 +571,7 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
 
           // Execute the transition to show the bars
           bars.transition()
-              .ease('elastic')
+              .ease(d3.easeElastic)
               .style('width', function (d) {
                 return d.pct + '%';
               });
@@ -792,7 +800,7 @@ var graphSubController = function ($scope, Zookeeper) {
                 params.filter = filter;
             }
 
-          Zookeeper.clusterState(params, function (data) { 
+          Zookeeper.clusterState(params, function (data) {
                     var state = data.znode.data;
                     var leaf_count = 0;
                     var graph_data = {
@@ -953,12 +961,12 @@ solrAdminApp.directive('graph', function(Constants) {
                 var classes = ['link'];
                 classes.push('lvl-' + p.target.depth);
 
-                if (p.target.data && p.target.data.leader) {
+                if (p.target.data.data && p.target.data.data.leader) {
                     classes.push('leader');
                 }
 
-                if (p.target.data && p.target.data.state) {
-                    classes.push(p.target.data.state);
+                if (p.target.data.data && p.target.data.data.state) {
+                    classes.push(p.target.data.data.state);
                 }
 
                 return classes.join(' ');
@@ -968,13 +976,13 @@ solrAdminApp.directive('graph', function(Constants) {
                 var classes = ['node'];
                 classes.push('lvl-' + d.depth);
 
-                if (d.data && d.data.leader) {
+                if (d.data.data && d.data.data.leader) {
                     classes.push('leader');
                 }
 
-                if (d.data && d.data.state) {
-                    if(!(d.data.type=='shard' && d.data.state=='active')){
-                        classes.push(d.data.state);
+                if (d.data.data && d.data.data.state) {
+                    if(!(d.data.data.type=='shard' && d.data.data.state=='active')){
+                        classes.push(d.data.data.state);
                     }
                 }
 
@@ -982,39 +990,39 @@ solrAdminApp.directive('graph', function(Constants) {
             };
 
             var helper_tooltip_text = function (d) {
-                if (!d.data) {
+                if (!d.data.data) {
                   return tooltip;
                 }
                 var tooltip;
 
-                if (! d.data.type) {
+                if (! d.data.data.type) {
                   return tooltip;
                 }
 
 
-                if (d.data.type == 'collection') {
-                  tooltip = d.name + " {<br/> ";
-                  tooltip += "numShards: [" + d.data.numShards + "],<br/>";
-                  tooltip += "router: [" + d.data.router + "],<br/>";
-                  tooltip += "replicationFactor: [" + d.data.replicationFactor + "],<br/>";
-                  tooltip += "nrtReplicas: [" + d.data.nrtReplicas + "],<br/>";
-                  tooltip += "pullReplicas: [" + d.data.pullReplicas + "],<br/>";
-                  tooltip += "tlogReplicas: [" + d.data.tlogReplicas + "],<br/>";
+                if (d.data.data.type == 'collection') {
+                  tooltip = d.data.name + " {<br/> ";
+                  tooltip += "numShards: [" + d.data.data.numShards + "],<br/>";
+                  tooltip += "router: [" + d.data.data.router + "],<br/>";
+                  tooltip += "replicationFactor: [" + d.data.data.replicationFactor + "],<br/>";
+                  tooltip += "nrtReplicas: [" + d.data.data.nrtReplicas + "],<br/>";
+                  tooltip += "pullReplicas: [" + d.data.data.pullReplicas + "],<br/>";
+                  tooltip += "tlogReplicas: [" + d.data.data.tlogReplicas + "],<br/>";
                   tooltip += "}";
-                } else if (d.data.type == 'shard') {
-                  tooltip = d.name + " {<br/> ";
-                  tooltip += "range: [" + d.data.range + "],<br/>";
-                  tooltip += "state: [" + d.data.state + "],<br/>";
+                } else if (d.data.data.type == 'shard') {
+                  tooltip = d.data.name + " {<br/> ";
+                  tooltip += "range: [" + d.data.data.range + "],<br/>";
+                  tooltip += "state: [" + d.data.data.state + "],<br/>";
                   tooltip += "}";
-                } else if (d.data.type == 'node') {
-                  tooltip = d.data.uri.core_node + " {<br/>";
+                } else if (d.data.data.type == 'node') {
+                  tooltip = d.data.data.uri.core_node + " {<br/>";
 
                   if (0 !== scope.helperData.core.length) {
-                      tooltip += "core: [" + d.data.uri.core + "],<br/>";
+                      tooltip += "core: [" + d.data.data.uri.core + "],<br/>";
                   }
 
                   if (0 !== scope.helperData.node_name.length) {
-                      tooltip += "node_name: [" + d.data.uri.node_name + "],<br/>";
+                      tooltip += "node_name: [" + d.data.data.uri.node_name + "],<br/>";
                   }
                   tooltip += "}";
                 }
@@ -1023,25 +1031,25 @@ solrAdminApp.directive('graph', function(Constants) {
             };
 
             var helper_node_text = function (d) {
-                if (!d.data || !d.data.uri) {
-                    return d.name;
+                if (!d.data.data || !d.data.data.uri) {
+                    return d.data.name;
                 }
 
-                var name = d.data.uri.hostname;
+                var name = d.data.data.uri.hostname;
                 if (1 !== scope.helperData.protocol.length) {
-                    name = d.data.uri.protocol + '//' + name;
+                    name = d.data.data.uri.protocol + '//' + name;
                 }
 
                 if (1 !== scope.helperData.port.length) {
-                    name += ':' + d.data.uri.port;
+                    name += ':' + d.data.data.uri.port;
                 }
 
                 if (1 !== scope.helperData.pathname.length) {
-                    name += d.data.uri.pathname;
+                    name += d.data.data.uri.pathname;
                 }
 
                 if(0 !== scope.helperData.replicaType.length) {
-                    name += ' (' + d.data.uri.replicaType[0] + ')';
+                    name += ' (' + d.data.data.uri.replicaType[0] + ')';
                 }
 
                 return name;
@@ -1074,14 +1082,14 @@ solrAdminApp.directive('graph', function(Constants) {
                     }
                 })
                 .on('click', function(d) {
-                    if (d.data.type == "node"){
+                    if (d.data.data.type == "node"){
                         location.href = getNodeUrl(d, view);
                     }
                 });
             }
 
             function getNodeUrl(d, view){
-                var url = d.name + Constants.ROOT_URL + "#/~cloud";
+                var url = d.data.name + Constants.ROOT_URL + "#/~cloud";
                 if (view != undefined){
                     url += "?view=" + view;
                 }
@@ -1095,11 +1103,12 @@ solrAdminApp.directive('graph', function(Constants) {
                 // Calculate roughly the width of host name to align the graph
                 var hostnameWidth = graphData.children.length > 0 ?
                   graphData.children[0].children[0].children[0].name.length * 5.5 : 400;
-                var tree = d3.layout.tree().size([h, Math.max(w - 140 - hostnameWidth, 100)]);
+                var root = d3.hierarchy(graphData);
+                d3.tree().size([h, Math.max(w - 140 - hostnameWidth, 100)])(root);
 
-                var diagonal = d3.svg.diagonal().projection(function (d) {
-                    return [d.y, d.x];
-                });
+                var diagonal = d3.linkHorizontal()
+                    .x(function (d) { return d.y; })
+                    .y(function (d) { return d.x; });
 
                 d3.select('#canvas', element).html('');
                 var vis = d3.select('#canvas', element).append('svg')
@@ -1108,10 +1117,10 @@ solrAdminApp.directive('graph', function(Constants) {
                     .append('g')
                     .attr('transform', 'translate(10, 0)');
 
-                var nodes = tree.nodes(graphData);
+                var nodes = root.descendants();
 
                 var link = vis.selectAll('path.link')
-                    .data(tree.links(nodes))
+                    .data(root.links())
                     .enter().append('path')
                     .attr('class', helper_path_class)
                     .attr('d', diagonal);

@@ -69,9 +69,9 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals("one", map.getName(0));
     map.setName(0, "ONE");
     assertEquals("ONE", map.getName(0));
-    assertEquals(Integer.valueOf(100), map.get("one", 1));
+    assertEquals(Integer.valueOf(100), map.getVal(map.indexOf("one", 1)));
     assertEquals(4, map.indexOf(null, 1));
-    assertNull(map.get(null, 1));
+    assertNull(map.getVal(map.indexOf(null, 1)));
 
     map = new SimpleOrderedMap<>();
     map.add("one", 1);
