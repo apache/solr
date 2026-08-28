@@ -18,8 +18,11 @@ package org.apache.solr.handler.admin.api;
 
 import jakarta.inject.Inject;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.RealTimeGetApi;
 import org.apache.solr.client.api.model.GetDocumentsResponse;
@@ -119,8 +122,7 @@ public class RealTimeGetAPI extends JerseyResource implements RealTimeGetApi {
     }
 
     // Handle Lucene IndexableField objects
-    if (value instanceof org.apache.lucene.index.IndexableField) {
-      org.apache.lucene.index.IndexableField field = (org.apache.lucene.index.IndexableField) value;
+    if (value instanceof IndexableField field) {
       // Try numeric value first
       Number numericValue = field.numericValue();
       if (numericValue != null) {
@@ -132,7 +134,7 @@ public class RealTimeGetAPI extends JerseyResource implements RealTimeGetApi {
         return stringValue;
       }
       // If neither, try binary value
-      org.apache.lucene.util.BytesRef binaryValue = field.binaryValue();
+      BytesRef binaryValue = field.binaryValue();
       if (binaryValue != null) {
         return binaryValue.utf8ToString();
       }
@@ -143,9 +145,8 @@ public class RealTimeGetAPI extends JerseyResource implements RealTimeGetApi {
     value = ByteArrayUtf8CharSequence.convertCharSeq(value);
 
     // Recursively handle collections
-    if (value instanceof java.util.Collection) {
-      java.util.Collection<?> collection = (java.util.Collection<?>) value;
-      java.util.List<Object> converted = new java.util.ArrayList<>(collection.size());
+    if (value instanceof Collection<?> collection) {
+      List<Object> converted = new ArrayList<>(collection.size());
       for (Object item : collection) {
         converted.add(convertFieldValue(item));
       }
