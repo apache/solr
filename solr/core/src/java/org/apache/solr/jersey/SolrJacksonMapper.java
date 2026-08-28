@@ -123,8 +123,7 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
    * without falling back to the legacy {@code JSONResponseWriter} path.
    *
    * <p>Only the outer {@code numFound}/{@code start}/{@code docs} wrapper is handled here -- each
-   * {@link SolrDocument}'s field values are serialized via Jackson's default {@link Map}
-   * handling.
+   * {@link SolrDocument}'s field values are serialized via Jackson's default {@link Map} handling.
    */
   public static class SolrDocumentListSerializer extends StdSerializer<SolrDocumentList> {
 

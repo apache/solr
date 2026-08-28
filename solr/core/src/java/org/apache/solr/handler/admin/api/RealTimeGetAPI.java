@@ -18,17 +18,12 @@ package org.apache.solr.handler.admin.api;
 
 import jakarta.inject.Inject;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.RealTimeGetApi;
 import org.apache.solr.client.api.model.GetDocumentsResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RealTimeGetHandler;
 import org.apache.solr.jersey.PermissionName;
@@ -84,17 +79,12 @@ public class RealTimeGetAPI extends JerseyResource implements RealTimeGetApi {
    */
   private void populateResponse(GetDocumentsResponse response) {
     final Object doc = solrQueryResponse.getValues().get("doc");
-    if (doc instanceof SolrDocument) {
-      final var docMap = new HashMap<String, Object>();
-      for (var entry : ((SolrDocument) doc).entrySet()) {
-        docMap.put(entry.getKey(), convertFieldValue(entry.getValue()));
-      }
-      response.doc = docMap;
+    if (doc instanceof SolrDocument solrDoc) {
+      response.doc = SolrDocumentFieldConverter.toFieldMap(solrDoc);
     }
 
     final Object docList = solrQueryResponse.getValues().get("response");
-    if (docList instanceof SolrDocumentList) {
-      final SolrDocumentList list = (SolrDocumentList) docList;
+    if (docList instanceof SolrDocumentList list) {
       final var result = new GetDocumentsResponse.DocumentsResult();
       result.numFound = list.getNumFound();
       result.start = list.getStart();
@@ -102,57 +92,9 @@ public class RealTimeGetAPI extends JerseyResource implements RealTimeGetApi {
       result.maxScore = list.getMaxScore();
       result.docs = new ArrayList<>();
       for (SolrDocument solrDoc : list) {
-        final var docMap = new HashMap<String, Object>();
-        for (var entry : solrDoc.entrySet()) {
-          docMap.put(entry.getKey(), convertFieldValue(entry.getValue()));
-        }
-        result.docs.add(docMap);
+        result.docs.add(SolrDocumentFieldConverter.toFieldMap(solrDoc));
       }
       response.response = result;
     }
-  }
-
-  /**
-   * Converts a field value from a SolrDocument to a JSON-serializable type. Handles IndexableField,
-   * Utf8CharSequence, and Collection types.
-   */
-  private Object convertFieldValue(Object value) {
-    if (value == null) {
-      return null;
-    }
-
-    // Handle Lucene IndexableField objects
-    if (value instanceof IndexableField field) {
-      // Try numeric value first
-      Number numericValue = field.numericValue();
-      if (numericValue != null) {
-        return numericValue;
-      }
-      // Fall back to string value
-      String stringValue = field.stringValue();
-      if (stringValue != null) {
-        return stringValue;
-      }
-      // If neither, try binary value
-      BytesRef binaryValue = field.binaryValue();
-      if (binaryValue != null) {
-        return binaryValue.utf8ToString();
-      }
-      return null;
-    }
-
-    // Handle Utf8CharSequence
-    value = ByteArrayUtf8CharSequence.convertCharSeq(value);
-
-    // Recursively handle collections
-    if (value instanceof Collection<?> collection) {
-      List<Object> converted = new ArrayList<>(collection.size());
-      for (Object item : collection) {
-        converted.add(convertFieldValue(item));
-      }
-      return converted;
-    }
-
-    return value;
   }
 }
