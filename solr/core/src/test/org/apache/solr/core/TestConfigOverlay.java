@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import static org.apache.solr.core.ConfigOverlay.isEditableProp;
 
-import java.util.Collections;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 
@@ -56,7 +55,7 @@ public class TestConfigOverlay extends SolrTestCase {
   }
 
   public void testSetProperty() {
-    ConfigOverlay overlay = new ConfigOverlay(Collections.emptyMap(), 0);
+    ConfigOverlay overlay = new ConfigOverlay(Map.of(), 0);
     overlay = overlay.setProperty("query.filterCache.initialSize", 100);
     assertEquals(100, overlay.getXPathProperty("query/filterCache/@initialSize"));
     Map<String, Object> map = overlay.getEditableSubProperties("query/filterCache");

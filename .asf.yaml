@@ -34,6 +34,7 @@ github:
     branch_9_8: {}
     branch_9_9: {}
     branch_9_10: {}
+    branch_9_11: {}
     branch_9x: {}
 
   protected_tags:
@@ -44,6 +45,12 @@ github:
 
   collaborators:
     - solrbot
+
+  # We use Renovate (solrbot) as our sole dependency-update bot; Dependabot's version/security
+  # update PRs duplicate what Renovate already opens (e.g. #4737 duplicating #4590). Keep
+  # dependabot_alerts on for Security-tab vulnerability visibility.
+  dependabot_alerts: true
+  dependabot_updates: false
 
 notifications:
   commits:      commits@solr.apache.org

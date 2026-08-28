@@ -17,21 +17,23 @@
 package org.apache.solr.ui.views.configsets
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
+import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsScene
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsTab
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.configsets_index_query
 import org.apache.solr.ui.generated.resources.configsets_request_handlers
@@ -41,11 +43,10 @@ import org.apache.solr.ui.generated.resources.files
 import org.apache.solr.ui.generated.resources.overview
 import org.apache.solr.ui.generated.resources.schema
 import org.apache.solr.ui.views.navigation.NavigationTabs
-import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ConfigsetsContent(
+fun ConfigsetsScene(
     component: ConfigsetsComponent,
     modifier: Modifier = Modifier,
 ) = FlowRow(
@@ -53,35 +54,33 @@ fun ConfigsetsContent(
     horizontalArrangement = Arrangement.spacedBy(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
-    val model by component.model.collectAsState()
-    val slot by component.tabSlot.subscribeAsState()
-    val currentChild = slot.child
+    val viewModel = viewModel { component.createConfigsetsRouteViewModel() }
+    val model by viewModel.uiState.collectAsState()
+
+    val sharedConfigsetsViewModel = viewModel { component.createConfigsetsViewModel() }
 
     Column(Modifier.fillMaxSize()) {
         NavigationTabs(
-            component = component,
-            entries = ConfigsetsTab.entries,
+            tabs = ConfigsetsTab.entries,
+            selectedTab = model.selectedTab,
+            onSelectTab = viewModel::selectTab,
             mapper = ::tabLabelRes,
             modifier = Modifier.padding(1.dp),
         )
-        ConfigsetsDropdown(
-            selectedConfigSet = model.selectedConfigset,
-            selectConfigset = component::onSelectConfigset,
-            availableConfigsets = model.configsets,
-        )
 
-        Box(
-            Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-        ) {
-            currentChild?.let {
-                when (val child = it.instance) {
-                    is Child.Overview -> ConfigsetsOverviewContent(component = child.component)
-                    is Child.Placeholder -> Text(text = child.tabName)
+        NavDisplay(
+            backStack = viewModel.backStack,
+            entryDecorators = listOf(rememberViewModelStoreNavEntryDecorator()),
+            entryProvider = entryProvider {
+                entry<ConfigsetsScene.Overview> {
+                    ConfigsetsOverviewContent(
+                        component = component.createConfigsetsOverviewComponent(),
+                        configsetsViewModel = sharedConfigsetsViewModel,
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                    )
                 }
-            }
-        }
+            },
+        )
     }
 }
 

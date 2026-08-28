@@ -129,7 +129,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
           int numBytesToRead = random().nextInt(maxBuffer) + 1;
           // test both read() and read(buffer, off, len)
           switch (random().nextInt(3)) {
-              // read()
+            // read()
             case 0:
               {
                 for (int i = 0; i < numBytesToRead && !done; i++) {
@@ -140,7 +140,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
                 }
               }
               break;
-              // read(byte, off, len)
+            // read(byte, off, len)
             case 1:
               {
                 int readLen = input.read(buffer, 0, numBytesToRead);
@@ -152,7 +152,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
                 }
               }
               break;
-              // skip(len)
+            // skip(len)
             case 2:
               {
                 // We only want to skip 1 because

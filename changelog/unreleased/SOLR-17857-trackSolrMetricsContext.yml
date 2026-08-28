@@ -1,0 +1,8 @@
+title: SolrMetricsContext is now reliably closed (once), and thus some components possessing one are too.  Fixes double-close of OTEL, yielding warnings.
+type: fixed
+authors:
+  - name: David Smiley
+  - name: Houston Putman
+links:
+  - name: SOLR-17857
+    url: https://issues.apache.org/jira/browse/SOLR-17857

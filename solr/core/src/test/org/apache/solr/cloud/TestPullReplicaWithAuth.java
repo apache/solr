@@ -108,10 +108,10 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
         for (String coreName : cc.getAllCoreNames()) {
           try (SolrCore core = cc.getCore(coreName)) {
             var addOpsDatapoint =
-                org.apache.solr.util.SolrMetricTestUtils.getCounterDatapoint(
+                SolrMetricTestUtils.getCounterDatapoint(
                     core,
                     "solr_core_update_committed_ops",
-                    org.apache.solr.util.SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                    SolrMetricTestUtils.newCloudLabelsBuilder(core)
                         .label("category", "UPDATE")
                         .label("ops", "adds")
                         .build());

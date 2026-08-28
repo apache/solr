@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Upgrade to Lucene 10.4
+type: dependency_update
+authors:
+  - name: Rahul Goswami
+links:
+  - name: SOLR-18143
+    url: https://issues.apache.org/jira/browse/SOLR-18143

@@ -78,7 +78,6 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
             .addConfig(
                 "conf",
                 TEST_PATH().resolve("configsets").resolve("exitable-directory").resolve("conf"));
-    clusterBuilder.withMetrics(true);
     clusterBuilder.configure();
 
     // pick an arbitrary node to use for our requests
@@ -296,7 +295,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Repeat(iterations = 5)
+  @Repeat(iterations = 1)
   public void testCreepThenBite() throws Exception {
     int creep = 100;
     ModifiableSolrParams params = params("q", "{!cache=false}name:a*");

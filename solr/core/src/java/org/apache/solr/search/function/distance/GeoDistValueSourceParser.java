@@ -22,7 +22,6 @@ import static org.apache.solr.search.FunctionQParser.FLAG_USE_FIELDNAME_SOURCE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ConstNumberSource;
@@ -245,7 +244,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     final DistanceUnits distanceUnits;
 
     public SpatialStrategyMultiValueSource(SpatialStrategy strategy, DistanceUnits distanceUnits) {
-      super(Collections.emptyList());
+      super(List.of());
       this.strategy = strategy;
       this.distanceUnits = distanceUnits;
     }

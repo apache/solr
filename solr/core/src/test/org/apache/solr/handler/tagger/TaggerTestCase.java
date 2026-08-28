@@ -26,11 +26,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeSet;
 import org.apache.lucene.document.Document;
 import org.apache.solr.SolrTestCaseJ4;
@@ -70,6 +70,8 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
   protected final ModifiableSolrParams baseParams = new ModifiableSolrParams();
 
+  protected static final String HANDLER = "/tag";
+
   // populated in buildNames; tested in assertTags
   protected static List<String> NAMES;
 
@@ -77,7 +79,6 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     baseParams.clear();
-    baseParams.set(CommonParams.QT, "/tag");
     baseParams.set(CommonParams.WT, "xml");
   }
 
@@ -121,7 +122,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   /** Asserts the tags. Will call req.close(). */
   protected void assertTags(SolrQueryRequest req, TestTag... eTags) throws Exception {
     try {
-      SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
+      SolrQueryResponse rsp = h.queryAndResponse(HANDLER, req);
       TestTag[] aTags = pullTagsFromResponse(req, rsp);
 
       String message;
@@ -182,7 +183,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     SolrParams params = SolrParams.wrapDefaults(moreParams, baseParams);
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), params) {};
     Iterable<ContentStream> stream =
-        Collections.singleton((ContentStream) new ContentStreamBase.StringStream(doc));
+        Set.of((ContentStream) new ContentStreamBase.StringStream(doc));
     req.setContentStreams(stream);
     return req;
   }

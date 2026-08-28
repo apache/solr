@@ -16,16 +16,10 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.util.Date;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthorizationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,38 +48,7 @@ public class CoreInfoHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
-    SolrCore core = req.getCore();
 
-    rsp.add("core", getCoreInfo(core, req.getSchema()));
-  }
-
-  private SimpleOrderedMap<Object> getCoreInfo(SolrCore core, IndexSchema schema) {
-    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-
-    info.add("schema", schema != null ? schema.getSchemaName() : "no schema!");
-
-    // Now
-    info.add("now", new Date());
-
-    // Start Time
-    info.add("start", core.getStartTimeStamp());
-
-    // Solr Home
-    SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
-    dirs.add("cwd", Path.of(System.getProperty("user.dir")).toAbsolutePath().toString());
-    dirs.add("instance", core.getInstancePath().toString());
-    try {
-      dirs.add("data", core.getDirectoryFactory().normalize(core.getDataDir()));
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized data directory path", e);
-    }
-    dirs.add("dirimpl", core.getDirectoryFactory().getClass().getName());
-    try {
-      dirs.add("index", core.getDirectoryFactory().normalize(core.getIndexDir()));
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized index directory path", e);
-    }
-    info.add("directory", dirs);
-    return info;
+    rsp.add("core", SystemInfoProvider.getCoreInfo(req.getCore(), req.getSchema()));
   }
 }

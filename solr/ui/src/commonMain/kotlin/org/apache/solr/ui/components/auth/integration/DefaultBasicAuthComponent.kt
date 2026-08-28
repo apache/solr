@@ -77,6 +77,7 @@ class DefaultBasicAuthComponent(
                 )
 
                 is BasicAuthStore.Label.AuthenticationStarted -> output(Output.Authenticating)
+
                 is BasicAuthStore.Label.ErrorReset -> output(Output.ErrorReset)
             }
         }.launchIn(mainScope)

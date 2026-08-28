@@ -17,6 +17,7 @@
 
 package org.apache.solr.cli;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -27,11 +28,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -560,7 +559,7 @@ public class RunExampleTool extends ToolBase {
       // Create a scanner from the provided prompts
       String promptsValue = cli.getOptionValue(PROMPT_INPUTS_OPTION);
       InputStream promptsStream =
-          new java.io.ByteArrayInputStream(promptsValue.getBytes(StandardCharsets.UTF_8));
+          new ByteArrayInputStream(promptsValue.getBytes(StandardCharsets.UTF_8));
       readInput = new Scanner(promptsStream, StandardCharsets.UTF_8);
       readInput.useDelimiter(",");
       prompt = true; // Enable prompting code path, but reading from prompts instead of user
@@ -672,8 +671,8 @@ public class RunExampleTool extends ToolBase {
 
   /** wait until the number of live nodes == numNodes. */
   protected void waitToSeeLiveNodes(String zkHost, int numNodes) {
-    try (CloudSolrClient cloudClient =
-        new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
+    // honours a chroot inside zkHost, e.g. zk1:2181/solr
+    try (CloudSolrClient cloudClient = new CloudSolrClient.Builder(zkHost).build()) {
       Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
       int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
       long timeoutNanos = System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);

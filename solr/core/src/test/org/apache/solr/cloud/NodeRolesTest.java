@@ -17,10 +17,12 @@
 
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
@@ -96,8 +98,7 @@ public class NodeRolesTest extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("rawtypes")
-  private void validateNodeRoles(String... nodenamePaths)
-      throws org.apache.solr.client.solrj.SolrServerException, java.io.IOException {
+  private void validateNodeRoles(String... nodenamePaths) throws SolrServerException, IOException {
     V2Response rsp =
         new V2Request.Builder("/cluster/node-roles").GET().build().process(cluster.getSolrClient());
     for (int i = 0; i < nodenamePaths.length; i += 2) {
@@ -105,8 +106,7 @@ public class NodeRolesTest extends SolrCloudTestCase {
       String path = nodenamePaths[i + 1];
       assertTrue(
           "Didn't find " + nodename + " at " + path + ". Full response: " + rsp.jsonStr(),
-          ((Collection) Objects.requireNonNullElse(rsp._get(path), Collections.emptyList()))
-              .contains(nodename));
+          ((Collection) Objects.requireNonNullElse(rsp._get(path), List.of())).contains(nodename));
     }
   }
 
@@ -119,8 +119,7 @@ public class NodeRolesTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient());
 
     Map<String, Object> l =
-        (Map<String, Object>)
-            Objects.requireNonNullElse(rsp._get("supported-roles"), Collections.emptyMap());
+        (Map<String, Object>) Objects.requireNonNullElse(rsp._get("supported-roles"), Map.of());
 
     assertTrue(l.containsKey("data"));
     assertTrue(l.containsKey("overseer"));

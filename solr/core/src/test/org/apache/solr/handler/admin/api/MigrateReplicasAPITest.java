@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin.api;
 
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.Set;
 import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
 import org.apache.solr.common.SolrException;
@@ -75,10 +74,9 @@ public class MigrateReplicasAPITest extends MockV2APITest {
   }
 
   @Test
-  public void testNoSourceNodesThrowsError() throws Exception {
+  public void testNoSourceNodesThrowsError() {
     MigrateReplicasRequestBody requestBody1 =
-        new MigrateReplicasRequestBody(
-            Collections.emptySet(), Set.of("demoTargetNode"), null, null);
+        new MigrateReplicasRequestBody(Set.of(), Set.of("demoTargetNode"), null, null);
     assertThrows(SolrException.class, () -> api.migrateReplicas(requestBody1));
     MigrateReplicasRequestBody requestBody2 =
         new MigrateReplicasRequestBody(null, Set.of("demoTargetNode"), null, null);

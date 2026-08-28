@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.common.params.FacetParams;
@@ -82,7 +83,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     List<PivotField> pivots = null;
 
     List<List<PivotField>> shardPivots = new ArrayList<>(clients.size());
-    for (org.apache.solr.client.solrj.SolrClient client : clients) {
+    for (SolrClient client : clients) {
       shardPivots.add(client.query(req).getFacetPivot().get("foo_s,bar_s"));
     }
 

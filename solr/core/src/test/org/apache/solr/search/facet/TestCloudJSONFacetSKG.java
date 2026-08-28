@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -45,6 +44,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -146,7 +146,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION_NAME).build();
+    CLOUD_CLIENT = cluster.newSolrClient(COLLECTION_NAME);
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
@@ -442,7 +442,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         // 'skg' key must not exist in th allBuckets bucket
         assertEquals(
             facetKey + " has skg in allBuckets: " + results.get("allBuckets"),
-            Collections.emptyList(),
+            List.of(),
             ((NamedList<Object>) results.get("allBuckets")).getAll("skg"));
       }
       final List<NamedList<Object>> buckets = (List<NamedList<Object>>) results.get("buckets");
@@ -500,7 +500,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       assertEquals(
           "Unexpected keys in facet response",
           expectedKeys,
-          actualFacetResponse.asShallowMap().keySet());
+          new SimpleOrderedMap<>(actualFacetResponse).keySet());
     }
   }
 

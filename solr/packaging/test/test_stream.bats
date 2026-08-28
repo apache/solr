@@ -38,14 +38,14 @@ teardown() {
 }
 
 @test "searching solr via locally executed streaming expression" {
-  
+
   local solr_stream_file="${BATS_TEST_TMPDIR}/search.expr"
   echo 'search(techproducts,' > "${solr_stream_file}"
   echo 'q="name:memory",' >> "${solr_stream_file}"
   echo 'fl="name,price",' >> "${solr_stream_file}"
   echo 'sort="price desc"' >> "${solr_stream_file}"
-  echo ')' >> "${solr_stream_file}"  
-  
+  echo ')' >> "${solr_stream_file}"
+
   run solr stream --execution local --header --credentials name:password ${solr_stream_file}
 
   assert_output --partial 'name   price'
@@ -53,15 +53,15 @@ teardown() {
   refute_output --partial 'ERROR'
 }
 
-@test "searching solr via remotely executed streaming expression" {
-  
+@test "searching solr via remotely executed streaming expression by solr-url" {
+
   local solr_stream_file="${BATS_TEST_TMPDIR}/search.expr"
   echo 'search(techproducts,' > "${solr_stream_file}"
   echo 'q="name:memory",' >> "${solr_stream_file}"
   echo 'fl="name,price",' >> "${solr_stream_file}"
   echo 'sort="price desc"' >> "${solr_stream_file}"
   echo ')' >> "${solr_stream_file}"
-  
+
   run solr stream --name techproducts --solr-url http://localhost:${SOLR_PORT} --header --credentials name:password ${solr_stream_file}
 
   assert_output --partial 'name   price'
@@ -69,15 +69,31 @@ teardown() {
   refute_output --partial 'ERROR'
 }
 
+@test "searching solr via remotely executed streaming expression by solr connection" {
+
+  local solr_stream_file="${BATS_TEST_TMPDIR}/search.expr"
+  echo 'search(techproducts,' > "${solr_stream_file}"
+  echo 'q="name:memory",' >> "${solr_stream_file}"
+  echo 'fl="name,price",' >> "${solr_stream_file}"
+  echo 'sort="price desc"' >> "${solr_stream_file}"
+  echo ')' >> "${solr_stream_file}"
+
+  run solr stream --name techproducts --solr-connection http://localhost:${SOLR_PORT}/solr --header --credentials name:password ${solr_stream_file}
+
+  assert_output --partial 'name   price'
+  assert_output --partial 'CORSAIR  XMS'
+  refute_output --partial 'ERROR'
+}
+
 @test "variable interpolation" {
-  
+
   local solr_stream_file="${BATS_TEST_TMPDIR}/search.expr"
   echo 'search(techproducts,' > "${solr_stream_file}"
   echo 'q="name:$1",' >> "${solr_stream_file}"
   echo 'fl="name,price",' >> "${solr_stream_file}"
   echo 'sort="price $2"' >> "${solr_stream_file}"
   echo ')' >> "${solr_stream_file}"
-  
+
   run solr stream --execution local --header --credentials name:password ${solr_stream_file} apple asc
 
   assert_output --partial 'name   price'

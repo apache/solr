@@ -330,6 +330,15 @@ solrAdminApp.config([
           onSelect: '&'
         },
         link: function(scope, element, attrs) {
+            // Bind once; previously this was inside the $watch which stacked listeners
+            // on every data change and could fire synchronously during a digest,
+            // triggering $rootScope:inprog.
+            element.on("select_node.jstree", function (event, data) {
+                scope.$applyAsync(function() {
+                  scope.onSelect({url: data.node.a_attr.href, data: data});
+                });
+            });
+
             scope.$watch("data", function(newValue, oldValue) {
               if (newValue && !jQuery.isEmptyObject(newValue)) {
                   var treeConfig = {
@@ -339,7 +348,7 @@ solrAdminApp.config([
                     }
                   };
 
-                  var tree = $(element).jstree(treeConfig);
+                  $(element).jstree(treeConfig);
 
                   // This is done to ensure that the data can be refreshed if it is updated behind the scenes.
                   // Putting the data in the treeConfig makes it stack and doesn't update.
@@ -347,13 +356,6 @@ solrAdminApp.config([
                   $(element).jstree(true).refresh();
 
                   $(element).jstree('open_node','li:first');
-                  if (tree) {
-                      element.bind("select_node.jstree", function (event, data) {
-                          scope.$apply(function() {
-                            scope.onSelect({url: data.node.a_attr.href, data: data});
-                          });
-                      });
-                  }
                 }
             }, true);
         }
@@ -378,6 +380,10 @@ solrAdminApp.config([
     }
     if ($rootScope.exceptions[config.url]) {
       delete $rootScope.exceptions[config.url];
+    }
+    if (config.url && config.url.startsWith("/api/cluster/security/")) {
+      // Clear any stale security panel error when a new security request starts
+      $rootScope.$broadcast('securityApiClearError');
     }
     activeRequests++;
     if (sessionStorage.getItem("auth.header")) {
@@ -420,8 +426,9 @@ solrAdminApp.config([
         return rejection;
     }
 
-    // Schema Designer handles errors internally to provide a better user experience than the global error handler
+    // Schema Designer and Security panels handle errors internally to provide a better user experience than the global error handler
     var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
+    var isHandledBySecurity = rejection.config.url && rejection.config.url.startsWith("/api/cluster/security/");
     if (rejection.status === 0) {
       $rootScope.$broadcast('connectionStatusActive');
       if (!$rootScope.retryCount) $rootScope.retryCount=0;
@@ -450,9 +457,12 @@ solrAdminApp.config([
         sessionStorage.setItem("auth.location", $location.path());
         $location.path('/login');
       }
-    } else if (rejection.status === 403 && !isHandledBySchemaDesigner) {
+    } else if (rejection.status === 403 && !isHandledBySchemaDesigner && !isHandledBySecurity) {
       // No permission
       $rootScope.showAuthzFailures = true;
+    } else if (isHandledBySecurity) {
+      // Let the security panel surface the detailed error in its own dialog
+      $rootScope.$broadcast('securityApiError', rejection);
     } else {
       // schema designer prefers to handle errors itself
       if (!isHandledBySchemaDesigner) {
@@ -464,10 +474,25 @@ solrAdminApp.config([
 
   return {request: started, response: ended, responseError: failed};
 })
-.config(function($httpProvider) {
+.config(function($httpProvider, $qProvider) {
   $httpProvider.interceptors.push("httpInterceptor");
   // Force BasicAuth plugin to serve us a 'Authorization: xBasic xxxx' header so browser will not pop up login dialogue
   $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+  // The V2 solrApi client (superagent-based) never goes through $httpProvider, so X-Requested-With
+  // (for the same popup-suppression trick) needs its own copy here.
+  solrApi.ApiClient.instance.defaultHeaders['X-Requested-With'] = 'XMLHttpRequest';
+  // Authorization is set via a superagent plugin instead of defaultHeaders, so it's re-read from
+  // sessionStorage on every request -- same as $http gets via httpInterceptor.started above -- and
+  // there's a single place to keep in sync (nowhere else should touch
+  // solrApi.ApiClient.instance.defaultHeaders['Authorization']).
+  solrApi.ApiClient.instance.plugins = [function(request) {
+    if (sessionStorage.getItem("auth.header")) {
+      request.set('Authorization', sessionStorage.getItem("auth.header"));
+    }
+    return request;
+  }];
+  // Suppress AngularJS 1.6+ "Possibly unhandled rejection" console noise; errors are handled via callbacks and the security/schema-designer error dialogs
+  $qProvider.errorOnUnhandledRejections(false);
 })
 .directive('fileModel', function ($parse) {
     return {
@@ -485,7 +510,7 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, Collections, System, Ping, Constants, SchemaDesigner) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, CollectionsV2, AliasesV2, SystemV2, Ping, Constants, SchemaDesigner, ApiErrorHandler) {
 
   $rootScope.exceptions={};
 
@@ -506,86 +531,98 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
   $scope.refresh();
   $scope.resetMenu = function(page, pageType) {
-    Cores.list(function(data) {
-      $scope.cores = [];
-      var currentCoreName = $route.current.params.core;
-      delete $scope.currentCore;
-      for (key in data.status) {
-        var core = data.status[key];
-        if (core.name.startsWith("._designer_")) {
-          continue;
+    CoresV2.getAllCoreStatus({indexInfo: false}, function(error, data, response) {
+      $timeout(function() {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        $scope.cores = [];
+        var currentCoreName = $route.current.params.core;
+        delete $scope.currentCore;
+        for (var key in data.status) {
+          var core = data.status[key];
+          if (core.name.startsWith("._designer_")) {
+            continue;
+          }
+          $scope.cores.push(core);
+          if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
+              $scope.currentCore = core;
+          }
         }
-        $scope.cores.push(core);
-        if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
-            $scope.currentCore = core;
-        }
-      }
-      $scope.showInitFailures = Object.keys(data.initFailures).length>0;
-      $scope.initFailures = data.initFailures;
+        $scope.showInitFailures = Object.keys(data.initFailures).length>0;
+        $scope.initFailures = data.initFailures;
+      });
     });
 
-    System.get(function(data) {
-      $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
-      $scope.usersPermissions = data.security.permissions;
-      $scope.isSecurityEnabled = $scope.authenticationPlugin != null;
+    SystemV2.getNodeSystemInfo({}, function(error, data, response) {
+      $timeout(function() {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
+        $scope.usersPermissions = data.security.permissions;
+        $scope.isSecurityEnabled = data.security.authenticationPlugin != null;
 
-      $scope.isSchemaDesignerEnabled = $scope.isPermitted([
-        permissions.CONFIG_EDIT_PERM,
-        permissions.SCHEMA_EDIT_PERM,
-        permissions.READ_PERM,
-        permissions.UPDATE_PERM
-      ]);
+        $scope.isSchemaDesignerEnabled = $scope.isPermitted([
+          permissions.CONFIG_EDIT_PERM,
+          permissions.SCHEMA_EDIT_PERM,
+          permissions.READ_PERM,
+          permissions.UPDATE_PERM
+        ]);
 
-      var currentCollectionName = $route.current.params.core;
-      delete $scope.currentCollection;
-      if ($scope.isCloudEnabled) {
-        Collections.list(function (cdata) {
-          Collections.listaliases(function (adata) {
-            $scope.aliases = [];
-            for (var key in adata.aliases) {
-              props = {};
-              if (key in adata.properties) {
-                props = adata.properties[key];
-              }
-              var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
-              $scope.aliases.push(alias);
-              if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
-                $scope.currentCollection = alias;
-              }
-            }
-            $scope.collections = [];
-            for (key in cdata.collections) {
-              if (cdata.collections[key].startsWith("._designer_")) {
-                continue; // ignore temp designer collections
-              }
-              var collection = {name: cdata.collections[key], type: 'collection'};
-              $scope.collections.push(collection);
-              if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
-                $scope.currentCollection = collection;
-              }
-            }
+        var currentCollectionName = $route.current.params.core;
+        delete $scope.currentCollection;
+        if ($scope.isCloudEnabled) {
+          CollectionsV2.listCollections(function (error, cdata, response) {
+            $timeout(function() {
+              if (error) { ApiErrorHandler.handle(response); return; }
+              AliasesV2.getAliases(function (error, adata, response) {
+                $timeout(function() {
+                  if (error) { ApiErrorHandler.handle(response); return; }
+                  $scope.aliases = [];
+                  for (var key in adata.aliases) {
+                    var props = {};
+                    if (key in adata.properties) {
+                      props = adata.properties[key];
+                    }
+                    var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
+                    $scope.aliases.push(alias);
+                    if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
+                      $scope.currentCollection = alias;
+                    }
+                  }
+                  $scope.collections = [];
+                  for (var key in cdata.collections) {
+                    if (cdata.collections[key].startsWith("._designer_")) {
+                      continue; // ignore temp designer collections
+                    }
+                    var collection = {name: cdata.collections[key], type: 'collection'};
+                    $scope.collections.push(collection);
+                    if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
+                      $scope.currentCollection = collection;
+                    }
+                  }
 
-            $scope.aliases_and_collections = $scope.aliases;
-            if ($scope.aliases.length > 0) {
-              $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
-            }
-            $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+                  $scope.aliases_and_collections = $scope.aliases;
+                  if ($scope.aliases.length > 0) {
+                    $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
+                  }
+                  $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+                });
+              });
+            });
           });
-        });
-      }
+        }
 
-      $scope.showEnvironment = data.environment !== undefined;
-      if (data.environment) {
-        $scope.environment = data.environment;
-        var env_labels = {'prod': 'Production', 'stage': 'Staging', 'test': 'Test', 'dev': 'Development'};
-        $scope.environment_label = env_labels[data.environment];
-        if (data.environment_label) {
-          $scope.environment_label = data.environment_label;
+        $scope.showEnvironment = data.environment !== undefined;
+        if (data.environment) {
+          $scope.environment = data.environment;
+          var env_labels = {'prod': 'Production', 'stage': 'Staging', 'test': 'Test', 'dev': 'Development'};
+          $scope.environment_label = env_labels[data.environment];
+          if (data.environment_label) {
+            $scope.environment_label = data.environment_label;
+          }
+          if (data.environment_color) {
+            $scope.environment_color = data.environment_color;
+          }
         }
-        if (data.environment_color) {
-          $scope.environment_color = data.environment_color;
-        }
-      }
+      });
     });
 
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;

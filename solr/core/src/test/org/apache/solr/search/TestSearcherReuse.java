@@ -18,7 +18,7 @@ package org.apache.solr.search;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.Map;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
@@ -176,8 +176,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
       // create a new field & add it.
       assertTrue("schema not mutable", beforeReq.getSchema().isMutable());
       ManagedIndexSchema oldSchema = (ManagedIndexSchema) beforeReq.getSchema();
-      SchemaField newField =
-          oldSchema.newField("hoss", "string", Collections.<String, Object>emptyMap());
+      SchemaField newField = oldSchema.newField("hoss", "string", Map.of());
       IndexSchema newSchema = oldSchema.addField(newField);
       h.getCore().setLatestSchema(newSchema);
 

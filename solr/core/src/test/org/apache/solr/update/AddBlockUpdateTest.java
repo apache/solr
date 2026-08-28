@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -615,7 +616,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
                         "child_s",
                         "b",
                         "grandChild",
-                        Collections.singleton(sdoc("id", "7", "child_s", "d"))),
+                        Set.of(sdoc("id", "7", "child_s", "d"))),
                     sdoc("id", "6", "child_s", "c")))
             .toString());
   }

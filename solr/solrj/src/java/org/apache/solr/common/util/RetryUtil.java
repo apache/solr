@@ -17,7 +17,6 @@
 package org.apache.solr.common.util;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -75,7 +74,7 @@ public class RetryUtil {
   public static void retryOnException(
       Class<? extends Exception> clazz, long timeoutms, long intervalms, RetryCmd cmd)
       throws Exception {
-    retryOnException(Collections.singleton(clazz), timeoutms, intervalms, cmd);
+    retryOnException(Set.of(clazz), timeoutms, intervalms, cmd);
   }
 
   /**

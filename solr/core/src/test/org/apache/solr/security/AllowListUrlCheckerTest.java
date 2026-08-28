@@ -23,7 +23,6 @@ import static org.hamcrest.CoreMatchers.is;
 
 import java.net.MalformedURLException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,8 +49,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoInput() throws Exception {
-    assertThat(
-        new AllowListUrlChecker(Collections.emptyList()).getHostAllowList().isEmpty(), is(true));
+    assertThat(new AllowListUrlChecker(List.of()).getHostAllowList().isEmpty(), is(true));
   }
 
   @Test
@@ -146,7 +144,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testHostParsingUnsetEmpty() throws Exception {
-    assertThat(AllowListUrlChecker.parseHostPorts(Collections.emptyList()).isEmpty(), is(true));
+    assertThat(AllowListUrlChecker.parseHostPorts(List.of()).isEmpty(), is(true));
   }
 
   @Test

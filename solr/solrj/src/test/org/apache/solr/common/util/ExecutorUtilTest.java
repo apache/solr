@@ -275,4 +275,17 @@ public class ExecutorUtilTest extends SolrTestCase {
       ExecutorUtil.shutdownNowAndAwaitTermination(service);
     }
   }
+
+  @Test
+  public void mdcAwarePoolToStringIncludesPoolName() {
+    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool("test-async-task");
+    try {
+      assertTrue(service.toString(), service.toString().contains("[poolName=test-async-task]"));
+
+      String executorForLogging = ExecutorUtil.describeExecutorForLogging(service);
+      assertTrue(executorForLogging, executorForLogging.contains("[poolName=test-async-task]"));
+    } finally {
+      ExecutorUtil.shutdownNowAndAwaitTermination(service);
+    }
+  }
 }

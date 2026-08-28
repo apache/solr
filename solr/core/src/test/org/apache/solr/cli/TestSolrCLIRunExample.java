@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -84,8 +83,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
      * test.
      */
     @Override
-    public void execute(
-        org.apache.commons.exec.CommandLine cmd, Map<String, String> env, ExecuteResultHandler erh)
+    public void execute(CommandLine cmd, Map<String, String> env, ExecuteResultHandler erh)
         throws IOException {
       int code = execute(cmd);
       if (code != 0)
@@ -93,7 +91,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
 
     @Override
-    public int execute(org.apache.commons.exec.CommandLine cmd) throws IOException {
+    public int execute(CommandLine cmd) throws IOException {
       String exe = cmd.getExecutable();
       assert (exe.endsWith("solr") || exe.endsWith("solr.cmd"));
 
@@ -402,7 +400,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       }
 
       // stop the test instance
-      executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
+      executor.execute(CommandLine.parse("bin/solr stop -p " + bindPort));
     }
   }
 
@@ -477,9 +475,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // index some docs - to verify all is good for both shards
     try (CloudSolrClient cloudClient =
-        new RandomizingCloudHttp2SolrClientBuilder(
-                Collections.singletonList(executor.solrCloudCluster.getZkServer().getZkAddress()),
-                Optional.empty())
+        new RandomizingCloudSolrClientBuilder(
+                List.of(executor.solrCloudCluster.getZkServer().getZkAddress()), Optional.empty())
             .withDefaultCollection(collectionName)
             .build()) {
 
@@ -518,7 +515,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     // System.out.println(toolOutput);
 
     // stop the test instance
-    executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
+    executor.execute(CommandLine.parse("bin/solr stop -p " + bindPort));
   }
 
   /**
@@ -592,8 +589,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     // verify the collection was created with the specified parameters
     try (CloudSolrClient cloudClient =
         new RandomizingCloudSolrClientBuilder(
-                Collections.singletonList(executor.solrCloudCluster.getZkServer().getZkAddress()),
-                Optional.empty())
+                List.of(executor.solrCloudCluster.getZkServer().getZkAddress()), Optional.empty())
             .withDefaultCollection(collectionName)
             .build()) {
 
@@ -628,7 +624,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     deleteTool.runTool(SolrCLI.processCommandLineArgs(deleteTool, deleteArgs));
 
     // stop the test instance
-    executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
+    executor.execute(CommandLine.parse("bin/solr stop -p " + bindPort));
   }
 
   @Test

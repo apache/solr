@@ -486,7 +486,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   /**
    * see SOLR-16848 working around a timing issue where the callback will be faster than the
-   * dispatchFilter's init
+   * SolrServlet's init
    */
   private void waitForJettyInit(JettySolrRunner replica1Jetty, String replica1JettyNodeName)
       throws InterruptedException {
@@ -538,7 +538,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     waitForState(
         "Waiting for single replica in state",
         collectionName,
-        collectionState -> collectionState.getReplicas().size() == 1);
+        collectionState -> collectionState.replicaStream().count() == 1);
   }
 
   /**

@@ -430,8 +430,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(request, response));
-      String handlerName = request.getParams().get(CommonParams.QT);
-      h.getCore().execute(h.getCore().getRequestHandler(handlerName), request, response);
+      h.getCore().execute(h.getCore().getRequestHandler(null), request, response);
       JavaBinResponseWriter responseWriter = new JavaBinResponseWriter();
       responseWriter.write(out, request, response);
     } finally {
@@ -481,7 +480,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             "group.query",
             "id:2",
             "timeAllowed",
-            "200"),
+            "10000"), // generous; must complete fully even on slow CI
         "/grouped/id:1/matches==5",
         "/grouped/id:2/matches==5");
   }

@@ -30,7 +30,9 @@ import java.io.IOException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
+import java.util.Map;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /** Customizes the ObjectMapper settings used for serialization/deserialization in Jersey */
 @SuppressWarnings("rawtypes")
@@ -56,6 +58,7 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
         new ByteArrayUtf8CharSequenceSerializer(ByteArrayUtf8CharSequence.class));
     customTypeModule.addSerializer(
         new IndexableFieldSerializer(org.apache.lucene.index.IndexableField.class));
+    customTypeModule.addSerializer(new SimpleOrderedMapSerializer(SimpleOrderedMap.class));
 
     return new ObjectMapper()
         // TODO Should failOnUnknown=false be made available on a "permissive" object mapper instead
@@ -78,7 +81,40 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
     @Override
     public void serialize(NamedList value, JsonGenerator gen, SerializerProvider provider)
         throws IOException {
-      gen.writeObject(value.asShallowMap());
+      // SimpleOrderedMap goes through SimpleOrderedMapSerializer below instead. asMap(0) avoids
+      // recursing into this same serializer for plain NamedLists.
+      gen.writeObject(value.asMap(0));
+    }
+  }
+
+  /**
+   * Writes a {@link SimpleOrderedMap} out directly via its {@link Map} entries, without the copy
+   * {@link NamedListSerializer} needs to dodge infinite recursion -- {@link SimpleOrderedMap} is
+   * already a {@link Map}, so there is nothing to convert.
+   */
+  public static class SimpleOrderedMapSerializer extends StdSerializer<SimpleOrderedMap> {
+
+    public SimpleOrderedMapSerializer() {
+      this(null);
+    }
+
+    public SimpleOrderedMapSerializer(Class<SimpleOrderedMap> somClazz) {
+      super(somClazz);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void serialize(SimpleOrderedMap value, JsonGenerator gen, SerializerProvider provider)
+        throws IOException {
+      final Map<String, Object> map = (Map<String, Object>) value;
+      gen.writeStartObject();
+      for (Map.Entry<String, Object> entry : map.entrySet()) {
+        // defaultSerializeField() doesn't honor NON_NULL inclusion itself -- skip nulls here.
+        if (entry.getValue() != null) {
+          provider.defaultSerializeField(entry.getKey(), entry.getValue(), gen);
+        }
+      }
+      gen.writeEndObject();
     }
   }
 

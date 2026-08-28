@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
@@ -58,7 +57,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String zkHost;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   private TupleStream stream;
   private Map<String, Tuple> nodes = new HashMap<>();
   private Iterator<Tuple> tuples;
@@ -96,10 +95,10 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
               streamExpressions.size()));
     }
 
-    zkHost = factory.getDefaultZkHost();
+    solrConnection = factory.getDefaultSolrConnection();
 
-    if (null == zkHost) {
-      throw new IOException("zkHost not found");
+    if (null == solrConnection) {
+      throw new IOException("solrConnection not found");
     }
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
@@ -220,15 +219,14 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
       builder.append(nodeId);
     }
 
-    CloudSolrClient client = clientCache.getCloudSolrClient(zkHost);
+    CloudSolrClient client = clientCache.getCloudSolrClient(solrConnection);
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.QT, "/terms");
     params.add(TermsParams.TERMS_FIELD, field);
     params.add(TermsParams.TERMS_STATS, "true");
     params.add(TermsParams.TERMS_LIST, builder.toString());
     params.add(TermsParams.TERMS_LIMIT, Integer.toString(nodes.size()));
 
-    QueryRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest("/terms", params);
 
     try {
       // Get the response from the terms component

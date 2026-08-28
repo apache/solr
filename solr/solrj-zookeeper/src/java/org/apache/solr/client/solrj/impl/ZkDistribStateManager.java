@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -55,10 +54,10 @@ public class ZkDistribStateManager implements DistribStateManager {
     try {
       data = getData(path);
     } catch (KeeperException.NoNodeException | NoSuchElementException e) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     if (data == null || data.getData() == null || data.getData().length == 0) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     return (Map<String, Object>) Utils.fromJSON(data.getData());
   }

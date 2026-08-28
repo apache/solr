@@ -21,7 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -56,7 +56,7 @@ public class ModuleUtils {
    * @return set of raw volume names from sysprop and/or env.var
    */
   static Set<String> resolveFromSyspropOrEnv() {
-    return Set.copyOf(EnvUtils.getPropertyAsList("solr.modules", Collections.emptyList()));
+    return Set.copyOf(EnvUtils.getPropertyAsList("solr.modules", List.of()));
   }
 
   /** Returns true if a module name is valid and exists in the system */
@@ -75,7 +75,7 @@ public class ModuleUtils {
           .collect(Collectors.toSet());
     } catch (IOException e) {
       log.warn("Found no modules in {}", getModulesPath(solrInstallDirPath), e);
-      return Collections.emptySet();
+      return Set.of();
     }
   }
 
