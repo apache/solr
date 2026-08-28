@@ -22,14 +22,17 @@ import static org.hamcrest.core.StringContains.containsStringIgnoringCase;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -53,6 +56,7 @@ import org.apache.solr.util.ServletFixtures;
 import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Test;
 
@@ -740,6 +744,28 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
           assertEquals("0123456789", new String(is.readAllBytes(), StandardCharsets.UTF_8));
         }
       }
+    }
+  }
+
+  @Test
+  public void testErrorClassification() throws Exception {
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    try (HttpJettySolrClient client =
+        (HttpJettySolrClient) builder(url, DEFAULT_CONNECTION_TIMEOUT, 0).build()) {
+      IOException unsent =
+          new RequestNotSentException("Broken pipe", new IOException("Broken pipe"));
+      assertTrue(client.wasRequestUnsent(new SolrServerException("wrapped", unsent)));
+      assertTrue(client.wasCommError(new SolrServerException("wrapped", unsent)));
+
+      // Jetty's own connection-lost types are communication errors, but they say nothing about
+      // whether the request was delivered, so they must never claim it was unsent.
+      for (Throwable lost :
+          List.of(new EofException("Connection reset by peer"), new ClosedChannelException())) {
+        assertTrue(lost.getClass().getName(), client.wasCommError(lost));
+        assertFalse(lost.getClass().getName(), client.wasRequestUnsent(lost));
+      }
+
+      assertFalse(client.wasCommError(new IOException("Broken pipe")));
     }
   }
 
