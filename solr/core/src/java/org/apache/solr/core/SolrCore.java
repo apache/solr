@@ -3040,9 +3040,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
                 + "'");
       }
       if (echoParams == EchoParamStyle.EXPLICIT) {
-        responseHeader.add("params", req.getOriginalParams().toNamedList());
+        responseHeader.add("params", new SimpleOrderedMap<>(req.getOriginalParams()));
       } else if (echoParams == EchoParamStyle.ALL) {
-        responseHeader.add("params", req.getParams().toNamedList());
+        responseHeader.add("params", new SimpleOrderedMap<>(req.getParams()));
       }
     }
   }
