@@ -43,10 +43,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Joins the from-side index to the to-side index this query is executed against, resolving
  * from-side docs matching {@code fromQuery} to to-side docs through the auxiliary join index
- * managed by {@link AuxIndexManager}: there, each (from-segment, to-segment) pair owns a SORTED_NUMERIC
- * column named by both sides' persistent keys, whose doc number is the from-side doc id and whose
- * value is the matching to-side doc id. Pair columns missing from the join index are built on
- * demand at weight creation, so no explicit build step exists; obtain instances via {@link
+ * managed by {@link AuxIndexManager}: there, each (from-segment, to-segment) pair owns a
+ * SORTED_NUMERIC column named by both sides' persistent keys, whose doc number is the from-side doc
+ * id and whose value is the matching to-side doc id. Pair columns missing from the join index are
+ * built on demand at weight creation, so no explicit build step exists; obtain instances via {@link
  * AuxIndexManager#newJoinQuery}. Matches score a constant.
  */
 class AuxIndexJoinQuery extends Query {

@@ -32,17 +32,17 @@ import java.util.concurrent.Future;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
 import org.apache.solr.search.join.aijoin.AuxIndexManager.JoinSegmentReference;
 import org.apache.solr.search.join.aijoin.AuxIndexManager.SegmentsTuple;
-import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Builds missing pair columns for an {@link AuxIndexManager}: dedups concurrent builders per pair field
- * name, computes the in-memory {@link JoinColumnModel}s, double-checks a fresh join-index searcher
- * for pairs persisted since the caller looked, and persists what is still missing through {@link
- * AuxIndexManager#writeBatch}.
+ * Builds missing pair columns for an {@link AuxIndexManager}: dedups concurrent builders per pair
+ * field name, computes the in-memory {@link JoinColumnModel}s, double-checks a fresh join-index
+ * searcher for pairs persisted since the caller looked, and persists what is still missing through
+ * {@link AuxIndexManager#writeBatch}.
  */
 final class JoinColumnIndexer {
 

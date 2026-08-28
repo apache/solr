@@ -56,8 +56,8 @@ import org.slf4j.LoggerFactory;
  *   <li>from - "foreign key" field name, collected while enumerating the subordinate query (the
  *       local parameter value).
  *   <li>fromIndex - optional core name to run the subordinate query against, when it differs from
- *       this core; cross-core joins are the reason {@link AuxIndexManager} exists in the first place,
- *       so this mirrors {@link ScoreJoinQParserPlugin}'s <code>fromIndex</code>, including
+ *       this core; cross-core joins are the reason {@link AuxIndexManager} exists in the first
+ *       place, so this mirrors {@link ScoreJoinQParserPlugin}'s <code>fromIndex</code>, including
  *       SolrCloud alias/collection resolution via {@link ScoreJoinQParserPlugin#getCoreName}.
  *   <li>to - "primary key" field name looked up in this core's index.
  * </ul>
@@ -66,16 +66,16 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Unlike {@link ScoreJoinQParserPlugin.OtherCoreJoinQuery}, which only borrows the from-side
  * searcher long enough to build a self-contained {@code Query} in {@code createWeight}, an {@link
- * org.apache.solr.search.join.aijoin.AuxIndexJoinQuery} keeps reading the from-side searcher on every
- * {@code scorerSupplier} call (it may lazily build missing pair columns per to-segment), so a
+ * org.apache.solr.search.join.aijoin.AuxIndexJoinQuery} keeps reading the from-side searcher on
+ * every {@code scorerSupplier} call (it may lazily build missing pair columns per to-segment), so a
  * cross-core from-searcher is pinned open for the whole request via {@link
  * SolrRequestInfo#addCloseHook}, the same mechanism {@link
  * org.apache.solr.search.JoinQuery.JoinQueryWeight} uses for the regular {@code {!join}}.
  *
- * <p>One {@link AuxIndexManager} is opened per core in {@link #inform(SolrCore)}, backed by a directory
- * under the core's dataDir (configurable via the {@code dir} init parameter, resolved relative to
- * dataDir unless absolute), and closed when the core closes. This sidecar always belongs to the
- * "to" side core -- the one this plugin is registered in.
+ * <p>One {@link AuxIndexManager} is opened per core in {@link #inform(SolrCore)}, backed by a
+ * directory under the core's dataDir (configurable via the {@code dir} init parameter, resolved
+ * relative to dataDir unless absolute), and closed when the core closes. This sidecar always
+ * belongs to the "to" side core -- the one this plugin is registered in.
  *
  * <p><b>Why this implements {@link QueryResponseWriter}:</b> {@link
  * org.apache.solr.core.SolrResourceLoader}'s {@code awareCompatibility} allowlist (see SOLR-8311)

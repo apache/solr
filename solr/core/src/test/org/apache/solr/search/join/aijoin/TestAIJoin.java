@@ -507,8 +507,8 @@ public class TestAIJoin extends SolrTestCase {
    * parent_id=parent0}, a term present in only the first parents segment. Per to-leaf, {@code
    * BooleanWeight.scorerSupplier} asks the clauses in order and bails out with {@code null} on the
    * first required clause that has no matches -- so for every to-segment except the first one the
-   * join's scorerSupplier is never invoked, no {@code JoinIndexScorerSupplier} is created, and the pairs
-   * (every from-segment x that to-segment) are never written to the sidecar.
+   * join's scorerSupplier is never invoked, no {@code JoinIndexScorerSupplier} is created, and the
+   * pairs (every from-segment x that to-segment) are never written to the sidecar.
    *
    * <p>Expected log shape: pass 1 loads all FK columns and builds only the first to-segment's
    * pairs; passes 2..3 show {@code evt=weight} with the same {@code pairsMissing} again, {@code

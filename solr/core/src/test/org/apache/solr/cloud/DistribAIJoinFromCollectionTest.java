@@ -45,9 +45,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link AuxIndexJoinQParserPlugin} version of {@link
- * DistribJoinFromCollectionTest}: same collocated-replica {@code fromIndex} setup (a single-shard
- * "from" collection deployed onto every node holding a "to" replica, so {@link
+ * {@link AuxIndexJoinQParserPlugin} version of {@link DistribJoinFromCollectionTest}: same
+ * collocated-replica {@code fromIndex} setup (a single-shard "from" collection deployed onto every
+ * node holding a "to" replica, so {@link
  * org.apache.solr.search.join.ScoreJoinQParserPlugin#getCoreName}'s collocation lookup always finds
  * a local "from" replica), but adapted for two ways {@code {!auxIndexJoin}} differs from {@code
  * {!join}}:
@@ -99,7 +99,8 @@ public class DistribAIJoinFromCollectionTest extends SolrCloudTestCase {
     assertTrue(nodeSet.size() > 0);
 
     // deploy the single-shard "from" collection to every node where the "to" collection exists,
-    // so AuxIndexJoinQParserPlugin's collocation lookup always finds a local "from" replica -- and stays
+    // so AuxIndexJoinQParserPlugin's collocation lookup always finds a local "from" replica -- and
+    // stays
     // on the single-shard fast path, which skips the router-field cross-checks that a sharded
     // "from" collection would otherwise require
     CollectionAdminRequest.createCollection(fromColl, configName, 1, 4)

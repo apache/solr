@@ -18,15 +18,14 @@
 /**
  * # AI join sidecar index
  *
- * <p>{@link AuxIndexManager} owns an auxiliary Lucene index
- * persisting, for every (from-segment, to-segment) pair, a SORTED_NUMERIC column mapping from-side
- * doc ids to to-side doc ids, plus edges columns with the pair's {@code {min, max}} doc bounds and
- * a to-side count. Pair columns are named by both sides' persistent side keys (segment id +
- * docvalues generation of the join field), so they survive reopens of either side and are built
- * lazily — the first {@code AuxIndexJoinQuery} weight that needs a pair writes it. See {@link
- * AuxIndexManager} for the user-facing API and {@link
- * org.apache.solr.search.join.aijoin.AIJoinIndexConfig} for tunables (blocking vs. non-blocking
- * refresh, one-field-per-segment, the reaper's sweep interval).
+ * <p>{@link AuxIndexManager} owns an auxiliary Lucene index persisting, for every (from-segment,
+ * to-segment) pair, a SORTED_NUMERIC column mapping from-side doc ids to to-side doc ids, plus
+ * edges columns with the pair's {@code {min, max}} doc bounds and a to-side count. Pair columns are
+ * named by both sides' persistent side keys (segment id + docvalues generation of the join field),
+ * so they survive reopens of either side and are built lazily — the first {@code AuxIndexJoinQuery}
+ * weight that needs a pair writes it. See {@link AuxIndexManager} for the user-facing API and
+ * {@link org.apache.solr.search.join.aijoin.AIJoinIndexConfig} for tunables (blocking vs.
+ * non-blocking refresh, one-field-per-segment, the reaper's sweep interval).
  *
  * <p>A batch of pair columns is written through {@code AIJoinDocWriter}. It guarantes a batch lands
  * doc-for-doc in one sidecar segment, so doc 0's edges and every from-doc id line up the same way.
@@ -38,13 +37,13 @@
  * key can never be read again. {@code AIJoinMergePolicy} reaps them:
  *
  * <ul>
- *   <li><b>Death signal via sampling, not listeners.</b> {@code AuxIndexManager#onCreateWeight} (called
- *       from {@code AuxIndexJoinQuery#createWeight}) reports the set of pair field names a query actually
- *       needed to {@code AIJoinMergePolicy#onCreateWeight}, keyed by (from-directory,
- *       to-directory). A pair field name present in an earlier snapshot for the same searcher pair
- *       but missing from a later one is queued as a pending removal. Sampling is throttled ({@code
- *       AIJoinIndexConfig#setSweepSamplingInterval}, default one minute) since it is only a
- *       heuristic hint, not a correctness requirement, and both the snapshot map and the
+ *   <li><b>Death signal via sampling, not listeners.</b> {@code AuxIndexManager#onCreateWeight}
+ *       (called from {@code AuxIndexJoinQuery#createWeight}) reports the set of pair field names a
+ *       query actually needed to {@code AIJoinMergePolicy#onCreateWeight}, keyed by
+ *       (from-directory, to-directory). A pair field name present in an earlier snapshot for the
+ *       same searcher pair but missing from a later one is queued as a pending removal. Sampling is
+ *       throttled ({@code AIJoinIndexConfig#setSweepSamplingInterval}, default one minute) since it
+ *       is only a heuristic hint, not a correctness requirement, and both the snapshot map and the
  *       pending-removal set are size-bounded (best-effort LRU-ish eviction).
  *   <li><b>Reaping.</b> {@code findMerges} drops every sidecar segment whose pair field names are
  *       all pending removals, via a {@code OneMerge} that reports the segment as fully deleted

@@ -46,9 +46,9 @@ import org.apache.solr.util.LogLevel;
 
 /**
  * Real (non-mocked) integration smoke test for {@link AIJoinMergePolicy}: builds a segmented
- * children/parents pair, forces {@link AuxIndexJoinQuery} to populate the sidecar join index, then mass
- * deletes and force-merges both sides so the sidecar's previously-built pair columns go stale, and
- * checks the policy actually notices and reaps them -- not just that it runs without throwing.
+ * children/parents pair, forces {@link AuxIndexJoinQuery} to populate the sidecar join index, then
+ * mass deletes and force-merges both sides so the sidecar's previously-built pair columns go stale,
+ * and checks the policy actually notices and reaps them -- not just that it runs without throwing.
  */
 @LogLevel("org.apache.solr.search.join.aijoin=WARN")
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "no.url")

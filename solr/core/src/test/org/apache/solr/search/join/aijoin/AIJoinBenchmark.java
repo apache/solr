@@ -57,9 +57,9 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
  * the parent id boundary is raised by 10% and a tenth of the (new) parent population, with all
  * their children, is rewritten through {@code updateDocument} at random ids below the new boundary
  * — ids above the old boundary append fresh docs while ids below it clash with existing ones and
- * replace them, leaving deletes behind. The {@link AuxIndexManager} is opened once and reused by every
- * round and pass: after each update the first search builds only the missing pair columns, which is
- * timed separately from the steady-state passes.
+ * replace them, leaving deletes behind. The {@link AuxIndexManager} is opened once and reused by
+ * every round and pass: after each update the first search builds only the missing pair columns,
+ * which is timed separately from the steady-state passes.
  *
  * <p>Plain Java benchmark, run directly with {@code main}, no test framework involved.
  */
