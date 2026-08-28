@@ -106,7 +106,7 @@ public class SolrPackageLoader implements Closeable {
       }
     }
     coreContainer.forEachLoadedCore(core -> core.getPackageListeners().packagesUpdated(updated));
-    myCopy = packageAPI.pkgs;
+    myCopy = packageStore.pkgs;
   }
 
   public Map<String, List<PackageStore.PkgVersion>> getModified(

@@ -45,7 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * JAX-RS implementation of the package management API ({@code /api/cluster/package}).
+ * JAX-RS implementation of the package management API ({@code /api/cluster/packages}).
  *
  * @see PackageApis
  */
@@ -196,7 +196,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
                 List<PackageStore.PkgVersion> versions = packages.packages.get(packageName);
                 if (versions == null || versions.isEmpty()) {
                   throw new SolrException(
-                      SolrException.ErrorCode.BAD_REQUEST, "No such package: " + packageName);
+                      SolrException.ErrorCode.NOT_FOUND, "No such package: " + packageName);
                 }
                 int idxToRemove = -1;
                 for (int i = 0; i < versions.size(); i++) {
@@ -207,7 +207,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
                 }
                 if (idxToRemove == -1) {
                   throw new SolrException(
-                      SolrException.ErrorCode.BAD_REQUEST, "No such version: " + version);
+                      SolrException.ErrorCode.NOT_FOUND, "No such version: " + version);
                 }
                 versions.remove(idxToRemove);
                 packages.znodeVersion = stat.getVersion() + 1;
@@ -229,7 +229,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     SolrPackageLoader.SolrPackage pkg = coreContainer.getPackageLoader().getPackage(packageName);
     if (pkg == null) {
       throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "No such package: " + packageName);
+          SolrException.ErrorCode.NOT_FOUND, "No such package: " + packageName);
     }
     // first refresh on the current node
     packageStore.packageLoader.notifyListeners(packageName);
@@ -242,7 +242,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
           coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
       try {
         var solrClient = coreContainer.getDefaultHttpSolrClient();
-        solrClient.requestWithBaseUrl(baseUrl, request::process);
+        request.processWithBaseUrl(solrClient, baseUrl, null);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -290,7 +290,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
       var baseUrl = coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
       try {
         var solrClient = coreContainer.getDefaultHttpSolrClient();
-        solrClient.requestWithBaseUrl(baseUrl, request::process);
+        request.processWithBaseUrl(solrClient, baseUrl, null);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

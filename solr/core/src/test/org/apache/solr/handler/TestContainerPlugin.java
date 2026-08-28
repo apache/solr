@@ -312,7 +312,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
         listener.waitFor(cluster.getJettySolrRunners().size()));
 
     waitForAllNodesToSync(
-        "/cluster/package",
+        "/cluster/packages",
         Map.of(
             ":result:packages:mypkg[0]:version",
             "1.0",

@@ -145,7 +145,7 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         10,
         () ->
-            new V2Request.Builder("/cluster/package")
+            new V2Request.Builder("/cluster/packages")
                 .withMethod(SolrRequest.METHOD.GET)
                 .build()
                 .process(cluster.getSolrClient()),
@@ -167,7 +167,7 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         10,
         () ->
-            new V2Request.Builder("/cluster/package")
+            new V2Request.Builder("/cluster/packages")
                 .withMethod(SolrRequest.METHOD.GET)
                 .build()
                 .process(cluster.getSolrClient()),
@@ -224,7 +224,7 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         10,
         () ->
-            new V2Request.Builder("/cluster/package")
+            new V2Request.Builder("/cluster/packages")
                 .withMethod(SolrRequest.METHOD.GET)
                 .build()
                 .process(cluster.getSolrClient()),

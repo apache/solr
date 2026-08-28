@@ -154,7 +154,7 @@ public class RepositoryManager {
   /**
    * Install a given package and version from the available repositories to Solr. The various steps
    * for doing so are, briefly, a) find upload a manifest to package store, b) download the
-   * artifacts and upload to package store, c) call {@link PackageManager} to register the package.
+   * artifacts and upload to package store, c) call the Package API to register the package.
    */
   private boolean installPackage(String packageName, String version) throws SolrException {
     SolrPackageInstance existingPlugin = packageManager.getPackageInstance(packageName, version);

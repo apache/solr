@@ -30,7 +30,7 @@ import org.apache.solr.client.api.model.PackagesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /** V2 API definitions for managing Solr packages. */
-@Path("/cluster/package")
+@Path("/cluster/packages")
 public interface PackageApis {
 
   @GET

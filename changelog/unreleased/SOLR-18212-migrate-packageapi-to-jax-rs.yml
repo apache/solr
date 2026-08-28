@@ -1,4 +1,4 @@
-title: The package management API now has OpenAPI and SolrJ support. 
+title: The package management API now has OpenAPI and SolrJ support. As part of this migration, the (experimental v2) API path moved from `/api/cluster/package` to `/api/cluster/packages`, and requests for a non-existent package or package version now return HTTP 404 instead of 400.
 type: changed
 authors:
   - name: Eric Pugh
