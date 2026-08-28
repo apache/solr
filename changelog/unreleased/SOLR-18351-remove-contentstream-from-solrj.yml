@@ -1,0 +1,14 @@
+title: >
+  ContentStream is no longer part of SolrJ -- it moved to solr-core (same package) as the
+  server-side contract for reading request content, and is no longer deprecated. SolrJ writes
+  content only via RequestWriter.ContentWriter. ContentStreamUpdateRequest is replaced by
+  ContentWriterUpdateRequest, ConfigSetAdminRequest.Upload.setUploadStream by setUploadContent,
+  and ClientUtils.toContentStreams is removed. Note that uploaded files are now sent verbatim:
+  the old ContentStream-based path silently gunzipped .gz files and guessed a missing content
+  type, so pass the content type explicitly.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18351
+    url: https://issues.apache.org/jira/browse/SOLR-18351
