@@ -14,18 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.security;
+package org.apache.solr.client.api.model;
 
-import org.apache.solr.client.solrj.jetty.MutableListenerFactory;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Map;
 
 /**
- * Plugin interface for configuring internal HttpClients. This relies on the internal HttpClient
- * implementation and is subject to change.
- *
- * @lucene.experimental
+ * Response body for {@code GET /api/node/properties} and {@code GET
+ * /api/node/properties/{propertyName}}.
  */
-public interface HttpClientBuilderPlugin {
+public class NodePropertiesResponse extends SolrJerseyResponse {
 
-  /** May be called more than once; each call replaces the previous listener, not adds to it. */
-  public default void setup(MutableListenerFactory listenerFactory) {}
+  public static final String SYSTEM_PROPERTIES = "system.properties";
+
+  @Schema(description = "JRE system properties for the Solr node. Secret values are redacted.")
+  @JsonProperty(SYSTEM_PROPERTIES)
+  public Map<String, String> systemProperties;
 }

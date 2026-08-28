@@ -120,7 +120,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
 
   private final long idleTimeoutMillis;
 
-  private List<HttpListenerFactory> listenerFactory;
+  private final List<HttpListenerFactory> listenerFactory;
   protected AsyncTracker asyncTracker = new AsyncTracker();
 
   private final boolean closeClient;
@@ -206,14 +206,6 @@ public class HttpJettySolrClient extends HttpSolrClient {
       }
       instance.setup(this);
     }
-  }
-
-  /**
-   * @deprecated Use {@link Builder#addListenerFactory(HttpListenerFactory)} instead.
-   */
-  @Deprecated(since = "9.7")
-  public void addListenerFactory(HttpListenerFactory factory) {
-    this.listenerFactory.add(factory);
   }
 
   /** internal use only */
