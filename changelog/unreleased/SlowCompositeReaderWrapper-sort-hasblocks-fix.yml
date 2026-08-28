@@ -1,0 +1,6 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: SlowCompositeReaderWrapper no longer misreports the index sort and hasBlocks of a multi-segment composite view; both were previously taken from the first segment only, which is wrong whenever there is more than one segment.
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: David Smiley
+links:
