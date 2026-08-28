@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.CORE;
 import static org.apache.solr.common.params.CoreAdminParams.CORE_NODE_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
-import static org.apache.solr.common.params.CoreAdminParams.OTHER;
 
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
@@ -55,23 +54,11 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   @Override
   public void populateApiBag() {
     final CoreAdminHandler handler = getRequestHandler();
-    apiBag.registerObject(new RenameCoreAPI(handler));
     apiBag.registerObject(new RequestCoreRecoveryAPI(handler));
     apiBag.registerObject(new PrepareCoreRecoveryAPI(handler));
     apiBag.registerObject(new RequestApplyCoreUpdatesAPI(handler));
     apiBag.registerObject(new RequestSyncShardAPI(handler));
     apiBag.registerObject(new RequestBufferUpdatesAPI(handler));
-  }
-
-  @Test
-  public void testRenameCoreAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/coreName", "POST", "{\"rename\": {\"to\": \"otherCore\"}}");
-
-    assertEquals("rename", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-    assertEquals("otherCore", v1Params.get(OTHER));
   }
 
   @Test

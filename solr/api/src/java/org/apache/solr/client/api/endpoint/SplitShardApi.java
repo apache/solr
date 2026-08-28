@@ -22,8 +22,8 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SplitShardRequestBody;
+import org.apache.solr.client.api.model.SplitShardResponse;
 
 /**
  * V2 API definition for splitting an existing shard into multiple pieces.
@@ -37,7 +37,7 @@ public interface SplitShardApi {
   @Operation(
       summary = "Splits a shard in an existing collection into two or more shards.",
       tags = {"shards"})
-  SolrJerseyResponse splitShard(
+  SplitShardResponse splitShard(
       @Parameter(description = "The name of the collection containing the shard.", required = true)
           @PathParam("collectionName")
           String collectionName,

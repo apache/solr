@@ -19,7 +19,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
@@ -48,11 +48,12 @@ public class SplitCoreAPITest extends SolrTestCaseJ4 {
   public void testSplitWithNoTargetCoreOrPathReturnsError() throws Exception {
     var request = new CoresApi.SplitCore(DEFAULT_TEST_CORENAME);
 
-    SolrJerseyResponse response = request.process(solrTestRule.getSolrClient());
-    assertNotNull("Expected error in response", response.error);
-    assertEquals(400, (int) response.error.code);
+    final var ex =
+        expectThrows(
+            RemoteSolrException.class, () -> request.process(solrTestRule.getSolrClient()));
+    assertEquals(400, ex.code());
     assertTrue(
         "Expected error about missing targetCore or path",
-        response.error.msg.contains("path") || response.error.msg.contains("targetCore"));
+        ex.getMessage().contains("path") || ex.getMessage().contains("targetCore"));
   }
 }

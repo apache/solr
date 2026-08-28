@@ -38,9 +38,10 @@ import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.SplitShardApi;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SplitShardRequestBody;
+import org.apache.solr.client.api.model.SplitShardResponse;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
@@ -56,6 +57,9 @@ import org.apache.solr.response.SolrQueryResponse;
  */
 public class SplitShardAPI extends AdminAPIBase implements SplitShardApi {
 
+  // Deep enough to cover every level SplitShardCmd's RTimerTree nests sub-timers to.
+  private static final int MAX_TIMING_TREE_DEPTH = 10;
+
   @Inject
   public SplitShardAPI(
       CoreContainer coreContainer,
@@ -66,10 +70,10 @@ public class SplitShardAPI extends AdminAPIBase implements SplitShardApi {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse splitShard(String collectionName, SplitShardRequestBody requestBody)
+  public SplitShardResponse splitShard(String collectionName, SplitShardRequestBody requestBody)
       throws Exception {
     ensureRequiredParameterProvided(COLLECTION, collectionName);
-    SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    SplitShardResponse response = instantiateJerseyResponse(SplitShardResponse.class);
 
     final Map<String, Object> v1Params = new HashMap<>();
     v1Params.put(ACTION, CollectionParams.CollectionAction.SPLITSHARD.toLower());
@@ -114,6 +118,14 @@ public class SplitShardAPI extends AdminAPIBase implements SplitShardApi {
 
     CollectionsHandler collectionsHandler = coreContainer.getCollectionsHandler();
     collectionsHandler.handleRequestBody(wrapParams(solrQueryRequest, v1Params), solrQueryResponse);
+
+    final Object timing = solrQueryResponse.getValues().get(TIMING);
+    if (timing instanceof NamedList<?> timingNamedList) {
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> timingMap = timingNamedList.asMap(MAX_TIMING_TREE_DEPTH);
+      response.timing = timingMap;
+    }
+
     return response;
   }
 }

@@ -33,12 +33,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.solr.client.api.model.SplitShardResponse;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.ShardsApi;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -162,6 +164,26 @@ public class SplitShardTest extends SolrCloudTestCase {
     long expected1 = (Integer.MAX_VALUE >> 1) - fuzz;
     assertEquals("wrong range in s1_0", expected0, delta0);
     assertEquals("wrong range in s1_1", expected1, delta1);
+  }
+
+  @Test
+  public void testV2ApiReturnsTimingInfo() throws Exception {
+    String collectionName = "splitTimingCollection";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 1, 1);
+
+    ShardsApi.SplitShard splitShard = new ShardsApi.SplitShard(collectionName);
+    splitShard.setShard("shard1");
+    splitShard.setTiming(true);
+
+    SplitShardResponse response = splitShard.process(cluster.getSolrClient());
+    assertNull("Split should have succeeded", response.error);
+    assertNotNull("Expected timing information in response", response.timing);
+    assertFalse("Expected non-empty timing information", response.timing.isEmpty());
+
+    waitForState(
+        "Waiting for 2 active shards after split", collectionName, activeClusterShape(2, 2));
   }
 
   @Test

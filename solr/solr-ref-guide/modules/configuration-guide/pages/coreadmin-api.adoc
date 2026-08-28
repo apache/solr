@@ -671,31 +671,7 @@ Request ID to track this action which will be processed asynchronously.
 The `SPLIT` action splits an index into two or more indexes.
 The index being split can continue to handle requests.
 The split pieces can be placed into a specified directory on the server's filesystem or it can be merged into running Solr cores.
-
-[tabs#coreadmin-split-request]
-======
-V1 API::
-+
-====
-[source,bash]
-----
-http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&targetCore=core1&targetCore=core2
-----
-====
-
-V2 API::
-+
-====
-[source,bash]
-----
-curl -X POST http://localhost:8983/api/cores/core0/split -H 'Content-Type: application/json' -d '
-  {
-    "targetCore": ["core1", "core2"]
-  }
-'
-----
-====
-======
+See the <<SPLIT Examples>> below for sample V1 and V2 requests.
 
 The `SPLIT` action supports five parameters, which are described in the table below.
 
