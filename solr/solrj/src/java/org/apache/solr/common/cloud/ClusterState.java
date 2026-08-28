@@ -160,7 +160,7 @@ public class ClusterState implements MapWriter {
     return liveNodes;
   }
 
-  @Deprecated
+  @Deprecated(since = "10.0")
   public Map<String, List<Replica>> getReplicaNamesPerCollectionOnNode(final String nodeName) {
     Map<String, List<Replica>> replicaNamesPerCollectionOnNode = new HashMap<>();
     collectionStates.values().stream()

@@ -39,7 +39,7 @@ import org.apache.solr.uninverting.UninvertingReader;
  *   <li>doing grouped faceting ({@code group.facet}) on a single-valued numeric field.
  * </ul>
  */
-@Deprecated
+@Deprecated(since = "6.0")
 public class NumericHidingLeafReader extends FilterLeafReader {
 
   /**

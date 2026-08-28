@@ -865,7 +865,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * @deprecated Use of this method can only lead to race conditions. Try to actually obtain a lock
    *     instead.
    */
-  @Deprecated
+  @Deprecated(since = "7.0")
   private static boolean isWriterLocked(Directory directory) throws IOException {
     try {
       directory.obtainLock(IndexWriter.WRITE_LOCK_NAME).close();
