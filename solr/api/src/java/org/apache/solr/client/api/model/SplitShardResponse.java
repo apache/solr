@@ -20,9 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Map;
 
-/**
- * Response body for {@link org.apache.solr.client.api.endpoint.SplitShardApi#splitShard}
- */
+/** Response body for {@link org.apache.solr.client.api.endpoint.SplitShardApi#splitShard} */
 public class SplitShardResponse extends SubResponseAccumulatingJerseyResponse {
 
   @Schema(

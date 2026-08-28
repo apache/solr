@@ -19,9 +19,7 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/**
- * Response body for {@link org.apache.solr.client.api.endpoint.SplitCoreApi#splitCore}
- */
+/** Response body for {@link org.apache.solr.client.api.endpoint.SplitCoreApi#splitCore} */
 public class SplitCoreResponse extends SolrJerseyResponse {
 
   @Schema(
