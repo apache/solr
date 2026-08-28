@@ -1,0 +1,10 @@
+title: >
+  SolrJ: transports now classify their own failures via SolrClient.wasRequestUnsent /
+  wasCommError; CloudSolrClient and LBSolrClient ask instead of matching exception types.
+  CloudSolrClient now replays an update only when the transport proves it was never sent.
+type: changed
+authors:
+  - name: Han Chan
+links:
+  - name: SOLR-18402
+    url: https://issues.apache.org/jira/browse/SOLR-18402
