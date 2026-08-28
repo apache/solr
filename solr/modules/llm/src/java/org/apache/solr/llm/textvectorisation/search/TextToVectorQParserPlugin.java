@@ -86,7 +86,7 @@ public class TextToVectorQParserPlugin extends QParserPlugin
       SolrTextToVectorModel textToVector = modelStore.getModel(embeddingModelName);
 
       if (textToVector != null) {
-        final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
+        final SchemaField schemaField = req.getSchema().getField(getFieldName());
         final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
         int fieldDimensions = denseVectorType.getDimension();
         VectorEncoding vectorEncoding = denseVectorType.getVectorEncoding();

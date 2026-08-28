@@ -50,7 +50,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
   @Override
   public Query parse() throws SyntaxError {
     final String vectorField = getFieldName();
-    final SchemaField schemaField = req.getCore().getLatestSchema().getField(vectorField);
+    final SchemaField schemaField = req.getSchema().getField(vectorField);
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);

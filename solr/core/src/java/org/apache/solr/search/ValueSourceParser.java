@@ -898,7 +898,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
                   SolrException.ErrorCode.BAD_REQUEST, "Invalid payload function: " + func);
             }
 
-            IndexSchema schema = fp.getReq().getCore().getLatestSchema();
+            IndexSchema schema = fp.getReq().getSchema();
             PayloadDecoder decoder = schema.getPayloadDecoder(tinfo.field);
 
             if (decoder == null) {
