@@ -18,6 +18,7 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -59,6 +60,10 @@ public class SplitShardRequestBody {
   @Schema(description = "The method to use for splitting the index (e.g. 'rewrite' or 'link').")
   @JsonProperty
   public String splitMethod;
+
+  @Schema(description = "The nodes to place the new sub-shard replicas on.")
+  @JsonProperty
+  public List<String> nodeSet;
 
   @Schema(description = "Core properties to set on the sub-shards.")
   @JsonProperty

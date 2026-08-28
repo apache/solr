@@ -36,7 +36,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
@@ -91,13 +90,8 @@ import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
-import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_BY_PREFIX;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_FUZZ;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
@@ -653,56 +647,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }),
     SPLITSHARD_OP(
         SPLITSHARD,
-        DEFAULT_COLLECTION_OP_TIMEOUT * 5,
         (req, rsp, h) -> {
-          String name = req.getParams().required().get(COLLECTION_PROP);
-          // TODO : add support for multiple shards
-          String shard = req.getParams().get(SHARD_ID_PROP);
-          String rangesStr = req.getParams().get(CoreAdminParams.RANGES);
-          String splitKey = req.getParams().get("split.key");
-          String numSubShards = req.getParams().get(NUM_SUB_SHARDS);
-          String fuzz = req.getParams().get(SPLIT_FUZZ);
-
-          if (splitKey == null && shard == null) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "At least one of shard, or split.key should be specified.");
-          }
-          if (splitKey != null && shard != null) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Only one of 'shard' or 'split.key' should be specified");
-          }
-          if (splitKey != null && rangesStr != null) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Only one of 'ranges' or 'split.key' should be specified");
-          }
-          if (numSubShards != null && (splitKey != null || rangesStr != null)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "numSubShards can not be specified with split.key or ranges parameters");
-          }
-          if (fuzz != null && (splitKey != null || rangesStr != null)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "fuzz can not be specified with split.key or ranges parameters");
-          }
-
-          Map<String, Object> map =
-              copy(
-                  req.getParams(),
-                  null,
-                  COLLECTION_PROP,
-                  SHARD_ID_PROP,
-                  "split.key",
-                  CoreAdminParams.RANGES,
-                  WAIT_FOR_FINAL_STATE,
-                  TIMING,
-                  SPLIT_METHOD,
-                  NUM_SUB_SHARDS,
-                  SPLIT_FUZZ,
-                  SPLIT_BY_PREFIX,
-                  FOLLOW_ALIASES,
-                  CREATE_NODE_SET_PARAM);
-          return copyPropertiesWithPrefix(req.getParams(), map, PROPERTY_PREFIX);
+          SplitShardAPI.invokeWithV1Params(h.coreContainer, req, rsp);
+          return null;
         }),
     DELETESHARD_OP(
         DELETESHARD,

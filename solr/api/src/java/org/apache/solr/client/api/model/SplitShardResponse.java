@@ -23,7 +23,7 @@ import java.util.Map;
 /**
  * Response body for {@link org.apache.solr.client.api.endpoint.SplitShardApi#splitShard}
  */
-public class SplitShardResponse extends SolrJerseyResponse {
+public class SplitShardResponse extends SubResponseAccumulatingJerseyResponse {
 
   @Schema(
       description =
