@@ -228,8 +228,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
 
     SolrPackageLoader.SolrPackage pkg = coreContainer.getPackageLoader().getPackage(packageName);
     if (pkg == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.NOT_FOUND, "No such package: " + packageName);
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such package: " + packageName);
     }
     // first refresh on the current node
     packageStore.packageLoader.notifyListeners(packageName);
