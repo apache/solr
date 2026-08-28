@@ -91,7 +91,7 @@ import org.apache.lucene.index.IndexOptions;
  * @deprecated Please use {@link FloatPoint} instead
  * @since 2.9
  */
-@Deprecated
+@Deprecated(since = "6.0")
 public final class LegacyFloatField extends LegacyField {
 
   /**

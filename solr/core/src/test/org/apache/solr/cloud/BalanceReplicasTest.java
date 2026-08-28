@@ -97,7 +97,7 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
     collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     log.debug("### After balancing: {}", collection);
     Set<String> replicaNodes =
-        collection.getReplicas().stream().map(Replica::getNodeName).collect(Collectors.toSet());
+        collection.replicaStream().map(Replica::getNodeName).collect(Collectors.toSet());
     assertEquals("Incorrect nodes for replicas after balancing", liveNodes, replicaNodes);
   }
 
@@ -146,16 +146,13 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
         "Timed out waiting for replicas to be balanced across the target nodes",
         coll,
         (state) ->
-            state.getReplicas().stream()
-                    .map(Replica::getNodeName)
-                    .collect(Collectors.toSet())
-                    .size()
+            state.replicaStream().map(Replica::getNodeName).collect(Collectors.toSet()).size()
                 == 4);
 
     collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     log.debug("### After balancing: {}", collection);
     Set<String> replicaNodes =
-        collection.getReplicas().stream().map(Replica::getNodeName).collect(Collectors.toSet());
+        collection.replicaStream().map(Replica::getNodeName).collect(Collectors.toSet());
     assertEquals("Incorrect nodes for replicas after balancing", 4, replicaNodes.size());
     assertTrue(
         "A non-balanced node lost replicas during balancing", replicaNodes.contains(l.get(0)));

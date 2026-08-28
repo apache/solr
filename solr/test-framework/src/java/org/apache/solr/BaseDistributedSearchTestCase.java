@@ -68,8 +68,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -131,17 +131,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     r = new Random(random().nextLong());
   }
 
-  @SuppressWarnings("deprecation")
   @BeforeClass
   // Sets the solr.security.allow.urls.enable=false, disabling the need to provide an allow list.
   public static void setSolrEnableUrlUrlAllowList() {
-    systemSetPropertyEnableUrlAllowList(false);
-  }
-
-  @SuppressWarnings("deprecation")
-  @AfterClass
-  public static void clearSolrEnableUrlUrlAllowList() {
-    systemClearPropertySolrEnableUrlAllowList();
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
   }
 
   protected BaseDistributedSearchTestCase() {
@@ -267,7 +260,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   public void distribSetUp() throws Exception {
     distribSetUpCalled = true;
-    SolrTestCaseJ4.resetExceptionIgnores(); // ignore anything with ignore_exception in it
     testDir = createTempDir();
   }
 

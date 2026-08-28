@@ -325,7 +325,7 @@ public class StreamTool extends ToolBase {
     String collection = cli.getOptionValue(COLLECTION_OPTION);
 
     return new PushBackStream(
-        new SolrStream(solrUrl + "/solr/" + collection, params("qt", "/stream", "expr", expr)));
+        new SolrStream(solrUrl + "/solr", collection, "/stream", params("expr", expr)));
   }
 
   private static ModifiableSolrParams params(String... params) {

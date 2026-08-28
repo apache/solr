@@ -1144,8 +1144,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * reason to do so.
      *
      * @param incremental true to use incremental backups, false otherwise.
+     * @deprecated The 'full-snapshot' format is being removed; incremental backups are already the
+     *     default, so this method no longer needs to be called.
      */
-    @Deprecated
+    @Deprecated(since = "9.0")
     public Backup setIncremental(boolean incremental) {
       this.incremental = incremental;
       return this;
@@ -2058,17 +2060,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     /** Sets the timezone for interpreting any Solr "date math. */
     public CreateTimeRoutedAlias setTimeZone(TimeZone tz) {
       this.tz = tz;
-      return this;
-    }
-
-    /**
-     * Sets how long into the future (millis) that we will allow a document to pass.
-     *
-     * @deprecated Please use {@link #setMaxFutureMs(Long)} instead.
-     */
-    @Deprecated
-    public CreateTimeRoutedAlias setMaxFutureMs(Integer maxFutureMs) {
-      this.maxFutureMs = Long.valueOf(maxFutureMs);
       return this;
     }
 

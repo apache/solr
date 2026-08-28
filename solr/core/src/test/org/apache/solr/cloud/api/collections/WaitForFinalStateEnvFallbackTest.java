@@ -92,8 +92,7 @@ public class WaitForFinalStateEnvFallbackTest extends SolrCloudTestCase {
         elapsedMs < 5_000);
 
     DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(collection);
-    boolean anyNonActive =
-        coll.getReplicas().stream().anyMatch(r -> r.getState() != Replica.State.ACTIVE);
+    boolean anyNonActive = coll.replicaStream().anyMatch(r -> r.getState() != Replica.State.ACTIVE);
     assertTrue(
         "expected the new replica to still be stuck in recovery (not ACTIVE) since we "
             + "returned before waiting for final state",
