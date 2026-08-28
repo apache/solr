@@ -85,21 +85,4 @@ public class ContentWriterUpdateRequest extends AbstractUpdateRequest {
   public void addContent(String content, String contentType) {
     addContent(null, content, contentType);
   }
-
-  /** Adds {@code bytes} as a part. */
-  public void addBytes(String name, byte[] bytes, String contentType) {
-    addPart(
-        name,
-        new ContentWriter() {
-          @Override
-          public void write(OutputStream os) throws IOException {
-            os.write(bytes);
-          }
-
-          @Override
-          public String getContentType() {
-            return contentType;
-          }
-        });
-  }
 }

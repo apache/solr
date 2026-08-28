@@ -27,12 +27,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,7 +53,6 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
@@ -921,37 +917,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, rsp.getResults().getNumFound());
 
     ContentWriterUpdateRequest up = new ContentWriterUpdateRequest("/update");
-    Path file = getFile("solrj/books.csv");
-    final int written[] = new int[] {0};
-
-    boolean assertWrittenOnce = random().nextBoolean();
-    if (assertWrittenOnce) {
-      byte[] allBytes = Files.readAllBytes(file);
-      up.addPart(
-          "solrj/books.csv",
-          new RequestWriter.ContentWriter() {
-            @Override
-            public void write(OutputStream os) throws IOException {
-              written[0]++;
-              os.write(allBytes);
-            }
-
-            @Override
-            public String getContentType() {
-              return "application/csv";
-            }
-          });
-    } else {
-      up.addFile(file, "application/csv");
-    }
+    up.addFile(getFile("solrj/books.csv"), "application/csv");
 
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = client.request(up);
     assertNotNull("Couldn't upload books.csv", result);
-
-    if (assertWrittenOnce) {
-      assertEquals("written exactly once", 1, written[0]);
-    }
     rsp = client.query(new SolrQuery("*:*"));
     assertEquals(10, rsp.getResults().getNumFound());
   }

@@ -394,7 +394,6 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
   public String update(String chain, String xml) {
     try {
-      // Send raw XML through EmbeddedSolrServer
       ContentWriterUpdateRequest xmlRequest = new ContentWriterUpdateRequest("/update");
       xmlRequest.addContent(xml, "text/xml");
 
