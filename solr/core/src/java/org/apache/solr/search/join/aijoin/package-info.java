@@ -16,14 +16,39 @@
  */
 
 /**
- * # AI join sidecar index
+ * <h2>AI join sidecar index</h2>
  *
- * <p>{@link AuxIndexManager} owns an auxiliary Lucene index persisting, for every (from-segment,
+ * <pre>
+ * AuxIndexJoinQParserPlugin
+ *       │
+ *       ▼
+ * AuxIndexManager  ----->  AIJoinIndexConfig
+ *       │    │
+ *       │    +----------> AIJoinMergePolicy
+ *       ▼
+ * AuxIndexJoinQuery ------> FromLeafJoinContext
+ *       │                           │
+ *       ▼                           ▼
+ * JoinIndexWeight             ForeignKeyColumn
+ *       │
+ *       ▼
+ * JoinIndexScorerSupplier -----> JoinColumnIndexer
+ * │ │                            │ │
+ * │ ▼                            │ ▼
+ * │JISS.JoinTask                 │JoinColumnModel
+ * ▼                              ▼
+ * JISS.LazyRefineTwoPhIter       AIJoinDocWriter
+ *
+ * </pre>
+ *
+ * <p>{@link org.apache.solr.search.join.aijoin.AuxIndexManager} owns an auxiliary Lucene index
+ * persisting, for every (from-segment,
  * to-segment) pair, a SORTED_NUMERIC column mapping from-side doc ids to to-side doc ids, plus
  * edges columns with the pair's {@code {min, max}} doc bounds and a to-side count. Pair columns are
  * named by both sides' persistent side keys (segment id + docvalues generation of the join field),
  * so they survive reopens of either side and are built lazily — the first {@code AuxIndexJoinQuery}
- * weight that needs a pair writes it. See {@link AuxIndexManager} for the user-facing API and
+ * weight that needs a pair writes it. See {@link org.apache.solr.search.join.aijoin.AuxIndexManager}
+ * for the user-facing API and
  * {@link org.apache.solr.search.join.aijoin.AIJoinIndexConfig} for tunables (blocking vs.
  * non-blocking refresh, one-field-per-segment, the reaper's sweep interval).
  *
