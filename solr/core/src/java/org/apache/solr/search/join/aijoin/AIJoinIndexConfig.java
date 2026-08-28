@@ -28,8 +28,8 @@ import org.apache.lucene.store.Directory;
  * AuxIndexManager joinIndex = new AuxIndexManager(joinDir, config);
  * </pre>
  *
- * <p>Once passed to {@link AuxIndexManager#AuxIndexManager(Directory, AIJoinIndexConfig)}, changes to this
- * object no longer affect the created {@link AuxIndexManager} instance.
+ * <p>Once passed to {@link AuxIndexManager#AuxIndexManager(Directory, AIJoinIndexConfig)}, changes
+ * to this object no longer affect the created {@link AuxIndexManager} instance.
  */
 public final class AIJoinIndexConfig {
 
@@ -71,10 +71,11 @@ public final class AIJoinIndexConfig {
   }
 
   /**
-   * How often {@link AuxIndexManager#onCreateWeight} actually samples searcher state for the dead-pair
-   * reaper; calls arriving sooner than this after the last accepted sample are skipped, since
-   * sampling is only a heuristic hint feeding the reap decision, not a correctness requirement.
-   * Default is one minute. Pass zero (or a non-positive value) to sample on every call.
+   * How often {@link AuxIndexManager#onCreateWeight} actually samples searcher state for the
+   * dead-pair reaper; calls arriving sooner than this after the last accepted sample are skipped,
+   * since sampling is only a heuristic hint feeding the reap decision, not a correctness
+   * requirement. Default is one minute. Pass zero (or a non-positive value) to sample on every
+   * call.
    */
   public AIJoinIndexConfig setSweepSamplingInterval(long duration, TimeUnit unit) {
     this.sweepSamplingIntervalNanos = unit.toNanos(duration);

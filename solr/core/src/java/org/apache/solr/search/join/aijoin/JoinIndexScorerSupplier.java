@@ -48,10 +48,10 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.search.join.aijoin.AuxIndexManager.JoinSegmentReference;
-import org.apache.solr.search.join.aijoin.AuxIndexManager.SegmentsTuple;
 import org.apache.solr.search.join.aijoin.AIJoinUtil.DocEdges;
 import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
+import org.apache.solr.search.join.aijoin.AuxIndexManager.JoinSegmentReference;
+import org.apache.solr.search.join.aijoin.AuxIndexManager.SegmentsTuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,10 +66,11 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *   <li>{@code evt=build} -- a join-index write happened; carries the wall time it cost. Emitted by
  *       {@code AuxIndexManager#writeJoinSegments}, the chokepoint both build paths share: {@code
- *       cause=eager-create-weight} for the bulk build {nolink AuxIndexManager#ensureJoinSegments} does
- *       at {@link AuxIndexJoinQuery#createWeight} time, and {@code cause=lazy-to-segment} for the
- *       per-context fallback below. In a steady run the eager path does all the work and the lazy
- *       one never fires, so a log with no {@code cause=lazy-to-segment} line is the expected shape.
+ *       cause=eager-create-weight} for the bulk build {nolink AuxIndexManager#ensureJoinSegments}
+ *       does at {@link AuxIndexJoinQuery#createWeight} time, and {@code cause=lazy-to-segment} for
+ *       the per-context fallback below. In a steady run the eager path does all the work and the
+ *       lazy one never fires, so a log with no {@code cause=lazy-to-segment} line is the expected
+ *       shape.
  *   <li>{@code evt=ctx} -- this context finished setting up: how many (from, to) pairs contributed,
  *       how many the a-priori from-edge check dropped before any column was opened, and how loose
  *       the resulting approximation is.
@@ -157,53 +158,6 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   private final Map<String, JoinTask> joinCellsByPairFieldName = new HashMap<>();
   private final IndexReader toReader;
 
-  // TODO kept alongside LazyRefineTwoPhIter for comparison/rollback; not currently wired up
-  @SuppressWarnings("UnusedNestedClass")
-  private final class EagerRefineTwoPhIter extends TwoPhaseIterator {
-    boolean pruned = false;
-
-    private EagerRefineTwoPhIter(DocIdSetIterator approximation) {
-      super(approximation);
-    }
-
-    @Override
-    public boolean matches() throws IOException {
-      if (!pruned) {
-        FixedBitSet matchedToDocs;
-        int shift;
-        // prune the approximation to the resolved matches: drop the
-        // remaining range bits and or the matches back in at their
-        // absolute positions, so the approximation stops visiting
-        // non-matching docs
-        shift = approximation.docID();
-        // TODO the this is: it's enough to just confirm the match the return the control.
-        // TODO there, should be a refined bitset
-        // TODO when we need to refine an approx, we go throug join segments,
-        // TODO and drop them into refined bitset until we confirm the match
-        // TODO the order of iteration is: to side doc freq, which we neeed to persist and read then
-        // TODO once we drop a join segment to refined bitset we exclude it from iterations
-        // TODO also, just boundary check the following matches checks
-        // TODO the following matches() checks, at first confirm with refied bitset,
-        // TODO if it's false procede with to bitset dumping into refined bitset
-        matchedToDocs = refineToMatches(shift);
-        falsePositiveToDocsBits.clear(shift, lastToDoc + 1);
-        FixedBitSet.orRange(
-            matchedToDocs, 0, falsePositiveToDocsBits, shift, lastToDoc - shift + 1);
-        pruned = true;
-        return falsePositiveToDocsBits.get(approximation.docID());
-      }
-      // the bitset spans [shift, lastToDoc] shifted to zero
-      // return matchedToDocs.get(approximation.docID() - shift);
-      assert /*return*/ falsePositiveToDocsBits.get(approximation.docID()); // always true ??
-      return true;
-    }
-
-    @Override
-    public float matchCost() {
-      return matchedToDocsCount;
-    }
-  }
-
   private final class LazyRefineTwoPhIter extends TwoPhaseIterator {
     FixedBitSet falseNegToDocsBits = null;
     private int shift;
@@ -236,9 +190,11 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
             this.shift = approximation.docID();
             falseNegToDocsBits = new FixedBitSet(lastToDoc + 1 - shift);
           }
-          int walked = cell.dumpMatchesInto(falseNegToDocsBits, shift);
-          JoinIndexScorerSupplier.this.removeJoinCell(cell);
-          cellsDrained++;
+          int walked = cell.dumpMatchesInto(falseNegToDocsBits, shift, approximation.docID());
+          if (!cell.fromSegIterIsNotExausted()) {
+            JoinIndexScorerSupplier.this.removeJoinCell(cell);
+            cellsDrained++;
+          }
           fromDocsWalked += walked;
           if (!joinCells.isEmpty()) {
             if (falseNegToDocsBits.get(approximation.docID() - shift)) {
@@ -370,11 +326,12 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
      *
      * @return how many from-docs were walked, i.e. the column-read work this drain cost
      */
-    int dumpMatchesInto(FixedBitSet matchedToDocs, int shift) throws IOException {
+    int dumpMatchesInto(FixedBitSet matchedToDocs, int shift, int earlyExitDoc) throws IOException {
       SortedNumericDocValues toDocsByFromDoc = toDocsByFromDocsDV();
       int walked = 0;
+      boolean confirmedCurrent = false;
       for (int fromDoc = fromSegmentDocIdIter.docID(); // prepositioned to the first match
-          fromDoc != DocIdSetIterator.NO_MORE_DOCS && fromDoc <= fromDocEdges()[1];
+          fromSegIterIsNotExausted();
           fromDoc = fromSegmentDocIdIter.nextDoc()) {
         walked++;
         if (toDocsByFromDoc.advanceExact(fromDoc)) {
@@ -391,11 +348,23 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
             // than written at a negative offset
             if (toDocMatch >= shift) {
               matchedToDocs.set(toDocMatch - shift);
+              if (toDocMatch == earlyExitDoc) {
+                confirmedCurrent = true;
+              }
             }
+          }
+          if (confirmedCurrent) {
+            // we've just confirmed the doc, which was matches() is called for
+            return walked; // giveup
           }
         }
       }
       return walked;
+    }
+
+    private boolean fromSegIterIsNotExausted() {
+      return fromSegmentDocIdIter.docID() != DocIdSetIterator.NO_MORE_DOCS
+          && fromSegmentDocIdIter.docID() <= fromDocEdges()[1];
     }
 
     @Override
@@ -449,7 +418,8 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   /**
    * @param weightAgeJoinSegmentsReadOnly the join segments cached at {@link
    *     AuxIndexJoinQuery#createWeight} time DON'T MODIFY ME!!!
-   * @param weightAgeJoinSearcher the join searcher cached at {@link AuxIndexJoinQuery#createWeight} time
+   * @param weightAgeJoinSearcher the join searcher cached at {@link AuxIndexJoinQuery#createWeight}
+   *     time
    * @param scorerSupplierAgeJoinSearcher the join searcher used at {@link
    *     JoinIndexWeight#scorerSupplier} time
    * @param fromColumnFutures from side data by segment ord.
@@ -699,7 +669,8 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         missingPairs.put(cell.pairFieldName, cell.segmentsFromTo);
       }
       // the build itself is timed and reported by AuxIndexManager#writeJoinSegments, which is the
-      // chokepoint both this lazy path and the eager AuxIndexJoinQuery#createWeight path go through;
+      // chokepoint both this lazy path and the eager AuxIndexJoinQuery#createWeight path go
+      // through;
       // here we only accumulate what it cost this context, for the evt=ctx / evt=done lines
       long buildStartNanos = System.nanoTime();
       Map<String, JoinColumnModel> written =
@@ -826,32 +797,5 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   @Override
   public long cost() {
     return (long) lastToDoc - firstToDoc + 1;
-  }
-
-  /**
-   * TODO this refines false positive approximation , but it can iteratively refine false-negative
-   * docset, this let us giveup looping join tasks
-   *
-   * @deprecated called from EagerRefineTwoPhIter which is out of use now
-   */
-  @Deprecated
-  private FixedBitSet refineToMatches(int shift) throws IOException {
-    FixedBitSet matchedToDocs = new FixedBitSet(lastToDoc - shift + 1);
-    IndexSearcher freshSearcher = this.joinIndex.acquire();
-    try {
-
-      refreshJoinTasksReferences(freshSearcher);
-      assert this.lastSeenJoinSearcher == freshSearcher;
-      for (JoinTask cell : joinCells) {
-        cell.dumpMatchesInto(matchedToDocs, shift);
-      }
-    } catch (ExecutionException e) {
-      throw new RuntimeException(e);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    } finally { // TODO release before looping remaining cells separately
-      this.joinIndex.release(freshSearcher);
-    }
-    return matchedToDocs;
   }
 }

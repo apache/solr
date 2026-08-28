@@ -65,9 +65,9 @@ import org.slf4j.event.Level;
 
 /**
  * Column-building and addressing helpers for the auxiliary join index managed by {@link
- * AuxIndexManager}: for every (from-segment, to-segment) pair it produces a SORTED_NUMERIC column named
- * {@link #pairFieldName}, whose doc number is the from-side doc id and whose value is the to-side
- * doc id whose {@code toField} term equals the from doc's {@code fromField} term, plus two
+ * AuxIndexManager}: for every (from-segment, to-segment) pair it produces a SORTED_NUMERIC column
+ * named {@link #pairFieldName}, whose doc number is the from-side doc id and whose value is the
+ * to-side doc id whose {@code toField} term equals the from doc's {@code fromField} term, plus two
  * companion edges columns persisting the pair's {min, max} from-doc and to-doc bounds.
  */
 final class AIJoinUtil {
@@ -256,8 +256,8 @@ final class AIJoinUtil {
    *
    * <p>Docs already deleted at build time are skipped, purely to avoid persisting entries nobody
    * can ever match -- deletes are otherwise re-checked live at query time (from-side in {@code
-   * JoinIndexScorerSupplier}, to-side by the searcher's own {@code acceptDocs}), since a pair's cached
-   * mapping outlives whatever gets deleted after it was built.
+   * JoinIndexScorerSupplier}, to-side by the searcher's own {@code acceptDocs}), since a pair's
+   * cached mapping outlives whatever gets deleted after it was built.
    */
   static JoinColumnModel computeDocMapping(
       LeafReaderContext toContext,

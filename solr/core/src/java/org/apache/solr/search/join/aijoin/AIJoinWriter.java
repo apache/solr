@@ -23,8 +23,8 @@ import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
 
 /**
  * Isolates every write-side representation of a join batch behind this one write-only surface, so
- * {@link AuxIndexManager} and {@link AIJoinUtil} deal only in {@link JoinColumnModel} and never need to
- * import a particular field-writing API themselves.
+ * {@link AuxIndexManager} and {@link AIJoinUtil} deal only in {@link JoinColumnModel} and never
+ * need to import a particular field-writing API themselves.
  */
 abstract class AIJoinWriter {
 

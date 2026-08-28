@@ -39,10 +39,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
- * Exercises {@link AuxIndexJoinQParserPlugin}, modeled on {@link TestScoreJoinQPNoScore}'s same-core
- * {@code {!join}} coverage plus {@link org.apache.solr.TestCrossCoreJoin}'s cross-core setup, since
- * cross-core joins -- not same-core -- are the reason {@link
- * AuxIndexManager} exists.
+ * Exercises {@link AuxIndexJoinQParserPlugin}, modeled on {@link TestScoreJoinQPNoScore}'s
+ * same-core {@code {!join}} coverage plus {@link org.apache.solr.TestCrossCoreJoin}'s cross-core
+ * setup, since cross-core joins -- not same-core -- are the reason {@link AuxIndexManager} exists.
  *
  * <p>Every join here goes from the "many" side (an employee, single-valued FK) to the "few" side
  * (that employee's department, a value unique per to-doc): {@code AIJoinUtil#computeDocMapping} is,
@@ -53,10 +52,9 @@ import org.junit.Test;
  *
  * <p>Both cores use version 1.7 schemas ({@code configsets/aijoin}, shared with {@link
  * org.apache.solr.cloud.DistribAIJoinFromCollectionTest}, and {@code configsets/minimal}), where
- * docValues default to true: {@link AuxIndexManager} reads real
- * per-segment {@link org.apache.lucene.index.SortedSetDocValues} directly, unlike {@link
- * ScoreJoinQParserPlugin} (via {@link org.apache.lucene.search.join.JoinUtil}) which tolerates
- * uninverted fields too.
+ * docValues default to true: {@link AuxIndexManager} reads real per-segment {@link
+ * org.apache.lucene.index.SortedSetDocValues} directly, unlike {@link ScoreJoinQParserPlugin} (via
+ * {@link org.apache.lucene.search.join.JoinUtil}) which tolerates uninverted fields too.
  */
 public class TestAuxIndexJoinQParserPlugin extends SolrTestCase {
 
