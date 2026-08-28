@@ -123,7 +123,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
               return new ConnectException("TEST");
             }
             if (i == 2) {
-              return new SocketException("TEST");
+              return new ConnectException("TEST");
             }
             if (i == 3) {
               return new ConnectException("TEST");
@@ -137,6 +137,50 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       // Race: sometimes async completes fast enough for 2 fetches, sometimes only 1.
       int fetchCount = refs.get(collName).getCount();
       assertTrue("Expected 1 or 2 fetches, got " + fetchCount, fetchCount >= 1 && fetchCount <= 2);
+    }
+  }
+
+  /**
+   * An update may already have been applied by the time a communication error surfaces, so it is
+   * replayed only when the transport proves the request never arrived.
+   */
+  public void testUpdateIsNotReplayedWhenItMayHaveBeenApplied() throws Exception {
+    String collName = "gettingstarted";
+    Set<String> livenodes = new HashSet<>();
+    Map<String, ClusterState.CollectionRef> refs = new HashMap<>();
+    Map<String, DocCollection> colls = new HashMap<>();
+
+    Map<String, Function<?, ?>> responses = new HashMap<>();
+    LBJettySolrClient mockLbclient = getMockLbHttpSolrClient(responses);
+    AtomicInteger lbhttpRequestCount = new AtomicInteger();
+    try (ClusterStateProvider clusterStateProvider = getStateProvider(livenodes, refs);
+        CloudSolrClient cloudClient =
+            new RandomizingCloudSolrClientBuilder(clusterStateProvider) {
+              @Override
+              protected LBSolrClient createOrGetLbClient(HttpSolrClient myClient) {
+                return mockLbclient;
+              }
+            }.build()) {
+      livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
+      refs.put(collName, new ClusterState.CollectionRef(loadCollection(collName, 1)));
+      colls.put(collName, loadCollection(collName, 1));
+
+      // Not a ConnectException: the transport cannot prove this request never left.
+      responses.put(
+          "request",
+          o -> {
+            lbhttpRequestCount.incrementAndGet();
+            return new SocketException("TEST");
+          });
+      UpdateRequest update = new UpdateRequest().add("id", "123", "desc", "Something 0");
+
+      // The routing randomization decides whether the failure arrives wrapped, so match the cause.
+      Exception thrown = expectThrows(Exception.class, () -> cloudClient.request(update, collName));
+      assertTrue(
+          "the transport's failure must reach the caller",
+          SolrException.hasCause(thrown, SocketException.class));
+      assertEquals(
+          "an update that may have been applied must not be replayed", 1, lbhttpRequestCount.get());
     }
   }
 

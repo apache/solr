@@ -717,6 +717,10 @@ public abstract class CloudSolrClient extends SolrClient {
               : SolrException.ErrorCode.UNKNOWN.code;
 
       final boolean wasCommError = wasCommError(exc);
+      // An update may already have been applied; only replay one the transport proves never
+      // arrived.
+      final boolean mayReplay =
+          request.getRequestType() != SolrRequestType.UPDATE || wasRequestUnsent(exc);
 
       if (wasCommError
           || (exc instanceof RouteException
@@ -748,7 +752,8 @@ public abstract class CloudSolrClient extends SolrClient {
             }
           }
         }
-        if (retryCount < MAX_STALE_RETRIES) { // if it is a communication error , we must try again
+        // if it is a communication error , we must try again
+        if (mayReplay && retryCount < MAX_STALE_RETRIES) {
           // may be, we have a stale version of the collection state,
           // and we could not get any information from the server
           // it is probably not worth trying again and again because
