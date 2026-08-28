@@ -22,7 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -36,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -365,6 +369,19 @@ public abstract class HttpSolrClient extends SolrClient {
 
   public Set<String> getUrlParamNames() {
     return urlParamNames;
+  }
+
+  @Override
+  public boolean wasRequestUnsent(Throwable t) {
+    return SolrException.hasCause(t, RequestNotSentException.class)
+        || SolrException.hasCause(t, ConnectException.class);
+  }
+
+  @Override
+  public boolean wasCommError(Throwable t) {
+    return SolrException.hasCause(t, SocketException.class)
+        || SolrException.hasCause(t, UnknownHostException.class)
+        || wasRequestUnsent(t);
   }
 
   /**

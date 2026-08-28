@@ -210,7 +210,8 @@ public abstract class CloudSolrClient extends SolrClient {
    * Is this a communication error? We will retry if so. The whole cause chain is inspected, since a
    * transport may report the underlying failure wrapped at any depth.
    */
-  protected boolean wasCommError(Throwable t) {
+  @Override
+  public boolean wasCommError(Throwable t) {
     return SolrException.hasCause(t, SocketException.class)
         || SolrException.hasCause(t, UnknownHostException.class)
         || SolrException.hasCause(t, RequestNotSentException.class);

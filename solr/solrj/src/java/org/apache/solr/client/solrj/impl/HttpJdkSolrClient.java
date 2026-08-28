@@ -29,6 +29,7 @@ import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
@@ -227,6 +228,13 @@ public class HttpJdkSolrClient extends HttpSolrClient {
   public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     return requestWithBaseUrl(null, solrRequest, collection);
+  }
+
+  /** A connect timeout means the connection was never established, so nothing was written. */
+  @Override
+  public boolean wasRequestUnsent(Throwable t) {
+    return super.wasRequestUnsent(t)
+        || SolrException.hasCause(t, HttpConnectTimeoutException.class);
   }
 
   protected PreparedRequest prepareRequest(
