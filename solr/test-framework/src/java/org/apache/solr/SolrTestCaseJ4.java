@@ -117,7 +117,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
@@ -2254,7 +2253,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // and copies the stock files in there.
 
   /** Copies the test collection1 config into {@code dstRoot}/{@code collection}/conf */
-  @Deprecated // Instead use a basic config + whatever is needed or default config
+  /**
+   * @deprecated Use a basic config plus whatever is needed, or the default config, instead of
+   *     copying the full collection1 test config.
+   */
+  @Deprecated(since = "10.0") // Instead use a basic config + whatever is needed or default config
   public static void copySolrHomeToTemp(Path dstRoot, String collection) throws IOException {
     Path subHome = dstRoot.resolve(collection).resolve("conf");
     Files.createDirectories(subHome);
@@ -2652,14 +2655,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static void systemSetPropertySolrTestsMergePolicyFactory(String value) {
     System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, value);
   }
-
-  @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemSetPropertyEnableUrlAllowList(boolean value) {
-    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, String.valueOf(value));
-  }
-
-  @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrEnableUrlAllowList() {}
 
   @SafeVarargs
   protected static <T> T pickRandom(T... options) {
