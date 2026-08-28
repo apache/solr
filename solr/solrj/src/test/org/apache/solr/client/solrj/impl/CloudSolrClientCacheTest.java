@@ -431,7 +431,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
     @Override
     public HttpSolrClient getHttpClient() {
-      throw new UnsupportedOperationException();
+      return mock(HttpSolrClient.class);
     }
 
     @FunctionalInterface
