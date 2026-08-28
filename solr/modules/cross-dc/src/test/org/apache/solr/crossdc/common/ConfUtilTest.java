@@ -291,7 +291,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFillProperties_SecurityProperties() throws Exception {
+  public void testFillProperties_SecurityProperties() {
     Map<String, Object> properties = new HashMap<>();
 
     // Set security-related properties
