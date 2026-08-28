@@ -20,6 +20,7 @@ import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 
 import io.opentelemetry.api.common.Attributes;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import java.io.IOException;
 import java.util.Optional;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -43,7 +44,7 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEntryList() {
+  public void testEntryList() throws IOException {
     // Ensure entries to FieldCache
     assertU(adoc("id", "id0"));
     assertU(commit());
@@ -72,7 +73,7 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
     }
   }
 
-  private void assertEntryList(boolean bytesMetricIncluded) {
+  private void assertEntryList(boolean bytesMetricIncluded) throws IOException {
     FieldCacheMetrics metrics = getFieldCacheMetrics();
     assertTrue(
         "Field cache entries count should be greater than 0",
@@ -85,12 +86,11 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
     }
   }
 
-  private FieldCacheMetrics getFieldCacheMetrics() {
+  private FieldCacheMetrics getFieldCacheMetrics() throws IOException {
     String registryName = TestUtil.randomSimpleString(random(), 1, 10);
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
-    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registryName);
-
-    try (SolrFieldCacheBean mbean = new SolrFieldCacheBean()) {
+    try (var solrMetricsContext = new SolrMetricsContext(metricManager, registryName);
+        SolrFieldCacheBean mbean = new SolrFieldCacheBean()) {
       mbean.initializeMetrics(
           solrMetricsContext, Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()));
 

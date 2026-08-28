@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.feature;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -65,9 +64,6 @@ import org.apache.solr.search.SolrIndexSearcher;
  *
  * <p>DefaultValueFVFS: used for docValues=true, a fallback scorer that is used on segments where no
  * document has a value set in the field of this feature
- *
- * <p>Use {@link LegacyFieldValueFeature} for the pre 9.4 behaviour of not using DocValues when
- * docValues=true is combined with stored=true.
  */
 public class FieldValueFeature extends Feature {
 
@@ -82,7 +78,7 @@ public class FieldValueFeature extends Feature {
 
   public void setField(String field) {
     this.field = field;
-    fieldAsSet = Collections.singleton(field);
+    fieldAsSet = Set.of(field);
   }
 
   @Override

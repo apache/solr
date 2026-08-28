@@ -22,7 +22,6 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -93,7 +92,10 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     // verify doc is on the leader and replica
     final List<Replica> notLeaders =
-        stateReader.getClusterState().getCollection(COLLECTION).getReplicas().stream()
+        stateReader
+            .getClusterState()
+            .getCollection(COLLECTION)
+            .replicaStream()
             .filter(r -> r.getCoreName().equals(leader.getCoreName()) == false)
             .collect(Collectors.toList());
     assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, 1, null);
@@ -351,7 +353,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     doc.addField("id", String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
     AbstractFullDistribZkTestBase.sendDocsWithRetry(
-        cluster.getSolrClient(), COLLECTION, Collections.singletonList(doc), 2, 3, 100);
+        cluster.getSolrClient(), COLLECTION, List.of(doc), 2, 3, 100);
   }
 
   /**
@@ -360,8 +362,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
    */
   protected Long assertDocExists(SolrClient solr, String docId, Long expVers) throws Exception {
     QueryRequest qr =
-        new QueryRequest(
-            params("qt", "/get", "id", docId, "distrib", "false", "fl", "id,_version_"));
+        new QueryRequest("/get", params("id", docId, "distrib", "false", "fl", "id,_version_"));
     NamedList<?> rsp = solr.request(qr);
     SolrDocument doc = (SolrDocument) rsp.get("doc");
     String match = JSONTestUtil.matchObj("/id", doc, docId);

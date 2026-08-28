@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.ConfigsetsApi;
 import org.apache.solr.client.api.model.CloneConfigsetRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ConfigSetParams;
@@ -34,7 +35,11 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/** V2 API implementation for ConfigsetsApi.Clone */
+/**
+ * V2 API implementation for creating a new configset form an existing one.
+ *
+ * <p>This API (GET /v2/configsets) is analogous to the v1 /admin/configs?action=CREATE command.
+ */
 public class CloneConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Clone {
 
   @Inject
@@ -50,6 +55,7 @@ public class CloneConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Cl
   public SolrJerseyResponse cloneExistingConfigSet(CloneConfigsetRequestBody requestBody)
       throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    SolrIdentifierValidator.validateConfigSetName(requestBody.name);
     if (configSetService.checkConfigExists(requestBody.name)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + requestBody.name);

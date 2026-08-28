@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -319,17 +321,15 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testMultiBad() {
-    try {
-      ignoreException("analyzer returned too many terms");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("analyzer returned too many terms")) {
       Exception expected =
           expectThrows(
               Exception.class,
               "Should throw exception when token evaluates to more than one term",
               () -> assertQ(req("q", "content_multi_bad:" + "abCD*")));
-      assertTrue(expected.getCause() instanceof org.apache.solr.common.SolrException);
-    } finally {
-      resetExceptionIgnores();
+      assertTrue(expected.getCause() instanceof SolrException);
     }
   }
 

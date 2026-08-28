@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.nio.file.Path;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
@@ -35,10 +36,11 @@ public class SolrPingTest extends SolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrTestRule.startSolr(SolrTestCaseJ4.getFile("solrj/solr"));
+    Path solrHome = SolrTestCaseJ4.getFile("solrj/solr");
+    solrTestRule.startSolr(solrHome);
 
     SolrTestCaseJ4.newRandomConfig();
-    solrTestRule.newCollection().withConfigSet("../collection1").create();
+    solrTestRule.newCollection().withConfigSet(solrHome.resolve("collection1")).create();
   }
 
   @Before

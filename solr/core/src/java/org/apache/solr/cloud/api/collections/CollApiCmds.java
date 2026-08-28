@@ -70,10 +70,10 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -275,13 +275,7 @@ public class CollApiCmds {
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
 
       CollectionHandlingUtils.collectionCmd(
-          adminCmdContext,
-          message,
-          params,
-          results,
-          Replica.State.ACTIVE,
-          Collections.emptySet(),
-          ccc);
+          adminCmdContext, message, params, results, Replica.State.ACTIVE, Set.of(), ccc);
     }
   }
 

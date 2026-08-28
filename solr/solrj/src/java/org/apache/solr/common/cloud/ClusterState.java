@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
@@ -31,17 +29,12 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.util.CollectionUtil;
-import org.apache.solr.common.util.Utils;
-import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,34 +190,6 @@ public class ClusterState implements MapWriter {
     return sb.toString();
   }
 
-  /**
-   * Create a ClusterState from Json. This method doesn't support legacy configName location and
-   * thus don't call it where that's important
-   *
-   * @param bytes a byte array of a Json representation of a mapping from collection name to the
-   *     Json representation of a {@link DocCollection} as written by {@link #write(JSONWriter)}. It
-   *     can represent one or more collections.
-   * @param liveNodes list of live nodes
-   * @param creationTime assigns this date to all {@link DocCollection} referenced by the returned
-   *     {@link ClusterState}
-   * @return the ClusterState
-   */
-  @Deprecated
-  public static ClusterState createFromJson(
-      int version,
-      byte[] bytes,
-      Set<String> liveNodes,
-      Instant creationTime,
-      DocCollection.PrsSupplier prsSupplier) {
-    if (bytes == null || bytes.length == 0) {
-      return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
-    }
-    @SuppressWarnings({"unchecked"})
-    Map<String, Object> stateMap =
-        (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, STR_INTERNER_OBJ_BUILDER);
-    return createFromCollectionMap(version, stateMap, liveNodes, creationTime, prsSupplier);
-  }
-
   @Deprecated
   public static ClusterState createFromCollectionMap(
       int version,
@@ -273,7 +238,7 @@ public class ClusterState implements MapWriter {
       // legacy format from 4.0... there was no separate "shards" level to contain the collection
       // shards.
       slices = Slice.loadAllFromMap(name, objs);
-      props = Collections.emptyMap();
+      props = Map.of();
     } else {
       slices = Slice.loadAllFromMap(name, sliceObjs);
       objs.remove(CollectionStateProps.SHARDS);
@@ -387,16 +352,5 @@ public class ClusterState implements MapWriter {
   /** The approximate number of collections. */
   public int size() {
     return collectionStates.size();
-  }
-
-  private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER =
-      STANDARDOBJBUILDER;
-
-  /**
-   * @lucene.internal
-   */
-  public static void setStrInternerParser(Function<JSONParser, ObjectBuilder> fun) {
-    if (fun == null) return;
-    STR_INTERNER_OBJ_BUILDER = fun;
   }
 }

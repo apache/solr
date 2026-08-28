@@ -18,7 +18,6 @@ package org.apache.solr.request;
 
 import java.io.Closeable;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -225,7 +224,7 @@ public class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
   }
 
   protected Map<String, JsonSchemaValidator> getValidators() {
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   private record LocalPrincipal(String user) implements Principal {

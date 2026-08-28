@@ -1,0 +1,7 @@
+title: SOLR-17549 - v2 SolrRequest/SolrResponse classes now report errors identically to their v1 counterparts
+type: fixed
+authors:
+  - name: Jason Gerlowski
+links:
+  - name: SOLR-17549
+    url: https://issues.apache.org/jira/browse/SOLR-17549

@@ -28,9 +28,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
@@ -336,7 +336,7 @@ public class PostToolTest extends SolrCloudTestCase {
     assertEquals(3, num);
 
     // Without respecting robots.txt
-    postTool.pageFetcher.robotsCache.put("[ff01::114]", Collections.emptyList());
+    postTool.pageFetcher.robotsCache.put("[ff01::114]", List.of());
     postTool.recursive = 5;
     num = postTool.postWebPages(new String[] {"http://[ff01::114]/#removeme"}, 0, null);
     assertEquals(6, num);

@@ -23,7 +23,6 @@ package org.apache.solr.handler.extraction.fromtika;
 
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.xml.sax.Attributes;
@@ -47,7 +46,7 @@ public class ToXMLContentHandler extends ToTextContentHandler {
     public ElementInfo(ElementInfo parent, Map<String, String> namespaces) {
       this.parent = parent;
       if (namespaces.isEmpty()) {
-        this.namespaces = Collections.emptyMap();
+        this.namespaces = Map.of();
       } else {
         this.namespaces = new HashMap<String, String>(namespaces);
       }

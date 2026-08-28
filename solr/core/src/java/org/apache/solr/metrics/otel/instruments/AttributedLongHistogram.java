@@ -24,8 +24,7 @@ public class AttributedLongHistogram {
   protected final LongHistogram histogram;
   protected final Attributes attributes;
 
-  public AttributedLongHistogram(
-      LongHistogram histogram, io.opentelemetry.api.common.Attributes attributes) {
+  public AttributedLongHistogram(LongHistogram histogram, Attributes attributes) {
     this.histogram = histogram;
     this.attributes = attributes;
   }

@@ -34,7 +34,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +94,7 @@ public class SearchHandler extends RequestHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
+  private HandlerMetrics metricsShard;
 
   protected volatile List<SearchComponent> components;
   private ShardHandlerFactory shardHandlerFactory;
@@ -203,7 +202,7 @@ public class SearchHandler extends RequestHandlerBase
 
                 @Override
                 public Map<String, PackageAPI.PkgVersion> packageDetails() {
-                  return Collections.emptyMap();
+                  return Map.of();
                 }
 
                 @Override
@@ -275,6 +274,10 @@ public class SearchHandler extends RequestHandlerBase
     DebugComponent dbgCmp = null;
     for (String c : list) {
       SearchComponent comp = core.getSearchComponent(c);
+      if (comp == null) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Unknown search component: " + c);
+      }
       if (comp instanceof DebugComponent && makeDebugLast == true) {
         dbgCmp = (DebugComponent) comp;
       } else {
@@ -765,7 +768,7 @@ public class SearchHandler extends RequestHandlerBase
         return "EXECUTE_QUERY";
       case STAGE_GET_FIELDS:
         return "GET_FIELDS";
-        // nobody wants to think it was DONE and canceled after it completed...
+      // nobody wants to think it was DONE and canceled after it completed...
       case STAGE_DONE:
         return "FINISHING";
       default:

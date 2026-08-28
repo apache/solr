@@ -548,11 +548,34 @@ Please refer to the https://search.maven.org/artifact/org.apache.solr/solr-solrj
 
 If you are using Maven, the `org.apache.solr.solr-solrj` artifact contains the required jars.
 
-Once the jars are available on the classpath, the Solr JDBC driver name is `org.apache.solr.client.solrj.io.sql.DriverImpl` and a connection can be made with the following connection string format:
+Once the jars are available on the classpath, the Solr JDBC driver name is `org.apache.solr.client.solrj.io.sql.DriverImpl` and a connection can be made with the following connection string formats:
 
+==== HTTP-based JDBC URL
+[source,plain]
+----
+jdbc:solr:http://SOLR_HTTP_CONNECTION_STRING?collection=COLLECTION_NAME
+----
+
+For example:
+
+[source,plain]
+----
+jdbc:solr:http://solr1.example.com:8983/solr?collection=COLLECTION_NAME
+----
+
+
+==== ZooKeeper-based JDBC URL
 [source,plain]
 ----
 jdbc:solr://SOLR_ZK_CONNECTION_STRING?collection=COLLECTION_NAME
 ----
+
+For example:
+
+[source,plain]
+----
+jdbc:solr://zoo.example.com:2181/solr?collection=COLLECTION_NAME
+----
+
 
 There are other parameters that can be optionally added to the connection string like `aggregationMode` and `numWorkers`.

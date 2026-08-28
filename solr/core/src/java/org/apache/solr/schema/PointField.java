@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -262,7 +261,7 @@ public abstract class PointField extends NumericFieldType {
   @Override
   public List<IndexableField> createFields(SchemaField sf, Object value) {
     if (!isFieldUsed(sf)) {
-      return Collections.emptyList();
+      return List.of();
     }
     List<IndexableField> fields = new ArrayList<>(3);
     IndexableField field = null;

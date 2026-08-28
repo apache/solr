@@ -16,14 +16,13 @@
  */
 package org.apache.solr.client.solrj.io.stream.expr;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 
 /** Explanation containing details about a expression */
-public class Explanation implements MapSerializable {
+public class Explanation implements MapWriter {
 
   private String expressionNodeId;
   private String expressionType;
@@ -139,35 +138,14 @@ public class Explanation implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    if (null != expressionNodeId) {
-      map.put("expressionNodeId", expressionNodeId);
-    }
-    if (null != expressionType) {
-      map.put("expressionType", expressionType);
-    }
-    if (null != functionName) {
-      map.put("functionName", functionName);
-    }
-    if (null != implementingClass) {
-      map.put("implementingClass", implementingClass);
-    }
-    if (null != expression) {
-      map.put("expression", expression);
-    }
-    if (null != note) {
-      map.put("note", note);
-    }
-
-    if (null != helpers && 0 != helpers.size()) {
-      List<Map<String, Object>> helperMaps = new ArrayList<>();
-      for (Explanation helper : helpers) {
-        helperMaps.add(helper.toMap(new LinkedHashMap<>()));
-      }
-      map.put("helpers", helperMaps);
-    }
-
-    return map;
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.putIfNotNull("expressionNodeId", expressionNodeId)
+        .putIfNotNull("expressionType", expressionType)
+        .putIfNotNull("functionName", functionName)
+        .putIfNotNull("implementingClass", implementingClass)
+        .putIfNotNull("expression", expression)
+        .putIfNotNull("note", note)
+        .putIfNotNull("helpers", helpers);
   }
 
   public static interface ExpressionType {

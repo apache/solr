@@ -36,8 +36,6 @@ import org.apache.solr.common.cloud.DigestZkACLProvider;
 import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
@@ -303,7 +301,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUpConfigLinkConfigClearZk() throws Exception {
+  public void testUpConfigDownConfigClearZk() throws Exception {
     Path tmpDir = createTempDir();
 
     // test upconfig
@@ -332,26 +330,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
       assertEquals(
           "Verify that all local files are uploaded to ZK", filesStream.count(), zkFiles.size());
     }
-
-    // test linkconfig
-    args =
-        new String[] {
-          "linkconfig",
-          "--conf-name",
-          confsetname,
-          "-c",
-          "collection1",
-          "-z",
-          zkServer.getZkAddress()
-        };
-
-    assertEquals(0, CLITestHelper.runTool(args, LinkConfigTool.class));
-
-    ZkNodeProps collectionProps =
-        ZkNodeProps.load(
-            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null));
-    assertTrue(collectionProps.containsKey("configName"));
-    assertEquals(confsetname, collectionProps.getStr("configName"));
 
     // test down config
     Path destDir =

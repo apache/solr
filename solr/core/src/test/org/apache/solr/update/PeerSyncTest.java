@@ -22,7 +22,6 @@ import static org.hamcrest.core.StringContains.containsString;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -422,13 +421,10 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
       throws IOException, SolrServerException {
     QueryRequest qr =
         new QueryRequest(
+            "/get",
             params(
-                "qt",
-                "/get",
-                "getVersions",
-                Integer.toString(numVersions),
-                "sync",
-                StrUtils.join(Arrays.asList(syncWith), ',')));
+                "getVersions", Integer.toString(numVersions),
+                "sync", StrUtils.join(Arrays.asList(syncWith), ',')));
     NamedList<?> rsp = client.request(qr);
     assertEquals(expectedResult, (Boolean) rsp.get("sync"));
   }
@@ -456,8 +452,8 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
   private static void testHandleVersionsWithRangesNoOther() {
     // no other, solitary us
     for (boolean completeList : new boolean[] {false, true}) {
-      List<Long> otherVersions = Collections.emptyList();
-      List<Long> ourUpdates = Collections.singletonList(42L);
+      List<Long> otherVersions = List.of();
+      List<Long> ourUpdates = List.of(42L);
       assertEquals(1, ourUpdates.size());
       long ourLowThreshold = ourUpdates.get(0);
       MissedUpdatesRequest mur =
@@ -471,8 +467,8 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
   private static void testHandleVersionsWithRangesSameOne() {
     for (boolean completeList : new boolean[] {false, true}) {
-      List<Long> otherVersions = Collections.singletonList(42L);
-      List<Long> ourUpdates = Collections.singletonList(42L);
+      List<Long> otherVersions = List.of(42L);
+      List<Long> ourUpdates = List.of(42L);
       assertEquals(1, ourUpdates.size());
       long ourLowThreshold = ourUpdates.get(0);
       MissedUpdatesRequest mur =

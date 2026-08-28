@@ -299,8 +299,8 @@ public final class ReplicationTestHelper {
       SolrTestCaseJ4.writeCoreProperties(
           homeDir.resolve("collection1"), props, "TestReplicationHandler");
 
-      dataDir = Path.of(homeDir + "/collection1", "data");
-      confDir = Path.of(homeDir + "/collection1", "conf");
+      dataDir = homeDir.resolve("collection1").resolve("data");
+      confDir = homeDir.resolve("collection1").resolve("conf");
 
       Files.createDirectories(homeDir);
       Files.createDirectories(dataDir);

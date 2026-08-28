@@ -113,7 +113,7 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
   public List<PivotFacetValue> getNextLevelValuesToRefine() {
     final int numRefinableValues = getExplicitValuesListSize();
     if (numRefinableValues < facetFieldOffset) {
-      return Collections.<PivotFacetValue>emptyList();
+      return List.of();
     }
 
     final int offsetPlusCount =

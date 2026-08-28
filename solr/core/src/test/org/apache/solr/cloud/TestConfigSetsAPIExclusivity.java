@@ -91,8 +91,6 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
 
   private void setupBaseConfigSet(String baseConfigSetName) throws Exception {
     solrCluster.uploadConfigSet(configset("configset-2"), baseConfigSetName);
-    // Make configset untrusted
-    solrCluster.getZkClient();
   }
 
   private Exception getFirstExceptionOrNull(List<Exception> list) {

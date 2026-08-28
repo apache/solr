@@ -1,0 +1,8 @@
+title: Resolve Google cloud dependencies using google-cloud-bom. Bump it to 0.261.0 and grpc-bom to 1.80.0
+type: dependency_update
+authors:
+- name: solrbot
+- name: Jan Høydahl
+links:
+- name: PR#4323
+  url: https://github.com/apache/solr/pull/4323

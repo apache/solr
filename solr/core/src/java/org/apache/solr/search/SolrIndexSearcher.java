@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -82,6 +81,7 @@ import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.TotalHits.Relation;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -139,7 +139,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
-  private static final Map<String, SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
+  private static final Map<String, SolrCache<?, ?>> NO_GENERIC_CACHES = Map.of();
   private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
 
   public static final int EXECUTOR_MAX_CPU_THREADS = Runtime.getRuntime().availableProcessors();
@@ -170,7 +170,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final LongAdder liveDocsNaiveCacheHitCount = new LongAdder();
   private final LongAdder liveDocsInsertsCount = new LongAdder();
   private final LongAdder liveDocsHitCount = new LongAdder();
-  private final List<AutoCloseable> toClose = new ArrayList<>();
 
   // Synchronous gauge for caching enabled status
   private AttributedLongGauge cachingEnabledGauge;
@@ -400,7 +399,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
     this.statsCache = core.createStatsCache();
-    this.toClose.add(this.statsCache);
     this.schema = schema;
     this.name =
         "Searcher@"
@@ -612,7 +610,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         caffeineCache.initializeMetrics(
             solrMetricsContext,
             core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
-            "solr_core_indexsearcher_cache");
+            "solr.core.indexsearcher.cache");
       }
     }
     initializeMetrics(solrMetricsContext, core.getCoreAttributes());
@@ -669,6 +667,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       directoryFactory.release(getIndexReader().directory());
     }
 
+    IOUtils.closeQuietly(statsCache);
+
     try {
       SolrInfoBean.super.close();
     } catch (Exception e) {
@@ -677,7 +677,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // do this at the end so it only gets done if there are no exceptions
     numCloses.incrementAndGet();
-    IOUtils.closeQuietly(toClose);
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -779,8 +778,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                   .setLen(nDocs)
                   .setSupersetMaxDoc(nDocs)
                   .setFlags(flags);
-              QueryResult qr = new QueryResult();
-              newSearcher.getDocListC(qr, qc);
+              // called for its cache side effect; the returned QueryResult is unused
+              newSearcher.getDocListC(qc);
               return true;
             }
           });
@@ -789,21 +788,27 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   /** Primary entrypoint for searching, using a {@link QueryCommand}. */
   public QueryResult search(QueryCommand cmd) throws IOException {
-    return search(new QueryResult(), cmd);
+    return getDocListC(cmd);
   }
 
-  @Deprecated
-  public QueryResult search(QueryResult qr, QueryCommand cmd) throws IOException {
-    getDocListC(qr, cmd);
-    return qr;
-  }
-
+  /**
+   * Override the default behavior to proxy to an anonymous {@link IndexSearcher} with {@link
+   * IndexSearcher#setTimeout} enabled, if and only if {@link QueryLimits#getCurrentLimits} are
+   * enabled.
+   *
+   * <p>It's important that this logic live in an overriden method that processes a query
+   * <em>after</em> the <code>Weight</code> has been computed, because some customer Solr <code>
+   * Query</code> classes expect a <code>SolrIndexSearcher</code> to be used for query rewrite and
+   * weight creation.
+   */
   @Override
-  public void search(Query query, Collector collector) throws IOException {
+  protected void searchLeaf(
+      LeafReaderContext ctx, int minDocId, int maxDocId, Weight weight, Collector collector)
+      throws IOException {
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
     if (!queryLimits.isLimitsEnabled()) {
       // no timeout.  Pass through to super class
-      super.search(query, collector);
+      super.searchLeaf(ctx, minDocId, maxDocId, weight, collector);
     } else {
       // Timeout enabled!  This impl is maybe a hack.  Use Lucene's IndexSearcher timeout.
       // But only some queries have it so don't use on "this" (SolrIndexSearcher), not to mention
@@ -814,9 +819,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           reader, core.getCoreContainer().getIndexSearcherExecutor()) { // cheap, actually!
         void searchWithTimeout() throws IOException {
           setTimeout(queryLimits); // Lucene's method name is less than ideal here...
-          // XXX Deprecated in Lucene 10, we should probably use search(Query, CollectorManager)
-          // instead
-          super.search(query, collector);
+          super.searchLeaf(ctx, minDocId, maxDocId, weight, collector);
           if (timedOut()) {
             throw new QueryLimitsExceededException(
                 "Limits exceeded! (search): " + queryLimits.limitStatusMessage());
@@ -825,46 +828,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }.searchWithTimeout();
     }
   }
-
-  /**
-   * Retrieve the {@link Document} instance corresponding to the document id.
-   *
-   * @see SolrDocumentFetcher
-   */
-  /* @Override
-  @Deprecated
-  public Document doc(int docId) throws IOException {
-    return doc(docId, (Set<String>) null);
-  }*/
-
-  /**
-   * Visit a document's fields using a {@link StoredFieldVisitor}. This method does not currently
-   * add to the Solr document cache.
-   *
-   * @see IndexReader#document(int, StoredFieldVisitor)
-   * @see SolrDocumentFetcher
-   */
-  /*@Override
-  @Deprecated
-  public final void doc(int docId, StoredFieldVisitor visitor) throws IOException {
-    getDocFetcher().doc(docId, visitor);
-  }*/
-
-  /**
-   * Retrieve the {@link Document} instance corresponding to the document id.
-   *
-   * <p><b>NOTE</b>: the document will have all fields accessible, but if a field filter is
-   * provided, only the provided fields will be loaded (the remainder will be available lazily).
-   *
-   * @see SolrDocumentFetcher
-   */
-  /*
-    @Override
-    @Deprecated
-    public final Document doc(int i, Set<String> fields) throws IOException {
-      return getDocFetcher().doc(i, fields);
-    }
-  */
 
   /** expert: internal API, subject to change */
   public SolrCache<String, UnInvertedField> getFieldValueCache() {
@@ -1520,66 +1483,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
-  /**
-   * Returns documents matching both <code>query</code> and <code>filter</code> and sorted by <code>
-   * sort</code>.
-   *
-   * <p>This method is cache aware and may retrieve <code>filter</code> from the cache or make an
-   * insertion into the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * @param filter may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocList getDocList(Query query, Query filter, Sort lsort, int offset, int len)
-      throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filter)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .search(this)
-        .getDocList();
-  }
-
-  /**
-   * Returns documents matching both <code>query</code> and the intersection of the <code>filterList
-   * </code>, sorted by <code>sort</code>.
-   *
-   * <p>This method is cache aware and may retrieve <code>filter</code> from the cache or make an
-   * insertion into the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * @param filterList may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocList getDocList(
-      Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags)
-      throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filterList)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setFlags(flags)
-        .search(this)
-        .getDocList();
-  }
-
   public static final int NO_CHECK_QCACHE = 0x80000000;
   public static final int GET_DOCSET = 0x40000000;
   static final int NO_CHECK_FILTERCACHE = 0x20000000;
@@ -1621,8 +1524,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * getDocList version that uses+populates query and filter caches. In the event of a timeout, the
    * cache is not populated.
    */
-  private QueryResult getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
-    // TODO don't take QueryResult as arg; create one here
+  private QueryResult getDocListC(QueryCommand cmd) throws IOException {
+    QueryResult qr = new QueryResult();
     if (cmd.getSegmentTerminateEarly()) {
       qr.setSegmentTerminatedEarly(Boolean.FALSE);
     }
@@ -1973,7 +1876,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd)) {
+      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, getTaskExecutor())) {
         log.trace("SINGLE THREADED search, skipping collector manager in getDocListNC");
         final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
         MaxScoreCollector maxScoreCollector = null;
@@ -2084,7 +1987,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final TopDocs topDocs;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd)) {
+      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, getTaskExecutor())) {
         log.trace("SINGLE THREADED search, skipping collector manager in getDocListAndSetNC");
 
         @SuppressWarnings({"rawtypes"})
@@ -2141,197 +2044,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // TODO: currently we don't generate the DocSet for the base query,
     // but the QueryDocSet == CompleteDocSet if filter==null.
     return pf.filter == null && pf.postFilter == null ? qr.getDocSet() : null;
-  }
-
-  /**
-   * Returns documents matching <code>query</code>, sorted by <code>sort</code>.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocList getDocList(Query query, Sort lsort, int offset, int len) throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .search(this)
-        .getDocList();
-  }
-
-  /**
-   * Returns documents matching both <code>query</code> and <code>filter</code> and sorted by <code>
-   * sort</code>. Also returns the complete set of documents matching <code>query</code> and <code>
-   * filter</code> (regardless of <code>offset</code> and <code>len</code>).
-   *
-   * <p>This method is cache aware and may retrieve <code>filter</code> from the cache or make an
-   * insertion into the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * <p>The DocList and DocSet returned should <b>not</b> be modified.
-   *
-   * @param filter may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
-   *     caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len)
-      throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filter)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setNeedDocSet(true)
-        .search(this)
-        .getDocListAndSet();
-  }
-
-  /**
-   * Returns documents matching both <code>query</code> and <code>filter</code> and sorted by <code>
-   * sort</code>. Also returns the compete set of documents matching <code>query</code> and <code>
-   * filter</code> (regardless of <code>offset</code> and <code>len</code>).
-   *
-   * <p>This method is cache aware and may retrieve <code>filter</code> from the cache or make an
-   * insertion into the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * <p>The DocList and DocSet returned should <b>not</b> be modified.
-   *
-   * @param filter may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @param flags user supplied flags for the result set
-   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
-   *     caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocListAndSet getDocListAndSet(
-      Query query, Query filter, Sort lsort, int offset, int len, int flags) throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filter)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setFlags(flags)
-        .setNeedDocSet(true)
-        .search(this)
-        .getDocListAndSet();
-  }
-
-  /**
-   * Returns documents matching both <code>query</code> and the intersection of <code>filterList
-   * </code>, sorted by <code>sort</code>. Also returns the compete set of documents matching <code>
-   * query</code> and <code>filter</code> (regardless of <code>offset</code> and <code>len</code>).
-   *
-   * <p>This method is cache aware and may retrieve <code>filter</code> from the cache or make an
-   * insertion into the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * <p>The DocList and DocSet returned should <b>not</b> be modified.
-   *
-   * @param filterList may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
-   *     caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocListAndSet getDocListAndSet(
-      Query query, List<Query> filterList, Sort lsort, int offset, int len) throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filterList)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setNeedDocSet(true)
-        .search(this)
-        .getDocListAndSet();
-  }
-
-  /**
-   * Returns documents matching both <code>query</code> and the intersection of <code>filterList
-   * </code>, sorted by <code>sort</code>. Also returns the complete set of documents matching
-   * <code>query</code> and <code>filter</code> (regardless of <code>offset</code> and <code>len
-   * </code>).
-   *
-   * <p>This method is cache aware and may retrieve filters from the cache or make an insertion into
-   * the cache as a result of this call.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * <p>The DocList and DocSet returned should <b>not</b> be modified.
-   *
-   * @param filterList may be null
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @param flags user supplied flags for the result set
-   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
-   *     caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocListAndSet getDocListAndSet(
-      Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags)
-      throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setFilterList(filterList)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setFlags(flags)
-        .setNeedDocSet(true)
-        .search(this)
-        .getDocListAndSet();
-  }
-
-  /**
-   * Returns the top documents matching the <code>query</code> and sorted by <code>
-   * sort</code>, limited by <code>offset</code> and <code>len</code>. Also returns compete set of
-   * matching documents as a {@link DocSet}.
-   *
-   * <p>FUTURE: The returned DocList may be retrieved from a cache.
-   *
-   * @param lsort criteria by which to sort (if null, query relevance is used)
-   * @param offset offset into the list of documents to return
-   * @param len maximum number of documents to return
-   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the
-   *     caller.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  @Deprecated
-  public DocListAndSet getDocListAndSet(Query query, Sort lsort, int offset, int len)
-      throws IOException {
-    return new QueryCommand()
-        .setQuery(query)
-        .setSort(lsort)
-        .setOffset(offset)
-        .setLen(len)
-        .setNeedDocSet(true)
-        .search(this)
-        .getDocListAndSet();
   }
 
   private DocList constantScoreDocList(int offset, int length, DocSet docs) {
@@ -2627,77 +2339,71 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     warmupTimer =
         new AttributedLongTimer(
             solrMetricsContext.longHistogram(
-                "solr_core_indexsearcher_warmup_time",
+                "solr.core.indexsearcher.warmup_time",
                 "Searcher warmup time (ms)",
                 OtelUnit.MILLISECONDS),
             baseAttributes);
 
-    toClose.add(
-        solrMetricsContext.observableLongCounter(
-            "solr_core_indexsearcher_live_docs_cache",
-            "LiveDocs cache metrics",
-            obs -> {
-              obs.record(
-                  liveDocsInsertsCount.sum(),
-                  baseAttributes.toBuilder().put(TYPE_ATTR, "inserts").build());
-              obs.record(
-                  liveDocsHitCount.sum(),
-                  baseAttributes.toBuilder().put(TYPE_ATTR, "hits").build());
-              obs.record(
-                  liveDocsNaiveCacheHitCount.sum(),
-                  baseAttributes.toBuilder().put(TYPE_ATTR, "naive_hits").build());
-            }));
+    solrMetricsContext.observableLongCounter(
+        "solr.core.indexsearcher.live_docs.cache",
+        "LiveDocs cache metrics",
+        obs -> {
+          obs.record(
+              liveDocsInsertsCount.sum(),
+              baseAttributes.toBuilder().put(TYPE_ATTR, "inserts").build());
+          obs.record(
+              liveDocsHitCount.sum(), baseAttributes.toBuilder().put(TYPE_ATTR, "hits").build());
+          obs.record(
+              liveDocsNaiveCacheHitCount.sum(),
+              baseAttributes.toBuilder().put(TYPE_ATTR, "naive_hits").build());
+        });
     // reader stats (numeric)
-    toClose.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_core_indexsearcher_index_num_docs",
-            "Number of live docs in the index",
-            obs -> {
-              try {
-                obs.record(reader.numDocs(), baseAttributes);
-              } catch (Exception ignore) {
-                // replacement for nullNumber
-              }
-            }));
+    solrMetricsContext.observableLongGauge(
+        "solr.core.indexsearcher.index.num_docs",
+        "Number of live docs in the index",
+        obs -> {
+          try {
+            obs.record(reader.numDocs(), baseAttributes);
+          } catch (Exception ignore) {
+            // replacement for nullNumber
+          }
+        });
 
-    toClose.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_core_indexsearcher_index_docs",
-            "Total number of docs in the index (including deletions)",
-            obs -> {
-              try {
-                obs.record(reader.maxDoc(), baseAttributes);
-              } catch (Exception ignore) {
-              }
-            }));
+    solrMetricsContext.observableLongGauge(
+        "solr.core.indexsearcher.index.docs",
+        "Total number of docs in the index (including deletions)",
+        obs -> {
+          try {
+            obs.record(reader.maxDoc(), baseAttributes);
+          } catch (Exception ignore) {
+          }
+        });
     // indexVersion (numeric)
-    toClose.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_core_indexsearcher_index_version",
-            "Lucene index version",
-            obs -> {
-              try {
-                obs.record(reader.getVersion(), baseAttributes);
-              } catch (Exception ignore) {
-              }
-            }));
+    solrMetricsContext.observableLongGauge(
+        "solr.core.indexsearcher.index.version",
+        "Lucene index version",
+        obs -> {
+          try {
+            obs.record(reader.getVersion(), baseAttributes);
+          } catch (Exception ignore) {
+          }
+        });
     // size of the currently opened commit
-    toClose.add(
-        solrMetricsContext.observableDoubleGauge(
-            "solr_core_indexsearcher_index_commit_size",
-            "Size of the current index commit (megabytes)",
-            obs -> {
-              try {
-                long total = 0L;
-                for (String file : reader.getIndexCommit().getFileNames()) {
-                  total += DirectoryFactory.sizeOf(reader.directory(), file);
-                }
-                obs.record(MetricUtils.bytesToMegabytes(total), baseAttributes);
-              } catch (Exception e) {
-                // skip recording if unavailable (no nullNumber in OTel)
-              }
-            },
-            OtelUnit.MEGABYTES));
+    solrMetricsContext.observableDoubleGauge(
+        "solr.core.indexsearcher.index.commit_size",
+        "Size of the current index commit (megabytes)",
+        obs -> {
+          try {
+            long total = 0L;
+            for (String file : reader.getIndexCommit().getFileNames()) {
+              total += DirectoryFactory.sizeOf(reader.directory(), file);
+            }
+            obs.record(MetricUtils.bytesToMegabytes(total), baseAttributes);
+          } catch (Exception e) {
+            // skip recording if unavailable (no nullNumber in OTel)
+          }
+        },
+        OtelUnit.MEGABYTES);
   }
 
   public long getWarmupTime() {

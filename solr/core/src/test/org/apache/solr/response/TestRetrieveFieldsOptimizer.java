@@ -180,9 +180,9 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     String id = "str" + idx;
     sdoc.addField("str", id);
     sdoc.addField(idNotStoredDv, id);
-    fieldsExpectedVals.put(idNotStoredDv, Collections.singletonList(id));
+    fieldsExpectedVals.put(idNotStoredDv, List.of(id));
     sdoc.addField(idStoredNotDv, id);
-    fieldsExpectedVals.put(idStoredNotDv, Collections.singletonList(id));
+    fieldsExpectedVals.put(idStoredNotDv, List.of(id));
 
     for (RetrieveField field : fieldsHolder.fields.values()) {
       if (field.name.equals(idNotStoredDv) || field.name.equals(idStoredNotDv)) {
@@ -479,7 +479,7 @@ class FieldHolder {
         storedMvFields.add(field);
       }
     }
-    return schema.addFields(fieldsToAdd, Collections.emptyMap(), false);
+    return schema.addFields(fieldsToAdd, Map.of(), false);
   }
 
   RetrieveField getTestField(String field) {

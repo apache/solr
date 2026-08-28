@@ -30,11 +30,6 @@ public interface CollectionParams {
 
   String NAME = "name";
 
-  /**
-   * @deprecated use {@link #SOURCE_NODE} instead
-   */
-  @Deprecated String FROM_NODE = "fromNode";
-
   String SOURCE_NODE = "sourceNode";
   String TARGET_NODE = "targetNode";
   String SOURCE_NODES = "sourceNodes";
@@ -69,6 +64,10 @@ public interface CollectionParams {
     public boolean isHigherOrEqual(LockLevel that) {
       return height >= that.height;
     }
+
+    public boolean isEqual(LockLevel that) {
+      return height == that.height;
+    }
   }
 
   /**
@@ -98,7 +97,9 @@ public interface CollectionParams {
     DELETEREPLICA(true, LockLevel.SHARD),
     FORCELEADER(true, LockLevel.SHARD),
     MIGRATE(true, LockLevel.COLLECTION),
+    @Deprecated(since = "10.1")
     ADDROLE(true, LockLevel.NONE),
+    @Deprecated(since = "10.1")
     REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
     COLLECTIONPROP(true, LockLevel.NONE), // atomic; no lock
@@ -136,7 +137,7 @@ public interface CollectionParams {
     // TODO when we have a node level lock use it here
     BALANCE_REPLICAS(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
-    MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
+    MOCK_REPLICA_TASK(true, LockLevel.REPLICA),
     NONE(false, LockLevel.NONE),
     // TODO: not implemented yet
     MERGESHARDS(true, LockLevel.SHARD),

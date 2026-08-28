@@ -1,8 +1,10 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Improved CloudSolrClient's urlScheme detection by using the scheme of provided Solr URLs, or looking at "solr.ssl.enabled".
+title: Improved CloudSolrClient's http/https (SSL) detection by using the scheme of provided Solr URLs, or looking at the "solr.ssl.enabled" system property. Likewise improved Solr itself to consider this property as an alternative to the urlScheme cluster property.
 type: changed
 authors:
   - name: Vishnu Priya Chandra Sekar
 links:
   - name: SOLR-18056
     url: https://issues.apache.org/jira/browse/SOLR-18056
+  - name: SOLR-18055
+    url: https://issues.apache.org/jira/browse/SOLR-18055

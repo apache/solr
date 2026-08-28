@@ -23,7 +23,7 @@
 
   <directoryFactory class="solr.RAMDirectoryFactory"/>
   <indexConfig>
-    <lockType>single</lockType>
+    <lockType>none</lockType>
   </indexConfig>
 
   <schemaFactory class="ClassicIndexSchemaFactory"/>

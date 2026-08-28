@@ -19,7 +19,6 @@ package org.apache.solr.cloud.api.collections;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +95,7 @@ public class MigrateReplicasCmd implements CollApiCmds.CollectionApiCommand {
         Assign.AssignRequest assignRequest =
             new Assign.AssignRequestBuilder()
                 .forCollection(sourceReplica.getCollection())
-                .forShard(Collections.singletonList(sourceReplica.getShard()))
+                .forShard(List.of(sourceReplica.getShard()))
                 .assignReplicas(ReplicaCount.of(sourceReplica.getType(), 1))
                 .onNodes(targetNodeList)
                 .build();
@@ -134,7 +133,7 @@ public class MigrateReplicasCmd implements CollApiCmds.CollectionApiCommand {
   protected Set<String> getNodesFromParam(ZkNodeProps message, String paramName) {
     Object rawParam = message.get(paramName);
     if (rawParam == null) {
-      return Collections.emptySet();
+      return Set.of();
     } else if (rawParam instanceof Set) {
       return (Set<String>) rawParam;
     } else if (rawParam instanceof Collection) {

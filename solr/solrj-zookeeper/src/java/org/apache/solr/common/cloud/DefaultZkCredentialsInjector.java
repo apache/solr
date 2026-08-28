@@ -16,13 +16,12 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.util.Collections;
 import java.util.List;
 
 public class DefaultZkCredentialsInjector implements ZkCredentialsInjector {
 
   @Override
   public List<ZkCredential> getZkCredentials() {
-    return Collections.emptyList();
+    return List.of();
   }
 }

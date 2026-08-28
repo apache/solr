@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -54,7 +54,7 @@ public class ListCacheEvaluator extends RecursiveObjectEvaluator implements Many
       if (spaceCache != null) {
         return new ArrayList<>(spaceCache.keySet());
       } else {
-        return Collections.emptyList();
+        return List.of();
       }
     } else {
       throw new IOException("The listCache function requires two parameters: workspace and key");
