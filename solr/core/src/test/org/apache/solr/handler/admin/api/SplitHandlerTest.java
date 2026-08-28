@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.admin;
+package org.apache.solr.handler.admin.api;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -120,14 +120,15 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
       }
     }
 
-    List<SplitOp.RangeCount> counts = new ArrayList<>(maxRanges);
+    List<SplitCoreAPI.RangeCount> counts = new ArrayList<>(maxRanges);
     for (; ; ) {
       int end = start + rand.nextInt(100) + 1;
       if (end < start) {
         // overflow
         end = Integer.MAX_VALUE;
       }
-      counts.add(new SplitOp.RangeCount(new DocRouter.Range(start, end), rand.nextInt(1000) + 1));
+      counts.add(
+          new SplitCoreAPI.RangeCount(new DocRouter.Range(start, end), rand.nextInt(1000) + 1));
       if (counts.size() >= maxRanges) break;
       if (counts.size() == maxRanges / 2 && rand.nextBoolean()) {
         // transition toward the end of the range (more boundary cases for large ranges)
@@ -146,7 +147,7 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
     }
 
     try {
-      Collection<DocRouter.Range> results = SplitOp.getSplits(counts, curr);
+      Collection<DocRouter.Range> results = SplitCoreAPI.getSplits(counts, curr);
       verifyContiguous(results, curr);
     } catch (Throwable e) {
       // System.err.println(e);
@@ -158,17 +159,17 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
 
     // split whole range exactly in two
     DocRouter.Range curr = new DocRouter.Range(10, 15);
-    List<SplitOp.RangeCount> counts = new ArrayList<>();
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(10, 15), 100));
-    Collection<DocRouter.Range> results = SplitOp.getSplits(counts, curr);
+    List<SplitCoreAPI.RangeCount> counts = new ArrayList<>();
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(10, 15), 100));
+    Collection<DocRouter.Range> results = SplitCoreAPI.getSplits(counts, curr);
     assertEquals(12, results.iterator().next().max);
     verifyContiguous(results, curr);
 
     // make sure range with docs is split in half even if current range of shard is bigger
     curr = new DocRouter.Range(-100, 101);
     counts = new ArrayList<>();
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(10, 15), 100));
-    results = SplitOp.getSplits(counts, curr);
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(10, 15), 100));
+    results = SplitCoreAPI.getSplits(counts, curr);
     assertEquals(12, results.iterator().next().max);
     verifyContiguous(results, curr);
 
@@ -176,12 +177,12 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
     // this can happen since document routing can be overridden.
     curr = new DocRouter.Range(-100, 101);
     counts = new ArrayList<>();
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(-1000, -990), 100));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(-980, -970), 2));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(10, 15), 100));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(1000, 1010), 5));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(1020, 1030), 7));
-    results = SplitOp.getSplits(counts, curr);
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(-1000, -990), 100));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(-980, -970), 2));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(10, 15), 100));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(1000, 1010), 5));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(1020, 1030), 7));
+    results = SplitCoreAPI.getSplits(counts, curr);
     assertEquals(12, results.iterator().next().max);
     verifyContiguous(results, curr);
 
@@ -192,29 +193,29 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
     // The random tests *should* catch this as well though.
     curr = new DocRouter.Range(-100, 101);
     counts = new ArrayList<>();
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(0, 9), 1));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(10, 19), 4));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(20, 29), 3));
-    results = SplitOp.getSplits(counts, curr);
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(0, 9), 1));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(10, 19), 4));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(20, 29), 3));
+    results = SplitCoreAPI.getSplits(counts, curr);
     assertEquals(19, results.iterator().next().max);
     verifyContiguous(results, curr);
 
     curr = new DocRouter.Range(-100, 101);
     counts = new ArrayList<>();
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(0, 9), 3));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(10, 19), 4));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(20, 29), 1));
-    results = SplitOp.getSplits(counts, curr);
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(0, 9), 3));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(10, 19), 4));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(20, 29), 1));
+    results = SplitCoreAPI.getSplits(counts, curr);
     assertEquals(9, results.iterator().next().max);
     verifyContiguous(results, curr);
 
     // test that if largest count is first
     curr = new DocRouter.Range(-100, 101);
     counts = new ArrayList<>();
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(0, 9), 4));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(10, 19), 1));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(20, 29), 1));
-    results = SplitOp.getSplits(counts, curr);
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(0, 9), 4));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(10, 19), 1));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(20, 29), 1));
+    results = SplitCoreAPI.getSplits(counts, curr);
     assertEquals(9, results.iterator().next().max);
     verifyContiguous(results, curr);
 
@@ -222,10 +223,10 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
     // until the last range and then need to back up)
     curr = new DocRouter.Range(-100, 101);
     counts = new ArrayList<>();
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(0, 9), 1));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(10, 19), 1));
-    counts.add(new SplitOp.RangeCount(new DocRouter.Range(20, 29), 4));
-    results = SplitOp.getSplits(counts, curr);
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(0, 9), 1));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(10, 19), 1));
+    counts.add(new SplitCoreAPI.RangeCount(new DocRouter.Range(20, 29), 4));
+    results = SplitCoreAPI.getSplits(counts, curr);
     assertEquals(19, results.iterator().next().max);
     verifyContiguous(results, curr);
   }
@@ -245,10 +246,10 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
       SolrQueryRequest req = req("myquery");
       try {
         // the first time through the loop we do this before adding docs to test an empty index
-        Collection<SplitOp.RangeCount> counts1 =
-            SplitOp.getHashHistogram(req.getSearcher(), prefixField, router, null);
-        Collection<SplitOp.RangeCount> counts2 =
-            SplitOp.getHashHistogramFromId(req.getSearcher(), idField, router, null);
+        Collection<SplitCoreAPI.RangeCount> counts1 =
+            SplitCoreAPI.getHashHistogram(req.getSearcher(), prefixField, router, null);
+        Collection<SplitCoreAPI.RangeCount> counts2 =
+            SplitCoreAPI.getHashHistogramFromId(req.getSearcher(), idField, router, null);
         assertTrue(eqCount(counts1, counts2));
 
         if (i > 0) {
@@ -274,16 +275,17 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
     }
   }
 
-  private boolean eqCount(Collection<SplitOp.RangeCount> a, Collection<SplitOp.RangeCount> b) {
+  private boolean eqCount(
+      Collection<SplitCoreAPI.RangeCount> a, Collection<SplitCoreAPI.RangeCount> b) {
     if (a.size() != b.size()) {
       return false;
     }
 
-    Iterator<SplitOp.RangeCount> it1 = a.iterator();
-    Iterator<SplitOp.RangeCount> it2 = b.iterator();
+    Iterator<SplitCoreAPI.RangeCount> it1 = a.iterator();
+    Iterator<SplitCoreAPI.RangeCount> it2 = b.iterator();
     while (it1.hasNext()) {
-      SplitOp.RangeCount r1 = it1.next();
-      SplitOp.RangeCount r2 = it2.next();
+      SplitCoreAPI.RangeCount r1 = it1.next();
+      SplitCoreAPI.RangeCount r2 = it2.next();
       if (!r1.range.equals(r2.range) || r1.count != r2.count) {
         return false;
       }

@@ -22,8 +22,8 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SplitCoreRequestBody;
+import org.apache.solr.client.api.model.SplitCoreResponse;
 
 /**
  * V2 API definition for splitting a Solr core.
@@ -37,7 +37,7 @@ public interface SplitCoreApi {
   @Operation(
       summary = "Splits a core index into two or more indexes.",
       tags = {"cores"})
-  SolrJerseyResponse splitCore(
+  SplitCoreResponse splitCore(
       @Parameter(description = "The name of the core to split.", required = true)
           @PathParam("coreName")
           String coreName,
