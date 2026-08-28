@@ -5,3 +5,5 @@ authors:
 links:
 - name: PR#4178
   url: https://github.com/apache/solr/pull/4178
+- name: SOLR-18212
+  url: https://issues.apache.org/jira/browse/SOLR-18212
