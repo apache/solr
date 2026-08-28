@@ -189,12 +189,13 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
 
   private int replicaCount() {
     try {
-      return cluster
-          .getSolrClient()
-          .getClusterState()
-          .getCollection(COLLECTION)
-          .getReplicas()
-          .size();
+      return (int)
+          cluster
+              .getSolrClient()
+              .getClusterState()
+              .getCollection(COLLECTION)
+              .replicaStream()
+              .count();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
