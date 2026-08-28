@@ -27,14 +27,13 @@ import java.util.List;
 import java.util.Set;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -395,9 +394,9 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
   public String update(String chain, String xml) {
     try {
-      // Use ContentStreamUpdateRequest to send raw XML through EmbeddedSolrServer
-      ContentStreamUpdateRequest xmlRequest = new ContentStreamUpdateRequest("/update");
-      xmlRequest.addContentStream(new ContentStreamBase.StringStream(xml, "text/xml"));
+      // Send raw XML through EmbeddedSolrServer
+      ContentWriterUpdateRequest xmlRequest = new ContentWriterUpdateRequest("/update");
+      xmlRequest.addContent(xml, "text/xml");
 
       // Set the update chain parameter and request XML response
       xmlRequest.getParams().add("update.chain", chain);

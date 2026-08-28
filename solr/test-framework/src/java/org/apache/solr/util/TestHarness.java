@@ -26,12 +26,11 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -265,8 +264,8 @@ public class TestHarness extends BaseTestHarness {
       assert null != mdcSnap; // prevent compiler warning of unused var
 
       EmbeddedSolrServer server = new EmbeddedSolrServer(getCoreContainer(), getCore().getName());
-      ContentStreamUpdateRequest xmlRequest = new ContentStreamUpdateRequest("/update");
-      xmlRequest.addContentStream(new ContentStreamBase.StringStream(xml, "text/xml"));
+      ContentWriterUpdateRequest xmlRequest = new ContentWriterUpdateRequest("/update");
+      xmlRequest.addContent(xml, "text/xml");
 
       // Request XML response format and use InputStreamResponseParser
       xmlRequest.getParams().add("wt", "xml");

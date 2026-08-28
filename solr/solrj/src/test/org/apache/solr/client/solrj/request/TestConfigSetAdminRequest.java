@@ -39,7 +39,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     verifyException(upload, "ConfigSet");
 
     upload.setConfigSetName("name");
-    verifyException(upload, "There must be a ContentStream");
+    verifyException(upload, "There must be content");
 
     upload.setUploadFile(tmpFile, "application/zip");
 

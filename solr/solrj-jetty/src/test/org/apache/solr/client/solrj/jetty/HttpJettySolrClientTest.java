@@ -35,7 +35,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClientTestBase;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -49,7 +49,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ServletFixtures;
 import org.apache.solr.util.ServletFixtures.DebugServlet;
@@ -93,15 +92,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testMultipartUpload() throws Exception {
-    ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
-    ContentStreamBase.StringStream first = new ContentStreamBase.StringStream("first content");
-    first.setName("firstPart");
-    first.setContentType("text/plain");
-    ContentStreamBase.StringStream second = new ContentStreamBase.StringStream("second content");
-    second.setName("secondPart");
-    second.setContentType("text/plain");
-    req.addContentStream(first);
-    req.addContentStream(second);
+    ContentWriterUpdateRequest req = new ContentWriterUpdateRequest("/update");
+    req.addContent("firstPart", "first content", "text/plain");
+    req.addContent("secondPart", "second content", "text/plain");
     req.setParam("someParam", "someValue");
 
     String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
@@ -138,7 +139,7 @@ public class TestUtils extends SolrTestCaseJ4 {
     ContentStream stream =
         new ContentStreamBase.ByteArrayStream(baos.toByteArray(), null, "application/javabin");
     List<CommandOperation> commands =
-        CommandOperation.readCommands(List.of(stream), new NamedList<>(), Set.of("single"));
+        ApiBag.readCommands(List.of(stream), new NamedList<>(), Set.of("single"));
 
     assertEquals(5, commands.size());
   }
