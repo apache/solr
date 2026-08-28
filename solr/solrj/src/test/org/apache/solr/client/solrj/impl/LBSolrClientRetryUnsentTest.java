@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
@@ -55,6 +56,12 @@ public class LBSolrClientRetryUnsentTest extends SolrTestCase {
     @Override
     protected SolrClient getClient(Endpoint endpoint) {
       return new SolrClient() {
+        // Stands in for a transport; the LB asks it rather than inspecting the exception itself.
+        @Override
+        public boolean wasRequestUnsent(Throwable t) {
+          return SolrException.hasCause(t, RequestNotSentException.class);
+        }
+
         @Override
         public NamedList<Object> request(SolrRequest<?> request, String collection)
             throws SolrServerException, IOException {

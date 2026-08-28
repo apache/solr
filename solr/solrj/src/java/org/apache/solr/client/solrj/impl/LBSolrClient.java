@@ -20,10 +20,8 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
-import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.http.HttpConnectTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,7 +41,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.RemoteSolrException;
-import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -656,7 +653,7 @@ public abstract class LBSolrClient extends SolrClient {
         throw e;
       }
     } catch (SocketException e) {
-      if (!isNonRetryable || e instanceof ConnectException) {
+      if (!isNonRetryable || getClient(baseUrl).wasRequestUnsent(e)) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
       } else {
         throw e;
@@ -672,9 +669,7 @@ public abstract class LBSolrClient extends SolrClient {
       if (!isNonRetryable
           && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else if (isNonRetryable
-          && (isConnectException(rootCause)
-              || SolrException.hasCause(e, RequestNotSentException.class))) {
+      } else if (isNonRetryable && getClient(baseUrl).wasRequestUnsent(e)) {
         // Nothing of the request reached the server, so replaying it elsewhere is safe even though
         // it isn't idempotent.
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
@@ -686,15 +681,6 @@ public abstract class LBSolrClient extends SolrClient {
     }
 
     return ex;
-  }
-
-  protected boolean isConnectException(Throwable t) {
-    if (t instanceof ConnectException || t instanceof HttpConnectTimeoutException) {
-      return true;
-    }
-    // Check for common connection timeout exceptions by name to avoid hard dependencies on
-    // specific HTTP client libraries (e.g., Jetty or Apache HttpClient).
-    return t != null && t.getClass().getName().endsWith("ConnectTimeoutException");
   }
 
   protected abstract SolrClient getClient(Endpoint endpoint);
