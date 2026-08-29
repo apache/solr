@@ -17,15 +17,8 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.PATH;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -42,71 +35,6 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
   @Override
   public void inform(SolrCore core) {
     this.shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
-  }
-
-  /**
-   * Process the actual request. extraParams is required for allowing sub handlers to pass in custom
-   * parameters to be put in the outgoing shard request
-   */
-  protected void processRequest(
-      SolrQueryRequest req, ResponseBuilder rb, Map<String, String> extraParams)
-      throws IOException {
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
-    List<SearchComponent> components = rb.components;
-
-    shardHandler.prepDistributed(rb);
-
-    for (SearchComponent c : components) {
-      c.prepare(rb);
-    }
-
-    if (!rb.isDistrib) {
-      for (SearchComponent component : components) {
-        component.process(rb);
-      }
-    } else {
-      ShardRequest sreq = new ShardRequest();
-
-      // Distribute to all shards
-      sreq.shards = rb.shards;
-      sreq.actualShards = sreq.shards;
-
-      sreq.responses = new ArrayList<>(sreq.actualShards.length);
-      rb.finished = new ArrayList<>();
-
-      for (String shard : sreq.actualShards) {
-        ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
-        String reqPath = (String) req.getContext().get(PATH);
-
-        params.set(CommonParams.QT, reqPath);
-        ShardHandler.setShardAttributesToParams(params, sreq.purpose);
-
-        if (extraParams != null) {
-          for (Map.Entry<String, String> entry : extraParams.entrySet()) {
-            params.set(entry.getKey(), entry.getValue());
-          }
-        }
-
-        shardHandler.submit(sreq, shard, params);
-      }
-
-      ShardResponse srsp = shardHandler.takeCompletedOrError();
-
-      if (srsp.getException() != null) {
-        shardHandler.cancelAll();
-        if (srsp.getException() instanceof SolrException) {
-          throw (SolrException) srsp.getException();
-        } else {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
-        }
-      }
-
-      rb.finished.add(srsp.getShardRequest());
-
-      for (SearchComponent c : components) {
-        c.handleResponses(rb, srsp.getShardRequest());
-      }
-    }
   }
 
   public static ResponseBuilder buildResponseBuilder(
