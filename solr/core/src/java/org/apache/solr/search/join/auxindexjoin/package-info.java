@@ -16,58 +16,62 @@
  */
 
 /**
- * <h2>AI join sidecar index</h2>
+ *
+ * <h2>Auxiliary Index Join</h2>
+ *
+ * Persists doc-nums to doc-nums relation in auxiliary index.
+ *
+ * <h4>Simplified Collaboration Diagram</h4>
  *
  * <pre>
- * AuxIndexJoinQParserPlugin
+ * {@link AuxIndexJoinQParserPlugin}
  *       │
  *       ▼
- * AuxIndexManager  ----->  AIJoinIndexConfig
+ * {@link AuxIndexManager}  ----->  {@link AuxIndexJoinConfig}
  *       │    │
- *       │    +----------> AIJoinMergePolicy
+ *       │    +----------> {@link AuxIndexJoinMergePolicy}
  *       ▼
- * AuxIndexJoinQuery ------> FromLeafJoinContext
+ * {@link AuxIndexJoinQuery} ------> {@link FromLeafJoinContext}
  *       │                           │
  *       ▼                           ▼
- * JoinIndexWeight             ForeignKeyColumn
+ * {@link JoinIndexWeight}             {@link ForeignKeyColumn}
  *       │
  *       ▼
- * JoinIndexScorerSupplier -----> JoinColumnIndexer
- * │ │                            │ │
- * │ ▼                            │ ▼
- * │JISS.JoinTask                 │JoinColumnModel
- * ▼                              ▼
- * JISS.LazyRefineTwoPhIter       AIJoinDocWriter
+ * {@link JoinIndexScorerSupplier} ---------> {@link JoinColumnIndexer}
+ *   │ │                                       │ │
+ *   │ ▼                                       │ ▼
+ *   │{@link JoinIndexScorerSupplier.LeafJoin}           │{@link JoinIndexUtils.JoinColumnModel}
+ *   ▼                                         ▼
+ *{@link JoinIndexScorerSupplier.LazyConfimationIterator} {@link JoinColumnDocWriter}
  *
  * </pre>
  *
- * <p>{@link org.apache.solr.search.join.aijoin.AuxIndexManager} owns an auxiliary Lucene index
- * persisting, for every (from-segment,
- * to-segment) pair, a SORTED_NUMERIC column mapping from-side doc ids to to-side doc ids, plus
- * edges columns with the pair's {@code {min, max}} doc bounds and a to-side count. Pair columns are
- * named by both sides' persistent side keys (segment id + docvalues generation of the join field),
- * so they survive reopens of either side and are built lazily — the first {@code AuxIndexJoinQuery}
- * weight that needs a pair writes it. See {@link org.apache.solr.search.join.aijoin.AuxIndexManager}
- * for the user-facing API and
- * {@link org.apache.solr.search.join.aijoin.AIJoinIndexConfig} for tunables (blocking vs.
- * non-blocking refresh, one-field-per-segment, the reaper's sweep interval).
+ * <p>{@link AuxIndexManager} owns an auxiliary Lucene index
+ * persisting, for every (from-segment, to-segment) pair, a SORTED_NUMERIC column mapping from-side
+ * doc ids to to-side doc ids, plus edges columns with the pair's {@code {min, max}} doc bounds and
+ * a to-side count. Pair columns are named by both sides' persistent side keys (segment id +
+ * docvalues generation of the join field), so they survive reopens of either side and are built
+ * lazily — the first {@code AuxIndexJoinQuery} weight that needs a pair writes it. See {@link
+ * AuxIndexManager} for the user-facing API and {@link
+ * AuxIndexJoinConfig} for tunables (blocking vs. non-blocking
+ * refresh, one-field-per-segment, the reaper's sweep interval).
  *
- * <p>A batch of pair columns is written through {@code AIJoinDocWriter}. It guarantes a batch lands
+ * <p>A batch of pair columns is written through {@code JoinColumnDocWriter}. It guarantes a batch lands
  * doc-for-doc in one sidecar segment, so doc 0's edges and every from-doc id line up the same way.
  *
  * <h2>Garbage collection of dead pairs</h2>
  *
  * The sidecar is append-only. A side key dies when its segment is merged away, dropped, or its join
  * field receives an in-place docvalues update (dvGen bump); pair columns referencing a dead side
- * key can never be read again. {@code AIJoinMergePolicy} reaps them:
+ * key can never be read again. {@code AuxIndexJoinMergePolicy} reaps them:
  *
  * <ul>
  *   <li><b>Death signal via sampling, not listeners.</b> {@code AuxIndexManager#onCreateWeight}
  *       (called from {@code AuxIndexJoinQuery#createWeight}) reports the set of pair field names a
- *       query actually needed to {@code AIJoinMergePolicy#onCreateWeight}, keyed by
+ *       query actually needed to {@code AuxIndexJoinMergePolicy#onCreateWeight}, keyed by
  *       (from-directory, to-directory). A pair field name present in an earlier snapshot for the
  *       same searcher pair but missing from a later one is queued as a pending removal. Sampling is
- *       throttled ({@code AIJoinIndexConfig#setSweepSamplingInterval}, default one minute) since it
+ *       throttled ({@code AuxIndexJoinConfig#setSweepSamplingInterval}, default one minute) since it
  *       is only a heuristic hint, not a correctness requirement, and both the snapshot map and the
  *       pending-removal set are size-bounded (best-effort LRU-ish eviction).
  *   <li><b>Reaping.</b> {@code findMerges} drops every sidecar segment whose pair field names are
@@ -86,7 +90,7 @@
  * <ul>
  *   <li>comparative benchmarking for updates: parent, children field, PARENT_ID_FK ({@code
  *       AIJoinBenchmark} currently only compares against {@code JoinUtil} on a static index)
- *   <li>many-to-many: {@code AIJoinUtil} doc mapping currently degrades M:N joins to M:1 (single
+ *   <li>many-to-many: {@code JoinIndexUtils} doc mapping currently degrades M:N joins to M:1 (single
  *       to-doc kept per from-doc)
  *   <li>reverse join on the same columns: children by parents filter
  *   <li>we estimate to&amp;from set by a range. Alternatives: union of ranges, roaring (bitset).
@@ -98,4 +102,6 @@
  *       intersection
  * </ul>
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
+
+import org.apache.solr.search.join.AuxIndexJoinQParserPlugin;

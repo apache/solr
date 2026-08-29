@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -63,7 +63,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
  *
  * <p>Plain Java benchmark, run directly with {@code main}, no test framework involved.
  */
-public class AIJoinBenchmark {
+public class AuxIndexJoinBenchmark {
 
   private static final String PARENT_ID = "parent_id";
   private static final String PARENT_ID_FK = "parent_id_FK";
@@ -98,7 +98,7 @@ public class AIJoinBenchmark {
   }
 
   public static void main(String[] args) throws Exception {
-    new AIJoinBenchmark().runBenchmark();
+    new AuxIndexJoinBenchmark().runBenchmark();
     // executor.shutdown();
   }
 

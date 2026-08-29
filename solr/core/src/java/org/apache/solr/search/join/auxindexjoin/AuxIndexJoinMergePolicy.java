@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.util.List;
@@ -35,7 +35,7 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Bits;
 
-final class AIJoinMergePolicy extends MergePolicy {
+final class AuxIndexJoinMergePolicy extends MergePolicy {
   @Override
   public MergePolicy.MergeSpecification findMerges(
       MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
@@ -46,7 +46,7 @@ final class AIJoinMergePolicy extends MergePolicy {
       if (merging.contains(info)) {
         continue;
       }
-      Set<String> pairFieldNames = AIJoinUtil.pairFieldNames(AIJoinUtil.readFieldInfos(info));
+      Set<String> pairFieldNames = JoinIndexUtils.pairFieldNames(JoinIndexUtils.readFieldInfos(info));
       if (!pairFieldNames.isEmpty()
           && pendingPairRemovals.containsAll(
               pairFieldNames)) { // todo sweep pending removals as well
@@ -195,13 +195,13 @@ final class AIJoinMergePolicy extends MergePolicy {
     if (!shouldSample()) {
       return;
     }
-    Object fromKey = AIJoinUtil.directoryKey(AIJoinUtil.directory(fromSearcher.getIndexReader()));
-    Object toKey = AIJoinUtil.directoryKey(AIJoinUtil.directory(searcher.getIndexReader()));
+    Object fromKey = JoinIndexUtils.directoryKey(JoinIndexUtils.directory(fromSearcher.getIndexReader()));
+    Object toKey = JoinIndexUtils.directoryKey(JoinIndexUtils.directory(searcher.getIndexReader()));
     Map.Entry<Object, Object> searcherKey = Map.entry(fromKey, toKey);
 
     Set<String> currentSnapshot = Set.copyOf(neededPairs);
     Set<String> previousSnapshot =
-        AIJoinMergePolicy.putBounded(
+        AuxIndexJoinMergePolicy.putBounded(
             lastNeededPairsBySearcherPair,
             trackedSearcherPairsOrder,
             searcherKey,
@@ -210,7 +210,7 @@ final class AIJoinMergePolicy extends MergePolicy {
     if (previousSnapshot != null) {
       for (String pairFieldName : previousSnapshot) {
         if (!currentSnapshot.contains(pairFieldName)) {
-          AIJoinMergePolicy.addBounded(
+          AuxIndexJoinMergePolicy.addBounded(
               pendingPairRemovals,
               pendingPairRemovalsOrder,
               pairFieldName,
@@ -246,7 +246,7 @@ final class AIJoinMergePolicy extends MergePolicy {
     return previous;
   }
 
-  /** Same eviction policy as {@link AIJoinMergePolicy#putBounded}, for a plain set. */
+  /** Same eviction policy as {@link AuxIndexJoinMergePolicy#putBounded}, for a plain set. */
   static <T> void addBounded(
       Set<T> set, ConcurrentLinkedQueue<T> insertionOrder, T value, int maxSize) {
     if (set.add(value)) {

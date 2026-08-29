@@ -14,38 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.store.Directory;
 
 /**
  * Holds the configuration used to create an {@link AuxIndexManager}. Every setter returns {@link
- * AIJoinIndexConfig} to allow chaining settings conveniently, for example:
+ * AuxIndexJoinConfig} to allow chaining settings conveniently, for example:
  *
  * <pre class="prettyprint">
- * AIJoinIndexConfig config = new AIJoinIndexConfig().setBlockingRefresh(false);
+ * AuxIndexJoinConfig config = new AuxIndexJoinConfig().setBlockingRefresh(false);
  * AuxIndexManager joinIndex = new AuxIndexManager(joinDir, config);
  * </pre>
  *
- * <p>Once passed to {@link AuxIndexManager#AuxIndexManager(Directory, AIJoinIndexConfig)}, changes
+ * <p>Once passed to {@link AuxIndexManager#AuxIndexManager(Directory, AuxIndexJoinConfig)}, changes
  * to this object no longer affect the created {@link AuxIndexManager} instance.
  */
-public final class AIJoinIndexConfig {
+public final class AuxIndexJoinConfig {
 
   private boolean singleFieldPerSegment = false;
   private boolean blockingRefresh = true;
   private long sweepSamplingIntervalNanos = TimeUnit.MINUTES.toNanos(1);
 
   /** Sole constructor, using the default settings documented on each setter. */
-  public AIJoinIndexConfig() {}
+  public AuxIndexJoinConfig() {}
 
   /**
    * Whether each pair column is flushed into its own sidecar segment, rather than batching every
    * pair column built in the same round into one segment. Default is {@code false}: many columns
    * per segment, traded off against a longer sweep to reclaim any that become dead.
    */
-  public AIJoinIndexConfig setSingleFieldPerSegment(boolean singleFieldPerSegment) {
+  public AuxIndexJoinConfig setSingleFieldPerSegment(boolean singleFieldPerSegment) {
     this.singleFieldPerSegment = singleFieldPerSegment;
     return this;
   }
@@ -60,7 +60,7 @@ public final class AIJoinIndexConfig {
    * org.apache.lucene.search.SearcherManager} is refreshed past it, so the freshly built pairs are
    * visible to the caller that triggered the build. Default is {@code true}.
    */
-  public AIJoinIndexConfig setBlockingRefresh(boolean blockingRefresh) {
+  public AuxIndexJoinConfig setBlockingRefresh(boolean blockingRefresh) {
     this.blockingRefresh = blockingRefresh;
     return this;
   }
@@ -77,7 +77,7 @@ public final class AIJoinIndexConfig {
    * requirement. Default is one minute. Pass zero (or a non-positive value) to sample on every
    * call.
    */
-  public AIJoinIndexConfig setSweepSamplingInterval(long duration, TimeUnit unit) {
+  public AuxIndexJoinConfig setSweepSamplingInterval(long duration, TimeUnit unit) {
     this.sweepSamplingIntervalNanos = unit.toNanos(duration);
     return this;
   }

@@ -14,14 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
-class FromLeafJoinContext {
-  final AIJoinUtil.CacheAndCount matches;
-  final ForeignKeyColumn fkColumn;
+import java.util.List;
+import java.util.concurrent.Executor;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.IndexSearcher;
 
-  public FromLeafJoinContext(AIJoinUtil.CacheAndCount matches, ForeignKeyColumn fkColumn) {
-    this.matches = matches;
-    this.fkColumn = fkColumn;
+final class ParallelIndexSearcher extends IndexSearcher {
+  ParallelIndexSearcher(IndexReader r, Executor executor) {
+    super(r, executor);
+  }
+
+  @Override
+  protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+    return slices(leaves, 1000, 5, false);
   }
 }

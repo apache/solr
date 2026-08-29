@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.index.DirectoryReader;
@@ -46,8 +47,11 @@ import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocIdStream;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScorerSupplier;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
@@ -56,6 +60,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RoaringDocIdSet;
@@ -70,7 +75,7 @@ import org.slf4j.event.Level;
  * to-side doc id whose {@code toField} term equals the from doc's {@code fromField} term, plus two
  * companion edges columns persisting the pair's {min, max} from-doc and to-doc bounds.
  */
-final class AIJoinUtil {
+final class JoinIndexUtils {
 
   /** Suffix of the always-written column persisting a pair's {min, max} from-doc edges. */
   static final String FROM_EDGES_PREFIX = "fromDoc_edges_"; // TODO reduce to the singe letter
@@ -83,23 +88,62 @@ final class AIJoinUtil {
 
   static final String TO_COUNT_PREFIX = "num_toDoc_";
 
-  private AIJoinUtil() {}
+  private JoinIndexUtils() {}
 
   /**
    * Level the {@code AIJOIN evt=...} diagnostic logs emit at; kept in one place so all diagnostics
    * can be raised or lowered together. To see them, enable {@code TRACE} for the emitting loggers
    * in log4j config.
    */
-  private static final Level AIJOIN_LOG_LEVEL = Level.TRACE;
+  private static final Level LOG_LEVEL = Level.TRACE;
 
   /** Whether the AIJOIN diagnostic logs would emit at the configured level. */
   static boolean diagnosticsEnabled(Logger log) {
-    return log.isEnabledForLevel(AIJOIN_LOG_LEVEL);
+    return log.isEnabledForLevel(LOG_LEVEL);
   }
 
   /** Emits an AIJOIN diagnostic line at the configured level. */
   static void logDiagnostic(Logger log, String message, Object... args) {
-    log.atLevel(AIJOIN_LOG_LEVEL).log(message, args);
+    log.atLevel(LOG_LEVEL).log(message, args);
+  }
+
+  /**
+   * Scans {@code joinSearcher}'s leaves for every pair column whose field name satisfies {@code
+   * isNeeded}, returning where each one lives. Used both to seed a fresh {@link JoinIndexWeight}'s
+   * view of already-built pairs, and by {@link JoinIndexScorerSupplier} to relocate a pair whose
+   * cached segment reference no longer resolves. TODO subject for in-heap caching TODO commit's
+   * userdata might have a list of pairs with known segment ords and names
+   */
+  static Map<String, AuxIndexManager.JoinSegmentReference> extractExistingJoinColumns(
+      IndexSearcher joinSearcher, Predicate<String> isNeeded) {
+    Map<String, AuxIndexManager.JoinSegmentReference> existingJoinSegments =
+        CollectionUtil.newHashMap(joinSearcher.getIndexReader().leaves().size());
+    for (LeafReaderContext joinContext : joinSearcher.getIndexReader().leaves()) {
+      String segmentName = segmentName(joinContext);
+      for (FieldInfo fieldInfo : joinContext.reader().getFieldInfos()) {
+        // pairs are detected by their toCount companion, which is written to doc 0 for every
+        // built pair; the join column itself is sparse and a tombstone pair (disjoint terms)
+        // never materializes it, so scanning for join columns kept re-reporting once-built
+        // tombstones as missing -- and re-triggering their from-side FK loads on every query
+        String splits[] = fieldInfo.name.split(TO_COUNT_PREFIX);
+        if (splits.length == 2 && isNeeded.test(splits[1])) {
+          existingJoinSegments.computeIfAbsent(
+              splits[1],
+              fieldName -> new AuxIndexManager.JoinSegmentReference(fieldName, segmentName, joinContext.ord));
+        }
+      }
+    }
+    return existingJoinSegments;
+  }
+
+  static CacheAndCount computeDocIdSet(Weight fromWeight, LeafReaderContext ctx)
+      throws IOException {
+    ScorerSupplier supplier = fromWeight.scorerSupplier(ctx);
+    if (supplier == null) {
+      return null; // NO matches ???
+    }
+    BulkScorer scorer = supplier.bulkScorer();
+    return cacheImpl(scorer, ctx.reader().maxDoc(), ctx.reader().getLiveDocs());
   }
 
   /**
@@ -341,7 +385,7 @@ final class AIJoinUtil {
 
   /**
    * Reads a pair's persisted {@code {min, max}} edges (or {@code toCount}), all stored on doc 0 of
-   * the column -- the read-side counterpart of {@link AIJoinWriter}'s edges columns.
+   * the column -- the read-side counterpart of {@link JoinColumWriter}'s edges columns.
    */
   static int[] loadEdges(LeafReaderContext joinContext, String edgesFieldName) throws IOException {
     SortedNumericDocValues edgesDV = joinContext.reader().getSortedNumericDocValues(edgesFieldName);

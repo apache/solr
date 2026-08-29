@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,14 +45,12 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.LogLevel;
 
 /**
- * Real (non-mocked) integration smoke test for {@link AIJoinMergePolicy}: builds a segmented
+ * Real (non-mocked) integration smoke test for {@link AuxIndexJoinMergePolicy}: builds a segmented
  * children/parents pair, forces {@link AuxIndexJoinQuery} to populate the sidecar join index, then
  * mass deletes and force-merges both sides so the sidecar's previously-built pair columns go stale,
  * and checks the policy actually notices and reaps them -- not just that it runs without throwing.
  */
-@LogLevel("org.apache.solr.search.join.aijoin=WARN")
-@LuceneTestCase.SuppressSysoutChecks(bugUrl = "no.url")
-public class TestAIJoinMergePolicy extends SolrTestCase {
+public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
 
   private static final String ID = "id";
   private static final String PARENT_ID = "parent_id";
@@ -225,7 +223,7 @@ public class TestAIJoinMergePolicy extends SolrTestCase {
         "the old pair columns should have been recognized as dead",
         joinIndex.mergePolicy.pendingPairRemovalsCount() > 0);
     assertTrue(
-        "AIJoinMergePolicy should have reaped at least the one dead sidecar segment",
+        "AuxIndexJoinMergePolicy should have reaped at least the one dead sidecar segment",
         joinIndex.mergePolicy.droppedSegmentCount() >= 1);
 
     // do it again: grow, mass-delete, force-merge -- the reaper should keep working, not just

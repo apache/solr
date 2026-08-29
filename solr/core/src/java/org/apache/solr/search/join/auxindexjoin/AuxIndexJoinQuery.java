@@ -14,9 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
-
-import static org.apache.solr.search.join.aijoin.AIJoinUtil.cacheImpl;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -28,14 +26,12 @@ import java.util.concurrent.Future;
 import java.util.function.Predicate;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.internal.hppc.IntHashSet;
-import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.search.join.aijoin.AuxIndexManager.JoinSegmentReference;
+import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.JoinSegmentReference;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,21 +70,6 @@ class AuxIndexJoinQuery extends Query {
     this.fromExecutorService = fromExecutorService;
   }
 
-  private AIJoinUtil.CacheAndCount computeDocIdSet(Weight fromWeight, LeafReaderContext ctx)
-      throws IOException {
-    // TODO figure out how to steal cached from side filters
-    //    if (fromWeight!=null && fromWeight.getClass().getSimpleName().contains("Caching") ){
-    //      System.out.println("fromWeight is CachingWeight");
-    //    }
-    ScorerSupplier supplier = fromWeight.scorerSupplier(ctx);
-    if (supplier == null) {
-      return null; // NO matches ???
-    }
-    // TODO handle already cached WeightWrapper
-    BulkScorer scorer = supplier.bulkScorer();
-    return cacheImpl(scorer, ctx.reader().maxDoc(), ctx.reader().getLiveDocs());
-  }
-
   @SuppressWarnings("ReferenceEquality")
   @Override
   public Query rewrite(IndexSearcher indexSearcher) throws IOException {
@@ -109,17 +90,12 @@ class AuxIndexJoinQuery extends Query {
         getRequiredColumNames(toSideSearcher);
 
     joinIndex.onCreateWeight(neededPairs.keySet(), fromSearcher, toSideSearcher); // ignoring fields
-    //
-    // DON'T write'em upfront
-    //
-    // WAS:
-    // joinIndex.ensureJoinSegments(neededPairs, fromSearcher, fromField, toSideSearcher, toField);
     Predicate<String> isNeeded = neededPairs::containsKey;
 
     Map<String, JoinSegmentReference> existingJoinSegments;
     IndexSearcher joinSearcher = this.joinIndex.acquire();
     try {
-      existingJoinSegments = AuxIndexManager.extractExistingJoinColumns(joinSearcher, isNeeded);
+      existingJoinSegments = JoinIndexUtils.extractExistingJoinColumns(joinSearcher, isNeeded);
     } finally {
       this.joinIndex.release(joinSearcher);
     }
@@ -129,14 +105,14 @@ class AuxIndexJoinQuery extends Query {
     neededPairs.values().stream()
         .mapToInt(AuxIndexManager.SegmentsTuple::fromLeafOrd)
         .forEach(fromOrdsToLoad::add);
-    if (AIJoinUtil.diagnosticsEnabled(log)) {
+    if (JoinIndexUtils.diagnosticsEnabled(log)) {
       // pairsMissing > 0 on a repeat query means those pairs were never persisted by a previous
       // run (writeBatch never captured them), so their from-segments' FK columns get reloaded
       // here; pairsClaimed counts missing pairs another thread is building right now (claims are
       // dropped once persisted), i.e. reloads that are pure waste
-      AIJoinUtil.logDiagnostic(
+      JoinIndexUtils.logDiagnostic(
           log,
-          "AIJOIN evt=weight pairsNeeded={} pairsExisting={} pairsMissing={} pairsClaimed={}"
+          "AUXIJOIN evt=weight pairsNeeded={} pairsExisting={} pairsMissing={} pairsClaimed={}"
               + " fkOrdsToLoad={} missingPairs={}",
           pairsNeeded,
           existingJoinSegments.size(),
@@ -168,32 +144,8 @@ class AuxIndexJoinQuery extends Query {
     for (LeafReaderContext ctx : this.fromSearcher.getLeafContexts()) {
       futures[ctx.ord] =
           this.fromExecutorService.submit(
-              () -> {
-                try {
-                  AIJoinUtil.CacheAndCount docset = computeDocIdSet(fromWeight, ctx);
-                  boolean loadFk =
-                      docset != null && docset.count() > 0 && fromLeafsToLoad.contains(ctx.ord);
-                  if (AIJoinUtil.diagnosticsEnabled(log)) {
-                    AIJoinUtil.logDiagnostic(
-                        log,
-                        "AIJOIN evt=fromLeaf fromSeg={} ord={} fromMatches={} missingPair={}"
-                            + " fkLoaded={}",
-                        AIJoinUtil.segmentName(ctx),
-                        ctx.ord,
-                        docset == null ? -1 : docset.count(),
-                        fromLeafsToLoad.contains(ctx.ord),
-                        loadFk);
-                  }
-                  if (loadFk) {
-                    // waste case: noone to-seg read FK,
-                    return new FromLeafJoinContext(docset, new ForeignKeyColumn(ctx, fromField));
-                  } else {
-                    return new FromLeafJoinContext(docset, null);
-                  }
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
-              });
+              () -> FromLeafJoinContext.heavyLoadFromLeaf(fromWeight, fromField, ctx, fromLeafsToLoad.contains(ctx.ord))
+          );
     }
 
     return futures;
@@ -203,9 +155,9 @@ class AuxIndexJoinQuery extends Query {
       IndexSearcher searcher) {
     Map<String, AuxIndexManager.SegmentsTuple> neededPairs = new HashMap<>();
     for (LeafReaderContext toContext : searcher.getIndexReader().leaves()) {
-      String toKey = AIJoinUtil.getSideKey(toContext, toField);
+      String toKey = JoinIndexUtils.getSideKey(toContext, toField);
       for (LeafReaderContext fromCtx : fromSearcher.getLeafContexts()) {
-        String fromKey = AIJoinUtil.getSideKey(fromCtx, fromField);
+        String fromKey = JoinIndexUtils.getSideKey(fromCtx, fromField);
         neededPairs.put(
             fromKey + "_" + toKey, new AuxIndexManager.SegmentsTuple(fromCtx.ord, toContext.ord));
       }

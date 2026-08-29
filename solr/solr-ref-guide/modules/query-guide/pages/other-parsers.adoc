@@ -22,13 +22,12 @@ This section details the other parsers, and gives examples for how they might be
 
 Many of these parsers are expressed the same way as xref:local-params.adoc[].
 
-== AIJoin Query Parser
+== Auxiliary Index Join Query Parser
 
-The AIJoin (which stands for Auxiliary Index Join) Query Parser is similar to
-<<Join Query Parser,Join Query Parser>>, but uses a lazily written sidecar index
-for faster joins.
+It's similar to
+<<Join Query Parser,Join Query Parser>>, but uses a lazily written sidecar index for faster joins.
 
-Details of this query parser are in the section xref:aijoin-query-parser.adoc[].
+Details of this query parser are in the section xref:auxindexjoin-query-parser.adoc[].
 
 == Block Join Query Parsers
 

@@ -14,21 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.util.Map;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
+import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 
 /**
  * Isolates every write-side representation of a join batch behind this one write-only surface, so
- * {@link AuxIndexManager} and {@link AIJoinUtil} deal only in {@link JoinColumnModel} and never
+ * {@link AuxIndexManager} and {@link JoinIndexUtils} deal only in {@link JoinColumnModel} and never
  * need to import a particular field-writing API themselves.
  */
-abstract class AIJoinWriter {
+abstract class JoinColumWriter {
 
-  protected AIJoinWriter() {}
+  protected JoinColumWriter() {}
 
   /**
    * Builds the pair columns for every entry in {@code mappings} (doc-map plus edges, keyed by pair
