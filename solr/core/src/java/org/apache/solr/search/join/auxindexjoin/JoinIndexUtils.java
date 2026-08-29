@@ -129,7 +129,9 @@ final class JoinIndexUtils {
         if (splits.length == 2 && isNeeded.test(splits[1])) {
           existingJoinSegments.computeIfAbsent(
               splits[1],
-              fieldName -> new AuxIndexManager.JoinSegmentReference(fieldName, segmentName, joinContext.ord));
+              fieldName ->
+                  new AuxIndexManager.JoinSegmentReference(
+                      fieldName, segmentName, joinContext.ord));
         }
       }
     }

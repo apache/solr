@@ -217,7 +217,8 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
           if (info == null) {
             fromCore.close();
             throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST, "Cross-core auxIndexJoin must have SolrRequestInfo");
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Cross-core auxIndexJoin must have SolrRequestInfo");
           }
           // released once this request completes: the from-side searcher is read on every
           // scorerSupplier() call, not just while building this query, so it must outlive parse()

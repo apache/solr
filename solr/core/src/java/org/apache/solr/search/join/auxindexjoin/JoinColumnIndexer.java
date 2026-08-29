@@ -32,9 +32,9 @@ import java.util.concurrent.Future;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.JoinSegmentReference;
 import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.SegmentsTuple;
+import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
