@@ -27,7 +27,6 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -39,7 +38,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -115,11 +114,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     NODE_CLIENTS = new ArrayList<SolrClient>(numServers);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      URL jettyURL = jetty.getBaseUrl();
-      NODE_CLIENTS.add(
-          new HttpJettySolrClient.Builder(jettyURL.toString())
-              .withDefaultCollection(COLLECTION_NAME)
-              .build());
+      NODE_CLIENTS.add(new CollectionScopedSolrClient(jetty.getSolrClient(), COLLECTION_NAME));
     }
     assertEquals(numServers, NODE_CLIENTS.size());
   }
@@ -137,11 +132,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   @AfterClass
   public static void afterClass() throws IOException {
-    if (NODE_CLIENTS != null) {
-      for (SolrClient client : NODE_CLIENTS) {
-        client.close();
-      }
-    }
+    // the jettys own these clients
     NODE_CLIENTS = null;
     if (COLLECTION_CLIENT != null) {
       COLLECTION_CLIENT.close();

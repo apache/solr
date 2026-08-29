@@ -91,6 +91,8 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
           .equals(getCollectionState(COLLECTION).getLeader("shard1").getBaseUrl())) {
         specialIdx = solrClients.size();
       }
+      // own clients on purpose: this test stops and restarts a node, which the runner's
+      // cached client does not survive
       solrClients.add(
           new HttpJettySolrClient.Builder(jettySolrRunner.getBaseUrl().toString()).build());
     }

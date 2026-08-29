@@ -395,12 +395,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       params.add("distrib", "false");
       QueryRequest queryRequest = new QueryRequest(params);
 
-      try (SolrClient solrClient =
-          new HttpJettySolrClient.Builder(baseUrl).withDefaultCollection(coreName).build()) {
-        QueryResponse queryResponse = queryRequest.process(solrClient);
-        SolrDocumentList docList = queryResponse.getResults();
-        assertEquals(1, docList.getNumFound());
-      }
+      SolrClient solrClient =
+          new CollectionScopedSolrClient(cluster.getJetty(baseUrl).getSolrClient(), coreName);
+      QueryResponse queryResponse = queryRequest.process(solrClient);
+      SolrDocumentList docList = queryResponse.getResults();
+      assertEquals(1, docList.getNumFound());
     }
 
     // Test the deleteById routing for UpdateRequest
