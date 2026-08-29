@@ -296,12 +296,11 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
-    String nodeName = response._getStr("success[0]/key");
-    String corename = response._getStr(asList("success", nodeName, "core"), null);
+    String successKey = response._getStr("success[0]/key"); // "nodeName/coreNodeName"
+    String corename = response._getStr(asList("success", successKey, "core"), null);
+    String nodeName = successKey.substring(0, successKey.indexOf('/'));
 
-    // nodeName is actually "nodeName/coreNodeName" (see CollectionHandlingUtils.requestKey)
-    SolrClient coreClient =
-        cluster.getJetty(nodeName.substring(0, nodeName.indexOf('/'))).getSolrClient();
+    SolrClient coreClient = cluster.getJetty(nodeName).getSolrClient();
     CoreAdminResponse status = CoreAdminRequest.getStatus(corename, coreClient);
     assertEquals(
         collectionName, status._get(asList("status", corename, "cloud", "collection"), null));
