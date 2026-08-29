@@ -18,9 +18,7 @@ package org.apache.solr;
 
 import java.io.IOException;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -101,9 +99,7 @@ public class TestCpuTimeSearch extends SolrCloudTestCase {
             coll.getSlices().stream()
                 .flatMap(s -> s.getReplicas().stream())
                 .toArray(Replica[]::new));
-    try (SolrClient client = new HttpJettySolrClient.Builder(randomReplica.getCoreUrl()).build()) {
-      response = client.query(query);
-    }
+    response = cluster.getSolrClient(randomReplica).query(query);
 
     SolrDocumentList results = response.getResults();
     int size = results.size();

@@ -834,34 +834,33 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     SolrQuery q = new SolrQuery().setQuery("*:*");
     RemoteSolrException sse = null;
 
-    try (SolrClient solrClient =
-        new HttpJettySolrClient.Builder(r.getBaseUrl()).withDefaultCollection(COLLECTION).build()) {
+    // addressed by collection (not core) on purpose: that is what exercises _stateVer_
+    SolrClient solrClient =
+        new CollectionScopedSolrClient(cluster.getReplicaJetty(r).getSolrClient(), COLLECTION);
 
-      if (log.isInfoEnabled()) {
-        log.info("should work query, result {}", solrClient.query(q));
-      }
-      // no problem
-      q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + coll.getZNodeVersion());
-      if (log.isInfoEnabled()) {
-        log.info("2nd query , result {}", solrClient.query(q));
-      }
-      // no error yet good
-
-      q.setParam(
-          CloudSolrClient.STATE_VERSION,
-          COLLECTION + ":" + (coll.getZNodeVersion() - 1)); // an older version expect error
-
-      QueryResponse rsp = solrClient.query(q);
-      final NamedList<Object> response = rsp.getResponse();
-      final int stateVersionIdx =
-          response.indexOf(CloudSolrClient.STATE_VERSION, response.size() - 1);
-      @SuppressWarnings({"rawtypes"})
-      Map m = stateVersionIdx == -1 ? null : (Map) response.getVal(stateVersionIdx);
-      assertNotNull(
-          "Expected an extra information from server with the list of invalid collection states",
-          m);
-      assertNotNull(m.get(COLLECTION));
+    if (log.isInfoEnabled()) {
+      log.info("should work query, result {}", solrClient.query(q));
     }
+    // no problem
+    q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + coll.getZNodeVersion());
+    if (log.isInfoEnabled()) {
+      log.info("2nd query , result {}", solrClient.query(q));
+    }
+    // no error yet good
+
+    q.setParam(
+        CloudSolrClient.STATE_VERSION,
+        COLLECTION + ":" + (coll.getZNodeVersion() - 1)); // an older version expect error
+
+    QueryResponse rsp = solrClient.query(q);
+    final NamedList<Object> response = rsp.getResponse();
+    final int stateVersionIdx =
+        response.indexOf(CloudSolrClient.STATE_VERSION, response.size() - 1);
+    @SuppressWarnings({"rawtypes"})
+    Map m = stateVersionIdx == -1 ? null : (Map) response.getVal(stateVersionIdx);
+    assertNotNull(
+        "Expected an extra information from server with the list of invalid collection states", m);
+    assertNotNull(m.get(COLLECTION));
 
     // now send the request to another node that does not serve the collection
 
@@ -883,20 +882,20 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     log.info("the node which does not serve this collection{} ", theNode);
     assertNotNull(theNode);
 
-    try (SolrClient solrClient =
-        new HttpJettySolrClient.Builder(theNode).withDefaultCollection(COLLECTION).build()) {
+    // this node has no replica of the collection, so it is addressed by node rather than replica
+    SolrClient otherNodeClient =
+        new CollectionScopedSolrClient(cluster.getJetty(theNode).getSolrClient(), COLLECTION);
 
-      q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion() - 1));
-      try {
-        QueryResponse rsp = solrClient.query(q);
-        log.info("error was expected");
-      } catch (RemoteSolrException e) {
-        sse = e;
-      }
-      assertNotNull(sse);
-      assertEquals(
-          " Error code should be 510", SolrException.ErrorCode.INVALID_STATE.code, sse.code());
+    q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion() - 1));
+    try {
+      otherNodeClient.query(q);
+      log.info("error was expected");
+    } catch (RemoteSolrException e) {
+      sse = e;
     }
+    assertNotNull(sse);
+    assertEquals(
+        " Error code should be 510", SolrException.ErrorCode.INVALID_STATE.code, sse.code());
   }
 
   @Test

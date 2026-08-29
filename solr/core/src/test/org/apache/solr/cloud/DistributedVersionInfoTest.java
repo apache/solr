@@ -34,7 +34,6 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -367,30 +366,31 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
     String coreName = replica.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = new HttpJettySolrClient.Builder(replica.getBaseUrl()).build()) {
-      CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
-      long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
+    // CoreAdmin is a node-level API, so the node's own client is what we want here
+    SolrClient client = cluster.getReplicaJetty(replica).getSolrClient();
+    CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
+    long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 
-      Thread.sleep(1000);
+    Thread.sleep(1000);
 
-      // send reload command for the collection
-      log.info("Sending RELOAD command for {}", testCollectionName);
-      CollectionAdminRequest.reloadCollection(testCollectionName).process(client);
-      Thread.sleep(2000); // reload can take a short while
+    // send reload command for the collection
+    log.info("Sending RELOAD command for {}", testCollectionName);
+    CollectionAdminRequest.reloadCollection(testCollectionName).process(client);
+    Thread.sleep(2000); // reload can take a short while
 
-      // verify reload is done, waiting up to 30 seconds for slow test environments
-      long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
-      while (System.nanoTime() < timeout) {
-        statusResp = CoreAdminRequest.getStatus(coreName, client);
-        long startTimeAfterReload = statusResp.getStartTime(coreName).getTime();
-        if (startTimeAfterReload > leaderCoreStartTime) {
-          reloadedOk = true;
-          break;
-        }
-        // else ... still waiting to see the reloaded core report a later start time
-        Thread.sleep(1000);
+    // verify reload is done, waiting up to 30 seconds for slow test environments
+    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+    while (System.nanoTime() < timeout) {
+      statusResp = CoreAdminRequest.getStatus(coreName, client);
+      long startTimeAfterReload = statusResp.getStartTime(coreName).getTime();
+      if (startTimeAfterReload > leaderCoreStartTime) {
+        reloadedOk = true;
+        break;
       }
+      // else ... still waiting to see the reloaded core report a later start time
+      Thread.sleep(1000);
     }
+
     return reloadedOk;
   }
 }

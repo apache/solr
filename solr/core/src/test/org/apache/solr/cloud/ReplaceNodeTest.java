@@ -138,14 +138,12 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     replaceNodeRequest.setWaitForFinalState(true);
     replaceNodeRequest.processAndWait("001", cloudClient, 10);
 
-    try (SolrClient coreClient =
-        new HttpJettySolrClient.Builder(zkStateReader.getBaseUrlForNodeName(emptyNode)).build()) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
-      assertEquals(
-          "Expecting no cores but found some: " + status.getCoreStatus(),
-          0,
-          status.getCoreStatus().size());
-    }
+    SolrClient coreClient = cluster.getJetty(emptyNode).getSolrClient();
+    CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
+    assertEquals(
+        "Expecting no cores but found some: " + status.getCoreStatus(),
+        0,
+        status.getCoreStatus().size());
 
     collection = cluster.getSolrClient().getClusterState().getCollection(coll);
     assertEquals(create.getNumShards().intValue(), collection.getSlices().size());
