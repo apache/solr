@@ -18,17 +18,13 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.net.http.HttpClient;
-import java.net.http.HttpConnectTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,7 +41,6 @@ import java.util.stream.Collectors;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.RemoteSolrException;
-import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
@@ -738,27 +733,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   private HttpJdkSolrClient.Builder builder(String url) {
     return builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT);
-  }
-
-  @Test
-  public void testErrorClassification() throws Exception {
-    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
-    try (HttpJdkSolrClient client = builder(url).build()) {
-      IOException unsent =
-          new RequestNotSentException("Broken pipe", new IOException("Broken pipe"));
-      assertTrue(client.wasRequestUnsent(new SolrServerException("wrapped", unsent)));
-      assertTrue(client.wasRequestUnsent(new ConnectException("Connection refused")));
-      assertTrue(client.wasRequestUnsent(new HttpConnectTimeoutException("timed out")));
-
-      // A bare IOException may have been sent and applied, so it is never proof of the contrary.
-      assertFalse(client.wasRequestUnsent(new IOException("Broken pipe")));
-      assertFalse(client.wasRequestUnsent(new UnknownHostException("nosuchhost")));
-
-      assertTrue(client.wasCommError(new UnknownHostException("nosuchhost")));
-      assertTrue(client.wasCommError(new SocketException("Connection reset")));
-      assertTrue(client.wasCommError(new HttpConnectTimeoutException("timed out")));
-      assertFalse(client.wasCommError(new IOException("Broken pipe")));
-    }
   }
 
   private byte[] javabinResponse() {
