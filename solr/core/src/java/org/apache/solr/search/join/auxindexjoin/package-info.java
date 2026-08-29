@@ -22,7 +22,7 @@
  *
  * Persists doc-nums to doc-nums relation in auxiliary index.
  *
- * <h4>Simplified Collaboration Diagram</h4>
+ * <h3>Simplified Collaboration Diagram</h3>
  *
  * <pre>
  * {@link org.apache.solr.search.join.AuxIndexJoinQParserPlugin}
