@@ -69,10 +69,13 @@ final class JoinColumnDocWriter extends JoinColumWriter {
   private static void addJoinColumns( // TODO don't write minusones columns for tombstones!!
       List<Document> docs, JoinColumnModel mapping, String pairFieldName) throws IOException {
     addOrdMap(docs, JoinIndexUtils.TO_DOC_VAL_BY_FROM_DOCNUM + pairFieldName, mapping);
-    addEdges(docs, JoinIndexUtils.FROM_EDGES_PREFIX + pairFieldName, mapping.edges().fromDocEdges());
+    addEdges(
+        docs, JoinIndexUtils.FROM_EDGES_PREFIX + pairFieldName, mapping.edges().fromDocEdges());
     addEdges(docs, JoinIndexUtils.TO_EDGES_PREFIX + pairFieldName, mapping.edges().toDocEdges());
     addEdges(
-        docs, JoinIndexUtils.TO_COUNT_PREFIX + pairFieldName, new int[] {mapping.edges().toCount()});
+        docs,
+        JoinIndexUtils.TO_COUNT_PREFIX + pairFieldName,
+        new int[] {mapping.edges().toCount()});
   }
 
   /**

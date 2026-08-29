@@ -40,8 +40,7 @@ class FromLeafJoinContext {
       Weight fromWeight, String fromField, LeafReaderContext ctx, boolean loadFkColumn) {
     try {
       JoinIndexUtils.CacheAndCount docset = JoinIndexUtils.computeDocIdSet(fromWeight, ctx);
-      boolean loadFk =
-          docset != null && docset.count() > 0 && loadFkColumn;
+      boolean loadFk = docset != null && docset.count() > 0 && loadFkColumn;
       if (JoinIndexUtils.diagnosticsEnabled(log)) {
         JoinIndexUtils.logDiagnostic(
             log,

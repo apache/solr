@@ -48,10 +48,10 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.DocEdges;
-import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.JoinSegmentReference;
 import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.SegmentsTuple;
+import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.DocEdges;
+import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -251,11 +251,11 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
 
   /**
    * Represents a cell in the join matrix bounded to from and to segments. Resolved exactly once,
-   * either from the join index ({@link #resolveFromReadingJoinIndex}: just the pair's {@link DocEdges}, with
-   * real docvalues opened later, on demand, through {@link #joinSegmentRef} -- which keeps being
-   * refreshed as the join reader reopens -- or from the indexer ({@link #resolveFromCalculatedModel}: the
-   * pair's edges plus an in-memory {@link JoinColumnModel} that needs no further indirection to
-   * read.
+   * either from the join index ({@link #resolveFromReadingJoinIndex}: just the pair's {@link
+   * DocEdges}, with real docvalues opened later, on demand, through {@link #joinSegmentRef} --
+   * which keeps being refreshed as the join reader reopens -- or from the indexer ({@link
+   * #resolveFromCalculatedModel}: the pair's edges plus an in-memory {@link JoinColumnModel} that
+   * needs no further indirection to read.
    */
   class LeafJoin implements DocEdges {
     final String pairFieldName;
@@ -385,9 +385,9 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   }
 
   /**
-   * Drops {@code cell} from {@link #leafJoins}. It's a little bit awkward.
-   * Every iteration join task list is copied and then removed from original list via
-   * reference equality. Ideally, iterators should be used for removals.
+   * Drops {@code cell} from {@link #leafJoins}. It's a little bit awkward. Every iteration join
+   * task list is copied and then removed from original list via reference equality. Ideally,
+   * iterators should be used for removals.
    */
   private void dropJoinLeaf(LeafJoin cell) {
     leafJoins.remove(cell);
@@ -455,12 +455,15 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       assert joinLeaf.ord == task.joinSegmentRef.joinSegmentLeafOrd();
       task.resolveFromReadingJoinIndex( // ok. this one may be ready for search.
           new JoinIndexUtils.Edges(
-              JoinIndexUtils.loadEdges(joinLeaf, JoinIndexUtils.FROM_EDGES_PREFIX + task.pairFieldName),
+              JoinIndexUtils.loadEdges(
+                  joinLeaf, JoinIndexUtils.FROM_EDGES_PREFIX + task.pairFieldName),
               // TODO it might not need to be loaded, if "from" edges fully cut of the column. Thus,
               // we won't read even "to" edges at all.
-              JoinIndexUtils.loadEdges(joinLeaf, JoinIndexUtils.TO_EDGES_PREFIX + task.pairFieldName),
+              JoinIndexUtils.loadEdges(
+                  joinLeaf, JoinIndexUtils.TO_EDGES_PREFIX + task.pairFieldName),
               // TODO use it for ordering join segment iteration, desc
-              JoinIndexUtils.loadEdges(joinLeaf, JoinIndexUtils.TO_COUNT_PREFIX + task.pairFieldName)[0]));
+              JoinIndexUtils.loadEdges(
+                  joinLeaf, JoinIndexUtils.TO_COUNT_PREFIX + task.pairFieldName)[0]));
     }
     for (Entry<LeafJoin, JoinColumnModel> entry : refreshedAndNew.justWritten) {
       LeafJoin task = entry.getKey();

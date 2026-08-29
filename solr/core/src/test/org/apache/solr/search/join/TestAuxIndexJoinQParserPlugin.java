@@ -52,8 +52,8 @@ import org.junit.Test;
  * this test doesn't exercise that one.
  *
  * <p>Both cores use version 1.7 schemas ({@code configsets/aijoin}, shared with {@link
- * DistribAuxIndexJoinFromCollectionTest}, and {@code configsets/minimal}), where
- * docValues default to true: {@link AuxIndexManager} reads real per-segment {@link
+ * DistribAuxIndexJoinFromCollectionTest}, and {@code configsets/minimal}), where docValues default
+ * to true: {@link AuxIndexManager} reads real per-segment {@link
  * org.apache.lucene.index.SortedSetDocValues} directly, unlike {@link ScoreJoinQParserPlugin} (via
  * {@link org.apache.lucene.search.join.JoinUtil}) which tolerates uninverted fields too.
  */

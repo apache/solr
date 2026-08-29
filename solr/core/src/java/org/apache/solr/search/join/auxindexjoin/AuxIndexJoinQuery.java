@@ -144,8 +144,9 @@ class AuxIndexJoinQuery extends Query {
     for (LeafReaderContext ctx : this.fromSearcher.getLeafContexts()) {
       futures[ctx.ord] =
           this.fromExecutorService.submit(
-              () -> FromLeafJoinContext.heavyLoadFromLeaf(fromWeight, fromField, ctx, fromLeafsToLoad.contains(ctx.ord))
-          );
+              () ->
+                  FromLeafJoinContext.heavyLoadFromLeaf(
+                      fromWeight, fromField, ctx, fromLeafsToLoad.contains(ctx.ord)));
     }
 
     return futures;

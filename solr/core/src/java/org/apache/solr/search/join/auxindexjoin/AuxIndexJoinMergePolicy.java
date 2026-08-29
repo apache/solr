@@ -46,7 +46,8 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
       if (merging.contains(info)) {
         continue;
       }
-      Set<String> pairFieldNames = JoinIndexUtils.pairFieldNames(JoinIndexUtils.readFieldInfos(info));
+      Set<String> pairFieldNames =
+          JoinIndexUtils.pairFieldNames(JoinIndexUtils.readFieldInfos(info));
       if (!pairFieldNames.isEmpty()
           && pendingPairRemovals.containsAll(
               pairFieldNames)) { // todo sweep pending removals as well
@@ -195,7 +196,8 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
     if (!shouldSample()) {
       return;
     }
-    Object fromKey = JoinIndexUtils.directoryKey(JoinIndexUtils.directory(fromSearcher.getIndexReader()));
+    Object fromKey =
+        JoinIndexUtils.directoryKey(JoinIndexUtils.directory(fromSearcher.getIndexReader()));
     Object toKey = JoinIndexUtils.directoryKey(JoinIndexUtils.directory(searcher.getIndexReader()));
     Map.Entry<Object, Object> searcherKey = Map.entry(fromKey, toKey);
 
