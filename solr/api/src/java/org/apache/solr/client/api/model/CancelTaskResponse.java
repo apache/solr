@@ -26,7 +26,5 @@ public class CancelTaskResponse extends SolrJerseyResponse {
     NOT_FOUND
   }
 
-  @JsonProperty
-  public CancelTaskResponse.CancellationStatus status;
-
+  @JsonProperty public CancelTaskResponse.CancellationStatus status;
 }

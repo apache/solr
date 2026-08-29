@@ -52,7 +52,6 @@ public class TaskCancellationHandler extends TaskManagementHandler {
       rsp.add("status", "Query with queryID" + taskCancellationID + " not found");
       rsp.add("responseCode", 404);
     }
-
   }
 
   @Override

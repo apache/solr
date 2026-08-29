@@ -45,20 +45,21 @@ public class CancelTask extends JerseyResource implements TasksApi.Cancel {
     boolean isTaskCancelled = ActiveTaskQuerySupport.cancelTask(solrQueryRequest, taskID);
 
     response.status =
-          (isTaskCancelled)
+        (isTaskCancelled)
             ? CancelTaskResponse.CancellationStatus.SUCCESS
             : CancelTaskResponse.CancellationStatus.NOT_FOUND;
 
     return response;
   }
 
-  public static boolean cancelTaskActiveOnThisShard(SolrQueryRequest solrQueryRequest, String taskId) {
-    CancellableCollector cancellableTask = solrQueryRequest.getCore().getCancellableQueryTracker().getCancellableTask(taskId);
+  public static boolean cancelTaskActiveOnThisShard(
+      SolrQueryRequest solrQueryRequest, String taskId) {
+    CancellableCollector cancellableTask =
+        solrQueryRequest.getCore().getCancellableQueryTracker().getCancellableTask(taskId);
     if (cancellableTask != null) {
       cancellableTask.cancel();
       return true;
     }
     return false;
   }
-
 }
