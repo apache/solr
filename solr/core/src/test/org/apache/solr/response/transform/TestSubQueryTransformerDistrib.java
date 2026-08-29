@@ -413,7 +413,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
         upd.append("</update>");
 
         ContentWriterUpdateRequest req = withBasicAuth(new ContentWriterUpdateRequest("/update"));
-        req.addContent(upd.toString(), "text/xml");
+        req.addContentWithType(upd.toString(), "text/xml");
         cluster.getSolrClient().request(req, collection);
         upd.setLength("<update>".length());
       }

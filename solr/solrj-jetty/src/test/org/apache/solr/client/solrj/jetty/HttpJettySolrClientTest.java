@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClientTestBase;
 import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
@@ -93,8 +94,10 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testMultipartUpload() throws Exception {
     ContentWriterUpdateRequest req = new ContentWriterUpdateRequest("/update");
-    req.addContent("firstPart", "first content", "text/plain");
-    req.addContent("secondPart", "second content", "text/plain");
+    req.addPart(
+        "firstPart", new RequestWriter.StringPayloadContentWriter("first content", "text/plain"));
+    req.addPart(
+        "secondPart", new RequestWriter.StringPayloadContentWriter("second content", "text/plain"));
     req.setParam("someParam", "someValue");
 
     String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;

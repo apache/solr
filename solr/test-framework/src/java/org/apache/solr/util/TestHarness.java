@@ -265,7 +265,7 @@ public class TestHarness extends BaseTestHarness {
 
       EmbeddedSolrServer server = new EmbeddedSolrServer(getCoreContainer(), getCore().getName());
       ContentWriterUpdateRequest xmlRequest = new ContentWriterUpdateRequest("/update");
-      xmlRequest.addContent(xml, "text/xml");
+      xmlRequest.addContentWithType(xml, "text/xml");
 
       // Request XML response format and use InputStreamResponseParser
       xmlRequest.getParams().add("wt", "xml");

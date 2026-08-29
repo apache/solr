@@ -76,13 +76,8 @@ public class ContentWriterUpdateRequest extends AbstractUpdateRequest {
         });
   }
 
-  /** Adds {@code content}, encoded as UTF-8, as a part. */
-  public void addContent(String name, String content, String contentType) {
-    addPart(name, new RequestWriter.StringPayloadContentWriter(content, contentType));
-  }
-
   /** Adds {@code content}, encoded as UTF-8, as the request's only part. */
-  public void addContent(String content, String contentType) {
-    addContent(null, content, contentType);
+  public void addContentWithType(String content, String contentType) {
+    addPart(null, new RequestWriter.StringPayloadContentWriter(content, contentType));
   }
 }

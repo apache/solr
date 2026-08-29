@@ -398,7 +398,7 @@ public class SolrCLI implements CLIO {
   public static NamedList<Object> postJsonToSolr(
       SolrClient solrClient, String updatePath, String jsonBody) throws Exception {
     ContentWriterUpdateRequest req = new ContentWriterUpdateRequest(updatePath);
-    req.addContent(jsonBody, JSON_CONTENT_TYPE);
+    req.addContentWithType(jsonBody, JSON_CONTENT_TYPE);
     return solrClient.request(req);
   }
 

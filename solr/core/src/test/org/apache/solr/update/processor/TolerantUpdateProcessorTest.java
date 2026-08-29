@@ -395,7 +395,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   public String update(String chain, String xml) {
     try {
       ContentWriterUpdateRequest xmlRequest = new ContentWriterUpdateRequest("/update");
-      xmlRequest.addContent(xml, "text/xml");
+      xmlRequest.addContentWithType(xml, "text/xml");
 
       // Set the update chain parameter and request XML response
       xmlRequest.getParams().add("update.chain", chain);
