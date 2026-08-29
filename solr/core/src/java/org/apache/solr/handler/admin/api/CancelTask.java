@@ -44,10 +44,13 @@ public class CancelTask extends JerseyResource implements TasksApi.Cancel {
 
     boolean isTaskCancelled = ActiveTaskQuerySupport.cancelTask(solrQueryRequest, taskID);
 
-    response.status =
-        (isTaskCancelled)
-            ? CancelTaskResponse.CancellationStatus.SUCCESS
-            : CancelTaskResponse.CancellationStatus.NOT_FOUND;
+    if (isTaskCancelled) {
+      response.status = CancelTaskResponse.CancellationStatus.SUCCESS;
+      response.responseHeader.status = 200;
+    } else {
+      response.status = CancelTaskResponse.CancellationStatus.NOT_FOUND;
+      response.responseHeader.status = 404;
+    }
 
     return response;
   }
