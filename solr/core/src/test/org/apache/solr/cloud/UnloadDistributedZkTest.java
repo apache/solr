@@ -32,7 +32,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.common.SolrInputDocument;
@@ -156,30 +155,22 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
     final String unloadCmdCoreName1 = (unloadInOrder ? coreName1 : coreName2);
     final String unloadCmdCoreName2 = (unloadInOrder ? coreName2 : coreName1);
 
-    try (SolrClient adminClient =
-        new HttpJettySolrClient.Builder(buildUrl(jettys.get(0).getLocalPort())).build()) {
-      // now unload one of the two
-      Unload unloadCmd = new Unload(false);
-      unloadCmd.setCoreName(unloadCmdCoreName1);
-      adminClient.request(unloadCmd);
+    SolrClient adminClient = jettys.get(0).getSolrClient();
+    // now unload one of the two
+    Unload unloadCmd = new Unload(false);
+    unloadCmd.setCoreName(unloadCmdCoreName1);
+    adminClient.request(unloadCmd);
 
-      // there should still be two shards (as of SOLR-5209)
-      checkCoreNamePresenceAndSliceCount(
-          collection,
-          unloadCmdCoreName1,
-          false /* shouldBePresent */,
-          numShards /* expectedSliceCount */);
+    // there should still be two shards (as of SOLR-5209)
+    checkCoreNamePresenceAndSliceCount(
+        collection, unloadCmdCoreName1, false /* shouldBePresent */, numShards);
 
-      // now unload one of the other
-      unloadCmd = new Unload(false);
-      unloadCmd.setCoreName(unloadCmdCoreName2);
-      adminClient.request(unloadCmd);
-      checkCoreNamePresenceAndSliceCount(
-          collection,
-          unloadCmdCoreName2,
-          false /* shouldBePresent */,
-          numShards /* expectedSliceCount */);
-    }
+    // now unload one of the other
+    unloadCmd = new Unload(false);
+    unloadCmd.setCoreName(unloadCmdCoreName2);
+    adminClient.request(unloadCmd);
+    checkCoreNamePresenceAndSliceCount(
+        collection, unloadCmdCoreName2, false /* shouldBePresent */, numShards);
 
     // printLayout();
     // the collection should still be present (as of SOLR-5209 replica removal does not cascade to
