@@ -29,7 +29,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.ListSnapshots;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -152,20 +151,19 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
           continue; // We know that the snapshot is not created for this replica.
         }
 
-        String replicaBaseUrl = replica.getBaseUrl();
         String coreName = replica.getCoreName();
 
         assertTrue(snapshotByCoreName.containsKey(coreName));
         CoreSnapshotMetaData coreSnapshot = snapshotByCoreName.get(coreName);
 
-        try (SolrClient adminClient = new HttpJettySolrClient.Builder(replicaBaseUrl).build()) {
-          Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);
-          Optional<SnapshotMetaData> metaData =
-              snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();
-          assertTrue("Snapshot not created for core " + coreName, metaData.isPresent());
-          assertEquals(coreSnapshot.getIndexDirPath(), metaData.get().getIndexDirPath());
-          assertEquals(coreSnapshot.getGenerationNumber(), metaData.get().getGenerationNumber());
-        }
+        // listing core snapshots is a node-level admin call
+        SolrClient adminClient = cluster.getReplicaJetty(replica).getSolrClient();
+        Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);
+        Optional<SnapshotMetaData> metaData =
+            snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();
+        assertTrue("Snapshot not created for core " + coreName, metaData.isPresent());
+        assertEquals(coreSnapshot.getIndexDirPath(), metaData.get().getIndexDirPath());
+        assertEquals(coreSnapshot.getGenerationNumber(), metaData.get().getGenerationNumber());
       }
     }
 
@@ -274,17 +272,15 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
           continue; // We know that the snapshot was not created for this replica.
         }
 
-        String replicaBaseUrl = replica.getBaseUrl();
         String coreName = replica.getCoreName();
 
-        try (SolrClient adminClient = new HttpJettySolrClient.Builder(replicaBaseUrl).build()) {
-          Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);
-          Optional<SnapshotMetaData> metaData =
-              snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();
-          assertFalse("Snapshot not deleted for core " + coreName, metaData.isPresent());
-          // Remove the entry for core if the snapshot is deleted successfully.
-          snapshotByCoreName.remove(coreName);
-        }
+        SolrClient adminClient = cluster.getReplicaJetty(replica).getSolrClient();
+        Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);
+        Optional<SnapshotMetaData> metaData =
+            snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();
+        assertFalse("Snapshot not deleted for core " + coreName, metaData.isPresent());
+        // Remove the entry for core if the snapshot is deleted successfully.
+        snapshotByCoreName.remove(coreName);
       }
     }
 
