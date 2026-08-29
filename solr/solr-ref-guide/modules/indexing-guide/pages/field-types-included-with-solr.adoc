@@ -73,6 +73,8 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |RptWithGeometrySpatialField |A derivative of `SpatialRecursivePrefixTreeFieldType` that also stores the original geometry. See xref:query-guide:spatial-search.adoc[] for more information and usage with geospatial results transformer.
 
+|SemVerField |A field type for semantic versioning strings with up to 6 dot-separated numeric parts (e.g., "2.3.1" or "1.0.4.2"). Each part must be in the range [0, 999]. Internally encoded as a long, preserving version ordering so that range queries, sorting, and comparisons work naturally. Missing trailing parts are treated as zero ("2.3" equals "2.3.0"). For single valued fields, `docValues="true"` must be used to enable sorting.
+
 |SortableTextField |A specialized version of TextField that allows (and defaults to) `docValues="true"` for sorting on the first 1024 characters of the original string prior to analysis. The number of characters used for sorting can be overridden with the `maxCharsForDocValues` attribute. See xref:query-guide:common-query-parameters.adoc#sort-parameter[sort parameter discussion] for details.
 
 |SpatialRecursivePrefixTreeFieldType |(RPT for short) Accepts latitude comma longitude strings or other shapes in WKT format. See xref:query-guide:spatial-search.adoc[] for more information.
