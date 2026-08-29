@@ -19,12 +19,10 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.handler.admin.api.CancelTaskAPI;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.handler.admin.api.CancelTask;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -32,40 +30,34 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 
 /** Handles requests for query cancellation for cancellable queries */
-public class QueryCancellationHandler extends TaskManagementHandler {
+public class TaskCancellationHandler extends TaskManagementHandler {
   // This can be a parent level member but we keep it here to allow future handlers to have
   // a custom list of components
-  private List<SearchComponent> components;
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    ResponseBuilder rb = buildResponseBuilder(req, rsp, getComponentsList());
-    Map<String, String> extraParams = null;
+    String taskCancellationID = req.getParams().get(QUERY_UUID, null);
 
-    rb.setCancellation(true);
-
-    String cancellationUUID = req.getParams().get(QUERY_UUID, null);
-
-    if (cancellationUUID == null) {
+    if (taskCancellationID == null) {
       throw new IllegalArgumentException(
           "Query cancellation was requested but no query UUID for cancellation was given");
     }
 
-    if (rb.isDistrib) {
-      extraParams = new HashMap<>();
+    boolean isTaskCancelled = ActiveTaskQuerySupport.cancelTask(req, taskCancellationID);
 
-      extraParams.put(QUERY_UUID, cancellationUUID);
+    if (isTaskCancelled) {
+      rsp.add("status", "Query with queryID " + taskCancellationID + " cancelled successfully");
+      rsp.add("responseCode", 200);
+    } else {
+      rsp.add("status", "Query with queryID" + taskCancellationID + " not found");
+      rsp.add("responseCode", 404);
     }
 
-    // Let this be visible to handleResponses in the handling component
-    rb.setCancellationUUID(cancellationUUID);
-
-    processRequest(req, rb, extraParams);
   }
 
   @Override
   public String getDescription() {
-    return "Cancel queries";
+    return "Cancel active tasks";
   }
 
   @Override
@@ -83,7 +75,6 @@ public class QueryCancellationHandler extends TaskManagementHandler {
     if (path.startsWith("/tasks/cancel")) {
       return this;
     }
-
     return null;
   }
 
@@ -94,14 +85,11 @@ public class QueryCancellationHandler extends TaskManagementHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return AnnotatedApi.getApis(new CancelTaskAPI(this));
+    return List.of();
   }
 
-  private List<SearchComponent> getComponentsList() {
-    if (components == null) {
-      components = buildComponentsList();
-    }
-
-    return components;
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(CancelTask.class);
   }
 }

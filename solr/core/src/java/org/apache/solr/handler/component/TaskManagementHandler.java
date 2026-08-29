@@ -112,9 +112,6 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
   public static List<SearchComponent> buildComponentsList() {
     List<SearchComponent> components = new ArrayList<>(2);
 
-    QueryCancellationComponent component = new QueryCancellationComponent();
-    components.add(component);
-
     return components;
   }
 

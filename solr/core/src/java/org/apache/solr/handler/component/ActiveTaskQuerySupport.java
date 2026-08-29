@@ -32,6 +32,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.api.ListActiveTasks;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.CancellableCollector;
 
 public class ActiveTaskQuerySupport {
   private static final String ACTIVE_TASK_LIST_HANDLER_PATH = "/tasks/list";
@@ -46,11 +47,24 @@ public class ActiveTaskQuerySupport {
     return execute(req, taskId).taskActive;
   }
 
+  public static boolean cancelTask(SolrQueryRequest req, String taskId) throws Exception {
+    return cancel(req, taskId);
+  }
+
   private static TaskQueryResult execute(SolrQueryRequest req, String taskId) throws Exception {
     if (!shouldDistributed(req)) {
       return localResult(req, taskId);
     }
     return distributedResult(req, taskId);
+  }
+
+  private static boolean cancel(SolrQueryRequest req, String taskId) {
+    CancellableCollector cancellableTask = req.getCore().getCancellableQueryTracker().getCancellableTask(taskId);
+    if (cancellableTask != null) {
+      cancellableTask.cancel();
+      return true;
+    }
+    return false;
   }
 
   private static TaskQueryResult localResult(SolrQueryRequest req, String taskId) {
