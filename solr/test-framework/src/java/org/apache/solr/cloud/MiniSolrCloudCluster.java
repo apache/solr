@@ -757,7 +757,12 @@ public class MiniSolrCloudCluster implements SolrBackend {
 
   /** Return the jetty for a node, identified by either its node name or its base URL. */
   public JettySolrRunner getJetty(String nodeNameOrUrl) {
-    for (JettySolrRunner jetty : jettys) {
+    return findJetty(jettys, nodeNameOrUrl);
+  }
+
+  /** Returns the runner among {@code runners} identified by node name or base URL. */
+  static JettySolrRunner findJetty(Collection<JettySolrRunner> runners, String nodeNameOrUrl) {
+    for (JettySolrRunner jetty : runners) {
       if (jetty.isStopped()) continue;
       if (nodeNameOrUrl.equals(jetty.getNodeName())
           || nodeNameOrUrl.equals(jetty.getBaseUrl().toString())) {

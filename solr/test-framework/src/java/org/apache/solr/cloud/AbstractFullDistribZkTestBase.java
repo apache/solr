@@ -2557,14 +2557,29 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     return commonCloudSolrClient;
   }
 
+  /** Returns the jetty identified by node name or base URL. */
+  protected JettySolrRunner getJetty(String nodeNameOrUrl) {
+    return MiniSolrCloudCluster.findJetty(allRunners(), nodeNameOrUrl);
+  }
+
   /**
    * Returns the jetty-owned client for the node hosting {@code replica}, scoped to that replica's
    * core. The caller must not close it -- the jetty owns it.
    */
   protected SolrClient getSolrClient(Replica replica) {
     return new CollectionScopedSolrClient(
-        MiniSolrCloudCluster.findReplicaJetty(jettys, replica).getSolrClient(),
+        MiniSolrCloudCluster.findReplicaJetty(allRunners(), replica).getSolrClient(),
         replica.getCoreName());
+  }
+
+  /** All runners of this cluster; the control jetty is kept outside {@link #jettys}. */
+  private List<JettySolrRunner> allRunners() {
+    if (controlJetty == null) {
+      return jettys;
+    }
+    List<JettySolrRunner> all = new ArrayList<>(jettys);
+    all.add(controlJetty);
+    return all;
   }
 
   protected CloudSolrClient getSolrClient(String collectionName) {
