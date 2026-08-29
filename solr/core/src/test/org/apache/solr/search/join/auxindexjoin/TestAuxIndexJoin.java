@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.Closeable;
@@ -71,9 +71,7 @@ import org.slf4j.LoggerFactory;
  * single valued {@link SortedSetDocValuesField} {@code parent_id_FK} pointing to the parents'
  * single valued {@code parent_id} (M:1).
  */
-@LogLevel("org.apache.solr.search.join.aijoin=WARN")
-// @LuceneTestCase.SuppressSysoutChecks(bugUrl = "no.url")
-public class TestAIJoin extends SolrTestCase {
+public class TestAuxIndexJoin extends SolrTestCase {
 
   private static final String ID = "id";
   private static final String PARENT_ID = "parent_id";
@@ -114,8 +112,8 @@ public class TestAIJoin extends SolrTestCase {
     joinDir = newDirectory();
     // none of these affect join correctness, only internal segment layout, refresh latency, and
     // dead-pair reap timing -- randomized to exercise all combinations
-    AIJoinIndexConfig config =
-        new AIJoinIndexConfig()
+    AuxIndexJoinConfig config =
+        new AuxIndexJoinConfig()
             .setSingleFieldPerSegment(random().nextBoolean())
             .setBlockingRefresh(random().nextBoolean())
             .setSweepSamplingInterval(TestUtil.nextInt(random(), -1, 2), TimeUnit.MINUTES);

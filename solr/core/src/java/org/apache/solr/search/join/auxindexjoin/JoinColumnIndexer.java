@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -32,9 +32,9 @@ import java.util.concurrent.Future;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
-import org.apache.solr.search.join.aijoin.AuxIndexManager.JoinSegmentReference;
-import org.apache.solr.search.join.aijoin.AuxIndexManager.SegmentsTuple;
+import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
+import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.JoinSegmentReference;
+import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.SegmentsTuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +71,7 @@ final class JoinColumnIndexer {
   /**
    * How many of the given pair field names have a build currently in flight in {@link #pairBuilds}
    * (claims are removed once persisted). Diagnostic only: a pair counted here but still reported
-   * missing by {@link AuxIndexManager#extractExistingJoinColumns} means the caller is about to redo
+   * missing by {@link JoinIndexUtils#extractExistingJoinColumns} means the caller is about to redo
    * from-side work for a pair some other thread is building right now.
    */
   int countClaimedBuilds(Set<String> pairFieldNames) {
@@ -195,14 +195,14 @@ final class JoinColumnIndexer {
       Future<FromLeafJoinContext>[] fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
     Map<String, JoinColumnModel> loadedMappings = new LinkedHashMap<>();
-    AIJoinUtil.ToDocInvertor toInvertor = new AIJoinUtil.ToDocInvertor(toField);
+    JoinIndexUtils.ToDocInvertor toInvertor = new JoinIndexUtils.ToDocInvertor(toField);
     for (String pairFieldName : ownedPairs) {
       SegmentsTuple position = missingPairs.get(pairFieldName);
       LeafReaderContext toContext = toReader.leaves().get(position.toLeafOrd());
       LeafReaderContext fromContext = fromReader.leaves().get(position.fromLeafOrd());
       assert fromColumnFutures[fromContext.ord] != null;
-      AIJoinUtil.JoinColumnModel mapping =
-          AIJoinUtil.computeDocMapping(
+      JoinIndexUtils.JoinColumnModel mapping =
+          JoinIndexUtils.computeDocMapping(
               toContext, toField, fromColumnFutures[fromContext.ord].get().fkColumn, toInvertor);
       loadedMappings.put(pairFieldName, mapping);
     }
@@ -257,7 +257,7 @@ final class JoinColumnIndexer {
     try {
       if (freshJoinSearcher != observedAbsentSearcher) {
         Map<String, JoinSegmentReference> alreadyPersisted =
-            AuxIndexManager.extractExistingJoinColumns(freshJoinSearcher, ownedPairs::contains);
+            JoinIndexUtils.extractExistingJoinColumns(freshJoinSearcher, ownedPairs::contains);
         if (!alreadyPersisted.isEmpty()) {
           unwrittenMappings = new LinkedHashMap<>(loadedMappings);
           unwrittenMappings.keySet().removeAll(alreadyPersisted.keySet());
@@ -358,16 +358,16 @@ final class JoinColumnIndexer {
       Set<String> writtenPairs,
       long startNanos,
       long builtNanos) {
-    if (!AIJoinUtil.diagnosticsEnabled(log) || pairsRequested == 0) {
+    if (!JoinIndexUtils.diagnosticsEnabled(log) || pairsRequested == 0) {
       return;
     }
     long toCount = 0;
     for (JoinColumnModel model : loadedMappings.values()) {
       toCount += model.edges().toCount();
     }
-    AIJoinUtil.logDiagnostic(
+    JoinIndexUtils.logDiagnostic(
         log,
-        "AIJOIN evt=build ctx={} pairsRequested={} pairsBuilt={} pairsAwaited={}"
+        "AUXIJOIN evt=build ctx={} pairsRequested={} pairsBuilt={} pairsAwaited={}"
             + " builtMs={} awaitedMs={} toCount={} writtenPairs={}",
         traceCtxId == null ? "-" : traceCtxId,
         pairsRequested,

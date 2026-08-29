@@ -26,13 +26,14 @@ import java.util.List;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.cloud.DistribAuxIndexJoinFromCollectionTest;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.search.join.aijoin.AuxIndexManager;
+import org.apache.solr.search.join.auxindexjoin.AuxIndexManager;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -51,7 +52,7 @@ import org.junit.Test;
  * this test doesn't exercise that one.
  *
  * <p>Both cores use version 1.7 schemas ({@code configsets/aijoin}, shared with {@link
- * org.apache.solr.cloud.DistribAIJoinFromCollectionTest}, and {@code configsets/minimal}), where
+ * DistribAuxIndexJoinFromCollectionTest}, and {@code configsets/minimal}), where
  * docValues default to true: {@link AuxIndexManager} reads real per-segment {@link
  * org.apache.lucene.index.SortedSetDocValues} directly, unlike {@link ScoreJoinQParserPlugin} (via
  * {@link org.apache.lucene.search.join.JoinUtil}) which tolerates uninverted fields too.

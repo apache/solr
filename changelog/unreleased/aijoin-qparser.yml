@@ -1,5 +1,5 @@
 title: >
-  Introducing {!aijoin} query for query-time join with auxiliary index.
+  Introducing {!auxIndexJoin} query for query-time join with auxiliary index.
 type: added
 authors:
   - name: Mikhail Khludnev

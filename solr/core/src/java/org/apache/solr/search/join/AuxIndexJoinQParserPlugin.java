@@ -41,7 +41,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.search.join.aijoin.AuxIndexManager;
+import org.apache.solr.search.join.auxindexjoin.AuxIndexManager;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -194,7 +194,7 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
         final String fromField = getParam("from");
         final String toField = getParam("to");
         if (fromField == null || toField == null) {
-          throw new SyntaxError("aijoin query parser requires 'from' and 'to' local params");
+          throw new SyntaxError("auxIndexJoin query parser requires 'from' and 'to' local params");
         }
         final String fromIndex = localParams.get("fromIndex");
         final String v = localParams.get(CommonParams.VALUE);
@@ -217,7 +217,7 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
           if (info == null) {
             fromCore.close();
             throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST, "Cross-core aijoin must have SolrRequestInfo");
+                SolrException.ErrorCode.BAD_REQUEST, "Cross-core auxIndexJoin must have SolrRequestInfo");
           }
           // released once this request completes: the from-side searcher is read on every
           // scorerSupplier() call, not just while building this query, so it must outlive parse()

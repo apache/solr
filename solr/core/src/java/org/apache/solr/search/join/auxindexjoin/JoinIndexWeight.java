@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.util.Map;
@@ -28,7 +28,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.search.join.aijoin.AuxIndexManager.JoinSegmentReference;
+import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.JoinSegmentReference;
 
 final class JoinIndexWeight extends Weight {
   final IndexSearcher maybeStaleJoinSearcher;

@@ -1,4 +1,4 @@
-= AIJoin Query Parser
+= Auxiliary Index Join Query Parser
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -18,7 +18,7 @@
 
 `auxIndexJoin` (which stands for Auxiliary Index Join) Query Parser is similar to xref:join-query-parser.adoc[], but uses a lazily written sidecar index for faster joins.
 
-Instead of using Lucene's join utilities directly, the parser matches documents through a dedicated join index that is maintained alongside the core's main index.
+Instead of using Lucene's join utilities, the parser matches documents through a dedicated join index that is maintained alongside the core's main index.
 The join index is populated lazily: if the inner (`from`-side) query doesn't hit a certain segment, the join index isn't written for it; and if `{!auxIndexJoin}` is intersected (`AND`/`+`) with a query that doesn't hit a certain segment on the outer (`to`) side, the corresponding join index columns aren't written either.
 
 Like the Join query parser, Solr runs a subquery (the `v` parameter), gathers the values that matching documents have in a `from` field, and returns documents where those values are contained in a `to` field.
@@ -63,18 +63,18 @@ So far, it should be single value string field with docValues enabled.
 +
 The name of the core to run the "from" query (`v` parameter) on and where "from" values are gathered.
 If this parameter is not defined, it defaults to the processing core.
-Cross-core joins are the primary use case for the AIJoin index, so this is useful when the "from" values live in a different core on the same node.
+Cross-core joins are the primary use case for `auxIndexJoin`, so this is useful when the "from" values live in a different core on the same node.
 
 == Configuration
 
-The AIJoin query parser *must be* registered in `solrconfig.xml` as a `<queryParser>`.
+`auxIndexJoin` query parser *must be* registered in `solrconfig.xml` as a `<queryParser>`.
 A sidecar join index is opened per core when the core loads, in a directory under the core's `dataDir`, and closed when the core closes.
 
 `dir`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `aijoin`
+|Optional |Default: `aux-index-join`
 |===
 +
 The init parameter for the directory holding the sidecar join index.
@@ -93,4 +93,4 @@ The algorithm utilizes multiple threads on _both_ sides if multiple threads are 
 
 == Disclaimer
 
-`auxIndexJoin` is completely experimental. It even might not guarantee compatibility with future versions.
+`auxIndexJoin` is completely experimental that's why it requires explicit configuration. So, far it's evalueated within single relation (from-to index pair) only, but it should support many ones in principle. It even might not guarantee compatibility with future versions.

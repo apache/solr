@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /**
  * From-side state of one (from-segment, to-segment) pair: the from doc values, its live-docs mask,
  * and the hashed from-side term dictionary. The hash maps each from-side term to its from-ord via
- * {@link #fromOrdByHashOrd}, so the to-side stage of {@link AIJoinUtil#computeDocMapping} can
+ * {@link #fromOrdByHashOrd}, so the to-side stage of {@link JoinIndexUtils#computeDocMapping} can
  * resolve a to-side term to the from-ord it shares. {@link #toDocByFromDoc} is zero-filled to
  * {@code -1} and indexed by each live from-doc's from-ord by ; the to-side stage rewrites it in
  * place from from-ords to to-docs.
@@ -94,14 +94,14 @@ final class ForeignKeyColumn {
     this.fromOrdByHashOrd = fromOrdByHashOrd;
     this.toDocByFromDoc = toDocByFromDoc;
     this.fromValuesCount = Math.toIntExact(fromDV.getValueCount());
-    if (AIJoinUtil.diagnosticsEnabled(log)) {
+    if (JoinIndexUtils.diagnosticsEnabled(log)) {
       // this constructor is the heavy from-side work (hashes the whole term dictionary), so every
       // line here is one profiler-visible FK load; a segment recurring across queries means its
       // pairs never get persisted and the load is being repeated in vain
-      AIJoinUtil.logDiagnostic(
+      JoinIndexUtils.logDiagnostic(
           log,
-          "AIJOIN evt=fkload fromSeg={} field={} ord={} maxDoc={} values={} tookUs={}",
-          AIJoinUtil.segmentName(fromContext),
+          "AUXIJOIN evt=fkload fromSeg={} field={} ord={} maxDoc={} values={} tookUs={}",
+          JoinIndexUtils.segmentName(fromContext),
           fromField,
           fromContext.ord,
           fromContext.reader().maxDoc(),

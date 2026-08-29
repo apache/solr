@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -24,21 +24,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
+import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 
 /**
  * The auxiliary join index: a self-maintaining sidecar persisting per (from-segment, to-segment)
@@ -66,9 +62,9 @@ public final class AuxIndexManager implements Closeable {
   private final JoinColumnIndexer pairBuilder = new JoinColumnIndexer(this);
 
   // package-private (not private): tests reach in directly to observe the reaper's state
-  final AIJoinMergePolicy mergePolicy;
+  final AuxIndexJoinMergePolicy mergePolicy;
   private final MergeScheduler mergeScheduler;
-  private final AIJoinWriter writerDelegate;
+  private final JoinColumWriter writerDelegate;
   private final boolean blockingRefresh;
 
   /** A pair's (from-segment, to-segment) leaf ordinals. */
@@ -85,81 +81,44 @@ public final class AuxIndexManager implements Closeable {
       String pairFieldName, String joinSegmentName, int joinSegmentLeafOrd) {}
 
   /**
-   * Scans {@code joinSearcher}'s leaves for every pair column whose field name satisfies {@code
-   * isNeeded}, returning where each one lives. Used both to seed a fresh {@link JoinIndexWeight}'s
-   * view of already-built pairs, and by {@link JoinIndexScorerSupplier} to relocate a pair whose
-   * cached segment reference no longer resolves. TODO subject for in-heap caching TODO commit's
-   * userdata might have a list of pairs with known segment ords and names
-   */
-  static Map<String, JoinSegmentReference> extractExistingJoinColumns(
-      IndexSearcher joinSearcher, Predicate<String> isNeeded) {
-    Map<String, JoinSegmentReference> existingJoinSegments =
-        CollectionUtil.newHashMap(joinSearcher.getIndexReader().leaves().size());
-    for (LeafReaderContext joinContext : joinSearcher.getIndexReader().leaves()) {
-      String segmentName = AIJoinUtil.segmentName(joinContext);
-      for (FieldInfo fieldInfo : joinContext.reader().getFieldInfos()) {
-        // pairs are detected by their toCount companion, which is written to doc 0 for every
-        // built pair; the join column itself is sparse and a tombstone pair (disjoint terms)
-        // never materializes it, so scanning for join columns kept re-reporting once-built
-        // tombstones as missing -- and re-triggering their from-side FK loads on every query
-        String splits[] = fieldInfo.name.split(AIJoinUtil.TO_COUNT_PREFIX);
-        if (splits.length == 2 && isNeeded.test(splits[1])) {
-          existingJoinSegments.computeIfAbsent(
-              splits[1],
-              fieldName -> new JoinSegmentReference(fieldName, segmentName, joinContext.ord));
-        }
-      }
-    }
-    return existingJoinSegments;
-  }
-
-  /**
    * Opens a persistent auxiliary join index over the given directory, creating it if empty, using
-   * the default {@link AIJoinIndexConfig}. The caller retains ownership of the directory: {@link
+   * the default {@link AuxIndexJoinConfig}. The caller retains ownership of the directory: {@link
    * #close()} does not close it.
    */
   public AuxIndexManager(Directory directory) throws IOException {
-    this(directory, new AIJoinIndexConfig());
+    this(directory, new AuxIndexJoinConfig());
   }
 
   /**
    * Opens a persistent auxiliary join index over the given directory, creating it if empty, using
-   * the given {@link AIJoinIndexConfig}. The caller retains ownership of the directory: {@link
+   * the given {@link AuxIndexJoinConfig}. The caller retains ownership of the directory: {@link
    * #close()} does not close it.
    */
-  public AuxIndexManager(Directory directory, AIJoinIndexConfig config) throws IOException {
+  public AuxIndexManager(Directory directory, AuxIndexJoinConfig config) throws IOException {
     this(directory, config, new ConcurrentMergeScheduler());
   }
 
   /**
    * Opens a persistent auxiliary join index over the given directory, creating it if empty, using
-   * the given {@link AIJoinIndexConfig} and {@link MergeScheduler} in place of the default {@link
+   * the given {@link AuxIndexJoinConfig} and {@link MergeScheduler} in place of the default {@link
    * ConcurrentMergeScheduler}. The caller retains ownership of the directory: {@link #close()} does
    * not close it.
    */
   public AuxIndexManager(
-      Directory directory, AIJoinIndexConfig config, MergeScheduler mergeScheduler)
+      Directory directory, AuxIndexJoinConfig config, MergeScheduler mergeScheduler)
       throws IOException {
     this.mergeScheduler = mergeScheduler;
-    this.mergePolicy = new AIJoinMergePolicy();
+    this.mergePolicy = new AuxIndexJoinMergePolicy();
     this.mergePolicy.setSweepInterval(config.getSweepSamplingIntervalNanos(), TimeUnit.NANOSECONDS);
     this.writer =
         new IndexWriter(
             directory,
             new IndexWriterConfig().setMergePolicy(mergePolicy).setMergeScheduler(mergeScheduler));
     this.manager = new SearcherManager(writer, null);
-    AIJoinWriter bulkWriter = new AIJoinDocWriter(); // new AIJoinColumnWriter()
+    JoinColumWriter bulkWriter = new JoinColumnDocWriter(); // new AIJoinColumnWriter()
     this.writerDelegate =
         config.getSingleFieldPerSegment()
-            ? new AIJoinWriter() {
-              @Override
-              void writeJoinColumns(IndexWriter writer, Map<String, JoinColumnModel> mappings)
-                  throws IOException {
-                for (Map.Entry<String, JoinColumnModel> entry : mappings.entrySet()) {
-                  bulkWriter.writeJoinColumns(writer, Map.of(entry.getKey(), entry.getValue()));
-                }
-              }
-            }
+            ? new SingleColumnBySegmentWriter(bulkWriter)
             : bulkWriter;
     this.blockingRefresh = config.getBlockingRefresh();
   }
@@ -284,6 +243,22 @@ public final class AuxIndexManager implements Closeable {
     } else {
       throw new UnsupportedOperationException(
           "waitForMerges() requires a ConcurrentMergeScheduler, got " + mergeScheduler.getClass());
+    }
+  }
+
+  private static class SingleColumnBySegmentWriter extends JoinColumWriter {
+    private final JoinColumWriter bulkWriter;
+
+    public SingleColumnBySegmentWriter(JoinColumWriter bulkWriter) {
+      this.bulkWriter = bulkWriter;
+    }
+
+    @Override
+    void writeJoinColumns(IndexWriter writer, Map<String, JoinColumnModel> mappings)
+        throws IOException {
+      for (Map.Entry<String, JoinColumnModel> entry : mappings.entrySet()) {
+        bulkWriter.writeJoinColumns(writer, Map.of(entry.getKey(), entry.getValue()));
+      }
     }
   }
 }

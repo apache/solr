@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
+import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 
 /**
  * Sibling of {@code AIJoinColumnWriter} writing the same pair columns through the plain {@link
@@ -37,9 +37,9 @@ import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
  * is guaranteed to end up doc-for-doc (list index == doc id) in one sidecar segment, keeping doc
  * 0's edges and every from-doc id aligned the same way.
  */
-final class AIJoinDocWriter extends AIJoinWriter {
+final class JoinColumnDocWriter extends JoinColumWriter {
 
-  AIJoinDocWriter() {}
+  JoinColumnDocWriter() {}
 
   @Override
   void writeJoinColumns(IndexWriter writer, Map<String, JoinColumnModel> mappings)
@@ -68,11 +68,11 @@ final class AIJoinDocWriter extends AIJoinWriter {
    */
   private static void addJoinColumns( // TODO don't write minusones columns for tombstones!!
       List<Document> docs, JoinColumnModel mapping, String pairFieldName) throws IOException {
-    addOrdMap(docs, AIJoinUtil.TO_DOC_VAL_BY_FROM_DOCNUM + pairFieldName, mapping);
-    addEdges(docs, AIJoinUtil.FROM_EDGES_PREFIX + pairFieldName, mapping.edges().fromDocEdges());
-    addEdges(docs, AIJoinUtil.TO_EDGES_PREFIX + pairFieldName, mapping.edges().toDocEdges());
+    addOrdMap(docs, JoinIndexUtils.TO_DOC_VAL_BY_FROM_DOCNUM + pairFieldName, mapping);
+    addEdges(docs, JoinIndexUtils.FROM_EDGES_PREFIX + pairFieldName, mapping.edges().fromDocEdges());
+    addEdges(docs, JoinIndexUtils.TO_EDGES_PREFIX + pairFieldName, mapping.edges().toDocEdges());
     addEdges(
-        docs, AIJoinUtil.TO_COUNT_PREFIX + pairFieldName, new int[] {mapping.edges().toCount()});
+        docs, JoinIndexUtils.TO_COUNT_PREFIX + pairFieldName, new int[] {mapping.edges().toCount()});
   }
 
   /**

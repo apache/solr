@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
  *       resolving to many "from" docs would silently drop matches).
  * </ul>
  */
-public class DistribAIJoinFromCollectionTest extends SolrCloudTestCase {
+public class DistribAuxIndexJoinFromCollectionTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -118,7 +118,7 @@ public class DistribAIJoinFromCollectionTest extends SolrCloudTestCase {
   @AfterClass
   public static void shutdown() {
     log.info(
-        "DistribAIJoinFromCollectionTest logic complete ... deleting the {} and {} collections",
+        "DistribAuxIndexJoinFromCollectionTest logic complete ... deleting the {} and {} collections",
         toColl,
         fromColl);
 
@@ -133,7 +133,7 @@ public class DistribAIJoinFromCollectionTest extends SolrCloudTestCase {
       }
     }
 
-    log.info("DistribAIJoinFromCollectionTest succeeded ... shutting down now!");
+    log.info("DistribAuxIndexJoinFromCollectionTest succeeded ... shutting down now!");
   }
 
   @Test

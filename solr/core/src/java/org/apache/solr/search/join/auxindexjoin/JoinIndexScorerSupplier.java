@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.join.aijoin;
+package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -48,19 +48,19 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.search.join.aijoin.AIJoinUtil.DocEdges;
-import org.apache.solr.search.join.aijoin.AIJoinUtil.JoinColumnModel;
-import org.apache.solr.search.join.aijoin.AuxIndexManager.JoinSegmentReference;
-import org.apache.solr.search.join.aijoin.AuxIndexManager.SegmentsTuple;
+import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.DocEdges;
+import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
+import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.JoinSegmentReference;
+import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.SegmentsTuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO prune by "to" range if it's under slice searching TODO pass raw cacheless searcher
+ * Joins all from-side segments to the single to-side segment.
  *
  * <h2>Instrumentation</h2>
  *
- * Emits INFO lines prefixed {@code AIJOIN} in logfmt (space-separated {@code key=value}), one
+ * Emits TRACE lines prefixed {@code AUXIJOIN} in logfmt (space-separated {@code key=value}), one
  * {@code evt=} per line, so a run can be parsed without a logging-config change:
  *
  * <ul>
@@ -123,27 +123,24 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   private long matchedToDocsCount = 0;
   private FixedBitSet falsePositiveToDocsBits = null;
 
-  /** ordered by from-cost descending */
-  private final List<JoinTask> joinCells = new ArrayList<>();
-
   // ---- instrumentation, best effort; see the class javadoc for the emitted format ----
   /** nanos spent inside {@code AuxIndexManager#writeJoinSegments} on behalf of this context */
   private long joinIndexBuildNanos;
 
   /** pairs that had a from-side match before the a-priori from-edge check ran */
-  private int cellsCreated;
+  private int joinLeafsCreated;
 
   /** pairs the a-priori from-edge check dropped, i.e. columns never opened at all */
-  private int cellsDroppedApriori;
+  private int leafsDroppedApriori;
 
-  /** calls to {@link LazyRefineTwoPhIter#matches()} */
+  /** calls to {@link LazyConfimationIterator#matches()} */
   private int confirmCalls;
 
   /** those answered from the half-read union alone, with no column read */
   private int confirmFreeHits;
 
   /** columns read through during confirmation */
-  private int cellsDrained;
+  private int leafsDrained;
 
   /** from-docs walked while draining, i.e. the column reads laziness is trying to avoid */
   private long fromDocsWalked;
@@ -151,28 +148,26 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   /** set once the {@code evt=done} line has been emitted, so it is emitted at most once */
   private boolean reported;
 
-  // secondary indices over joinCells, kept in sync by addJoinTask/removeJoinCell: every cell is
-  // reachable both by its from-segment ordinal (dense, so a plain array) and by its pair field
-  // name (sparse across the full from-segment space, so a map)
-  private final JoinTask[] joinCellsByFromSegOrd;
-  private final Map<String, JoinTask> joinCellsByPairFieldName = new HashMap<>();
+  /** ordered by from-cost descending */
+  private final List<LeafJoin> leafJoins = new ArrayList<>();
+
   private final IndexReader toReader;
 
-  private final class LazyRefineTwoPhIter extends TwoPhaseIterator {
+  private final class LazyConfimationIterator extends TwoPhaseIterator {
     FixedBitSet falseNegToDocsBits = null;
     private int shift;
 
-    private LazyRefineTwoPhIter(DocIdSetIterator approximation) {
+    private LazyConfimationIterator(DocIdSetIterator approximation) {
       super(approximation);
     }
 
     @Override
     public boolean matches() throws IOException {
       confirmCalls++;
-      if (joinCells.isEmpty()) {
+      if (leafJoins.isEmpty()) {
         assert falsePositiveToDocsBits.get(approximation.docID());
         confirmFreeHits++;
-        return true; /// aprox is a true pos already
+        return true; /// aproximation is a refined true pos already
       }
       if (falseNegToDocsBits != null) {
         if (falseNegToDocsBits.get(approximation.docID() - shift)) {
@@ -185,24 +180,24 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       try {
         refreshJoinTasksReferences(freshSearcher);
         assert JoinIndexScorerSupplier.this.lastSeenJoinSearcher == freshSearcher;
-        for (JoinTask cell : new ArrayList<>(joinCells)) {
+        for (LeafJoin joinTask : new ArrayList<>(leafJoins)) {
           if (falseNegToDocsBits == null) {
             this.shift = approximation.docID();
             falseNegToDocsBits = new FixedBitSet(lastToDoc + 1 - shift);
           }
-          int walked = cell.dumpMatchesInto(falseNegToDocsBits, shift, approximation.docID());
-          if (!cell.fromSegIterIsNotExausted()) {
-            JoinIndexScorerSupplier.this.removeJoinCell(cell);
-            cellsDrained++;
+          int walked = joinTask.dumpMatchesInto(falseNegToDocsBits, shift, approximation.docID());
+          if (!joinTask.fromSegIterIsNotExausted()) {
+            JoinIndexScorerSupplier.this.dropJoinLeaf(joinTask);
+            leafsDrained++;
           }
           fromDocsWalked += walked;
-          if (!joinCells.isEmpty()) {
+          if (!leafJoins.isEmpty()) {
             if (falseNegToDocsBits.get(approximation.docID() - shift)) {
-              logDrain(cell, walked, true);
+              logDrain(joinTask, walked, true);
               return true;
             } // otherwise we don't know if 0 is real false
           }
-          logDrain(cell, walked, false);
+          logDrain(joinTask, walked, false);
         }
       } catch (ExecutionException e) {
         throw new RuntimeException(e);
@@ -229,21 +224,21 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
      * for: the doc under test was found before the remaining {@code cellsLeft} columns were
      * touched.
      */
-    private void logDrain(JoinTask cell, int walked, boolean confirmed) {
-      if (!AIJoinUtil.diagnosticsEnabled(log)) {
+    private void logDrain(LeafJoin joinTask, int walked, boolean confirmed) {
+      if (!JoinIndexUtils.diagnosticsEnabled(log)) {
         return;
       }
-      AIJoinUtil.logDiagnostic(
+      JoinIndexUtils.logDiagnostic(
           log,
-          "AIJOIN evt=drain ctx={} toSeg={} pair={} confirmed={} walked={} colToCount={}"
+          "AUXIJOIN evt=drain ctx={} toSeg={} pair={} confirmed={} walked={} colToCount={}"
               + " cellsLeft={} hCard={} confirmCalls={}",
           ctxId,
-          AIJoinUtil.segmentName(toContext),
-          cell.pairFieldName,
+          JoinIndexUtils.segmentName(toContext),
+          joinTask.pairFieldName,
           confirmed,
           walked,
-          cell.toCount(),
-          joinCells.size(),
+          joinTask.toCount(),
+          leafJoins.size(),
           falseNegToDocsBits == null ? 0 : falseNegToDocsBits.cardinality(),
           confirmCalls);
     }
@@ -256,13 +251,13 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
 
   /**
    * Represents a cell in the join matrix bounded to from and to segments. Resolved exactly once,
-   * either from the join index ({@link #resolveFromIndex}: just the pair's {@link DocEdges}, with
+   * either from the join index ({@link #resolveFromReadingJoinIndex}: just the pair's {@link DocEdges}, with
    * real docvalues opened later, on demand, through {@link #joinSegmentRef} -- which keeps being
-   * refreshed as the join reader reopens -- or from the indexer ({@link #resolveFromIndexer}: the
+   * refreshed as the join reader reopens -- or from the indexer ({@link #resolveFromCalculatedModel}: the
    * pair's edges plus an in-memory {@link JoinColumnModel} that needs no further indirection to
    * read.
    */
-  class JoinTask implements DocEdges {
+  class LeafJoin implements DocEdges {
     final String pairFieldName;
     final DocIdSetIterator fromSegmentDocIdIter;
     final long fromMatchCount;
@@ -273,7 +268,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     // joinSegmentRef instead
     private JoinColumnModel docMapping;
 
-    JoinTask(
+    LeafJoin(
         String pairFieldName,
         SegmentsTuple segmentsFromTo,
         DocIdSetIterator fromSegmentDocIdIter,
@@ -287,13 +282,13 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     }
 
     /** Resolves this cell, once, to a join-index-persisted pair's edges. */
-    void resolveFromIndex(DocEdges edges) {
+    void resolveFromReadingJoinIndex(DocEdges edges) {
       assert this.edges == null : "already resolved: " + this.edges;
       this.edges = edges;
     }
 
     /** Resolves this cell, once, to an in-memory doc mapping built on demand. */
-    void resolveFromIndexer(JoinColumnModel docMapping) {
+    void resolveFromCalculatedModel(JoinColumnModel docMapping) {
       assert this.edges == null : "already resolved: " + this.edges;
       this.edges = docMapping.edges();
       this.docMapping = docMapping;
@@ -312,11 +307,11 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       // resolved from the join index: joinSegmentRef locates the real, on-disk column
       LeafReaderContext joinContext =
           lastSeenJoinSearcher.getLeafContexts().get(joinSegmentRef.joinSegmentLeafOrd());
-      assert AIJoinUtil.segmentName(joinContext).equals(joinSegmentRef.joinSegmentName());
+      assert JoinIndexUtils.segmentName(joinContext).equals(joinSegmentRef.joinSegmentName());
       return joinContext
           .reader()
           .getSortedNumericDocValues(
-              AIJoinUtil.TO_DOC_VAL_BY_FROM_DOCNUM + joinSegmentRef.pairFieldName());
+              JoinIndexUtils.TO_DOC_VAL_BY_FROM_DOCNUM + joinSegmentRef.pairFieldName());
     }
 
     /**
@@ -383,37 +378,24 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     }
   }
 
-  /** Appends {@code cell} to {@link #joinCells} and registers it in both indices. */
-  private JoinTask addJoinTask(JoinTask cell) {
-    joinCells.add(cell);
-    joinCellsByFromSegOrd[cell.segmentsFromTo.fromLeafOrd()] = cell;
-    joinCellsByPairFieldName.put(cell.pairFieldName, cell);
+  /** Appends {@code cell} to {@link #leafJoins} and registers it in both indices. */
+  private LeafJoin addJoinLeaf(LeafJoin cell) {
+    leafJoins.add(cell);
     return cell;
   }
 
   /**
-   * Drops {@code cell} from {@link #joinCells} and both indices, so a pair found to no longer
-   * contribute disappears from every view of it at once.
+   * Drops {@code cell} from {@link #leafJoins}. It's a little bit awkward.
+   * Every iteration join task list is copied and then removed from original list via
+   * reference equality. Ideally, iterators should be used for removals.
    */
-  private void removeJoinCell(JoinTask cell) {
-    joinCells.remove(cell);
-    joinCellsByFromSegOrd[cell.segmentsFromTo.fromLeafOrd()] = null;
-    joinCellsByPairFieldName.remove(cell.pairFieldName);
-  }
-
-  /** Looks up a cell by from-segment ordinal, or {@code null} if none is registered there. */
-  JoinTask cellByFromSegOrd(int fromSegOrd) {
-    return joinCellsByFromSegOrd[fromSegOrd];
-  }
-
-  /** Looks up a cell by pair field name, or {@code null} if none is registered under that name. */
-  JoinTask cellByPairFieldName(String pairFieldName) {
-    return joinCellsByPairFieldName.get(pairFieldName);
+  private void dropJoinLeaf(LeafJoin cell) {
+    leafJoins.remove(cell);
   }
 
   record TaskRefreshResult(
-      Set<Map.Entry<JoinTask, LeafReaderContext>> joinSegements,
-      Set<Map.Entry<JoinTask, JoinColumnModel>> justWritten) {}
+      Set<Map.Entry<LeafJoin, LeafReaderContext>> joinSegments,
+      Set<Map.Entry<LeafJoin, JoinColumnModel>> justWritten) {}
 
   /**
    * @param weightAgeJoinSegmentsReadOnly the join segments cached at {@link
@@ -449,13 +431,12 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     this.joinIndex = joinIndex;
     this.scoreMode = scoreMode;
     this.boost = boost;
-    this.joinCellsByFromSegOrd = new JoinTask[fromSearcher.getLeafContexts().size()];
 
     // 1. check from scorers
-    List<JoinTask> fromItersTasks = createFromItersTasks();
-    for (JoinTask newJoinTask : fromItersTasks) {
-      this.cellsCreated++;
-      this.addJoinTask(newJoinTask);
+    List<LeafJoin> fromItersTasks = createFromItersTasks();
+    for (LeafJoin newJoinTask : fromItersTasks) {
+      this.joinLeafsCreated++;
+      this.addJoinLeaf(newJoinTask);
       // 2. set old segment references
       JoinSegmentReference oldReference =
           weightAgeJoinSegmentsReadOnly.get(newJoinTask.pairFieldName);
@@ -467,39 +448,39 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     this.lastSeenJoinSearcher =
         weightAgeJoinSearcher; // set old searcher, it corresponds to weightAgeJoinSegmentsReadOnly
     TaskRefreshResult refreshedAndNew = refreshJoinTasksReferences(scorerSupplierAgeJoinSearcher);
-    for (Entry<JoinTask, LeafReaderContext> entry : refreshedAndNew.joinSegements) {
-      JoinTask cell = entry.getKey();
+    for (Entry<LeafJoin, LeafReaderContext> entry : refreshedAndNew.joinSegments) {
+      LeafJoin task = entry.getKey();
       LeafReaderContext joinLeaf = entry.getValue(); // got it from searcher leafs by refOrd
-      assert AIJoinUtil.segmentName(joinLeaf).equals(cell.joinSegmentRef.joinSegmentName());
-      assert joinLeaf.ord == cell.joinSegmentRef.joinSegmentLeafOrd();
-      cell.resolveFromIndex( // ok. this one may be ready for search.
-          new AIJoinUtil.Edges(
-              AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.FROM_EDGES_PREFIX + cell.pairFieldName),
+      assert JoinIndexUtils.segmentName(joinLeaf).equals(task.joinSegmentRef.joinSegmentName());
+      assert joinLeaf.ord == task.joinSegmentRef.joinSegmentLeafOrd();
+      task.resolveFromReadingJoinIndex( // ok. this one may be ready for search.
+          new JoinIndexUtils.Edges(
+              JoinIndexUtils.loadEdges(joinLeaf, JoinIndexUtils.FROM_EDGES_PREFIX + task.pairFieldName),
               // TODO it might not need to be loaded, if "from" edges fully cut of the column. Thus,
               // we won't read even "to" edges at all.
-              AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.TO_EDGES_PREFIX + cell.pairFieldName),
+              JoinIndexUtils.loadEdges(joinLeaf, JoinIndexUtils.TO_EDGES_PREFIX + task.pairFieldName),
               // TODO use it for ordering join segment iteration, desc
-              AIJoinUtil.loadEdges(joinLeaf, AIJoinUtil.TO_COUNT_PREFIX + cell.pairFieldName)[0]));
+              JoinIndexUtils.loadEdges(joinLeaf, JoinIndexUtils.TO_COUNT_PREFIX + task.pairFieldName)[0]));
     }
-    for (Entry<JoinTask, JoinColumnModel> entry : refreshedAndNew.justWritten) {
-      JoinTask cell = entry.getKey();
-      cell.resolveFromIndexer(entry.getValue());
+    for (Entry<LeafJoin, JoinColumnModel> entry : refreshedAndNew.justWritten) {
+      LeafJoin task = entry.getKey();
+      task.resolveFromCalculatedModel(entry.getValue());
     }
     // edges are  loaded
-    for (JoinTask cell :
+    for (LeafJoin task :
         List.copyOf(
-            joinCells)) { // hell. it might remove task from the list. that's sad. I have to copy
+            leafJoins)) { // hell. it might remove task from the list. that's sad. I have to copy
       // it.
-      assert cell.isResolved();
+      assert task.isResolved();
       // a little bit tricky. It assumes that column is join-index backed or just written and
       // array-backed,
-      advanceAtMinFromEdge(cell);
+      advanceAtMinFromEdge(task);
     }
     // now let's read each cell's edges, then build "to" side bitset of approximation
     // first pass: union the contributing pairs' to-doc ranges; every possible match in this
     // to segment falls into [minToDoc, maxToDoc]
-    for (JoinTask cell : joinCells) {
-      DocEdges docEdges = cell;
+    for (LeafJoin task : leafJoins) {
+      DocEdges docEdges = task;
       firstToDoc = Math.min(firstToDoc, docEdges.toDocEdges()[0]);
       lastToDoc = Math.max(lastToDoc, docEdges.toDocEdges()[1]);
       matchedToDocsCount += docEdges.toDocEdges()[1] - docEdges.toDocEdges()[0] + 1;
@@ -520,24 +501,24 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
    * saving the confirmation phase can make.
    */
   private void logContextSetUp() {
-    if (!AIJoinUtil.diagnosticsEnabled(log)) {
+    if (!JoinIndexUtils.diagnosticsEnabled(log)) {
       return;
     }
     long colToCountSum = 0;
-    for (JoinTask cell : joinCells) {
+    for (LeafJoin cell : leafJoins) {
       colToCountSum += cell.toCount();
     }
-    AIJoinUtil.logDiagnostic(
+    JoinIndexUtils.logDiagnostic(
         log,
-        "AIJOIN evt=ctx ctx={} toSeg={} toMaxDoc={} cellsCreated={} cellsDroppedApriori={}"
+        "AUXIJOIN evt=ctx ctx={} toSeg={} toMaxDoc={} cellsCreated={} cellsDroppedApriori={}"
             + " cellsLive={} buildMs={} approxCard={} approxSpanSum={} approxFrom={} approxTo={}"
             + " colToCountSum={}",
         ctxId,
-        AIJoinUtil.segmentName(toContext),
+        JoinIndexUtils.segmentName(toContext),
         toContext.reader().maxDoc(),
-        cellsCreated,
-        cellsDroppedApriori,
-        joinCells.size(),
+        joinLeafsCreated,
+        leafsDroppedApriori,
+        leafJoins.size(),
         joinIndexBuildNanos / 1_000_000L,
         falsePositiveToDocsBits == null ? 0 : falsePositiveToDocsBits.cardinality(),
         matchedToDocsCount,
@@ -552,36 +533,36 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
    * never emits this line never had to converge, which is the case the lazy variant exists for.
    */
   private void logConfirmationDone(String reason) {
-    if (reported || !AIJoinUtil.diagnosticsEnabled(log)) {
+    if (reported || !JoinIndexUtils.diagnosticsEnabled(log)) {
       return;
     }
     reported = true;
-    AIJoinUtil.logDiagnostic(
+    JoinIndexUtils.logDiagnostic(
         log,
-        "AIJOIN evt=done ctx={} toSeg={} reason={} confirmCalls={} freeHits={} cellsDrained={}"
+        "AUXIJOIN evt=done ctx={} toSeg={} reason={} confirmCalls={} freeHits={} cellsDrained={}"
             + " cellsLive={} fromDocsWalked={} buildMs={}",
         ctxId,
-        AIJoinUtil.segmentName(toContext),
+        JoinIndexUtils.segmentName(toContext),
         reason,
         confirmCalls,
         confirmFreeHits,
-        cellsDrained,
-        joinCells.size(),
+        leafsDrained,
+        leafJoins.size(),
         fromDocsWalked,
         joinIndexBuildNanos / 1_000_000L);
   }
 
   private TaskRefreshResult refreshJoinTasksReferences(IndexSearcher newJoinIndexSearcher)
       throws IOException, ExecutionException, InterruptedException {
-    Set<Map.Entry<JoinTask, LeafReaderContext>> joinSegments = new LinkedHashSet<>();
-    Set<Map.Entry<JoinTask, JoinColumnModel>> justWritten = new LinkedHashSet<>();
+    Set<Map.Entry<LeafJoin, LeafReaderContext>> joinSegments = new LinkedHashSet<>();
+    Set<Map.Entry<LeafJoin, JoinColumnModel>> justWritten = new LinkedHashSet<>();
 
-    Set<JoinTask> refreshReference = new LinkedHashSet<>();
-    Set<JoinTask> loadReference = new LinkedHashSet<>();
-    Map<String, JoinTask> needIndex = new LinkedHashMap<>();
-    Set<JoinTask> resolveTarget =
+    Set<LeafJoin> refreshReference = new LinkedHashSet<>();
+    Set<LeafJoin> loadReference = new LinkedHashSet<>();
+    Map<String, LeafJoin> needIndex = new LinkedHashMap<>();
+    Set<LeafJoin> resolveTarget =
         (newJoinIndexSearcher == this.lastSeenJoinSearcher) ? loadReference : refreshReference;
-    for (JoinTask task : joinCells) {
+    for (LeafJoin task : leafJoins) {
       if (task.joinSegmentRef != null) {
         resolveTarget.add(task);
       } else if (!task.isResolved()) {
@@ -592,28 +573,28 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     // refresh old refs, pass 1: same searcher, just get a segment by ord and check
     // the segment name
     List<LeafReaderContext> newLeaves = newJoinIndexSearcher.getLeafContexts();
-    for (Iterator<JoinTask> iter = refreshReference.iterator(); iter.hasNext(); ) {
-      JoinTask task = iter.next();
+    for (Iterator<LeafJoin> iter = refreshReference.iterator(); iter.hasNext(); ) {
+      LeafJoin task = iter.next();
       // check segment name by ord, if true, resolve it right here, remove from here
       LeafReaderContext byOrd =
           task.joinSegmentRef.joinSegmentLeafOrd() < newLeaves.size()
               ? newLeaves.get(task.joinSegmentRef.joinSegmentLeafOrd())
               : null;
       if (byOrd != null
-          && AIJoinUtil.segmentName(byOrd).equals(task.joinSegmentRef.joinSegmentName())) {
+          && JoinIndexUtils.segmentName(byOrd).equals(task.joinSegmentRef.joinSegmentName())) {
         joinSegments.add(new SimpleEntry<>(task, byOrd));
         iter.remove();
       }
     }
     // pass 2: searcher have changed, need to lookup segments by name in the new one
     if (!refreshReference.isEmpty()) {
-      Map<String, JoinTask> byOldJoinSegName = new HashMap<>();
-      for (JoinTask task : refreshReference) {
+      Map<String, LeafJoin> byOldJoinSegName = new HashMap<>();
+      for (LeafJoin task : refreshReference) {
         byOldJoinSegName.put(task.joinSegmentRef.joinSegmentName(), task);
       }
       for (LeafReaderContext joinLeaf : newLeaves) {
-        String segName = AIJoinUtil.segmentName(joinLeaf);
-        JoinTask task = byOldJoinSegName.get(segName);
+        String segName = JoinIndexUtils.segmentName(joinLeaf);
+        LeafJoin task = byOldJoinSegName.get(segName);
         if (task != null) {
           task.joinSegmentRef =
               new JoinSegmentReference(task.joinSegmentRef.pairFieldName(), segName, joinLeaf.ord);
@@ -624,16 +605,16 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     }
     // pass 3: search by field name
     if (!refreshReference.isEmpty()) {
-      Map<String, JoinTask> byPairFieldName = new HashMap<>();
-      for (JoinTask task : refreshReference) {
+      Map<String, LeafJoin> byPairFieldName = new HashMap<>();
+      for (LeafJoin task : refreshReference) {
         byPairFieldName.put(task.joinSegmentRef.pairFieldName(), task);
       }
       // loop join segments search for fields
       Map<String, JoinSegmentReference> joinSegmentsByPairFieldName =
-          AuxIndexManager.extractExistingJoinColumns(
+          JoinIndexUtils.extractExistingJoinColumns(
               lastSeenJoinSearcher, byPairFieldName::containsKey);
       // if found move to load set
-      for (JoinTask task : byPairFieldName.values()) {
+      for (LeafJoin task : byPairFieldName.values()) {
         JoinSegmentReference found = joinSegmentsByPairFieldName.get(task.pairFieldName);
         if (found != null) {
           task.joinSegmentRef = found;
@@ -647,18 +628,18 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
           "unable to refresh segment refs " + refreshReference + " at " + lastSeenJoinSearcher);
     }
     // load edges for regulars, repeat pass 1, for those who was found at pass 3
-    for (JoinTask cell : loadReference) {
+    for (LeafJoin cell : loadReference) {
       // String pairFieldName = cell.pairFieldName;
       LeafReaderContext joinLeafSeg =
           lastSeenJoinSearcher.getLeafContexts().get(cell.joinSegmentRef.joinSegmentLeafOrd());
-      assert AIJoinUtil.segmentName(joinLeafSeg).equals(cell.joinSegmentRef.joinSegmentName());
+      assert JoinIndexUtils.segmentName(joinLeafSeg).equals(cell.joinSegmentRef.joinSegmentName());
       joinSegments.add(new SimpleEntry<>(cell, joinLeafSeg));
     }
     // index unlucky ones
     if (!needIndex.isEmpty()) {
 
       Map<String, SegmentsTuple> missingPairs = new HashMap<>();
-      for (JoinTask cell : needIndex.values()) {
+      for (LeafJoin cell : needIndex.values()) {
         missingPairs.put(cell.pairFieldName, cell.segmentsFromTo);
       }
       long buildStartNanos = System.nanoTime();
@@ -678,7 +659,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       assert written.keySet().containsAll(missingPairs.keySet());
       assert missingPairs.keySet().containsAll(written.keySet());
       for (Map.Entry<String, JoinColumnModel> entry : written.entrySet()) { // TODO optimize
-        JoinTask cell = needIndex.get(entry.getKey());
+        LeafJoin cell = needIndex.get(entry.getKey());
         justWritten.add(new SimpleEntry<>(cell, entry.getValue()));
       }
     }
@@ -689,29 +670,29 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
 
   /**
    * Positions {@code cell}'s from-iterator behind {@code docEdges}'s first from-doc, or drops
-   * {@code cell} via {@link #removeJoinCell} when the iterator can no longer reach any doc the pair
+   * {@code cell} via {@link #dropJoinLeaf} when the iterator can no longer reach any doc the pair
    * maps -- either because the pair maps nothing ({-1, -1} sentinel), the iterator already moved
    * past the pair's last from-doc, or it exhausts before reaching the pair's first one (the
    * iterator only moves forward, so none of these are recoverable). Returns whether the cell
    * survives.
    */
-  private boolean advanceAtMinFromEdge(JoinTask cell) throws IOException {
+  private boolean advanceAtMinFromEdge(LeafJoin cell) throws IOException {
     int[] fromDocEdges = cell.fromDocEdges();
     int minFromDoc = fromDocEdges[0];
     int maxFromDoc = fromDocEdges[1];
     DocIdSetIterator fromSegemtIter = cell.fromSegmentDocIdIter;
     if (minFromDoc < 0) {
       // {-1, -1} sentinel: this pair maps no from doc to any to doc at all
-      cellsDroppedApriori++;
-      removeJoinCell(cell);
+      leafsDroppedApriori++;
+      dropJoinLeaf(cell);
       return false;
     }
     if (maxFromDoc >= 0
         && maxFromDoc != DocIdSetIterator.NO_MORE_DOCS
         && fromSegemtIter.docID() > maxFromDoc) {
       // from iter is already past the last from doc this pair maps, so it cannot contribute
-      cellsDroppedApriori++;
-      removeJoinCell(cell); // no more matches in this join segment, so the pair cannot contribute
+      leafsDroppedApriori++;
+      dropJoinLeaf(cell); // no more matches in this join segment, so the pair cannot contribute
       return false;
     }
     if (minFromDoc >= 0
@@ -721,8 +702,8 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       if (firstMatch == DocIdSetIterator.NO_MORE_DOCS || firstMatch > maxFromDoc) {
         /// wow from iter exhausted, no match in this join segment, so the pair cannot contribute
         // thus we need to return them from request `
-        cellsDroppedApriori++;
-        removeJoinCell(cell); // no more matches in this join segment, so the pair cannot contribute
+        leafsDroppedApriori++;
+        dropJoinLeaf(cell); // no more matches in this join segment, so the pair cannot contribute
         return false;
       } // else from iter is advanced behind the first from match , good
     }
@@ -730,18 +711,18 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   }
 
   /**
-   * every to segment call for prepositioned from seg iters populates a {@link JoinTask} per
+   * every to segment call for prepositioned from seg iters populates a {@link LeafJoin} per
    * contributing from segment, its iterator PREPOSITIONED to the first matching doc
    *
    * @return tasks are orfered by descending from-side match count, so the first task is the one
    *     with the most matches
    */
-  private List<JoinTask> createFromItersTasks()
+  private List<LeafJoin> createFromItersTasks()
       throws ExecutionException, InterruptedException, IOException {
     List<LeafReaderContext> leaves = new ArrayList<>(this.fromSearcher.getLeafContexts());
     Collections.shuffle(leaves, ThreadLocalRandom.current());
 
-    List<JoinTask> tasks = new ArrayList<>();
+    List<LeafJoin> tasks = new ArrayList<>();
     for (LeafReaderContext fromContext : leaves) {
       FromLeafJoinContext matchAndCount = this.fromColumnFutures[fromContext.ord].get();
       if (matchAndCount == null) {
@@ -753,9 +734,9 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
           && matchedFromDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         // name every contributing (from, to) pair column; pair field names are unique across pairs
         String pairFieldName =
-            AIJoinUtil.pairFieldName(fromContext, this.fromField, toContext, this.toField);
+            JoinIndexUtils.pairFieldName(fromContext, this.fromField, toContext, this.toField);
         tasks.add(
-            new JoinTask(
+            new LeafJoin(
                 pairFieldName,
                 new SegmentsTuple(fromContext.ord, toContext.ord),
                 matchedFromDocs,
@@ -764,7 +745,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     }
     // process the from segments with the most matches first
     // TODO won't we reorder them again then? why do we do it here though?
-    tasks.sort(Comparator.<JoinTask>comparingLong(t -> t.fromMatchCount).reversed());
+    tasks.sort(Comparator.<LeafJoin>comparingLong(t -> t.fromMatchCount).reversed());
     return tasks;
   }
 
@@ -779,7 +760,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     DocIdSetIterator approximation =
         new BitSetIterator(falsePositiveToDocsBits, matchedToDocsCount);
 
-    TwoPhaseIterator twoPhase = new LazyRefineTwoPhIter(approximation);
+    TwoPhaseIterator twoPhase = new LazyConfimationIterator(approximation);
     return new ConstantScoreScorer(boost, scoreMode, twoPhase);
   }
 
