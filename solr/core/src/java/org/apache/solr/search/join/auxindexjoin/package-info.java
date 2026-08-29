@@ -25,36 +25,37 @@
  * <h4>Simplified Collaboration Diagram</h4>
  *
  * <pre>
- * {@link AuxIndexJoinQParserPlugin}
+ * {@link org.apache.solr.search.join.AuxIndexJoinQParserPlugin}
  *       │
  *       ▼
- * {@link AuxIndexManager}  ----->  {@link AuxIndexJoinConfig}
+ * {@link org.apache.solr.search.join.auxindexjoin.AuxIndexManager}  ──────▶  {@link org.apache.solr.search.join.auxindexjoin.AuxIndexJoinConfig}
  *       │    │
- *       │    +----------> {@link AuxIndexJoinMergePolicy}
+ *       │    └──────────▶ {@link org.apache.solr.search.join.auxindexjoin.AuxIndexJoinMergePolicy}
  *       ▼
- * {@link AuxIndexJoinQuery} ------> {@link FromLeafJoinContext}
+ * {@link org.apache.solr.search.join.auxindexjoin.AuxIndexJoinQuery} ──────▶ {@link org.apache.solr.search.join.auxindexjoin.FromLeafJoinContext}
  *       │                           │
  *       ▼                           ▼
- * {@link JoinIndexWeight}             {@link ForeignKeyColumn}
+ * {@link org.apache.solr.search.join.auxindexjoin.JoinIndexWeight}             {@link org.apache.solr.search.join.auxindexjoin.ForeignKeyColumn}
  *       │
  *       ▼
- * {@link JoinIndexScorerSupplier} ---------> {@link JoinColumnIndexer}
- *   │ │                                       │ │
- *   │ ▼                                       │ ▼
- *   │{@link JoinIndexScorerSupplier.LeafJoin}           │{@link JoinIndexUtils.JoinColumnModel}
- *   ▼                                         ▼
- * {@link JoinIndexScorerSupplier.LazyConfimationIterator} {@link JoinColumnDocWriter}
+ * {@link org.apache.solr.search.join.auxindexjoin.JoinIndexScorerSupplier}   ──────▶   {@link org.apache.solr.search.join.auxindexjoin.JoinColumnIndexer}
+ *   │ │                                         │ │
+ *   │ ▼                                         │ ▼
+ *   │{@link org.apache.solr.search.join.auxindexjoin.JoinIndexScorerSupplier.LeafJoin}             │{@link org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel}
+ *   ▼                                           ▼
+ * {@link org.apache.solr.search.join.auxindexjoin.JoinIndexScorerSupplier.LazyConfimationIterator} {@link org.apache.solr.search.join.auxindexjoin.JoinColumnDocWriter}
  *
  * </pre>
  *
- * <p>{@link AuxIndexManager} owns an auxiliary Lucene index persisting, for every (from-segment,
- * to-segment) pair, a SORTED_NUMERIC column mapping from-side doc ids to to-side doc ids, plus
- * edges columns with the pair's {@code {min, max}} doc bounds and a to-side count. Pair columns are
- * named by both sides' persistent side keys (segment id + docvalues generation of the join field),
- * so they survive reopens of either side and are built lazily — the first {@code AuxIndexJoinQuery}
- * weight that needs a pair writes it. See {@link AuxIndexManager} for the user-facing API and
- * {@link AuxIndexJoinConfig} for tunables (blocking vs. non-blocking refresh,
- * one-field-per-segment, the reaper's sweep interval).
+ * <p>{@link org.apache.solr.search.join.auxindexjoin.AuxIndexManager} owns an auxiliary Lucene
+ * index persisting, for every (from-segment, to-segment) pair, a SORTED_NUMERIC column mapping
+ * from-side doc ids to to-side doc ids, plus edges columns with the pair's {@code {min, max}} doc
+ * bounds and a to-side count. Pair columns are named by both sides' persistent side keys (segment
+ * id + docvalues generation of the join field), so they survive reopens of either side and are
+ * built lazily — the first {@code AuxIndexJoinQuery} weight that needs a pair writes it. See {@link
+ * org.apache.solr.search.join.auxindexjoin.AuxIndexManager} for the user-facing API and {@link
+ * org.apache.solr.search.join.auxindexjoin.AuxIndexJoinConfig} for tunables (blocking vs.
+ * non-blocking refresh, one-field-per-segment, the reaper's sweep interval).
  *
  * <p>A batch of pair columns is written through {@code JoinColumnDocWriter}. It guarantes a batch
  * lands doc-for-doc in one sidecar segment, so doc 0's edges and every from-doc id line up the same
@@ -104,5 +105,3 @@
  * </ul>
  */
 package org.apache.solr.search.join.auxindexjoin;
-
-import org.apache.solr.search.join.AuxIndexJoinQParserPlugin;
