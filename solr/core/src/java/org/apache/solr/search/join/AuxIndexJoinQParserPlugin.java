@@ -66,9 +66,9 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Unlike {@link ScoreJoinQParserPlugin.OtherCoreJoinQuery}, which only borrows the from-side
  * searcher long enough to build a self-contained {@code Query} in {@code createWeight}, an {@link
- * org.apache.solr.search.join.aijoin.AuxIndexJoinQuery} keeps reading the from-side searcher on
- * every {@code scorerSupplier} call (it may lazily build missing pair columns per to-segment), so a
- * cross-core from-searcher is pinned open for the whole request via {@link
+ * org.apache.solr.search.join.auxindexjoin.AuxIndexJoinQuery} keeps reading the from-side searcher
+ * on every {@code scorerSupplier} call (it may lazily build missing pair columns per to-segment),
+ * so a cross-core from-searcher is pinned open for the whole request via {@link
  * SolrRequestInfo#addCloseHook}, the same mechanism {@link
  * org.apache.solr.search.JoinQuery.JoinQueryWeight} uses for the regular {@code {!join}}.
  *

@@ -433,7 +433,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     this.boost = boost;
 
     // 1. check from scorers
-    List<LeafJoin> fromItersTasks = createFromItersTasks();
+    List<LeafJoin> fromItersTasks = createLeafJoins();
     for (LeafJoin newJoinTask : fromItersTasks) {
       this.joinLeafsCreated++;
       this.addJoinLeaf(newJoinTask);
@@ -720,7 +720,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
    * @return tasks are orfered by descending from-side match count, so the first task is the one
    *     with the most matches
    */
-  private List<LeafJoin> createFromItersTasks()
+  private List<LeafJoin> createLeafJoins()
       throws ExecutionException, InterruptedException, IOException {
     List<LeafReaderContext> leaves = new ArrayList<>(this.fromSearcher.getLeafContexts());
     Collections.shuffle(leaves, ThreadLocalRandom.current());
