@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -37,7 +36,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -117,13 +115,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     log.info("excluded_node : {}  ", emptyNode);
     createReplaceNodeRequest(nodeToBeDecommissioned, emptyNode, null)
         .processAndWait("000", cloudClient, 15);
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-    try (SolrClient coreClient =
-        new HttpJettySolrClient.Builder(zkStateReader.getBaseUrlForNodeName(nodeToBeDecommissioned))
-            .build()) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
-      assertEquals(0, status.getCoreStatus().size());
-    }
+    SolrClient coreClient = cluster.getJetty(nodeToBeDecommissioned).getSolrClient();
+    CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
+    assertEquals(0, status.getCoreStatus().size());
 
     Thread.sleep(5000);
     collection = cloudClient.getClusterState().getCollection(coll);
@@ -138,12 +132,12 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     replaceNodeRequest.setWaitForFinalState(true);
     replaceNodeRequest.processAndWait("001", cloudClient, 10);
 
-    SolrClient coreClient = cluster.getJetty(emptyNode).getSolrClient();
-    CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
+    SolrClient emptyNodeClient = cluster.getJetty(emptyNode).getSolrClient();
+    CoreAdminResponse emptyNodeStatus = CoreAdminRequest.getStatus(null, emptyNodeClient);
     assertEquals(
-        "Expecting no cores but found some: " + status.getCoreStatus(),
+        "Expecting no cores but found some: " + emptyNodeStatus.getCoreStatus(),
         0,
-        status.getCoreStatus().size());
+        emptyNodeStatus.getCoreStatus().size());
 
     collection = cluster.getSolrClient().getClusterState().getCollection(coll);
     assertEquals(create.getNumShards().intValue(), collection.getSlices().size());

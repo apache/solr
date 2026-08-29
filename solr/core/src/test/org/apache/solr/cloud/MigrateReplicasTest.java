@@ -29,14 +29,12 @@ import java.util.Set;
 import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -123,16 +121,12 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         "MigrateReplicas request was unsuccessful",
         0L,
         ((Map<?, ?>) response.get("responseHeader")).get("status"));
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-    try (SolrClient coreClient =
-        new HttpJettySolrClient.Builder(zkStateReader.getBaseUrlForNodeName(nodeToBeDecommissioned))
-            .build()) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
-      assertEquals(
-          "There should not be any cores left on decommissioned node",
-          0,
-          status.getCoreStatus().size());
-    }
+    SolrClient coreClient = cluster.getJetty(nodeToBeDecommissioned).getSolrClient();
+    CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
+    assertEquals(
+        "There should not be any cores left on decommissioned node",
+        0,
+        status.getCoreStatus().size());
 
     Thread.sleep(5000);
     collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
@@ -152,14 +146,12 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         0L,
         ((Map<?, ?>) response.get("responseHeader")).get("status"));
 
-    try (SolrClient coreClient =
-        new HttpJettySolrClient.Builder(zkStateReader.getBaseUrlForNodeName(emptyNode)).build()) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
-      assertEquals(
-          "Expecting no cores but found some: " + status.getCoreStatus(),
-          0,
-          status.getCoreStatus().size());
-    }
+    SolrClient emptyNodeClient = cluster.getJetty(emptyNode).getSolrClient();
+    CoreAdminResponse emptyNodeStatus = CoreAdminRequest.getStatus(null, emptyNodeClient);
+    assertEquals(
+        "Expecting no cores but found some: " + emptyNodeStatus.getCoreStatus(),
+        0,
+        emptyNodeStatus.getCoreStatus().size());
 
     collection = cluster.getSolrClient().getClusterState().getCollection(coll);
     assertEquals(create.getNumShards().intValue(), collection.getSlices().size());

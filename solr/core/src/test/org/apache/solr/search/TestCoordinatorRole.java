@@ -35,7 +35,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -462,31 +461,31 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             CommonParams.JAVABIN);
     p.accept(q);
     SolrDocumentList docs = null;
-    try (SolrClient solrClient = new HttpJettySolrClient.Builder(qaNode).build()) {
-      for (int i = 0; i < 100; i++) {
-        try {
-          QueryResponse queryResponse = solrClient.query(COLL, q);
-          docs = queryResponse.getResults();
-          assertNotNull("Docs should not be null. Query response was: " + queryResponse, docs);
-          if (docs.size() > 0) {
-            found = true;
-            break;
-          }
-        } catch (SolrException ex) {
-          // we know we're doing tricky things that might cause transient errors
-          // TODO: all these query requests go to the QA node -- should QA propagate internal
-          // request errors to the external client (and the external client retry?) or should QA
-          // attempt to failover transparently in the event of an error?
-          if (i < 5) {
-            log.info("swallowing transient error", ex);
-          } else {
-            log.error("only expect actual _errors_ within a small window (e.g. 500ms)", ex);
-            fail("initial error time threshold exceeded");
-          }
+    SolrClient solrClient = cluster.getJetty(qaNode).getSolrClient();
+    for (int i = 0; i < 100; i++) {
+      try {
+        QueryResponse queryResponse = solrClient.query(COLL, q);
+        docs = queryResponse.getResults();
+        assertNotNull("Docs should not be null. Query response was: " + queryResponse, docs);
+        if (docs.size() > 0) {
+          found = true;
+          break;
         }
-        Thread.sleep(100);
+      } catch (SolrException ex) {
+        // we know we're doing tricky things that might cause transient errors
+        // TODO: all these query requests go to the QA node -- should QA propagate internal
+        // request errors to the external client (and the external client retry?) or should QA
+        // attempt to failover transparently in the event of an error?
+        if (i < 5) {
+          log.info("swallowing transient error", ex);
+        } else {
+          log.error("only expect actual _errors_ within a small window (e.g. 500ms)", ex);
+          fail("initial error time threshold exceeded");
+        }
       }
+      Thread.sleep(100);
     }
+
     assertTrue(found);
     return (String) docs.get(0).getFieldValue("_core_");
   }

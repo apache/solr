@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
@@ -89,26 +89,11 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
       COLLECTION_CLIENT.close();
       COLLECTION_CLIENT = null;
     }
-    if (null != S_ONE_LEADER_CLIENT) {
-      S_ONE_LEADER_CLIENT.close();
-      S_ONE_LEADER_CLIENT = null;
-    }
-    if (null != S_TWO_LEADER_CLIENT) {
-      S_TWO_LEADER_CLIENT.close();
-      S_TWO_LEADER_CLIENT = null;
-    }
-    if (null != S_ONE_NON_LEADER_CLIENT) {
-      S_ONE_NON_LEADER_CLIENT.close();
-      S_ONE_NON_LEADER_CLIENT = null;
-    }
-    if (null != S_TWO_NON_LEADER_CLIENT) {
-      S_TWO_NON_LEADER_CLIENT.close();
-      S_TWO_NON_LEADER_CLIENT = null;
-    }
-    if (null != NO_COLLECTION_CLIENT) {
-      NO_COLLECTION_CLIENT.close();
-      NO_COLLECTION_CLIENT = null;
-    }
+    S_ONE_LEADER_CLIENT = null;
+    S_TWO_LEADER_CLIENT = null;
+    S_ONE_NON_LEADER_CLIENT = null;
+    S_TWO_NON_LEADER_CLIENT = null;
+    NO_COLLECTION_CLIENT = null;
   }
 
   @BeforeClass
@@ -168,31 +153,26 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
 
       if (shardName.equals("shard1")) {
         S_ONE_LEADER_CLIENT =
-            new HttpJettySolrClient.Builder(leaderUrl)
-                .withDefaultCollection(COLLECTION_NAME)
-                .build();
+            new CollectionScopedSolrClient(
+                cluster.getJetty(leaderUrl).getSolrClient(), COLLECTION_NAME);
         S_ONE_NON_LEADER_CLIENT =
-            new HttpJettySolrClient.Builder(passiveUrl)
-                .withDefaultCollection(COLLECTION_NAME)
-                .build();
+            new CollectionScopedSolrClient(
+                cluster.getJetty(passiveUrl).getSolrClient(), COLLECTION_NAME);
       } else if (shardName.equals("shard2")) {
         S_TWO_LEADER_CLIENT =
-            new HttpJettySolrClient.Builder(leaderUrl)
-                .withDefaultCollection(COLLECTION_NAME)
-                .build();
+            new CollectionScopedSolrClient(
+                cluster.getJetty(leaderUrl).getSolrClient(), COLLECTION_NAME);
         S_TWO_NON_LEADER_CLIENT =
-            new HttpJettySolrClient.Builder(passiveUrl)
-                .withDefaultCollection(COLLECTION_NAME)
-                .build();
+            new CollectionScopedSolrClient(
+                cluster.getJetty(passiveUrl).getSolrClient(), COLLECTION_NAME);
       } else {
         fail("unexpected shard: " + shardName);
       }
     }
     assertEquals("Should be exactly one server left (not hosting either shard)", 1, urlMap.size());
     NO_COLLECTION_CLIENT =
-        new HttpJettySolrClient.Builder(urlMap.values().iterator().next())
-            .withDefaultCollection(COLLECTION_NAME)
-            .build();
+        new CollectionScopedSolrClient(
+            cluster.getJetty(urlMap.values().iterator().next()).getSolrClient(), COLLECTION_NAME);
 
     assertNotNull(S_ONE_LEADER_CLIENT);
     assertNotNull(S_TWO_LEADER_CLIENT);
