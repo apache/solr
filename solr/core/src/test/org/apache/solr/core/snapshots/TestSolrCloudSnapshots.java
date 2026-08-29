@@ -156,8 +156,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         assertTrue(snapshotByCoreName.containsKey(coreName));
         CoreSnapshotMetaData coreSnapshot = snapshotByCoreName.get(coreName);
 
-        // listing core snapshots is a node-level admin call
-        SolrClient adminClient = cluster.getReplicaJetty(replica).getSolrClient();
+        SolrClient adminClient = cluster.getSolrClient(replica);
         Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);
         Optional<SnapshotMetaData> metaData =
             snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();
@@ -274,7 +273,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
 
         String coreName = replica.getCoreName();
 
-        SolrClient adminClient = cluster.getReplicaJetty(replica).getSolrClient();
+        SolrClient adminClient = cluster.getSolrClient(replica);
         Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);
         Optional<SnapshotMetaData> metaData =
             snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();

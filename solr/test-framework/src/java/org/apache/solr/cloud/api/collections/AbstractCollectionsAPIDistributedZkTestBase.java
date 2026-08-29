@@ -560,7 +560,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
       for (Slice shard : collectionState) {
         for (Replica replica : shard) {
           CoreStatusResponse.SingleCoreData coreStatus;
-          SolrClient server = cluster.getReplicaJetty(replica).getSolrClient();
+          SolrClient server = cluster.getSolrClient(replica);
           coreStatus = CoreAdminRequest.getCoreStatus(replica.getCoreName(), false, server);
           long before = coreStatus.startTime.getTime();
           urlToTime.put(replica.getCoreUrl(), before);
@@ -639,7 +639,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     assertNotNull(newReplica);
     cluster.waitForActiveCollection(collectionName, 2, 6);
 
-    SolrClient coreclient = cluster.getReplicaJetty(newReplica).getSolrClient();
+    SolrClient coreclient = cluster.getSolrClient(newReplica);
     CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
     final var coreStatus = status.getCoreStatus(newReplica.getStr("core"));
     assertEquals(coreStatus.instanceDir, instancePath.toString());

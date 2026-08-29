@@ -366,8 +366,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
     String coreName = replica.getCoreName();
     boolean reloadedOk = false;
-    // CoreAdmin is a node-level API, so the node's own client is what we want here
-    SolrClient client = cluster.getReplicaJetty(replica).getSolrClient();
+    SolrClient client = cluster.getSolrClient(replica);
     CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
     long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 
