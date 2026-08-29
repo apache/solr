@@ -59,6 +59,7 @@ import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -2554,6 +2555,16 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       }
     }
     return commonCloudSolrClient;
+  }
+
+  /**
+   * Returns the jetty-owned client for the node hosting {@code replica}, scoped to that replica's
+   * core. The caller must not close it -- the jetty owns it.
+   */
+  protected SolrClient getSolrClient(Replica replica) {
+    return new CollectionScopedSolrClient(
+        MiniSolrCloudCluster.findReplicaJetty(jettys, replica).getSolrClient(),
+        replica.getCoreName());
   }
 
   protected CloudSolrClient getSolrClient(String collectionName) {

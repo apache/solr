@@ -1193,22 +1193,16 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     Replica shard1_0 = getLeaderFromZk(AbstractFullDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_0);
     QueryResponse response;
-    try (SolrClient shard1_0Client =
-        new HttpJettySolrClient.Builder(shard1_0.getBaseUrl())
-            .withDefaultCollection(shard1_0.getCoreName())
-            .build()) {
-      response = shard1_0Client.query(query);
-    }
+    SolrClient shard1_0Client = getSolrClient(shard1_0);
+    response = shard1_0Client.query(query);
+
     long shard10Count = response.getResults().getNumFound();
 
     Replica shard1_1 = getLeaderFromZk(AbstractFullDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_1);
     QueryResponse response2;
-    try (SolrClient shard1_1Client =
-        new HttpJettySolrClient.Builder(shard1_1.getBaseUrl())
-            .withDefaultCollection(shard1_1.getCoreName())
-            .build()) {
-      response2 = shard1_1Client.query(query);
-    }
+    SolrClient shard1_1Client = getSolrClient(shard1_1);
+    response2 = shard1_1Client.query(query);
+
     long shard11Count = response2.getResults().getNumFound();
 
     logDebugHelp(docCounts, response, shard10Count, response2, shard11Count, documentIds);
@@ -1231,12 +1225,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     for (Replica replica : slice.getReplicas()) {
       String coreUrl = replica.getCoreUrl();
       QueryResponse response;
-      try (SolrClient client =
-          new HttpJettySolrClient.Builder(replica.getBaseUrl())
-              .withDefaultCollection(replica.getCoreName())
-              .build()) {
-        response = client.query(query);
-      }
+      SolrClient client = getSolrClient(replica);
+      response = client.query(query);
+
       numFound[c++] = response.getResults().getNumFound();
       if (log.isInfoEnabled()) {
         log.info(

@@ -740,9 +740,16 @@ public class MiniSolrCloudCluster implements SolrBackend {
 
   /** Return the jetty that a particular replica resides on */
   public JettySolrRunner getReplicaJetty(Replica replica) {
-    for (JettySolrRunner jetty : jettys) {
+    return findReplicaJetty(jettys, replica);
+  }
+
+  /** Returns the runner among {@code runners} that hosts {@code replica}. */
+  static JettySolrRunner findReplicaJetty(Collection<JettySolrRunner> runners, Replica replica) {
+    for (JettySolrRunner jetty : runners) {
       if (jetty.isStopped()) continue;
       if (replica.getCoreUrl().startsWith(jetty.getBaseUrl().toString())) return jetty;
+      // a proxied jetty registers its replicas under the proxy's port
+      if (replica.getCoreUrl().startsWith(jetty.getProxyBaseUrl().toString())) return jetty;
     }
     throw new IllegalArgumentException(
         "Cannot find Jetty for a replica with core url " + replica.getCoreUrl());

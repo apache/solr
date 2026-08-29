@@ -46,7 +46,6 @@ import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
@@ -911,21 +910,17 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (Slice slice : dColl.getActiveSlices()) {
       long sliceDocCount = -1;
       for (Replica rep : slice.getReplicas()) {
-        try (SolrClient one =
-            new HttpJettySolrClient.Builder(rep.getBaseUrl())
-                .withDefaultCollection(rep.getCoreName())
-                .build()) {
-          SolrQuery query = new SolrQuery("*:*");
-          query.setDistrib(false);
-          QueryResponse resp = one.query(query);
-          long hits = resp.getResults().getNumFound();
-          if (sliceDocCount == -1) {
-            sliceDocCount = hits;
-            docTotal += hits;
-          } else {
-            if (hits != sliceDocCount) {
-              return -1;
-            }
+        SolrClient one = getSolrClient(rep);
+        SolrQuery query = new SolrQuery("*:*");
+        query.setDistrib(false);
+        QueryResponse resp = one.query(query);
+        long hits = resp.getResults().getNumFound();
+        if (sliceDocCount == -1) {
+          sliceDocCount = hits;
+          docTotal += hits;
+        } else {
+          if (hits != sliceDocCount) {
+            return -1;
           }
         }
       }
