@@ -676,6 +676,13 @@ public abstract class LBSolrClient extends SolrClient {
       } else {
         throw e;
       }
+    } catch (IOException e) {
+      // A transport may throw one directly rather than wrapping it in a SolrServerException.
+      if (!isNonRetryable || getClient(baseUrl).wasRequestUnsent(e)) {
+        ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
+      } else {
+        throw e;
+      }
     } catch (Exception e) {
       throw new SolrServerException(e);
     }

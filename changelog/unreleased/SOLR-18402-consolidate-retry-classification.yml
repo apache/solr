@@ -1,7 +1,8 @@
 title: >
   SolrJ: transports now classify their own failures via SolrClient.wasRequestUnsent /
   wasCommError; CloudSolrClient and LBSolrClient ask instead of matching exception types.
-  CloudSolrClient now replays an update only when the transport proves it was never sent.
+  CloudSolrClient now replays an update only when the transport proves it was never sent, and
+  LBSolrClient fails over on a bare IOException instead of aborting.
 type: changed
 authors:
   - name: Han Chan
