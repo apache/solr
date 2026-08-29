@@ -173,112 +173,103 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
     Replica shard1Leader = docCol.getSlice("shard1").getLeader();
     Replica shard2Leader = docCol.getSlice("shard2").getLeader();
-    try (SolrClient shard1 =
-            new HttpJettySolrClient.Builder(shard1Leader.getBaseUrl())
-                .withDefaultCollection(shard1Leader.getCoreName())
-                .build();
-        SolrClient shard2 =
-            new HttpJettySolrClient.Builder(shard2Leader.getBaseUrl())
-                .withDefaultCollection(shard2Leader.getCoreName())
-                .build()) {
+    SolrClient shard1 = cluster.getSolrClient(shard1Leader);
+    SolrClient shard2 = cluster.getSolrClient(shard2Leader);
+    // Add three documents to shard1
+    shard1.add(sdoc("id", "1", "title", "s1 one"));
+    shard1.add(sdoc("id", "2", "title", "s1 two"));
+    shard1.add(sdoc("id", "3", "title", "s1 three"));
+    shard1.commit();
+    final AtomicInteger docCounts1 = new AtomicInteger(3);
 
-      // Add three documents to shard1
-      shard1.add(sdoc("id", "1", "title", "s1 one"));
-      shard1.add(sdoc("id", "2", "title", "s1 two"));
-      shard1.add(sdoc("id", "3", "title", "s1 three"));
-      shard1.commit();
-      final AtomicInteger docCounts1 = new AtomicInteger(3);
+    // Add two documents to shard2
+    shard2.add(sdoc("id", "4", "title", "s2 four"));
+    shard2.add(sdoc("id", "5", "title", "s2 five"));
+    shard2.commit();
+    final AtomicInteger docCounts2 = new AtomicInteger(2);
 
-      // Add two documents to shard2
-      shard2.add(sdoc("id", "4", "title", "s2 four"));
-      shard2.add(sdoc("id", "5", "title", "s2 five"));
-      shard2.commit();
-      final AtomicInteger docCounts2 = new AtomicInteger(2);
+    // A re-usable helper to verify that the expected number of documents can be found on each
+    // shard...
+    Runnable checkShardCounts =
+        () -> {
+          try {
+            // including cloudClient helps us test view from other nodes that aren't the
+            // leaders...
+            for (SolrClient c : Arrays.asList(cloudClient, shard1, shard2)) {
 
-      // A re-usable helper to verify that the expected number of documents can be found on each
-      // shard...
-      Runnable checkShardCounts =
-          () -> {
-            try {
-              // including cloudClient helps us test view from other nodes that aren't the
-              // leaders...
-              for (SolrClient c : Arrays.asList(cloudClient, shard1, shard2)) {
-
-                ModifiableSolrParams params = params("q", "*:*");
-                if (c instanceof CloudSolrClient) {
-                  params.add("collection", testCollectionName);
-                }
-                assertEquals(
-                    docCounts1.get() + docCounts2.get(),
-                    c.query(params).getResults().getNumFound());
-
-                assertEquals(
-                    docCounts1.get(),
-                    c.query(params.set("shards", "shard1")).getResults().getNumFound());
-                assertEquals(
-                    docCounts2.get(),
-                    c.query(params.set("shards", "shard2")).getResults().getNumFound());
-
-                assertEquals(
-                    docCounts1.get() + docCounts2.get(),
-                    c.query(params.set("shards", "shard2,shard1")).getResults().getNumFound());
+              ModifiableSolrParams params = params("q", "*:*");
+              if (c instanceof CloudSolrClient) {
+                params.add("collection", testCollectionName);
               }
+              assertEquals(
+                  docCounts1.get() + docCounts2.get(), c.query(params).getResults().getNumFound());
 
               assertEquals(
                   docCounts1.get(),
-                  shard1.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound());
+                  c.query(params.set("shards", "shard1")).getResults().getNumFound());
               assertEquals(
                   docCounts2.get(),
-                  shard2.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound());
+                  c.query(params.set("shards", "shard2")).getResults().getNumFound());
 
-            } catch (Exception sse) {
-              throw new RuntimeException(sse);
+              assertEquals(
+                  docCounts1.get() + docCounts2.get(),
+                  c.query(params.set("shards", "shard2,shard1")).getResults().getNumFound());
             }
-          };
-      checkShardCounts.run();
 
-      { // Send a delete request for a doc on shard1 to core hosting shard1 with NO routing info
-        // Should delete (implicitly) since doc is (implicitly) located on this shard
-        final UpdateRequest deleteRequest = new UpdateRequest();
-        deleteRequest.deleteById("1");
-        shard1.request(deleteRequest);
-        shard1.commit();
-        docCounts1.decrementAndGet();
-      }
-      checkShardCounts.run();
+            assertEquals(
+                docCounts1.get(),
+                shard1.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound());
+            assertEquals(
+                docCounts2.get(),
+                shard2.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound());
 
-      { // Send a delete request to core hosting shard1 with a route param for a document that is
-        // actually in shard2 should delete.
-        final UpdateRequest deleteRequest = new UpdateRequest();
-        deleteRequest.deleteById("4").withRoute("shard2");
-        shard1.request(deleteRequest);
-        shard1.commit();
-        docCounts2.decrementAndGet();
-      }
-      checkShardCounts.run();
+          } catch (Exception sse) {
+            throw new RuntimeException(sse);
+          }
+        };
+    checkShardCounts.run();
 
-      { // Send a delete request to core hosting shard1 with NO route param for a document that is
-        // actually in shard2. Shouldn't delete, since deleteById requests are not broadcast to all
-        // shard leaders. (This is effectively a request to delete "5" if and only if it is on
-        // shard1)
-        final UpdateRequest deleteRequest = new UpdateRequest();
-        deleteRequest.deleteById("5");
-        shard1.request(deleteRequest);
-        shard1.commit();
-      }
-      checkShardCounts.run();
-
-      { // Multiple deleteById commands for different shards in a single request
-        final UpdateRequest deleteRequest = new UpdateRequest();
-        deleteRequest.deleteById("2", "shard1");
-        deleteRequest.deleteById("5", "shard2");
-        shard1.request(deleteRequest);
-        shard1.commit();
-        docCounts1.decrementAndGet();
-        docCounts2.decrementAndGet();
-      }
-      checkShardCounts.run();
+    { // Send a delete request for a doc on shard1 to core hosting shard1 with NO routing info
+      // Should delete (implicitly) since doc is (implicitly) located on this shard
+      final UpdateRequest deleteRequest = new UpdateRequest();
+      deleteRequest.deleteById("1");
+      shard1.request(deleteRequest);
+      shard1.commit();
+      docCounts1.decrementAndGet();
     }
+    checkShardCounts.run();
+
+    { // Send a delete request to core hosting shard1 with a route param for a document that is
+      // actually in shard2 should delete.
+      final UpdateRequest deleteRequest = new UpdateRequest();
+      deleteRequest.deleteById("4").withRoute("shard2");
+      shard1.request(deleteRequest);
+      shard1.commit();
+      docCounts2.decrementAndGet();
+    }
+    checkShardCounts.run();
+
+    { // Send a delete request to core hosting shard1 with NO route param for a document that is
+      // actually in shard2. Shouldn't delete, since deleteById requests are not broadcast to all
+      // shard leaders. (This is effectively a request to delete "5" if and only if it is on
+      // shard1)
+      final UpdateRequest deleteRequest = new UpdateRequest();
+      deleteRequest.deleteById("5");
+      shard1.request(deleteRequest);
+      shard1.commit();
+    }
+    checkShardCounts.run();
+
+    { // Multiple deleteById commands for different shards in a single request
+      final UpdateRequest deleteRequest = new UpdateRequest();
+      deleteRequest.deleteById("2", "shard1");
+      deleteRequest.deleteById("5", "shard2");
+      shard1.request(deleteRequest);
+      shard1.commit();
+      docCounts1.decrementAndGet();
+      docCounts2.decrementAndGet();
+    }
+    checkShardCounts.run();
   }
 
   public void testRTGCompositeRouterWithRouterField() throws Exception {
@@ -336,108 +327,100 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
     Replica shard1Leader = docCol.getSlice("shard1").getLeader();
     Replica shard2Leader = docCol.getSlice("shard2").getLeader();
-    try (SolrClient shard1 =
-            new HttpJettySolrClient.Builder(shard1Leader.getBaseUrl())
-                .withDefaultCollection(shard1Leader.getCoreName())
-                .build();
-        SolrClient shard2 =
-            new HttpJettySolrClient.Builder(shard2Leader.getBaseUrl())
-                .withDefaultCollection(shard2Leader.getCoreName())
-                .build()) {
+    SolrClient shard1 = cluster.getSolrClient(shard1Leader);
+    SolrClient shard2 = cluster.getSolrClient(shard2Leader);
+    // Add six documents w/diff routes (all sent to shard1 leader's core)
+    shard1.add(sdoc("id", "1", "routefield_s", "europe"));
+    shard1.add(sdoc("id", "3", "routefield_s", "europe"));
+    shard1.add(sdoc("id", "5", "routefield_s", "africa"));
+    shard1.add(sdoc("id", "7", "routefield_s", "europe"));
+    shard1.add(sdoc("id", "9", "routefield_s", "europe"));
+    shard1.add(sdoc("id", "11", "routefield_s", "africa"));
+    shard1.commit();
 
-      // Add six documents w/diff routes (all sent to shard1 leader's core)
-      shard1.add(sdoc("id", "1", "routefield_s", "europe"));
-      shard1.add(sdoc("id", "3", "routefield_s", "europe"));
-      shard1.add(sdoc("id", "5", "routefield_s", "africa"));
-      shard1.add(sdoc("id", "7", "routefield_s", "europe"));
-      shard1.add(sdoc("id", "9", "routefield_s", "europe"));
-      shard1.add(sdoc("id", "11", "routefield_s", "africa"));
-      shard1.commit();
+    // Add four documents w/diff routes (all sent to shard2 leader's core)
+    shard2.add(sdoc("id", "8", "routefield_s", "africa"));
+    shard2.add(sdoc("id", "6", "routefield_s", "europe"));
+    shard2.add(sdoc("id", "4", "routefield_s", "africa"));
+    shard2.add(sdoc("id", "2", "routefield_s", "europe"));
+    shard2.commit();
 
-      // Add four documents w/diff routes (all sent to shard2 leader's core)
-      shard2.add(sdoc("id", "8", "routefield_s", "africa"));
-      shard2.add(sdoc("id", "6", "routefield_s", "europe"));
-      shard2.add(sdoc("id", "4", "routefield_s", "africa"));
-      shard2.add(sdoc("id", "2", "routefield_s", "europe"));
-      shard2.commit();
+    final AtomicInteger docCountsEurope = new AtomicInteger(6);
+    final AtomicInteger docCountsAfrica = new AtomicInteger(4);
 
-      final AtomicInteger docCountsEurope = new AtomicInteger(6);
-      final AtomicInteger docCountsAfrica = new AtomicInteger(4);
+    // A re-usable helper to verify that the expected number of documents can be found based on
+    // _route_ key...
+    Runnable checkShardCounts =
+        () -> {
+          try {
+            // including cloudClient helps us test view from other nodes that aren't the
+            // leaders...
+            for (SolrClient c : Arrays.asList(cloudClient, shard1, shard2)) {
 
-      // A re-usable helper to verify that the expected number of documents can be found based on
-      // _route_ key...
-      Runnable checkShardCounts =
-          () -> {
-            try {
-              // including cloudClient helps us test view from other nodes that aren't the
-              // leaders...
-              for (SolrClient c : Arrays.asList(cloudClient, shard1, shard2)) {
-
-                ModifiableSolrParams params = params("q", "*:*");
-                if (c instanceof CloudSolrClient) {
-                  params.add("collection", testCollectionName);
-                }
-                assertEquals(
-                    docCountsEurope.get() + docCountsAfrica.get(),
-                    c.query(params).getResults().getNumFound());
-
-                assertEquals(
-                    docCountsEurope.get(),
-                    c.query(params.set("_route_", "europe")).getResults().getNumFound());
-                assertEquals(
-                    docCountsAfrica.get(),
-                    c.query(params.set("_route_", "africa")).getResults().getNumFound());
+              ModifiableSolrParams params = params("q", "*:*");
+              if (c instanceof CloudSolrClient) {
+                params.add("collection", testCollectionName);
               }
-            } catch (Exception sse) {
-              throw new RuntimeException(sse);
+              assertEquals(
+                  docCountsEurope.get() + docCountsAfrica.get(),
+                  c.query(params).getResults().getNumFound());
+
+              assertEquals(
+                  docCountsEurope.get(),
+                  c.query(params.set("_route_", "europe")).getResults().getNumFound());
+              assertEquals(
+                  docCountsAfrica.get(),
+                  c.query(params.set("_route_", "africa")).getResults().getNumFound());
             }
-          };
-      checkShardCounts.run();
+          } catch (Exception sse) {
+            throw new RuntimeException(sse);
+          }
+        };
+    checkShardCounts.run();
 
-      { // Send a delete request to core hosting shard1 with a route param for a document that was
-        // originally added via core on shard2
-        final UpdateRequest deleteRequest = new UpdateRequest();
-        deleteRequest.deleteById("4", "africa");
-        shard1.request(deleteRequest);
-        shard1.commit();
-        docCountsAfrica.decrementAndGet();
-      }
-      checkShardCounts.run();
-
-      { // Multiple deleteById commands with different routes in a single request
-        final UpdateRequest deleteRequest = new UpdateRequest();
-        deleteRequest.deleteById("2", "europe");
-        deleteRequest.deleteById("5", "africa");
-        shard1.request(deleteRequest);
-        shard1.commit();
-        docCountsEurope.decrementAndGet();
-        docCountsAfrica.decrementAndGet();
-      }
-      checkShardCounts.run();
-
-      // Tests for distributing delete by id when route is missing from the request
-      { // Send a delete request with no route to shard1 for document on shard2, should be
-        // distributed
-        final UpdateRequest deleteRequest = new UpdateRequest();
-        deleteRequest.deleteById("8");
-        shard1.request(deleteRequest);
-        shard1.commit();
-        docCountsAfrica.decrementAndGet();
-      }
-      checkShardCounts.run();
-
-      { // Multiple deleteById commands with missing route in a single request, should be
-        // distributed
-        final UpdateRequest deleteRequest = new UpdateRequest();
-        deleteRequest.deleteById("6");
-        deleteRequest.deleteById("11");
-        shard1.request(deleteRequest);
-        shard1.commit();
-        docCountsEurope.decrementAndGet();
-        docCountsAfrica.decrementAndGet();
-      }
-      checkShardCounts.run();
+    { // Send a delete request to core hosting shard1 with a route param for a document that was
+      // originally added via core on shard2
+      final UpdateRequest deleteRequest = new UpdateRequest();
+      deleteRequest.deleteById("4", "africa");
+      shard1.request(deleteRequest);
+      shard1.commit();
+      docCountsAfrica.decrementAndGet();
     }
+    checkShardCounts.run();
+
+    { // Multiple deleteById commands with different routes in a single request
+      final UpdateRequest deleteRequest = new UpdateRequest();
+      deleteRequest.deleteById("2", "europe");
+      deleteRequest.deleteById("5", "africa");
+      shard1.request(deleteRequest);
+      shard1.commit();
+      docCountsEurope.decrementAndGet();
+      docCountsAfrica.decrementAndGet();
+    }
+    checkShardCounts.run();
+
+    // Tests for distributing delete by id when route is missing from the request
+    { // Send a delete request with no route to shard1 for document on shard2, should be
+      // distributed
+      final UpdateRequest deleteRequest = new UpdateRequest();
+      deleteRequest.deleteById("8");
+      shard1.request(deleteRequest);
+      shard1.commit();
+      docCountsAfrica.decrementAndGet();
+    }
+    checkShardCounts.run();
+
+    { // Multiple deleteById commands with missing route in a single request, should be
+      // distributed
+      final UpdateRequest deleteRequest = new UpdateRequest();
+      deleteRequest.deleteById("6");
+      deleteRequest.deleteById("11");
+      shard1.request(deleteRequest);
+      shard1.commit();
+      docCountsEurope.decrementAndGet();
+      docCountsAfrica.decrementAndGet();
+    }
+    checkShardCounts.run();
   }
 
   public void testThatCantForwardToLeaderFails() throws Exception {
@@ -882,36 +865,27 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       final Slice slice = entry.getValue();
       log.info("Checking: {} -> {}", shardName, slice);
       final Replica leader = entry.getValue().getLeader();
-      try (SolrClient leaderClient =
-          new HttpJettySolrClient.Builder(leader.getBaseUrl())
-              .withDefaultCollection(leader.getCoreName())
-              .build()) {
-        final SolrDocumentList leaderResults = leaderClient.query(perReplicaParams).getResults();
-        log.debug("Shard {}: Leader results: {}", shardName, leaderResults);
-        for (Replica replica : slice) {
-          try (SolrClient replicaClient =
-              new HttpJettySolrClient.Builder(replica.getBaseUrl())
-                  .withDefaultCollection(replica.getCoreName())
-                  .build()) {
-            final SolrDocumentList replicaResults =
-                replicaClient.query(perReplicaParams).getResults();
-            if (log.isDebugEnabled()) {
-              log.debug(
-                  "Shard {}: Replica ({}) results: {}",
-                  shardName,
-                  replica.getCoreName(),
-                  replicaResults);
-            }
-            assertEquals(
-                "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
-                Set.of(),
-                CloudInspectUtil.showDiff(
-                    leaderResults,
-                    replicaResults,
-                    shardName + " leader: " + leader.getCoreUrl(),
-                    shardName + ": " + replica.getCoreUrl()));
-          }
+      SolrClient leaderClient = cluster.getSolrClient(leader);
+      final SolrDocumentList leaderResults = leaderClient.query(perReplicaParams).getResults();
+      log.debug("Shard {}: Leader results: {}", shardName, leaderResults);
+      for (Replica replica : slice) {
+        SolrClient replicaClient = cluster.getSolrClient(replica);
+        final SolrDocumentList replicaResults = replicaClient.query(perReplicaParams).getResults();
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "Shard {}: Replica ({}) results: {}",
+              shardName,
+              replica.getCoreName(),
+              replicaResults);
         }
+        assertEquals(
+            "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
+            Set.of(),
+            CloudInspectUtil.showDiff(
+                leaderResults,
+                replicaResults,
+                shardName + " leader: " + leader.getCoreUrl(),
+                shardName + ": " + replica.getCoreUrl()));
       }
     }
   }

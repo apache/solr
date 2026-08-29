@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -191,15 +190,11 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
       if (!r.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
         continue;
       }
-      try (SolrClient replicaClient =
-          new HttpJettySolrClient.Builder(r.getBaseUrl())
-              .withDefaultCollection(r.getCoreName())
-              .build()) {
-        assertEquals(
-            "Replica " + r.getName() + " not up to date",
-            numDocs,
-            replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
-      }
+      SolrClient replicaClient = cluster.getSolrClient(r);
+      assertEquals(
+          "Replica " + r.getName() + " not up to date",
+          numDocs,
+          replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
     }
   }
 

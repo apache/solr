@@ -111,35 +111,29 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         maxOnReplica);
 
     // send the same doc but with a lower version than the max in the index
-    try (SolrClient client =
-        new HttpJettySolrClient.Builder(replica.getBaseUrl())
-            .withDefaultCollection(replica.getCoreName())
-            .build()) {
-      String docId = String.valueOf(1);
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.setField("id", docId);
-      doc.setField("_version_", maxOnReplica - 1); // bad version!!!
+    SolrClient client = cluster.getSolrClient(replica);
+    String docId = String.valueOf(1);
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", docId);
+    doc.setField("_version_", maxOnReplica - 1); // bad version!!!
 
-      // simulate what the leader does when sending a doc to a replica
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(
-          DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString());
-      params.set(DISTRIB_FROM, leader.getCoreUrl());
+    // simulate what the leader does when sending a doc to a replica
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString());
+    params.set(DISTRIB_FROM, leader.getCoreUrl());
 
-      UpdateRequest req = new UpdateRequest();
-      req.setParams(params);
-      req.add(doc);
+    UpdateRequest req = new UpdateRequest();
+    req.setParams(params);
+    req.add(doc);
 
-      log.info(
-          "Sending doc with out-of-date version ({}) document directly to replica",
-          maxOnReplica - 1);
+    log.info(
+        "Sending doc with out-of-date version ({}) document directly to replica", maxOnReplica - 1);
 
-      client.request(req);
-      client.commit();
+    client.request(req);
+    client.commit();
 
-      Long docVersion = getVersionFromIndex(replica, docId);
-      assertEquals("older version should have been thrown away", maxOnReplica, docVersion);
-    }
+    Long docVersion = getVersionFromIndex(replica, docId);
+    assertEquals("older version should have been thrown away", maxOnReplica, docVersion);
 
     reloadCollection(leader, COLLECTION);
 
@@ -305,16 +299,12 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     query.addSort(new SolrQuery.SortClause("_version_", SolrQuery.ORDER.desc));
     query.setParam("distrib", false);
 
-    try (SolrClient client =
-        new HttpJettySolrClient.Builder(replica.getBaseUrl())
-            .withDefaultCollection(replica.getCoreName())
-            .build()) {
-      QueryResponse qr = client.query(query);
-      SolrDocumentList hits = qr.getResults();
-      if (hits.isEmpty()) fail("No results returned from query: " + query);
+    SolrClient client = cluster.getSolrClient(replica);
+    QueryResponse qr = client.query(query);
+    SolrDocumentList hits = qr.getResults();
+    if (hits.isEmpty()) fail("No results returned from query: " + query);
 
-      vers = (Long) hits.get(0).getFirstValue("_version_");
-    }
+    vers = (Long) hits.get(0).getFirstValue("_version_");
 
     if (vers == null)
       fail("Failed to get version using query " + query + " from " + replica.getCoreUrl());
@@ -330,34 +320,18 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       int lastDocId,
       Set<Integer> deletedDocs)
       throws Exception {
-    SolrClient leaderSolr =
-        new HttpJettySolrClient.Builder(leader.getBaseUrl())
-            .withDefaultCollection(leader.getCoreName())
-            .build();
+    SolrClient leaderSolr = cluster.getSolrClient(leader);
     List<SolrClient> replicas = new ArrayList<SolrClient>(notLeaders.size());
-    for (Replica r : notLeaders)
-      replicas.add(
-          new HttpJettySolrClient.Builder(r.getBaseUrl())
-              .withDefaultCollection(r.getCoreName())
-              .build());
+    for (Replica r : notLeaders) replicas.add(cluster.getSolrClient(r));
 
-    try {
-      for (int d = firstDocId; d <= lastDocId; d++) {
+    for (int d = firstDocId; d <= lastDocId; d++) {
 
-        if (deletedDocs != null && deletedDocs.contains(d)) continue;
+      if (deletedDocs != null && deletedDocs.contains(d)) continue;
 
-        String docId = String.valueOf(d);
-        Long leaderVers = assertDocExists(leaderSolr, docId, null);
-        for (SolrClient replicaSolr : replicas) {
-          assertDocExists(replicaSolr, docId, leaderVers);
-        }
-      }
-    } finally {
-      if (leaderSolr != null) {
-        leaderSolr.close();
-      }
+      String docId = String.valueOf(d);
+      Long leaderVers = assertDocExists(leaderSolr, docId, null);
       for (SolrClient replicaSolr : replicas) {
-        replicaSolr.close();
+        assertDocExists(replicaSolr, docId, leaderVers);
       }
     }
   }

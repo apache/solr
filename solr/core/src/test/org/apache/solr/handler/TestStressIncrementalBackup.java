@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -81,20 +80,13 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
             .iterator()
             .next();
     coreName = r.getCoreName();
-    coreClient =
-        new HttpJettySolrClient.Builder(r.getBaseUrl())
-            .withDefaultCollection(r.getCoreName())
-            .build();
+    coreClient = cluster.getSolrClient(r);
   }
 
   @After
   public void afterTest() throws Exception {
     // we use a clean cluster instance for every test, so we need to clean it up
     shutdownCluster();
-
-    if (null != coreClient) {
-      coreClient.close();
-    }
   }
 
   @SuppressWarnings("AssertionFailureIgnored") // failure happens inside a thread

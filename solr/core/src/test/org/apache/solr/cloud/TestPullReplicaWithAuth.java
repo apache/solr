@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -95,14 +94,10 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
       Slice s = docCollection.getSlices().iterator().next();
       Replica leader = s.getLeader();
-      try (SolrClient leaderClient =
-          new HttpJettySolrClient.Builder(leader.getBaseUrl())
-              .withDefaultCollection(leader.getCoreName())
-              .build()) {
-        assertEquals(
-            numDocs,
-            queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
-      }
+      SolrClient leaderClient = cluster.getSolrClient(leader);
+      assertEquals(
+          numDocs,
+          queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
 
       List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
       waitForNumDocsInAllReplicas(

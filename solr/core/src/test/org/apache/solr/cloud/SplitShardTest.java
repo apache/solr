@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -230,21 +229,10 @@ public class SplitShardTest extends SolrCloudTestCase {
       if (!slice.getState().equals(Slice.State.ACTIVE)) continue;
       long lastReplicaCount = -1;
       for (Replica replica : slice.getReplicas()) {
-        SolrClient replicaClient =
-            new HttpJettySolrClient.Builder(replica.getBaseUrl())
-                .withDefaultCollection(replica.getCoreName())
-                .build();
-        long numFound;
-        try {
-          numFound =
-              replicaClient
-                  .query(params("q", "*:*", "distrib", "false"))
-                  .getResults()
-                  .getNumFound();
-          log.info("Replica count={} for {}", numFound, replica);
-        } finally {
-          replicaClient.close();
-        }
+        SolrClient replicaClient = cluster.getSolrClient(replica);
+        long numFound =
+            replicaClient.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound();
+        log.info("Replica count={} for {}", numFound, replica);
         if (lastReplicaCount >= 0) {
           assertEquals("Replica doc count for " + replica, lastReplicaCount, numFound);
         }

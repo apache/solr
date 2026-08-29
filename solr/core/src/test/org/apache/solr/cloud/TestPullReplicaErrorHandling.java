@@ -142,6 +142,8 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       for (int i = 1; i <= 10; i++) {
         addDocs(10 + i);
         Replica leader = s.getLeader();
+        // proxied ports: the replica's registered URL is the proxy's, not the jetty's,
+        // so the cluster can't resolve a jetty-owned client here
         try (SolrClient leaderClient =
             new HttpJettySolrClient.Builder(leader.getBaseUrl())
                 .withDefaultCollection(leader.getCoreName())

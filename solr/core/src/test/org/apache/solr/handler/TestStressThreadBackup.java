@@ -41,7 +41,6 @@ import org.apache.lucene.tests.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -105,10 +104,6 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   public void afterTest() throws Exception {
     // we use a clean cluster instance for every test, so we need to clean it up
     shutdownCluster();
-
-    if (null != coreClient) {
-      coreClient.close();
-    }
   }
 
   @Test
@@ -369,10 +364,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
             .iterator()
             .next();
     coreName = r.getCoreName();
-    coreClient =
-        new HttpJettySolrClient.Builder(r.getBaseUrl())
-            .withDefaultCollection(r.getCoreName())
-            .build();
+    coreClient = cluster.getSolrClient(r);
   }
 
   /**

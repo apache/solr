@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -135,59 +134,54 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     DocCollection state = getCollectionState(targetCollection);
     Replica replica = state.replicaStream().findFirst().orElseThrow();
-    try (SolrClient collectionClient =
-        new HttpJettySolrClient.Builder(replica.getBaseUrl())
-            .withDefaultCollection(replica.getCoreName())
-            .build()) {
+    SolrClient collectionClient = cluster.getSolrClient(replica);
+    SolrQuery solrQuery = new SolrQuery("*:*");
+    assertEquals(
+        "DocCount on target collection does not match",
+        0,
+        collectionClient.query(solrQuery).getResults().getNumFound());
 
-      SolrQuery solrQuery = new SolrQuery("*:*");
-      assertEquals(
-          "DocCount on target collection does not match",
-          0,
-          collectionClient.query(solrQuery).getResults().getNumFound());
+    invokeCollectionMigration(
+        CollectionAdminRequest.migrateData(
+                sourceCollection, targetCollection, splitKey + "/" + BIT_SEP + "!")
+            .setForwardTimeout(45));
 
-      invokeCollectionMigration(
-          CollectionAdminRequest.migrateData(
-                  sourceCollection, targetCollection, splitKey + "/" + BIT_SEP + "!")
-              .setForwardTimeout(45));
+    long finishTime = System.nanoTime();
 
-      long finishTime = System.nanoTime();
+    indexer.join();
+    splitKeyCount += indexer.getSplitKeyCount();
 
-      indexer.join();
-      splitKeyCount += indexer.getSplitKeyCount();
-
-      try {
-        cluster.getSolrClient().deleteById(sourceCollection, "a/" + BIT_SEP + "!104");
-        splitKeyCount--;
-      } catch (Exception e) {
-        log.warn("Error deleting document a/{}!104", BIT_SEP, e);
-      }
-      cluster.getSolrClient().commit(sourceCollection);
-      collectionClient.commit();
-
-      solrQuery = new SolrQuery("*:*").setRows(1000);
-      QueryResponse response = collectionClient.query(solrQuery);
-      log.info("Response from target collection: {}", response);
-      assertEquals(
-          "DocCount on target collection does not match",
-          splitKeyCount,
-          response.getResults().getNumFound());
-
-      waitForState(
-          "Expected to find routing rule for split key " + splitKey,
-          sourceCollection,
-          c -> {
-            if (c == null) return false;
-            Slice shard = c.getSlice("shard2");
-            if (shard == null) return false;
-            if (shard.getRoutingRules() == null || shard.getRoutingRules().isEmpty()) return false;
-            if (shard.getRoutingRules().get(splitKey + "!") == null) return false;
-            return true;
-          });
-
-      boolean ruleRemoved = waitForRuleToExpire(sourceCollection, "shard2", splitKey, finishTime);
-      assertTrue("Routing rule was not expired", ruleRemoved);
+    try {
+      cluster.getSolrClient().deleteById(sourceCollection, "a/" + BIT_SEP + "!104");
+      splitKeyCount--;
+    } catch (Exception e) {
+      log.warn("Error deleting document a/{}!104", BIT_SEP, e);
     }
+    cluster.getSolrClient().commit(sourceCollection);
+    collectionClient.commit();
+
+    solrQuery = new SolrQuery("*:*").setRows(1000);
+    QueryResponse response = collectionClient.query(solrQuery);
+    log.info("Response from target collection: {}", response);
+    assertEquals(
+        "DocCount on target collection does not match",
+        splitKeyCount,
+        response.getResults().getNumFound());
+
+    waitForState(
+        "Expected to find routing rule for split key " + splitKey,
+        sourceCollection,
+        c -> {
+          if (c == null) return false;
+          Slice shard = c.getSlice("shard2");
+          if (shard == null) return false;
+          if (shard.getRoutingRules() == null || shard.getRoutingRules().isEmpty()) return false;
+          if (shard.getRoutingRules().get(splitKey + "!") == null) return false;
+          return true;
+        });
+
+    boolean ruleRemoved = waitForRuleToExpire(sourceCollection, "shard2", splitKey, finishTime);
+    assertTrue("Routing rule was not expired", ruleRemoved);
   }
 
   static class Indexer extends Thread {
