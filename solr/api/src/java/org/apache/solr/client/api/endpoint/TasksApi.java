@@ -24,6 +24,7 @@ import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import org.apache.solr.client.api.model.CancelTaskResponse;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
@@ -57,6 +58,6 @@ public interface TasksApi {
     @Operation(
         summary = "Cancel any specific task",
         tags = {"tasks"})
-    TaskStatusResponse cancelRunningTask(@PathParam("taskID") String taskID) throws Exception;
+    CancelTaskResponse cancelRunningTask(@PathParam("taskID") String taskID) throws Exception;
   }
 }

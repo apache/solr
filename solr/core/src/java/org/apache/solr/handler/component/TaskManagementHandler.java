@@ -109,12 +109,6 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
     }
   }
 
-  public static List<SearchComponent> buildComponentsList() {
-    List<SearchComponent> components = new ArrayList<>(2);
-
-    return components;
-  }
-
   public static ResponseBuilder buildResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
     CoreContainer cc = req.getCoreContainer();
