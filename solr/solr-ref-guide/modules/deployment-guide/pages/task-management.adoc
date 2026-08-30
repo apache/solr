@@ -124,7 +124,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/cancel?queryUUID=5"
+curl -X DELETE "http://localhost:8983/v2/collections/collectionName/tasks/5"
 ----
 ====
 ======
