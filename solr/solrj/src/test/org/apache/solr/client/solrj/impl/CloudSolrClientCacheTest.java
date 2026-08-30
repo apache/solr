@@ -409,6 +409,9 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     private volatile Invocation defaultInvocation;
     private final List<String> stateHistory = Collections.synchronizedList(new ArrayList<>());
     private final NamedList<Object> okResponse;
+    // Answers "cannot tell" to both classification predicates, which these tests do not exercise.
+    // Stub it if a test needs a communication error.
+    private final HttpSolrClient httpClient = mock(HttpSolrClient.class);
 
     RecordingCloudSolrClient(ClusterStateProvider provider, int refreshThreads) {
       this(provider, true, true, false, refreshThreads);
@@ -477,7 +480,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
     @Override
     public HttpSolrClient getHttpClient() {
-      return mock(HttpSolrClient.class);
+      return httpClient;
     }
 
     @FunctionalInterface
