@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
@@ -148,7 +149,6 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     String collName = "gettingstarted";
     Set<String> livenodes = new HashSet<>();
     Map<String, ClusterState.CollectionRef> refs = new HashMap<>();
-    Map<String, DocCollection> colls = new HashMap<>();
 
     Map<String, Function<?, ?>> responses = new HashMap<>();
     LBJettySolrClient mockLbclient = getMockLbHttpSolrClient(responses);
@@ -160,10 +160,12 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
               protected LBSolrClient createOrGetLbClient(HttpSolrClient myClient) {
                 return mockLbclient;
               }
-            }.build()) {
+            }
+            // Pin the routing so the update takes the load-balanced path and the transport's
+            // failure arrives unwrapped.
+            .sendUpdatesToAnyReplica().build()) {
       livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
       refs.put(collName, new ClusterState.CollectionRef(loadCollection(collName, 1)));
-      colls.put(collName, loadCollection(collName, 1));
 
       // Not a ConnectException: the transport cannot prove this request never left.
       responses.put(
@@ -174,13 +176,55 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
           });
       UpdateRequest update = new UpdateRequest().add("id", "123", "desc", "Something 0");
 
-      // The routing randomization decides whether the failure arrives wrapped, so match the cause.
-      Exception thrown = expectThrows(Exception.class, () -> cloudClient.request(update, collName));
-      assertTrue(
-          "the transport's failure must reach the caller",
-          SolrException.hasCause(thrown, SocketException.class));
+      expectThrows(SocketException.class, () -> cloudClient.request(update, collName));
       assertEquals(
           "an update that may have been applied must not be replayed", 1, lbhttpRequestCount.get());
+    }
+  }
+
+  /**
+   * A 503 is the server declining to process the update, not a communication failure, so it stays
+   * retryable. {@link CloudSolrClient#directUpdate} raises this shape when a shard replica is
+   * unavailable.
+   */
+  public void testUpdateIsRetriedOnRouteExceptionWith503() throws Exception {
+    String collName = "gettingstarted";
+    Set<String> livenodes = new HashSet<>();
+    Map<String, ClusterState.CollectionRef> refs = new HashMap<>();
+
+    Map<String, Function<?, ?>> responses = new HashMap<>();
+    NamedList<Object> okResponse = new NamedList<>();
+    okResponse.add("responseHeader", new NamedList<>(Map.of("status", 0)));
+    LBJettySolrClient mockLbclient = getMockLbHttpSolrClient(responses);
+    AtomicInteger lbhttpRequestCount = new AtomicInteger();
+    try (ClusterStateProvider clusterStateProvider = getStateProvider(livenodes, refs);
+        CloudSolrClient cloudClient =
+            new RandomizingCloudSolrClientBuilder(clusterStateProvider) {
+              @Override
+              protected LBSolrClient createOrGetLbClient(HttpSolrClient myClient) {
+                return mockLbclient;
+              }
+            }.sendUpdatesToAnyReplica().build()) {
+      livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
+      refs.put(collName, new ClusterState.CollectionRef(loadCollection(collName, 1)));
+
+      NamedList<Throwable> shardFailures = new NamedList<>();
+      shardFailures.add(
+          "http://127.0.0.1:8983/solr/gettingstarted_shard1_replica_n1",
+          new RemoteSolrException("127.0.0.1:8983", 503, "Service Unavailable", null));
+      responses.put(
+          "request",
+          o -> {
+            if (lbhttpRequestCount.incrementAndGet() == 1) {
+              return new CloudSolrClient.RouteException(
+                  SolrException.ErrorCode.SERVICE_UNAVAILABLE, shardFailures, Map.of());
+            }
+            return okResponse;
+          });
+
+      UpdateRequest update = new UpdateRequest().add("id", "123", "desc", "Something 0");
+      cloudClient.request(update, collName);
+      assertEquals("a 503 must still be retried", 2, lbhttpRequestCount.get());
     }
   }
 
