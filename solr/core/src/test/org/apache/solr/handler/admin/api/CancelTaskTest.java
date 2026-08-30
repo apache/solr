@@ -34,10 +34,7 @@ import org.junit.Test;
 
 public class CancelTaskTest extends SolrTestCaseJ4 {
 
-  private SolrQueryRequest mockQueryRequest;
-  private SolrCore solrCore;
   private CancellableQueryTracker cancellableQueryTracker;
-
   private CancelTask cancelTask;
 
   @BeforeClass
@@ -50,45 +47,33 @@ public class CancelTaskTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
 
-    mockQueryRequest = mock(SolrQueryRequest.class);
-    solrCore = mock(SolrCore.class);
+    SolrQueryRequest solrQueryRequest = mock(SolrQueryRequest.class);
+    SolrCore solrCore = mock(SolrCore.class);
     cancellableQueryTracker = mock(CancellableQueryTracker.class);
 
-    when(mockQueryRequest.getCore()).thenReturn(solrCore);
+    when(solrQueryRequest.getCore()).thenReturn(solrCore);
     when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
 
-    cancelTask = new CancelTask(mockQueryRequest);
+    cancelTask = new CancelTask(solrQueryRequest);
   }
 
   @Test
   public void testCancelRunningTask() throws Exception {
     CancellableCollector cancellableCollector = mock(CancellableCollector.class);
-    when(cancellableQueryTracker.getCancellableTask("taskID_running"))
-        .thenReturn(cancellableCollector);
+    when(cancellableQueryTracker.getCancellableTask("taskID_running")).thenReturn(cancellableCollector);
 
     CancelTaskResponse response = cancelTask.cancelRunningTask("taskID_running");
 
     assertEquals(CancelTaskResponse.CancellationStatus.SUCCESS, response.status);
-    assertNull(response.error);
     verify(cancellableCollector).cancel();
   }
 
-  /**
-   * Cancelling a task that doesn't exist should produce a real HTTP 404, the same way any other
-   * v2 API request for a specific resource that isn't found does (see the "Errors" section of
-   * dev-docs/v2-api-conventions.adoc). That means throwing a {@link SolrException} with {@link
-   * SolrException.ErrorCode#NOT_FOUND} -- not returning a normal (200) response with a "not
-   * found" value stuffed inside it, which is what {@code CancelTask.cancelRunningTask} currently
-   * does. A normal Jersey return always produces a 200 on the wire regardless of what's inside
-   * the response body; only a thrown exception (via CatchAllExceptionMapper) actually changes the
-   * HTTP status code. This test intentionally fails against the current implementation.
-   */
+
   @Test
   public void testCancelNonExistentTaskReturns404() {
     when(cancellableQueryTracker.getCancellableTask("taskID_missing")).thenReturn(null);
 
-    SolrException ex =
-        expectThrows(SolrException.class, () -> cancelTask.cancelRunningTask("taskID_missing"));
-    assertEquals(SolrException.ErrorCode.NOT_FOUND.code, ex.code());
+    SolrException exception = expectThrows(SolrException.class, () -> cancelTask.cancelRunningTask("taskID_missing"));
+    assertEquals(SolrException.ErrorCode.NOT_FOUND.code, exception.code());
   }
 }

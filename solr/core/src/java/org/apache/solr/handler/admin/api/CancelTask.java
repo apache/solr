@@ -23,6 +23,7 @@ import jakarta.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.TasksApi;
 import org.apache.solr.client.api.model.CancelTaskResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.ActiveTaskQuerySupport;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
@@ -46,13 +47,9 @@ public class CancelTask extends JerseyResource implements TasksApi.Cancel {
 
     if (isTaskCancelled) {
       response.status = CancelTaskResponse.CancellationStatus.SUCCESS;
-      response.responseHeader.status = 200;
-    } else {
-      response.status = CancelTaskResponse.CancellationStatus.NOT_FOUND;
-      response.responseHeader.status = 404;
+      return response;
     }
-
-    return response;
+    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, CancelTaskResponse.CancellationStatus.NOT_FOUND.name());
   }
 
   public static boolean cancelTaskActiveOnThisShard(
