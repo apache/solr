@@ -60,7 +60,8 @@ public class CancelTaskTest extends SolrTestCaseJ4 {
   @Test
   public void testCancelRunningTask() throws Exception {
     CancellableCollector cancellableCollector = mock(CancellableCollector.class);
-    when(cancellableQueryTracker.getCancellableTask("taskID_running")).thenReturn(cancellableCollector);
+    when(cancellableQueryTracker.getCancellableTask("taskID_running"))
+        .thenReturn(cancellableCollector);
 
     CancelTaskResponse response = cancelTask.cancelRunningTask("taskID_running");
 
@@ -68,12 +69,12 @@ public class CancelTaskTest extends SolrTestCaseJ4 {
     verify(cancellableCollector).cancel();
   }
 
-
   @Test
   public void testCancelNonExistentTaskReturns404() {
     when(cancellableQueryTracker.getCancellableTask("taskID_missing")).thenReturn(null);
 
-    SolrException exception = expectThrows(SolrException.class, () -> cancelTask.cancelRunningTask("taskID_missing"));
+    SolrException exception =
+        expectThrows(SolrException.class, () -> cancelTask.cancelRunningTask("taskID_missing"));
     assertEquals(SolrException.ErrorCode.NOT_FOUND.code, exception.code());
   }
 }
