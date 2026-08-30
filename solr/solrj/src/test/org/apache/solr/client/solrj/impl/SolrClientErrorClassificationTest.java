@@ -96,10 +96,15 @@ public class SolrClientErrorClassificationTest extends SolrTestCase {
       // answered at the throw site by the request-commit listener instead.
       for (Throwable lost :
           new Throwable[] {
-            new EofException("Connection reset by peer"), new ClosedChannelException()
+            new EofException("Connection reset by peer"),
+            new ClosedChannelException(),
+            // The shape HttpJettySolrClient raises once an HTTP/2 session is lost after commit.
+            new EofException("HTTP/2 session closed", new IllegalStateException("session closed"))
           }) {
         assertTrue(lost.getClass().getName(), client.wasCommError(lost));
+        assertTrue(lost.getClass().getName(), client.wasCommError(wrapped(lost)));
         assertFalse(lost.getClass().getName(), client.wasRequestUnsent(lost));
+        assertFalse(lost.getClass().getName(), client.wasRequestUnsent(wrapped(lost)));
       }
     }
   }
