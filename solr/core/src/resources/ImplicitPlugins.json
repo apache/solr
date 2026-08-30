@@ -144,10 +144,10 @@
       }
     },
     "/tasks/cancel": {
-      "class": "solr.QueryCancellationHandler",
+      "class": "solr.TaskCancellationHandler",
       "useParams":"_TASK_CANCELLATION",
       "components": [
-        "querycancellation"
+        "taskcancellation"
       ]
     },
     "/tasks/list": {
@@ -158,7 +158,7 @@
       ]
     }
   },
-  "queryResponseWriter": {  
+  "queryResponseWriter": {
     "geojson": {
       "class": "solr.GeoJSONResponseWriter"
     },
