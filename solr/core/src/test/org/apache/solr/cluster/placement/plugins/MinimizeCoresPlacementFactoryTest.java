@@ -260,7 +260,9 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
 
     // Each expected placement is represented as a string "col shard replica-type fromNode ->
     // toNode"
-    Set<String> expectedPlacements = Set.of("b 1 TLOG 0 -> 2", "b 1 NRT 3 -> 4");
+    // The duplicate replica of shard 1 of collection "a" is first moved off of node 0, then the
+    // regular weight-based balancing evens out the remaining core counts
+    Set<String> expectedPlacements = Set.of("a 1 NRT 0 -> 4", "a 2 TLOG 3 -> 2");
     verifyBalancing(
         expectedPlacements,
         balancePlan,
@@ -299,7 +301,9 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
 
     // Each expected placement is represented as a string "col shard replica-type fromNode ->
     // toNode"
-    Set<String> expectedPlacements = Set.of("a 1 NRT 3 -> 1", "a 2 NRT 3 -> 0");
+    // The duplicate replica of shard 1 is first moved off of node 0, then the regular weight-based
+    // balancing evens out the remaining core counts
+    Set<String> expectedPlacements = Set.of("a 1 NRT 0 -> 1", "a 1 NRT 3 -> 2", "a 2 NRT 3 -> 0");
     verifyBalancing(
         expectedPlacements,
         balancePlan,

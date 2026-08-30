@@ -16,11 +16,13 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.NodeConfig;
 import org.junit.BeforeClass;
@@ -45,7 +47,7 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
           "some.Secret"
         }) {
       System.setProperty(propName, PASSWORD);
-      NamedList<Object> properties = readProperties();
+      Map<String, Object> properties = readProperties();
 
       assertEquals(
           "Failed to redact " + propName,
@@ -54,13 +56,41 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testSingleProperty() throws Exception {
+    System.setProperty("GetNodeProperties.v1.visible", "hello");
+    try {
+      Map<String, Object> properties = readProperties("GetNodeProperties.v1.visible");
+      assertEquals(1, properties.size());
+      assertEquals("hello", properties.get("GetNodeProperties.v1.visible"));
+    } finally {
+      System.clearProperty("GetNodeProperties.v1.visible");
+    }
+  }
+
+  @Test
+  public void testMissingPropertyStillReturned() throws Exception {
+    Map<String, Object> properties = readProperties("GetNodeProperties.v1.doesNotExist");
+    assertEquals(1, properties.size());
+    assertTrue(properties.containsKey("GetNodeProperties.v1.doesNotExist"));
+    assertNull(properties.get("GetNodeProperties.v1.doesNotExist"));
+  }
+
+  private Map<String, Object> readProperties() throws Exception {
+    return readProperties(null);
+  }
+
   @SuppressWarnings({"unchecked"})
-  private NamedList<Object> readProperties() throws Exception {
+  private Map<String, Object> readProperties(String name) throws Exception {
     SolrClient client = new EmbeddedSolrServer(h.getCore());
-
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    if (name != null) {
+      params.set("name", name);
+    }
     NamedList<Object> properties =
-        client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/properties"));
+        client.request(
+            new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/properties", params));
 
-    return (NamedList<Object>) properties.get("system.properties");
+    return (Map<String, Object>) properties.get("system.properties");
   }
 }

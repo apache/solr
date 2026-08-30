@@ -359,7 +359,7 @@ public class JavaBinCodec implements PushWriter {
     throw new RuntimeException("Unknown type " + tagByte);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public boolean writeKnownType(Object val) throws IOException {
     if (writePrimitive(val)) return true;
     if (val instanceof NamedList) {
@@ -1250,16 +1250,16 @@ public class JavaBinCodec implements PushWriter {
     } else if (val instanceof Number) {
 
       if (val instanceof Integer) {
-        writeInt(((Integer) val).intValue());
+        writeInt((Integer) val);
         return true;
       } else if (val instanceof Long) {
-        writeLong(((Long) val).longValue());
+        writeLong((Long) val);
         return true;
       } else if (val instanceof Float) {
-        writeFloat(((Float) val).floatValue());
+        writeFloat((Float) val);
         return true;
       } else if (val instanceof Double) {
-        writeDouble(((Double) val).doubleValue());
+        writeDouble((Double) val);
         return true;
       } else if (val instanceof Byte) {
         daos.writeByte(BYTE);

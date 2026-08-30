@@ -38,8 +38,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.HttpListenerFactory;
+import org.apache.solr.client.solrj.jetty.MutableListenerFactory;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -209,7 +209,13 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     int sigStart = header.lastIndexOf(' ');
 
     String data = header.substring(0, sigStart);
-    byte[] sig = Base64.getDecoder().decode(header.substring(sigStart + 1));
+    byte[] sig;
+    try {
+      sig = Base64.getDecoder().decode(header.substring(sigStart + 1));
+    } catch (IllegalArgumentException e) {
+      log.warn("Could not parse signature in SolrAuthV2 header as base64");
+      return null;
+    }
     PKIHeaderData rv = validateSignature(data, sig, key, false);
     if (rv == null) {
       log.warn("Failed to verify signature, trying after refreshing the key ");
@@ -306,7 +312,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void setup(HttpJettySolrClient client) {
+  public void setup(MutableListenerFactory listenerFactory) {
     final HttpListenerFactory.RequestResponseListener listener =
         new HttpListenerFactory.RequestResponseListener() {
           private static final String CACHED_REQUEST_USER_KEY = "cachedRequestUser";
@@ -357,7 +363,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
                 (String) request.getAttributes().get(CACHED_REQUEST_USER_KEY));
           }
         };
-    client.addListenerFactory(() -> listener);
+    listenerFactory.setDelegate(() -> listener);
   }
 
   public boolean needsAuthorization(HttpServletRequest req) {

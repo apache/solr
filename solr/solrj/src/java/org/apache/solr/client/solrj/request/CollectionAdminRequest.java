@@ -20,6 +20,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
@@ -76,8 +77,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
           CollectionAdminParams.READ_ONLY);
 
   protected final CollectionAction action;
-
-  @Deprecated public static String PROPERTY_PREFIX = CollectionAdminParams.PROPERTY_PREFIX;
 
   public CollectionAdminRequest(CollectionAction action) {
     this("/admin/collections", action);
@@ -166,6 +165,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return asyncId;
     }
 
+    /**
+     * @deprecated Solr is moving toward always waiting for final state, with no option to opt out;
+     *     once that happens, this parameter will have no effect and will likely be removed. See
+     *     SOLR-17712.
+     */
     @Deprecated(since = "9.10")
     public void setWaitForFinalState(boolean waitForFinalState) {
       this.waitForFinalState = waitForFinalState;
@@ -1154,8 +1158,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * reason to do so.
      *
      * @param incremental true to use incremental backups, false otherwise.
+     * @deprecated The 'full-snapshot' format is being removed; incremental backups are already the
+     *     default, so this method no longer needs to be called.
      */
-    @Deprecated
+    @Deprecated(since = "9.0")
     public Backup setIncremental(boolean incremental) {
       this.incremental = incremental;
       return this;
@@ -2068,17 +2074,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     /** Sets the timezone for interpreting any Solr "date math. */
     public CreateTimeRoutedAlias setTimeZone(TimeZone tz) {
       this.tz = tz;
-      return this;
-    }
-
-    /**
-     * Sets how long into the future (millis) that we will allow a document to pass.
-     *
-     * @deprecated Please use {@link #setMaxFutureMs(Long)} instead.
-     */
-    @Deprecated
-    public CreateTimeRoutedAlias setMaxFutureMs(Integer maxFutureMs) {
-      this.maxFutureMs = Long.valueOf(maxFutureMs);
       return this;
     }
 

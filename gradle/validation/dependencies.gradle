@@ -56,6 +56,15 @@ allprojects {
     conf.shouldResolveConsistentlyWith(project.configurations.runtimeClasspath)
   }
 
+  // Helper for the throwaway configurations produced by Configuration.copyRecursive(). Gradle names
+  // them "<source>Copy" and lockAllConfigurations() above would otherwise give them lock state of
+  // their own, which nothing ever refreshes because they exist only while a task is executing.
+  // They still have to resolve to the versions the source configuration was locked to.
+  ext.pinCopyToSource = { Configuration copy, Configuration source ->
+    copy.resolutionStrategy.deactivateDependencyLocking()
+    copy.shouldResolveConsistentlyWith(source)
+  }
+
   dependencies {
     modules {
       module("org.hamcrest:hamcrest-core") {
