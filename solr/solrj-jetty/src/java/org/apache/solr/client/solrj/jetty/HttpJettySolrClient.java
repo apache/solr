@@ -531,9 +531,11 @@ public class HttpJettySolrClient extends HttpSolrClient {
       // Jetty HTTP/2 throws IllegalStateException ("session closed") when the connection is lost.
       abortCause = e;
       throw committed.get()
-          ? new SolrServerException("Connection lost at: " + url, new IOException(e))
+          ? new SolrServerException(
+              "Connection lost at: " + url, new EofException("HTTP/2 session closed", e))
           : new SolrServerException(
-              "Connection lost at: " + url, new RequestNotSentException(e.getMessage(), e));
+              "Connection failed before the request was sent to: " + url,
+              new RequestNotSentException(e.getMessage(), e));
     } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;
