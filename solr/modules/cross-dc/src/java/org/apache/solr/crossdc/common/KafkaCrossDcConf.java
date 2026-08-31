@@ -225,7 +225,7 @@ public class KafkaCrossDcConf extends CrossDcConf {
   private final Map<String, Object> properties;
 
   public KafkaCrossDcConf(Map<String, Object> properties) {
-    List<String> nullValueKeys = new ArrayList<String>();
+    List<String> nullValueKeys = new ArrayList<>();
     properties.forEach(
         (k, v) -> {
           if (v == null) {
@@ -275,7 +275,7 @@ public class KafkaCrossDcConf extends CrossDcConf {
         (key, v) -> {
           try {
             int intVal = Integer.parseInt((String) v);
-            integerProperties.put(key.toString(), intVal);
+            integerProperties.put(key, intVal);
           } catch (NumberFormatException ignored) {
 
           }
@@ -312,7 +312,7 @@ public class KafkaCrossDcConf extends CrossDcConf {
         sb.append(configProperty.getKey()).append("=").append(printablePropertyValue).append(",");
       }
     }
-    if (sb.length() > 0) {
+    if (!sb.isEmpty()) {
       sb.setLength(sb.length() - 1);
     }
 

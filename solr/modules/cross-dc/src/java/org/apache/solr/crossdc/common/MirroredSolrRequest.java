@@ -49,7 +49,7 @@ public class MirroredSolrRequest<T extends SolrResponse> {
     CONFIGSET,
     UNKNOWN;
 
-    public static final Type get(String s) {
+    public static Type get(String s) {
       if (s == null) {
         return UNKNOWN;
       } else {
@@ -227,10 +227,6 @@ public class MirroredSolrRequest<T extends SolrResponse> {
     return submitTimeNanos;
   }
 
-  public void setSubmitTimeNanos(final long submitTimeNanos) {
-    this.submitTimeNanos = submitTimeNanos;
-  }
-
   public Type getType() {
     return type;
   }
@@ -264,15 +260,16 @@ public class MirroredSolrRequest<T extends SolrResponse> {
   public String toString() {
     final StringBuilder sb = new StringBuilder(getClass().getSimpleName() + "{type=");
     sb.append(type.toString());
-    sb.append(", method=" + solrRequest.getMethod());
-    sb.append(", params=" + solrRequest.getParams());
+    sb.append(", method=").append(solrRequest.getMethod());
+    sb.append(", params=").append(solrRequest.getParams());
     if (solrRequest instanceof UpdateRequest req) {
-      sb.append(", add=" + (req.getDocuments() != null ? req.getDocuments().size() : "0"));
-      sb.append(", del=" + (req.getDeleteByIdMap() != null ? req.getDeleteByIdMap().size() : "0"));
-      sb.append(", dbq=" + (req.getDeleteQuery() != null ? req.getDeleteQuery().size() : "0"));
+      sb.append(", add=").append(req.getDocuments() != null ? req.getDocuments().size() : "0");
+      sb.append(", del=")
+          .append(req.getDeleteByIdMap() != null ? req.getDeleteByIdMap().size() : "0");
+      sb.append(", dbq=").append(req.getDeleteQuery() != null ? req.getDeleteQuery().size() : "0");
     }
-    sb.append(", attempt=" + attempt);
-    sb.append(", submitTimeNanos=" + submitTimeNanos);
+    sb.append(", attempt=").append(attempt);
+    sb.append(", submitTimeNanos=").append(submitTimeNanos);
     sb.append('}');
     return sb.toString();
   }

@@ -14,23 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.crossdc.update.processor;
+package org.apache.solr.client.solrj;
 
-/** Wrapper class for Mirroring exceptions. */
-public class MirroringException extends Exception {
-  public MirroringException() {
-    super();
-  }
+import java.io.IOException;
+import java.io.Serial;
 
-  public MirroringException(String message) {
-    super(message);
-  }
+/**
+ * Indicates that a request failed before any of it was written to the network, so the server cannot
+ * have processed it. Retrying such a request on another node is safe even when it is not
+ * idempotent.
+ *
+ * <p>Typically a pooled connection that the server had already closed.
+ */
+public class RequestNotSentException extends IOException {
 
-  public MirroringException(String message, Throwable cause) {
+  @Serial private static final long serialVersionUID = 1L;
+
+  public RequestNotSentException(String message, Throwable cause) {
     super(message, cause);
-  }
-
-  public MirroringException(Throwable cause) {
-    super(cause);
   }
 }
