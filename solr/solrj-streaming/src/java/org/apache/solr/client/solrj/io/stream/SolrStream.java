@@ -89,7 +89,9 @@ public class SolrStream extends TupleStream {
    * @param path the request handler path to query (e.g. "/export"). If not provided, defaults to
    *     "/select".
    * @param params query-parameters sent with the streaming request
+   * @deprecated since 10.1. Use base URL constructor instead.
    */
+  @Deprecated
   public SolrStream(String collectionOrCoreUrl, String path, SolrParams params) {
     this(collectionOrCoreUrl, null, path, params);
   }
