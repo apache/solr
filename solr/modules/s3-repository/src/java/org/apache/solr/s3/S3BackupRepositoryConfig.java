@@ -67,25 +67,6 @@ public class S3BackupRepositoryConfig {
     }
   }
 
-  static int getIntConfig(NamedList<?> config, String property) {
-    return getIntConfig(config, property, 0);
-  }
-
-  static int getIntConfig(NamedList<?> config, String property, int def) {
-    String envProp = EnvUtils.getProperty(property);
-    if (envProp == null) {
-      Object configProp = config.get(property);
-      return configProp instanceof Integer ? (int) configProp : def;
-    } else {
-      return Integer.parseInt(envProp);
-    }
-  }
-
-  /** If the property as any other value than 'true' or 'TRUE', this will default to false. */
-  static boolean getBooleanConfig(NamedList<?> config, String property) {
-    return getBooleanConfig(config, property, false);
-  }
-
   static boolean getBooleanConfig(NamedList<?> config, String property, boolean def) {
     String envProp = EnvUtils.getProperty(property);
     if (envProp == null) {
