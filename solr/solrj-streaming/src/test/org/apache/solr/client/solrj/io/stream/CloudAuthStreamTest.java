@@ -505,7 +505,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
   public void testDaemonUpdateStream() throws Exception {
     final Replica daemonReplica = getRandomReplica(COLLECTION_X);
-    log.info("Using Daemon @ {}", daemonReplica.getCoreUrl());
+    if (log.isInfoEnabled()) {
+      log.info("Using Daemon @ {}", daemonReplica.getCoreUrl());
+    }
 
     {
       // NOTE: in spite of what is implied by 'terminate=true', this daemon will NEVER terminate on
@@ -567,7 +569,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
   public void testDaemonUpdateStreamInsufficientCredentials() throws Exception {
     final Replica daemonReplica = getRandomReplica(COLLECTION_X);
-    log.info("Using Daemon @ {}", daemonReplica.getCoreUrl());
+    if (log.isInfoEnabled()) {
+      log.info("Using Daemon @ {}", daemonReplica.getCoreUrl());
+    }
 
     // both of these users have valid credentials and authz read COLLECTION_X, but neither has
     // authz to write to X...
