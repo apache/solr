@@ -17,11 +17,12 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.api.model.CancelTaskResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CancellableQueryTracker;
@@ -32,7 +33,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class CancelTaskTest extends SolrTestCaseJ4 {
+public class CancelTaskTest extends SolrTestCase {
 
   private CancellableQueryTracker cancellableQueryTracker;
   private CancelTask cancelTask;

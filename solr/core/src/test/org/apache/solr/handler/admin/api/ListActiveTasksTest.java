@@ -17,13 +17,14 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.core.CancellableQueryTracker;
 import org.apache.solr.core.SolrCore;
@@ -32,7 +33,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ListActiveTasksTest extends SolrTestCaseJ4 {
+public class ListActiveTasksTest extends SolrTestCase {
 
   private SolrQueryRequest mockQueryRequest;
   private SolrCore solrCore;
