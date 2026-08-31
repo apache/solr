@@ -100,8 +100,9 @@
  *       advance()-eble iterator over union. And for "from" side it should be just intersectable
  *       with docSetIter. Format should balance storage size and decoding efforts. It should be
  *       stored as a Document fields.
- *   <li>approach refined terminology: outer side - slices, inner-side - bands, and a tile is an
- *       intersection
+ *   <li>stripe columns for join index: break {@link JoinIndexUtils#TO_DOC_VAL_BY_FROM_DOCNUM} to a
+ *       pair one is {@code to_doc_nums<maxdocs(to-side)/2} and {@code
+ *       to_doc_nums>=maxdocs(to-side)/2}
  * </ul>
  */
 package org.apache.solr.search.join.auxindexjoin;

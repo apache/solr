@@ -329,7 +329,8 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
           fromSegIterIsNotExausted();
           fromDoc = fromSegmentDocIdIter.nextDoc()) {
         walked++;
-        if (toDocsByFromDoc.advanceExact(fromDoc)) {
+        if (toDocsByFromDoc.advanceExact(
+            fromDoc)) { // TODO will it be faster to use advance() and leapfrog?
           for (int i = 0; i < toDocsByFromDoc.docValueCount(); i++) {
             int toDocMatch = (int) toDocsByFromDoc.nextValue();
             assert toDocMatch <= toDocEdges()[1] && toDocMatch >= toDocEdges()[0]

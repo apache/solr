@@ -83,7 +83,7 @@ final class JoinIndexUtils {
   /** Suffix of the always-written column persisting a pair's {min, max} to-doc edges. */
   static final String TO_EDGES_PREFIX = "toDoc_edges_";
 
-  /** main join colums for join index to_doc_num[from_docnum] */
+  /** main join columns for join index to_doc_num[from_docnum] */
   static final String TO_DOC_VAL_BY_FROM_DOCNUM = "join_toDoc_";
 
   static final String TO_COUNT_PREFIX = "num_toDoc_";
