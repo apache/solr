@@ -241,7 +241,6 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
       }
       params.set(CommonParams.FL, fromField);
       params.set(CommonParams.SORT, fromField + " asc");
-      params.set(CommonParams.QT, "/export");
       params.set(CommonParams.WT, CommonParams.JAVABIN);
 
       StreamContext streamContext = new StreamContext();
@@ -263,7 +262,7 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
       }
 
       TupleStream cloudSolrStream =
-          new CloudSolrStream(streamingSolrConnection, collection, params);
+          new CloudSolrStream(streamingSolrConnection, collection, "/export", params);
       TupleStream uniqueStream = new UniqueStream(cloudSolrStream, new FieldEqualitor(fromField));
       uniqueStream.setStreamContext(streamContext);
       return uniqueStream;
@@ -296,10 +295,9 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("expr", uniqueExpr.toString());
-      params.set(CommonParams.QT, "/stream");
       params.set(CommonParams.WT, CommonParams.JAVABIN);
 
-      return new SolrStream(solrUrl + "/" + collection, params);
+      return new SolrStream(solrUrl, collection, "/stream", params);
     }
 
     private DocSet getDocSet() throws IOException {

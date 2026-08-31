@@ -157,7 +157,7 @@ public abstract class SolrRequest<T> implements Serializable {
 
   public SolrRequest(METHOD m, String path, SolrRequestType requestType) {
     this.method = m;
-    this.path = path;
+    this.path = validatePath(path);
     this.requestType = requestType;
   }
 
@@ -172,12 +172,24 @@ public abstract class SolrRequest<T> implements Serializable {
     this.method = method;
   }
 
+  /**
+   * The URI path to a "request handler", such as "/select". Must start with a "/". For
+   * collection/core requests, this is appended to the core/collection path; otherwise it's a node
+   * level request and thus is relative to the solr root.
+   */
   public String getPath() {
     return path;
   }
 
   public void setPath(String path) {
-    this.path = path;
+    this.path = validatePath(path);
+  }
+
+  private static String validatePath(String path) {
+    if (path != null && !path.startsWith("/")) {
+      throw new IllegalArgumentException("Must start with a '/': " + path);
+    }
+    return path;
   }
 
   /**
@@ -263,7 +275,7 @@ public abstract class SolrRequest<T> implements Serializable {
   /**
    * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "7.2")
   public Collection<ContentStream> getContentStreams() throws IOException {
     return null;
   }

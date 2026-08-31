@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
+import org.apache.solr.client.solrj.jetty.MutableListenerFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
@@ -86,6 +87,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
   protected volatile HttpJettySolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
+  private final MutableListenerFactory securityListenerFactory = new MutableListenerFactory();
   protected LBAsyncSolrClient loadbalancer;
   private ObservableLongGauge asyncRequestsGauge;
 
@@ -309,8 +311,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withExecutor(commExecutor)
             .withMaxConnectionsPerHost(maxConnectionsPerHost)
+            .addListenerFactory(this.httpListenerFactory)
+            .addListenerFactory(this.securityListenerFactory)
             .build();
-    this.defaultClient.addListenerFactory(this.httpListenerFactory);
     this.loadbalancer = new LBJettySolrClient.Builder(defaultClient).build();
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
@@ -321,7 +324,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   @Override
   public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {
     if (clientBuilderPlugin != null) {
-      clientBuilderPlugin.setup(defaultClient);
+      clientBuilderPlugin.setup(securityListenerFactory);
     }
   }
 
@@ -445,7 +448,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     if (isSolrSslEnabled != null) {
       return isSolrSslEnabled ? "https" : "http";
     }
-    String urlScheme = getParameter(args, INIT_URL_SCHEME, System.getProperty(INIT_URL_SCHEME), sb);
+    String urlScheme =
+        getParameter(args, INIT_URL_SCHEME, EnvUtils.getProperty(INIT_URL_SCHEME), sb);
     if (urlScheme != null && urlScheme.endsWith("://")) {
       urlScheme = urlScheme.replace("://", "");
     }

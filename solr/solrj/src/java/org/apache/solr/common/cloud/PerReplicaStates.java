@@ -20,7 +20,6 @@ package org.apache.solr.common.cloud;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -35,20 +34,17 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.StrUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This represents the individual replica states in a collection This is an immutable object. When
  * states are modified, a new instance is constructed
  */
 public class PerReplicaStates implements ReflectMapWriter {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final char SEPARATOR = ':';
   // no:of times to retry in case of a CAS failure
   public static final int MAX_RETRIES = 5;
 
-  // znode path where thisis loaded from
+  // znode path where this is loaded from
   @JsonProperty public final String path;
 
   // the child version of that znode

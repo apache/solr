@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -336,9 +337,9 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
       expectedIds.put(strs.get(i), Long.valueOf(verS.get(i)));
     }
 
-    solrClient.query(params("qt", "/get", "ids", ids));
+    new QueryRequest("/get", params("ids", ids)).process(solrClient);
 
-    QueryResponse rsp = cloudClient.query(params("qt", "/get", "ids", ids));
+    QueryResponse rsp = new QueryRequest("/get", params("ids", ids)).process(cloudClient);
     Map<String, Object> obtainedIds = new HashMap<>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIds.put((String) doc.get("id"), doc.get(vfield));

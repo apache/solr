@@ -1,0 +1,13 @@
+{
+  "class": "dev.langchain4j.model.mistralai.MistralAiChatModel",
+  "name": "mistralai-1",
+  "params": {
+    "baseUrl": "https://api.mistral.ai/v1",
+    "apiKey": "apiKey-mistralAI",
+    "modelName": "mistral-small-latest",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}

@@ -27,6 +27,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory;
  * This test simply does a bunch of basic things in solrcloud mode and asserts things work as
  * expected.
  */
+@Nightly
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -186,14 +188,17 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
         cloudClient.getClusterState().hasCollection(collection));
   }
 
+  /**
+   * A reserved core of the given collection, or null if the node hosts none; caller must close it.
+   */
   protected SolrCore getFirstCore(String collection, JettySolrRunner jetty) {
-    SolrCore solrCore = null;
-    for (SolrCore core : jetty.getCoreContainer().getCores()) {
-      if (core.getName().startsWith(collection)) {
-        solrCore = core;
+    String coreName = null;
+    for (String name : jetty.getCoreContainer().getLoadedCoreNames()) {
+      if (name.startsWith(collection)) {
+        coreName = name;
       }
     }
-    return solrCore;
+    return coreName == null ? null : jetty.getCoreContainer().getCore(coreName);
   }
 
   /**
@@ -216,8 +221,10 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
     int slices =
         zkStateReader.getClusterState().getCollection("unloadcollection").getSlices().size();
     assertEquals(1, slices);
-    SolrCore solrCore = getFirstCore("unloadcollection", jetty1);
-    String core1DataDir = solrCore.getDataDir();
+    String core1DataDir;
+    try (SolrCore solrCore = getFirstCore("unloadcollection", jetty1)) {
+      core1DataDir = solrCore.getDataDir();
+    }
 
     assertTrue(
         CollectionAdminRequest.addReplicaToShard("unloadcollection", "shard1")

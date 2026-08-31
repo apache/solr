@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,7 +75,7 @@ public class NodeValueFetcher {
             .sum();
       }
     },
-    SYSLOADAVG("sysLoadAvg", "jvm_system_cpu_utilization_ratio");
+    SYSLOADAVG("sysLoadAvg", "jvm_system_cpu_utilization");
 
     public final String tagName;
     public final String metricName;
@@ -243,14 +244,25 @@ public class NodeValueFetcher {
     ModifiableSolrParams params = new ModifiableSolrParams();
     try {
       SimpleSolrResponse rsp = ctx.invokeWithRetry(ctx.getNode(), "/admin/info/properties", params);
-      NamedList<?> systemPropsRsp = (NamedList<?>) rsp.getResponse().get("system.properties");
+      Object systemPropsRsp = rsp.getResponse().get("system.properties");
       for (String requestedProperty : requestedTagNames) {
-        Object property = systemPropsRsp.get(requestedProperty.substring(SYSPROP_PREFIX.length()));
+        String key = requestedProperty.substring(SYSPROP_PREFIX.length());
+        Object property = getSysProp(systemPropsRsp, key);
         if (property != null) ctx.tags.put(requestedProperty, property.toString());
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting remote info", e);
     }
+  }
+
+  private static Object getSysProp(Object systemProperties, String key) {
+    if (systemProperties instanceof NamedList<?> namedList) {
+      return namedList.get(key);
+    }
+    if (systemProperties instanceof Map<?, ?> map) {
+      return map.get(key);
+    }
+    return null;
   }
 
   /**
