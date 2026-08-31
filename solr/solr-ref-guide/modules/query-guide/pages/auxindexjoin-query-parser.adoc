@@ -80,10 +80,43 @@ A sidecar join index is opened per core when the core loads, in a directory unde
 The init parameter for the directory holding the sidecar join index.
 Resolved relative to the core's `dataDir` unless an absolute path is given.
 
+`singleFieldPerSegment`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, each pair column is flushed into its own sidecar segment.
+Otherwise, every pair column built in the same round is batched into a single segment (the default), trading a longer sweep for less storage overhead.
+
+`blockingRefresh`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, writing a batch of pair columns blocks until the sidecar's searcher manager is refreshed past it, so the freshly built pairs are immediately visible to the caller that triggered the build.
+
+`sweepSamplingInterval`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `60`
+|===
++
+How often (in seconds) the dead-pair reaper samples searcher state while the sidecar index is being read.
+Calls arriving sooner than this interval after the last accepted sample are skipped.
+Pass a non-positive value to sample on every call.
+
 [source,xml]
 ----
 <queryParser name="auxIndexJoin" class="org.apache.solr.search.join.AuxIndexJoinQParserPlugin">
   <str name="dir">aijoin</str>
+  <bool name="singleFieldPerSegment">false</bool>
+  <bool name="blockingRefresh">true</bool>
+  <long name="sweepSamplingInterval">60</long>
 </queryParser>
 ----
 
