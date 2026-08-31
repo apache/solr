@@ -103,6 +103,12 @@ Its builder will dynamically detect if solr-jetty is available and use that, oth
 CommonParams.QT has been un-deprecated.
 Nonetheless, if your code makes explicit reference to "qt" when constructing a standard request, there is usually a better way.
 
+`CloudSolrClient` now retries a failed update only when the transport can prove the request never reached the server.
+Previously any communication error, or a 503, caused a retry, which could re-send an update that had already been partially applied.
+
+`SolrClient` gains `wasRequestUnsent(Throwable)` and `wasCommError(Throwable)`, both defaulting to `false` and overridden per transport.
+`CloudSolrClient.wasCommError` is now `public`, and `LBSolrClient.isConnectException` has been removed; override `wasRequestUnsent` on the transport client instead.
+
 === Jetty Configuration
 
 Solr 10.1 upgrades the server to Eclipse Jetty 12.1, which removed Jetty's directory-scanning deployer (the `DeploymentManager` and `ContextProvider` classes).
