@@ -140,12 +140,16 @@ public class PartitionManagerTest {
     PartitionManager.WorkUnit first = enqueue(109);
     first.workItems.add(CompletableFuture.failedFuture(new IllegalStateException("boom")));
 
+    Throwable thrown = null;
     try {
       partitionManager.checkOffsetsAndUpdate(PARTITION);
-      fail("expected the work item failure to be rethrown");
     } catch (Throwable e) {
+      thrown = e;
       assertEquals(IllegalStateException.class, e.getClass());
       assertEquals("boom", e.getMessage());
+    }
+    if (thrown == null) {
+      fail("expected the work item failure to be rethrown");
     }
 
     verify(consumer, never()).commitSync(anyMap());
