@@ -568,6 +568,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       // Do the rollups in parallel
       // Maintain the sort of the Tuples coming from the workers.
       StreamComparator comp = bucketSortComp(buckets, sortDirection);
+      @SuppressWarnings("resource")
       final ParallelStream parallelStream =
           new ParallelStream(solrConnection, collection, tupleStream, numWorkers, comp);
 
@@ -796,6 +797,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     if (numWorkers > 1) {
       // Do the unique in parallel
       // Maintain the sort of the Tuples coming from the workers.
+      @SuppressWarnings("resource")
       final ParallelStream parallelStream =
           new ParallelStream(solrConnection, collection, tupleStream, numWorkers, comp);
 
