@@ -351,7 +351,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     { // WRITE_X user should be able to update X via a (dummy) stream from Y...
       final SolrStream solrStream =
           new SolrStream(
-              solrUrl + "/" + COLLECTION_Y,
+              solrUrl,
+              COLLECTION_Y,
               "/stream",
               params(
                   "expr",
@@ -429,10 +430,11 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   public void testIndirectUpdateStreamInsufficientCredentials() throws Exception {
 
     // regardless of how it's routed, WRITE_Y should NOT have authz to stream updates to X...
-    for (String path : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
+    for (String coll : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
       final SolrStream solrStream =
           new SolrStream(
-              solrUrl + "/" + path,
+              solrUrl,
+              coll,
               "/stream",
               params(
                   "expr",
@@ -502,8 +504,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   }
 
   public void testDaemonUpdateStream() throws Exception {
-    final String daemonUrl = getRandomCoreUrl(COLLECTION_X);
-    log.info("Using Daemon @ {}", daemonUrl);
+    final Replica daemonReplica = getRandomReplica(COLLECTION_X);
+    log.info("Using Daemon @ {}", daemonReplica.getCoreUrl());
 
     {
       // NOTE: in spite of what is implied by 'terminate=true', this daemon will NEVER terminate on
@@ -513,7 +515,12 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
           "daemon(id=daemonId,runInterval=1000,terminate=true,update("
               + COLLECTION_X
               + ",tuple(id=42,a_i=1,b_i=5)))";
-      final SolrStream solrStream = new SolrStream(daemonUrl, "/stream", params("expr", expr));
+      final SolrStream solrStream =
+          new SolrStream(
+              daemonReplica.getBaseUrl(),
+              daemonReplica.getCoreName(),
+              "/stream",
+              params("expr", expr));
       solrStream.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
       final List<Tuple> tuples = getTuples(solrStream);
       assertEquals(1, tuples.size()); // daemon starting status
@@ -524,7 +531,11 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       while (!timeout.hasTimedOut()) {
         final SolrStream daemonCheck =
-            new SolrStream(daemonUrl, "/stream", params("action", "list"));
+            new SolrStream(
+                daemonReplica.getBaseUrl(),
+                daemonReplica.getCoreName(),
+                "/stream",
+                params("action", "list"));
         daemonCheck.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
         final List<Tuple> tuples = getTuples(daemonCheck);
         assertEquals(1, tuples.size()); // our daemon;
@@ -541,7 +552,11 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     } finally {
       // kill the damon...
       final SolrStream daemonKiller =
-          new SolrStream(daemonUrl, "/stream", params("action", "kill", "id", "daemonId"));
+          new SolrStream(
+              daemonReplica.getBaseUrl(),
+              daemonReplica.getCoreName(),
+              "/stream",
+              params("action", "kill", "id", "daemonId"));
       daemonKiller.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
       final List<Tuple> tuples = getTuples(daemonKiller);
       assertEquals(1, tuples.size()); // daemon death status
@@ -551,8 +566,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   }
 
   public void testDaemonUpdateStreamInsufficientCredentials() throws Exception {
-    final String daemonUrl = getRandomCoreUrl(COLLECTION_X);
-    log.info("Using Daemon @ {}", daemonUrl);
+    final Replica daemonReplica = getRandomReplica(COLLECTION_X);
+    log.info("Using Daemon @ {}", daemonReplica.getCoreUrl());
 
     // both of these users have valid credentials and authz read COLLECTION_X, but neither has
     // authz to write to X...
@@ -568,7 +583,10 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
                 + ",tuple(id=42,a_i=1,b_i=5)))     ";
         final SolrStream solrStream =
             new SolrStream(
-                daemonUrl, "/stream", params("_trace", "start_" + daemonId, "expr", expr));
+                daemonReplica.getBaseUrl(),
+                daemonReplica.getCoreName(),
+                "/stream",
+                params("_trace", "start_" + daemonId, "expr", expr));
         solrStream.setCredentials(user, passwordFor(user));
         final List<Tuple> tuples = getTuples(solrStream);
         assertEquals(1, tuples.size()); // daemon starting status
@@ -580,7 +598,10 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
         while (!timeout.hasTimedOut()) {
           final SolrStream daemonCheck =
               new SolrStream(
-                  daemonUrl, "/stream", params("_trace", "check_" + daemonId, "action", "list"));
+                  daemonReplica.getBaseUrl(),
+                  daemonReplica.getCoreName(),
+                  "/stream",
+                  params("_trace", "check_" + daemonId, "action", "list"));
           daemonCheck.setCredentials(user, passwordFor(user));
           final List<Tuple> tuples = getTuples(daemonCheck);
           assertEquals(1, tuples.size()); // our daemon;
@@ -604,7 +625,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
         // kill the damon...
         final SolrStream daemonKiller =
             new SolrStream(
-                daemonUrl,
+                daemonReplica.getBaseUrl(),
+                daemonReplica.getCoreName(),
                 "/stream",
                 params("_trace", "kill_" + daemonId, "action", "kill", "id", daemonId));
         daemonKiller.setCredentials(user, passwordFor(user));
@@ -765,7 +787,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     { // WRITE_X user should be able to delete X via a (dummy) stream from Y...
       final SolrStream solrStream =
           new SolrStream(
-              solrUrl + "/" + COLLECTION_Y,
+              solrUrl,
+              COLLECTION_Y,
               "/stream",
               params("expr", "delete(" + COLLECTION_X + ",batchSize=1," + "tuple(id=42z))"));
       solrStream.setCredentials(WRITE_X_USER, passwordFor(WRITE_X_USER));
@@ -921,16 +944,15 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   }
 
   /** Sigh. DaemonStream requires polling the same core where the stream was executed. */
-  protected static String getRandomCoreUrl(final String collection) {
-    final List<String> replicaUrls =
+  protected static Replica getRandomReplica(final String collection) {
+    final List<Replica> replicas =
         cluster
             .getZkStateReader()
             .getClusterState()
             .getCollectionOrNull(collection)
             .replicaStream()
-            .map(Replica::getCoreUrl)
             .collect(Collectors.toList());
-    Collections.shuffle(replicaUrls, random());
-    return replicaUrls.get(0);
+    Collections.shuffle(replicas, random());
+    return replicas.get(0);
   }
 }

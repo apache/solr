@@ -64,6 +64,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Assume;
 import org.junit.Before;
@@ -2130,7 +2131,12 @@ public class StreamingTest extends SolrCloudTestCase {
           "rollup(search("
               + COLLECTIONORALIAS
               + ",q=\"*:*\",fl=\"a_s,a_i,a_f,b_f\",sort=\"a_s asc\",partitionKeys=\"a_s\", path=\"/export\"),over=\"a_s\",sum(a_i),sum(a_f),min(a_i),min(a_f),max(a_i),max(a_f),avg(a_i),avg(a_f),count(*),missing(b_f))\n");
-      SolrStream solrStream = new SolrStream(shardUrls.get(0), "/stream", solrParams);
+      SolrStream solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       streamContext = new StreamContext();
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);

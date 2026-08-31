@@ -69,13 +69,13 @@ public class SolrStream extends TupleStream {
   private transient SolrClientCache clientCache;
   private transient boolean doCloseCache;
 
-  // TODO SOLR-17995 proposes that we should deprecate this constructor in favor of one of the other
-  // constructors that requires users to provide the core as an explicit parameter
   /**
    * @param collectionOrCoreUrl URL of the Solr core or collection to query, typically of the form
    *     "http://host:8983/solr/myCore".
    * @param params query-parameters sent with the streaming request
+   * @deprecated since 10.1. Use base URL constructor instead.
    */
+  @Deprecated
   public SolrStream(String collectionOrCoreUrl, SolrParams params) {
     this.baseUrl = collectionOrCoreUrl;
     this.params = params;
