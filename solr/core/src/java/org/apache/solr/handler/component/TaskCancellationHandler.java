@@ -45,6 +45,14 @@ public class TaskCancellationHandler extends TaskManagementHandler {
 
     boolean isTaskCancelled = ActiveTaskQuerySupport.cancelTask(req, taskCancellationID);
 
+    // FRAGILE: these exact "status" message strings are also used as the cross-shard
+    // cancellation signal -- ActiveTaskQuerySupport.mergeCancellationStatus() matches shard
+    // sub-responses via `.contains("cancelled successfully")`, since this handler has no
+    // dedicated machine-readable field for it (unlike ActiveTasksListHandler's isShardedRequest
+    // handling for task status, which emits a plain boolean for shard-to-shard requests).
+    // Changing this wording will silently break cross-shard cancellation aggregation; see
+    // TestTaskManagement.testCrossShardTaskCancellationVisibility, which will start failing if
+    // that happens.
     if (isTaskCancelled) {
       rsp.add("status", "Query with queryID " + taskCancellationID + " cancelled successfully");
       rsp.add("responseCode", 200);

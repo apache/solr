@@ -151,6 +151,12 @@ public class ActiveTaskQuerySupport {
     return false;
   }
 
+  // FRAGILE: relies on substring-matching the human-readable "status" message
+  // TaskCancellationHandler emits, since that handler has no dedicated machine-readable success
+  // signal for the shard-to-shard case (unlike mergeTaskStatus() below, whose Boolean branch is
+  // genuinely reachable via ActiveTasksListHandler's isShardedRequest handling). The `instanceof
+  // Boolean` branch here is currently unreachable in practice. See the FRAGILE note on
+  // TaskCancellationHandler.handleRequestBody() before changing that message text.
   private static boolean mergeCancellationStatus(List<ShardResponse> responses) {
     for (ShardResponse shardResponse : responses) {
       Object cancellationStatus = shardResponse.getSolrResponse().getResponse().get("status");
