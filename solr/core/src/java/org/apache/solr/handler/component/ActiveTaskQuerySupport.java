@@ -157,6 +157,11 @@ public class ActiveTaskQuerySupport {
   // genuinely reachable via ActiveTasksListHandler's isShardedRequest handling). The `instanceof
   // Boolean` branch here is currently unreachable in practice. See the FRAGILE note on
   // TaskCancellationHandler.handleRequestBody() before changing that message text.
+  // We didn't want to change the current V1 response output format, so we can't improve this.
+  // This is used by both V1 and V2 -- CancelTask (V2) calls ActiveTaskQuerySupport.cancelTask(),
+  // the same entry point TaskCancellationHandler (V1) uses, and distributedResult() always fans
+  // shard-level sub-requests out over the V1 wire path regardless of which API the original
+  // request came in on. V2 is not any more robust here.
   private static boolean mergeCancellationStatus(List<ShardResponse> responses) {
     for (ShardResponse shardResponse : responses) {
       Object cancellationStatus = shardResponse.getSolrResponse().getResponse().get("status");
