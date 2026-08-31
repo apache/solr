@@ -58,7 +58,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
 
     final ManagedResource res = restManager.getManagedResource(resourceId);
     assertTrue(res instanceof TextToVectorModelStore);
-    assertEquals(res.getResourceId(), resourceId);
+    assertEquals(resourceId, res.getResourceId());
   }
 
   @Test
