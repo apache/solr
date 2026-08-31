@@ -19,6 +19,7 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/** Response body returned after a task cancellation request. */
 public class CancelTaskResponse extends SolrJerseyResponse {
 
   public enum CancellationStatus {

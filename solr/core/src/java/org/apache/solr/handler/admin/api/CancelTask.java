@@ -29,6 +29,7 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CancellableCollector;
 
+/** V2 API implementation for cancelling an active task. */
 public class CancelTask extends JerseyResource implements TasksApi.Cancel {
 
   private final SolrQueryRequest solrQueryRequest;
