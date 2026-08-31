@@ -131,8 +131,16 @@ curl -X DELETE "http://localhost:8983/v2/collections/collectionName/tasks/5"
 ======
 
 === Sample Response
+
+The V1 and V2 APIs currently return the cancellation result in different shapes.
+
 ==== If the task was found and successfully cancelled:
 
+[tabs#cancelalltasks-response-found]
+======
+V1 API::
++
+====
 ----
 {
   "responseHeader":{
@@ -141,9 +149,32 @@ curl -X DELETE "http://localhost:8983/v2/collections/collectionName/tasks/5"
   "status":"Query with queryID 5 cancelled successfully",
   "responseCode":200}
 ----
+====
+
+V2 API::
++
+====
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":26},
+  "status":"SUCCESS"}
+----
+====
+======
 
 ==== If the task was not found:
 
+With the V1 API, a task that isn't found is still a `200` response, with `responseCode` in the body indicating the failure.
+With the V2 API, a task that isn't found returns an actual HTTP `404`, with the standard v2 error envelope.
+
+[tabs#cancelalltasks-response-notfound]
+======
+V1 API::
++
+====
 ----
 {
   "responseHeader":{
@@ -152,6 +183,26 @@ curl -X DELETE "http://localhost:8983/v2/collections/collectionName/tasks/5"
   "status":"Query with queryID 5 not found",
   "responseCode":404}
 ----
+====
+
+V2 API::
++
+====
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":404,
+    "QTime":24},
+  "error":{
+    "metadata":{
+      "error-class":"org.apache.solr.common.SolrException",
+      "root-error-class":"org.apache.solr.common.SolrException"},
+    "code":404,
+    "msg":"NOT_FOUND"}}
+----
+====
+======
 
 == Check Status of a Specific Task
 To check the status of a specific task, please use the following syntax:
