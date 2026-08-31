@@ -266,17 +266,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
   }
 
   /**
-   * Regression test for cross-shard task visibility.
-   *
-   * <p>On {@code main}, {@code ActiveTasksListHandler.handleRequestBody()} delegates to {@code
-   * processRequest()}, which fans the request out to every shard via the distributed query
-   * pipeline. {@code ActiveTasksListComponent.handleResponses()} then aggregates the per-shard
-   * results, so a task running on shard 2 is visible when the status-check request lands on shard
-   * 1.
-   *
-   * <p>If this handler is migrated to JAX-RS and the fan-out is replaced with a direct call to the
-   * handler node's own {@code CancellableQueryTracker}, a task registered only on shard 2 becomes
-   * invisible to a request handled by shard 1, causing a false "inactive" response.
+   * Regression test for cross-shard task visibility -- guards against a task on shard 2 becoming
+   * invisible to a status-check request handled by shard 1.
    */
   @Test
   public void testCrossShardTaskStatusVisibility() throws Exception {
@@ -387,13 +378,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
   }
 
   /**
-   * Same regression as {@link #testCrossShardTaskCancellationVisibility}, but issued via the V2 API
-   * instead of the raw V1 request. {@code CancelTask} (V2) calls the same {@code
-   * ActiveTaskQuerySupport.cancelTask()} entry point V1's {@code TaskCancellationHandler} does, and
-   * {@code distributedResult()} always fans shard-level sub-requests out over the V1 wire path
-   * regardless of which API the original request came in on -- so V2 is exposed to the exact same
-   * string-matching fragility in {@code mergeCancellationStatus()} whenever cross-shard fan-out is
-   * needed. This test proves that sharing, rather than just asserting it.
+   * Same as {@link #testCrossShardTaskCancellationVisibility}, but via the V2 API -- confirms V2
+   * shares the same cross-shard string-matching fragility as V1.
    */
   @Test
   public void testCrossShardTaskCancellationVisibilityV2() throws Exception {
