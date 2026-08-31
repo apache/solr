@@ -23,13 +23,13 @@ Queries are the only type of "task" currently supported, but additional types ma
 == Registering Tasks for Task Management
 
 Task-tracking and management is an opt-in feature: tracking must be explicitly enabled on each individual task.
-For queries (the only type of "task" currently supported), this is done by specifying the `canCancel` boolean flag as a query-parameter.
-A value of `true` enables task-management; `false` (the default) leaves it disabled.
+For queries (the only type of "task" currently supported), this is done by specifying the xref:query-guide:common-query-parameters.adoc#cancancel-parameter[`canCancel`] boolean flag as a query-parameter.
+A value of `true` enables task management; `false` (the default) leaves it disabled.
 
-Solr will assign each task a UUID for tracking purposes.
-Users may override this if desired with an arbitrary string of their choice using the `queryUUID` query-parameter.
+Solr will assign each task an ID for tracking purposes.
+Users may override this if desired with an arbitrary string of their choice using the `queryUUID` query-parameter when submitting the original query.
 (Users are responsible for ensuring that any `queryUUID` values they provide are unique and don't conflict with other running tasks.)
-This UUID, whether generated or provided by the user, can then be used to track or cancel the task.
+This ID, whether generated or provided by the user, can then be used to track or cancel the task -- as a query parameter with the V1 API, or as part of the URL path with the V2 API; see the sections below for the specifics of each operation.
 
 == Task Management Operations
 Task management interface supports the following types of operations:
