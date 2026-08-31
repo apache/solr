@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -41,6 +42,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.join.auxindexjoin.AuxIndexJoinConfig;
 import org.apache.solr.search.join.auxindexjoin.AuxIndexManager;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -74,8 +76,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>One {@link AuxIndexManager} is opened per core in {@link #inform(SolrCore)}, backed by a
  * directory under the core's dataDir (configurable via the {@code dir} init parameter, resolved
- * relative to dataDir unless absolute), and closed when the core closes. This sidecar always
- * belongs to the "to" side core -- the one this plugin is registered in.
+ * relative to dataDir unless absolute), and closed when the core closes. The remaining init
+ * parameters mirror {@link AuxIndexJoinConfig}: {@code singleFieldPerSegment}, {@code
+ * blockingRefresh}, and {@code sweepSamplingInterval} (seconds). This sidecar always belongs to the
+ * "to" side core -- the one this plugin is registered in.
  *
  * <p><b>Why this implements {@link QueryResponseWriter}:</b> {@link
  * org.apache.solr.core.SolrResourceLoader}'s {@code awareCompatibility} allowlist (see SOLR-8311)
@@ -105,15 +109,35 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
 
   public static final String DEFAULT_DIR = "aux-index-join";
 
+  /** Init parameter: whether each pair column is flushed into its own sidecar segment. */
+  public static final String SINGLE_FIELD_PER_SEGMENT = "singleFieldPerSegment";
+
+  /** Init parameter: whether writing a batch of pair columns blocks until it is searchable. */
+  public static final String BLOCKING_REFRESH = "blockingRefresh";
+
+  /**
+   * Init parameter: how often (in seconds) {@code AuxIndexManager.onCreateWeight} samples searcher
+   * state for the dead-pair reaper. Non-positive means sample on every call. Defaults to 60.
+   */
+  public static final String SWEEP_SAMPLING_INTERVAL = "sweepSamplingInterval";
+
   private String configuredDir = DEFAULT_DIR;
+  private final AuxIndexJoinConfig joinIndexConfig = new AuxIndexJoinConfig();
 
   private volatile AuxIndexManager joinIndex;
 
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
-    if (args != null && args.get(DIR) != null) {
-      configuredDir = args.get(DIR).toString();
+    if (args != null) {
+      SolrParams params = args.toSolrParams();
+      configuredDir = params.get(DIR, DEFAULT_DIR);
+      joinIndexConfig.setSingleFieldPerSegment(
+          params.getBool(SINGLE_FIELD_PER_SEGMENT, joinIndexConfig.getSingleFieldPerSegment()));
+      joinIndexConfig.setBlockingRefresh(
+          params.getBool(BLOCKING_REFRESH, joinIndexConfig.getBlockingRefresh()));
+      joinIndexConfig.setSweepSamplingInterval(
+          params.getLong(SWEEP_SAMPLING_INTERVAL, 60), TimeUnit.SECONDS);
     }
   }
 
@@ -130,7 +154,8 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
       directory =
           core.getDirectoryFactory()
               .get(path.toString(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-      joinIndex = new AuxIndexManager(directory);
+      AuxIndexJoinConfig config = joinIndexConfig;
+      joinIndex = new AuxIndexManager(directory, config);
     } catch (IOException | RuntimeException e) {
       if (directory != null) {
         try {
