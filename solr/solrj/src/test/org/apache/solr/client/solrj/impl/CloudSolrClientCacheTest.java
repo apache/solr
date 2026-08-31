@@ -183,18 +183,16 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * A 503 is the server declining to process the update, not a communication failure, so it stays
-   * retryable. {@link CloudSolrClient#directUpdate} raises this shape when a shard replica is
-   * unavailable.
+   * {@link CloudSolrClient#directUpdate} raises a {@link CloudSolrClient.RouteException} only after
+   * collecting every shard's result, so a 503 from one shard can follow success on another and a
+   * replay would re-apply those.
    */
-  public void testUpdateIsRetriedOnRouteExceptionWith503() throws Exception {
+  public void testUpdateIsNotRetriedOnRouteExceptionWith503() throws Exception {
     String collName = "gettingstarted";
     Set<String> livenodes = new HashSet<>();
     Map<String, ClusterState.CollectionRef> refs = new HashMap<>();
 
     Map<String, Function<?, ?>> responses = new HashMap<>();
-    NamedList<Object> okResponse = new NamedList<>();
-    okResponse.add("responseHeader", new NamedList<>(Map.of("status", 0)));
     LBJettySolrClient mockLbclient = getMockLbHttpSolrClient(responses);
     AtomicInteger lbhttpRequestCount = new AtomicInteger();
     try (ClusterStateProvider clusterStateProvider = getStateProvider(livenodes, refs);
@@ -215,16 +213,18 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       responses.put(
           "request",
           o -> {
-            if (lbhttpRequestCount.incrementAndGet() == 1) {
-              return new CloudSolrClient.RouteException(
-                  SolrException.ErrorCode.SERVICE_UNAVAILABLE, shardFailures, Map.of());
-            }
-            return okResponse;
+            lbhttpRequestCount.incrementAndGet();
+            return new CloudSolrClient.RouteException(
+                SolrException.ErrorCode.SERVICE_UNAVAILABLE, shardFailures, Map.of());
           });
 
       UpdateRequest update = new UpdateRequest().add("id", "123", "desc", "Something 0");
-      cloudClient.request(update, collName);
-      assertEquals("a 503 must still be retried", 2, lbhttpRequestCount.get());
+      expectThrows(
+          CloudSolrClient.RouteException.class, () -> cloudClient.request(update, collName));
+      assertEquals(
+          "a 503 may follow partial success, so it must not be replayed",
+          1,
+          lbhttpRequestCount.get());
     }
   }
 

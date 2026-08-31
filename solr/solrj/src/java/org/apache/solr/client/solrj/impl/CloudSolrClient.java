@@ -717,10 +717,10 @@ public abstract class CloudSolrClient extends SolrClient {
               : SolrException.ErrorCode.UNKNOWN.code;
 
       final boolean wasCommError = wasCommError(exc);
-      // A communication error says nothing about whether an update was applied; only replay one
-      // the transport proves never arrived. A 503 is the server declining to process it, so that
-      // path is unaffected.
-      final boolean mayReplayAfterCommError =
+      // Neither a comm error nor a 503 proves an update went unapplied: directUpdate raises
+      // RouteException only after collecting every shard's result. Replay only what the transport
+      // proves never arrived.
+      final boolean mayReplay =
           request.getRequestType() != SolrRequestType.UPDATE || wasRequestUnsent(exc);
 
       if (wasCommError
@@ -754,7 +754,7 @@ public abstract class CloudSolrClient extends SolrClient {
           }
         }
         // if it is a communication error , we must try again
-        if ((!wasCommError || mayReplayAfterCommError) && retryCount < MAX_STALE_RETRIES) {
+        if (mayReplay && retryCount < MAX_STALE_RETRIES) {
           // may be, we have a stale version of the collection state,
           // and we could not get any information from the server
           // it is probably not worth trying again and again because
@@ -820,7 +820,7 @@ public abstract class CloudSolrClient extends SolrClient {
             // we just pulled state from ZK, so update the cache so that the retry uses it
             collectionStateCache.put(
                 ext.getName(), new ExpiringCachedDocCollection(latestStateFromZk));
-            if (mayReplayAfterCommError) {
+            if (mayReplay) {
               // looks like we couldn't reach the server because the state was stale == retry
               stateWasStale = true;
             }
