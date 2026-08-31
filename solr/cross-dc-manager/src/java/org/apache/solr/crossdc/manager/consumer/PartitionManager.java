@@ -20,14 +20,12 @@ import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -41,8 +39,39 @@ public class PartitionManager {
       new ConcurrentHashMap<>();
   private final KafkaConsumer<String, MirroredSolrRequest<?>> consumer;
 
-  static class PartitionWork {
+  @VisibleForTesting
+  public static class PartitionWork {
     final Queue<WorkUnit> partitionQueue = new ArrayDeque<>();
+
+    /**
+     * Assign a record to a work unit: enqueue the unit on its first record, and advance its commit
+     * point to just past that record. A unit that never receives a record is never enqueued, so it
+     * can never commit an offset of its own.
+     *
+     * <p>Guarded by the same monitor as {@link
+     * PartitionManager#checkOffsetsAndUpdate(TopicPartition)}, which is the other place the queue
+     * is touched.
+     *
+     * @param unit the work unit the record belongs to
+     * @param recordOffset offset of the record being assigned
+     * @throws IllegalStateException if recordOffset regresses behind the last record already
+     *     assigned to this unit
+     */
+    synchronized void assignRecord(WorkUnit unit, long recordOffset) {
+      if (recordOffset < unit.nextOffset) {
+        throw new IllegalStateException(
+            "Out-of-order record offset "
+                + recordOffset
+                + ", expected an offset greater than or equal to "
+                + (unit.nextOffset - 1));
+      }
+      // if this is a new unit enqueue it first
+      if (unit.nextOffset < 0) {
+        partitionQueue.add(unit);
+      }
+      // advance the commit point to just past the record
+      unit.nextOffset = recordOffset + 1;
+    }
   }
 
   @VisibleForTesting
@@ -50,7 +79,12 @@ public class PartitionManager {
     final int partition;
     final String topic;
     final Set<Future<?>> workItems = new HashSet<>();
-    long nextOffset;
+
+    /**
+     * Exclusive upper bound of the offsets this unit owns, i.e. the offset to commit once all of
+     * its work items are done. Negative until the unit is assigned its first record.
+     */
+    long nextOffset = -1;
 
     WorkUnit(TopicPartition partition) {
       this.partition = partition.partition();
@@ -73,50 +107,74 @@ public class PartitionManager {
         });
   }
 
-  public void checkOffsetUpdates() throws Throwable {
+  public void checkOffsetsAndUpdate() throws Throwable {
     for (TopicPartition partition : partitionWorkMap.keySet()) {
-      checkForOffsetUpdates(partition);
+      checkOffsetsAndUpdate(partition);
     }
   }
 
-  void checkForOffsetUpdates(TopicPartition partition) throws Throwable {
-    synchronized (partition) {
-      PartitionWork work;
-      if ((work = partitionWorkMap.get(partition)) != null) {
-        WorkUnit workUnit = work.partitionQueue.peek();
-        if (workUnit != null) {
-          boolean allFuturesDone = true;
-          for (Future<?> future : workUnit.workItems) {
-            if (!future.isDone()) {
-              if (log.isTraceEnabled()) {
-                log.trace("Future for update is not done topic={}", partition.topic());
-              }
-              allFuturesDone = false;
-              break;
-            }
-
-            try {
-              future.get();
-            } catch (InterruptedException e) {
-              log.error("Error updating offset for partition: {}", partition, e);
-              throw e;
-            } catch (ExecutionException e) {
-              log.error("Error updating offset for partition: {}", partition, e);
-              throw e.getCause();
-            }
-
-            if (log.isTraceEnabled()) {
-              log.trace("Future for update is done topic={}", partition.topic());
-            }
+  void checkOffsetsAndUpdate(TopicPartition partition) throws Throwable {
+    // can't synchronize on the argument (equal but distinct object for different threads)
+    // sync on the PartitionWork instead, which is unique per partition and shared by all threads
+    // that work on that partition.
+    final PartitionWork partitionWork = partitionWorkMap.get(partition);
+    if (partitionWork == null) {
+      // normally impossible because consumer should always call #getPartitionWork first
+      // which creates the instance if it doesn't exist.
+      return;
+    }
+    synchronized (partitionWork) {
+      // remove every completed work unit at the head of the queue, stopping at the first one
+      // that is still in flight - a work unit's offset may only be committed once all of the
+      // work units before it have been committed too.
+      long committableOffset = -1;
+      WorkUnit workUnit;
+      try {
+        while ((workUnit = partitionWork.partitionQueue.peek()) != null) {
+          if (!isComplete(workUnit, partition)) {
+            break;
           }
-
-          if (allFuturesDone) {
-            work.partitionQueue.poll();
-            updateOffset(partition, workUnit.nextOffset);
-          }
+          // remove completed unit
+          partitionWork.partitionQueue.poll();
+          committableOffset = workUnit.nextOffset;
+        }
+      } finally {
+        // commit whatever progress was already verified in this drain, even if a later
+        // unit's isComplete() threw - otherwise that progress silently gets lost.
+        if (committableOffset >= 0) {
+          updateOffset(partition, committableOffset);
         }
       }
     }
+  }
+
+  /** Check whether all the work items of this unit are done, rethrowing any of their failures. */
+  private boolean isComplete(WorkUnit workUnit, TopicPartition partition) throws Throwable {
+    for (Future<?> future : workUnit.workItems) {
+      if (!future.isDone()) {
+        if (log.isTraceEnabled()) {
+          log.trace("Future for update is not done topic={}", partition.topic());
+        }
+        return false;
+      }
+
+      try {
+        // the future is already done, so this returns (or rethrows) without waiting
+        future.get();
+      } catch (InterruptedException e) {
+        log.error("Error updating offset for partition: {}", partition, e);
+        Thread.currentThread().interrupt();
+        throw e;
+      } catch (ExecutionException e) {
+        log.error("Error updating offset for partition: {}", partition, e);
+        throw e.getCause();
+      }
+
+      if (log.isTraceEnabled()) {
+        log.trace("Future for update is done topic={}", partition.topic());
+      }
+    }
+    return true;
   }
 
   /**
@@ -135,10 +193,5 @@ public class PartitionManager {
     }
 
     consumer.commitSync(Map.of(partition, new OffsetAndMetadata(nextOffset)));
-  }
-
-  static long getOffsetForPartition(
-      List<ConsumerRecord<String, MirroredSolrRequest<?>>> partitionRecords) {
-    return partitionRecords.get(partitionRecords.size() - 1).offset() + 1;
   }
 }

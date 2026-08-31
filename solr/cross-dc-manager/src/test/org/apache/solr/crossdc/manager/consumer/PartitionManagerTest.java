@@ -19,13 +19,19 @@ package org.apache.solr.crossdc.manager.consumer;
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -35,9 +41,14 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * Tests that a partition's commit point never runs ahead of work that is still in flight: a work
+ * unit's offset may only be committed once that unit and every unit queued before it are done.
+ */
 @SuppressWarnings("unchecked")
 public class PartitionManagerTest {
 
@@ -46,11 +57,105 @@ public class PartitionManagerTest {
     assumeWorkingMockito();
   }
 
+  private static final TopicPartition PARTITION = new TopicPartition("topic1", 0);
+
+  @SuppressWarnings("unchecked")
+  private final KafkaConsumer<String, MirroredSolrRequest<?>> consumer = mock(KafkaConsumer.class);
+
+  private PartitionManager partitionManager;
+  private PartitionManager.PartitionWork work;
+
+  @Before
+  public void setUp() {
+    partitionManager = new PartitionManager(consumer);
+    work = partitionManager.getPartitionWork(PARTITION);
+  }
+
+  /** Enqueue a work unit owning a single record at the given offset. */
+  private PartitionManager.WorkUnit enqueue(long recordOffset) {
+    PartitionManager.WorkUnit workUnit = new PartitionManager.WorkUnit(PARTITION);
+    work.assignRecord(workUnit, recordOffset);
+    return workUnit;
+  }
+
+  @Test
+  public void testDrainsAllCompletedUnitsInSingleCommit() throws Throwable {
+    PartitionManager.WorkUnit first = enqueue(109);
+    PartitionManager.WorkUnit second = enqueue(119);
+    PartitionManager.WorkUnit third = enqueue(129);
+
+    // the later units finish first - nothing may be committed while the head is in flight
+    CompletableFuture<Void> firstWork = new CompletableFuture<>();
+    first.workItems.add(firstWork);
+    second.workItems.add(CompletableFuture.completedFuture(null));
+    third.workItems.add(CompletableFuture.completedFuture(null));
+
+    partitionManager.checkOffsetsAndUpdate(PARTITION);
+
+    verify(consumer, never()).commitSync(anyMap());
+    assertEquals(3, work.partitionQueue.size());
+
+    // once the head completes, all three retire under a single commit of the furthest offset
+    firstWork.complete(null);
+    partitionManager.checkOffsetsAndUpdate(PARTITION);
+
+    verify(consumer).commitSync(Map.of(PARTITION, new OffsetAndMetadata(130)));
+    verifyNoMoreInteractions(consumer);
+    assertEquals(0, work.partitionQueue.size());
+  }
+
+  @Test
+  public void testStopsAtFirstIncompleteUnit() throws Throwable {
+    PartitionManager.WorkUnit first = enqueue(109);
+    PartitionManager.WorkUnit second = enqueue(119);
+    enqueue(129);
+
+    first.workItems.add(CompletableFuture.completedFuture(null));
+    second.workItems.add(new CompletableFuture<>());
+
+    partitionManager.checkOffsetsAndUpdate(PARTITION);
+
+    // only the first unit's records are done, so only its offset may be committed
+    verify(consumer).commitSync(Map.of(PARTITION, new OffsetAndMetadata(110)));
+    verifyNoMoreInteractions(consumer);
+    assertEquals(2, work.partitionQueue.size());
+    assertSame(second, work.partitionQueue.peek());
+  }
+
+  @Test
+  public void testAssignRecordThrowsOnOutOfOrderOffset() {
+    PartitionManager.WorkUnit unit = new PartitionManager.WorkUnit(PARTITION);
+    work.assignRecord(unit, 109);
+
+    try {
+      work.assignRecord(unit, 108);
+      fail("expected an out-of-order record offset to be rejected");
+    } catch (IllegalStateException e) {
+      // expected
+    }
+  }
+
+  @Test
+  public void testFailedWorkItemPropagatesAndBlocksTheCommit() {
+    PartitionManager.WorkUnit first = enqueue(109);
+    first.workItems.add(CompletableFuture.failedFuture(new IllegalStateException("boom")));
+
+    try {
+      partitionManager.checkOffsetsAndUpdate(PARTITION);
+      fail("expected the work item failure to be rethrown");
+    } catch (Throwable e) {
+      assertEquals(IllegalStateException.class, e.getClass());
+      assertEquals("boom", e.getMessage());
+    }
+
+    verify(consumer, never()).commitSync(anyMap());
+  }
+
   /**
    * Should return the existing PartitionWork when the partition is already in the partitionWorkMap
    */
   @Test
-  public void getPartitionWorkWhenPartitionInMap() {
+  public void testPartitionWorkWhenPartitionInMap() {
     KafkaConsumer<String, MirroredSolrRequest<?>> consumer = mock(KafkaConsumer.class);
     PartitionManager partitionManager = new PartitionManager(consumer);
     TopicPartition partition = new TopicPartition("test-topic", 0);
@@ -65,7 +170,7 @@ public class PartitionManagerTest {
 
   /** Should create a new PartitionWork when the partition is not in the partitionWorkMap */
   @Test
-  public void getPartitionWorkWhenPartitionNotInMap() {
+  public void testPartitionWorkWhenPartitionNotInMap() {
     KafkaConsumer<String, MirroredSolrRequest<?>> consumer = mock(KafkaConsumer.class);
     PartitionManager partitionManager = new PartitionManager(consumer);
     TopicPartition partition = new TopicPartition("test-topic", 0);
@@ -79,7 +184,7 @@ public class PartitionManagerTest {
 
   /** Should not update the offset when the future for update is not done */
   @Test
-  public void checkForOffsetUpdatesWhenFutureNotDone() throws Throwable {
+  public void testForOffsetUpdatesWhenFutureNotDone() throws Throwable {
     KafkaConsumer<String, MirroredSolrRequest<?>> consumer = mock(KafkaConsumer.class);
     PartitionManager partitionManager = new PartitionManager(consumer);
     TopicPartition partition = new TopicPartition("test-topic", 0);
@@ -88,9 +193,9 @@ public class PartitionManagerTest {
     Future<?> future = mock(Future.class);
     when(future.isDone()).thenReturn(false);
     workUnit.workItems.add(future);
-    partitionWork.partitionQueue.add(workUnit);
+    partitionWork.assignRecord(workUnit, 0);
 
-    partitionManager.checkForOffsetUpdates(partition);
+    partitionManager.checkOffsetsAndUpdate(partition);
 
     assertEquals(1, partitionWork.partitionQueue.size());
     assertTrue(partitionWork.partitionQueue.contains(workUnit));
@@ -98,14 +203,14 @@ public class PartitionManagerTest {
 
   /** Should update the offset when the future for update is done */
   @Test
-  public void checkForOffsetUpdatesWhenFutureDone() throws Throwable {
+  public void testForOffsetUpdatesWhenFutureDone() throws Throwable {
     KafkaConsumer<String, MirroredSolrRequest<?>> consumer = mock(KafkaConsumer.class);
     PartitionManager partitionManager = new PartitionManager(consumer);
     TopicPartition partition = new TopicPartition("test-topic", 0);
 
     PartitionManager.PartitionWork partitionWork = partitionManager.getPartitionWork(partition);
     PartitionManager.WorkUnit workUnit = new PartitionManager.WorkUnit(partition);
-    partitionWork.partitionQueue.add(workUnit);
+    partitionWork.assignRecord(workUnit, 0);
 
     // Use a real Future instead of a mocked one
     ExecutorService executor =
@@ -121,7 +226,7 @@ public class PartitionManagerTest {
     // Wait for the Future to completeE
     future.get(10, TimeUnit.SECONDS);
 
-    partitionManager.checkForOffsetUpdates(partition);
+    partitionManager.checkOffsetsAndUpdate(partition);
 
     // Verify that the consumer.commitSync() method was called with the correct parameters
     verify(consumer, times(1))
@@ -136,7 +241,8 @@ public class PartitionManagerTest {
 
   /** Should check for offset updates for all partitions in the partitionWorkMap */
   @Test
-  public void checkOffsetUpdatesForAllPartitions() throws Throwable { // Create a mock KafkaConsumer
+  public void testOffsetUpdatesForAllPartitions() throws Throwable {
+    // Create a mock KafkaConsumer
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
 
     // Create a PartitionManager instance with the mock KafkaConsumer
@@ -154,8 +260,8 @@ public class PartitionManagerTest {
     PartitionManager.WorkUnit workUnit1 = new PartitionManager.WorkUnit(partition1);
     PartitionManager.WorkUnit workUnit2 = new PartitionManager.WorkUnit(partition2);
 
-    work1.partitionQueue.add(workUnit1);
-    work2.partitionQueue.add(workUnit2);
+    work1.assignRecord(workUnit1, 0);
+    work2.assignRecord(workUnit2, 0);
 
     // Create mock Futures and add them to the WorkUnits
     Future<?> mockFuture1 = mock(Future.class);
@@ -168,8 +274,8 @@ public class PartitionManagerTest {
     when(mockFuture1.isDone()).thenReturn(true);
     when(mockFuture2.isDone()).thenReturn(true);
 
-    // Call the checkOffsetUpdates method
-    partitionManager.checkOffsetUpdates();
+    // Call the checkOffsetsAndUpdate method
+    partitionManager.checkOffsetsAndUpdate();
 
     // Verify that the futures were checked for completion
     verify(mockFuture1, times(1)).isDone();

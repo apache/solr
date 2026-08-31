@@ -245,9 +245,6 @@ public class KafkaCrossDcConsumerTest {
     MirroredSolrRequest<?> request = new MirroredSolrRequest<>(new UpdateRequest());
     IQueueHandler.Result<MirroredSolrRequest<?>> failedResubmitResult =
         new IQueueHandler.Result<>(IQueueHandler.ResultStatus.FAILED_RESUBMIT, null, request);
-    // SolrMessageProcessor mockMessageProcessor = mock(SolrMessageProcessor.class);
-    // when(mockMessageProcessor.handleItem(any(MirroredSolrRequest.class)))
-    //     .thenReturn(failedResubmitResult);
 
     // Mock the KafkaMirroringSink
     KafkaMirroringSink mockKafkaMirroringSink = mock(KafkaMirroringSink.class);
@@ -406,7 +403,7 @@ public class KafkaCrossDcConsumerTest {
       }
       // Create a valid MirroredSolrRequest
       ConsumerRecord<String, MirroredSolrRequest<?>> record =
-          new ConsumerRecord<>("test-topic", 0, 0, "key", new MirroredSolrRequest<>(validRequest));
+          new ConsumerRecord<>("test-topic", 0, i, "key", new MirroredSolrRequest<>(validRequest));
       records.add(record);
     }
     ConsumerRecords<String, MirroredSolrRequest<?>> consumerRecords =
