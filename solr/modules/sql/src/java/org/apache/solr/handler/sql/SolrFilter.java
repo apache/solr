@@ -271,7 +271,7 @@ class SolrFilter extends Filter implements SolrRel {
         throw new AssertionError("expected 1 operand for " + node);
       }
 
-      final RexNode left = operands.get(0);
+      final RexNode left = operands.getFirst();
       if (left instanceof RexInputRef) {
         String name = fieldNames.get(((RexInputRef) left).getIndex());
         SqlKind kind = node.getKind();
@@ -325,23 +325,23 @@ class SolrFilter extends Filter implements SolrRel {
           }
         }
 
-        String query = "";
+        StringBuilder query = new StringBuilder();
         if (!andStrings.isEmpty()) {
           String andString = String.join(" AND ", andStrings);
-          query += "(" + andString + ")";
+          query.append("(").append(andString).append(")");
         }
         if (!notStrings.isEmpty()) {
           if (!query.isEmpty()) {
-            query += " AND ";
+            query.append(" AND ");
           }
           for (int i = 0; i < notStrings.size(); i++) {
             if (i > 0) {
-              query += " AND ";
+              query.append(" AND ");
             }
-            query += " (*:* -" + notStrings.get(i) + ")";
+            query.append(" (*:* -").append(notStrings.get(i)).append(")");
           }
         }
-        return query.trim();
+        return query.toString().trim();
       } else {
         return String.join(" AND ", andStrings);
       }
@@ -402,7 +402,7 @@ class SolrFilter extends Filter implements SolrRel {
     protected String translateComparison(RexNode node) {
       final SqlKind kind = node.getKind();
       if (kind == SqlKind.NOT) {
-        RexNode negated = ((RexCall) node).getOperands().get(0);
+        RexNode negated = ((RexCall) node).getOperands().getFirst();
         if (negated.isA(SqlKind.AND)) {
           AndClause andClause = translateAndOrBetween(negated, true);
           // if the resulting andClause is a "between" then don't negate it as it's already
@@ -789,7 +789,7 @@ class SolrFilter extends Filter implements SolrRel {
           notBuilder.append(")");
         }
 
-        return "and(" + builder.toString() + "," + notBuilder.toString() + ")";
+        return "and(" + builder + "," + notBuilder + ")";
       } else {
         return builder.toString();
       }
