@@ -303,7 +303,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         assertNotNull(map.get("c1"));
 
         Stat stat = new Stat();
-        zkClient.getData(ZkStateReader.getCollectionPath("c1"), null, stat);
+        zkClient.getData(DocCollection.getCollectionPath("c1"), null, stat);
         assertEquals(
             Instant.ofEpochMilli(stat.getCtime()),
             clusterState.getCollection("c1").getCreationTime());
@@ -364,7 +364,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         state = reader.getClusterState();
 
         Stat stat = new Stat();
-        zkClient.getData(ZkStateReader.getCollectionPath("c2"), null, stat);
+        zkClient.getData(DocCollection.getCollectionPath("c2"), null, stat);
         assertEquals(
             Instant.ofEpochMilli(stat.getCtime()), state.getCollection("c2").getCreationTime());
 

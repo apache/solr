@@ -18,9 +18,8 @@ import java.util.stream.Collectors
  */
 
 // This adds validation of project dependencies:
-// 1) license file
-// 2) notice file
-// 3) checksum validation/ generation.
+// 1) license + notice files (only for dependencies shipped in the binary distribution)
+// 2) checksum validation/ generation (for all dependencies, including test-only ones).
 
 // WARNING: The tasks in this file share internal state between tasks without using files.
 // Because of this all tasks here must always execute together, so they cannot define task outputs.
@@ -31,9 +30,7 @@ def failOnError = true
 
 // We're using commons-codec for computing checksums.
 buildscript {
-  repositories {
-    mavenCentral()
-  }
+  apply from: rootProject.file('build-tools/build-infra/declare-repositories.gradle'), to: delegate
 
   dependencies {
     classpath libs.commonscodec.commonscodec
@@ -64,6 +61,14 @@ def licenseTypes = [
     "COMPOUND": [name: "Compound license (details in NOTICE file)."],
 ]
 
+// Projects whose runtime dependencies ship in the binary distribution.
+// Keep in sync with gradle/solr/packaging.gradle and solr/packaging/build.gradle.
+rootProject.ext.isDistShippingProject = { Project p ->
+  p.path == ":solr:server" ||
+      p.path.startsWith(":solr:modules:") ||
+      p.path == ":solr:cross-dc-manager"
+}
+
 allprojects {
   task licenses() {
     group = 'Dependency validation'
@@ -78,6 +83,11 @@ subprojects {
   // be verified.
   project.configurations {
     jarValidation
+    // Dependencies shipped in the binary distribution; LICENSE/NOTICE required only for these.
+    distJarValidation {
+      canBeConsumed = false
+      canBeResolved = false // parents are resolved individually; also keeps it out of dependency locking
+    }
   }
 
   // For Java projects, add all dependencies from the following configurations
@@ -95,6 +105,10 @@ subprojects {
     // Align jarValidation with tested runtimeClasspath versions
     // This ensures validation uses the same versions that were tested
     alignWithRuntimeClasspath(configurations.jarValidation)
+
+    if (rootProject.ext.isDistShippingProject(project)) {
+      project.configurations.distJarValidation.extendsFrom project.configurations.runtimeClasspath
+    }
   }
 
   // Collects dependency JAR information for a project and saves it in
@@ -107,34 +121,40 @@ subprojects {
     doFirst {
       // When gradle resolves a configuration it applies exclude rules from inherited configurations
       // globally (this seems like a bug to me). So we process each inherited configuration independently
-      // but make sure there are no other dependencies on jarValidation itself.
-      if (!configurations.jarValidation.dependencies.isEmpty()) {
-        throw new GradleException(
-            "jarValidation must only inherit from other configurations (can't have its own dependencies).")
-      }
+      // but make sure there are no other dependencies on the validation configuration itself.
+      def resolvableParents = { Configuration validationConf ->
+        if (!validationConf.dependencies.isEmpty()) {
+          throw new GradleException(
+              "${validationConf.name} must only inherit from other configurations (can't have its own dependencies).")
+        }
 
-      def excludeRules = configurations.jarValidation.excludeRules
-      List<Map<String, String>> excludeRuleMaps;
-      if (excludeRules && excludeRules.size() > 0) {
-        excludeRuleMaps = excludeRules.stream().map {rule ->
-          if (rule.module != null) {
-            Map.of("group", rule.group, "module", rule.module)
-          } else {
-            Map.of("group", rule.group)
+        def excludeRules = validationConf.excludeRules
+        List<Map<String, String>> excludeRuleMaps;
+        if (excludeRules && excludeRules.size() > 0) {
+          excludeRuleMaps = excludeRules.stream().map {rule ->
+            if (rule.module != null) {
+              Map.of("group", rule.group, "module", rule.module)
+            } else {
+              Map.of("group", rule.group)
+            }
+          }.collect(Collectors.toList())
+        }
+
+        return validationConf.extendsFrom.collect {conf ->
+          if (excludeRules && excludeRules.size() > 0) {
+            def source = conf
+            conf = source.copyRecursive()
+            conf.canBeResolved = true
+            pinCopyToSource(conf, source)
+            excludeRuleMaps.forEach {conf.exclude(it)}
           }
-        }.collect(Collectors.toList())
+          conf
+        }.findAll {conf -> conf.canBeResolved}
       }
 
       ArrayDeque<ResolvedDependency> queue = new ArrayDeque<>()
-      configurations.jarValidation.extendsFrom.each {conf ->
-        if (excludeRules && excludeRules.size() > 0) {
-          conf = conf.copyRecursive()
-          conf.canBeResolved = true
-          excludeRuleMaps.forEach {conf.exclude(it)}
-        }
-        if (conf.canBeResolved) {
-          queue.addAll(conf.resolvedConfiguration.firstLevelModuleDependencies)
-        }
+      resolvableParents(configurations.jarValidation).each {conf ->
+        queue.addAll(conf.resolvedConfiguration.firstLevelModuleDependencies)
       }
 
       def visited = new HashSet<>()
@@ -175,6 +195,13 @@ subprojects {
 
       project.ext.jarInfos = infos.sort {a, b -> "${a.module}".compareTo("${b.module}")}
       // jarInfos.each { info -> println "${info.module}" }
+
+      // Full transitive set of jars this project contributes to the binary distribution.
+      def distFiles = new HashSet<File>()
+      resolvableParents(configurations.distJarValidation).each {conf ->
+        conf.resolvedConfiguration.resolvedArtifacts.each {artifact -> distFiles.add(artifact.file)}
+      }
+      project.ext.distJarFiles = distFiles
     }
   }
 
@@ -228,12 +255,20 @@ subprojects {
   // 'commons-LICENSE.txt'
   tasks.register('validateJarLicenses') {
     group = 'Dependency validation'
-    description = "Validate license and notice files of dependencies"
+    description = "Validate license and notice files of dependencies shipped in the binary distribution"
     dependsOn collectJarInfos
+    // The shipped set is global: a jar reachable only through another Solr project
+    // (e.g. lucene-core via :solr:core) is validated here but ships via :solr:server.
+    dependsOn rootProject.subprojects
+        .findAll {p -> rootProject.ext.isDistShippingProject(p)}
+        .collect {p -> "${p.path}:collectJarInfos"}
 
     doLast {
+      def distJarFiles = rootProject.subprojects
+          .findAll {p -> rootProject.ext.isDistShippingProject(p)}
+          .collectMany {p -> p.ext.has('distJarFiles') ? p.ext.distJarFiles : []} as Set
       def errors = []
-      jarInfos.each {dep ->
+      jarInfos.findAll {dep -> distJarFiles.contains(dep.path)}.each {dep ->
         def baseName = dep.name
         def found = []
         def candidates = []
@@ -361,9 +396,9 @@ configure(plist) {
     }
 
     doFirst {
-      def allReferenced = validationTasks
       // Only collect for enabled tasks: https://issues.apache.org/jira/browse/LUCENE-9780
-          .findAll {it.enabled}
+      def enabledValidationTasks = validationTasks.findAll {it.enabled}
+      def allReferenced = enabledValidationTasks
           .collectMany {task ->
             task.project.jarInfos.collectMany {it.referencedFiles}
           }
@@ -377,9 +412,13 @@ configure(plist) {
       def dangling = (allExisting - allReferenced).sort()
 
       if (dangling) {
-        gradle.buildFinished {
-          logger
-              .warn("WARNING: there were unreferenced files under license folder:\n  - ${dangling.join("\n  - ")}")
+        def msg = "Unreferenced files present in the licenses folder. Delete stale LICENSE/NOTICE " +
+            "files manually, or run 'gradlew updateLicenses' to regenerate .sha1 files:\n  - ${dangling.join("\n  - ")}"
+        // Only fail when all validation tasks ran, otherwise the reference list is incomplete.
+        if (failOnError && enabledValidationTasks.size() == validationTasks.size()) {
+          throw new GradleException(msg)
+        } else {
+          logger.warn("WARNING: ${msg}")
         }
       }
     }

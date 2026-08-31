@@ -25,13 +25,12 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-phrasesuggest.xml", "schema-phrasesuggest.xml");
-    assertQ(req("qt", URI, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));
+    assertQ(reqWithPath(URI, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));
   }
 
   public void testLinearBlenderType() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "the",
@@ -53,8 +52,7 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
 
   public void testReciprocalBlenderType() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "the",
@@ -78,8 +76,7 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
       testExponentialReciprocalBlenderTypeExponent1() { // exponent=1 will give same output as
     // reciprocal
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "the",
@@ -101,8 +98,7 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
 
   public void testExponentialReciprocalBlenderType() { // default is exponent=2.0
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "the",
@@ -124,8 +120,7 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
 
   public void testMultiSuggester() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "the",
@@ -160,8 +155,7 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
   public void testSuggestCount() {
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "the",
@@ -172,8 +166,7 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='blended_infix_suggest_reciprocal']/lst[@name='the']/int[@name='numFound'][.='1']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "the",
@@ -184,8 +177,7 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='blended_infix_suggest_reciprocal']/lst[@name='the']/int[@name='numFound'][.='2']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "the",
@@ -196,8 +188,7 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='blended_infix_suggest_reciprocal']/lst[@name='the']/int[@name='numFound'][.='3']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "the",

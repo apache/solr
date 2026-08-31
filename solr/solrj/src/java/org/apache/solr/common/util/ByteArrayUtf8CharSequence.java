@@ -72,14 +72,6 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     return buf[offset + idx];
   }
 
-  /**
-   * this is for internal use, to get a cached string value. returns null if there is no cached
-   * String value
-   */
-  public String getStringOrNull() {
-    return utf16;
-  }
-
   @Override
   public int write(int start, byte[] buffer, int pos) {
     return _writeBytes(buf, offset, length, start, buffer, pos);
@@ -203,7 +195,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
       }
     }
     if (needsCopy) {
-      Collection<Object> copy = null;
+      Collection<Object> copy;
       if (vals instanceof Set) {
         copy = CollectionUtil.newHashSet(vals.size());
       } else {
@@ -217,7 +209,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
 
   public static Object convertCharSeq(Object o) {
     if (o == null) return null;
-    if (o instanceof Utf8CharSequence) return ((Utf8CharSequence) o).toString();
+    if (o instanceof Utf8CharSequence) return o.toString();
     if (o instanceof Collection) return convertCharSeq((Collection<?>) o);
     return o;
   }

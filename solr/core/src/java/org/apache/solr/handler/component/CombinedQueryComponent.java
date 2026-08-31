@@ -455,10 +455,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     populateNextCursorMarkFromMergedShards(rb);
 
     if (thereArePartialResults) {
-      rb.rsp
-          .getResponseHeader()
-          .asShallowMap()
-          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      updateResponseHeader(
+          rb.rsp.getResponseHeader(),
+          SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY,
+          Boolean.TRUE);
     }
     if (segmentTerminatedEarly != null) {
       final Object existingSegmentTerminatedEarly =
@@ -472,12 +472,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                 SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
                 segmentTerminatedEarly);
       } else if (!Boolean.TRUE.equals(existingSegmentTerminatedEarly) && segmentTerminatedEarly) {
-        rb.rsp
-            .getResponseHeader()
-            .remove(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
-        rb.rsp
-            .getResponseHeader()
-            .add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, true);
+        updateResponseHeader(
+            rb.rsp.getResponseHeader(),
+            SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
+            true);
       }
     }
     if (maxHitsTerminatedEarly) {

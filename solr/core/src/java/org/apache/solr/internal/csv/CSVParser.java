@@ -254,14 +254,14 @@ public class CSVParser {
    * @throws IOException on stream access error
    */
   protected Token nextToken(Token tkn) throws IOException {
-    wsBuf.clear(); // resuse
+    wsBuf.clear(); // reuse
 
     // get the last read char (required for empty line detection)
     int lastChar = in.readAgain();
 
     //  read the next char and set eol
-    /* note: unfortunately isEndOfLine may consumes a character silently.
-     *       this has no effect outside of the method. so a simple workaround
+    /* note: unfortunately isEndOfLine may consume a character silently.
+     *       this has no effect outside the method. so a simple workaround
      *       is to call 'readAgain' on the stream...
      *       uh: might using objects instead of base-types (jdk1.5 autoboxing!)
      */
@@ -286,7 +286,7 @@ public class CSVParser {
       }
     }
 
-    // did we reached eof during the last iteration already ? TT_EOF
+    // did we reach eof during the last iteration already ? TT_EOF
     if (isEndOfFile(lastChar) || (lastChar != strategy.getDelimiter() && isEndOfFile(c))) {
       tkn.type = TT_EOF;
       return tkn;
@@ -302,7 +302,7 @@ public class CSVParser {
       }
       // ok, start of token reached: comment, encapsulated, or token
       if (c == strategy.getCommentStart()) {
-        // ignore everything till end of line and continue (incr linecount)
+        // ignore everything till end of line and continue (increment line count)
         in.readLine();
         tkn = nextToken(tkn.reset());
       } else if (c == strategy.getDelimiter()) {
@@ -464,7 +464,7 @@ public class CSVParser {
    *
    * @param c current char which is discarded because it's the "\\" of "\\uXXXX"
    * @return the decoded character
-   * @throws IOException on wrong unicode escape sequence or read error
+   * @throws IOException on wrong Unicode escape sequence or read error
    */
   protected int unicodeEscapeLexer(int c) throws IOException {
     int ret = 0;
@@ -482,12 +482,7 @@ public class CSVParser {
       ret = Integer.parseInt(code.toString(), 16);
     } catch (NumberFormatException e) {
       throw new IOException(
-          "(line "
-              + getLineNumber()
-              + ") Wrong unicode escape sequence found '"
-              + code.toString()
-              + "'"
-              + e.toString());
+          "(line " + getLineNumber() + ") Wrong unicode escape sequence found '" + code + "'" + e);
     }
     return ret;
   }

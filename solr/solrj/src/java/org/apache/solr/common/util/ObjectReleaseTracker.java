@@ -21,7 +21,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,16 +33,6 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public class ObjectReleaseTracker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final List<String> DEFAULT_STACK_FILTERS =
-      Arrays.asList(
-          new String[] {
-            "org.junit.",
-            "junit.framework.",
-            "sun.",
-            "java.lang.reflect.",
-            "com.carrotsearch.randomizedtesting.",
-          });
 
   public static final Map<Object, Exception> OBJECTS = new ConcurrentHashMap<>();
 

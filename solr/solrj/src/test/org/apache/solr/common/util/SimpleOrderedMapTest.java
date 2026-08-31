@@ -193,6 +193,24 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     assertFalse(map.containsKey("two"));
   }
 
+  /** The MapWriter constructor copies rather than returning a live view. */
+  @Test
+  public void testMapWriterConstructorCopiesRatherThanViewing() {
+    final NamedList<Integer> source = new NamedList<>();
+    source.add("one", 1);
+
+    final SimpleOrderedMap<Integer> copy = new SimpleOrderedMap<>(source);
+    assertEquals(Integer.valueOf(1), copy.get("one"));
+
+    copy.put("one", 11);
+    assertEquals(
+        "mutating the copy must not reach the source", Integer.valueOf(1), source.get("one"));
+    assertEquals(Integer.valueOf(11), copy.get("one"));
+
+    source.add("two", 2);
+    assertNull("adding to the source must not reach the copy", copy.get("two"));
+  }
+
   private void setupData() {
     map.add("one", 1);
     map.add("two", 2);

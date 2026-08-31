@@ -15,7 +15,7 @@
  limitations under the License.
 */
 
-solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, $cookies, $window, Constants, SchemaDesigner, Luke) {
+solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, $cookies, $window, Constants, SchemaDesigner, ConfigSetFiles, Luke) {
   $scope.resetMenu("schema-designer", Constants.IS_ROOT_PAGE);
 
   $scope.schemas = [];
@@ -239,7 +239,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     }
 
     $scope.resetSchema();
-    var params = {path: "info", configSet: $scope.currentSchema};
+    var params = {configSet: $scope.currentSchema};
     SchemaDesigner.get(params, function (data) {
       $scope.currentSchema = data.configSet;
       $("#select-schema").trigger("chosen:updated");
@@ -582,7 +582,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       $scope.addErrors.push($scope.adding + " name is required!");
     }
 
-    if ($scope.newField.name.indexOf(" ") != -1) {
+    if ($scope.newField.name && $scope.newField.name.indexOf(" ") != -1) {
       $scope.addErrors.push($scope.adding + " name should not have whitespace");
     }
 
@@ -595,7 +595,8 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       }
 
       // TODO: is this the correct logic for detecting dynamic? Probably good enough for the designer
-      var isDynamic = $scope.newField.name.startsWith("*") || $scope.newField.name.endsWith("*");
+      var isDynamic = !!$scope.newField.name &&
+          ($scope.newField.name.startsWith("*") || $scope.newField.name.endsWith("*"));
       if (isDynamic) {
         if ($scope.luke && $scope.luke.dynamic_fields[$scope.newField.name]) {
           $scope.addErrors.push("dynamic field '" + $scope.newField.name + "' already exists!");
@@ -656,7 +657,6 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     delete $scope.addErrors; // no errors!
 
     SchemaDesigner.post({
-      path: "add",
       configSet: $scope.currentSchema,
       schemaVersion: $scope.schemaVersion
     }, addData, function (data) {
@@ -673,9 +673,9 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
           $scope.added = false;
           var nodeId = "/";
           if ("field" === $scope.adding) {
-            nodeId = "field/" + data[command];
+            nodeId = "field/" + ("add-dynamic-field" === command ? data.dynamicField : data.field);
           } else if ("type" === $scope.adding) {
-            nodeId = "type/" + data[command];
+            nodeId = "type/" + data.fieldType;
           }
           $scope.onSchemaUpdated(data.configSet, data, nodeId);
         }, 500);
@@ -791,7 +791,6 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     delete $scope.addCopyFieldErrors;
     var data = {"add-copy-field": $scope.copyField};
     SchemaDesigner.post({
-      path: "add",
       configSet: $scope.currentSchema,
       schemaVersion: $scope.schemaVersion
     }, data, function (data) {
@@ -887,10 +886,10 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     $scope.updateWorking = true;
     $scope.updateStatusMessage = "Updating file ...";
 
-    SchemaDesigner.post(params, $scope.fileNodeText, function (data) {
+    SchemaDesigner.put(params, $scope.fileNodeText, function (data) {
       if (data.updateFileError) {
-        if (data[$scope.selectedFile]) {
-          $scope.fileNodeText = data[$scope.selectedFile];
+        if (data.fileContent) {
+          $scope.fileNodeText = data.fileContent;
         }
         $scope.updateFileError = data.updateFileError;
       } else {
@@ -904,9 +903,9 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   $scope.onSelectFileNode = function (id, doSelectOnTree) {
     $scope.selectedFile = id.startsWith("files/") ? id.substring("files/".length) : id;
 
-    var params = {path: "file", file: $scope.selectedFile, configSet: $scope.currentSchema};
-    SchemaDesigner.get(params, function (data) {
-      $scope.fileNodeText = data[$scope.selectedFile];
+    var mutableId = "._designer_" + $scope.currentSchema;
+    ConfigSetFiles.get({configSet: mutableId, filePath: $scope.selectedFile}, function (data) {
+      $scope.fileNodeText = data.content;
       $scope.isLeafNode = false;
       if (doSelectOnTree) {
         delete $scope.selectedNode;
@@ -1389,7 +1388,6 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     $scope.updateStatusMessage = "Updating " + $scope.selectedType + " ...";
 
     SchemaDesigner.put({
-      path: "update",
       configSet: $scope.currentSchema,
       schemaVersion: $scope.schemaVersion
     }, putData, function (data) {
@@ -1522,11 +1520,13 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   };
 
   $scope.downloadConfig = function () {
-    // have to use an AJAX request so we can supply the Authorization header
+    // Use the generic configsets download endpoint on the mutable draft
+    var mutableId = "._designer_" + $scope.currentSchema;
+    var downloadUrl = "/api/configsets/" + encodeURIComponent(mutableId) + "/files";
     if (sessionStorage.getItem("auth.header")) {
       var fileName = $scope.currentSchema+"_configset.zip";
       var xhr = new XMLHttpRequest();
-      xhr.open("GET", "/api/schema-designer/download/"+fileName+"?wt=raw&configSet="+$scope.currentSchema, true);
+      xhr.open("GET", downloadUrl, true);
       xhr.setRequestHeader('Authorization', sessionStorage.getItem("auth.header"));
       xhr.responseType = 'blob';
       xhr.addEventListener('load',function() {
@@ -1543,7 +1543,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       })
       xhr.send();
     } else {
-      location.href = "/api/schema-designer/download/"+$scope.currentSchema+"_configset.zip?wt=raw&configSet=" + $scope.currentSchema;
+      location.href = downloadUrl;
     }
   };
 
@@ -1834,6 +1834,11 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     }
 
     SchemaDesigner.get(params, function (data) {
+      if (data.updateError != null) {
+        $scope.onError(data.updateError, data.updateErrorCode, data.errorDetails);
+        return;
+      }
+
       $("#sort").trigger("chosen:updated");
       $("#ff").trigger("chosen:updated");
       $("#hl").trigger("chosen:updated");

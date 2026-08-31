@@ -86,7 +86,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     this.supportMissingVersionOnOldDocs = supportMissingVersionOnOldDocs;
     this.core = req.getCore();
     this.versionFieldNames = versionFields.toArray(EMPTY_STR_ARR);
-    IndexSchema schema = core.getLatestSchema();
+    IndexSchema schema = req.getSchema();
     userVersionFields = new SchemaField[versionFieldNames.length];
     for (int i = 0; i < versionFieldNames.length; i++) {
       userVersionFields[i] = schema.getField(versionFieldNames[i]);
@@ -469,7 +469,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
 
       SolrInputDocument newDoc =
           createTombstoneDocument(
-              core.getLatestSchema(),
+              cmd.getReq().getSchema(),
               cmd.getId(),
               versionFieldNames,
               deleteParamValues,
@@ -500,7 +500,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
 
         SolrInputDocument newDoc =
             createTombstoneDocument(
-                core.getLatestSchema(),
+                cmd.getReq().getSchema(),
                 cmd.getId(),
                 versionFieldNames,
                 deleteParamValues,

@@ -1,0 +1,11 @@
+title: >
+  Upgraded the bundled jQuery UI library (used for tooltips in the Admin UI's
+  Cloud graph view) from an old, unversioned build to 1.13.3, resolving
+  CVE-2021-41182, CVE-2021-41183, and CVE-2021-41184. Also added the missing
+  jQuery UI attribution to NOTICE.txt.
+type: dependency_update
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-16309
+    url: https://issues.apache.org/jira/browse/SOLR-16309

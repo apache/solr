@@ -26,6 +26,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.jetty.MutableListenerFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -69,6 +70,8 @@ public class UpdateShardHandler implements SolrInfoBean {
   private final HttpJettySolrClient recoveryOnlyClient;
 
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
+
+  private final MutableListenerFactory securityListenerFactory = new MutableListenerFactory();
 
   private SolrMetricsContext solrMetricsContext;
 
@@ -115,9 +118,12 @@ public class UpdateShardHandler implements SolrInfoBean {
           .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
 
-    updateOnlyClientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
+    updateOnlyClientBuilder
+        .withTheseParamNamesInTheUrl(urlParamNames)
+        .addListenerFactory(securityListenerFactory);
     updateOnlyClient = updateOnlyClientBuilder.build();
 
+    recoveryOnlyClientBuilder.addListenerFactory(securityListenerFactory);
     recoveryOnlyClient = recoveryOnlyClientBuilder.build();
 
     ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
@@ -244,7 +250,6 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   public void setSecurityBuilder(HttpClientBuilderPlugin builder) {
-    builder.setup(updateOnlyClient);
-    builder.setup(recoveryOnlyClient);
+    builder.setup(securityListenerFactory);
   }
 }

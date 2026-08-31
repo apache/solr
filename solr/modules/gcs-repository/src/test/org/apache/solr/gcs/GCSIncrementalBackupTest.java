@@ -26,6 +26,7 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.Nightly
 @ThreadLeakLingering(linger = 10)
 @LuceneTestCase.SuppressCodecs({
   "SimpleText"

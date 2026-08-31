@@ -151,29 +151,6 @@ public class KafkaCrossDcConsumerTest {
     kafkaCrossDcConsumer.shutdown();
   }
 
-  private ConsumerRecord<String, MirroredSolrRequest<?>> createSampleConsumerRecord() {
-    return new ConsumerRecord<>("sample-topic", 0, 0, "key", createSampleMirroredSolrRequest());
-  }
-
-  private ConsumerRecords<String, MirroredSolrRequest<?>> createSampleConsumerRecords() {
-    TopicPartition topicPartition = new TopicPartition("sample-topic", 0);
-    List<ConsumerRecord<String, MirroredSolrRequest<?>>> recordsList = new ArrayList<>();
-    recordsList.add(
-        new ConsumerRecord<>("sample-topic", 0, 0, "key", createSampleMirroredSolrRequest()));
-    return new ConsumerRecords<>(Map.of(topicPartition, recordsList));
-  }
-
-  private MirroredSolrRequest<?> createSampleMirroredSolrRequest() {
-    // Create a sample MirroredSolrRequest for testing
-    SolrInputDocument solrInputDocument = new SolrInputDocument();
-    solrInputDocument.addField("id", "1");
-    solrInputDocument.addField("title", "Sample title");
-    solrInputDocument.addField("content", "Sample content");
-    UpdateRequest updateRequest = new UpdateRequest();
-    updateRequest.add(solrInputDocument);
-    return new MirroredSolrRequest<>(updateRequest);
-  }
-
   /** Should create a KafkaCrossDcConsumer with the given configuration and startLatch */
   @Test
   public void kafkaCrossDcConsumerCreationWithConfigurationAndStartLatch() {
@@ -204,7 +181,7 @@ public class KafkaCrossDcConsumerTest {
   }
 
   @Test
-  public void testSolrClientSupplier() throws Exception {
+  public void testSolrClientSupplier() {
     supplier.get();
     assertEquals(1, solrClientCounter.get());
     clusterStateProviderIsClosed = true;
@@ -331,7 +308,7 @@ public class KafkaCrossDcConsumerTest {
   }
 
   @Test
-  public void testHandleValidAdminRequest() throws Exception {
+  public void testHandleValidAdminRequest() {
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
     KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
     doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED, null))

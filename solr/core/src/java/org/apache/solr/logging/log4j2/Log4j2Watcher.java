@@ -173,7 +173,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     LoggerConfig rootConfig = ctx.getConfiguration().getRootLogger();
     Map<String, LoggerInfo> map = new HashMap<>(ctx.getLoggers().size());
 
-    // First add the ROOT loger with the ROOT level
+    // First add the ROOT logger with the ROOT level
     map.put(
         LoggerInfo.ROOT_NAME,
         new Log4j2Info(

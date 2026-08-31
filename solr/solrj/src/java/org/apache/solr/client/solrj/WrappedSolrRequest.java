@@ -161,7 +161,7 @@ public class WrappedSolrRequest<T> extends SolrRequest<T> {
   }
 
   @Override
-  @Deprecated
+  @Deprecated(since = "10.1")
   public Collection<ContentStream> getContentStreams() throws IOException {
     return wrapped.getContentStreams();
   }

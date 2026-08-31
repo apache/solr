@@ -62,7 +62,8 @@ public class SpellCheckCollatorWithCollapseTest extends SolrTestCaseJ4 {
           params(CommonParams.FQ, "{!collapse tag=collapser field=group_i}")
         }) {
       assertQ(
-          req(
+          reqWithPath(
+              "/spellCheckCompRH_Direct",
               params,
               SpellCheckComponent.COMPONENT_NAME,
               "true",
@@ -78,8 +79,6 @@ public class SpellCheckCollatorWithCollapseTest extends SolrTestCaseJ4 {
               "1",
               CommonParams.Q,
               "a_s:lpve",
-              CommonParams.QT,
-              "/spellCheckCompRH_Direct",
               SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS,
               "5",
               "expand",

@@ -395,12 +395,16 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     Map<String, Integer> numReplicasByNodeName = new HashMap<>();
     restoreCollection
-        .getReplicas()
+        .getSlices()
         .forEach(
-            x -> {
-              numReplicasByNodeName.put(
-                  x.getNodeName(), numReplicasByNodeName.getOrDefault(x.getNodeName(), 0) + 1);
-            });
+            slice ->
+                slice
+                    .getReplicas()
+                    .forEach(
+                        x ->
+                            numReplicasByNodeName.put(
+                                x.getNodeName(),
+                                numReplicasByNodeName.getOrDefault(x.getNodeName(), 0) + 1)));
     numReplicasByNodeName.forEach(
         (k, v) -> {
           assertTrue(

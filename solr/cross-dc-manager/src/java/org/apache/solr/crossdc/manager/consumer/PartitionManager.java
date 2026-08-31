@@ -120,22 +120,6 @@ public class PartitionManager {
   }
 
   /**
-   * Reset the local offset so that the consumer reads the records from Kafka again.
-   *
-   * @param partition The TopicPartition to reset the offset for
-   * @param partitionRecords PartitionRecords for the specified partition
-   */
-  private void resetOffsetForPartition(
-      TopicPartition partition,
-      List<ConsumerRecord<String, MirroredSolrRequest<?>>> partitionRecords) {
-    if (log.isTraceEnabled()) {
-      log.trace("Resetting offset to: {}", partitionRecords.get(0).offset());
-    }
-    long resetOffset = partitionRecords.get(0).offset();
-    consumer.seek(partition, resetOffset);
-  }
-
-  /**
    * Logs and updates the commit point for the partition that has been processed.
    *
    * @param partition The TopicPartition to update the offset for

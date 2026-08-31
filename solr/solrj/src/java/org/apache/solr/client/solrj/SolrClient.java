@@ -1198,6 +1198,8 @@ public abstract class SolrClient implements Serializable, Closeable {
    * This method defines the context in which this Solr client is being used (e.g. for internal
    * communication between Solr nodes or as an external client). The default value is {@code
    * SolrClientContext#Client}
+   *
+   * @deprecated No replacement has been designed yet; see SOLR-14720.
    */
   @Deprecated(since = "10.1") // TODO replace or refactor; see SOLR-14720 related
   public SolrRequest.SolrClientContext getContext() {

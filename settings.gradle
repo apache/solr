@@ -16,10 +16,7 @@
  */
 
 pluginManagement {
-  repositories {
-    mavenCentral()
-    gradlePluginPortal()
-  }
+  apply from: file("build-tools/build-infra/declare-repositories.gradle"), to: delegate
 
   includeBuild("build-tools/build-infra")
 }

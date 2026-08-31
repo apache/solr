@@ -27,8 +27,7 @@ public class TestFileDictionaryLookup extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig-phrasesuggest.xml", "schema-phrasesuggest.xml");
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "",
@@ -42,8 +41,7 @@ public class TestFileDictionaryLookup extends SolrTestCaseJ4 {
 
     // tests to demonstrate default maxEdit parameter (value: 1), control for testWithMaxEdit2
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "chagn",
@@ -62,8 +60,7 @@ public class TestFileDictionaryLookup extends SolrTestCaseJ4 {
             + "']/lst[@name='chagn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "chacn",
@@ -82,8 +79,7 @@ public class TestFileDictionaryLookup extends SolrTestCaseJ4 {
             + "']/lst[@name='chacn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "chagr",
@@ -99,8 +95,7 @@ public class TestFileDictionaryLookup extends SolrTestCaseJ4 {
             + "']/lst[@name='chagr']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='charge']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "chanr",
@@ -113,8 +108,7 @@ public class TestFileDictionaryLookup extends SolrTestCaseJ4 {
             + "']/lst[@name='chanr']/int[@name='numFound'][.='3']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "cyhnce",

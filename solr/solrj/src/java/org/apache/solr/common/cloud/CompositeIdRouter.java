@@ -44,12 +44,12 @@ import org.apache.solr.common.util.Hash;
  *
  * <pre>
  * An Example:
- * If the id "contact!0000000KISS is passed 😘
- * Take "contact"" and hash it with murmurhash3_x86_32
+ * If the id "contact!0000000KISS" is passed 😘
+ * Take "contact" and hash it with murmurhash3_x86_32
  * result: -541354036
  * bits: 11011111101110111001011111001100
  *
- * Take 0000000KISS and hash it with murmurhash3_x86_32
+ * Take "0000000KISS" and hash it with murmurhash3_x86_32
  * result: 2099700320
  * bits: 01111101001001101110001001100000
  *

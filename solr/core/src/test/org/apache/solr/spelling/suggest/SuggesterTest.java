@@ -52,8 +52,7 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     assertU(commit()); // configured to do a rebuild on commit
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             requestUri,
             "q",
             "ac",
@@ -76,8 +75,7 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     waitForWarming();
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             requestUri,
             "q",
             "ac",
@@ -95,8 +93,7 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     addDocs();
     assertU(commit());
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             requestUri,
             "q",
             "ac",
@@ -108,8 +105,7 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "4", "text", "actually"));
     assertU(commit());
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             requestUri,
             "q",
             "ac",

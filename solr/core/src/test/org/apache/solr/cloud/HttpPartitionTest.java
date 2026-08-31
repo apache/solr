@@ -553,7 +553,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
   private NamedList<Object> realTimeGetDocId(SolrClient solr, String docId)
       throws SolrServerException, IOException {
-    QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
+    QueryRequest qr = new QueryRequest("/get", params("id", docId, "distrib", "false"));
     return solr.request(qr);
   }
 

@@ -236,8 +236,19 @@ public class ClientUtils {
     int len = val.length();
     if (0 == len) return "''"; // quoted empty string
 
+    // Note: QueryParsing#parseLocalParams's peek() (used to check for a '=' or the closing quote
+    // char) skips leading whitespace as a side effect, so an unquoted empty value would silently
+    // absorb the whitespace meant to separate it from the next local param, corrupting parsing of
+    // everything that follows. Quoting sidesteps this entirely.
+
     int i = 0;
-    if (len > 0 && val.charAt(0) != '$') {
+    char first = val.charAt(0);
+    // A leading '$' would be read back as a param dereference, and a leading quote char would be
+    // read back as the start of a quoted string (StrParser#getQuotedString accepts both ' and "
+    // as delimiters); both must be quoted regardless of the rest of the value.
+    if (first == '$' || first == '\'' || first == '"') {
+      // leave i == 0 so the quoting branch below is taken
+    } else {
       for (; i < len; i++) {
         char ch = val.charAt(i);
         if (Character.isWhitespace(ch) || ch == '}') break;
@@ -246,12 +257,16 @@ public class ClientUtils {
 
     if (i >= len) return val;
 
-    // We need to enclose in quotes... but now we need to escape
+    // We need to enclose in quotes... but now we need to escape.  Both the quote delimiter itself
+    // and a literal backslash must be escaped: StrParser#getQuotedString treats any '\' as the
+    // start of an escape sequence when reading a quoted value, so an un-escaped '\' here would be
+    // silently consumed (or worse, combined with the following char into an unintended escape like
+    // \n) when the value is parsed back.
     StringBuilder sb = new StringBuilder(val.length() + 4);
     sb.append('\'');
     for (i = 0; i < len; i++) {
       char ch = val.charAt(i);
-      if (ch == '\'') {
+      if (ch == '\'' || ch == '\\') {
         sb.append('\\');
       }
       sb.append(ch);

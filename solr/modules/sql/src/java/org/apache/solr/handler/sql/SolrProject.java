@@ -17,7 +17,6 @@
 package org.apache.solr.handler.sql;
 
 import java.util.List;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -57,9 +56,7 @@ class SolrProject extends Project implements SolrRel {
   public void implement(Implementor implementor) {
     implementor.visitChild(0, getInput());
     final SolrRules.RexToSolrTranslator translator =
-        new SolrRules.RexToSolrTranslator(
-            (JavaTypeFactory) getCluster().getTypeFactory(),
-            SolrRules.solrFieldNames(getInput().getRowType()));
+        new SolrRules.RexToSolrTranslator(SolrRules.solrFieldNames(getInput().getRowType()));
     for (Pair<RexNode, String> pair : getNamedProjects()) {
       final String name = pair.right;
       final String expr = pair.left.accept(translator);

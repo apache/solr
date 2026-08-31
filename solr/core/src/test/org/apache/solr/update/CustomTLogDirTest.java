@@ -25,7 +25,6 @@ import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.SolrClientTestRule;
@@ -49,7 +48,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
     SolrClient client = solrTestRule.getSolrClient(collectionName);
 
-    Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
+    Path coreRootDir = solrTestRule.getCoreContainer().getCoreRootDirectory();
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
@@ -65,7 +64,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
     SolrClient client = solrTestRule.getSolrClient(collectionName);
 
-    Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
+    Path coreRootDir = solrTestRule.getCoreContainer().getCoreRootDirectory();
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
@@ -96,7 +95,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
     SolrClient client = solrTestRule.getSolrClient(collectionName);
 
-    Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
+    Path coreRootDir = solrTestRule.getCoreContainer().getCoreRootDirectory();
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
@@ -112,7 +111,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
     SolrClient client = solrTestRule.getSolrClient(collectionName);
 
-    Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
+    Path coreRootDir = solrTestRule.getCoreContainer().getCoreRootDirectory();
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
@@ -126,7 +125,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
     SolrClient client = solrTestRule.getSolrClient(collectionName);
 
-    Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
+    Path coreRootDir = solrTestRule.getCoreContainer().getCoreRootDirectory();
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
@@ -169,7 +168,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
               .toList();
       assertNotNull(list);
       assertEquals(1, list.size());
-      CoreContainer cc = ((EmbeddedSolrServer) client).getCoreContainer();
+      CoreContainer cc = solrTestRule.getCoreContainer();
       cc.unload(collectionName, true, true, true);
       assertFalse(Files.exists(resolvedTlogDir));
     }

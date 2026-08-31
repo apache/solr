@@ -19,7 +19,7 @@ package org.apache.solr.handler.designer;
 
 import static org.apache.solr.common.util.Utils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
-import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
+import static org.apache.solr.handler.designer.SchemaDesigner.getMutableId;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 
@@ -37,6 +37,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.filestore.FileStore;
+import org.apache.solr.handler.configsets.DownloadConfigSet;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -74,7 +75,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     assertNotNull(cluster);
     cc = cluster.getJettySolrRunner(0).getCoreContainer();
     assertNotNull(cc);
-    helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester());
+    helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesigner.newSchemaSuggester());
   }
 
   @Test
@@ -112,13 +113,14 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
             configSet, schema, List.of(), true, DEFAULT_CONFIGSET_NAME);
     assertEquals(2, schema.getSchemaZkVersion());
 
-    byte[] zipped = helper.downloadAndZipConfigSet(mutableId);
+    byte[] zipped = DownloadConfigSet.zipConfigSet(cc.getConfigSetService(), mutableId);
     assertTrue(zipped != null && zipped.length > 0);
   }
 
   @Test
   public void testDownloadAndZip() throws IOException {
-    byte[] zipped = helper.downloadAndZipConfigSet(DEFAULT_CONFIGSET_NAME);
+    byte[] zipped =
+        DownloadConfigSet.zipConfigSet(cc.getConfigSetService(), DEFAULT_CONFIGSET_NAME);
     ZipInputStream stream = new ZipInputStream(new ByteArrayInputStream(zipped));
 
     boolean foundSolrConfig = false;
@@ -176,7 +178,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     assertTrue(
         cluster
             .getZkClient()
-            .exists(SchemaDesignerAPI.getConfigSetZkPath(mutableId, "lang/stopwords_en.txt")));
+            .exists(SchemaDesigner.getConfigSetZkPath(mutableId, "lang/stopwords_en.txt")));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
     assertNotNull(schema.getFieldOrNull("*_txt_fr"));
     assertNull(schema.getFieldOrNull("*_txt_ga"));
@@ -198,7 +200,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     assertTrue(
         cluster
             .getZkClient()
-            .exists(SchemaDesignerAPI.getConfigSetZkPath(mutableId, "lang/stopwords_en.txt")));
+            .exists(SchemaDesigner.getConfigSetZkPath(mutableId, "lang/stopwords_en.txt")));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
     assertNotNull(schema.getFieldOrNull("*_txt_fr"));
     assertNull(schema.getFieldOrNull("*_txt_ga"));

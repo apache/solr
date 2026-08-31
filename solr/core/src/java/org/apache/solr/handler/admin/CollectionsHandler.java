@@ -1180,7 +1180,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return copy(
               req.getParams(),
               map,
-              CollectionParams.FROM_NODE,
               CollectionParams.SOURCE_NODE,
               TARGET_NODE,
               WAIT_FOR_FINAL_STATE,

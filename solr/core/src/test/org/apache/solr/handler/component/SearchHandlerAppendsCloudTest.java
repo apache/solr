@@ -130,9 +130,7 @@ public class SearchHandlerAppendsCloudTest extends SolrCloudTestCase {
 
             // compose the query
             final SolrQuery solrQuery = new SolrQuery(bee_t + ":bee");
-            if (searchHandlerNames[ii] != null) {
-              solrQuery.setParam(CommonParams.QT, searchHandlerNames[ii]);
-            }
+            final String path = searchHandlerNames[ii] != null ? searchHandlerNames[ii] : "/select";
             if (searchHandlerNames[jj] != null) {
               solrQuery.setParam(ShardParams.SHARDS_QT, searchHandlerNames[jj]);
             }
@@ -144,7 +142,7 @@ public class SearchHandlerAppendsCloudTest extends SolrCloudTestCase {
 
             // make the query
             final QueryResponse queryResponse =
-                new QueryRequest(solrQuery).process(cluster.getSolrClient(), COLLECTION);
+                new QueryRequest(path, solrQuery).process(cluster.getSolrClient(), COLLECTION);
 
             // analyse the response
             final StringBuilder contextInfo = new StringBuilder();

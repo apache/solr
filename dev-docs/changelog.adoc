@@ -94,6 +94,7 @@ links:
 We have two gradle tasks that bootstraps a YAML file in the `changelog/unreleased/` directory.
 `writeChangeLog` will infer the JIRA id from the current branch if possible, otherwise you'll need to add the JIRA link manually.
 If the change isn't worth a JIRA yet a changelog would still be nice, use `writeChangelogPr` after you've created the PR.  It will incorporate a link to the PR in the entry.
+If `writeChangelogPr` can't auto-detect the PR for your current branch (e.g. `gh` can't correlate a differently-named local branch to it), pass the PR explicitly: `./gradlew writeChangelogPr -Ppr=4677` or `-Ppr=https://github.com/apache/solr/pull/4677`.
 
 Invoke the task with:
 

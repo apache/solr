@@ -357,7 +357,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
             v20, "id", "20", "_version_", v20, "inplace_updatable_float", map("inc", 1));
     // RTG before a commit
     assertJQ(
-        req("qt", "/get", "id", "20", "fl", "id,inplace_updatable_float,_version_"),
+        reqWithPath("/get", "id", "20", "fl", "id,inplace_updatable_float,_version_"),
         "=={'doc':{'id':'20', 'inplace_updatable_float':" + 102.0 + ",'_version_':" + v20 + "}}");
     assertU(commit("softCommit", "false"));
     assertQ(
@@ -653,7 +653,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
 
     // RTG
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,inplace_updatable_float,inplace_updatable_int"),
+        reqWithPath("/get", "id", "1", "fl", "id,inplace_updatable_float,inplace_updatable_int"),
         "=={'doc':{'id':'1', 'inplace_updatable_float':"
             + 202.0
             + ",'inplace_updatable_int':"
@@ -670,7 +670,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "fq", "inplace_updatable_float:[* TO *]"), "//*[@numFound='1']");
     // RTG before update
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,inplace_updatable_float,title_s"),
+        reqWithPath("/get", "id", "1", "fl", "id,inplace_updatable_float,title_s"),
         "=={'doc':{'id':'1', 'inplace_updatable_float':" + 42.0 + ",'title_s':" + "first" + "}}");
 
     // set the value to null
@@ -681,7 +681,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "fq", "inplace_updatable_float:[* TO *]"), "//*[@numFound='0']");
     // after update
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,inplace_updatable_float,title_s"),
+        reqWithPath("/get", "id", "1", "fl", "id,inplace_updatable_float,title_s"),
         "=={'doc':{'id':'1','title_s':first}}");
   }
 
