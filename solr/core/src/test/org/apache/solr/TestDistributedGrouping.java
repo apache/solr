@@ -34,6 +34,7 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.grouping.distributed.requestfactory.TopGroupsShardRequestFactory;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -69,7 +70,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
   String oddField = "oddField_s1";
 
   @Test
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "try"})
   public void test() throws Exception {
     del("*:*");
     commit();
@@ -878,24 +879,25 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "sort",
         i1 + " asc, id asc");
 
-    ignoreException("'group.offset' parameter cannot be negative");
-    SolrException exception =
-        expectThrows(
-            SolrException.class,
-            () ->
-                query(
-                    "q",
-                    "*:*",
-                    "group",
-                    "true",
-                    "group.query",
-                    t1 + ":kings OR " + t1 + ":eggs",
-                    "group.offset",
-                    "-1"));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-    assertThat(
-        exception.getMessage(), containsString("'group.offset' parameter cannot be negative"));
-    resetExceptionIgnores();
+    try (ErrorLogMuter ignored =
+        ErrorLogMuter.regex("'group.offset' parameter cannot be negative")) {
+      SolrException exception =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  query(
+                      "q",
+                      "*:*",
+                      "group",
+                      "true",
+                      "group.query",
+                      t1 + ":kings OR " + t1 + ":eggs",
+                      "group.offset",
+                      "-1"));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+      assertThat(
+          exception.getMessage(), containsString("'group.offset' parameter cannot be negative"));
+    }
 
     query(
         "q",

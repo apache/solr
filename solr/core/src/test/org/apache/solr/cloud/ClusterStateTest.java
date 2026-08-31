@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.junit.Test;
@@ -47,7 +48,7 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     Map<String, Object> props = new HashMap<>();
     String nodeName = "node1:10000_solr";
     props.put(ZkStateReader.NODE_NAME_PROP, nodeName);
-    props.put(ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName(nodeName, "http"));
+    props.put(ZkStateReader.BASE_URL_PROP, URLUtil.getBaseUrlForNodeName(nodeName, "http"));
     props.put(ZkStateReader.CORE_NAME_PROP, "core1");
 
     props.put("prop1", "value");
@@ -74,8 +75,10 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     byte[] bytes = Utils.toJSON(clusterState);
 
     Instant creationTime = Instant.now();
+    @SuppressWarnings("unchecked")
+    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length);
     ClusterState loadedClusterState =
-        ClusterState.createFromJson(-1, bytes, liveNodes, creationTime, null);
+        ClusterState.createFromCollectionMap(-1, stateMap, liveNodes, creationTime, null);
     assertFalse(
         loadedClusterState.getCollection("collection1").getProperties().containsKey("shards"));
 
@@ -103,19 +106,5 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
 
     assertEquals(creationTime, loadedClusterState.getCollection("collection1").getCreationTime());
     assertEquals(creationTime, loadedClusterState.getCollection("collection2").getCreationTime());
-
-    loadedClusterState =
-        ClusterState.createFromJson(-1, new byte[0], liveNodes, Instant.now(), null);
-
-    assertEquals(
-        "Provided liveNodes not used properly", 2, loadedClusterState.getLiveNodes().size());
-    assertEquals("Should not have collections", 0, loadedClusterState.size());
-
-    loadedClusterState =
-        ClusterState.createFromJson(-1, (byte[]) null, liveNodes, Instant.now(), null);
-
-    assertEquals(
-        "Provided liveNodes not used properly", 2, loadedClusterState.getLiveNodes().size());
-    assertEquals("Should not have collections", 0, loadedClusterState.size());
   }
 }

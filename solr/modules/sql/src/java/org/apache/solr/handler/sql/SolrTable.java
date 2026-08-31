@@ -352,8 +352,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       }
       return limitStream;
     } else {
-      params.add(CommonParams.QT, "/export");
-      return new CloudSolrStream(solrConnection, collection, params);
+      return new CloudSolrStream(solrConnection, collection, "/export", params);
     }
   }
 
@@ -523,9 +522,6 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     params.set(CommonParams.FL, fl);
     params.set(CommonParams.Q, query);
     params.set(CommonParams.WT, CommonParams.JAVABIN);
-    // Always use the /export handler for Group By Queries because it requires exporting full result
-    // sets.
-    params.set(CommonParams.QT, "/export");
 
     if (numWorkers > 1) {
       params.set("partitionKeys", getPartitionKeys(buckets));
@@ -535,7 +531,9 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     TupleStream tupleStream;
 
-    CloudSolrStream cstream = new CloudSolrStream(solrConnection, collection, params);
+    // Always use the /export handler for Group By Queries because it requires exporting full
+    // result sets.
+    CloudSolrStream cstream = new CloudSolrStream(solrConnection, collection, "/export", params);
     tupleStream = new RollupStream(cstream, buckets, metrics);
 
     StreamFactory factory =
@@ -781,9 +779,6 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     params.set(CommonParams.FL, fl);
     params.set(CommonParams.Q, query);
     params.set(CommonParams.WT, CommonParams.JAVABIN);
-    // Always use the /export handler for Distinct Queries because it requires exporting full result
-    // sets.
-    params.set(CommonParams.QT, "/export");
 
     if (numWorkers > 1) {
       params.set("partitionKeys", getPartitionKeys(buckets));
@@ -793,7 +788,9 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     TupleStream tupleStream;
 
-    CloudSolrStream cstream = new CloudSolrStream(solrConnection, collection, params);
+    // Always use the /export handler for Distinct Queries because it requires exporting full
+    // result sets.
+    CloudSolrStream cstream = new CloudSolrStream(solrConnection, collection, "/export", params);
     tupleStream = new UniqueStream(cstream, ecomp);
 
     if (numWorkers > 1) {

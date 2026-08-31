@@ -79,17 +79,6 @@ class SolrAggregate extends Aggregate implements SolrRel {
   }
 
   @Override
-  public Aggregate copy(
-      RelTraitSet traitSet,
-      RelNode input,
-      boolean indicator,
-      ImmutableBitSet groupSet,
-      List<ImmutableBitSet> groupSets,
-      List<AggregateCall> aggCalls) {
-    return new SolrAggregate(getCluster(), traitSet, hints, input, groupSet, groupSets, aggCalls);
-  }
-
-  @Override
   public void implement(Implementor implementor) {
     implementor.visitChild(0, getInput());
 
