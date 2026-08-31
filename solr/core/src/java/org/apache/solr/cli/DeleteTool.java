@@ -17,18 +17,14 @@
 package org.apache.solr.cli;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
 import java.util.Locale;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.ConfigsetsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
@@ -94,98 +90,68 @@ public class DeleteTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     try (var solrClient = CLIUtils.getSolrClient(cli)) {
       if (CLIUtils.isCloudMode(solrClient)) {
-        deleteCollection(cli);
+        deleteCollection(cli, solrClient);
       } else {
         deleteCore(cli, solrClient);
       }
     }
   }
 
-  protected void deleteCollection(CommandLine cli) throws Exception {
-    var builder =
-        new HttpJettySolrClient.Builder()
-            .withIdleTimeout(30, TimeUnit.SECONDS)
-            .withConnectionTimeout(15, TimeUnit.SECONDS)
-            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
-            .withOptionalBasicAuthCredentials(
-                cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
-
-    var solrConnection = CLIUtils.getSolrConnection(cli);
-    try (var cloudSolrClient = CLIUtils.getCloudSolrClient(solrConnection, builder)) {
-      echoIfVerbose("Connecting to Solr at " + solrConnection.toString());
-      deleteCollection(cloudSolrClient, cli);
-    }
-  }
-
-  protected void deleteCollection(CloudSolrClient cloudSolrClient, CommandLine cli)
-      throws Exception {
-    Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-    if (liveNodes.isEmpty())
-      throw new IllegalStateException(
-          "No live nodes found! Cannot delete a collection until "
-              + "there is at least 1 live node in the cluster.");
-
+  protected void deleteCollection(CommandLine cli, SolrClient solrClient) throws Exception {
     String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    if (!cloudSolrClient.getClusterState().hasCollection(collectionName)) {
+    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
+
+    if (!CLIUtils.safeCheckCollectionExists(
+        solrUrl, collectionName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
       throw new IllegalArgumentException("Collection " + collectionName + " not found!");
     }
 
-    String configName =
-        cloudSolrClient.getClusterState().getCollection(collectionName).getConfigName();
+    // Uses the V1 CLUSTERSTATUS request rather than the V2 CollectionsApi.GetCollectionStatus:
+    // the latter goes through a Jersey code path that currently throws under basic-auth-secured
+    // clusters. Still a plain HTTP admin call, not a direct ZK connection.
+    var statusReq = new CollectionAdminRequest.ClusterStatus().setCollectionName(collectionName);
+    var statusResponse = statusReq.process(solrClient);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> cluster = (Map<String, Object>) statusResponse.getResponse().get("cluster");
+    @SuppressWarnings("unchecked")
+    Map<String, Object> collections = (Map<String, Object>) cluster.get("collections");
+    @SuppressWarnings("unchecked")
+    Map<String, Object> collectionInfo = (Map<String, Object>) collections.get(collectionName);
+    String configName = collectionInfo != null ? (String) collectionInfo.get("configName") : null;
     boolean deleteConfig = cli.hasOption(DELETE_CONFIG_OPTION);
+    boolean force = cli.hasOption(FORCE_OPTION);
 
-    if (deleteConfig && configName != null) {
-      if (cli.hasOption(FORCE_OPTION)) {
-        log.warn(
-            "Skipping safety checks, configuration directory {} will be deleted with impunity.",
-            configName);
-      } else {
-        // need to scan all Collections to see if any are using the config
-        Collection<String> collections = cloudSolrClient.getClusterState().getCollectionNames();
-
-        // give a little note to the user if there are many collections in case it takes a while
-        if (collections.size() > 50)
-          if (log.isInfoEnabled()) {
-            log.info(
-                "Scanning {} to ensure no other collections are using config {}",
-                collections.size(),
-                configName);
-          }
-
-        Optional<String> inUse =
-            collections.stream()
-                .filter(name -> !name.equals(collectionName)) // ignore this collection
-                .filter(
-                    name ->
-                        configName.equals(
-                            cloudSolrClient.getClusterState().getCollection(name).getConfigName()))
-                .findFirst();
-        if (inUse.isPresent()) {
-          deleteConfig = false;
-          log.warn(
-              "Configuration directory {} is also being used by {}{}",
-              configName,
-              inUse.get(),
-              "; configuration will not be deleted from ZooKeeper. You can pass the --force-delete-config flag to force delete.");
-        }
-      }
+    if (deleteConfig && configName != null && force) {
+      log.warn(
+          "Skipping safety checks, configuration directory {} will be deleted with impunity.",
+          configName);
     }
 
     echoIfVerbose("\nDeleting collection '" + collectionName + "' using V2 Collections API");
 
     try {
       var req = new CollectionsApi.DeleteCollection(collectionName);
-      var response = req.process(cloudSolrClient);
+      var response = req.process(solrClient);
       echoIfVerbose(response);
     } catch (SolrServerException sse) {
       throw new Exception(
           "Failed to delete collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
-    if (deleteConfig) {
+    if (deleteConfig && configName != null) {
       try {
         var req = new ConfigsetsApi.DeleteConfigSet(configName);
-        req.process(cloudSolrClient);
+        // With the collection already deleted above, the server only needs to check whether any
+        // *other* collection still uses this config.
+        req.setIfUnused(!force);
+        var response = req.process(solrClient);
+        if (!response.deleted) {
+          log.warn(
+              "Configuration directory {} is also being used by {}; configuration will not be"
+                  + " deleted. You can pass the --force flag to force delete.",
+              configName,
+              response.collectionsUsingConfigSet);
+        }
       } catch (Exception exc) {
         echo(
             "\nWARNING: Failed to delete configSet "
