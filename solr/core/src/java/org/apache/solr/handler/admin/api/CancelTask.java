@@ -50,8 +50,9 @@ public class CancelTask extends JerseyResource implements TasksApi.Cancel {
       response.status = CancelTaskResponse.CancellationStatus.SUCCESS;
       return response;
     }
+    response.status = CancelTaskResponse.CancellationStatus.NOT_FOUND;
     throw new SolrException(
-        SolrException.ErrorCode.NOT_FOUND, CancelTaskResponse.CancellationStatus.NOT_FOUND.name());
+        SolrException.ErrorCode.NOT_FOUND, "Task with ID '" + taskID + "' not found");
   }
 
   public static boolean cancelTaskActiveOnThisShard(

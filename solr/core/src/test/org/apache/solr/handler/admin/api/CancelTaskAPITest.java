@@ -73,5 +73,8 @@ public class CancelTaskAPITest extends SolrTestCase {
         expectThrows(
             RemoteSolrException.class, () -> req.process(solrTestRule.getSolrClient(null)));
     assertEquals("Expected 404 for non-existent task", 404, ex.code());
+    assertTrue(
+        "Expected error message to identify the missing task: " + ex.getMessage(),
+        ex.getMessage().contains("does-not-exist"));
   }
 }

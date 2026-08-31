@@ -77,5 +77,6 @@ public class CancelTaskTest extends SolrTestCase {
     SolrException exception =
         expectThrows(SolrException.class, () -> cancelTask.cancelRunningTask("taskID_missing"));
     assertEquals(SolrException.ErrorCode.NOT_FOUND.code, exception.code());
+    assertTrue(exception.getMessage().contains("taskID_missing"));
   }
 }
