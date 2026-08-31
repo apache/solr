@@ -60,8 +60,8 @@ public class TestLinearModel extends TestRerankBase {
   }
 
   public static Map<String, Object> makeFeatureWeights(List<Feature> features, Number weight) {
-    final Map<String, Object> nameParams = new HashMap<String, Object>();
-    final HashMap<String, Number> modelWeights = new HashMap<String, Number>();
+    final Map<String, Object> nameParams = new HashMap<>();
+    final HashMap<String, Number> modelWeights = new HashMap<>();
     for (final Feature feat : features) {
       modelWeights.put(feat.getName(), weight);
     }
@@ -93,11 +93,10 @@ public class TestLinearModel extends TestRerankBase {
     weights.put("constant1", 1d);
     weights.put("constant5", 1d);
 
-    Map<String, Object> params = new HashMap<String, Object>();
+    Map<String, Object> params = new HashMap<>();
     final List<Feature> features = getFeatures(new String[] {"constant1", "constant5"});
     final List<Normalizer> norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
+        new ArrayList<>(Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
     params.put("weights", weights);
     final LTRScoringModel ltrScoringModel =
         createLinearModel("test1", features, norms, "test", fstore.getFeatures(), params);

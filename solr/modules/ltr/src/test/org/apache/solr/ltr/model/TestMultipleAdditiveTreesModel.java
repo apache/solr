@@ -119,7 +119,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
-  public void multipleAdditiveTreesTestNoParams() throws Exception {
+  public void multipleAdditiveTreesTestNoParams() {
     final ModelException expectedException =
         new ModelException("no trees declared for model multipleadditivetreesmodel_no_params");
     Exception ex =
@@ -135,7 +135,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
-  public void multipleAdditiveTreesTestEmptyParams() throws Exception {
+  public void multipleAdditiveTreesTestEmptyParams() {
     final ModelException expectedException =
         new ModelException("no trees declared for model multipleadditivetreesmodel_no_trees");
     Exception ex =
@@ -151,7 +151,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
-  public void multipleAdditiveTreesTestNoWeight() throws Exception {
+  public void multipleAdditiveTreesTestNoWeight() {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree doesn't contain a weight");
     Exception ex =
@@ -167,7 +167,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
-  public void multipleAdditiveTreesTestTreesParamDoesNotContainTree() throws Exception {
+  public void multipleAdditiveTreesTestTreesParamDoesNotContainTree() {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree doesn't contain a tree");
     Exception ex =
@@ -183,7 +183,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
-  public void multipleAdditiveTreesTestNoFeaturesSpecified() throws Exception {
+  public void multipleAdditiveTreesTestNoFeaturesSpecified() {
     final ModelException expectedException =
         new ModelException("no features declared for model multipleadditivetreesmodel_no_features");
     Exception ex =
@@ -199,7 +199,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
-  public void multipleAdditiveTreesTestNoRight() throws Exception {
+  public void multipleAdditiveTreesTestNoRight() {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree node is missing right");
     Exception ex =
@@ -215,7 +215,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
-  public void multipleAdditiveTreesTestNoLeft() throws Exception {
+  public void multipleAdditiveTreesTestNoLeft() {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree node is missing left");
     Exception ex =
@@ -231,7 +231,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
-  public void multipleAdditiveTreesTestNoThreshold() throws Exception {
+  public void multipleAdditiveTreesTestNoThreshold() {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
     Exception ex =
@@ -247,7 +247,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
-  public void multipleAdditiveTreesTestMissingTreeFeature() throws Exception {
+  public void multipleAdditiveTreesTestMissingTreeFeature() {
     final ModelException expectedException =
         new ModelException(
             "MultipleAdditiveTreesModel tree node is leaf with left=-100.0 and right=75.0");

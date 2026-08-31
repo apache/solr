@@ -165,10 +165,6 @@ public abstract class WrapperModel extends AdapterModel {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder(getClass().getSimpleName());
-    sb.append("(name=").append(getName());
-    sb.append(",model=(").append(model.toString()).append(")");
-
-    return sb.toString();
+    return getClass().getSimpleName() + "(name=" + getName() + ",model=(" + model.toString() + ")";
   }
 }

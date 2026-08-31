@@ -56,7 +56,6 @@ public class TestRerankBase extends RestTestBase {
 
   public static final String FEATURE_FILE_NAME = "_schema_feature-store.json";
   public static final String MODEL_FILE_NAME = "_schema_model-store.json";
-  public static final String PARENT_ENDPOINT = "/schema/*";
 
   protected static final String COLLECTION = "collection1";
   protected static final String CONF_DIR = COLLECTION + "/conf";
@@ -83,7 +82,7 @@ public class TestRerankBase extends RestTestBase {
     }
   }
 
-  protected static void chooseDefaultFeatureFormat() throws Exception {
+  protected static void chooseDefaultFeatureFormat() {
     switch (random().nextInt(3)) {
       case 0:
         defaultFeatureFormat = null;
@@ -286,14 +285,13 @@ public class TestRerankBase extends RestTestBase {
   }
 
   public static LTRScoringModel createModelFromFiles(String modelFileName, String featureFileName)
-      throws ModelException, Exception {
+      throws Exception {
     return createModelFromFiles(
         modelFileName, featureFileName, FeatureStore.DEFAULT_FEATURE_STORE_NAME);
   }
 
   public static LTRScoringModel createModelFromFiles(
-      String modelFileName, String featureFileName, String featureStoreName)
-      throws ModelException, Exception {
+      String modelFileName, String featureFileName, String featureStoreName) throws Exception {
     URL url = TestRerankBase.class.getResource("/modelExamples/" + modelFileName);
     final String modelJson = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
     final ManagedModelStore ms = getManagedModelStore();
@@ -311,7 +309,7 @@ public class TestRerankBase extends RestTestBase {
     final ManagedFeatureStore fs = getManagedFeatureStore();
     // fs.getFeatureStore(null).clear();
     fs.doDeleteChild(null, featureStoreName); // is this safe??
-    // based on my need to call this I dont think that
+    // based on my need to call this I don't think that
     // "getNewManagedFeatureStore()"
     // is actually returning a new feature store each time
     fs.applyUpdatesToManagedData(parsedFeatureJson);
@@ -347,7 +345,7 @@ public class TestRerankBase extends RestTestBase {
     final List<Feature> features = new ArrayList<>();
     int pos = 0;
     for (final String name : names) {
-      final Map<String, Object> params = new HashMap<String, Object>();
+      final Map<String, Object> params = new HashMap<>();
       params.put("value", 10);
       final Feature f =
           Feature.getInstance(
@@ -363,7 +361,7 @@ public class TestRerankBase extends RestTestBase {
     return getFeatures(Arrays.asList(names));
   }
 
-  protected static void bulkIndex() throws Exception {
+  protected static void bulkIndex() {
     assertU(
         adoc(
             "title",
@@ -408,10 +406,10 @@ public class TestRerankBase extends RestTestBase {
   }
 
   protected static void doTestParamsToMap(
-      String featureClassName, LinkedHashMap<String, Object> featureParams) throws Exception {
+      String featureClassName, LinkedHashMap<String, Object> featureParams) {
 
     // start with default parameters
-    final LinkedHashMap<String, Object> paramsA = new LinkedHashMap<String, Object>();
+    final LinkedHashMap<String, Object> paramsA = new LinkedHashMap<>();
     final Object defaultValue;
     switch (random().nextInt(6)) {
       case 0:
@@ -421,16 +419,16 @@ public class TestRerankBase extends RestTestBase {
         defaultValue = "1.2";
         break;
       case 2:
-        defaultValue = Double.valueOf(3.4d);
+        defaultValue = 3.4d;
         break;
       case 3:
-        defaultValue = Float.valueOf(0.5f);
+        defaultValue = 0.5f;
         break;
       case 4:
-        defaultValue = Integer.valueOf(67);
+        defaultValue = 67;
         break;
       case 5:
-        defaultValue = Long.valueOf(89);
+        defaultValue = 89L;
         break;
       default:
         defaultValue = null;
