@@ -54,6 +54,10 @@ public class SnapshotDescribeTool extends ToolBase {
           .desc("Name of the snapshot to describe")
           .get();
 
+  /** Parameters for the snapshot-describe command, independent of the command line parser. */
+  record SnapshotDescribeParams(
+      String solrUrl, String credentials, String collectionName, String snapshotName) {}
+
   public SnapshotDescribeTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -77,10 +81,18 @@ public class SnapshotDescribeTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      describeSnapshot(solrClient, collectionName, snapshotName);
+    SnapshotDescribeParams params =
+        new SnapshotDescribeParams(
+            CLIUtils.normalizeSolrUrl(cli),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(SNAPSHOT_NAME_OPTION));
+    describeSnapshot(params);
+  }
+
+  void describeSnapshot(SnapshotDescribeParams params) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(params.solrUrl(), params.credentials())) {
+      describeSnapshot(solrClient, params.collectionName(), params.snapshotName());
     }
   }
 
