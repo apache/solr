@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -41,7 +42,12 @@ public class PartitionManager {
 
   @VisibleForTesting
   public static class PartitionWork {
+    final TopicPartition partition;
     final Queue<WorkUnit> partitionQueue = new ArrayDeque<>();
+
+    PartitionWork(TopicPartition partition) {
+      this.partition = partition;
+    }
 
     /**
      * Assign a record to a work unit: enqueue the unit on its first record, and advance its commit
@@ -58,6 +64,14 @@ public class PartitionManager {
      *     assigned to this unit
      */
     synchronized void assignRecord(WorkUnit unit, long recordOffset) {
+      // does this work unit belong to the partition we're interested in?
+      if (unit.partition != partition.partition()) {
+        throw new IllegalStateException(
+            "Work unit for partition "
+                + partition.partition()
+                + " but record for partition "
+                + unit.partition);
+      }
       if (recordOffset < unit.nextOffset) {
         throw new IllegalStateException(
             "Out-of-order record offset "
@@ -101,7 +115,7 @@ public class PartitionManager {
         partition,
         (k, v) -> {
           if (v == null) {
-            return new PartitionWork();
+            return new PartitionWork(partition);
           }
           return v;
         });
@@ -121,6 +135,7 @@ public class PartitionManager {
     if (partitionWork == null) {
       // normally impossible because consumer should always call #getPartitionWork first
       // which creates the instance if it doesn't exist.
+      log.warn("No PartitionWork for partition {}, likely programming error.", partition);
       return;
     }
     synchronized (partitionWork) {
@@ -162,8 +177,11 @@ public class PartitionManager {
         // the future is already done, so this returns (or rethrows) without waiting
         future.get();
       } catch (InterruptedException e) {
-        log.error("Error updating offset for partition: {}", partition, e);
+        log.error("Error updating offset for partition (interrupted): {}", partition, e);
         Thread.currentThread().interrupt();
+        throw e;
+      } catch (CancellationException e) {
+        log.error("Error updating offset for partition (cancelled): {}", partition, e);
         throw e;
       } catch (ExecutionException e) {
         log.error("Error updating offset for partition: {}", partition, e);

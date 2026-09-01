@@ -163,7 +163,7 @@ public class PartitionManagerTest {
     KafkaConsumer<String, MirroredSolrRequest<?>> consumer = mock(KafkaConsumer.class);
     PartitionManager partitionManager = new PartitionManager(consumer);
     TopicPartition partition = new TopicPartition("test-topic", 0);
-    PartitionManager.PartitionWork partitionWork = new PartitionManager.PartitionWork();
+    PartitionManager.PartitionWork partitionWork = new PartitionManager.PartitionWork(partition);
     partitionManager.partitionWorkMap.put(partition, partitionWork);
 
     PartitionManager.PartitionWork result = partitionManager.getPartitionWork(partition);
@@ -219,28 +219,30 @@ public class PartitionManagerTest {
     // Use a real Future instead of a mocked one
     ExecutorService executor =
         ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("test"));
-    Future<?> future =
-        executor.submit(
-            () -> {
-              // Simulate the task being completed
-            });
+    try {
+      Future<?> future =
+          executor.submit(
+              () -> {
+                // Simulate the task being completed
+              });
 
-    workUnit.workItems.add(future);
+      workUnit.workItems.add(future);
 
-    // Wait for the Future to completeE
-    future.get(10, TimeUnit.SECONDS);
+      // Wait for the Future to completeE
+      future.get(10, TimeUnit.SECONDS);
 
-    partitionManager.checkOffsetsAndUpdate(partition);
+      partitionManager.checkOffsetsAndUpdate(partition);
 
-    // Verify that the consumer.commitSync() method was called with the correct parameters
-    verify(consumer, times(1))
-        .commitSync(Map.of(partition, new OffsetAndMetadata(workUnit.nextOffset)));
+      // Verify that the consumer.commitSync() method was called with the correct parameters
+      verify(consumer, times(1))
+          .commitSync(Map.of(partition, new OffsetAndMetadata(workUnit.nextOffset)));
 
-    // Verify that the partitionQueue is empty after processing
-    assertTrue(partitionWork.partitionQueue.isEmpty());
-
-    // Shutdown the executor
-    executor.shutdown();
+      // Verify that the partitionQueue is empty after processing
+      assertTrue(partitionWork.partitionQueue.isEmpty());
+    } finally {
+      // Shutdown the executor
+      executor.shutdown();
+    }
   }
 
   /** Should check for offset updates for all partitions in the partitionWorkMap */
