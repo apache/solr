@@ -51,6 +51,11 @@
       "allowedVersions": "<8.0.0"
     },
     {
+      "description": "Keep org.apache.tika on the 3.x line on branch_9x; actual document parsing runs in the external Tika Server (see extraction module), tika-core/tika-langdetect-tika here are only thin client-side API/language-detection libraries, so there's no need to chase Tika 4.x on this branch.",
+      "matchPackageNames": ["org.apache.tika:**"],
+      "allowedVersions": "<4.0.0"
+    },
+    {
       "description": "Keep the Jetty 10.x line on branch_9x; Jetty 11 moves the Servlet API from javax.servlet to jakarta.servlet (branch_9x is still on javax.servlet throughout), and Jetty 12 additionally requires Java 17 but branch_9x builds with Java 11",
       "matchPackageNames": ["org.eclipse.jetty*:**"],
       "allowedVersions": "<11.0.0"
