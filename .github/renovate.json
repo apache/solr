@@ -47,7 +47,7 @@
     },
     {
       "description": "Keep com.diffplug.spotless on the 7.x line on branch_9x; 8.0.0 bumps the required Java to 17.",
-      "matchPackageNames": ["com.diffplug.spotless"],
+      "matchDepNames": ["com.diffplug.spotless"],
       "allowedVersions": "<8.0.0"
     },
     {
