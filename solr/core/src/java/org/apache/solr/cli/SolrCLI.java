@@ -42,6 +42,36 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.help.HelpFormatter;
 import org.apache.commons.cli.help.TableDefinition;
 import org.apache.commons.cli.help.TextHelpAppendable;
+import org.apache.solr.cli.tools.ApiTool;
+import org.apache.solr.cli.tools.AssertTool;
+import org.apache.solr.cli.tools.AuthTool;
+import org.apache.solr.cli.tools.ConfigTool;
+import org.apache.solr.cli.tools.CreateTool;
+import org.apache.solr.cli.tools.DeleteTool;
+import org.apache.solr.cli.tools.ExportTool;
+import org.apache.solr.cli.tools.PackageTool;
+import org.apache.solr.cli.tools.PostLogsTool;
+import org.apache.solr.cli.tools.PostTool;
+import org.apache.solr.cli.tools.RunExampleTool;
+import org.apache.solr.cli.tools.StreamTool;
+import org.apache.solr.cli.tools.VersionTool;
+import org.apache.solr.cli.tools.cluster.ClusterTool;
+import org.apache.solr.cli.tools.cluster.HealthcheckTool;
+import org.apache.solr.cli.tools.cluster.StatusTool;
+import org.apache.solr.cli.tools.snapshot.SnapshotCreateTool;
+import org.apache.solr.cli.tools.snapshot.SnapshotDeleteTool;
+import org.apache.solr.cli.tools.snapshot.SnapshotDescribeTool;
+import org.apache.solr.cli.tools.snapshot.SnapshotExportTool;
+import org.apache.solr.cli.tools.snapshot.SnapshotListTool;
+import org.apache.solr.cli.tools.zk.ConfigSetDownloadTool;
+import org.apache.solr.cli.tools.zk.ConfigSetUploadTool;
+import org.apache.solr.cli.tools.zk.UpdateACLTool;
+import org.apache.solr.cli.tools.zk.ZkCpTool;
+import org.apache.solr.cli.tools.zk.ZkLsTool;
+import org.apache.solr.cli.tools.zk.ZkMkrootTool;
+import org.apache.solr.cli.tools.zk.ZkMvTool;
+import org.apache.solr.cli.tools.zk.ZkRmTool;
+import org.apache.solr.cli.tools.zk.ZkToolHelp;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -218,23 +248,6 @@ public class SolrCLI implements CLIO {
     }
 
     throw new IllegalArgumentException(toolType + " is not a valid command!");
-  }
-
-  /**
-   * Returns the value of the option with the given name, or the value of the deprecated option. If
-   * both values are null, then it returns the default value.
-   *
-   * <p>If this method is marked as unused by your IDE, it means we have no deprecated CLI options
-   * currently, congratulations! This method is preserved for the next time we need to deprecate a
-   * CLI option.
-   */
-  public static String getOptionWithDeprecatedAndDefault(
-      CommandLine cli, Option opt, Option deprecated, String def) {
-    String val = cli.getOptionValue(opt);
-    if (val == null) {
-      val = cli.getOptionValue(deprecated);
-    }
-    return val == null ? def : val;
   }
 
   // TODO: SOLR-17429 - remove the custom logic when Commons CLI is upgraded and
