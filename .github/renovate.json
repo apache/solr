@@ -56,6 +56,11 @@
       "allowedVersions": "<11.0.0"
     },
     {
+      "description": "Keep Jersey/Jakarta REST/HK2 on their Java-11-compatible line on branch_9x; jakarta.ws.rs-api 4.0.0+ and Jersey/HK2 4.x+ target Jakarta EE 11 (Java 17+) but branch_9x builds with Java 11",
+      "matchPackageNames": ["jakarta.ws.rs:jakarta.ws.rs-api", "org.glassfish.jersey*:**", "org.glassfish.hk2*:**"],
+      "allowedVersions": "<4.0.0"
+    },
+    {
       "description": "Pin org.semver4j:semver4j to 5.x; 6.0.0 is compiled to Java 17 but branch_9x builds with Java 11",
       "matchPackageNames": ["org.semver4j:semver4j"],
       "allowedVersions": "<6.0.0"
