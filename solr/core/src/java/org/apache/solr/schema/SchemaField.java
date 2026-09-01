@@ -112,6 +112,10 @@ public final class SchemaField extends FieldProperties implements IndexableField
     return (properties & DOC_VALUES) != 0;
   }
 
+  public boolean hasDocValuesSkipList() {
+    return (properties & DOC_VALUES_SKIP_LIST) != 0;
+  }
+
   public boolean storeTermVector() {
     return (properties & STORE_TERMVECTORS) != 0;
   }
@@ -373,6 +377,18 @@ public final class SchemaField extends FieldProperties implements IndexableField
       p &= ~pp;
     }
 
+    if (on(falseProps, DOC_VALUES)) {
+      int pp = DOC_VALUES_SKIP_LIST;
+      if (on(DOC_VALUES_SKIP_LIST, trueProps)) {
+        throw new RuntimeException(
+            "SchemaField: "
+                + name
+                + " conflicting 'true' field options for non-docValues field:"
+                + props);
+      }
+      p &= ~pp;
+    }
+
     if (on(falseProps, INDEXED)) {
       int pp = (OMIT_NORMS | OMIT_TF_POSITIONS | OMIT_POSITIONS);
       if (on(pp, falseProps)) {
@@ -466,6 +482,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
       properties.add(getPropertyName(REQUIRED), isRequired());
       properties.add(getPropertyName(TOKENIZED), isTokenized());
       properties.add(getPropertyName(USE_DOCVALUES_AS_STORED), useDocValuesAsStored());
+      properties.add(getPropertyName(DOC_VALUES_SKIP_LIST), hasDocValuesSkipList());
       // The BINARY property is always false
       // properties.add(getPropertyName(BINARY), isBinary());
     } else {
@@ -532,6 +549,11 @@ public final class SchemaField extends FieldProperties implements IndexableField
     return DocValuesType.NONE;
   }
 
+  /**
+   * For fields with docValues the underlaying lucene field is created without passing these values
+   * as is. Instead the creating class should check on {@link #hasDocValuesSkipList()} and create
+   * the appropriate field type.
+   */
   @Override
   public DocValuesSkipIndexType docValuesSkipIndexType() {
     return DocValuesSkipIndexType.NONE;

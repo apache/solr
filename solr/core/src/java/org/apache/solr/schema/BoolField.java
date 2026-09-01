@@ -23,8 +23,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -47,6 +45,11 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /** */
 public class BoolField extends PrimitiveFieldType {
+
+  @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
+  }
+
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     field.checkSortability();
@@ -189,9 +192,10 @@ public class BoolField extends PrimitiveFieldType {
       IndexableField docval;
       final BytesRef bytes = new BytesRef(toInternal(value.toString()));
       if (field.multiValued()) {
-        docval = new SortedSetDocValuesField(field.getName(), bytes);
+        docval =
+            createSortedSetDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList());
       } else {
-        docval = new SortedDocValuesField(field.getName(), bytes);
+        docval = createSortedDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList());
       }
 
       // Only create a list of we have 2 values...
