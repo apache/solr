@@ -119,7 +119,7 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
         slowSubmitAction(elapsedTimeMillis);
       }
     } catch (Exception e) {
-      // We are intentionally catching all exceptions, the expected exception form this function is
+      // We are intentionally catching all exceptions, the expected exception from this function is
       // {@link MirroringException}
       String message =
           "Unable to enqueue request "
