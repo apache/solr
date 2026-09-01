@@ -143,6 +143,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               .tikaServerRecursive(tikaserverRecursive)
               .tikaServerTimeoutSeconds(tikaTimeoutSecs)
               .tikaServerRequestHeaders(Map.of())
+              .tikaServerConfigJson(params.get(ExtractingParams.TIKASERVER_CONFIG_JSON))
               .build();
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);
