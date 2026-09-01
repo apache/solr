@@ -50,12 +50,28 @@ public abstract class ConfigSetAdminRequest<
     return this;
   }
 
-  public ConfigSetAdminRequest() {
-    super(METHOD.GET, "/admin/configs", SolrRequestType.ADMIN);
+  public ConfigSetAdminRequest(METHOD method) {
+    this(method, "/admin/configs");
   }
 
+  public ConfigSetAdminRequest(METHOD method, String path) {
+    super(method, path, SolrRequestType.ADMIN);
+  }
+
+  /**
+   * @deprecated Use {@link #ConfigSetAdminRequest(METHOD)}.
+   */
+  @Deprecated(since = "11.0")
+  public ConfigSetAdminRequest() {
+    this(METHOD.GET);
+  }
+
+  /**
+   * @deprecated Use {@link #ConfigSetAdminRequest(METHOD, String)}.
+   */
+  @Deprecated(since = "11.0")
   public ConfigSetAdminRequest(String path) {
-    super(METHOD.GET, path, SolrRequestType.ADMIN);
+    this(METHOD.GET, path);
   }
 
   protected abstract Q getThis();
@@ -77,6 +93,18 @@ public abstract class ConfigSetAdminRequest<
           T extends ConfigSetAdminRequest<T, ConfigSetAdminResponse>>
       extends ConfigSetAdminRequest<T, ConfigSetAdminResponse> {
     protected String configSetName = null;
+
+    protected ConfigSetSpecificAdminRequest(METHOD method) {
+      super(method);
+    }
+
+    /**
+     * @deprecated Use {@link #ConfigSetSpecificAdminRequest(METHOD)}.
+     */
+    @Deprecated(since = "11.0")
+    protected ConfigSetSpecificAdminRequest() {
+      this(METHOD.GET);
+    }
 
     public final T setConfigSetName(String configSetName) {
       this.configSetName = configSetName;
@@ -121,8 +149,8 @@ public abstract class ConfigSetAdminRequest<
     protected Boolean cleanup;
 
     public Upload() {
+      super(METHOD.POST);
       action = ConfigSetAction.UPLOAD;
-      setMethod(SolrRequest.METHOD.POST);
     }
 
     @Override
@@ -255,6 +283,7 @@ public abstract class ConfigSetAdminRequest<
     protected Properties properties;
 
     public Create() {
+      super(METHOD.POST);
       action = ConfigSetAction.CREATE;
     }
 
@@ -300,6 +329,7 @@ public abstract class ConfigSetAdminRequest<
   // DELETE request
   public static class Delete extends ConfigSetSpecificAdminRequest<Delete> {
     public Delete() {
+      super(METHOD.POST);
       action = ConfigSetAction.DELETE;
     }
 
@@ -312,6 +342,7 @@ public abstract class ConfigSetAdminRequest<
   // LIST request
   public static class List extends ConfigSetAdminRequest<List, ConfigSetAdminResponse.List> {
     public List() {
+      super(METHOD.GET);
       action = ConfigSetAction.LIST;
     }
 

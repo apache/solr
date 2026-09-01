@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateAlias;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateShard;
 import org.apache.solr.common.SolrException;
@@ -24,6 +25,13 @@ import org.junit.Test;
 
 /** Unit tests for {@link CollectionAdminRequest}. */
 public class TestCollectionAdminRequest extends SolrTestCase {
+
+  @Test
+  public void testAdminRequestsChooseExplicitHttpMethods() {
+    assertEquals(
+        METHOD.POST, CollectionAdminRequest.createCollection("collection", null, 1, 1).getMethod());
+    assertEquals(METHOD.GET, new CollectionAdminRequest.List().getMethod());
+  }
 
   @Test
   public void testInvalidCollectionNameRejectedWhenCreatingCollection() {
