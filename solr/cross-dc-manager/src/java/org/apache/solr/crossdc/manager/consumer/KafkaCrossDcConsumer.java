@@ -378,6 +378,9 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
       int currentCollapsed = 0;
 
       ConsumerRecord<String, MirroredSolrRequest<?>> lastRecord = null;
+      // the last record merged into updateReqBatch - not the same as lastRecord once a
+      // subsequent record has triggered a flush of that batch
+      ConsumerRecord<String, MirroredSolrRequest<?>> batchLastRecord = null;
 
       for (TopicPartition partition : records.partitions()) {
         if (log.isTraceEnabled()) {
@@ -441,7 +444,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
               }
               // send previous batch, if any
               if (updateReqBatch != null) {
-                sendBatch(updateReqBatch, type, lastRecord, workUnit);
+                sendBatch(updateReqBatch, type, batchLastRecord, workUnit);
               }
               updateReqBatch = null;
               currentCollapsed = 0;
@@ -480,6 +483,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
                 metrics.incrementCollapsedCounter();
                 currentCollapsed++;
               }
+              batchLastRecord = requestRecord;
               UpdateRequest update = (UpdateRequest) solrReq;
               MirroredSolrRequest.setParams(updateReqBatch, params);
 
@@ -509,7 +513,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
           }
 
           if (updateReqBatch != null) {
-            sendBatch(updateReqBatch, MirroredSolrRequest.Type.UPDATE, lastRecord, workUnit);
+            sendBatch(updateReqBatch, MirroredSolrRequest.Type.UPDATE, batchLastRecord, workUnit);
             updateReqBatch = null;
           }
           try {

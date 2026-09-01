@@ -156,8 +156,7 @@ public class PartitionManagerTest {
   }
 
   /**
-   * Should return the existing PartitionWork when the partition is already in the
-   * partitionWorkMap
+   * Should return the existing PartitionWork when the partition is already in the partitionWorkMap
    */
   @Test
   public void testPartitionWorkWhenPartitionInMap() {
