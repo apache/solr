@@ -132,18 +132,20 @@ public class PartitionManager {
     // sync on the PartitionWork instead, which is unique per partition and shared by all threads
     // that work on that partition.
     final PartitionWork partitionWork = partitionWorkMap.get(partition);
+    // normally impossible because consumer should always call #getPartitionWork first
+    // which creates the instance if it doesn't exist.
     if (partitionWork == null) {
-      // normally impossible because consumer should always call #getPartitionWork first
-      // which creates the instance if it doesn't exist.
-      log.warn("No PartitionWork for partition {}, likely programming error.", partition);
-      return;
+      throw new IllegalStateException(
+          "PartitionWork for partition " + partition + " not found, likely programming error.");
     }
+
     synchronized (partitionWork) {
       // remove every completed work unit at the head of the queue, stopping at the first one
       // that is still in flight - a work unit's offset may only be committed once all of the
       // work units before it have been committed too.
       long committableOffset = -1;
       WorkUnit workUnit;
+      Throwable failure = null;
       try {
         while ((workUnit = partitionWork.partitionQueue.peek()) != null) {
           if (!isComplete(workUnit, partition)) {
@@ -153,11 +155,26 @@ public class PartitionManager {
           partitionWork.partitionQueue.poll();
           committableOffset = workUnit.nextOffset;
         }
+      } catch (Throwable t) {
+        failure = t;
+        throw t;
       } finally {
         // commit whatever progress was already verified in this drain, even if a later
         // unit's isComplete() threw - otherwise that progress silently gets lost.
         if (committableOffset >= 0) {
-          updateOffset(partition, committableOffset);
+          try {
+            updateOffset(partition, committableOffset);
+          } catch (Throwable commitFailure) {
+            if (commitFailure instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
+            }
+            // don't let a secondary commit failure mask the real work-item failure
+            if (failure != null) {
+              failure.addSuppressed(commitFailure);
+            } else {
+              throw commitFailure;
+            }
+          }
         }
       }
     }

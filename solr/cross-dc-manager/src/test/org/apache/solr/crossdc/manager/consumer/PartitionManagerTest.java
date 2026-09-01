@@ -23,6 +23,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -153,6 +154,43 @@ public class PartitionManagerTest {
     }
 
     verify(consumer, never()).commitSync(anyMap());
+  }
+
+  /**
+   * When a later unit's isComplete() fails after an earlier unit already requires a commit, and the
+   * commit itself then also fails (e.g. a partition rebalance mid-drain), the original work-item
+   * failure must still be the one that propagates - with the commit failure attached as suppressed
+   * rather than replacing the original failure.
+   */
+  @Test
+  public void testCommitFailurePropgates() {
+    PartitionManager.WorkUnit first = enqueue(109);
+    PartitionManager.WorkUnit second = enqueue(119);
+
+    first.workItems.add(CompletableFuture.completedFuture(null));
+    second.workItems.add(CompletableFuture.failedFuture(new IllegalStateException("boom")));
+
+    RuntimeException commitFailure = new RuntimeException("commit failed");
+    doThrow(commitFailure).when(consumer).commitSync(anyMap());
+
+    Throwable thrown = null;
+    try {
+      partitionManager.checkOffsetsAndUpdate(PARTITION);
+      fail("expected the work item failure to be rethrown");
+    } catch (Throwable e) {
+      thrown = e;
+      // the real root cause must still be the one that surfaces
+      assertEquals(IllegalStateException.class, thrown.getClass());
+      assertEquals("boom", thrown.getMessage());
+      // with the secondary commit failure preserved rather than discarded
+      assertEquals(1, thrown.getSuppressed().length);
+      assertSame(commitFailure, thrown.getSuppressed()[0]);
+    }
+
+    // the earlier unit's offset was still attempted, even though the commit itself failed
+    verify(consumer).commitSync(Map.of(PARTITION, new OffsetAndMetadata(110)));
+    assertEquals(1, work.partitionQueue.size());
+    assertSame(second, work.partitionQueue.peek());
   }
 
   /**
