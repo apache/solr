@@ -34,6 +34,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -232,5 +233,6 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
       producer.flush();
       producer.close();
     }
+    IOUtils.closeQuietly(consumer);
   }
 }
