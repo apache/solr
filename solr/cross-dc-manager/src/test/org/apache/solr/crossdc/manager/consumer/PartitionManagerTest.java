@@ -176,7 +176,6 @@ public class PartitionManagerTest {
     Throwable thrown = null;
     try {
       partitionManager.checkOffsetsAndUpdate(PARTITION);
-      fail("expected the work item failure to be rethrown");
     } catch (Throwable e) {
       thrown = e;
       // the real root cause must still be the one that surfaces
@@ -185,6 +184,9 @@ public class PartitionManagerTest {
       // with the secondary commit failure preserved rather than discarded
       assertEquals(1, thrown.getSuppressed().length);
       assertSame(commitFailure, thrown.getSuppressed()[0]);
+    }
+    if (thrown == null) {
+      fail("expected the work item failure to be rethrown");
     }
 
     // the earlier unit's offset was still attempted, even though the commit itself failed
