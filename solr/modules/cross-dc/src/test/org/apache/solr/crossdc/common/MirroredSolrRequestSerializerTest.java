@@ -21,6 +21,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 public class MirroredSolrRequestSerializerTest extends SolrTestCase {
@@ -54,5 +55,28 @@ public class MirroredSolrRequestSerializerTest extends SolrTestCase {
                   .getFieldValue("test");
       assertEquals(fieldValue, deserValue);
     }
+  }
+
+  @Test
+  public void testMultivaluedParamsSurviveRoundTrip() {
+    MirroredSolrRequestSerializer serializer = new MirroredSolrRequestSerializer();
+    UpdateRequest req = new UpdateRequest();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    req.add(doc);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", "single-value");
+    params.add("fq", "a", "b", "c");
+    req.setParams(params);
+
+    MirroredSolrRequest<?> mirroredRequest = new MirroredSolrRequest<>(req);
+    byte[] data = serializer.serialize("test", mirroredRequest);
+    MirroredSolrRequest<?> deserialized = serializer.deserialize("test", data);
+
+    org.apache.solr.common.params.SolrParams deserializedParams =
+        deserialized.getSolrRequest().getParams();
+    assertEquals("single-value", deserializedParams.get("q"));
+    assertArrayEquals(new String[] {"a", "b", "c"}, deserializedParams.getParams("fq"));
   }
 }
