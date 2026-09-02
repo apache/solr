@@ -70,8 +70,8 @@ public class TestAuxIndexJoinQParserPlugin extends SolrTestCase {
 
     // the aijoin configset declares no schemaFactory, so loading it file-based would let the
     // default managed-schema factory rewrite the source-tree conf dir; work on a temp copy
-    Path aijoinConfigSet = createTempDir("aijoin");
-    PathUtils.copyDirectory(configset("aijoin"), aijoinConfigSet.resolve("conf"));
+    Path aijoinConfigSet = createTempDir("auxindexjoin");
+    PathUtils.copyDirectory(configset("auxindexjoin"), aijoinConfigSet.resolve("conf"));
     solrRule.newCollection().withConfigSet(aijoinConfigSet).create();
 
     // "minimal" uses ClassicIndexSchemaFactory, which never writes, so it's safe to use in place
