@@ -55,9 +55,9 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *   <li>no scoring -- {@code {!auxIndexJoin}} is always a constant-score match, so there's no
  *       {@code score=} local param and no scoring assertions.
- *   <li>M:1 only -- {@code AIJoinUtil#computeDocMapping} keeps exactly one to-doc per from-doc, so
- *       the join here always goes from the "from" collection's docs (each with a single-valued FK)
- *       to the "to" collection's docs by their unique key, never the reverse (one "to" doc
+ *   <li>M:1 only -- {@code JoinIndexUtil#computeDocMapping} keeps exactly one to-doc per from-doc,
+ *       so the join here always goes from the "from" collection's docs (each with a single-valued
+ *       FK) to the "to" collection's docs by their unique key, never the reverse (one "to" doc
  *       resolving to many "from" docs would silently drop matches).
  * </ul>
  */
@@ -78,7 +78,7 @@ public class DistribAuxIndexJoinFromCollectionTest extends SolrCloudTestCase {
         .withSolrXml(
             DEFAULT_CLOUD_SOLR_XML.replace(
                 "<solr>", "<solr><int name=\"indexSearcherExecutorThreads\">4</int>"))
-        .addConfig(configName, configset("aijoin"))
+        .addConfig(configName, configset("auxindexjoin"))
         .configure();
 
     Map<String, String> collectionProperties = new HashMap<>();
