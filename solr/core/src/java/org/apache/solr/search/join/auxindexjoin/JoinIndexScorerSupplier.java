@@ -493,9 +493,9 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       }
       falsePositiveToDocsBits.set(docEdges.toDocEdges()[0], docEdges.toDocEdges()[1] + 1);
     }
+    // when confirming docs, we want to start from heaviest leafs first
     if (leafJoins.size() > 1) {
-      Collections.sort(
-          leafJoins, // when confirming docs, we want to start from heaviest leafs first
+      leafJoins.sort(
           Comparator.<LeafJoin>comparingInt(
                   leafJoin ->
                       Math.toIntExact(

@@ -35,6 +35,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.JoinSegmentReference;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
@@ -141,7 +142,7 @@ class AuxIndexJoinQuery extends Query {
   private Map<Integer, Future<FromLeafJoinContext>> loadFromSide(IntHashSet fromLeafsToLoad)
       throws IOException {
     LinkedHashMap<Integer, Future<FromLeafJoinContext>> futuresByLeafOrds =
-        new LinkedHashMap<>(this.fromSearcher.getLeafContexts().size());
+        CollectionUtil.newLinkedHashMap(this.fromSearcher.getLeafContexts().size());
     final Weight fromWeight =
         this.fromSearcher.createWeight(this.fromQuery, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
 
