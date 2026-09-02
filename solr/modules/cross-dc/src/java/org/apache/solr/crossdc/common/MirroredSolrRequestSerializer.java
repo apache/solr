@@ -95,7 +95,8 @@ public class MirroredSolrRequestSerializer
       UpdateRequest updateRequest = (UpdateRequest) request;
       List docs = (List) requestMap.get("docs");
       if (docs != null) {
-        List<Map<String, Object>> docsParams = (List<Map<String, Object>>) requestMap.get("docsParams");
+        List<Map<String, Object>> docsParams =
+            (List<Map<String, Object>>) requestMap.get("docsParams");
         if (docsParams.size() != docs.size()) {
           throw new RuntimeException("docs and docsParams size mismatch");
         }
@@ -113,7 +114,8 @@ public class MirroredSolrRequestSerializer
 
       List<String> deletes = (List<String>) requestMap.get("deletes");
       if (deletes != null) {
-        List<Map<String, Object>> deletesParams = (List<Map<String, Object>>) requestMap.get("deletesParams");
+        List<Map<String, Object>> deletesParams =
+            (List<Map<String, Object>>) requestMap.get("deletesParams");
         if (deletesParams.size() != deletes.size()) {
           throw new RuntimeException("deletes and deletesParams size mismatch");
         }
