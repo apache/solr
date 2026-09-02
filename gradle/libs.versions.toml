@@ -136,6 +136,8 @@ jna = "5.19.1"
 # @keep for version alignment
 joda-time = "2.14.3"
 junit = "4.13.2"
+# @keep for version alignment
+kotlin = "2.4.0"
 # @keep used by spotless
 ktlint = "1.8.0"
 langchain4j-bom = "1.19.0"
@@ -391,6 +393,8 @@ jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 # @keep transitive dependency for version alignment
 jodatime-jodatime = { module = "joda-time:joda-time", version.ref = "joda-time" }
 junit-junit = { module = "junit:junit", version.ref = "junit" }
+# @keep transitive dependency for version alignment
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 langchain4j-anthropic = { module = "dev.langchain4j:langchain4j-anthropic" }
 langchain4j-bom = { module = "dev.langchain4j:langchain4j-bom", version.ref = "langchain4j-bom" }
 langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere" }
