@@ -18,7 +18,11 @@ package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -121,7 +125,7 @@ class AuxIndexJoinQuery extends Query {
           fromOrdsToLoad.size(),
           neededPairs.keySet());
     }
-    Future<FromLeafJoinContext>[] fromFutures = loadFromSide(fromOrdsToLoad);
+    Map<Integer, Future<FromLeafJoinContext>> fromFutures = loadFromSide(fromOrdsToLoad);
     // TODO this might produce too many small tasks
     return new JoinIndexWeight(
         this,
@@ -134,22 +138,30 @@ class AuxIndexJoinQuery extends Query {
   }
 
   @SuppressWarnings("unchecked")
-  private Future<FromLeafJoinContext>[] loadFromSide(IntHashSet fromLeafsToLoad)
+  private Map<Integer, Future<FromLeafJoinContext>> loadFromSide(IntHashSet fromLeafsToLoad)
       throws IOException {
-    Future<FromLeafJoinContext>[] futures =
-        (Future<FromLeafJoinContext>[]) (new Future<?>[this.fromSearcher.getLeafContexts().size()]);
+    LinkedHashMap<Integer, Future<FromLeafJoinContext>> futuresByLeafOrds =
+        new LinkedHashMap<>(this.fromSearcher.getLeafContexts().size());
     final Weight fromWeight =
         this.fromSearcher.createWeight(this.fromQuery, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
 
-    for (LeafReaderContext ctx : this.fromSearcher.getLeafContexts()) {
-      futures[ctx.ord] =
+    List<LeafReaderContext> fromLeafs = new ArrayList<>(this.fromSearcher.getLeafContexts());
+    // heaviest first, the smallest last
+    fromLeafs.sort(
+        Comparator.<LeafReaderContext, Boolean>comparing(ctx -> fromLeafsToLoad.contains(ctx.ord))
+            .thenComparingInt(ctx -> ctx.reader().maxDoc())
+            .reversed());
+
+    for (LeafReaderContext ctx : fromLeafs) {
+      futuresByLeafOrds.putLast(
+          ctx.ord, // the heaviest is submitted first, and accessed first as well
           this.fromExecutorService.submit(
               () ->
                   FromLeafJoinContext.heavyLoadFromLeaf(
-                      fromWeight, fromField, ctx, fromLeafsToLoad.contains(ctx.ord)));
+                      fromWeight, fromField, ctx, fromLeafsToLoad.contains(ctx.ord))));
     }
 
-    return futures;
+    return futuresByLeafOrds;
   }
 
   private @NonNull Map<String, AuxIndexManager.SegmentsTuple> getRequiredColumNames(

@@ -36,7 +36,7 @@ final class JoinIndexWeight extends Weight {
   private final ScoreMode scoreMode;
   private final float boost;
   private final IndexReader toReader;
-  private final Future<FromLeafJoinContext>[] fromColumnFutures;
+  private final Map<Integer, Future<FromLeafJoinContext>> fromColumnFutures;
 
   /**
    * [toSegmentOrd][fromSegmentOrd] -> the pair column resolved at construction time; null where the
@@ -53,7 +53,7 @@ final class JoinIndexWeight extends Weight {
       IndexReader toReader,
       ScoreMode scoreMode,
       float boost,
-      Future<FromLeafJoinContext>[] foreignColsFutures) {
+      Map<Integer, Future<FromLeafJoinContext>> foreignColsFutures) {
     super(auxIndexJoinQuery);
     this.maybeStaleJoinSearcher = maybeStaleJoinSearcher;
     this.existingJoinSegments = existingJoinSegments;

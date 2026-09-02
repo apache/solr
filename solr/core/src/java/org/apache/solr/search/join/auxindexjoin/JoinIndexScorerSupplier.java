@@ -33,7 +33,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -109,7 +108,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   final LeafReaderContext toContext;
   final Query fromQuery;
   final IndexSearcher fromSearcher;
-  private final Future<FromLeafJoinContext>[] fromColumnFutures;
+  private final Map<Integer, Future<FromLeafJoinContext>> fromColumnFutures;
   private final ScoreMode scoreMode;
   private final float boost;
   private IndexSearcher lastSeenJoinSearcher;
@@ -133,7 +132,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   /** pairs the a-priori from-edge check dropped, i.e. columns never opened at all */
   private int leafsDroppedApriori;
 
-  /** calls to {@link LazyConfimationIterator#matches()} */
+  /** calls to {@link LazyConfirmationIterator#matches()} */
   private int confirmCalls;
 
   /** those answered from the half-read union alone, with no column read */
@@ -153,11 +152,11 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
 
   private final IndexReader toReader;
 
-  private final class LazyConfimationIterator extends TwoPhaseIterator {
+  private final class LazyConfirmationIterator extends TwoPhaseIterator {
     FixedBitSet falseNegToDocsBits = null;
     private int shift;
 
-    private LazyConfimationIterator(DocIdSetIterator approximation) {
+    private LazyConfirmationIterator(DocIdSetIterator approximation) {
       super(approximation);
     }
 
@@ -342,7 +341,8 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
             // the global firstToDoc (e.g. under a boolean conjunction); a match below shift
             // is unreachable -- the iterator only moves forward -- so it's dropped rather
             // than written at a negative offset
-            if (toDocMatch >= shift) {
+            // Also. we don't need toDocs less than one we're confirming currently
+            if (toDocMatch >= shift && toDocMatch >= earlyExitDoc) {
               matchedToDocs.set(toDocMatch - shift);
               if (toDocMatch == earlyExitDoc) {
                 confirmedCurrent = true;
@@ -418,7 +418,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       IndexSearcher weightAgeJoinSearcher,
       IndexSearcher scorerSupplierAgeJoinSearcher,
       AuxIndexManager joinIndex,
-      Future<FromLeafJoinContext>[] fromColumnFutures,
+      Map<Integer, Future<FromLeafJoinContext>> fromColumnFutures,
       ScoreMode scoreMode,
       float boost)
       throws ExecutionException, InterruptedException, IOException {
@@ -493,7 +493,19 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       }
       falsePositiveToDocsBits.set(docEdges.toDocEdges()[0], docEdges.toDocEdges()[1] + 1);
     }
-    // TODO and only here is worth to order cells by count in join column
+    if (leafJoins.size() > 1) {
+      Collections.sort(
+          leafJoins, // when confirming docs, we want to start from heaviest leafs first
+          Comparator.<LeafJoin>comparingInt(
+                  leafJoin ->
+                      Math.toIntExact(
+                          Math.min(
+                              leafJoin
+                                  .fromMatchCount, // use a min of both side as an estimate of join
+                              // cardinality
+                              leafJoin.edges.toCount())))
+              .reversed());
+    }
     logContextSetUp();
   }
 
@@ -723,15 +735,15 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
    */
   private List<LeafJoin> createLeafJoins()
       throws ExecutionException, InterruptedException, IOException {
-    List<LeafReaderContext> leaves = new ArrayList<>(this.fromSearcher.getLeafContexts());
-    Collections.shuffle(leaves, ThreadLocalRandom.current());
-
     List<LeafJoin> tasks = new ArrayList<>();
-    for (LeafReaderContext fromContext : leaves) {
-      FromLeafJoinContext matchAndCount = this.fromColumnFutures[fromContext.ord].get();
-      if (matchAndCount == null) {
+    for (Future<FromLeafJoinContext> fromContextFuture : this.fromColumnFutures.values()) {
+      // block on them in the given order, expecting to park on the longest first, and then read
+      // shorter with no locks
+      FromLeafJoinContext matchAndCount = fromContextFuture.get();
+      if (matchAndCount == null) { // no hits for this from-side leaf.
         continue;
       }
+      LeafReaderContext fromContext = this.fromSearcher.getLeafContexts().get(matchAndCount.ord);
       DocIdSetIterator matchedFromDocs;
       if (matchAndCount.matches != null
           && (matchedFromDocs = matchAndCount.matches.iterator()) != null
@@ -747,9 +759,6 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
                 matchAndCount.matches.count()));
       }
     }
-    // process the from segments with the most matches first
-    // TODO won't we reorder them again then? why do we do it here though?
-    tasks.sort(Comparator.<LeafJoin>comparingLong(t -> t.fromMatchCount).reversed());
     return tasks;
   }
 
@@ -764,7 +773,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     DocIdSetIterator approximation =
         new BitSetIterator(falsePositiveToDocsBits, matchedToDocsCount);
 
-    TwoPhaseIterator twoPhase = new LazyConfimationIterator(approximation);
+    TwoPhaseIterator twoPhase = new LazyConfirmationIterator(approximation);
     return new ConstantScoreScorer(boost, scoreMode, twoPhase);
   }
 

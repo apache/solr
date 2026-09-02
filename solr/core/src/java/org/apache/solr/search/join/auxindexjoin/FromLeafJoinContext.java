@@ -28,12 +28,15 @@ import org.slf4j.LoggerFactory;
 class FromLeafJoinContext {
   final JoinIndexUtils.CacheAndCount matches;
   final ForeignKeyColumn fkColumn;
+  final int ord;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public FromLeafJoinContext(JoinIndexUtils.CacheAndCount matches, ForeignKeyColumn fkColumn) {
+  public FromLeafJoinContext(
+      JoinIndexUtils.CacheAndCount matches, ForeignKeyColumn fkColumn, int ord) {
     this.matches = matches;
     this.fkColumn = fkColumn;
+    this.ord = ord;
   }
 
   static @NonNull FromLeafJoinContext heavyLoadFromLeaf(
@@ -54,9 +57,9 @@ class FromLeafJoinContext {
       }
       if (loadFk) {
         // waste case: noone to-seg read FK,
-        return new FromLeafJoinContext(docset, new ForeignKeyColumn(ctx, fromField));
+        return new FromLeafJoinContext(docset, new ForeignKeyColumn(ctx, fromField), ctx.ord);
       } else {
-        return new FromLeafJoinContext(docset, null);
+        return new FromLeafJoinContext(docset, null, ctx.ord);
       }
     } catch (IOException e) {
       throw new UncheckedIOException(e);
