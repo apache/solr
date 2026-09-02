@@ -1,0 +1,7 @@
+title: Update GitHub Actions (major)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4854
+  url: https://github.com/apache/solr/pull/4854
