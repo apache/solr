@@ -23,6 +23,8 @@ Following these guidelines has given us the following (non-exhaustive) list of v
 * `/api/backups/specificBackupName/versions/specificVersion`
 * `/api/cluster/nodes/specificNodeName/roles`
 * `/api/cluster/nodes/specificNodeName/roles/specificRoleName`
+* `/api/cluster/commands`
+* `/api/cluster/commands/specificCommandId`
 * `/api/cluster/properties`
 * `/api/cluster/properties/specificPropertyName`
 * `/api/collections`

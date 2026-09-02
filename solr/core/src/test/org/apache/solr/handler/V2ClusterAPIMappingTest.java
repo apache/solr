@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler;
 
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -70,15 +69,6 @@ public class V2ClusterAPIMappingTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAsyncCommandStatusAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params("/cluster/command-status/someId", "GET", null);
-
-    assertEquals(CollectionParams.CollectionAction.REQUESTSTATUS.lowerName, v1Params.get(ACTION));
-    assertEquals("someId", v1Params.get(REQUESTID));
-  }
-
-  @Test
   public void testClusterOverseerAllParams() throws Exception {
     final SolrParams v1Params = captureConvertedV1Params("/cluster/overseer", "GET", null);
 
@@ -90,15 +80,6 @@ public class V2ClusterAPIMappingTest extends SolrTestCaseJ4 {
     final SolrParams v1Params = captureConvertedV1Params("/cluster", "GET", null);
 
     assertEquals(CollectionAction.CLUSTERSTATUS.lowerName, v1Params.get(ACTION));
-  }
-
-  @Test
-  public void testDeleteCommandStatusAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params("/cluster/command-status/someId", "DELETE", null);
-
-    assertEquals(CollectionParams.CollectionAction.DELETESTATUS.lowerName, v1Params.get(ACTION));
-    assertEquals("someId", v1Params.get(REQUESTID));
   }
 
   @Test
