@@ -99,6 +99,17 @@ Otherwise, every pair column built in the same round is batched into a single se
 +
 If `true`, writing a batch of pair columns blocks until the sidecar's searcher manager is refreshed past it, so the freshly built pairs are immediately visible to the caller that triggered the build.
 
+`useFromSideThreads`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true` (the default), searching the from-side segments and loading foreigh key columns is parallelized across the executor threads described in <<segment-level-parallelism>>.
+Note it's actual only if <<segment-level-parallelism>> is enabled and treated as `false` otherwise.
+If `false`, the from-side segments are loaded sequentially on the calling thread, bounding the build to a single thread.
+
 `sweepSamplingInterval`::
 +
 [%autowidth,frame=none]
@@ -116,10 +127,12 @@ Pass a non-positive value to sample on every call.
   <str name="dir">aijoin</str>
   <bool name="singleFieldPerSegment">false</bool>
   <bool name="blockingRefresh">true</bool>
+  <bool name="useFromSideThreads">true</bool>
   <long name="sweepSamplingInterval">60</long>
 </queryParser>
 ----
 
+[[segment-level-parallelism]]
 == Segment-level Parallelism
 
 The algorithm utilizes multiple threads on _both_ sides if multiple threads are available. So, set xref:configuration-guide:configuring-solr-xml.adoc#indexSearcherExecutorThreads[indexSearcherExecutorThreads] to `-1` or `>0` in the `solr.xml` file. Note the emphasis on _both_ above: using the xref:common-query-parameters.adoc#multithreaded-parameter[`multiThreaded`] request parameter confines the inner (`from`-side) query to a single thread, limiting performance.

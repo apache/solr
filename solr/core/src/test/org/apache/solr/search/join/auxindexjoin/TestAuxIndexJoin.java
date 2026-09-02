@@ -115,6 +115,7 @@ public class TestAuxIndexJoin extends SolrTestCase {
         new AuxIndexJoinConfig()
             .setSingleFieldPerSegment(random().nextBoolean())
             .setBlockingRefresh(random().nextBoolean())
+            .setUseFromSideThreads(random().nextBoolean())
             .setSweepSamplingInterval(TestUtil.nextInt(random(), -1, 2), TimeUnit.MINUTES);
     joinIndex = new AuxIndexManager(joinDir, config);
   }

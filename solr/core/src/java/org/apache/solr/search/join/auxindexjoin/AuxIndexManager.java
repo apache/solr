@@ -66,6 +66,7 @@ public final class AuxIndexManager implements Closeable {
   private final MergeScheduler mergeScheduler;
   private final JoinColumWriter writerDelegate;
   private final boolean blockingRefresh;
+  private final boolean useFromSideThreads;
 
   /** A pair's (from-segment, to-segment) leaf ordinals. */
   record SegmentsTuple(int fromLeafOrd, int toLeafOrd) {}
@@ -121,6 +122,7 @@ public final class AuxIndexManager implements Closeable {
             ? new SingleColumnBySegmentWriter(bulkWriter)
             : bulkWriter;
     this.blockingRefresh = config.getBlockingRefresh();
+    this.useFromSideThreads = config.getUseFromSideThreads();
   }
 
   /**
@@ -142,13 +144,10 @@ public final class AuxIndexManager implements Closeable {
       IndexSearcher fromSearcher,
       String toField,
       ExecutorService fromExecutor) {
-    return new AuxIndexJoinQuery(
-        this,
-        fromField,
-        fromQuery,
-        fromSearcher,
-        toField,
-        fromExecutor == null ? new DirectExecutorService() : fromExecutor);
+    if (fromExecutor == null || !useFromSideThreads) {
+      fromExecutor = new DirectExecutorService();
+    }
+    return new AuxIndexJoinQuery(this, fromField, fromQuery, fromSearcher, toField, fromExecutor);
   }
 
   /**
