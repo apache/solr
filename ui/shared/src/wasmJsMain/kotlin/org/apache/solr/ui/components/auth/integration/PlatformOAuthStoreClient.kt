@@ -58,6 +58,7 @@ private val logger = KotlinLogging.logger {}
  * @property httpClient A preconfigured HTTP client that has the base URL of a Solr instance
  * already set.
  */
+@OptIn(ExperimentalWasmJsInterop::class)
 actual class PlatformOAuthStoreClient actual constructor(private val httpClient: HttpClient) : OAuthStoreProvider.Client {
 
     actual override suspend fun authenticate(

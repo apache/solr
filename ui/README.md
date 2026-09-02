@@ -54,12 +54,12 @@ The WebAssembly app is built and published at [Apache nightlies](https://nightli
 and bundled during the Solr build (see [README.md](../README.md)) into the current webapp.
 You can choose the built to include by setting `solr.ui.commit` in the `gradle.properties`,
 or build from source by setting `solr.ui.buildFromSource=true`. Once the Solr project then access
-[`http://localhost:8983/solr/compose`](http://localhost:8983/solr/compose).
+[`http://127.0.0.1:8983/solr/ui/`](http://127.0.0.1:8983/solr/ui/).
 
 Various references are included in the webapp for already migrated pages.
 
 > Note that the standalone WebAssembly app executed via
-> `./gradlew :solr:ui:wasmJsBrowserRun` runs on port `8080` and will run
+> `./gradlew :webApp:wasmJsBrowserRun` runs on port `8080` and will run
 > into CORS exceptions. Therefore, the usage of it for development is
 > discouraged.
 >

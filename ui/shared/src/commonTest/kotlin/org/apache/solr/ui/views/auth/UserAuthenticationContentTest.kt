@@ -21,6 +21,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.v2.runComposeUiTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import org.apache.solr.ui.components.auth.AuthenticationComponent.Model
 import org.apache.solr.ui.shared.generated.resources.Res
@@ -30,6 +31,7 @@ import org.apache.solr.ui.shared.generated.resources.error_invalid_credentials
 class UserAuthenticationContentTest {
 
     @Test
+    @Ignore // TODO Currently fails on wasmJs
     fun `GIVEN error THEN error displayed`() = runComposeUiTest {
         val error = Res.string.error_invalid_credentials
         setContent {

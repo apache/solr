@@ -30,6 +30,7 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
+import io.ktor.http.fullPath
 import io.ktor.http.path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -95,11 +96,11 @@ class DefaultStartComponentIntegrationTest {
             message = "Expected one request in history",
         )
         assertEquals(
-            expected = URLBuilder(DEFAULT_SOLR_URL).apply {
-                // As of now connection is established by calling this endpoint
-                path("api/node/system")
-            }.build(),
-            actual = engine.requestHistory[0].url,
+            // As of now connection is established by calling this endpoint
+            // Note that the default host is the window.location.url (localhost:9876) on wasmJs
+            // and 127.0.0.1:8983 on JVM
+            expected = "/api/node/system",
+            actual = engine.requestHistory[0].url.fullPath,
         )
     }
 

@@ -40,6 +40,13 @@ dependencyResolutionManagement {
         }
         mavenCentral()
     }
+
+  // Use root project's version catalog for project-wide dependencies
+  versionCatalogs {
+    create("rootLibs") {
+      from(files("../gradle/libs.versions.toml"))
+    }
+  }
 }
 
 plugins {

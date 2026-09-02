@@ -1,3 +1,5 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,11 +18,12 @@
  */
 
 plugins {
-    alias(libs.plugins.kotlin.multiplatform) apply false
-    alias(libs.plugins.kotlin.jvm) apply false
-    alias(libs.plugins.compose.multiplatform) apply false
-    alias(libs.plugins.compose.compiler) apply false
-    alias(libs.plugins.ktor) apply false
+  alias(libs.plugins.kotlin.multiplatform) apply false
+  alias(libs.plugins.kotlin.jvm) apply false
+  alias(libs.plugins.compose.multiplatform) apply false
+  alias(libs.plugins.compose.compiler) apply false
+  alias(libs.plugins.ktor) apply false
+  alias(rootLibs.plugins.diffplug.spotless) apply false
 }
 
 group = "org.apache.solr.ui"
@@ -38,4 +41,19 @@ subprojects {
   }
   // mavenCentral / enterprise mirror, shared with the rest of the build.
   apply(from = rootProject.file("../build-tools/build-infra/declare-repositories.gradle"))
+
+  // Configure spotless for kotlin sources
+  plugins.apply(rootProject.rootLibs.plugins.diffplug.spotless.get().pluginId)
+
+  project.extensions.getByType<SpotlessExtension>().apply {
+    kotlin {
+      // Apply to all Kotlin and Kotlin DSL files
+      target("**/*.kt", "**/*.kts")
+
+      // TODO Enable ktlint in the UI module
+//      ktlint(rootProject.rootLibs.versions.ktlint.get())
+//        .setEditorConfigPath(rootProject.file("../.editorconfig"))
+//        .customRuleSets(listOf(libs.nlopez.compose.ktlintrules.get().toString()))
+    }
+  }
 }
