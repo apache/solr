@@ -90,8 +90,8 @@ eclipse-jetty = "12.0.34"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.7.1.202607240634-r"
 essenty = "2.5.0"
-fasterxml = "2.22.0"
-fasterxml-woodstox = "7.2.1"
+fasterxml = "2.22.2"
+fasterxml-woodstox = "7.2.2"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
 # @keep for version alignment
