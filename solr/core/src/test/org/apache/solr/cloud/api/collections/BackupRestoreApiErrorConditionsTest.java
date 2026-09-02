@@ -18,7 +18,6 @@ package org.apache.solr.cloud.api.collections;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -209,7 +208,7 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
   public void testListAndDeleteFailOnOldBackupLocations() throws Exception {
     final String nonIncrementalBackupLocation = createTempDir().toAbsolutePath().toString();
     // Solr can no longer create this legacy format; build the marker file by hand instead.
-    final Path backupDir = Paths.get(nonIncrementalBackupLocation, BACKUP_NAME);
+    final Path backupDir = Path.of(nonIncrementalBackupLocation, BACKUP_NAME);
     Files.createDirectories(backupDir);
     Files.createFile(backupDir.resolve(BackupManager.TRADITIONAL_BACKUP_PROPS_FILE));
 
