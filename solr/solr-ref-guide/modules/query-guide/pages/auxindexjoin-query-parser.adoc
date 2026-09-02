@@ -139,4 +139,4 @@ The algorithm utilizes multiple threads on _both_ sides if multiple threads are 
 
 == Disclaimer
 
-`auxIndexJoin` is completely experimental that's why it requires explicit configuration. So, far it's evalueated within single relation (from-to index pair) only, but it should support many ones in principle. It even might not guarantee compatibility with future versions.
+`auxIndexJoin` is completely experimental, which is why it requires explicit configuration. So, far it's evalueated within single relation (from-to index pair) only, but it should support many ones in principle. It's parameters/usage is more subject to change with less backwards compatibility concern.
