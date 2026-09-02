@@ -30,6 +30,7 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRI
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -49,6 +50,7 @@ import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.DocBasedVersionConstraintsProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
@@ -207,7 +209,7 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
     // core.getResourceLoader().newInstance(RequestMirroringHandler.class.getName(),
     // KafkaRequestMirroringHandler.class);
 
-    conf = new KafkaCrossDcConf(properties);
+    setKafkaCrossDcConf(new KafkaCrossDcConf(properties));
 
     KafkaMirroringSink sink = new KafkaMirroringSink(conf);
 
@@ -215,7 +217,17 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
     core.addCloseHook(new MyCloseHook(closer));
 
     producerMetrics = new ProducerMetrics(core.getSolrMetricsContext().getChildContext(this), core);
-    mirroringHandler = new KafkaRequestMirroringHandler(sink);
+    setMirroringHandler(new KafkaRequestMirroringHandler(sink));
+  }
+
+  @VisibleForTesting
+  void setKafkaCrossDcConf(KafkaCrossDcConf conf) {
+    this.conf = conf;
+  }
+
+  @VisibleForTesting
+  void setMirroringHandler(KafkaRequestMirroringHandler mirroringHandler) {
+    this.mirroringHandler = mirroringHandler;
   }
 
   @Override
@@ -230,6 +242,10 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
     if (mirroringHandler == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "mirroringHandler is null");
     }
+
+    // allow distributed forwarding to other replicas/shards
+    DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist(
+        req, SERVER_SHOULD_MIRROR);
 
     // Check if mirroring is disabled in request params, defaults to true
     boolean doMirroring = req.getParams().getBool(SERVER_SHOULD_MIRROR, true);
