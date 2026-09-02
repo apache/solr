@@ -100,9 +100,11 @@ public class MirroredSolrRequestSerializer
           throw new RuntimeException("docs and docsParams size mismatch");
         }
         for (int i = 0; i < docs.size(); i++) {
-          updateRequest.add((SolrInputDocument) docs.get(i),
-              (Integer) docsParams.get(i).get(UpdateRequest.COMMIT_WITHIN),
-              (Boolean) docsParams.get(i).get(UpdateRequest.OVERWRITE));
+          Map<String, Object> docParams = docsParams.get(i);
+          updateRequest.add(
+              (SolrInputDocument) docs.get(i),
+              docParams == null ? null : (Integer) docParams.get(UpdateRequest.COMMIT_WITHIN),
+              docParams == null ? null : (Boolean) docParams.get(UpdateRequest.OVERWRITE));
         }
       } else {
         updateRequest.add("id", "1"); // TODO huh?
@@ -116,9 +118,11 @@ public class MirroredSolrRequestSerializer
           throw new RuntimeException("deletes and deletesParams size mismatch");
         }
         for (int i = 0; i < deletes.size(); i++) {
-          updateRequest.deleteById(deletes.get(i),
-              (String) deletesParams.get(i).get(ShardParams._ROUTE_),
-              (Long) deletesParams.get(i).get(UpdateRequest.VER));
+          Map<String, Object> deleteParams = deletesParams.get(i);
+          updateRequest.deleteById(
+              deletes.get(i),
+              deleteParams == null ? null : (String) deleteParams.get(ShardParams._ROUTE_),
+              deleteParams == null ? null : (Long) deleteParams.get(UpdateRequest.VER));
         }
       }
 
