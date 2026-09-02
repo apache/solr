@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.MountableFile;
 
 @ThreadLeakFilters(filters = {SolrIgnoredThreadsFilter.class, QuickPatchThreadsFilter.class})
 public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHandlerTestAbstract {
@@ -43,9 +44,15 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
 
     String baseUrl;
     try {
+      // allowPerRequestConfig is off by default (it lets a client inject arbitrary parser
+      // config, e.g. for encrypted-document passwords); enabling it here is test-only.
       tika =
-          new GenericContainer<>("apache/tika:3.2.3.0-full")
+          new GenericContainer<>("apache/tika:4.0.0-full")
               .withExposedPorts(9998)
+              .withCopyFileToContainer(
+                  MountableFile.forHostPath(getFile("extraction/tika-server-config.json")),
+                  "/tika-config.json")
+              .withCommand("-c", "/tika-config.json")
               .waitingFor(Wait.forListeningPort());
       tika.start();
       baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);

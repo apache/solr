@@ -78,7 +78,7 @@ The quickest way to run Tika Server for development is using Docker. The example
 
 [,bash]
 ----
-docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
+docker run --rm -p 9998:9998 --name tika -d apache/tika:4.0.0-full
 ----
 
 NOTE: If Solr runs in Docker too, ensure both containers share a network and use the Tika container name as the host in `tikaserver.url`.
@@ -92,7 +92,7 @@ First we start a tika server on port 9998, using Docker.
 [source,bash]
 ----
 # Start Tika Server in the background
-docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
+docker run --rm -p 9998:9998 --name tika -d apache/tika:4.0.0-full
 
 # To stop the server when done, run `docker stop tika`
 ----
@@ -384,6 +384,61 @@ Example: `passwordsFile=/path/to/passwords.txt`
 // +
 // Only applicable for `tikaserver` backend. Can only be set in `solrconfig.xml`, not per request.
 
+`tikaserver.chunks`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, splits the extracted document into Tika 4.x's `tk:chunks` -- text chunks carrying precomputed embedding vectors, produced by a server-side embedding metadata filter such as `openai-embedding-filter` -- and indexes one Solr document per chunk instead of one document for the whole source file.
+See <<Indexing Chunks with Embeddings>> below.
++
+Example: `tikaserver.chunks=true`
+
+`tikaserver.chunks.contentField`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `content`
+|===
++
+The Solr field that holds a chunk's text when `tikaserver.chunks=true`.
+This field must already exist in the schema.
+
+`tikaserver.chunks.vectorField`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `vector`
+|===
++
+The Solr `DenseVectorField`-typed field that holds a chunk's embedding when `tikaserver.chunks=true`.
+This field must already exist in the schema, with a `vectorDimension` matching the embedding filter's output dimension.
+
+`tikaserver.chunks.parentField`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `chunk_parent_id`
+|===
++
+The Solr field that holds the source document's ID on every chunk document when `tikaserver.chunks=true`.
+Chunks are indexed as plain sibling documents referencing their parent by this field, not as Solr nested/block-join child documents.
+This field must already exist in the schema.
+
+`tikaserver.config`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A raw JSON object sent as the per-request parser configuration for Tika Server (e.g., `{"pdf-parser":{"ocr":{"strategy":"NO_OCR"}}}`).
+See <<Parser-Specific Properties>> below for details and an important security note: this requires `allowPerRequestConfig=true` on the Tika Server, which is off by default.
++
+Example: `tikaserver.config={"pdf-parser":{"ocr":{"strategy":"NO_OCR"}}}`
+
 `tikaserver.maxChars`::
 +
 [%autowidth,frame=none]
@@ -540,9 +595,103 @@ So you can use the other URPs without worrying about unexpected field additions.
 
 === Parser-Specific Properties
 
-Parser-specific properties for Tika must be configured directly on your Tika Server instance. Consult the https://tika.apache.org/[Apache Tika documentation] for details.
+Server-wide parser properties (things that should apply to every request) must be configured directly on your Tika Server instance, via its own JSON configuration file. Consult the https://tika.apache.org/[Apache Tika documentation] for details.
 
-NOTE: In earlier versions of Solr Cell you could supply Tika configuration directly to Solr. This is no longer possible.
+For a single request, you can instead pass parser-specific options through Solr using the `tikaserver.config` parameter, whose value is a raw JSON object matching Tika Server's per-request configuration format.
+For example, to disable OCR for one request:
+
+[,console]
+----
+$ bin/solr post -c gettingstarted example/exampledocs/solr-word.pdf --params 'literal.id=doc1&tikaserver.config={"pdf-parser":{"ocr":{"strategy":"NO_OCR"}}}'
+----
+
+[IMPORTANT]
+====
+`tikaserver.config` requires your Tika Server to be started with `allowPerRequestConfig: true` in its own JSON configuration (under the `server` section).
+This is off by default, and Tika Server logs a warning when it is enabled, because it lets any client that can reach `/update/extract` inject arbitrary parser configuration, including options that spawn external processes such as OCR.
+Only enable it if you need per-request configuration, and treat access to your Solr instance's extraction endpoint accordingly.
+
+[source,json]
+----
+{
+  "server": {
+    "allowPerRequestConfig": true
+  }
+}
+----
+====
+
+`tikaserver.config` is combined with any password resolved from `resource.password` or `passwordsFile` (see <<Indexing Encrypted Documents>>) into a single request to Tika Server, and is only supported for non-recursive extraction (`tikaserver.recursive=false`, the default); Tika Server has no way to accept per-request configuration for recursive extraction while also returning the XHTML content Solr Cell needs.
+
+=== Indexing Chunks with Embeddings
+
+Tika 4.x's `tika-inference` module adds optional server-side embedding metadata filters (e.g. `openai-embedding-filter`) that split a parsed document's content into semantically-bounded chunks -- splitting on Markdown heading and paragraph boundaries -- and attach a precomputed embedding vector to each chunk.
+Setting `tikaserver.chunks=true` tells Solr Cell to read those chunks back out and index one Solr document per chunk, each with its own text and embedding vector, instead of a single document for the whole source file.
+This turns Solr Cell into a path straight from "binary document in" to "kNN-searchable chunks out," using Solr's existing xref:query-guide:dense-vector-search.adoc[dense vector search] support.
+
+Chunking happens entirely on the Tika Server side; Solr Cell does not call an embeddings API itself.
+You must configure the embedding filter directly in Tika Server's own JSON configuration file (the same mechanism used to start Tika Server with `-c`, see <<Starting Tika Server with Docker>>), for example:
+
+[source,json]
+----
+{
+  "server": {},
+  "metadata-filters": [
+    {
+      "openai-embedding-filter": {
+        "baseUrl": "https://api.openai.com",
+        "model": "text-embedding-3-small",
+        "apiKey": "${OPENAI_API_KEY}"
+      }
+    }
+  ]
+}
+----
+
+Consult the https://tika.apache.org/[Apache Tika documentation] for the full set of embedding filter options.
+
+Before indexing, your collection's schema must already define the three fields `tikaserver.chunks` writes to: a text field for the chunk content (default `content`), a `DenseVectorField` for the embedding (default `vector`, with `vectorDimension` matching your embedding model's output), and a string field for the parent document ID (default `chunk_parent_id`).
+For example:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' -d '{
+  "add-field-type": {
+    "name": "knn_vector",
+    "class": "solr.DenseVectorField",
+    "vectorDimension": 1536,
+    "similarityFunction": "cosine"
+  }
+}' 'http://localhost:8983/solr/gettingstarted/schema'
+
+curl -X POST -H 'Content-type:application/json' -d '{
+  "add-field": {"name": "vector", "type": "knn_vector", "indexed": true, "stored": true},
+  "add-field": {"name": "chunk_parent_id", "type": "string", "indexed": true, "stored": true}
+}' 'http://localhost:8983/solr/gettingstarted/schema'
+----
+
+With the schema in place, index a document with `tikaserver.chunks=true`:
+
+[source,bash]
+----
+curl "http://localhost:8983/solr/gettingstarted/update/extract?tikaserver.chunks=true&literal.id=doc1&commit=true" \
+  -F "myfile=@report.md"
+----
+
+Each resulting chunk document gets an ID of the form `<parentId>-chunk-<n>` (`doc1-chunk-0`, `doc1-chunk-1`, ...), a `chunk_parent_id` of `doc1`, and its own `content`/`vector`.
+Any `literal.__fieldname__` parameters are copied onto every chunk document.
+You can then run a kNN query scoped to (or across) a document's chunks:
+
+[source,bash]
+----
+curl "http://localhost:8983/solr/gettingstarted/select?q={!knn+f=vector+topK=5}%5B0.01,...%5D&fq=chunk_parent_id:doc1"
+----
+
+[NOTE]
+====
+This is a v1 feature: chunk documents are indexed as plain sibling documents (matching the "standard RAG pattern" used by LangChain, LlamaIndex, and Haystack), not as Solr nested/block-join child documents, and the `fmap`/`capture`/`captureAttr`/`xpath` parameters -- which operate on Tika's XHTML output -- have no effect in chunk mode.
+If `tikaserver.chunks=true` but the Tika Server response carries no `tk:chunks` (for example, because no embedding filter is configured), Solr Cell raises an error rather than silently indexing nothing.
+====
 
 === Indexing Encrypted Documents
 

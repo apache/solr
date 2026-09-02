@@ -157,4 +157,39 @@ public interface ExtractingParams {
 
   /** Default or per-request timeout in seconds for TikaServer HTTP calls. */
   String TIKASERVER_TIMEOUT_SECS = "tikaserver.timeoutSeconds";
+
+  /**
+   * Optional raw JSON object sent as the "config" part of a per-request TikaServer configuration
+   * call (e.g. {@code {"pdf-parser":{"ocr":{"strategy":"no_ocr"}}}}). Tika Server 4.x removed its
+   * X-Tika-* configuration headers in favor of this JSON mechanism; the server must additionally
+   * have {@code allowPerRequestConfig=true} set, or the request is rejected with 403. Ignored for
+   * recursive (tikaserver.recursive) requests, since TikaServer has no XML-output variant of
+   * /rmeta/config.
+   */
+  String TIKASERVER_CONFIG_JSON = "tikaserver.config";
+
+  /**
+   * If {@code true}, splits the extracted document into Tika 4.x's {@code tk:chunks} (produced by a
+   * server-side embedding metadata filter, e.g. {@code openai-embedding-filter}) and indexes one
+   * Solr document per chunk, each carrying its own embedding vector, instead of one document for
+   * the whole source file. Requires the Tika Server to be configured with an embedding filter;
+   * throws if the response carries no {@code tk:chunks}. See {@link
+   * #TIKASERVER_CHUNKS_CONTENT_FIELD}, {@link #TIKASERVER_CHUNKS_VECTOR_FIELD}, and {@link
+   * #TIKASERVER_CHUNKS_PARENT_FIELD} for the Solr field names used; all three must already exist in
+   * the schema.
+   */
+  String TIKASERVER_CHUNKS = "tikaserver.chunks";
+
+  /** Solr field to hold a chunk's text when {@link #TIKASERVER_CHUNKS} is enabled. */
+  String TIKASERVER_CHUNKS_CONTENT_FIELD = "tikaserver.chunks.contentField";
+
+  /** Solr field to hold a chunk's embedding vector when {@link #TIKASERVER_CHUNKS} is enabled. */
+  String TIKASERVER_CHUNKS_VECTOR_FIELD = "tikaserver.chunks.vectorField";
+
+  /**
+   * Solr field to hold the source document's id on every chunk document when {@link
+   * #TIKASERVER_CHUNKS} is enabled. Chunks are indexed as plain sibling documents referencing their
+   * parent by this field, not as Solr nested/block-join child documents.
+   */
+  String TIKASERVER_CHUNKS_PARENT_FIELD = "tikaserver.chunks.parentField";
 }

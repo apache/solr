@@ -46,4 +46,6 @@ dependencies {
   testImplementation libs.junit.junit
   testImplementation libs.testcontainers
   testImplementation libs.carrotsearch.randomizedtesting.runner
+  // Embedded mock HTTP server for TikaServerExtractionBackendTest's chunk-embeddings tests
+  testImplementation libs.eclipse.jetty.server
 }

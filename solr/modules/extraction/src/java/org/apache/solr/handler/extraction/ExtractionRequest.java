@@ -38,6 +38,8 @@ public class ExtractionRequest {
   public final boolean tikaServerRecursive;
   public final Integer tikaServerTimeoutSeconds; // optional per-request override
   public final Map<String, String> tikaServerRequestHeaders = new HashMap<>();
+  public final String tikaServerConfigJson; // optional raw JSON "config" part; TikaServer 4.x only
+  public final boolean tikaServerChunks; // split into tk:chunks instead of one whole document
 
   /**
    * Constructs an ExtractionRequest object containing metadata and configurations for extraction
@@ -59,6 +61,10 @@ public class ExtractionRequest {
    *     only). If null or ≤ 0, the default timeout will be used
    * @param tikaServerRequestHeaders optional headers to be included in requests to the extraction
    *     service. TikaServer only
+   * @param tikaServerConfigJson optional raw JSON object sent as the per-request "config" part.
+   *     TikaServer 4.x only; requires allowPerRequestConfig=true on the server
+   * @param tikaServerChunks if true, extract Tika 4.x's tk:chunks (one per embedding-filter chunk)
+   *     instead of a single whole-document result. TikaServer 4.x only
    */
   private ExtractionRequest(
       String streamType,
@@ -73,7 +79,9 @@ public class ExtractionRequest {
       String extractFormat,
       boolean tikaServerRecursive,
       Integer tikaServerTimeoutSeconds,
-      Map<String, String> tikaServerRequestHeaders) {
+      Map<String, String> tikaServerRequestHeaders,
+      String tikaServerConfigJson,
+      boolean tikaServerChunks) {
     this.streamType = streamType;
     this.resourceName = resourceName;
     this.contentType = contentType;
@@ -89,6 +97,8 @@ public class ExtractionRequest {
     if (tikaServerRequestHeaders != null) {
       this.tikaServerRequestHeaders.putAll(tikaServerRequestHeaders);
     }
+    this.tikaServerConfigJson = tikaServerConfigJson;
+    this.tikaServerChunks = tikaServerChunks;
   }
 
   /** Creates a new Builder for constructing ExtractionRequest instances. */
@@ -111,6 +121,8 @@ public class ExtractionRequest {
     private boolean tikaServerRecursive = false;
     private Integer tikaServerTimeoutSeconds;
     private Map<String, String> tikaServerRequestHeaders;
+    private String tikaServerConfigJson;
+    private boolean tikaServerChunks = false;
 
     private Builder() {}
 
@@ -179,6 +191,16 @@ public class ExtractionRequest {
       return this;
     }
 
+    public Builder tikaServerConfigJson(String tikaServerConfigJson) {
+      this.tikaServerConfigJson = tikaServerConfigJson;
+      return this;
+    }
+
+    public Builder tikaServerChunks(boolean tikaServerChunks) {
+      this.tikaServerChunks = tikaServerChunks;
+      return this;
+    }
+
     public ExtractionRequest build() {
       return new ExtractionRequest(
           streamType,
@@ -193,7 +215,9 @@ public class ExtractionRequest {
           extractFormat,
           tikaServerRecursive,
           tikaServerTimeoutSeconds,
-          tikaServerRequestHeaders);
+          tikaServerRequestHeaders,
+          tikaServerConfigJson,
+          tikaServerChunks);
     }
   }
 }

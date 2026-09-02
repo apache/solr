@@ -39,7 +39,7 @@ Indexing binary files (PDF, DOCX, PPTX, etc.) with the Post Tool requires the So
 .Start a Tika Server quickly using Docker (exposes port 9998 on localhost)
 [,bash]
 ----
-docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
+docker run --rm -p 9998:9998 --name tika -d apache/tika:4.0.0-full
 ----
 
 === Start Solr with the extraction module enabled

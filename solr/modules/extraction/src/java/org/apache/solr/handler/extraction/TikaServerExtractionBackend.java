@@ -18,15 +18,21 @@ package org.apache.solr.handler.extraction;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -37,15 +43,23 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RefCounted;
 import org.apache.tika.sax.BodyContentHandler;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
+import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.helpers.DefaultHandler;
 
 /**
@@ -53,6 +67,8 @@ import org.xml.sax.helpers.DefaultHandler;
  * import of org.apache.tika.sax.BodyContentHandler;
  */
 public class TikaServerExtractionBackend implements ExtractionBackend {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /**
    * Default maximum response size (100MB) to prevent excessive memory usage from large documents
    */
@@ -173,26 +189,99 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
    *     request.tikaserverRecursive</code>
    */
   InputStream callTikaServer(InputStream inputStream, ExtractionRequest request) throws Exception {
-    String url = baseUrl + (request.tikaServerRecursive ? "/rmeta" : "/tika");
+    ExtractionMetadata md = buildMetadataFromRequest(request);
+    String pwd = resolvePassword(request, md);
+    String configJson = resolveConfigJson(request, pwd);
 
     HttpClient client = acquiredResourcesRef.get().client;
-
-    Request req = client.newRequest(url).method("PUT");
     Duration effectiveTimeout =
         (request.tikaServerTimeoutSeconds != null && request.tikaServerTimeoutSeconds > 0)
             ? Duration.ofSeconds(request.tikaServerTimeoutSeconds)
             : defaultTimeout;
-    req.timeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    // Also set idle timeout in case of heavy server side work like OCR
-    req.idleTimeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
-
-    // Headers
-    String accept = (request.tikaServerRecursive ? "application/json" : "text/xml");
-    req.headers(h -> h.add("Accept", accept));
     String contentType = (request.streamType != null) ? request.streamType : request.contentType;
-    if (contentType != null) {
-      req.headers(h -> h.add("Content-Type", contentType));
+
+    String url;
+    Request req;
+    if (configJson != null && request.tikaServerRecursive) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Per-request TikaServer config (password or "
+              + ExtractingParams.TIKASERVER_CONFIG_JSON
+              + ") is not supported together with "
+              + ExtractingParams.TIKASERVER_RECURSIVE
+              + "=true: TikaServer 4.x has no XML-output variant of /rmeta/config.");
     }
+    if (configJson != null) {
+      // Tika 4.x dropped its X-Tika-* configuration headers (including Password) in favor of a
+      // per-request JSON "config" part on a multipart request; the server must additionally opt
+      // in with allowPerRequestConfig=true. There is no XML content-handler variant of
+      // /rmeta/config in Tika 4.x, so this path only covers non-recursive extraction (checked
+      // above).
+      url = baseUrl + "/tika/config/xml";
+      req = client.newRequest(url).method("POST");
+      req.headers(h -> h.add("Accept", "text/xml"));
+
+      HttpFields.Mutable fileFields = HttpFields.build();
+      if (contentType != null) {
+        fileFields.add(HttpHeader.CONTENT_TYPE, contentType);
+      }
+      try (MultiPartRequestContent multiPart = new MultiPartRequestContent()) {
+        multiPart.addPart(
+            new MultiPart.ContentSourcePart(
+                "file",
+                request.resourceName,
+                fileFields,
+                new InputStreamRequestContent(inputStream)));
+        multiPart.addPart(
+            new MultiPart.ContentSourcePart(
+                "config",
+                null,
+                HttpFields.build().add(HttpHeader.CONTENT_TYPE, "application/json"),
+                new StringRequestContent(configJson)));
+        req.body(multiPart);
+      }
+    } else {
+      // Tika 4.x's default content handler is Markdown, not XHTML/XML (TIKA-4663); Solr's SAX-based
+      // content handling needs the previous XHTML/XML output, requested via the /xml path variants.
+      url = baseUrl + (request.tikaServerRecursive ? "/rmeta/xml" : "/tika/xml");
+      req = client.newRequest(url).method("PUT");
+      String accept = (request.tikaServerRecursive ? "application/json" : "text/xml");
+      req.headers(h -> h.add("Accept", accept));
+      if (contentType != null) {
+        req.headers(h -> h.add("Content-Type", contentType));
+      }
+      if (request.resourceName != null) {
+        req.headers(
+            h ->
+                h.add(
+                    "Content-Disposition",
+                    "attachment; filename=\"" + request.resourceName + "\""));
+      }
+      if (contentType != null) {
+        req.body(new InputStreamRequestContent(contentType, inputStream));
+      } else {
+        req.body(new InputStreamRequestContent(inputStream));
+      }
+    }
+
+    return sendAndReadResponse(req, url, effectiveTimeout, request, !request.tikaServerRecursive);
+  }
+
+  /**
+   * Sends an already-built request and validates/returns its response body as a bounded {@link
+   * InputStream}, shared by {@link #callTikaServer} and {@link #callTikaServerForChunks}.
+   *
+   * @param allowPartial422 if true, a 422 (Unprocessable Entity) response with a non-empty body is
+   *     treated as a partial success rather than a hard failure (see {@link #callTikaServer} for
+   *     why this only applies to the non-recursive raw endpoints)
+   */
+  private InputStream sendAndReadResponse(
+      Request req,
+      String url,
+      Duration effectiveTimeout,
+      ExtractionRequest request,
+      boolean allowPartial422)
+      throws Exception {
     if (!request.tikaServerRequestHeaders.isEmpty()) {
       req.headers(
           h ->
@@ -202,32 +291,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
                   }));
     }
 
-    ExtractionMetadata md = buildMetadataFromRequest(request);
-    if (request.resourcePassword != null || request.passwordsMap != null) {
-      RegexRulesPasswordProvider passwordProvider = new RegexRulesPasswordProvider();
-      if (request.resourcePassword != null) {
-        passwordProvider.setExplicitPassword(request.resourcePassword);
-      }
-      if (request.passwordsMap != null) {
-        passwordProvider.setPasswordMap(request.passwordsMap);
-      }
-      String pwd = passwordProvider.getPassword(md);
-      if (pwd != null) {
-        req.headers(h -> h.add("Password", pwd)); // Tika Server expects this header if provided
-      }
-    }
-    if (request.resourceName != null) {
-      req.headers(
-          h ->
-              h.add(
-                  "Content-Disposition", "attachment; filename=\"" + request.resourceName + "\""));
-    }
-
-    if (contentType != null) {
-      req.body(new InputStreamRequestContent(contentType, inputStream));
-    } else {
-      req.body(new InputStreamRequestContent(inputStream));
-    }
+    req.timeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    // Also set idle timeout in case of heavy server side work like OCR
+    req.idleTimeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
 
     InputStreamResponseListener listener = new InputStreamResponseListener();
     req.send(listener);
@@ -273,7 +339,33 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     }
 
     int code = response.getStatus();
-    if (code < 200 || code >= 300) {
+    InputStream responseStream = listener.getInputStream();
+    // Tika 4.x's raw /tika* endpoints (non-recursive) return 422 whenever a container-level
+    // exception occurred during parsing -- including a non-aborting one like a writeLimit
+    // truncation -- but the body still carries whatever content was successfully extracted
+    // (there's no envelope to carry the exception itself on these endpoints; use /rmeta for
+    // that). A request that extracted nothing at all (e.g. a wrong password) also gets 422, but
+    // with an empty body -- treat that case as the failure it is instead of a silent empty
+    // "success". Peek the first byte to tell the two apart.
+    if (code == 422 && allowPartial422) {
+      PushbackInputStream peekable = new PushbackInputStream(responseStream, 1);
+      int firstByte = peekable.read();
+      if (firstByte == -1) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "TikaServer "
+                + url
+                + " returned status 422 (Unprocessable Entity) with no content -- the document"
+                + " could not be parsed at all (check the password, if one was required).");
+      }
+      peekable.unread(firstByte);
+      log.warn(
+          "TikaServer {} returned 422 (a container-level exception occurred during parsing); "
+              + "using the partial content it still returned. Use tikaserver.recursive=true "
+              + "against /rmeta for the exception detail.",
+          url);
+      responseStream = peekable;
+    } else if (code < 200 || code >= 300) {
       SolrException.ErrorCode errorCode = SolrException.ErrorCode.getErrorCode(code);
       String reason = response.getReason();
       String msg =
@@ -285,9 +377,204 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       throw new SolrException(errorCode, msg);
     }
 
-    InputStream responseStream = listener.getInputStream();
     // Bound the amount of data we read from Tika Server to avoid excessive memory/CPU usage
     return new LimitingInputStream(responseStream, maxCharsLimit);
+  }
+
+  /**
+   * A single Tika 4.x {@code tk:chunks} entry carrying chunk text and its embedding vector. Image
+   * chunks (text-less, produced by an image embedding filter) are not surfaced here; v1 only
+   * indexes text chunks.
+   */
+  static final class Chunk {
+    final String text;
+    final float[] vector;
+
+    Chunk(String text, float[] vector) {
+      this.text = text;
+      this.vector = vector;
+    }
+  }
+
+  /**
+   * Calls TikaServer's {@code /rmeta} endpoint (always the JSON/Markdown-handler variant, since
+   * chunking requires Markdown content -- see {@link ExtractingParams#TIKASERVER_CHUNKS}) and
+   * flattens every {@code tk:chunks} entry found across the response array (one array entry per
+   * embedded file) into a single list.
+   *
+   * @throws SolrException if the response carries no {@code tk:chunks} anywhere, which almost
+   *     always means the TikaServer instance has no embedding metadata filter configured
+   */
+  List<Chunk> extractChunks(InputStream inputStream, ExtractionRequest request) throws Exception {
+    try (InputStream tikaResponse = callTikaServerForChunks(inputStream, request)) {
+      Object parsed = Utils.fromJSON(tikaResponse);
+      if (!(parsed instanceof List<?> list)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Unexpected /rmeta response, expected JSON array");
+      }
+      List<Chunk> chunks = new ArrayList<>();
+      for (Object o : list) {
+        if (!(o instanceof Map<?, ?> map)) continue;
+        String chunksJson = firstString(map.get("tk:chunks"));
+        if (chunksJson == null || chunksJson.isBlank()) continue;
+        Object parsedChunks = Utils.fromJSONString(chunksJson);
+        if (!(parsedChunks instanceof List<?> chunkList)) continue;
+        for (Object co : chunkList) {
+          if (!(co instanceof Map<?, ?> chunkMap)) continue;
+          Object textObj = chunkMap.get("text");
+          Object vectorObj = chunkMap.get("vector");
+          // v1 only indexes text chunks; image chunks (no "text") are skipped.
+          if (textObj == null || vectorObj == null) continue;
+          chunks.add(new Chunk(String.valueOf(textObj), decodeVector(String.valueOf(vectorObj))));
+        }
+      }
+      if (chunks.isEmpty()) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "tikaserver.chunks=true but the TikaServer response carried no tk:chunks. Configure "
+                + "an embedding metadata filter (e.g. openai-embedding-filter) on the TikaServer "
+                + "instance -- see Tika's tika-inference module documentation.");
+      }
+      return chunks;
+    }
+  }
+
+  /** Returns the first (and typically only) value of a Tika metadata JSON value as a String. */
+  private static String firstString(Object val) {
+    if (val instanceof List<?> l) {
+      return l.isEmpty() ? null : String.valueOf(l.get(0));
+    }
+    return val == null ? null : String.valueOf(val);
+  }
+
+  /**
+   * Decodes a chunk's {@code vector} field: a base64-encoded, big-endian (Java default {@link
+   * ByteBuffer} order) float32 array, per Tika's {@code ChunkSerializer} -- confirmed by
+   * round-tripping known embedding values against a live TikaServer 4.0.0 instance.
+   */
+  private static float[] decodeVector(String base64) {
+    byte[] bytes = Base64.getDecoder().decode(base64);
+    java.nio.FloatBuffer floatBuffer = ByteBuffer.wrap(bytes).asFloatBuffer();
+    float[] vector = new float[floatBuffer.remaining()];
+    floatBuffer.get(vector);
+    return vector;
+  }
+
+  /**
+   * Builds and sends the request for {@link #extractChunks}: always hits {@code /rmeta} (or {@code
+   * /rmeta/config} when a per-request config, e.g. a resolved password, applies), requesting JSON
+   * so the default Markdown content handler -- required for chunking -- is used. Independent of
+   * {@code request.tikaServerRecursive}: {@code /rmeta} already returns one array entry per
+   * embedded file regardless.
+   */
+  private InputStream callTikaServerForChunks(InputStream inputStream, ExtractionRequest request)
+      throws Exception {
+    ExtractionMetadata md = buildMetadataFromRequest(request);
+    String pwd = resolvePassword(request, md);
+    String configJson = resolveConfigJson(request, pwd);
+
+    HttpClient client = acquiredResourcesRef.get().client;
+    Duration effectiveTimeout =
+        (request.tikaServerTimeoutSeconds != null && request.tikaServerTimeoutSeconds > 0)
+            ? Duration.ofSeconds(request.tikaServerTimeoutSeconds)
+            : defaultTimeout;
+    String contentType = (request.streamType != null) ? request.streamType : request.contentType;
+
+    String url;
+    Request req;
+    if (configJson != null) {
+      url = baseUrl + "/rmeta/config";
+      req = client.newRequest(url).method("POST");
+      req.headers(h -> h.add("Accept", "application/json"));
+
+      HttpFields.Mutable fileFields = HttpFields.build();
+      if (contentType != null) {
+        fileFields.add(HttpHeader.CONTENT_TYPE, contentType);
+      }
+      try (MultiPartRequestContent multiPart = new MultiPartRequestContent()) {
+        multiPart.addPart(
+            new MultiPart.ContentSourcePart(
+                "file",
+                request.resourceName,
+                fileFields,
+                new InputStreamRequestContent(inputStream)));
+        multiPart.addPart(
+            new MultiPart.ContentSourcePart(
+                "config",
+                null,
+                HttpFields.build().add(HttpHeader.CONTENT_TYPE, "application/json"),
+                new StringRequestContent(configJson)));
+        req.body(multiPart);
+      }
+    } else {
+      url = baseUrl + "/rmeta";
+      req = client.newRequest(url).method("PUT");
+      req.headers(h -> h.add("Accept", "application/json"));
+      if (contentType != null) {
+        req.headers(h -> h.add("Content-Type", contentType));
+      }
+      if (request.resourceName != null) {
+        req.headers(
+            h ->
+                h.add(
+                    "Content-Disposition",
+                    "attachment; filename=\"" + request.resourceName + "\""));
+      }
+      if (contentType != null) {
+        req.body(new InputStreamRequestContent(contentType, inputStream));
+      } else {
+        req.body(new InputStreamRequestContent(inputStream));
+      }
+    }
+
+    return sendAndReadResponse(req, url, effectiveTimeout, request, false);
+  }
+
+  /** Resolves the password to use for an encrypted document, or null if none applies. */
+  private String resolvePassword(ExtractionRequest request, ExtractionMetadata md) {
+    if (request.resourcePassword == null && request.passwordsMap == null) {
+      return null;
+    }
+    RegexRulesPasswordProvider passwordProvider = new RegexRulesPasswordProvider();
+    if (request.resourcePassword != null) {
+      passwordProvider.setExplicitPassword(request.resourcePassword);
+    }
+    if (request.passwordsMap != null) {
+      passwordProvider.setPasswordMap(request.passwordsMap);
+    }
+    return passwordProvider.getPassword(md);
+  }
+
+  /**
+   * Builds the per-request TikaServer JSON "config" payload, merging any resolved password with any
+   * caller-supplied {@link ExtractingParams#TIKASERVER_CONFIG_JSON}. Returns null if neither
+   * applies, meaning no per-request config is needed.
+   */
+  @SuppressWarnings("unchecked")
+  private String resolveConfigJson(ExtractionRequest request, String pwd) {
+    Map<String, Object> config = new LinkedHashMap<>();
+    if (request.tikaServerConfigJson != null && !request.tikaServerConfigJson.isBlank()) {
+      Object parsed;
+      try {
+        parsed = Utils.fromJSONString(request.tikaServerConfigJson);
+      } catch (Exception e) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Invalid JSON in " + ExtractingParams.TIKASERVER_CONFIG_JSON + ": " + e.getMessage(),
+            e);
+      }
+      if (!(parsed instanceof Map)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            ExtractingParams.TIKASERVER_CONFIG_JSON + " must be a JSON object");
+      }
+      config.putAll((Map<String, Object>) parsed);
+    }
+    if (pwd != null && !config.containsKey("simple-password-provider")) {
+      config.put("simple-password-provider", Map.of("password", pwd));
+    }
+    return config.isEmpty() ? null : Utils.toJSONString(config);
   }
 
   private static class LimitingInputStream extends InputStream {
