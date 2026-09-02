@@ -17,18 +17,6 @@
 
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
-repositories {
-    google {
-        mavenContent {
-            includeGroupAndSubgroups("androidx")
-            includeGroupAndSubgroups("com.android")
-            includeGroupAndSubgroups("com.google")
-        }
-    }
-}
-// mavenCentral / enterprise mirror, shared with the rest of the build.
-apply(from = rootProject.file("../build-tools/build-infra/declare-repositories.gradle"))
-
 group = "org.apache.solr.ui"
 
 plugins {
@@ -72,9 +60,9 @@ kotlin {
             implementation(libs.mvikotlin.mvikotlin)
             implementation(libs.mvikotlin.main)
 
-            implementation(project.dependencies.platform(libs.ktor.bom))
+            api(project.dependencies.platform(libs.ktor.bom))
+            api(libs.ktor.client.core)
             implementation(libs.ktor.client.auth)
-            implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.contentNegotiation)
             implementation(libs.ktor.client.serialization.json)
             implementation(libs.squareup.okio)

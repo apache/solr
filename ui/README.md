@@ -19,27 +19,36 @@
 
 > **⚠️ EXPERIMENTAL ⚠️**
 >
-> This is an experimental module developed as a proof-of-concept. Many parts of the UI
-> are under development, use wrong colors, may not work or have limited functionality.
+> This is an experimental module because of its early state. Many parts of the UI
+> are under development and may not work or have limited functionality.
 
 This module contains the code for the new Admin UI written in Kotlin / Compose Multiplatform.
 
 ## Supported Targets
 
-The module is available for desktop / JVM targets and web (WebAssembly).
+The module is available for desktop / JVM and web (WebAssembly).
 
 ## Build and Run
 
 > **IMPORTANT**
 >
-> Before you try to build your project, make sure you update your `gradle.properties` files to
+> Before you try to build the project, make sure you update your `gradle.properties` file to
 > reflect the module's configuration requirements. Review the differences between your file and
 > `gradle/template.gradle.properties` and update accordingly.
 
-To build and run the desktop client simply run `./gradlew :solr:ui:run`.
+This module is provided as an independent sub-module. Therefore, if you use the terminal you have to prefix any
+task targeting this module with `-p ui`, like `./gradlew -p ui check`.
 
-Make sure that you have a Solr development instance running on `localhost:8983`, as the current
-implementation uses hardcoded values.
+If you load the module in your IDE, the IDE may create a new gradle wrapper under `ui/gradle/wrapper` and
+gradlew/gradle.bat files under `ui/`. In this case make sure the wrapper is on the same version as the root project
+(see `gradle/wrapper/gradle-wrapper.properties`) to avoid any build issues later on CI.
+
+To build and run the desktop client simply run from the root directory `./gradlew -p :desktopApp:run`, or if you
+loaded the module separately from inside `ui/` (new root) `./gradlew :desktopApp:run`.
+
+The desktop app is running a standalone client and therefore need a solr instance / backend to connect with.
+
+> Note: The current implementation may be limited to run only with locally hosted solr instances.
 
 The WebAssembly app is built and published at [Apache nightlies](https://nightlies.apache.org/solr/ui/wasm/)
 and bundled during the Solr build (see [README.md](../README.md)) into the current webapp.
