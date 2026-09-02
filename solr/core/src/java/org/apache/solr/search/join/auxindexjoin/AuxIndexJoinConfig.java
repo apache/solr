@@ -35,6 +35,7 @@ public final class AuxIndexJoinConfig {
 
   private boolean singleFieldPerSegment = false;
   private boolean blockingRefresh = true;
+  private boolean useFromSideThreads = true;
   private long sweepSamplingIntervalNanos = TimeUnit.MINUTES.toNanos(1);
 
   /** Sole constructor, using the default settings documented on each setter. */
@@ -68,6 +69,23 @@ public final class AuxIndexJoinConfig {
   /** Returns the current value set via {@link #setBlockingRefresh}. */
   public boolean getBlockingRefresh() {
     return blockingRefresh;
+  }
+
+  /**
+   * Whether loading the from-side leaves that feed a join build is parallelized across the caller's
+   * executor threads. When {@code true} (the default) each from-side segment is loaded on a
+   * separate executor thread; when {@code false} they are loaded sequentially on the calling
+   * thread. Set to {@code false} to bound the load to a single thread, e.g. when the executor is
+   * contended or to keep queries deterministic.
+   */
+  public AuxIndexJoinConfig setUseFromSideThreads(boolean useFromSideThreads) {
+    this.useFromSideThreads = useFromSideThreads;
+    return this;
+  }
+
+  /** Returns the current value set via {@link #setUseFromSideThreads}. */
+  public boolean getUseFromSideThreads() {
+    return useFromSideThreads;
   }
 
   /**
