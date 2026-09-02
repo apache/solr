@@ -170,8 +170,7 @@ public final class AuxIndexManager implements Closeable {
   /**
    * Builds and persists the given missing pair columns, keyed by pair field name to their
    * (from-segment, to-segment) leaf ordinals. Delegates to {@link
-   * JoinColumnIndexer#buildAndPersistJoinColumns(Map, IndexReader, IndexReader, String, String,
-   * IndexSearcher, Future[])} writeJoinSegments}, which documents the claim/await dedup and the
+   * JoinColumnIndexer#buildAndPersistJoinColumns}, which documents the claim/await dedup and the
    * fresh-searcher double-check in detail.
    *
    * @param observedAbsentSearcher the join-index searcher in which the caller established that
@@ -186,7 +185,7 @@ public final class AuxIndexManager implements Closeable {
       String toField,
       String traceCtxId,
       IndexSearcher observedAbsentSearcher,
-      Future<FromLeafJoinContext>[] fromColumnFutures)
+      Map<Integer, Future<FromLeafJoinContext>> fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
     return pairBuilder.buildAndPersistJoinColumns(
         missingPairs,

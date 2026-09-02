@@ -43,7 +43,7 @@
  *   │ ▼                                         │ ▼
  *   │{@link org.apache.solr.search.join.auxindexjoin.JoinIndexScorerSupplier.LeafJoin}             │{@link org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel}
  *   ▼                                           ▼
- * {@link org.apache.solr.search.join.auxindexjoin.JoinIndexScorerSupplier.LazyConfimationIterator} {@link org.apache.solr.search.join.auxindexjoin.JoinColumnDocWriter}
+ * {@link org.apache.solr.search.join.auxindexjoin.JoinIndexScorerSupplier.LazyConfirmationIterator} {@link org.apache.solr.search.join.auxindexjoin.JoinColumnDocWriter}
  *
  * </pre>
  *

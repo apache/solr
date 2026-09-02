@@ -114,7 +114,7 @@ final class JoinColumnIndexer {
       String toField,
       String traceCtxId,
       IndexSearcher observedAbsentSearcher,
-      Future<FromLeafJoinContext>[] fromColumnFutures)
+      Map<Integer, Future<FromLeafJoinContext>> fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
     long startNanos = System.nanoTime();
     Claims claims = claimPairs(missingPairs.keySet());
@@ -192,7 +192,7 @@ final class JoinColumnIndexer {
       IndexReader fromReader,
       IndexReader toReader,
       String toField,
-      Future<FromLeafJoinContext>[] fromColumnFutures)
+      Map<Integer, Future<FromLeafJoinContext>> fromColumnFutures)
       throws IOException, ExecutionException, InterruptedException {
     Map<String, JoinColumnModel> loadedMappings = new LinkedHashMap<>();
     JoinIndexUtils.ToDocInvertor toInvertor = new JoinIndexUtils.ToDocInvertor(toField);
@@ -200,10 +200,12 @@ final class JoinColumnIndexer {
       SegmentsTuple position = missingPairs.get(pairFieldName);
       LeafReaderContext toContext = toReader.leaves().get(position.toLeafOrd());
       LeafReaderContext fromContext = fromReader.leaves().get(position.fromLeafOrd());
-      assert fromColumnFutures[fromContext.ord] != null;
+      Future<FromLeafJoinContext> fromLeafJoinContextFuture =
+          fromColumnFutures.get(fromContext.ord);
+      assert fromLeafJoinContextFuture != null;
+      FromLeafJoinContext fkCtx = fromLeafJoinContextFuture.get();
       JoinIndexUtils.JoinColumnModel mapping =
-          JoinIndexUtils.computeDocMapping(
-              toContext, toField, fromColumnFutures[fromContext.ord].get().fkColumn, toInvertor);
+          JoinIndexUtils.computeDocMapping(toContext, toField, fkCtx.fkColumn, toInvertor);
       loadedMappings.put(pairFieldName, mapping);
     }
     return loadedMappings;
