@@ -25,3 +25,17 @@ plugins {
 
 group = "org.apache.solr.ui"
 version = "0.1.0"
+
+subprojects {
+  repositories {
+    google {
+      mavenContent {
+        includeGroupAndSubgroups("androidx")
+        includeGroupAndSubgroups("com.android")
+        includeGroupAndSubgroups("com.google")
+      }
+    }
+  }
+  // mavenCentral / enterprise mirror, shared with the rest of the build.
+  apply(from = rootProject.file("../build-tools/build-infra/declare-repositories.gradle"))
+}

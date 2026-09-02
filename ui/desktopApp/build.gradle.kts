@@ -18,20 +18,26 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.compose.multiplatform)
-    alias(libs.plugins.compose.compiler)
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.compose.multiplatform)
+  alias(libs.plugins.compose.compiler)
 }
 
 dependencies {
-    implementation(projects.shared)
+  implementation(projects.shared)
 
-    implementation(compose.desktop.currentOs)
-    implementation(libs.kotlinx.coroutines.swing)
+  implementation(compose.desktop.currentOs)
+  implementation(libs.kotlinx.coroutines.swing)
+  implementation(libs.compose.material3)
 
-    implementation(libs.compose.uiToolingPreview)
+  implementation(libs.essenty.lifecycle)
+  implementation(libs.decompose.decompose)
+  implementation(libs.decompose.extensions.compose)
+  implementation(libs.mvikotlin.main)
+  implementation(libs.mvikotlin.mvikotlin)
+
+  implementation(libs.compose.uiToolingPreview)
 }
-
 
 compose.desktop {
   application {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.utils
+package org.apache.solr.ui
 
 import javax.swing.SwingUtilities
 
