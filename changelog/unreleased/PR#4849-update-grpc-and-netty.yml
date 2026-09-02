@@ -1,7 +1,0 @@
-title: Update gRPC and Netty
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#4849
-  url: https://github.com/apache/solr/pull/4849
