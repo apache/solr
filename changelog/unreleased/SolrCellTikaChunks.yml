@@ -1,0 +1,4 @@
+title: Solr Cell can index Tika 4.x chunk embeddings into dense_vector fields via new tikaserver.chunks parameter
+type: added
+authors:
+  - name: Eric Pugh

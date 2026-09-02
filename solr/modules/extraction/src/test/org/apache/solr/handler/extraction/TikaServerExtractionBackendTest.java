@@ -19,8 +19,14 @@ package org.apache.solr.handler.extraction;
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.ByteArrayInputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -28,12 +34,25 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.extraction.fromtika.ToXMLContentHandler;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Callback;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.MountableFile;
 
 /**
@@ -46,6 +65,7 @@ import org.testcontainers.utility.MountableFile;
       TikaServerExtractionBackendTest.TestcontainersThreadsFilter.class
     })
 public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // Ignore known non-daemon threads spawned by Testcontainers and Java HttpClient in this test
   @SuppressWarnings("NewClassNamingConvention")
@@ -97,6 +117,110 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
       } catch (Throwable ignore) {
       }
       tika = null;
+    }
+  }
+
+  private static Server embeddingsServer;
+  private static GenericContainer<?> tikaChunks;
+  private static String chunksBaseUrl;
+
+  /**
+   * A minimal, embedded-Jetty, OpenAI-compatible embeddings endpoint standing in for a real
+   * embeddings API. Each embedding is a small deterministic function of the input text.
+   */
+  private static class EmbeddingsHandler extends Handler.Abstract {
+    @Override
+    public boolean handle(Request request, Response response, Callback callback) throws Exception {
+      String body = Content.Source.asString(request, StandardCharsets.UTF_8);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> req = (Map<String, Object>) Utils.fromJSONString(body);
+      List<?> inputs = (List<?>) req.get("input");
+      List<Object> data = new ArrayList<>();
+      for (int i = 0; i < inputs.size(); i++) {
+        int total = 0;
+        for (byte b : String.valueOf(inputs.get(i)).getBytes(StandardCharsets.UTF_8)) {
+          total += (b & 0xFF);
+        }
+        List<Double> vector = new ArrayList<>();
+        for (int d = 0; d < 4; d++) {
+          vector.add(((total + d) % 10) / 10.0);
+        }
+        Map<String, Object> embedding = new LinkedHashMap<>();
+        embedding.put("object", "embedding");
+        embedding.put("index", i);
+        embedding.put("embedding", vector);
+        data.add(embedding);
+      }
+      Map<String, Object> resp = new LinkedHashMap<>();
+      resp.put("object", "list");
+      resp.put("data", data);
+      resp.put("model", req.getOrDefault("model", "mock-embed"));
+      byte[] respBytes = Utils.toJSONString(resp).getBytes(StandardCharsets.UTF_8);
+      response.setStatus(200);
+      response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/json");
+      response.write(true, ByteBuffer.wrap(respBytes), callback);
+      return true;
+    }
+  }
+
+  @SuppressWarnings("resource")
+  @BeforeClass
+  public static void startChunksTikaServer() {
+    Assume.assumeFalse(
+        "Skipping on s390x", "s390x".equalsIgnoreCase(System.getProperty("os.arch")));
+    try {
+      embeddingsServer = new Server();
+      ServerConnector connector = new ServerConnector(embeddingsServer);
+      connector.setPort(0);
+      embeddingsServer.addConnector(connector);
+      embeddingsServer.setHandler(new EmbeddingsHandler());
+      embeddingsServer.start();
+      int embeddingsPort = connector.getLocalPort();
+
+      // Tika 4.x requires a top-level "server" element even when there's nothing to configure
+      // in it.
+      String config =
+          "{\"server\":{},\"metadata-filters\":[{\"openai-embedding-filter\":"
+              + "{\"baseUrl\":\"http://host.docker.internal:"
+              + embeddingsPort
+              + "\",\"model\":\"mock-embed\"}}]}";
+      Path configFile = Files.createTempFile("tika-chunks-config", ".json");
+      Files.writeString(configFile, config);
+      // Files.createTempFile defaults to owner-only (0600) permissions; the TikaServer container
+      // process runs as a different uid and needs read access to the bind-mounted file.
+      Files.setPosixFilePermissions(configFile, PosixFilePermissions.fromString("rw-r--r--"));
+
+      tikaChunks =
+          new GenericContainer<>("apache/tika:4.0.0-full")
+              .withExposedPorts(9998)
+              .withExtraHost("host.docker.internal", "host-gateway")
+              .withCopyFileToContainer(MountableFile.forHostPath(configFile), "/tika-config.json")
+              .withCommand("-c", "/tika-config.json")
+              .withLogConsumer(new Slf4jLogConsumer(log))
+              .waitingFor(Wait.forListeningPort());
+      tikaChunks.start();
+      chunksBaseUrl = "http://" + tikaChunks.getHost() + ":" + tikaChunks.getMappedPort(9998);
+    } catch (Throwable t) {
+      // Skip tests if Docker/Testcontainers are not available in the environment
+      Assume.assumeNoException("Docker/Testcontainers not available; skipping chunk tests", t);
+    }
+  }
+
+  @AfterClass
+  public static void stopChunksTikaServer() {
+    if (tikaChunks != null) {
+      try {
+        tikaChunks.stop();
+      } catch (Throwable ignore) {
+      }
+      tikaChunks = null;
+    }
+    if (embeddingsServer != null) {
+      try {
+        embeddingsServer.stop();
+      } catch (Throwable ignore) {
+      }
+      embeddingsServer = null;
     }
   }
 
@@ -333,6 +457,54 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         SolrException e = expectThrows(SolrException.class, () -> backend.extract(in, request));
         assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
         assertTrue(e.getMessage().contains(ExtractingParams.TIKASERVER_RECURSIVE));
+      }
+    }
+  }
+
+  private static ExtractionRequest newMarkdownRequest(String resourceName) {
+    return ExtractionRequest.builder()
+        .resourceName(resourceName)
+        .contentType("text/markdown")
+        .streamName(resourceName)
+        .build();
+  }
+
+  @Test
+  public void testExtractChunks() throws Exception {
+    Assume.assumeTrue("Chunks TikaServer container not started", tikaChunks != null);
+    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(chunksBaseUrl)) {
+      String markdown =
+          "# Report\n\nRevenue grew 15% year over year in the last quarter.\n\n"
+              + "# Costs\n\nOperating costs remained flat compared to prior periods and did not"
+              + " change much.\n";
+      byte[] data = markdown.getBytes(StandardCharsets.UTF_8);
+      ExtractionRequest request = newMarkdownRequest("sample.md");
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        List<TikaServerExtractionBackend.Chunk> chunks = backend.extractChunks(in, request);
+        assertFalse("Expected at least one chunk", chunks.isEmpty());
+        assertTrue(
+            "Expected more than one chunk from a two-heading Markdown document", chunks.size() > 1);
+        for (TikaServerExtractionBackend.Chunk chunk : chunks) {
+          assertNotNull(chunk.text);
+          assertFalse(chunk.text.isBlank());
+          assertEquals(
+              "Expected the mock embedding server's 4-dimensional vectors", 4, chunk.vector.length);
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testExtractChunksThrowsWithoutEmbeddingFilterConfigured() throws Exception {
+    // Reuses the plain `tika` container from startTikaServer(), which has no embedding filter.
+    Assume.assumeTrue("Tika server container not started", tika != null);
+    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+      byte[] data = "# Heading\n\nSome text.".getBytes(StandardCharsets.UTF_8);
+      ExtractionRequest request = newMarkdownRequest("sample.md");
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        SolrException e =
+            expectThrows(SolrException.class, () -> backend.extractChunks(in, request));
+        assertTrue(e.getMessage().contains("tk:chunks"));
       }
     }
   }

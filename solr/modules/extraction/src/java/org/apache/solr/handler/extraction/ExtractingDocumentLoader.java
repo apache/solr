@@ -19,10 +19,14 @@ package org.apache.solr.handler.extraction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
@@ -144,7 +148,22 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               .tikaServerTimeoutSeconds(tikaTimeoutSecs)
               .tikaServerRequestHeaders(Map.of())
               .tikaServerConfigJson(params.get(ExtractingParams.TIKASERVER_CONFIG_JSON))
+              .tikaServerChunks(params.getBool(ExtractingParams.TIKASERVER_CHUNKS, false))
               .build();
+
+      if (extractionRequest.tikaServerChunks) {
+        try {
+          loadChunks(req, params, stream, inputStream, extractionRequest);
+        } catch (Exception e) {
+          if (ignoreTikaException) {
+            if (log.isWarnEnabled())
+              log.warn("skip extracting chunks due to {}.", e.getLocalizedMessage(), e);
+            return;
+          }
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+        return;
+      }
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);
       String[] captureElems = params.getParams(ExtractingParams.CAPTURE_ELEMENTS);
@@ -229,6 +248,69 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           factory.createSolrContentHandler(metadata, params, req.getSchema());
       handler.appendToContent(result.getContent());
       addDoc(handler);
+    }
+  }
+
+  /**
+   * Indexes one Solr document per Tika 4.x {@code tk:chunks} entry instead of one document for the
+   * whole source file. See {@link ExtractingParams#TIKASERVER_CHUNKS}.
+   */
+  private void loadChunks(
+      SolrQueryRequest req,
+      SolrParams params,
+      ContentStream stream,
+      InputStream inputStream,
+      ExtractionRequest extractionRequest)
+      throws Exception {
+    if (!(backend instanceof TikaServerExtractionBackend tikaServerBackend)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          ExtractingParams.TIKASERVER_CHUNKS
+              + "=true requires the "
+              + TikaServerExtractionBackend.NAME
+              + " extraction backend");
+    }
+    List<TikaServerExtractionBackend.Chunk> chunks =
+        tikaServerBackend.extractChunks(inputStream, extractionRequest);
+
+    String contentField = params.get(ExtractingParams.TIKASERVER_CHUNKS_CONTENT_FIELD, "content");
+    String vectorField = params.get(ExtractingParams.TIKASERVER_CHUNKS_VECTOR_FIELD, "vector");
+    String parentField =
+        params.get(ExtractingParams.TIKASERVER_CHUNKS_PARENT_FIELD, "chunk_parent_id");
+
+    String uniqueKeyField =
+        req.getSchema().getUniqueKeyField() != null
+            ? req.getSchema().getUniqueKeyField().getName()
+            : "id";
+
+    String parentId = params.get(ExtractingParams.LITERALS_PREFIX + uniqueKeyField);
+    if (parentId == null) parentId = params.get(ExtractingParams.RESOURCE_NAME);
+    if (parentId == null) parentId = stream.getName();
+    if (parentId == null) parentId = UUID.randomUUID().toString();
+
+    int n = 0;
+    for (TikaServerExtractionBackend.Chunk chunk : chunks) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.setField(uniqueKeyField, parentId + "-chunk-" + n);
+      doc.setField(contentField, chunk.text);
+      doc.setField(vectorField, chunk.vector);
+      doc.setField(parentField, parentId);
+
+      Iterator<String> paramNames = params.getParameterNamesIterator();
+      while (paramNames.hasNext()) {
+        String pname = paramNames.next();
+        if (!pname.startsWith(ExtractingParams.LITERALS_PREFIX)) continue;
+        String name = pname.substring(ExtractingParams.LITERALS_PREFIX.length());
+        if (name.equals(uniqueKeyField)) continue;
+        for (String v : params.getParams(pname)) {
+          doc.addField(name, v);
+        }
+      }
+
+      templateAdd.clear();
+      templateAdd.solrDoc = doc;
+      processor.processAdd(templateAdd);
+      n++;
     }
   }
 

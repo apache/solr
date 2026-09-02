@@ -25,10 +25,14 @@ import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -260,6 +264,24 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       }
     }
 
+    return sendAndReadResponse(req, url, effectiveTimeout, request, !request.tikaServerRecursive);
+  }
+
+  /**
+   * Sends an already-built request and validates/returns its response body as a bounded {@link
+   * InputStream}, shared by {@link #callTikaServer} and {@link #callTikaServerForChunks}.
+   *
+   * @param allowPartial422 if true, a 422 (Unprocessable Entity) response with a non-empty body is
+   *     treated as a partial success rather than a hard failure (see {@link #callTikaServer} for
+   *     why this only applies to the non-recursive raw endpoints)
+   */
+  private InputStream sendAndReadResponse(
+      Request req,
+      String url,
+      Duration effectiveTimeout,
+      ExtractionRequest request,
+      boolean allowPartial422)
+      throws Exception {
     if (!request.tikaServerRequestHeaders.isEmpty()) {
       req.headers(
           h ->
@@ -325,7 +347,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     // that). A request that extracted nothing at all (e.g. a wrong password) also gets 422, but
     // with an empty body -- treat that case as the failure it is instead of a silent empty
     // "success". Peek the first byte to tell the two apart.
-    if (code == 422 && !request.tikaServerRecursive) {
+    if (code == 422 && allowPartial422) {
       PushbackInputStream peekable = new PushbackInputStream(responseStream, 1);
       int firstByte = peekable.read();
       if (firstByte == -1) {
@@ -357,6 +379,156 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
 
     // Bound the amount of data we read from Tika Server to avoid excessive memory/CPU usage
     return new LimitingInputStream(responseStream, maxCharsLimit);
+  }
+
+  /**
+   * A single Tika 4.x {@code tk:chunks} entry carrying chunk text and its embedding vector. Image
+   * chunks (text-less, produced by an image embedding filter) are not surfaced here; v1 only
+   * indexes text chunks.
+   */
+  static final class Chunk {
+    final String text;
+    final float[] vector;
+
+    Chunk(String text, float[] vector) {
+      this.text = text;
+      this.vector = vector;
+    }
+  }
+
+  /**
+   * Calls TikaServer's {@code /rmeta} endpoint (always the JSON/Markdown-handler variant, since
+   * chunking requires Markdown content -- see {@link ExtractingParams#TIKASERVER_CHUNKS}) and
+   * flattens every {@code tk:chunks} entry found across the response array (one array entry per
+   * embedded file) into a single list.
+   *
+   * @throws SolrException if the response carries no {@code tk:chunks} anywhere, which almost
+   *     always means the TikaServer instance has no embedding metadata filter configured
+   */
+  List<Chunk> extractChunks(InputStream inputStream, ExtractionRequest request) throws Exception {
+    try (InputStream tikaResponse = callTikaServerForChunks(inputStream, request)) {
+      Object parsed = Utils.fromJSON(tikaResponse);
+      if (!(parsed instanceof List<?> list)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Unexpected /rmeta response, expected JSON array");
+      }
+      List<Chunk> chunks = new ArrayList<>();
+      for (Object o : list) {
+        if (!(o instanceof Map<?, ?> map)) continue;
+        String chunksJson = firstString(map.get("tk:chunks"));
+        if (chunksJson == null || chunksJson.isBlank()) continue;
+        Object parsedChunks = Utils.fromJSONString(chunksJson);
+        if (!(parsedChunks instanceof List<?> chunkList)) continue;
+        for (Object co : chunkList) {
+          if (!(co instanceof Map<?, ?> chunkMap)) continue;
+          Object textObj = chunkMap.get("text");
+          Object vectorObj = chunkMap.get("vector");
+          // v1 only indexes text chunks; image chunks (no "text") are skipped.
+          if (textObj == null || vectorObj == null) continue;
+          chunks.add(new Chunk(String.valueOf(textObj), decodeVector(String.valueOf(vectorObj))));
+        }
+      }
+      if (chunks.isEmpty()) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "tikaserver.chunks=true but the TikaServer response carried no tk:chunks. Configure "
+                + "an embedding metadata filter (e.g. openai-embedding-filter) on the TikaServer "
+                + "instance -- see Tika's tika-inference module documentation.");
+      }
+      return chunks;
+    }
+  }
+
+  /** Returns the first (and typically only) value of a Tika metadata JSON value as a String. */
+  private static String firstString(Object val) {
+    if (val instanceof List<?> l) {
+      return l.isEmpty() ? null : String.valueOf(l.get(0));
+    }
+    return val == null ? null : String.valueOf(val);
+  }
+
+  /**
+   * Decodes a chunk's {@code vector} field: a base64-encoded, big-endian (Java default {@link
+   * ByteBuffer} order) float32 array, per Tika's {@code ChunkSerializer} -- confirmed by
+   * round-tripping known embedding values against a live TikaServer 4.0.0 instance.
+   */
+  private static float[] decodeVector(String base64) {
+    byte[] bytes = Base64.getDecoder().decode(base64);
+    java.nio.FloatBuffer floatBuffer = ByteBuffer.wrap(bytes).asFloatBuffer();
+    float[] vector = new float[floatBuffer.remaining()];
+    floatBuffer.get(vector);
+    return vector;
+  }
+
+  /**
+   * Builds and sends the request for {@link #extractChunks}: always hits {@code /rmeta} (or {@code
+   * /rmeta/config} when a per-request config, e.g. a resolved password, applies), requesting JSON
+   * so the default Markdown content handler -- required for chunking -- is used. Independent of
+   * {@code request.tikaServerRecursive}: {@code /rmeta} already returns one array entry per
+   * embedded file regardless.
+   */
+  private InputStream callTikaServerForChunks(InputStream inputStream, ExtractionRequest request)
+      throws Exception {
+    ExtractionMetadata md = buildMetadataFromRequest(request);
+    String pwd = resolvePassword(request, md);
+    String configJson = resolveConfigJson(request, pwd);
+
+    HttpClient client = acquiredResourcesRef.get().client;
+    Duration effectiveTimeout =
+        (request.tikaServerTimeoutSeconds != null && request.tikaServerTimeoutSeconds > 0)
+            ? Duration.ofSeconds(request.tikaServerTimeoutSeconds)
+            : defaultTimeout;
+    String contentType = (request.streamType != null) ? request.streamType : request.contentType;
+
+    String url;
+    Request req;
+    if (configJson != null) {
+      url = baseUrl + "/rmeta/config";
+      req = client.newRequest(url).method("POST");
+      req.headers(h -> h.add("Accept", "application/json"));
+
+      HttpFields.Mutable fileFields = HttpFields.build();
+      if (contentType != null) {
+        fileFields.add(HttpHeader.CONTENT_TYPE, contentType);
+      }
+      try (MultiPartRequestContent multiPart = new MultiPartRequestContent()) {
+        multiPart.addPart(
+            new MultiPart.ContentSourcePart(
+                "file",
+                request.resourceName,
+                fileFields,
+                new InputStreamRequestContent(inputStream)));
+        multiPart.addPart(
+            new MultiPart.ContentSourcePart(
+                "config",
+                null,
+                HttpFields.build().add(HttpHeader.CONTENT_TYPE, "application/json"),
+                new StringRequestContent(configJson)));
+        req.body(multiPart);
+      }
+    } else {
+      url = baseUrl + "/rmeta";
+      req = client.newRequest(url).method("PUT");
+      req.headers(h -> h.add("Accept", "application/json"));
+      if (contentType != null) {
+        req.headers(h -> h.add("Content-Type", contentType));
+      }
+      if (request.resourceName != null) {
+        req.headers(
+            h ->
+                h.add(
+                    "Content-Disposition",
+                    "attachment; filename=\"" + request.resourceName + "\""));
+      }
+      if (contentType != null) {
+        req.body(new InputStreamRequestContent(contentType, inputStream));
+      } else {
+        req.body(new InputStreamRequestContent(inputStream));
+      }
+    }
+
+    return sendAndReadResponse(req, url, effectiveTimeout, request, false);
   }
 
   /** Resolves the password to use for an encrypted document, or null if none applies. */
