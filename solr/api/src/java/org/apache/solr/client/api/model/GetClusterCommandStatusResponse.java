@@ -18,7 +18,9 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,10 +54,44 @@ public class GetClusterCommandStatusResponse extends SolrJerseyResponse {
   public static class CommandStatus implements ReflectWritable {
     @JsonProperty("state")
     @Schema(description = "Request state: submitted, running, completed, failed, or notfound.")
-    public String state;
+    public State state;
 
     @JsonProperty("msg")
     @Schema(description = "A message describing where the request was found, if at all.")
     public String msg;
+
+    /**
+     * The state of an asynchronous request. Mirrors {@code
+     * org.apache.solr.client.solrj.response.RequestStatusState}'s constants and wire keys; kept as
+     * a separate type here since this module (solr:api) cannot depend on solrj.
+     */
+    public enum State {
+      SUBMITTED("submitted"),
+      RUNNING("running"),
+      COMPLETED("completed"),
+      FAILED("failed"),
+      NOT_FOUND("notfound");
+
+      private final String key;
+
+      State(String key) {
+        this.key = key;
+      }
+
+      @JsonValue
+      public String getKey() {
+        return key;
+      }
+
+      @JsonCreator
+      public static State fromKey(String key) {
+        for (State state : values()) {
+          if (state.key.equalsIgnoreCase(key)) {
+            return state;
+          }
+        }
+        throw new IllegalArgumentException("Unknown request status state: " + key);
+      }
+    }
   }
 }

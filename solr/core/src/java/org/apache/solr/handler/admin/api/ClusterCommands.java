@@ -228,7 +228,7 @@ public class ClusterCommands extends AdminAPIBase implements ClusterCommandsApi 
   private static void setStatus(
       GetClusterCommandStatusResponse response, RequestStatusState state, String requestId) {
     final CommandStatus status = new CommandStatus();
-    status.state = state.getKey();
+    status.state = CommandStatus.State.valueOf(state.name());
     status.msg = statusMessage(state, requestId);
     response.status = status;
   }
@@ -270,7 +270,7 @@ public class ClusterCommands extends AdminAPIBase implements ClusterCommandsApi 
     final Object statusVal = values.getVal(idx);
     if (statusVal instanceof CommandStatus commandStatus) {
       final SimpleOrderedMap<String> status = new SimpleOrderedMap<>();
-      status.add("state", commandStatus.state);
+      status.add("state", commandStatus.state.getKey());
       status.add("msg", commandStatus.msg);
       values.setVal(idx, status);
     }
