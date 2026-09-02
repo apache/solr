@@ -677,8 +677,8 @@ include::example$SolrCellRefGuideExamplesTest.java[tag=solr-cell-pdf-extraction]
 This operation streams the file `my-file.pdf` into the Solr index for `my_collection`.
 
 The sample code above calls the extract command, but you can substitute other commands that are supported by Solr Cell.
-The key class to use is the `ContentStreamUpdateRequest`, which makes sure the ContentStreams are set properly.
+The key class to use is the `ContentWriterUpdateRequest`, which makes sure the request content is written properly.
 SolrJ takes care of the rest.
 
-Note that the `ContentStreamUpdateRequest` is not just specific to Solr Cell.
+Note that the `ContentWriterUpdateRequest` is not just specific to Solr Cell.
 You can send CSV to the CSV Update handler and to any other Request Handler that works with Content Streams for updates.
