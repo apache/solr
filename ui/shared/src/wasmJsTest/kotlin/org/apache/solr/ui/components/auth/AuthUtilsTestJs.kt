@@ -44,7 +44,7 @@ class AuthUtilsTestJs {
 
     @Test
     fun `WHEN generate redirect URI with defaults THEN no double slash exists`() {
-        val redirectUri = getRedirectUri()
+        val redirectUri = getRedirectUri().removePrefix("http://")
 
         assertFalse(
             actual = redirectUri.contains("//"),

@@ -93,9 +93,9 @@ private class PreviewAuthenticationComponentWithBasicAuth(
                             clientId = "",
                             authorizationFlow = AuthorizationFlow.CodePKCE,
                             scope = "",
-                            redirectUris = listOf(Url("http://localhost")),
-                            authorizationEndpoint = Url("http://localhost"),
-                            tokenEndpoint = Url("http://localhost"),
+                            redirectUris = listOf(Url("http://127.0.0.1")),
+                            authorizationEndpoint = Url("http://127.0.0.1"),
+                            tokenEndpoint = Url("http://127.0.0.1"),
                         ),
                     )
                 } else {

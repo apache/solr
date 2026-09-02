@@ -39,7 +39,7 @@ import org.apache.solr.ui.views.root.RootContent
 import org.apache.solr.ui.views.theme.SolrTheme
 import org.w3c.dom.Window
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalWasmJsInterop::class)
 fun main() {
     val lifecycle = LifecycleRegistry()
     val componentContext = DefaultAppComponentContext(

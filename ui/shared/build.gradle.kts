@@ -31,6 +31,8 @@ kotlin {
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser()
+        // Required for testing
+        binaries.executable()
     }
     jvm()
 
@@ -82,6 +84,7 @@ kotlin {
         }
 
         jvmMain.dependencies {
+            implementation(compose.desktop.currentOs)
             implementation(libs.ktor.client.cio)
             implementation(libs.ktor.server.cio)
             implementation(libs.ktor.server.core)
