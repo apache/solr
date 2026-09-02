@@ -42,7 +42,7 @@ public class ThreadDump {
   }
 
   /**
-   * Dumps all of the threads' current information, including synchronization, to an output stream.
+   * Dumps all the threads' current information, including synchronization, to an output stream.
    *
    * @param out an output stream
    */
@@ -51,8 +51,8 @@ public class ThreadDump {
   }
 
   /**
-   * Dumps all of the threads' current information, optionally including synchronization, to an
-   * output stream.
+   * Dumps all the threads' current information, optionally including synchronization, to an output
+   * stream.
    *
    * <p>Having control over including synchronization info allows using this method (and its
    * wrappers, i.e. ThreadDumpServlet) in environments where getting object monitor and/or ownable

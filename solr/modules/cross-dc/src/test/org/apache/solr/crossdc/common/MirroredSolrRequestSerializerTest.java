@@ -28,7 +28,7 @@ public class MirroredSolrRequestSerializerTest extends SolrTestCase {
   private static final byte[] EMPTY_ARR = new byte[3];
 
   @Test
-  public void testSerializationBufferOptimization() throws Exception {
+  public void testSerializationBufferOptimization() {
     MirroredSolrRequestSerializer serializer = new MirroredSolrRequestSerializer();
     UpdateRequest req = new UpdateRequest();
     SolrInputDocument doc = new SolrInputDocument();
@@ -50,7 +50,7 @@ public class MirroredSolrRequestSerializerTest extends SolrTestCase {
           (String)
               ((UpdateRequest) deserialized.getSolrRequest())
                   .getDocuments()
-                  .get(0)
+                  .getFirst()
                   .getFieldValue("test");
       assertEquals(fieldValue, deserValue);
     }

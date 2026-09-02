@@ -116,8 +116,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
     if (req.getContentStreams() == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No contentStream");
     }
-    List<CommandOperation> ops =
-        CommandOperation.readCommands(req.getContentStreams(), rsp.getValues());
+    List<CommandOperation> ops = ApiBag.readCommands(req.getContentStreams(), rsp.getValues());
     if (ops == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands");
     }
