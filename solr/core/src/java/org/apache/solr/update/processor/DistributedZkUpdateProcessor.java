@@ -1014,6 +1014,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                     DocCollection targetColl =
                         cstate.getCollectionOrNull(rule.getTargetCollectionName());
                     if (targetColl == null) {
+                      if (log.isInfoEnabled()) {
+                        log.info(
+                            "Removing shard update routing rule because the target collection {} doesn't exist",
+                            rule.getTargetCollectionName());
+                      }
                       removeRoutingRule(myShardId, routeKey);
                       break;
                     }
@@ -1036,6 +1041,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                 }
               }
             } else {
+              log.info("Removing shard update routing rule because it has expired");
               removeRoutingRule(myShardId, routeKey);
             }
           }
@@ -1052,7 +1058,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
     try {
       if (ruleExpiryLock.tryLock(10, TimeUnit.MILLISECONDS)) {
-        log.info("Going to remove routing rule");
         try {
           Map<String, Object> map =
               Map.of(
