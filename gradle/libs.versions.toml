@@ -164,7 +164,7 @@ material3 = "1.10.0-alpha05"
 mockito = "5.23.0"
 morethan-jmhreport = "0.9.6"
 mvikotlin = "4.4.0"
-navsecurity = "5.0.2"
+navsecurity = "6.0.2"
 netty = "4.2.17.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.82.Final"
