@@ -551,7 +551,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
    */
   @Deprecated(since = "11.0")
   public CoreAdminRequest() {
-    this(METHOD.GET);
+    this(METHOD.POST);
   }
 
   /**
@@ -559,7 +559,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
    */
   @Deprecated(since = "11.0")
   public CoreAdminRequest(String path) {
-    this(METHOD.GET, path);
+    this(METHOD.POST, path);
   }
 
   public void setCoreName(String coreName) {

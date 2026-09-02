@@ -63,7 +63,7 @@ public abstract class ConfigSetAdminRequest<
    */
   @Deprecated(since = "11.0")
   public ConfigSetAdminRequest() {
-    this(METHOD.GET);
+    this(METHOD.POST);
   }
 
   /**
@@ -71,7 +71,7 @@ public abstract class ConfigSetAdminRequest<
    */
   @Deprecated(since = "11.0")
   public ConfigSetAdminRequest(String path) {
-    this(METHOD.GET, path);
+    this(METHOD.POST, path);
   }
 
   protected abstract Q getThis();
@@ -103,7 +103,7 @@ public abstract class ConfigSetAdminRequest<
      */
     @Deprecated(since = "11.0")
     protected ConfigSetSpecificAdminRequest() {
-      this(METHOD.GET);
+      this(METHOD.POST);
     }
 
     public final T setConfigSetName(String configSetName) {

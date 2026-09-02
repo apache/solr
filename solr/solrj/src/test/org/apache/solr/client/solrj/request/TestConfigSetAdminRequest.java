@@ -28,7 +28,9 @@ import org.junit.Test;
 public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
 
   @Test
+  @SuppressWarnings("deprecation")
   public void testAdminRequestsChooseExplicitHttpMethods() {
+    assertEquals(METHOD.POST, new MyConfigSetAdminRequest().getMethod());
     assertEquals(METHOD.POST, new ConfigSetAdminRequest.Create().getMethod());
     assertEquals(METHOD.GET, new ConfigSetAdminRequest.List().getMethod());
   }

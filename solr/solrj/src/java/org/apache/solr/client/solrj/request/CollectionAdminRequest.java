@@ -92,7 +92,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
    */
   @Deprecated(since = "11.0")
   public CollectionAdminRequest(CollectionAction action) {
-    this(METHOD.GET, action);
+    this(METHOD.POST, action);
   }
 
   /**
@@ -100,7 +100,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
    */
   @Deprecated(since = "11.0")
   public CollectionAdminRequest(String path, CollectionAction action) {
-    this(METHOD.GET, path, action);
+    this(METHOD.POST, path, action);
   }
 
   @Override
@@ -173,7 +173,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      */
     @Deprecated(since = "11.0")
     public AsyncCollectionAdminRequest(CollectionAction action) {
-      this(METHOD.GET, action);
+      this(METHOD.POST, action);
     }
 
     @Override
@@ -291,7 +291,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      */
     @Deprecated(since = "11.0")
     public AsyncCollectionSpecificAdminRequest(CollectionAction action, String collection) {
-      this(METHOD.GET, action, collection);
+      this(METHOD.POST, action, collection);
     }
 
     public String getCollectionName() {
@@ -331,7 +331,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     @Deprecated(since = "11.0")
     public AsyncShardSpecificAdminRequest(
         CollectionAction action, String collection, String shard) {
-      this(METHOD.GET, action, collection, shard);
+      this(METHOD.POST, action, collection, shard);
     }
 
     @Override
@@ -361,7 +361,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      */
     @Deprecated(since = "11.0")
     public ShardSpecificAdminRequest(CollectionAction action, String collection, String shard) {
-      this(METHOD.GET, action, collection, shard);
+      this(METHOD.POST, action, collection, shard);
     }
 
     @Override
@@ -400,7 +400,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      */
     @Deprecated(since = "11.0")
     public CollectionAdminRoleRequest(CollectionAction action, String node, String role) {
-      this(METHOD.GET, action, node, role);
+      this(METHOD.POST, action, node, role);
     }
 
     public String getNode() {
