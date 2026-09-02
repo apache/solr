@@ -43,7 +43,15 @@ def buildFromSource = project.hasProperty('solr.ui.buildFromSource') &&
 
 def uiCommit = uiProps.getProperty('solr.ui.commit')
 if (!uiCommit && !buildFromSource) {
-  throw new GradleException("gradle.properties is missing solr.ui.commit and is not configured to build UI from source.")
+  if (project.hasProperty('solr.ui.buildFromSource')) {
+    throw new GradleException("gradle.properties is missing solr.ui.commit and is not configured to build UI from source.")
+  }
+
+  logger.warn(
+      "WARNING: gradle.properties is missing solr.ui.commit and is not configured to build UI from source; " +
+          "falling back to build from source."
+  )
+  buildFromSource = true
 }
 
 def uiSha256 = uiProps.getProperty('solr.ui.wasmSha256')?.trim()
