@@ -80,7 +80,7 @@ class SolrSort extends Sort implements SolrRel {
     }
 
     if (fetch != null) {
-      implementor.setLimit(((RexLiteral) fetch).getValue().toString());
+      implementor.setLimit(((RexLiteral) fetch).getValue2().toString());
     }
 
     if (offset != null && offset instanceof RexLiteral) {

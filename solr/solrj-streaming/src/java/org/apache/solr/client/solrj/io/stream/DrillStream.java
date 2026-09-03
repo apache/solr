@@ -262,14 +262,14 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       final ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
       paramsLoc.set(DISTRIB, "false"); // We are the aggregator.
       paramsLoc.set("expr", pushStream.toString());
-      paramsLoc.set("qt", "/export");
       paramsLoc.set("fl", fl);
       paramsLoc.set("sort", sort);
       paramsLoc.set("q", q);
       getReplicas(this.solrConnection, this.collection, this.streamContext, paramsLoc)
           .forEach(
               r -> {
-                SolrStream solrStream = new SolrStream(r.getBaseUrl(), paramsLoc, r.getCoreName());
+                SolrStream solrStream =
+                    new SolrStream(r.getBaseUrl(), r.getCoreName(), "/export", paramsLoc);
                 solrStream.setStreamContext(streamContext);
                 solrStreams.add(solrStream);
               });

@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -499,7 +500,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       assertEquals(
           "Unexpected keys in facet response",
           expectedKeys,
-          actualFacetResponse.asShallowMap().keySet());
+          new SimpleOrderedMap<>(actualFacetResponse).keySet());
     }
   }
 

@@ -24,6 +24,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
@@ -171,6 +172,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
               assertQueryEqualsAndReturn(
                   "fuzzy", req, "{!fuzzy f=$myField maxExpansions=4 transpositions=false}asdf");
       assertFalse(q.getTranspositions());
+    }
+  }
+
+  public void testQueryIntervals() throws Exception {
+    try (SolrQueryRequest req = req("myField", "foo_s")) {
+      assertQueryEquals(
+          IntervalsQParserPlugin.NAME,
+          req,
+          "{!intervals df=$myField}{'term':{'value':'asdf'}}",
+          "{!intervals df=foo_s}{'term':{'value':'asdf'}}");
     }
   }
 
@@ -1112,16 +1123,6 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("hsin(45,true,0,0,45,45)");
   }
 
-  public void testFuncGhhsin() throws Exception {
-    assertFuncEquals(
-        "ghhsin(45,id,'asdf')",
-        "ghhsin(45,field(id),'asdf')"); // "id" is just a single-valued string field
-  }
-
-  public void testFuncGeohash() throws Exception {
-    assertFuncEquals("geohash(45,99)");
-  }
-
   public void testFuncDist() throws Exception {
     assertFuncEquals("dist(2,45,99,101,111)", "dist(2,vector(45,99),vector(101,111))");
   }
@@ -1998,6 +1999,29 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         "hash_range",
         "{!hash_range f=x_id l=107347968 u=214695935}",
         "{!hash_range l='107347968' u='214695935' f='x_id'}");
+  }
+
+  @Test
+  public void testNestPathRootShortcut() throws Exception {
+    try (SolrQueryRequest req = req("df", "_nest_path_")) {
+      Query parsedQ =
+          assertQueryEqualsAndReturn(
+              null, req, "{!field f=_nest_path_ v=''}", "{!field f=_nest_path_}/");
+
+      var schemaField = req.getSchema().getField("_nest_path_");
+      Query expectedQ =
+          new BooleanQuery.Builder()
+              .add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST)
+              .add(
+                  schemaField.getType().getExistenceQuery(null, schemaField),
+                  BooleanClause.Occur.MUST_NOT)
+              .build();
+
+      assertEquals(
+          "The root shortcut query did not form the expected match-all minus existence structure",
+          expectedQ,
+          parsedQ);
+    }
   }
 
   // Override req to add df param

@@ -57,6 +57,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.apache.solr.util.ServletFixtures.RedirectServlet;
@@ -470,15 +471,14 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     IOUtils.closeQuietly((InputStream) stream);
   }
 
+  @SuppressWarnings("try")
   protected void testSetCredentialsExplicitly(HttpSolrClient client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-    try {
-      ignoreException("Error from server");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Error from server")) {
       client.request(r);
     } catch (Exception e) {
       // expected
     }
-    unIgnoreException("Error from server");
     assertTrue(DebugServlet.headers.size() > 0);
     String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNotNull(
@@ -490,16 +490,15 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
         authorizationHeader);
   }
 
+  @SuppressWarnings("try")
   protected void testPerRequestCredentials(HttpSolrClient client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
     r.setBasicAuthCredentials("foo3", "per-request");
-    try {
-      ignoreException("Error from server");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Error from server")) {
       client.request(r);
     } catch (Exception e) {
       // expected
     }
-    unIgnoreException("Error from server");
     assertTrue(DebugServlet.headers.size() > 0);
     String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNotNull(
@@ -512,29 +511,27 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
         authorizationHeader);
   }
 
+  @SuppressWarnings("try")
   protected void testNoCredentials(HttpSolrClient client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-    try {
-      ignoreException("Error from server");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Error from server")) {
       client.request(r);
     } catch (Exception e) {
       // expected
     }
-    unIgnoreException("Error from server");
     assertFalse(
         "Expecting no authorization header but got: " + DebugServlet.headers,
         DebugServlet.headers.containsKey("authorization"));
   }
 
+  @SuppressWarnings("try")
   protected void testUseOptionalCredentials(HttpSolrClient client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-    try {
-      ignoreException("Error from server");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Error from server")) {
       client.request(r);
     } catch (Exception e) {
       // expected
     }
-    unIgnoreException("Error from server");
     assertTrue(DebugServlet.headers.size() > 0);
     String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNotNull(
@@ -546,16 +543,15 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
         authorizationHeader);
   }
 
+  @SuppressWarnings("try")
   protected void testUseOptionalCredentialsWithNull(HttpSolrClient client) {
     // username foo, password with embedded colon separator is "expli:cit".
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-    try {
-      ignoreException("Error from server");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Error from server")) {
       client.request(r);
     } catch (Exception e) {
       // expected
     }
-    unIgnoreException("Error from server");
     assertTrue(DebugServlet.headers.size() > 0);
     String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNull(

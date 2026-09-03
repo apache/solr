@@ -1,3 +1,18 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from subprocess import call
 import os
 
@@ -6,7 +21,7 @@ FEATURE_DIFF_THRESHOLD = 1.e-6
 
 class LibSvmFormatter:
     def processQueryDocFeatureVector(self,docClickInfo,trainingFile):
-        '''Expects as input a sorted by queries list or generator that provides the context 
+        '''Expects as input a sorted by queries list or generator that provides the context
         for each query in a tuple composed of: (query , docId , relevance , source , featureVector).
         The list of documents that are part of the same query will generate comparisons
         against each other for training. '''
@@ -82,7 +97,7 @@ def _writeRankSVMPairs(listOfFeatures,output):
       (4, {1:0.9, 2:0.9, 3:0.1})
       (3, {1:0.7, 2:0.9, 3:0.2})
       (1, {1:0.1, 2:0.9, 6:0.1})
-    ]    
+    ]
     '''
     for d1 in range(0,len(listOfFeatures)):
         for d2 in range(d1+1,len(listOfFeatures)):

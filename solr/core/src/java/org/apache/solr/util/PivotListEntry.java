@@ -80,6 +80,7 @@ public enum PivotListEntry {
     }
     // otherwise...
     // scan starting at the min/optional index
-    return pivotList.get(this.getName(), this.minIndex);
+    final int idx = pivotList.indexOf(this.getName(), this.minIndex);
+    return idx == -1 ? null : pivotList.getVal(idx);
   }
 }

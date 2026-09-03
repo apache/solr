@@ -163,14 +163,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
     ModifiableSolrParams p = new ModifiableSolrParams(params);
     p.set("wt", wt);
-    String path = p.get("qt");
-    p.remove("qt");
     p.set("indent", "true");
 
     QueryRequest query = new QueryRequest(p);
-    if (path != null) {
-      query.setPath(path);
-    }
 
     if ("json".equals(wt)) {
       query.setResponseParser(new JsonMapResponseParser());
@@ -458,7 +453,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       // If we want to run with allowlist, this must be explicitly set to true for the test
       // otherwise we disable the check
       if (EnvUtils.getPropertyAsBool(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, null)) {
-        systemSetPropertyEnableUrlAllowList(false);
+        System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
       }
 
       jetty.start();

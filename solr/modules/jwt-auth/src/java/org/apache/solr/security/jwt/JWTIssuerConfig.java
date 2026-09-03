@@ -512,7 +512,7 @@ public class JWTIssuerConfig {
      * Fetch well-known config from a URL, with optional list of trusted certificates
      *
      * @param url the url to fetch
-     * @param trustedCerts optional list of trusted SSL certs. May be null to fall-back to Java's
+     * @param trustedCerts optional list of trusted SSL certs. May be null to fall back to Java's
      *     defaults
      * @return an instance of WellKnownDiscoveryConfig object
      */

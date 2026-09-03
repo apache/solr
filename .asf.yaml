@@ -46,6 +46,12 @@ github:
   collaborators:
     - solrbot
 
+  # We use Renovate (solrbot) as our sole dependency-update bot; Dependabot's version/security
+  # update PRs duplicate what Renovate already opens (e.g. #4737 duplicating #4590). Keep
+  # dependabot_alerts on for Security-tab vulnerability visibility.
+  dependabot_alerts: true
+  dependabot_updates: false
+
 notifications:
   commits:      commits@solr.apache.org
   issues:       issues@solr.apache.org

@@ -88,12 +88,12 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
     // But it should behave just like the 'defaults' request handler above
     assertQ(
         "lazy handler returns fewer matches",
-        req("q", "id:[42 TO 47]", "qt", "/lazy"),
+        reqWithPath("/lazy", "q", "id:[42 TO 47]"),
         "*[count(//doc)=4]");
 
     assertQ(
         "lazy handler includes highlighting",
-        req("q", "name:Zapp OR title:General", "qt", "/lazy"),
+        reqWithPath("/lazy", "q", "name:Zapp OR title:General"),
         "//lst[@name='highlighting']");
   }
 

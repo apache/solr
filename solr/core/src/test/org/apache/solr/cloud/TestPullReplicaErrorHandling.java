@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SocketProxy;
@@ -251,16 +252,19 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     DocCollection docCollection = assertNumberOfReplicas(1, 0, 1, false, true);
     Slice s = docCollection.getSlices().iterator().next();
     JettySolrRunner jetty = getJettyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
-    SolrCore core = jetty.getCoreContainer().getCores().iterator().next();
+    CoreContainer coreContainer = jetty.getCoreContainer();
 
-    for (int i = 0; i < (TEST_NIGHTLY ? 5 : 2); i++) {
-      cluster.expireZkSession(jetty);
-      waitForState(
-          "Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
-      waitForState("Expecting node to reconnect", collectionName, activeReplicaCount(1, 0, 1));
-      // We have two active ReplicationHandler with two close hooks each, one for triggering
-      // recovery and one for doing interval polling
-      assertEquals(5, core.getCloseHooks().size());
+    // held open across the reconnects below, so the same core instance is checked each time
+    try (SolrCore core = coreContainer.getCore(coreContainer.getLoadedCoreNames().get(0))) {
+      for (int i = 0; i < (TEST_NIGHTLY ? 5 : 2); i++) {
+        cluster.expireZkSession(jetty);
+        waitForState(
+            "Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
+        waitForState("Expecting node to reconnect", collectionName, activeReplicaCount(1, 0, 1));
+        // We have two active ReplicationHandler with two close hooks each, one for triggering
+        // recovery and one for doing interval polling
+        assertEquals(5, core.getCloseHooks().size());
+      }
     }
   }
 

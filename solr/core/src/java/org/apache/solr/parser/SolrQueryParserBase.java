@@ -1296,14 +1296,15 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
           WildcardQuery.toAutomaton(term, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
       // TODO: we should likely use the automaton to calculate shouldReverse, too.
       if (factory.shouldReverse(termStr)) {
-        automaton = Operations.concatenate(automaton, Automata.makeChar(factory.getMarkerChar()));
+        automaton =
+            Operations.concatenate(List.of(automaton, Automata.makeChar(factory.getMarkerChar())));
         automaton = Operations.reverse(automaton);
       } else {
         // reverse wildcardfilter is active: remove false positives
         // fsa representing false positives (markerChar*)
         Automaton falsePositives =
             Operations.concatenate(
-                Automata.makeChar(factory.getMarkerChar()), Automata.makeAnyString());
+                List.of(Automata.makeChar(factory.getMarkerChar()), Automata.makeAnyString()));
         // subtract these away
         automaton =
             Operations.minus(automaton, falsePositives, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);

@@ -21,6 +21,7 @@ import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
 
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -95,7 +96,8 @@ public class TestThinCache extends SolrTestCaseJ4 {
     lrf = h.getRequestFactory("/select", 0, 20);
   }
 
-  SolrMetricManager metricManager = new SolrMetricManager(null);
+  MetricExporter me = null;
+  SolrMetricManager metricManager = new SolrMetricManager(me);
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
 
   @Test

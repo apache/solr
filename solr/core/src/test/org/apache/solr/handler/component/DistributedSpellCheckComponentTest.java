@@ -22,8 +22,10 @@ import java.util.List;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
@@ -44,20 +46,15 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     useFactory(null); // need an FS factory
   }
 
-  private void q(Object... q) throws Exception {
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-
-    for (int i = 0; i < q.length; i += 2) {
-      params.add(q[i].toString(), q[i + 1].toString());
-    }
-
-    controlClient.query(params);
+  private void q(String handler, SolrParams params) throws Exception {
+    new QueryRequest(handler, params).process(controlClient);
 
     // query a random server
-    params.set("shards", shards);
+    final ModifiableSolrParams distribParams = new ModifiableSolrParams(params);
+    distribParams.set("shards", shards);
     int which = r.nextInt(clients.size());
     SolrClient client = clients.get(which);
-    client.query(params);
+    new QueryRequest(handler, distribParams).process(client);
   }
 
   @Override
@@ -140,14 +137,17 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     String maxResults = SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST;
 
     // Build the dictionary for IndexBasedSpellChecker
-    q(buildRequest("*:*", false, "/spellCheckCompRH", false, build, "true"));
+    q("/spellCheckCompRH", buildRequest("*:*", false, "/spellCheckCompRH", false, build, "true"));
 
     // Test Basic Functionality
     query(
+        requestHandlerName,
         buildRequest("toyata", true, requestHandlerName, random().nextBoolean(), (String[]) null));
     query(
+        requestHandlerName,
         buildRequest("toyata", true, requestHandlerName, random().nextBoolean(), extended, "true"));
     query(
+        requestHandlerName,
         buildRequest(
             "bluo",
             true,
@@ -160,6 +160,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
 
     // Test Collate functionality
     query(
+        requestHandlerName,
         buildRequest(
             "The quick reb fox jumped over the lazy brown dogs",
             false,
@@ -172,6 +173,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
             collate,
             "true"));
     query(
+        requestHandlerName,
         buildRequest(
             "lowerfilt:(+quock +reb)",
             false,
@@ -190,6 +192,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
             collateExtended,
             "true"));
     query(
+        requestHandlerName,
         buildRequest(
             "lowerfilt:(+quock +reb)",
             false,
@@ -208,6 +211,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
             collateExtended,
             "false"));
     query(
+        requestHandlerName,
         buildRequest(
             "lowerfilt:(+quock +reb)",
             false,
@@ -228,6 +232,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
 
     // Test context-sensitive collate
     query(
+        requestHandlerName,
         buildRequest(
             "lowerfilt:(\"quick red fox\")",
             false,
@@ -250,6 +255,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
             maxResults,
             "10"));
     query(
+        requestHandlerName,
         buildRequest(
             "lowerfilt:(\"rod fix\")",
             false,
@@ -272,6 +278,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
             maxResults,
             "10"));
     query(
+        requestHandlerName,
         buildRequest(
             "lowerfilt:(\"rod fix\")",
             false,
@@ -298,6 +305,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
 
     // Test word-break spellchecker
     query(
+        reqHandlerWithWordbreak,
         buildRequest(
             "lowerfilt:(+quock +redfox +jum +ped)",
             false,
@@ -316,6 +324,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
             collateExtended,
             "true"));
     query(
+        reqHandlerWithWordbreak,
         buildRequest(
             "lowerfilt:(+rodfix)",
             false,
@@ -334,6 +343,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
             collateExtended,
             "true"));
     query(
+        reqHandlerWithWordbreak,
         buildRequest(
             "lowerfilt:(+son +ata)",
             false,
@@ -362,10 +372,9 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     commit();
 
     query(
+        "/spellCheckCompRH_Direct",
         true,
         params(
-            "qt",
-            "/spellCheckCompRH_Direct",
             "shards.qt",
             "/spellCheckCompRH_Direct",
             "rows",
@@ -386,19 +395,22 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
             Boolean.toString(random().nextBoolean()),
             collateExtended,
             Boolean.toString(random().nextBoolean()),
+            // "0" is correctly spelled, in more docs than configured maxQueryFrequency
             "test.expected.suggestions",
-            "0", // this word is correctly spelled, in more docs then configured maxQueryFrequency
+            "0",
+            // echoParams=all needed so validateControlData can see our
+            // test.expected.suggestions
             "echoParams",
-            "all")); // needed so validateControlData can see our test.expected.suggestions
+            "all"));
   }
 
-  private Object[] buildRequest(
+  private SolrParams buildRequest(
       String q,
       boolean useSpellcheckQ,
       String handlerName,
       boolean useGrouping,
       String... addlParams) {
-    List<Object> params = new ArrayList<>();
+    List<String> params = new ArrayList<>();
 
     params.add("q");
     params.add(useSpellcheckQ ? "*:*" : q);
@@ -410,9 +422,6 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
 
     params.add("fl");
     params.add("id,lowerfilt");
-
-    params.add("qt");
-    params.add(handlerName);
 
     params.add("shards.qt");
     params.add(handlerName);
@@ -431,6 +440,6 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     if (addlParams != null) {
       params.addAll(Arrays.asList(addlParams));
     }
-    return params.toArray(new Object[0]);
+    return params(params.toArray(new String[0]));
   }
 }

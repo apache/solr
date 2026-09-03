@@ -109,6 +109,16 @@ module:clustering:
       - any-glob-to-any-file:
           - solr/modules/clustering/**
 
+module:cross-dc:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/cross-dc/**
+
+module:cuvs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/cuvs/**
+
 module:extraction:
   - changed-files:
       - any-glob-to-any-file:
@@ -128,6 +138,11 @@ module:langid:
   - changed-files:
       - any-glob-to-any-file:
           - solr/modules/langid/**
+
+module:language-models:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/language-models/**
 
 module:ltr:
   - changed-files:

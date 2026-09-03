@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.ConfigSetService;
 
 /** Supports create command in the bin/solr script. */
@@ -135,7 +136,7 @@ public class CreateTool extends ToolBase {
     String coreName = cli.getOptionValue(COLLECTION_NAME_OPTION);
     String solrUrl = CLIUtils.normalizeSolrUrl(cli);
 
-    final String solrInstallDir = System.getProperty("solr.install.dir");
+    final String solrInstallDir = EnvUtils.getProperty("solr.install.dir");
     final String confDirName =
         cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
 
@@ -217,7 +218,7 @@ public class CreateTool extends ToolBase {
       throws Exception {
 
     String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    final String solrInstallDir = System.getProperty("solr.install.dir");
+    final String solrInstallDir = EnvUtils.getProperty("solr.install.dir");
     String confName = cli.getOptionValue(CONF_NAME_OPTION);
     String confDir = cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
     Path solrInstallDirPath = Path.of(solrInstallDir);

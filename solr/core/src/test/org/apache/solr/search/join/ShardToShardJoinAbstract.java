@@ -59,7 +59,6 @@ public abstract class ShardToShardJoinAbstract extends SolrCloudTestCase {
 
   private static final String[] scoreModes = {"avg", "max", "min", "total"};
 
-  //    resetExceptionIgnores();
   protected static String toColl = "parent";
   protected static String fromColl = "children";
 

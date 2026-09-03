@@ -51,12 +51,14 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
@@ -66,8 +68,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -129,17 +131,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     r = new Random(random().nextLong());
   }
 
-  @SuppressWarnings("deprecation")
   @BeforeClass
   // Sets the solr.security.allow.urls.enable=false, disabling the need to provide an allow list.
   public static void setSolrEnableUrlUrlAllowList() {
-    systemSetPropertyEnableUrlAllowList(false);
-  }
-
-  @SuppressWarnings("deprecation")
-  @AfterClass
-  public static void clearSolrEnableUrlUrlAllowList() {
-    systemClearPropertySolrEnableUrlAllowList();
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
   }
 
   protected BaseDistributedSearchTestCase() {
@@ -265,7 +260,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   public void distribSetUp() throws Exception {
     distribSetUpCalled = true;
-    SolrTestCaseJ4.resetExceptionIgnores(); // ignore anything with ignore_exception in it
     testDir = createTempDir();
   }
 
@@ -598,18 +592,22 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
   }
 
+  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
+      throws SolrServerException, IOException {
+    return queryRandomShard(params.get(CommonParams.QT, "/select"), params);
+  }
+
   /**
    * Queries a random shard; nothing more.
    *
    * <p>WARNING: tests should generally not call this as it doesn't compare to the control client
    */
-  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
+  protected QueryResponse queryRandomShard(String requestHandler, ModifiableSolrParams params)
       throws SolrServerException, IOException {
     // query a random server
     int which = r.nextInt(clients.size());
     SolrClient client = clients.get(which);
-    QueryResponse rsp = client.query(params);
-    return rsp;
+    return new QueryRequest(requestHandler, params).process(client);
   }
 
   /** Sets distributed params. Returns the distributed QueryResponse */
@@ -629,13 +627,22 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return query(setDistribParams, params);
   }
 
-  /** Returns the distributed QueryResponse */
+  protected QueryResponse query(String requestHandler, SolrParams p) throws Exception {
+    return query(requestHandler, true, p);
+  }
+
   protected QueryResponse query(boolean setDistribParams, SolrParams p) throws Exception {
+    return query(p.get(CommonParams.QT, "/select"), setDistribParams, p);
+  }
+
+  /** Returns the distributed QueryResponse */
+  protected QueryResponse query(String requestHandler, boolean setDistribParams, SolrParams p)
+      throws Exception {
     if (p.get("distrib") != null) {
       throw new IllegalArgumentException("don't pass distrib param");
     }
 
-    final QueryResponse controlRsp = controlClient.query(p);
+    final QueryResponse controlRsp = new QueryRequest(requestHandler, p).process(controlClient);
     validateControlData(controlRsp);
 
     if (shardCount == 0) { // mostly for temp debugging
@@ -645,7 +652,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     final ModifiableSolrParams params = new ModifiableSolrParams(p);
     if (setDistribParams) setDistributedParams(params);
 
-    QueryResponse rsp = queryRandomShard(params);
+    QueryResponse rsp = queryRandomShard(requestHandler, params);
 
     compareResponses(rsp, controlRsp);
 
@@ -660,7 +667,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
                     int which = r.nextInt(clients.size());
                     SolrClient client = clients.get(which);
                     try {
-                      QueryResponse rsp1 = client.query(new ModifiableSolrParams(params));
+                      QueryResponse rsp1 =
+                          new QueryRequest(requestHandler, new ModifiableSolrParams(params))
+                              .process(client);
                       if (verifyStress) {
                         compareResponses(rsp1, controlRsp);
                       }

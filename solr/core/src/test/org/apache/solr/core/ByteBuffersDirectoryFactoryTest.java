@@ -20,11 +20,17 @@ import java.io.IOException;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 
 /** Test-case for ByteBuffersDirectoryFactory */
 public class ByteBuffersDirectoryFactoryTest extends SolrTestCaseJ4 {
+
+  public void testLockTypeNone() throws IOException {
+    ByteBuffersDirectoryFactory factory = new ByteBuffersDirectoryFactory();
+    assertSame(NoLockFactory.INSTANCE, factory.createLockFactory(DirectoryFactory.LOCK_TYPE_NONE));
+  }
 
   public void testOpenReturnsTheSameForSamePath() throws IOException {
     final Directory directory = new ByteBuffersDirectory();

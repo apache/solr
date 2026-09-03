@@ -2310,7 +2310,7 @@ public class ZkController implements Closeable {
         // listeners
         try (SolrClient client =
             new HttpJettySolrClient.Builder(leaderBaseUrl)
-                .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
+                .withHttpClient((HttpJettySolrClient) getCoreContainer().getDefaultHttpSolrClient())
                 .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
           WaitForState prepCmd = new WaitForState();

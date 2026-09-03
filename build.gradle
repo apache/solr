@@ -23,6 +23,7 @@ plugins {
   id 'solr.build-infra'
 
   alias(libs.plugins.owasp.dependencycheck)
+  alias(libs.plugins.barfuin.jacocolog) apply false
   alias(libs.plugins.benmanes.versions)
   alias(libs.plugins.kotlin.multiplatform) apply false
   alias(libs.plugins.littlerobots.versioncatalogupdate) apply false
@@ -132,6 +133,7 @@ ext {
 
   // Use gradle flag in root project for further referencing
   withUiModule = gradle.ext.withUiModule
+  withJsClient = gradle.ext.withJsClient
 }
 
 // Include smaller chunks configuring dedicated build areas.
@@ -154,6 +156,13 @@ apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
 apply from: file('gradle/testing/retry-test.gradle')
 
+def withCoverage = gradle.startParameter.taskNames.any {
+  it == 'coverage' || it.endsWith(':coverage')
+} || providers.gradleProperty('tests.coverage').getOrElse('false').toBoolean()
+if (withCoverage) {
+  apply from: file('gradle/testing/coverage.gradle.kts')
+}
+
 // Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')
 
@@ -171,6 +180,7 @@ apply from: file('gradle/validation/git-status.gradle')
 apply from: file('gradle/validation/validate-source-patterns.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
+apply from: file('gradle/validation/dependency-analyze.gradle.kts')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')

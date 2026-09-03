@@ -22,6 +22,7 @@ import static org.apache.solr.common.params.CommonParams.JSON;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,15 +32,24 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SortSpecParsing;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
@@ -90,7 +100,7 @@ public class DebugComponent extends SearchComponent {
       }
 
       NamedList<Object> stdinfo =
-          SolrPluginUtils.doStandardDebug(
+          doStandardDebug(
               rb.req,
               rb.getQueryString(),
               rb.wrap(rb.getQuery()),
@@ -216,7 +226,7 @@ public class DebugComponent extends SearchComponent {
 
       Map.Entry<String, Object>[] arr =
           (Map.Entry<String, Object>[])
-              Array.newInstance(NamedList.NamedListEntry.class, rb.resultIds.size());
+              Array.newInstance(AbstractMap.SimpleEntry.class, rb.resultIds.size());
       // Will be set to true if there is at least one response with PURPOSE_GET_DEBUG
       boolean hasGetDebugResponses = false;
 
@@ -251,7 +261,7 @@ public class DebugComponent extends SearchComponent {
           info = new SimpleOrderedMap<>();
         }
         // No responses were received from shards. Show local query info.
-        SolrPluginUtils.doStandardQueryDebug(
+        doStandardQueryDebug(
             rb.req, rb.getQueryString(), rb.wrap(rb.getQuery()), rb.isDebugQuery(), info);
         if (rb.isDebugQuery() && rb.getQparser() != null) {
           rb.getQparser().addDebugInfo(info);
@@ -374,6 +384,125 @@ public class DebugComponent extends SearchComponent {
     t.add(dest);
     t.add(source);
     return t;
+  }
+
+  /**
+   * Returns a NamedList containing many "standard" pieces of debugging information.
+   *
+   * <ul>
+   *   <li>rawquerystring - the 'q' param exactly as specified by the client
+   *   <li>querystring - the 'q' param after any preprocessing done by the plugin
+   *   <li>parsedquery - the main query executed formated by the Solr QueryParsing utils class
+   *       (which knows about field types)
+   *   <li>parsedquery_toString - the main query executed formatted by its own toString method (in
+   *       case it has internal state Solr doesn't know about)
+   *   <li>explain - the list of score explanations for each document in results against query.
+   *   <li>otherQuery - the query string specified in 'explainOther' query param.
+   *   <li>explainOther - the list of score explanations for each document in results against
+   *       'otherQuery'
+   * </ul>
+   *
+   * @param req the request we are dealing with
+   * @param userQuery the users query as a string, after any basic preprocessing has been done
+   * @param query the query built from the userQuery (and perhaps other clauses) that identifies the
+   *     main result set of the response.
+   * @param results the main result set of the response
+   * @return The debug info
+   * @throws java.io.IOException if there was an IO error
+   */
+  public static NamedList<Object> doStandardDebug(
+      SolrQueryRequest req,
+      String userQuery,
+      Query query,
+      DocList results,
+      boolean dbgQuery,
+      boolean dbgResults)
+      throws IOException {
+    NamedList<Object> dbg = new SimpleOrderedMap<>();
+    doStandardQueryDebug(req, userQuery, query, dbgQuery, dbg);
+    doStandardResultsDebug(req, query, results, dbgResults, dbg);
+    return dbg;
+  }
+
+  public static void doStandardQueryDebug(
+      SolrQueryRequest req,
+      String userQuery,
+      Query query,
+      boolean dbgQuery,
+      NamedList<Object> dbg) {
+    if (dbgQuery) {
+      /* userQuery may have been pre-processed .. expose that */
+      dbg.add("rawquerystring", req.getParams().get(CommonParams.Q));
+      dbg.add("querystring", userQuery);
+
+      /* QueryParsing.toString isn't perfect, use it to see converted
+       * values, use regular toString to see any attributes of the
+       * underlying Query it may have missed.
+       */
+      dbg.add("parsedquery", QueryParsing.toString(query, req.getSchema()));
+      dbg.add("parsedquery_toString", query.toString());
+    }
+  }
+
+  public static void doStandardResultsDebug(
+      SolrQueryRequest req, Query query, DocList results, boolean dbgResults, NamedList<Object> dbg)
+      throws IOException {
+    if (dbgResults) {
+      SolrIndexSearcher searcher = req.getSearcher();
+      IndexSchema schema = searcher.getSchema();
+      boolean explainStruct = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
+
+      if (results != null) {
+        NamedList<Explanation> explain =
+            SolrPluginUtils.getExplanations(query, results, searcher, schema);
+        dbg.add(
+            "explain",
+            explainStruct
+                ? SolrPluginUtils.explanationsToNamedLists(explain)
+                : SolrPluginUtils.explanationsToStrings(explain));
+      }
+
+      String otherQueryS = req.getParams().get(CommonParams.EXPLAIN_OTHER);
+      if (otherQueryS != null && otherQueryS.length() > 0) {
+        DocList otherResults = doSimpleQuery(otherQueryS, req, 0, 10);
+        dbg.add("otherQuery", otherQueryS);
+        NamedList<Explanation> explainO =
+            SolrPluginUtils.getExplanations(query, otherResults, searcher, schema);
+        dbg.add(
+            "explainOther",
+            explainStruct
+                ? SolrPluginUtils.explanationsToNamedLists(explainO)
+                : SolrPluginUtils.explanationsToStrings(explainO));
+      }
+    }
+  }
+
+  /** Executes a basic query */
+  public static DocList doSimpleQuery(String sreq, SolrQueryRequest req, int start, int limit)
+      throws IOException {
+    List<String> commands = StrUtils.splitSmart(sreq, ';');
+
+    String qs = commands.size() >= 1 ? commands.get(0) : "";
+    try {
+      Query query = QParser.getParser(qs, req).getQuery();
+
+      // If the first non-query, non-filter command is a simple sort on an indexed field, then
+      // we can use the Lucene sort ability.
+      Sort sort = null;
+      if (commands.size() >= 2) {
+        sort = SortSpecParsing.parseSortSpec(commands.get(1), req).getSort();
+      }
+
+      return new QueryCommand()
+          .setQuery(query)
+          .setSort(sort)
+          .setOffset(start)
+          .setLen(limit)
+          .search(req.getSearcher())
+          .getDocList();
+    } catch (SyntaxError e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing query: " + qs);
+    }
   }
 
   /////////////////////////////////////////////

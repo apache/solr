@@ -27,7 +27,9 @@ develocity {
   buildScan {
     uploadInBackground = !isCIBuild
 
-    publishing.onlyIf {it.authenticated}
+    // Publish on CI (assume key env var set) or locally when opted-in via -Pscan
+    def isScanOptIn = providers.gradleProperty('scan').present
+    publishing.onlyIf { (isCIBuild || isScanOptIn) && it.authenticated }
     obfuscation {
       ipAddresses {addresses -> addresses.collect {address -> "0.0.0.0"}}
     }
@@ -55,7 +57,9 @@ develocity {
 
 buildCache {
   local {
-    enabled = !isCIBuild
+    enabled =
+        providers.gradleProperty('org.gradle.caching').map(Boolean::parseBoolean)
+            .getOrElse(!isCIBuild)
   }
 
   remote(develocity.buildCache) {

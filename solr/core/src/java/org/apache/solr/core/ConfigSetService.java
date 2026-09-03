@@ -137,7 +137,7 @@ public abstract class ConfigSetService {
         log.warn(
             "The _default configset could not be uploaded. Please provide 'solr.configset.default.confdir' parameter that points to a configset {} {}",
             "intended to be the default. Current 'solr.configset.default.confdir' value:",
-            System.getProperty(SOLR_CONFIGSET_DEFAULT_CONFDIR));
+            EnvUtils.getProperty(SOLR_CONFIGSET_DEFAULT_CONFDIR));
       } else {
         this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
       }
@@ -165,7 +165,7 @@ public abstract class ConfigSetService {
    * @see ConfigSetService#SOLR_CONFIGSET_DEFAULT_CONFDIR
    */
   public static Path getDefaultConfigDirPath() {
-    String confDir = System.getProperty(SOLR_CONFIGSET_DEFAULT_CONFDIR);
+    String confDir = EnvUtils.getProperty(SOLR_CONFIGSET_DEFAULT_CONFDIR);
     if (confDir != null) {
       Path path = Path.of(confDir);
       if (Files.exists(path)) {
@@ -173,7 +173,7 @@ public abstract class ConfigSetService {
       }
     }
 
-    String installDir = System.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
+    String installDir = EnvUtils.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
     if (installDir != null) {
       Path subPath = Path.of("server", "solr", "configsets", "_default", "conf");
       Path path = Path.of(installDir).resolve(subPath);

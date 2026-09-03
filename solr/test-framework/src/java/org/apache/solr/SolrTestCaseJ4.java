@@ -62,7 +62,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -97,7 +96,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
@@ -120,7 +118,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
@@ -239,7 +236,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   @BeforeClass
   public static void setupTestCases() {
-    resetExceptionIgnores();
+    if (ignoreExceptionMuter != null) {
+      // defensive: a previous test class may have failed to tear down cleanly
+      ignoreExceptionMuter.close();
+      ignoreExceptionMuter = null;
+    }
 
     testExecutor =
         new ExecutorUtil.MDCAwareThreadPoolExecutor(
@@ -274,7 +275,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.metrics.otlpExporterInterval", "1000");
 
     startTrackingSearchers();
-    ignoreException("ignore_exception");
+    ignoreExceptionMuter = ErrorLogMuter.regex("ignore_exception");
     newRandomConfig();
 
     sslConfig = buildSSLConfig();
@@ -303,7 +304,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         testExecutor = null;
       }
 
-      resetExceptionIgnores();
+      if (ignoreExceptionMuter != null) {
+        ignoreExceptionMuter.close();
+        ignoreExceptionMuter = null;
+      }
 
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
@@ -574,51 +578,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  private static final Map<String, ErrorLogMuter> errorMuters = new ConcurrentHashMap<>();
-
   /**
-   * Causes any ERROR log messages matching with a substring matching the regex pattern to be
-   * filtered out by the ROOT logger
-   *
-   * @see #resetExceptionIgnores
-   * @deprecated use a {@link ErrorLogMuter} instead
+   * Registered by {@link #setupTestCases} / {@link #initCore()}, closed by {@link
+   * #teardownTestCases}.
    */
-  @Deprecated
-  public static void ignoreException(String pattern) {
-    errorMuters.computeIfAbsent(pattern, (pat) -> ErrorLogMuter.regex(pat));
-  }
-
-  /**
-   * @see #ignoreException
-   * @deprecated use a {@link ErrorLogMuter} instead
-   */
-  @Deprecated
-  public static void unIgnoreException(String pattern) {
-    errorMuters.computeIfPresent(
-        pattern,
-        (pat, muter) -> {
-          IOUtils.closeQuietly(muter);
-          return null;
-        });
-  }
-
-  /**
-   * Clears all exception patterns, immediately re-registering {@code "ignore_exception"}. {@link
-   * SolrTestCaseJ4} calls this in both {@link BeforeClass} {@link AfterClass} so usually tests
-   * don't need to call this.
-   *
-   * @see #ignoreException
-   * @deprecated use a {@link ErrorLogMuter} instead
-   */
-  @Deprecated
-  public static void resetExceptionIgnores() {
-    errorMuters.forEach(
-        (k, muter) -> {
-          IOUtils.closeQuietly(muter);
-          errorMuters.remove(k);
-        });
-    ignoreException("ignore_exception");
-  }
+  private static ErrorLogMuter ignoreExceptionMuter;
 
   protected static String getClassName() {
     return getTestClass().getName();
@@ -681,7 +645,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static void initCore() throws Exception {
     log.info("####initCore");
 
-    ignoreException("ignore_exception");
+    if (ignoreExceptionMuter == null) {
+      ignoreExceptionMuter = ErrorLogMuter.regex("ignore_exception");
+    }
 
     String configFile = getSolrConfigFile();
     if (configFile != null) {
@@ -914,6 +880,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
+   * Validates a JSON DSL request matches the given JSON test expressions
+   *
+   * @param jsonBody The JSON DSL request body to send to Solr
+   * @param tests JSON path expression + '==' + expected value
+   * @see JSONTestUtil#DEFAULT_DELTA
+   * @see #assertJQ(SolrQueryRequest,double,String...)
+   * @return The request response as a JSON String if all test patterns pass
+   */
+  public static String assertJJQ(String jsonBody, String... tests) throws Exception {
+    SolrQueryRequestBase jreq = (SolrQueryRequestBase) req();
+    jreq.setContentStreams(List.of(new ContentStreamBase.StringStream(jsonBody)));
+    return assertJQ(jreq, JSONTestUtil.DEFAULT_DELTA, tests);
+  }
+
+  /**
    * Validates a query matches some JSON test expressions using the default double delta tolerance.
    *
    * @see JSONTestUtil#DEFAULT_DELTA
@@ -1051,31 +1032,28 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /** Makes sure a query throws a SolrException with the listed response code */
+  @SuppressWarnings("try")
   public static void assertQEx(String message, SolrQueryRequest req, int code) {
-    try {
-      ignoreException(".");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".")) {
       h.query(req);
       fail(message);
     } catch (SolrException sex) {
       assertEquals(code, sex.code());
     } catch (Exception e2) {
       throw new RuntimeException("Exception during query", e2);
-    } finally {
-      unIgnoreException(".");
     }
   }
 
+  /** Makes sure a query throws a SolrException with the listed response code */
+  @SuppressWarnings("try")
   public static void assertQEx(String message, SolrQueryRequest req, SolrException.ErrorCode code) {
-    try {
-      ignoreException(".");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".")) {
       h.query(req);
       fail(message);
     } catch (SolrException e) {
       assertEquals(code.code, e.code());
     } catch (Exception e2) {
       throw new RuntimeException("Exception during query", e2);
-    } finally {
-      unIgnoreException(".");
     }
   }
 
@@ -1088,13 +1066,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param req Solr request
    * @param code expected error code for the query
    */
+  @SuppressWarnings("try")
   public static void assertQEx(
       String failMessage,
       String exceptionMessage,
       SolrQueryRequest req,
       SolrException.ErrorCode code) {
-    try {
-      ignoreException(".");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".")) {
       h.query(req);
       fail(failMessage);
     } catch (SolrException e) {
@@ -1108,8 +1086,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           e.getMessage() != null && e.getMessage().contains(exceptionMessage));
     } catch (Exception e2) {
       throw new RuntimeException("Exception during query", e2);
-    } finally {
-      unIgnoreException(".");
     }
   }
 
@@ -1284,6 +1260,37 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       mp.add(moreParams[i], moreParams[i + 1]);
     }
     return new SolrQueryRequestBase(h.getCore(), mp);
+  }
+
+  /**
+   * Generates a SolrQueryRequest representing the specified path and query params
+   *
+   * <p>Path information is used by {@link #assertQ(SolrQueryRequest, String...)} and similar
+   * helpers to look up the request handler to invoke. When used with these helpers, typically only
+   * the requestHandler path segment need by provided ("/select", "/export", etc.)
+   *
+   * @see #req(String...)
+   */
+  public static SolrQueryRequest reqWithPath(String path, String... params) {
+    return withPath(path, req(params));
+  }
+
+  /**
+   * Generates a SolrQueryRequest representing the specified path and query params
+   *
+   * <p>Path information is used by {@link #assertQ(SolrQueryRequest, String...)} and similar
+   * helpers to look up the request handler to invoke. When used with these helpers, typically only
+   * the requestHandler path segment need by provided ("/select", "/export", etc.)
+   *
+   * @see #req(SolrParams, String...)
+   */
+  public static SolrQueryRequest reqWithPath(String path, SolrParams params, String... moreParams) {
+    return withPath(path, req(params, moreParams));
+  }
+
+  public static SolrQueryRequest withPath(String path, SolrQueryRequest req) {
+    req.getContext().put(CommonParams.PATH, path);
+    return req;
   }
 
   /** Necessary to make method signatures un-ambiguous */
@@ -2247,7 +2254,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // and copies the stock files in there.
 
   /** Copies the test collection1 config into {@code dstRoot}/{@code collection}/conf */
-  @Deprecated // Instead use a basic config + whatever is needed or default config
+  /**
+   * @deprecated Use a basic config plus whatever is needed, or the default config, instead of
+   *     copying the full collection1 test config.
+   */
+  @Deprecated(since = "10.0") // Instead use a basic config + whatever is needed or default config
   public static void copySolrHomeToTemp(Path dstRoot, String collection) throws IOException {
     Path subHome = dstRoot.resolve(collection).resolve("conf");
     Files.createDirectories(subHome);
@@ -2471,7 +2482,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static class RandomizingCloudSolrClientBuilder extends CloudSolrClient.Builder {
 
     public RandomizingCloudSolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
-      super(zkHosts, zkChroot);
+      // sets the protected fields directly, matching the sibling constructors below
+      super(new ArrayList<>());
+      this.zkHosts.addAll(zkHosts);
+      zkChroot.ifPresent(chroot -> this.zkChroot = chroot);
       randomizeCloudSolrClient();
     }
 
@@ -2517,13 +2531,23 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @param url the base URL for a Solr node. Should not contain a core or collection name.
    */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
+  /**
+   * @deprecated Prefer an existing client, e.g. from a {@link
+   *     org.apache.solr.util.SolrClientTestRule} or {@link
+   *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.
+   */
+  @Deprecated(since = "10.1") // probably use an existing client like on a testRule/jettyRunner
   public static HttpJettySolrClient getHttpSolrClient(String url) {
     return new HttpJettySolrClient.Builder(url).build();
   }
 
   /** Create a basic HttpSolrClient pointed at the specified replica */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
+  /**
+   * @deprecated Prefer an existing client, e.g. from a {@link
+   *     org.apache.solr.util.SolrClientTestRule} or {@link
+   *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.
+   */
+  @Deprecated(since = "10.1") // probably use an existing client like on a testRule/jettyRunner
   public static HttpJettySolrClient getHttpSolrClient(Replica replica) {
     return getHttpSolrClient(replica.getBaseUrl(), replica.getCoreName());
   }
@@ -2537,7 +2561,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param defaultCoreName the name of a core that the created client should default to when making
    *     core-aware requests
    */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
+  /**
+   * @deprecated Prefer an existing client, e.g. from a {@link
+   *     org.apache.solr.util.SolrClientTestRule} or {@link
+   *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.
+   */
+  @Deprecated(since = "10.1") // probably use an existing client like on a testRule/jettyRunner
   public static HttpJettySolrClient getHttpSolrClient(String url, String defaultCoreName) {
     return new HttpJettySolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
   }
@@ -2597,14 +2626,20 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   protected String getSaferTestName() {
-    // test names can hold additional info, like the test seed
-    // only take to first space
+    // test names can hold additional info, like the test seed:
+    //   "testFoo {seed=[...]}" (older runners) or "testFoo[seed=[...]]" (randomizedtesting 2.9+)
+    // keep only the method name, up to the first space or '['
     String testName = getTestName();
-    int index = testName.indexOf(' ');
-    if (index > 0) {
-      testName = testName.substring(0, index);
+    int index = testName.length();
+    int space = testName.indexOf(' ');
+    if (space > 0) {
+      index = space;
     }
-    return testName;
+    int bracket = testName.indexOf('[');
+    if (bracket > 0 && bracket < index) {
+      index = bracket;
+    }
+    return testName.substring(0, index);
   }
 
   @BeforeClass
@@ -2668,14 +2703,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static void systemSetPropertySolrTestsMergePolicyFactory(String value) {
     System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, value);
   }
-
-  @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemSetPropertyEnableUrlAllowList(boolean value) {
-    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, String.valueOf(value));
-  }
-
-  @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrEnableUrlAllowList() {}
 
   @SafeVarargs
   protected static <T> T pickRandom(T... options) {

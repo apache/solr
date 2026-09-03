@@ -129,7 +129,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   private void implTest(SolrClient solrClient, int numExpected) throws Exception {
 
-    final QueryRequest reqV = new QueryRequest(params("qt", "/get", "getVersions", "12345"));
+    final QueryRequest reqV = new QueryRequest("/get", params("getVersions", "12345"));
     final NamedList<?> rspV = solrClient.request(reqV, COLLECTION);
     final List<Long> versions = (List<Long>) rspV.get("versions");
     assertEquals(versions.toString(), numExpected, versions.size());
@@ -145,9 +145,8 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     for (boolean skipDbq : new boolean[] {false, true}) {
       final QueryRequest reqU =
           new QueryRequest(
+              "/get",
               params(
-                  "qt",
-                  "/get",
                   "getUpdates",
                   minVersion + "..." + maxVersion,
                   "skipDbq",

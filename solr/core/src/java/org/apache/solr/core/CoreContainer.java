@@ -34,7 +34,6 @@ import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
-import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
@@ -58,7 +57,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.CorruptIndexException;
@@ -71,7 +70,6 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
@@ -86,7 +84,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -125,7 +122,7 @@ import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.handler.designer.SchemaDesignerAPI;
+import org.apache.solr.handler.designer.SchemaDesigner;
 import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.LogWatcher;
@@ -164,8 +161,6 @@ import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ApplicationHandler;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -290,7 +285,7 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
-  public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
+  public final NodeRoles nodeRoles = new NodeRoles(EnvUtils.getProperty(NodeRoles.NODE_ROLES_PROP));
 
   private final ExecutorService indexSearcherExecutor;
 
@@ -412,14 +407,13 @@ public class CoreContainer {
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
     OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader);
-    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
+    this.metricManager = new SolrMetricManager(loader);
     this.tracer = TraceUtils.getGlobalTracer();
 
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
-    setWeakStringInterner();
     this.coresLocator = locator;
     this.containerProperties = new Properties(config.getSolrProperties());
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
@@ -556,14 +550,17 @@ public class CoreContainer {
 
     if (pluginClassName != null) {
       log.debug("Authentication plugin class obtained from security.json: {}", pluginClassName);
-    } else if (System.getProperty(AUTHENTICATION_PLUGIN_PROP) != null) {
-      pluginClassName = System.getProperty(AUTHENTICATION_PLUGIN_PROP);
-      log.debug(
-          "Authentication plugin class obtained from system property '{}': {}",
-          AUTHENTICATION_PLUGIN_PROP,
-          pluginClassName);
     } else {
-      log.debug("No authentication plugin used.");
+      String authPluginProp = EnvUtils.getProperty(AUTHENTICATION_PLUGIN_PROP);
+      if (authPluginProp != null) {
+        pluginClassName = authPluginProp;
+        log.debug(
+            "Authentication plugin class obtained from system property '{}': {}",
+            AUTHENTICATION_PLUGIN_PROP,
+            pluginClassName);
+      } else {
+        log.debug("No authentication plugin used.");
+      }
     }
     SecurityPluginHolder<AuthenticationPlugin> old = authenticationPlugin;
     SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin = null;
@@ -710,7 +707,7 @@ public class CoreContainer {
    * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    * @deprecated likely to simply be moved to the ObjectCache so as to not be used
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public SolrClientCache getSolrClientCache() {
     // TODO put in the objectCache instead
     return solrClientCache;
@@ -875,7 +872,7 @@ public class CoreContainer {
     registerV2Api(clusterAPI.commands);
 
     if (isZooKeeperAware()) {
-      registerV2Api(new SchemaDesignerAPI(this));
+      registerV2Api(SchemaDesigner.class);
     } // else Schema Designer not available in standalone (non-cloud) mode
 
     /*
@@ -1141,7 +1138,7 @@ public class CoreContainer {
     }
 
     if (authenticationPlugin != null
-        && StrUtils.isNullOrEmpty(System.getProperty("solr.jetty.https.port"))) {
+        && StrUtils.isNullOrEmpty(EnvUtils.getProperty("solr.jetty.https.port"))) {
       log.warn(
           "Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and data with encryption.");
     }
@@ -1379,19 +1376,30 @@ public class CoreContainer {
     metricManager.closeAllRegistries(); // Close all OTEL meter providers and metrics
   }
 
-  public void cancelCoreRecoveries() {
-
-    List<SolrCore> cores = solrCores.getCores();
-
-    // we must cancel without holding the cores sync
-    // make sure we wait for any recoveries to stop
-    for (SolrCore core : cores) {
-      try {
-        core.getSolrCoreState().cancelRecovery();
-      } catch (Exception e) {
-        log.error("Error canceling recovery for core", e);
+  /**
+   * Applies the given action to each currently loaded core, reserving and releasing each one
+   * without triggering a lazy load. A core unloaded concurrently after {@link
+   * #getLoadedCoreNames()} was called is skipped.
+   */
+  public void forEachLoadedCore(Consumer<SolrCore> action) {
+    for (String coreName : solrCores.getLoadedCoreNames()) {
+      // getCoreFromAnyList, not getCore: never loads
+      try (SolrCore core = solrCores.getCoreFromAnyList(coreName, true)) {
+        if (core == null) continue; // unloaded since getLoadedCoreNames
+        action.accept(core);
       }
     }
+  }
+
+  public void cancelCoreRecoveries() {
+    forEachLoadedCore(
+        core -> {
+          try {
+            core.getSolrCoreState().cancelRecovery();
+          } catch (Exception e) {
+            log.error("Error canceling recovery for core", e);
+          }
+        });
   }
 
   /**
@@ -1406,21 +1414,25 @@ public class CoreContainer {
    * <p>We do not need to unpause ever because the node is being shut down.
    */
   private void pauseUpdatesAndAwaitInflightRequests() {
-    getCores().parallelStream()
+    solrCores.getLoadedCoreNames().parallelStream()
         .forEach(
-            solrCore -> {
-              SolrCoreState solrCoreState = solrCore.getSolrCoreState();
-              try {
-                solrCoreState.pauseUpdatesAndAwaitInflightRequests();
-              } catch (TimeoutException e) {
-                log.warn(
-                    "Timed out waiting for in-flight update requests to complete for core: {}",
-                    solrCore.getName());
-              } catch (InterruptedException e) {
-                log.warn(
-                    "Interrupted while waiting for in-flight update requests to complete for core: {}",
-                    solrCore.getName());
-                Thread.currentThread().interrupt();
+            coreName -> {
+              // see cancelCoreRecoveries: reserve without loading, we are shutting down
+              try (SolrCore solrCore = solrCores.getCoreFromAnyList(coreName, true)) {
+                if (solrCore == null) return; // unloaded since getLoadedCoreNames
+                SolrCoreState solrCoreState = solrCore.getSolrCoreState();
+                try {
+                  solrCoreState.pauseUpdatesAndAwaitInflightRequests();
+                } catch (TimeoutException e) {
+                  log.warn(
+                      "Timed out waiting for in-flight update requests to complete for core: {}",
+                      solrCore.getName());
+                } catch (InterruptedException e) {
+                  log.warn(
+                      "Interrupted while waiting for in-flight update requests to complete for core: {}",
+                      solrCore.getName());
+                  Thread.currentThread().interrupt();
+                }
               }
             });
   }
@@ -1768,7 +1780,7 @@ public class CoreContainer {
 
     CoreInitFailedAction action =
         CoreInitFailedAction.valueOf(
-            System.getProperty(CoreInitFailedAction.class.getSimpleName(), "none"));
+            EnvUtils.getProperty(CoreInitFailedAction.class.getSimpleName(), "none"));
     log.debug("CorruptIndexException while creating core, will attempt to repair via {}", action);
 
     switch (action) {
@@ -1834,21 +1846,6 @@ public class CoreContainer {
         log.error("Exception releasing {}", dir, e);
       }
     }
-  }
-
-  /**
-   * Gets all loaded cores, consistent with {@link #getLoadedCoreNames()}. Caller doesn't need to
-   * close.
-   *
-   * <p>NOTE: rather dangerous API because each core is not reserved (could in theory be closed).
-   * Prefer {@link #getLoadedCoreNames()} and then call {@link #getCore(String)} then close it.
-   *
-   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it
-   *     can be sorted). Don't need to close them.
-   */
-  @Deprecated
-  public List<SolrCore> getCores() {
-    return solrCores.getCores();
   }
 
   /**
@@ -2462,10 +2459,10 @@ public class CoreContainer {
    *
    * <p>The caller does not need to close the client.
    *
-   * @return the existing {@link HttpJettySolrClient}
+   * @return the existing {@link HttpSolrClient}
    * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    */
-  public HttpJettySolrClient getDefaultHttpSolrClient() {
+  public HttpSolrClient getDefaultHttpSolrClient() {
     return solrClientProvider.getSolrClient();
   }
 
@@ -2497,34 +2494,6 @@ public class CoreContainer {
    */
   public void runAsync(Runnable r) {
     coreContainerAsyncTaskExecutor.execute(r);
-  }
-
-  public static void setWeakStringInterner() {
-    boolean enable = "true".equals(System.getProperty("solr.use.str.intern", "true"));
-    if (!enable) return;
-    Interner<String> interner = Interner.newWeakInterner();
-    ClusterState.setStrInternerParser(
-        new Function<>() {
-          @Override
-          public ObjectBuilder apply(JSONParser p) {
-            try {
-              return new ObjectBuilder(p) {
-                @Override
-                public void addKeyVal(Object map, Object key, Object val) throws IOException {
-                  if (key != null) {
-                    key = interner.intern(key.toString());
-                  }
-                  if (val instanceof String) {
-                    val = interner.intern((String) val);
-                  }
-                  super.addKeyVal(map, key, val);
-                }
-              };
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
-          }
-        });
   }
 
   /**

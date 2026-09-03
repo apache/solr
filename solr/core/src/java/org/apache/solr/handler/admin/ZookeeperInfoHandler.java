@@ -461,9 +461,10 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         case "none" -> FilterType.none;
         case "name" -> FilterType.name;
         case "status" -> FilterType.status;
-        default -> throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Invalid filterType '" + filterType + "'. Allowed values are: none, name, status");
+        default ->
+            throw new SolrException(
+                ErrorCode.BAD_REQUEST,
+                "Invalid filterType '" + filterType + "'. Allowed values are: none, name, status");
       };
     }
     return FilterType.none;

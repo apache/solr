@@ -35,6 +35,7 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -737,31 +738,30 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testAddBigIntegerValueToTrieField() {
     // Adding a BigInteger to a long field should fail
     // BigInteger.longValue() returns only the low-order 64 bits.
 
-    ignoreException("big_integer_t");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("big_integer_t")) {
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                updateJ(json("[{'id':'1','big_integer_tl':12345678901234567890}]"), null);
+              });
+      assertTrue(ex.getCause() instanceof NumberFormatException);
 
-    SolrException ex =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              updateJ(json("[{'id':'1','big_integer_tl':12345678901234567890}]"), null);
-            });
-    assertTrue(ex.getCause() instanceof NumberFormatException);
-
-    // Adding a BigInteger to an integer field should fail
-    // BigInteger.intValue() returns only the low-order 32 bits.
-    ex =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              updateJ(json("[{'id':'1','big_integer_ti':12345678901234567890}]"), null);
-            });
-    assertTrue(ex.getCause() instanceof NumberFormatException);
-
-    unIgnoreException("big_integer_t");
+      // Adding a BigInteger to an integer field should fail
+      // BigInteger.intValue() returns only the low-order 32 bits.
+      ex =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                updateJ(json("[{'id':'1','big_integer_ti':12345678901234567890}]"), null);
+              });
+      assertTrue(ex.getCause() instanceof NumberFormatException);
+    }
   }
 
   @Test

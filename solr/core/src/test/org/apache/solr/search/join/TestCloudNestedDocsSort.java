@@ -125,7 +125,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
             matchingChild = chVals.iterator().next();
           }
         }
-        maxDocs += parent.getChildDocumentCount() + 1;
+        maxDocs += (parent.hasChildDocuments() ? parent.getChildDocuments().size() : 0) + 1;
         docs.add(parent);
       }
       // don't add parents in increasing uniqueKey order

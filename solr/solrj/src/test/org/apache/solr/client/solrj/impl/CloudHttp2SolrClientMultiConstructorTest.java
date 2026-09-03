@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
@@ -68,9 +67,11 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
       clientChroot = "/mychroot";
     }
 
-    try (CloudSolrClient client =
-        new CloudSolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot))
-            .build()) {
+    // the parser takes everything from the first '/' as the chroot
+    final String connectionString =
+        String.join(",", hosts) + (clientChroot == null ? "" : clientChroot);
+
+    try (CloudSolrClient client = new CloudSolrClient.Builder(connectionString).build()) {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
           ZkClientClusterStateProvider.from(client)) {
         assertEquals(sb.toString(), zkClientClusterStateProvider.getZkHost());
@@ -82,6 +83,8 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
   public void testBadChroot() {
     final List<String> zkHosts = new ArrayList<>();
     zkHosts.add("host1:2181");
-    new CloudSolrClient.Builder(zkHosts, Optional.of("foo")).build();
+    // "foo" has no leading slash, so it can only reach validation via the connection record
+    new CloudSolrClient.Builder(new CloudSolrClient.CloudSolrClientConnection(true, zkHosts, "foo"))
+        .build();
   }
 }

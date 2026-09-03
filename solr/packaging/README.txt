@@ -81,8 +81,15 @@ docker/
   `docker/scripts` contains scripts that the Docker image uses to manage Solr.
   Refer to the README.md for instructions on how to build an image.
 
-docs/index.html
-  A link to the online version of Apache Solr Javadoc API documentation and Tutorial
+CHANGELOG.md
+  The list of changes in this release.
+
+Online Documentation
+  The online version of Apache Solr Javadoc API documentation and Tutorial:
+  @SOLR_DOC_URL@
+
+  Changes in this release are also published there, at:
+  @SOLR_CHANGES_URL@
 
 licenses/
   Licenses, notice files and signatures for Solr dependencies.

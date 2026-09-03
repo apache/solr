@@ -39,10 +39,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -135,7 +137,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         cloudClient
             .getClusterState()
             .getCollection(AbstractFullDistribZkTestBase.DEFAULT_COLLECTION);
-    Replica replica = defCol.getReplicas().get(0);
+    Replica replica = defCol.replicaStream().findFirst().orElseThrow();
     String nodeName = replica.getNodeName();
 
     String collectionName = "testSplitStaticIndexReplication_" + splitMethod.toLower();
@@ -1269,8 +1271,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     if (splitKey != null) {
       params.set("split.key", splitKey);
     }
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.POST, "/admin/collections", SolrRequestType.ADMIN, params);
 
     JettySolrRunner jetty = shardToJetty.get(SHARD1).getFirst().jetty;
     try (SolrClient baseServer = jetty.newClient(30_000, 300_000)) {

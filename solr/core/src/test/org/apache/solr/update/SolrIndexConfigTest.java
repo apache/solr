@@ -113,6 +113,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
     assertFalse("ms.isAutoIOThrottle", ms.getAutoIOThrottle());
+    assertNull("parentField should not be set without index sort", iwc.getParentField());
   }
 
   @Test
@@ -163,6 +164,11 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
     final Sort actual = sortingMergePolicy.getSort();
     assertEquals("SortingMergePolicy.getSort", expected, actual);
+    assertEquals("indexSort on IWC", expected, iwc.getIndexSort());
+    assertEquals(
+        "parentField should be set when indexSort is configured",
+        IndexSchema.IS_ROOT_FIELD_NAME,
+        iwc.getParentField());
   }
 
   public void testMergeOnFlushMPSolrIndexConfigCreation() throws Exception {

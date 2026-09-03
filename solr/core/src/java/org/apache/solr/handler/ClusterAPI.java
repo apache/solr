@@ -257,7 +257,12 @@ public class ClusterAPI {
 
   @EndPoint(method = POST, path = "/cluster", permission = COLL_EDIT_PERM)
   public class Commands {
+    /**
+     * @deprecated This API will be removed in Solr 11. Use Node Roles ({@code -Dsolr.node.roles})
+     *     at startup instead.
+     */
     @Command(name = "add-role")
+    @Deprecated(since = "10.1")
     public void addRole(PayloadObj<RoleInfo> obj) throws Exception {
       RoleInfo info = obj.get();
       Map<String, Object> m = new SimpleOrderedMap<>(info);
@@ -265,7 +270,12 @@ public class ClusterAPI {
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 
+    /**
+     * @deprecated This API will be removed in Solr 11. Use Node Roles ({@code -Dsolr.node.roles})
+     *     at startup instead.
+     */
     @Command(name = "remove-role")
+    @Deprecated(since = "10.1")
     public void removeRole(PayloadObj<RoleInfo> obj) throws Exception {
       RoleInfo info = obj.get();
       Map<String, Object> m = new SimpleOrderedMap<>(info);

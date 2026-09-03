@@ -89,7 +89,7 @@ import org.w3c.dom.Element;
  *
  * @deprecated Index with points and use {@link PointRangeQueryBuilder} instead
  */
-@Deprecated
+@Deprecated(since = "7.0")
 public class LegacyNumericRangeQueryBuilder implements QueryBuilder {
 
   @Override

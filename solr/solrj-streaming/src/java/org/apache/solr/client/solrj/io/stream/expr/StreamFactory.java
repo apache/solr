@@ -60,16 +60,6 @@ public class StreamFactory implements Serializable {
     collectionSolrConnection = new HashMap<>();
   }
 
-  /**
-   * @deprecated use {@link #withCollectionUseThisConnection(String,
-   *     CloudSolrClient.CloudSolrClientConnection)}
-   */
-  @Deprecated
-  public StreamFactory withCollectionZkHost(String collectionName, String zkHost) {
-    var solrConnection = zkHostToSolrConnection(zkHost);
-    return withCollectionUseThisConnection(collectionName, solrConnection);
-  }
-
   /** If an expressions references this collection, then use the specified Solr connection. */
   public StreamFactory withCollectionUseThisConnection(
       String collectionName, CloudSolrClient.CloudSolrClientConnection solrConnection) {
@@ -80,15 +70,6 @@ public class StreamFactory implements Serializable {
 
   public String getDefaultCollection() {
     return defaultCollection;
-  }
-
-  /**
-   * @deprecated use {@link #withDefaultSolrConnection(CloudSolrClient.CloudSolrClientConnection)}
-   */
-  @Deprecated
-  public StreamFactory withDefaultZkHost(String zkHost) {
-    var solrConnection = zkHostToSolrConnection(zkHost);
-    return withDefaultSolrConnection(solrConnection);
   }
 
   public StreamFactory withDefaultSolrConnection(
@@ -135,16 +116,6 @@ public class StreamFactory implements Serializable {
     return solrConnection;
   }
 
-  private static CloudSolrClient.CloudSolrClientConnection zkHostToSolrConnection(String zkHost) {
-    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
-    if (!solrConnection.isZookeeper()) {
-      throw new IllegalArgumentException(
-          String.format(
-              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
-    }
-    return solrConnection;
-  }
-
   @Override
   public Object clone() {
     // Shallow copy
@@ -163,24 +134,8 @@ public class StreamFactory implements Serializable {
     return this.defaultSort;
   }
 
-  /**
-   * @deprecated use {@link #buildSolrConnection(StreamExpression, String)} ()}
-   */
-  @Deprecated
-  public String getDefaultZkHost() {
-    return getDefaultSolrConnection().toString();
-  }
-
   public CloudSolrClient.CloudSolrClientConnection getDefaultSolrConnection() {
     return this.defaultSolrConnection;
-  }
-
-  /**
-   * @deprecated use {@link #buildSolrConnection(StreamExpression, String)}
-   */
-  @Deprecated
-  public String getCollectionZkHost(String collectionName) {
-    return getConnectionForCollection(collectionName).toString();
   }
 
   /**

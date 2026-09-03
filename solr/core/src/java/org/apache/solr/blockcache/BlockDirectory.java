@@ -323,21 +323,21 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
       return false;
     }
     switch (context.context()) {
-        // depending on params, we don't cache on merges or when only reading once
+      // depending on params, we don't cache on merges or when only reading once
       case MERGE:
         {
           return cacheMerges;
         }
-        /* TODO
-        case READ:
-          {
-            if (context.readOnce) {
-              return cacheReadOnce;
-            } else {
-              return true;
-            }
+      /* TODO
+      case READ:
+        {
+          if (context.readOnce) {
+            return cacheReadOnce;
+          } else {
+            return true;
           }
-          */
+        }
+        */
       default:
         {
           return true;

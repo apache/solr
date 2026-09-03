@@ -849,6 +849,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public void registerClusterPropertiesListener(ClusterPropertiesListener listener) {
+    log.debug("registerClusterPropertiesListener");
     // fire it once with current properties
     if (listener.onChange(getClusterProperties())) {
       removeClusterPropertiesListener(listener);
@@ -862,6 +863,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public void registerLiveNodesListener(LiveNodesListener listener) {
+    log.debug("registerLiveNodesListener");
     // fire it once with current live nodes
     if (listener.onChange(
         new TreeSet<>(getClusterState().getLiveNodes()),
@@ -1003,7 +1005,7 @@ public class ZkStateReader implements SolrCloseable {
             if (c == null) return false;
             Replica l = getLeader(n, c, shard);
             if (l != null) {
-              log.debug("leader found for {}/{} to be {}", collection, shard, l);
+              log.trace("leader found for {}/{} to be {}", collection, shard, l);
               leader.set(l);
               return true;
             }
@@ -1497,16 +1499,6 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  @Deprecated // see DocCollection
-  public static String getCollectionPathRoot(String coll) {
-    return DocCollection.getCollectionPathRoot(coll);
-  }
-
-  @Deprecated // see DocCollection
-  public static String getCollectionPath(String coll) {
-    return DocCollection.getCollectionPath(coll);
-  }
-
   /**
    * Notify this reader that a local Core is a member of a collection, and so that collection state
    * should be watched.
@@ -1608,6 +1600,7 @@ public class ZkStateReader implements SolrCloseable {
    */
   public void registerDocCollectionWatcher(
       String collection, DocCollectionWatcher docCollectionWatcher) {
+    log.debug("registerDocCollectionWatcher collection={}", collection);
     AtomicReference<StateWatcher> newWatcherRef = new AtomicReference<>();
     collectionWatches.compute(
         collection,
@@ -1664,7 +1657,7 @@ public class ZkStateReader implements SolrCloseable {
       DocCollection docCollection = clusterState.getCollectionOrNull(collection);
       if (liveNodes != null && docCollection != null) {
         if (predicate.matches(liveNodes, docCollection)) {
-          log.debug("Found {} directly in clusterState", predicate);
+          log.trace("waitForState collection={}: cache hit in clusterState", collection);
           return;
         }
       }
@@ -1746,7 +1739,7 @@ public class ZkStateReader implements SolrCloseable {
       DocCollection docCollection = clusterState.getCollectionOrNull(collection);
       if (docCollection != null) {
         if (predicate.test(docCollection)) {
-          log.debug("Found {} directly in clusterState", predicate);
+          log.trace("waitForState collection={}: cache hit in clusterState", collection);
           return docCollection;
         }
       }

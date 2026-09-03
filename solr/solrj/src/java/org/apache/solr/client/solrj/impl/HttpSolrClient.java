@@ -48,7 +48,6 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,14 +140,8 @@ public abstract class HttpSolrClient extends SolrClient {
     return wparams;
   }
 
-  protected boolean isMultipart(Collection<ContentStream> streams) {
-    boolean isMultipart = false;
-    if (streams != null) {
-      boolean hasNullStreamName = false;
-      hasNullStreamName = streams.stream().anyMatch(cs -> cs.getName() == null);
-      isMultipart = !hasNullStreamName && streams.size() > 1;
-    }
-    return isMultipart;
+  protected boolean isMultipart(RequestWriter.ContentWriter contentWriter) {
+    return contentWriter instanceof RequestWriter.MultipartContentWriter;
   }
 
   protected ModifiableSolrParams calculateQueryParams(
@@ -170,9 +163,7 @@ public abstract class HttpSolrClient extends SolrClient {
 
   protected void validateGetRequest(SolrRequest<?> solrRequest) throws IOException {
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
-    Collection<ContentStream> streams =
-        contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
-    if (contentWriter != null || streams != null) {
+    if (contentWriter != null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
     }
   }
@@ -290,9 +281,11 @@ public abstract class HttpSolrClient extends SolrClient {
         try {
           ByteArrayOutputStream body = new ByteArrayOutputStream();
           is.transferTo(body);
+          Charset charset = encoding != null ? Charset.forName(encoding) : FALLBACK_CHARSET;
           throw new RemoteSolrException(
-              urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
-        } catch (IOException e) {
+              urlExceptionMessage, httpStatus, prefix + body.toString(charset), null);
+          // IllegalArgumentException covers an unsupported/invalid charset name from the response
+        } catch (IOException | IllegalArgumentException e) {
           throw new RemoteSolrException(
               urlExceptionMessage,
               httpStatus,

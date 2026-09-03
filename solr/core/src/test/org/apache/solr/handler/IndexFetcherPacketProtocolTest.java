@@ -227,10 +227,13 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
   /** Writes file content to a directory and serializes it using the replication packet protocol. */
   private byte[] serializeFileToPacketStream(byte[] content, String fileName) throws Exception {
     DirectoryFactory directoryFactory = h.getCore().getDirectoryFactory();
+    // Use the same REPLICATION DirContext that the sender (DirectoryFileStream) uses to read the
+    // file, so the write and the read target the same (unwrapped) delegate Directory. For
+    // REPLICATION/BACKUP, CachingDirectoryFactory.filterDirectory() unwraps to the raw delegate.
     Directory dir =
         directoryFactory.get(
             h.getCore().getNewIndexDir(),
-            DirectoryFactory.DirContext.DEFAULT,
+            DirectoryFactory.DirContext.REPLICATION,
             h.getCore().getSolrConfig().indexConfig.lockType);
 
     try {

@@ -30,6 +30,8 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -43,7 +45,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -55,10 +56,12 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.AuthenticationFilter;
 import org.apache.solr.servlet.CoreContainerProvider;
+import org.apache.solr.servlet.LoadAdminUiServlet;
 import org.apache.solr.servlet.RateLimitFilter;
 import org.apache.solr.servlet.RequiredSolrRequestFilter;
 import org.apache.solr.servlet.SolrServlet;
 import org.apache.solr.servlet.TracingFilter;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
@@ -66,6 +69,7 @@ import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
+import org.eclipse.jetty.ee10.servlet.ResourceServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.Source;
@@ -294,7 +298,19 @@ public class JettySolrRunner implements SolrBackend {
       final ServletContextHandler root =
           new ServletContextHandler("/solr", ServletContextHandler.NO_SESSIONS);
       root.setServer(server);
-      root.setBaseResource(ResourceFactory.of(server).newResource("."));
+      if (config.enableAdminUi) {
+        Path webappDir = ExternalPaths.WEBAPP_HOME;
+        if (webappDir == null || !Files.exists(webappDir.resolve("index.html"))) {
+          throw new IllegalStateException(
+              "enableAdminUi requires the Admin UI webapp sources at <source>/solr/webapp/web, "
+                  + "but they could not be located (ExternalPaths.WEBAPP_HOME="
+                  + webappDir
+                  + ")");
+        }
+        root.setBaseResource(ResourceFactory.of(server).newResource(webappDir));
+      } else {
+        root.setBaseResource(ResourceFactory.of(server).newResource("."));
+      }
       root.addEventListener(
           // Install CCP first.  Subclass CCP to do some pre-initialization
           new CoreContainerProvider() {
@@ -327,6 +343,25 @@ public class JettySolrRunner implements SolrBackend {
       }
       // TODO: This needs to be driven by a parsing of web.xml eventually
       //  though we still want to avoid classpath scanning.
+
+      if (config.enableAdminUi) {
+        // Serve the Admin UI like production web.xml does: static assets + LoadAdminUiServlet
+        ServletHolder staticHolder = root.getServletHandler().newServletHolder(Source.EMBEDDED);
+        staticHolder.setName("static");
+        staticHolder.setHeldClass(ResourceServlet.class);
+        staticHolder.setInitParameter("pathInfoOnly", "false");
+        staticHolder.setInitParameter("dirAllowed", "false");
+        for (String pathSpec :
+            new String[] {
+              "/partials/*", "/libs/*", "/css/*", "/js/*", "/img/*", "/templates/*", "/ui/*"
+            }) {
+          root.addServlet(staticHolder, pathSpec);
+        }
+        ServletHolder adminUiHolder = root.getServletHandler().newServletHolder(Source.EMBEDDED);
+        adminUiHolder.setName("LoadAdminUI");
+        adminUiHolder.setHeldClass(LoadAdminUiServlet.class);
+        root.addServlet(adminUiHolder, "/index.html");
+      }
 
       // This is our main workhorse - now a servlet instead of filter
       solrServlet = root.getServletHandler().newServletHolder(Source.EMBEDDED);
@@ -750,7 +785,10 @@ public class JettySolrRunner implements SolrBackend {
     }
   }
 
-  @Deprecated
+  /**
+   * @deprecated Use {@link #getSolrClient()} or {@link #newClient(int, int)} instead.
+   */
+  @Deprecated(since = "10.1")
   public HttpJettySolrClient newClient() {
     return new HttpJettySolrClient.Builder(getBaseUrl().toString()).build();
   }
@@ -832,7 +870,7 @@ public class JettySolrRunner implements SolrBackend {
       throw new IllegalStateException(
           "Don't call SolrBackend methods in SolrCloud on JettySolrRunner");
     }
-    return new EmbeddedSolrBackend(new EmbeddedSolrServer(container, null)); // cheap
+    return new EmbeddedSolrBackend(container); // cheap
   }
 
   @Override

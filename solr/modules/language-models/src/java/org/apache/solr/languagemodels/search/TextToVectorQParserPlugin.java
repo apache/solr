@@ -78,8 +78,7 @@ public class TextToVectorQParserPlugin extends QParserPlugin
 
     private void checkVectorEncoding() {
       final VectorEncoding vectorEncoding =
-          getCheckedFieldType(req.getCore().getLatestSchema().getField(getFieldName()))
-              .getVectorEncoding();
+          getCheckedFieldType(req.getSchema().getField(getFieldName())).getVectorEncoding();
 
       if (vectorEncoding != VectorEncoding.FLOAT32) {
         throw new SolrException(

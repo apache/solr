@@ -63,7 +63,7 @@ public final class RemoteSolrException extends SolrException {
   public RemoteSolrException(String remoteHost, int code, Object remoteError, boolean skipRetry) {
     super(ErrorCode.getErrorCode(code), "Error from server at " + remoteHost);
     this.skipRetry = skipRetry;
-    setDetails(List.of(Map.of("remoteHost", remoteHost, "remoteError", remoteError)));
+    setDetails(List.of(Utils.makeMap("remoteHost", remoteHost, "remoteError", remoteError)));
     if (remoteError != null) {
       String remoteErrorMessageSuffix = getRemoteErrorMessageSuffix(remoteError, "");
       if (remoteErrorMessageSuffix.length() > 2) {

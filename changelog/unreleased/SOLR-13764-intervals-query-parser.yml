@@ -1,0 +1,13 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Add Intervals Query Parser
+type: added
+authors:
+  - name: Mikhail Khludnev,
+    nick: mkhludnev
+    url: https://home.apache.org/phonebook.html?uid=mkhl
+  - name: Sonu Sharma
+    nick: ercsonusharma
+    url: https://www.linkedin.com/in/ercsonu/
+links:
+  - name: SOLR-13764
+    url: https://issues.apache.org/jira/browse/SOLR-13764

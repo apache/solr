@@ -27,8 +27,9 @@ repositories {
             includeGroupAndSubgroups("com.google")
         }
     }
-    mavenCentral()
 }
+// mavenCentral / enterprise mirror, shared with the rest of the build.
+apply(from = rootProject.file("build-tools/build-infra/declare-repositories.gradle"))
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -47,10 +48,8 @@ kotlin {
             commonWebpackConfig {
                 outputFileName = "composeApp.js"
                 devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
-                    static = (static ?: mutableListOf()).apply {
-                        // Serve sources to debug inside browser
-                        add(project.projectDir.path)
-                    }
+                    // Serve sources to debug inside browser
+                    static(directory = project.projectDir.path)
                 }
                 // Note that webpack.config.d/ contains additional configuration
             }
@@ -63,7 +62,7 @@ kotlin {
         binaries.executable()
     }
 
-    jvm("desktop")
+    jvm()
 
     sourceSets {
         // Shared multiplatform dependencies
@@ -76,7 +75,6 @@ kotlin {
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.androidx.lifecycle.viewModelNav3)
             implementation(libs.androidx.navigation3.ui)
             implementation(libs.androidx.material3.adaptive.asProvider())
@@ -85,7 +83,6 @@ kotlin {
             implementation(libs.kotlinx.serialization.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.kotlinx.datetime)
 
             implementation(libs.decompose.decompose)
             implementation(libs.essenty.lifecycle)
@@ -93,7 +90,6 @@ kotlin {
             implementation(libs.mvikotlin.extensions.coroutines)
             implementation(libs.mvikotlin.mvikotlin)
             implementation(libs.mvikotlin.main)
-            implementation(libs.mvikotlin.logging)
 
             implementation(project.dependencies.platform(libs.ktor.bom))
             implementation(libs.ktor.client.auth)
@@ -103,7 +99,6 @@ kotlin {
             implementation(libs.squareup.okio)
 
             implementation(libs.oshai.logging)
-            implementation(libs.slf4j.api)
         }
 
         commonTest.dependencies {
@@ -113,26 +108,18 @@ kotlin {
             implementation(libs.ktor.client.mock)
         }
 
-        val wasmJsMain by getting {
-            dependencies {
-                implementation(libs.ktor.client.js)
-            }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
         }
 
-        val desktopMain by getting {
-            dependencies {
-                implementation(libs.ktor.client.cio)
-                implementation(libs.ktor.server.core)
-                implementation(libs.ktor.server.cio)
-                implementation(libs.ktor.server.htmlBuilder)
-                implementation(compose.desktop.currentOs)
-                implementation(libs.kotlinx.coroutines.swing)
-            }
+        jvmMain.dependencies {
+            implementation(libs.ktor.client.cio)
+            implementation(libs.ktor.server.core)
+            implementation(libs.ktor.server.cio)
+            implementation(libs.ktor.server.htmlBuilder)
+            implementation(compose.desktop.currentOs)
+            runtimeOnly(libs.kotlinx.coroutines.swing)
         }
-    }
-
-    compilerOptions {
-        freeCompilerArgs.add("-Xexplicit-backing-fields")
     }
 }
 
@@ -191,7 +178,7 @@ tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
 tasks.matching { task ->
     task.name in listOf(
         "allTests",
-        "desktopTest",
+        "jvmTest",
         "wasmJsTest",
         "wasmJsBrowserTest",
     )
@@ -221,4 +208,35 @@ tasks.matching {
     taskName.contains("wasmjs") && taskName.contains("production")
 }.configureEach {
     onlyIf { !(rootProject.ext["development"] as Boolean) }
+}
+
+val wasmJsUIBundleDir = layout.buildDirectory.dir(
+    if (rootProject.ext["development"] as Boolean) {
+        "dist/wasmJs/developmentExecutable"
+    } else {
+        "dist/wasmJs/productionExecutable"
+    },
+).get().asFile
+
+val wasmJsUIBundle = configurations.create("wasmJsUIBundle") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+}
+
+val finalizeWasmJsUIBundleDir = tasks.register<Sync>("finalizeWasmJsUIBundleDir") {
+    from(wasmJsUIBundleDir) {
+        include("**")
+    }
+}
+
+artifacts {
+    add("wasmJsUIBundle", wasmJsUIBundleDir) {
+        builtBy(
+            if (rootProject.ext["development"] as Boolean) {
+                ":solr:ui:wasmJsBrowserDevelopmentExecutableDistribution"
+            } else {
+                ":solr:ui:wasmJsBrowserDistribution"
+            },
+        )
+    }
 }

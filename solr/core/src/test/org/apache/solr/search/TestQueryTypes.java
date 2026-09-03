@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,6 +34,7 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
     return "basic";
   }
 
+  @SuppressWarnings("try")
   public void testQueryTypes() {
     assertU(adoc("id", "0"));
     assertU(adoc("id", "1", "v_t", "Hello Dude"));
@@ -382,8 +384,7 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
         "//result[@numFound='1']",
         "//*[@name='id'][.='1']");
 
-    try {
-      ignoreException("No\\ default\\, and no switch case");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("No\\ default\\, and no switch case")) {
       RuntimeException exp =
           expectThrows(
               RuntimeException.class,
@@ -399,8 +400,6 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
       assertTrue(
           "Error doesn't include bad switch case: " + e.getMessage(),
           e.getMessage().contains("asdf"));
-    } finally {
-      resetExceptionIgnores();
     }
 
     // dismax query from std request handler

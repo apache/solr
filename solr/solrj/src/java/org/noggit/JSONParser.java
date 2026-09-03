@@ -883,7 +883,7 @@ public class JSONParser {
     // implementation?
     for (; ; ) {
       switch (ch) {
-          // this is not the exclusive list of whitespace chars... the rest are handled in default:
+        // this is not the exclusive list of whitespace chars... the rest are handled in default:
         case ' ':
         case '\t':
         case '\r':
