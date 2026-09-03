@@ -1,0 +1,7 @@
+title: Update AWS SDK to v2.54.6
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4846
+  url: https://github.com/apache/solr/pull/4846
