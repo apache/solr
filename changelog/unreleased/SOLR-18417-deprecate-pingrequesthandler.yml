@@ -1,0 +1,7 @@
+type: deprecated
+title: Deprecate PingRequestHandler (the "/admin/ping" endpoint) in favor of `/api/node/health` (v2) or `/solr/admin/info/health` (v1).
+authors:
+  - name: Jason Gerlowski
+links:
+  - name: SOLR-18417
+    url: https://issues.apache.org/jira/browse/SOLR-18417
