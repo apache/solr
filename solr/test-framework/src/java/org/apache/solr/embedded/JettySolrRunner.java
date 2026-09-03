@@ -588,6 +588,8 @@ public class JettySolrRunner implements SolrBackend {
    * @param ioe An IOException that might wrap a BindException
    * @return A bind exception if present otherwise ioe
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting a self-referencing exception cause loop, by identity
   Exception lookForBindException(IOException ioe) {
     Exception e = ioe;
     while (e.getCause() != null && !(e == e.getCause()) && !(e instanceof BindException)) {

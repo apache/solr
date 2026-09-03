@@ -56,6 +56,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("ReferenceEquality")
   public void testSimpleSliceLeaderElection() throws Exception {
     String collection = "collection1";
     createCollection(collection);

@@ -493,6 +493,8 @@ public class SchemaManager {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting a self-referencing exception cause loop, by identity
   public static String getErrorStr(Exception e) {
     StringBuilder sb = new StringBuilder();
     Throwable cause = e;

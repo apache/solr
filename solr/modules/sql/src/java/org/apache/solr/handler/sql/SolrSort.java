@@ -33,6 +33,7 @@ import org.apache.calcite.rex.RexNode;
 /** Implementation of {@link org.apache.calcite.rel.core.Sort} relational expression in Solr. */
 class SolrSort extends Sort implements SolrRel {
 
+  @SuppressWarnings("ReferenceEquality")
   SolrSort(
       RelOptCluster cluster,
       RelTraitSet traitSet,

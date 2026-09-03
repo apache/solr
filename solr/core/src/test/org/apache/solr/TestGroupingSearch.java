@@ -1585,6 +1585,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("ReferenceEquality")
   public void testRandomGrouping() throws Exception {
     /*
      * updateJ("{\"add\":{\"doc\":{\"id\":\"77\"}}}", params("commit","true"));

@@ -594,6 +594,8 @@ public class ExportTool extends ToolBase {
       }
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // EOFDOC is a unique sentinel; identity check is intentional
     private void addConsumer(CountDownLatch consumerlatch) {
       consumerThreadpool.execute(
           () -> {

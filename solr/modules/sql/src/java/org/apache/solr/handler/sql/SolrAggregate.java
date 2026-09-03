@@ -55,6 +55,7 @@ class SolrAggregate extends Aggregate implements SolrRel {
     return String.format(Locale.ROOT, "%s(%s)", funcName, column);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   SolrAggregate(
       RelOptCluster cluster,
       RelTraitSet traitSet,

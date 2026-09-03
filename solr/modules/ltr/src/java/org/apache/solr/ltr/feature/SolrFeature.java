@@ -135,6 +135,7 @@ public class SolrFeature extends Feature {
   public class SolrFeatureWeight extends FeatureWeight {
     private final Weight solrQueryWeight;
 
+    @SuppressWarnings("ReferenceEquality")
     public SolrFeatureWeight(
         SolrIndexSearcher searcher,
         SolrQueryRequest request,

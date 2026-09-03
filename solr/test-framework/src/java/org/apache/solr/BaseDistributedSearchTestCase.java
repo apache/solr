@@ -902,6 +902,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public static String compare(Object a, Object b, int flags, Map<String, Integer> handle) {
     if (a == b) return null;
     if (a == null || b == null) return ":" + a + "!=" + b;

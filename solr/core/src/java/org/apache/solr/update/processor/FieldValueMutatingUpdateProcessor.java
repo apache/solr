@@ -57,6 +57,9 @@ public abstract class FieldValueMutatingUpdateProcessor extends FieldMutatingUpd
   protected abstract Object mutateValue(final Object src);
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // DELETE_VALUE_SINGLETON is a unique sentinel; identity check is
+  // intentional
   protected final SolrInputField mutate(final SolrInputField src) {
     Collection<Object> values = src.getValues();
     if (values == null) return src; // don't mutate

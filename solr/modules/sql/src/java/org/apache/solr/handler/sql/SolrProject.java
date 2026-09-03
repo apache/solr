@@ -30,6 +30,7 @@ import org.apache.calcite.util.Pair;
 
 /** Implementation of {@link org.apache.calcite.rel.core.Project} relational expression in Solr. */
 class SolrProject extends Project implements SolrRel {
+  @SuppressWarnings("ReferenceEquality")
   SolrProject(
       RelOptCluster cluster,
       RelTraitSet traitSet,
