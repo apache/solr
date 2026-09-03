@@ -589,11 +589,12 @@ allprojects {prj ->
   }
 }
 
-// Exclude generated OpenAPI sources in solrj from Error Prone checks.
+// Exclude generated OpenAPI sources and the vendored noggit JSON parser (org.noggit, not our
+// code/conventions) in solrj from Error Prone checks.
 configure(project(":solr:solrj")) {
   plugins.withId(libs.plugins.ltgt.errorprone.get().pluginId) {
     tasks.withType(JavaCompile) {
-      options.errorprone.excludedPaths = ".*/build/generated/.*"
+      options.errorprone.excludedPaths = ".*/build/generated/.*|.*/org/noggit/.*"
     }
   }
 }
