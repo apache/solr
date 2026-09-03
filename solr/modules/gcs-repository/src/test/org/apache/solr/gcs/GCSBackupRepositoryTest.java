@@ -36,7 +36,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -46,30 +45,11 @@ import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.Assume;
 import org.junit.Test;
 
 /** Unit tests for {@link GCSBackupRepository} that use an in-memory Storage object */
 public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
-
-  private static Locale savedLocale;
-
-  @BeforeClass
-  public static void ensureCompatibleLocale() {
-    // Google's FakeStorageRpc (used internally by LocalStorageHelper) formats its own "now"
-    // timestamp using the JVM default Locale without forcing ASCII digits, then re-parses that
-    // same string with a strict RFC3339 parser. Locales with a non-Latin native numbering system
-    // (e.g. "dz" Dzongkha, "ar" Arabic) produce digits the parser can't read back, e.g.
-    // StorageException: Invalid date/time format: ༢༠༢༦-༠༩-༠༣T༡༢:༥༩:༤༣Z
-    // That's a bug in the test double, not in our code under test, so pin ROOT for this suite.
-    savedLocale = Locale.getDefault();
-    Locale.setDefault(Locale.ROOT);
-  }
-
-  @AfterClass
-  public static void restoreLocale() {
-    Locale.setDefault(savedLocale);
-  }
 
   @AfterClass
   public static void tearDownClass() {
@@ -144,7 +124,7 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     GCSBackupRepository repo = createRepositoryWithStorage(realStorage);
     URI sourceDir = repo.resolve(getBaseUri(), "backup");
     BlobId blobId = BlobId.of(bucketName, sourceDir + "/source.dat");
-    realStorage.create(BlobInfo.newBuilder(blobId).build(), data);
+    createBlob(realStorage, blobId, data);
 
     Storage zeroReturningStorage = createZeroReturningStorage(realStorage);
     GCSBackupRepository proxyRepo = createRepositoryWithStorage(zeroReturningStorage);
@@ -171,7 +151,7 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     GCSBackupRepository repo = createRepositoryWithStorage(realStorage);
     URI sourceDir = repo.resolve(getBaseUri(), "backup");
     BlobId blobId = BlobId.of(bucketName, sourceDir + "/source.dat");
-    realStorage.create(BlobInfo.newBuilder(blobId).build(), data);
+    createBlob(realStorage, blobId, data);
 
     try (Directory dest = new ByteBuffersDirectory()) {
       repo.copyIndexFileTo(sourceDir, "source.dat", dest, "dest.dat");
@@ -181,6 +161,27 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
         in.readBytes(read, 0, data.length);
         assertArrayEquals(data, read);
       }
+    }
+  }
+
+  /**
+   * Creates a blob, skipping (rather than failing) the test if the current default locale trips the
+   * known FakeStorageRpc/RFC3339 date-parsing bug - see {@link
+   * LocalStorageGCSBackupRepository#initializeBackupLocation()} for the same pattern.
+   */
+  private static void createBlob(Storage storage, BlobId blobId, byte[] data) {
+    try {
+      storage.create(BlobInfo.newBuilder(blobId).build(), data);
+    } catch (Exception e) {
+      final Throwable cause = e.getCause();
+      Assume.assumeFalse(
+          "This test uses a GCS mock library that is incompatible with the current default locale",
+          cause != null
+              && e instanceof StorageException
+              && cause.getMessage().contains("Invalid date/time format")
+              && cause instanceof NumberFormatException);
+      // Not the known locale incompatibility - a genuine failure, so don't swallow it.
+      throw new RuntimeException(e);
     }
   }
 
