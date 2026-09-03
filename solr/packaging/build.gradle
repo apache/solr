@@ -376,7 +376,7 @@ abstract class BatsTask extends Exec {
   }
 }
 
-tasks.matching { it.name in ['assembleDist', 'releaseArtifacts', 'rat'] }.configureEach {
+tasks.matching { it.name in ['assembleDist', 'releaseArtifacts'] }.configureEach {
   doFirst {
     def flagIsTrue = project.hasProperty('solr.ui.buildFromSource') &&
         project.property('solr.ui.buildFromSource') == 'true'

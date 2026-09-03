@@ -181,6 +181,10 @@ allprojects {
           // Exclude new CHANGELOG and version-summary for each release
           exclude "CHANGELOG.md"
           exclude "changelog"
+
+          // solr/ui is a registered subproject with its own rat task, but it may be disabled
+          exclude "ui"
+
           break
 
         case ":solr":
