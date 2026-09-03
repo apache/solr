@@ -76,6 +76,7 @@ public abstract class HttpSolrClient extends SolrClient {
           CommonAdminParams.ASYNC,
           CollectionAdminParams.COLLECTION,
           "name", // core/collection name
+          "command", // e.g. for replication
           ShardParams.IS_SHARD,
           CommonParams.DISTRIB,
           ShardParams._ROUTE_,
