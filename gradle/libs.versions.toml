@@ -200,6 +200,8 @@ tdunning-tdigest = "3.3"
 testcontainers = "2.0.5"
 thetaphi-forbiddenapis = "3.10"
 threeten-bp = "1.7.4"
+# @keep required at test-compile time by no.nav.security:mock-oauth2-server
+toolsjackson = "3.2.1"
 xerial-snappy = "1.1.10.8"
 
 [plugins]
@@ -528,4 +530,6 @@ tdunning-tdigest = { module = "com.tdunning:t-digest", version.ref = "tdunning-t
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-kafka = { module = "org.testcontainers:testcontainers-kafka", version.ref = "testcontainers" }
 threeten-bp = { module = "org.threeten:threetenbp", version.ref = "threeten-bp" }
+toolsjackson-jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "toolsjackson" }
+toolsjackson-jackson-core-databind = { module = "tools.jackson.core:jackson-databind" }
 xerial-snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "xerial-snappy" }
