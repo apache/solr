@@ -36,6 +36,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -45,10 +46,30 @@ import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Unit tests for {@link GCSBackupRepository} that use an in-memory Storage object */
 public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
+
+  private static Locale savedLocale;
+
+  @BeforeClass
+  public static void ensureCompatibleLocale() {
+    // Google's FakeStorageRpc (used internally by LocalStorageHelper) formats its own "now"
+    // timestamp using the JVM default Locale without forcing ASCII digits, then re-parses that
+    // same string with a strict RFC3339 parser. Locales with a non-Latin native numbering system
+    // (e.g. "dz" Dzongkha, "ar" Arabic) produce digits the parser can't read back, e.g.
+    // StorageException: Invalid date/time format: ༢༠༢༦-༠༩-༠༣T༡༢:༥༩:༤༣Z
+    // That's a bug in the test double, not in our code under test, so pin ROOT for this suite.
+    savedLocale = Locale.getDefault();
+    Locale.setDefault(Locale.ROOT);
+  }
+
+  @AfterClass
+  public static void restoreLocale() {
+    Locale.setDefault(savedLocale);
+  }
 
   @AfterClass
   public static void tearDownClass() {
