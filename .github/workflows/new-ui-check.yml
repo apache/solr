@@ -1,4 +1,4 @@
-name: Admin UI Tests
+name: Solr UI Tests
 
 on:
   pull_request:
