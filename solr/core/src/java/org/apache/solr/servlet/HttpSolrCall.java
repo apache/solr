@@ -566,9 +566,8 @@ public class HttpSolrCall {
         path = "/{collection}" + path;
       }
     }
-    SolrParams requestParams = solrReq != null ? solrReq.getParams() : getQueryParams();
     String verb =
-        requestParams.get(CoreAdminParams.ACTION, req.getMethod()).toLowerCase(Locale.ROOT);
+        getQueryParams().get(CoreAdminParams.ACTION, req.getMethod()).toLowerCase(Locale.ROOT);
     span.updateName(verb + ":" + path);
   }
 
