@@ -42,13 +42,14 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
 
   private static final String BUCKET = S3OutputStreamTest.class.getSimpleName();
 
-  @ClassRule public static final S3MockContainerRule S3_MOCK_RULE = new S3MockContainerRule(BUCKET);
+  @ClassRule
+  public static final S3MockContainerRule s3MockContainer = new S3MockContainerRule(BUCKET);
 
   private S3Client s3;
 
   @Before
   public void setUpClient() {
-    s3 = S3_MOCK_RULE.createS3ClientV2();
+    s3 = s3MockContainer.createS3ClientV2();
   }
 
   @After
