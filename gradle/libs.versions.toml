@@ -177,6 +177,9 @@ onnx = "1.29.0"
 openapi = "7.25.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.65.0"
+# @keep incubator artifact versioning trails the stable "opentelemetry" release by one "-alpha" suffix;
+# bump alongside "opentelemetry" - it is not resolved via version alignment
+opentelemetry-api-incubator = "1.65.0-alpha"
 opentelemetry-prometheus = "1.63.0-alpha"
 opentelemetry-runtime-telemetry = "2.27.0-alpha"
 oshai-logging = "8.0.4"
@@ -486,6 +489,7 @@ onnxruntime = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = 
 openjdk-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "openjdk-jmh" }
 openjdk-jmh-generatorannprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "openjdk-jmh" }
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
+opentelemetry-api-incubator = { module = "io.opentelemetry:opentelemetry-api-incubator", version.ref = "opentelemetry-api-incubator" }
 opentelemetry-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref = "opentelemetry" }
 opentelemetry-context = { module = "io.opentelemetry:opentelemetry-context", version.ref = "opentelemetry" }
 opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
