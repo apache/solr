@@ -29,12 +29,8 @@ import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.extraction.fromtika.ToXMLContentHandler;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.utility.MountableFile;
 
 /**
  * Integration tests for TikaServerExtractionBackend using a real Tika Server via Testcontainers.
@@ -61,44 +57,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     }
   }
 
-  private static GenericContainer<?> tika;
-  private static String baseUrl;
-
-  @SuppressWarnings("resource")
-  @BeforeClass
-  public static void startTikaServer() {
-    Assume.assumeFalse(
-        "Skipping on s390x", "s390x".equalsIgnoreCase(System.getProperty("os.arch")));
-
-    try {
-      // allowPerRequestConfig is off by default (it lets a client inject arbitrary parser
-      // config, e.g. for encrypted-document passwords or tikaserver.config); enabling it here is
-      // test-only.
-      tika =
-          new GenericContainer<>("apache/tika:4.0.0-full")
-              .withExposedPorts(9998)
-              .withCopyFileToContainer(
-                  MountableFile.forHostPath(getFile("extraction/tika-server-config.json")),
-                  "/tika-config.json")
-              .withCommand("-c", "/tika-config.json");
-      tika.start();
-      baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
-    } catch (Throwable t) {
-      // Skip tests if Docker/Testcontainers are not available in the environment
-      Assume.assumeNoException("Docker/Testcontainers not available; skipping TikaServer tests", t);
-    }
-  }
-
-  @AfterClass
-  public static void stopTikaServer() {
-    if (tika != null) {
-      try {
-        tika.stop();
-      } catch (Throwable ignore) {
-      }
-      tika = null;
-    }
-  }
+  @ClassRule
+  public static final TikaServerContainerRule tikaContainer = new TikaServerContainerRule();
 
   private static ExtractionRequest newRequest(
       String resourceName,
@@ -119,8 +79,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExtractTextAndMetadata() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = "Hello TestContainers".getBytes(StandardCharsets.UTF_8);
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
         ExtractionResult res = backend.extract(in, newRequest("test.txt", "text/plain", "text"));
@@ -139,8 +99,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExtractWithSaxHandlerXml() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = "Hello XML".getBytes(StandardCharsets.UTF_8);
       ExtractionRequest request = newRequest("test.txt", "text/plain", "xml");
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
@@ -161,8 +121,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPdfWithImageRecursive() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
       // Tika 4.x removed the X-Tika-* header family entirely (see resolveConfigJson's javadoc);
       // there is no replacement for this combination. Per-request config now requires the
@@ -192,11 +152,10 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMaxCharsLimitEnforced() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
     // Set a very small max chars limit and attempt to extract more than that
     long maxChars = 10L;
     try (TikaServerExtractionBackend backend =
-        new TikaServerExtractionBackend(baseUrl, 180, null, maxChars)) {
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl(), 180, null, maxChars)) {
       byte[] data =
           ("This content is definitely longer than ten characters.")
               .getBytes(StandardCharsets.UTF_8);
@@ -215,10 +174,9 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMaxCharsLimitEnforcedWithSaxHandler() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
     long maxChars = 10L;
     try (TikaServerExtractionBackend backend =
-        new TikaServerExtractionBackend(baseUrl, 180, null, maxChars)) {
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl(), 180, null, maxChars)) {
       byte[] data =
           ("This content is definitely longer than ten characters.")
               .getBytes(StandardCharsets.UTF_8);
