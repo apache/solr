@@ -15,23 +15,10 @@
  * limitations under the License.
  */
 
-buildscript {
-  repositories {
-    mavenCentral()
-    maven { url 'https://repo.gradle.org/gradle/libs-releases' }
-  }
-
-  dependencies {
-    classpath libs.undercouch.download.task
-    classpath 'org.gradle:gradle-tooling-api:9.6.0'
-  }
-}
-
 // Downloads a pinned, checksum-verified Admin UI wasmJs artifact from nightlies.apache.org,
 // or builds it from source (solr.ui.buildFromSource=true), and wires the result into the
 // consuming project's resources.
 
-import de.undercouch.gradle.tasks.download.Download
 import java.security.MessageDigest
 import org.gradle.tooling.GradleConnector
 
@@ -81,14 +68,35 @@ def localCopyIsValid = {
   return sha256Of(f).equalsIgnoreCase(uiSha256)
 }
 
-tasks.register('downloadUiWasm', Download) {
+tasks.register('downloadUiWasm') {
+  group = 'Build Dependency Download'
+  description = 'Downloads the Solr UI WebAssembly archive.'
+
+  inputs.property('uiCommit', uiCommit)
+  outputs.file(uiWasmZip)
+
   onlyIf { !localCopyIsValid() }
-  src "https://nightlies.apache.org/solr/ui/wasm/${uiCommit}/solr-ui-wasm.zip"
-  dest uiWasmZip
-  overwrite true
+
+  doLast {
+    def targetFile = file(uiWasmZip)
+
+    // Ensure the parent directory for the destination file exists
+    if (targetFile.parentFile) {
+      targetFile.parentFile.mkdirs()
+    }
+
+    ant.get(
+        src: "https://nightlies.apache.org/solr/ui/wasm/${uiCommit}/solr-ui-wasm.zip",
+        dest: targetFile,
+        skipexisting: false
+    )
+  }
 }
 
 tasks.register('verifyUiWasm') {
+  group = "verification"
+  description = 'Verifies the checksum of the downloaded Solr UI WebAssembly archive.'
+
   dependsOn tasks.named('downloadUiWasm')
   doLast {
     File file = uiWasmZip.get().asFile

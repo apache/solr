@@ -18,7 +18,6 @@
 plugins {
   id 'java'
   id 'war'
-  alias(libs.plugins.undercouch.download)
 }
 
 apply from: "$rootDir/gradle/solr/solr-ui.gradle"
