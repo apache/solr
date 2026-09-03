@@ -30,11 +30,12 @@ import org.slf4j.LoggerFactory;
 public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHandlerTestAbstract {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @ClassRule public static final TikaServerContainerRule TIKA = new TikaServerContainerRule();
+  @ClassRule
+  public static final TikaServerContainerRule tikaContainer = new TikaServerContainerRule();
 
   @BeforeClass
   public static void beforeClassTika() throws Exception {
-    String baseUrl = TIKA.getBaseUrl();
+    String baseUrl = tikaContainer.getBaseUrl();
     System.setProperty("solr.test.tikaserver.url", baseUrl);
     System.setProperty("solr.test.extraction.backend", "tikaserver");
     System.setProperty("solr.test.tikaserver.metadata.compatibility", "true");

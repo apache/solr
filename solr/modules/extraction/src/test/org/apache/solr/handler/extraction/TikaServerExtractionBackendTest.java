@@ -57,7 +57,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     }
   }
 
-  @ClassRule public static final TikaServerContainerRule TIKA = new TikaServerContainerRule();
+  @ClassRule
+  public static final TikaServerContainerRule tikaContainer = new TikaServerContainerRule();
 
   private static ExtractionRequest newRequest(
       String resourceName,
@@ -78,7 +79,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExtractTextAndMetadata() throws Exception {
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(TIKA.getBaseUrl())) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = "Hello TestContainers".getBytes(StandardCharsets.UTF_8);
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
         ExtractionResult res = backend.extract(in, newRequest("test.txt", "text/plain", "text"));
@@ -97,7 +99,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExtractWithSaxHandlerXml() throws Exception {
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(TIKA.getBaseUrl())) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = "Hello XML".getBytes(StandardCharsets.UTF_8);
       ExtractionRequest request = newRequest("test.txt", "text/plain", "xml");
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
@@ -118,7 +121,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPdfWithImageRecursive() throws Exception {
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(TIKA.getBaseUrl())) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
       // Enable recursive extraction and set header to extract images from PDF
       ExtractionRequest request =
@@ -151,7 +155,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     // Set a very small max chars limit and attempt to extract more than that
     long maxChars = 10L;
     try (TikaServerExtractionBackend backend =
-        new TikaServerExtractionBackend(TIKA.getBaseUrl(), 180, null, maxChars)) {
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl(), 180, null, maxChars)) {
       byte[] data =
           ("This content is definitely longer than ten characters.")
               .getBytes(StandardCharsets.UTF_8);
@@ -172,7 +176,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   public void testMaxCharsLimitEnforcedWithSaxHandler() throws Exception {
     long maxChars = 10L;
     try (TikaServerExtractionBackend backend =
-        new TikaServerExtractionBackend(TIKA.getBaseUrl(), 180, null, maxChars)) {
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl(), 180, null, maxChars)) {
       byte[] data =
           ("This content is definitely longer than ten characters.")
               .getBytes(StandardCharsets.UTF_8);
