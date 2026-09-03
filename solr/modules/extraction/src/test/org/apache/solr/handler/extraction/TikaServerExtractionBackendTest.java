@@ -58,7 +58,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   }
 
   @ClassRule
-  public static final TikaServerContainerRule tikaContainer = new TikaServerContainerRule();
+  public static final TikaServerContainerRule tikaContainer =
+      new TikaServerContainerRule(getFile("extraction/tika-server-config.json"));
 
   private static ExtractionRequest newRequest(
       String resourceName,
@@ -210,8 +211,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testConfigJsonDisablesOcr() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
       // With no config, the PDF's embedded image gets OCR'd and "Puppet Apply" (from the image)
       // appears in the extracted content. Disabling OCR via tikaserver.config should suppress it.
@@ -233,8 +234,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testConfigJsonMergesWithPassword() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = Files.readAllBytes(getFile("extraction/encrypted-password-is-solrRules.pdf"));
       ExtractionRequest request =
           ExtractionRequest.builder()
@@ -259,8 +260,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testInvalidConfigJsonRejected() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
       ExtractionRequest request =
           newRequestWithConfig("test.txt", "text/plain", "xml", "not valid json");
@@ -274,8 +275,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testConfigJsonRejectedForRecursive() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
       ExtractionRequest request =
           ExtractionRequest.builder()
