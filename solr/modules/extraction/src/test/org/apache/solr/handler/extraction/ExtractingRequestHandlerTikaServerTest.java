@@ -26,6 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
@@ -37,27 +38,24 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
 
   @BeforeClass
   @SuppressWarnings("resource")
-  public static void beforeClassTika() {
+  public static void beforeClassTika() throws Exception {
     Assume.assumeFalse(
         "Skipping on s390x", "s390x".equalsIgnoreCase(System.getProperty("os.arch")));
+    Assume.assumeTrue(
+        "Docker/Testcontainers not available; skipping test",
+        DockerClientFactory.instance().isDockerAvailable());
 
-    String baseUrl;
-    try {
-      tika =
-          new GenericContainer<>("apache/tika:3.2.3.0-full")
-              .withExposedPorts(9998)
-              .waitingFor(Wait.forListeningPort());
-      tika.start();
-      baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
-      System.setProperty("solr.test.tikaserver.url", baseUrl);
-      System.setProperty("solr.test.extraction.backend", "tikaserver");
-      System.setProperty("solr.test.tikaserver.metadata.compatibility", "true");
-      log.info("Using extraction backend 'tikaserver'. Tika server running on {}", baseUrl);
-      initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
-    } catch (Throwable t) {
-      // Skip tests if Docker/Testcontainers are not available in the environment
-      Assume.assumeNoException("Docker/Testcontainers not available; skipping test", t);
-    }
+    tika =
+        new GenericContainer<>("apache/tika:3.2.3.0-full")
+            .withExposedPorts(9998)
+            .waitingFor(Wait.forListeningPort());
+    tika.start();
+    String baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
+    System.setProperty("solr.test.tikaserver.url", baseUrl);
+    System.setProperty("solr.test.extraction.backend", "tikaserver");
+    System.setProperty("solr.test.tikaserver.metadata.compatibility", "true");
+    log.info("Using extraction backend 'tikaserver'. Tika server running on {}", baseUrl);
+    initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
   }
 
   @AfterClass
