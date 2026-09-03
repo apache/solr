@@ -46,10 +46,6 @@ public class TikaServerContainerRule extends ExternalResource {
   private GenericContainer<?> tika;
   private String baseUrl;
 
-  public TikaServerContainerRule() {
-    this(null);
-  }
-
   /**
    * @param serverConfigFile optional Tika Server JSON config file to mount and start the container
    *     with (via {@code -c}), e.g. to set {@code allowPerRequestConfig: true}. Null for the
