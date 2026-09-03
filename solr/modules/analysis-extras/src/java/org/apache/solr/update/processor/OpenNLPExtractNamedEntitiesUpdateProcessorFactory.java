@@ -612,7 +612,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
         super.processAdd(cmd);
       }
 
-      /**
+      /*
        * Using configured NER model, extracts (name, type) pairs from the given source field value
        */
       private List<Pair<String, String>> extractTypedNamedEntities(Object srcFieldValue)

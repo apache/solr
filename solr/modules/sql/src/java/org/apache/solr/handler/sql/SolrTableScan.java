@@ -55,6 +55,7 @@ class SolrTableScan extends TableScan implements SolrRel {
     this.projectRowType = projectRowType;
 
     assert solrTable != null;
+    // Conventions are singletons (see SolrRel.CONVENTION); identity comparison is intentional.
     assert getConvention() == SolrRel.CONVENTION;
   }
 

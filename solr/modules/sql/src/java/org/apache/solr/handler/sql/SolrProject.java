@@ -37,6 +37,7 @@ class SolrProject extends Project implements SolrRel {
       List<? extends RexNode> projects,
       RelDataType rowType) {
     super(cluster, traitSet, input, projects, rowType);
+    // Conventions are singletons (see SolrRel.CONVENTION); identity comparison is intentional.
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == input.getConvention();
   }

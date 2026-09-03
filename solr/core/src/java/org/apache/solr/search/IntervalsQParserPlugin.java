@@ -455,7 +455,7 @@ public class IntervalsQParserPlugin extends QParserPlugin implements JsonConsume
         };
       }
 
-      /**
+      /*
        * Resolves the field referenced by an optional {@code use_field} rule parameter, falling back
        * to the query's default field when absent. Throws BAD_REQUEST if {@code useField} names a
        * field that doesn't exist in the schema.
@@ -473,9 +473,9 @@ public class IntervalsQParserPlugin extends QParserPlugin implements JsonConsume
         return resolveFieldType(analyzerName, ruleName).getQueryAnalyzer();
       }
 
-      /**
-       * Resolves the analyzer to use for normalizing prefix/wildcard/fuzzy term text. Unlike {@link
-       * #resolveAnalyzer}, this uses the field type's multi-term analyzer rather than its regular
+      /*
+       * Resolves the analyzer to use for normalizing prefix/wildcard/fuzzy term text. Unlike
+       * resolveAnalyzer, this uses the field type's multi-term analyzer rather than its regular
        * query analyzer, since the term text here is a single already-tokenized value, not free text
        * to be tokenized.
        */

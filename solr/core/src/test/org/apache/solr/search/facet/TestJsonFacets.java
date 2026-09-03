@@ -3799,6 +3799,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // (which will affect some assertions)
     final SolrClient shardA = clients.get(0);
     final SolrClient shardB = clients.get(clients.size() - 1);
+    // Identity check: same client instance means a single-node setup.
     final int numShardsWithData = (shardA == shardB) ? 1 : 2;
 
     // for simplicity, each foo_s "term" exists on each shard in the same number of docs as it's

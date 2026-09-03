@@ -607,3 +607,13 @@ configure(project(":solr:core")) {
     }
   }
 }
+
+// Exclude vendored Tika sources (copied in to eliminate the Tika dependency) in
+// solr:modules:extraction from Error Prone checks.
+configure(project(":solr:modules:extraction")) {
+  plugins.withId(libs.plugins.ltgt.errorprone.get().pluginId) {
+    tasks.withType(JavaCompile) {
+      options.errorprone.excludedPaths = ".*/org/apache/solr/handler/extraction/fromtika/.*"
+    }
+  }
+}

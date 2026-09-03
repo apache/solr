@@ -64,9 +64,8 @@ public abstract class DualDoubleFunction extends ValueSource {
         return func(doc, aVals, bVals);
       }
 
-      /**
-       * True if and only if <em>all</em> of the wrapped {@link FunctionValues} <code>exists</code>
-       * for the specified doc
+      /*
+       * True if and only if all of the wrapped FunctionValues exists for the specified doc
        */
       @Override
       public boolean exists(int doc) throws IOException {

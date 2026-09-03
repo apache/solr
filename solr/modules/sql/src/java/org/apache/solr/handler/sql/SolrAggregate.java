@@ -64,6 +64,7 @@ class SolrAggregate extends Aggregate implements SolrRel {
       List<ImmutableBitSet> groupSets,
       List<AggregateCall> aggCalls) {
     super(cluster, traitSet, hints, child, groupSet, groupSets, aggCalls);
+    // Conventions are singletons (see SolrRel.CONVENTION); identity comparison is intentional.
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == child.getConvention();
   }

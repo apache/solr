@@ -189,6 +189,8 @@ public class SolrFeature extends Feature {
           }
 
           DocSet filtersDocSet = searcher.getDocSet(filterQueries); // execute
+          // getDocSet() returns the live docs instance itself when there's nothing to filter;
+          // identity comparison detects that no-op case.
           if (filtersDocSet != searcher.getLiveDocSet()) {
             filterDocSetQuery = filtersDocSet.makeQuery();
           }

@@ -126,6 +126,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
 
     // kill everyone but the first leader that should have reconnected by now
     for (JettySolrRunner jetty2 : cluster.getJettySolrRunners()) {
+      // Identity check: skip the one instance we want to keep running.
       if (jetty != jetty2) {
         jetty2.stop();
       }

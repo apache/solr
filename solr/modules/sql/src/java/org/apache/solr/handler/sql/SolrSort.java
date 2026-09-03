@@ -42,6 +42,7 @@ class SolrSort extends Sort implements SolrRel {
       RexNode fetch) {
     super(cluster, traitSet, child, collation, offset, fetch);
 
+    // Conventions are singletons (see SolrRel.CONVENTION); identity comparison is intentional.
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == child.getConvention();
   }

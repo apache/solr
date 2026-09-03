@@ -102,7 +102,7 @@ public class TopDocsSlice extends DocSlice {
       return nextDoc();
     }
 
-    /** The remove operation is not supported by this Iterator. */
+    /* The remove operation is not supported by this Iterator. */
     @Override
     public void remove() {
       throw new UnsupportedOperationException(
