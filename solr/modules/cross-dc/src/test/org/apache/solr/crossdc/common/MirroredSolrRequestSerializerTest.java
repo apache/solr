@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
 public class MirroredSolrRequestSerializerTest extends SolrTestCase {
@@ -77,8 +78,7 @@ public class MirroredSolrRequestSerializerTest extends SolrTestCase {
     byte[] data = serializer.serialize("test", mirroredRequest);
     MirroredSolrRequest<?> deserialized = serializer.deserialize("test", data);
 
-    org.apache.solr.common.params.SolrParams deserializedParams =
-        deserialized.getSolrRequest().getParams();
+    SolrParams deserializedParams = deserialized.getSolrRequest().getParams();
     assertEquals("single-value", deserializedParams.get("q"));
     assertArrayEquals(new String[] {"a", "b", "c"}, deserializedParams.getParams("fq"));
   }
