@@ -107,6 +107,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     incompleteOrOverlappingCustomRangeTest();
     splitByUniqueKeyTest();
     splitByRouteFieldTest();
+    splitByNumericRouteFieldTest();
     splitByRouteKeyTest();
 
     // todo can't call waitForThingsToLevelOut because it looks for jettys of all shards
@@ -1009,6 +1010,75 @@ public class ShardSplitTest extends BasicDistributedZkTest {
               .query(new SolrQuery("*:*").setParam("shards", "shard1_1"))
               .getResults()
               .getNumFound());
+      assertEquals(101, collectionClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    }
+  }
+
+  public void splitByNumericRouteFieldTest() throws Exception {
+    log.info("Starting splitByNumericRouteFieldTest");
+    String collectionName = "numericRouteFieldColl";
+    int numShards = 4;
+    int replicationFactor = 2;
+
+    HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
+    String shardField = "shard_pl";
+    try (CloudSolrClient client = createCloudClient(null)) {
+      Map<String, Object> props =
+          Map.of(
+              REPLICATION_FACTOR,
+              replicationFactor,
+              CollectionHandlingUtils.NUM_SLICES,
+              numShards,
+              "router.field",
+              shardField);
+
+      createCollection(collectionInfos, collectionName, props, client);
+    }
+
+    List<Integer> list = collectionInfos.get(collectionName);
+    checkForCollection(collectionName, list);
+
+    waitForRecoveriesToFinish(false);
+
+    getCommonCloudSolrClient();
+    String baseUrl = getBaseUrlFromZk(cloudClient.getClusterState(), collectionName);
+
+    try (SolrClient collectionClient = getHttpSolrClient(baseUrl, collectionName)) {
+      ClusterState clusterState = cloudClient.getClusterState();
+      final DocRouter router = clusterState.getCollection(collectionName).getRouter();
+      Slice shard1 = clusterState.getCollection(collectionName).getSlice(SHARD1);
+      DocRouter.Range shard1Range =
+          shard1.getRange() != null ? shard1.getRange() : router.fullRange();
+      final List<DocRouter.Range> ranges = router.partitionRange(2, shard1Range);
+      final int[] docCounts = new int[ranges.size()];
+
+      for (int i = 100; i <= 200; i++) {
+        collectionClient.add(getDoc(id, i, "n_ti", i, shardField, i));
+        int idx = getHashRangeIdx(router, ranges, Integer.toString(i));
+        if (idx != -1) {
+          docCounts[idx]++;
+        }
+      }
+
+      collectionClient.commit();
+
+      trySplit(collectionName, null, SHARD1, 3);
+
+      waitForRecoveriesToFinish(collectionName, false);
+
+      assertEquals(
+          docCounts[0],
+          collectionClient
+              .query(new SolrQuery("*:*").setParam("shards", "shard1_0"))
+              .getResults()
+              .getNumFound());
+      assertEquals(
+          docCounts[1],
+          collectionClient
+              .query(new SolrQuery("*:*").setParam("shards", "shard1_1"))
+              .getResults()
+              .getNumFound());
+      assertEquals(101, collectionClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
   }
 

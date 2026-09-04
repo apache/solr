@@ -28,14 +28,18 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CodecReader;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FilterCodecReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
@@ -70,6 +74,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -677,6 +682,20 @@ public class SolrIndexSplitter {
       }
     }
 
+    if (field.getType().isPointField()) {
+      return splitPointField(
+          reader,
+          numPieces,
+          field,
+          rangesArr,
+          splitKey,
+          hashRouter,
+          delete,
+          docSets,
+          liveDocs,
+          currentPartition);
+    }
+
     Terms terms = reader.terms(field.getName());
     TermsEnum termsEnum = terms == null ? null : terms.iterator();
     if (termsEnum == null) return docSets;
@@ -746,36 +765,143 @@ public class SolrIndexSplitter {
     }
 
     if (docsMatchingRanges != null) {
-      for (int ii = 0; ii < docsMatchingRanges.length; ii++) {
-        if (0 == docsMatchingRanges[ii]) continue;
-        switch (ii) {
-          case 0:
-            // document loss
-            log.error(
-                "Splitting {}: {} documents belong to no shards and will be dropped",
-                reader,
-                docsMatchingRanges[ii]);
-            break;
-          case 1:
-            // normal case, each document moves to one of the sub-shards
-            log.info(
-                "Splitting {}: {} documents will move into a sub-shard",
-                reader,
-                docsMatchingRanges[ii]);
-            break;
-          default:
-            // document duplication
-            log.error(
-                "Splitting {}: {} documents will be moved to multiple ({}) sub-shards",
-                reader,
-                docsMatchingRanges[ii],
-                ii);
-            break;
+      logDocsMatchingRanges(reader, docsMatchingRanges);
+    }
+
+    return docSets;
+  }
+
+  private static FixedBitSet[] splitPointField(
+      LeafReader reader,
+      int numPieces,
+      SchemaField field,
+      DocRouter.Range[] rangesArr,
+      String splitKey,
+      HashBasedRouter hashRouter,
+      boolean delete,
+      FixedBitSet[] docSets,
+      Bits liveDocs,
+      AtomicInteger currentPartition)
+      throws IOException {
+    NumericDocValues numericDocValues =
+        field.hasDocValues() ? DocValues.getNumeric(reader, field.getName()) : null;
+
+    int[] docsMatchingRanges = null;
+    if (rangesArr != null) {
+      docsMatchingRanges = new int[rangesArr.length + 1];
+    }
+
+    for (int doc = 0; doc < reader.maxDoc(); doc++) {
+      if (liveDocs != null && !liveDocs.get(doc)) {
+        continue;
+      }
+
+      String routeValue = getRouteFieldValue(reader, doc, field, numericDocValues);
+      if (splitKey != null) {
+        String part1 = ((CompositeIdRouter) hashRouter).getRouteKeyNoSuffix(routeValue);
+        if (part1 == null || !splitKey.equals(part1)) {
+          continue;
+        }
+      }
+
+      if (rangesArr == null) {
+        if (delete) {
+          docSets[currentPartition.get()].clear(doc);
+        } else {
+          docSets[currentPartition.get()].set(doc);
+        }
+        currentPartition.set((currentPartition.get() + 1) % numPieces);
+      } else {
+        int hash = hashRouter.sliceHash(routeValue, null, null, null);
+        int matchingRangesCount = 0;
+        for (int i = 0; i < rangesArr.length; i++) {
+          if (rangesArr[i].includes(hash)) {
+            if (delete) {
+              docSets[i].clear(doc);
+            } else {
+              docSets[i].set(doc);
+            }
+            ++matchingRangesCount;
+          }
+        }
+        docsMatchingRanges[matchingRangesCount]++;
+      }
+    }
+
+    if (docsMatchingRanges != null) {
+      logDocsMatchingRanges(reader, docsMatchingRanges);
+    }
+    return docSets;
+  }
+
+  private static String getRouteFieldValue(
+      LeafReader reader, int doc, SchemaField field, NumericDocValues numericDocValues)
+      throws IOException {
+    if (numericDocValues != null && numericDocValues.advanceExact(doc)) {
+      return numericRouteValueToString(field, numericDocValues.longValue());
+    }
+
+    if (field.stored()) {
+      Document storedDocument = reader.storedFields().document(doc);
+      IndexableField storedField = storedDocument.getField(field.getName());
+      if (storedField != null) {
+        Object routeValue = field.getType().toObject(storedField);
+        if (routeValue != null) {
+          return routeValue.toString();
         }
       }
     }
 
-    return docSets;
+    throw new SolrException(
+        SolrException.ErrorCode.SERVER_ERROR,
+        "Unable to read route field '"
+            + field.getName()
+            + "' for shard splitting. Point-based route fields must expose docValues or be stored.");
+  }
+
+  private static String numericRouteValueToString(SchemaField field, long value) {
+    NumberType numberType = field.getType().getNumberType();
+    if (numberType == null) {
+      return Long.toString(value);
+    }
+
+    return switch (numberType) {
+      case INTEGER -> Integer.toString((int) value);
+      case LONG -> Long.toString(value);
+      case FLOAT -> Float.toString(Float.intBitsToFloat((int) value));
+      case DOUBLE -> Double.toString(Double.longBitsToDouble(value));
+      case DATE -> Long.toString(value);
+    };
+  }
+
+  private static void logDocsMatchingRanges(LeafReader reader, int[] docsMatchingRanges) {
+    for (int ii = 0; ii < docsMatchingRanges.length; ii++) {
+      if (0 == docsMatchingRanges[ii]) continue;
+      switch (ii) {
+        case 0:
+          // document loss
+          log.error(
+              "Splitting {}: {} documents belong to no shards and will be dropped",
+              reader,
+              docsMatchingRanges[ii]);
+          break;
+        case 1:
+          // normal case, each document moves to one of the sub-shards
+          log.info(
+              "Splitting {}: {} documents will move into a sub-shard",
+              reader,
+              docsMatchingRanges[ii]);
+          break;
+        default:
+          // document duplication
+          log.error(
+              "Splitting {}: {} documents will be moved to multiple ({}) sub-shards",
+              reader,
+              docsMatchingRanges[ii],
+              ii);
+          break;
+      }
+    }
   }
 
   private static void checkRouterSupportsSplitKey(HashBasedRouter hashRouter, String splitKey) {

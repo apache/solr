@@ -1,0 +1,8 @@
+title: >
+  SPLITSHARD fails to migrate documents when using a numeric PointField as router.field
+type: fixed
+authors:
+  - name: Olivier Boudet
+links:
+  - name: SOLR-18335
+    url: https://issues.apache.org/jira/browse/SOLR-18335
