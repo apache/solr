@@ -2049,16 +2049,21 @@ Use the describe command to gain detailed information about a specific snapshot:
 $ bin/solr snapshot-describe -c <collection-name> --snapshot-name <snapshot-name>
 ----
 
-=== Converting a Snapshot to a Backup
+=== Backing up a Collection
 
-Use the export command to take :
+Use the export command to back up a collection:
 
 [,console]
 ----
-$ bin/solr snapshot-export [--backup-repo-name <DIR>] -c <NAME> --dest-dir <DIR> [--async-id <ID>] --snapshot-name <NAME>
+$ bin/solr snapshot-export [--backup-repo-name <DIR>] -c <NAME> --dest-dir <DIR> [--async-id <ID>]
 ----
 
+The backup is named after the collection and the time the command ran, and the name is printed when the export starts.
+
 The `--async-id` parameter specifies that this is an asynchronous process.
+
+CAUTION: This command backs up the collection's *current* state; it cannot export a previously created snapshot.
+Doing that required the non-incremental backup format, which was removed in Solr 11, so `--snapshot-name` is no longer accepted here.
 
 
 === Delete a Snapshot
