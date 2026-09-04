@@ -698,10 +698,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     assertTrue(
         "Exception message should explain that example data is missing, but was: "
             + thrown.getMessage(),
-        thrown.getMessage().contains("does not include example data"));
+        thrown.getMessage().contains("Cannot find")
+            && thrown.getMessage().contains("techproducts example"));
   }
 
-  private static String @NonNull [] getToolArguments(Path fakeServerDir, Path fakeExampleDir) throws IOException {
+  private static String @NonNull [] getToolArguments(Path fakeServerDir, Path fakeExampleDir)
+      throws IOException {
     Assert.assertNotNull(ExternalPaths.SOURCE_HOME);
     Path script =
         ExternalPaths.SOURCE_HOME

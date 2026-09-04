@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -381,41 +382,31 @@ public class RunExampleTool extends ToolBase {
 
     if ("techproducts".equals(exampleName) && !alreadyExists) {
 
-      Path exampledocsDir = this.exampleDir.resolve("exampledocs");
-      if (!Files.isDirectory(exampledocsDir)) {
-        Path readOnlyExampleDir = serverDir.resolveSibling("example");
-        if (Files.isDirectory(readOnlyExampleDir)) {
-          exampledocsDir = readOnlyExampleDir.resolve("exampledocs");
-        }
-      }
+      Path exampledocsDir =
+          requireExampleData(Path.of("exampledocs"), Files::isDirectory, "techproducts");
+      echo("Indexing tech product example docs from " + exampledocsDir.toAbsolutePath());
 
-      if (Files.isDirectory(exampledocsDir)) {
-        echo("Indexing tech product example docs from " + exampledocsDir.toAbsolutePath());
+      String[] args =
+          new String[] {
+            "post",
+            "--solr-url",
+            solrUrl,
+            "--name",
+            collectionName,
+            "--type",
+            "application/xml",
+            "--filetypes",
+            "xml",
+            exampledocsDir.toAbsolutePath().toString()
+          };
+      PostTool postTool = new PostTool(runtime);
+      CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);
+      postTool.runTool(postToolCli);
 
-        String[] args =
-            new String[] {
-              "post",
-              "--solr-url",
-              solrUrl,
-              "--name",
-              collectionName,
-              "--type",
-              "application/xml",
-              "--filetypes",
-              "xml",
-              exampledocsDir.toAbsolutePath().toString()
-            };
-        PostTool postTool = new PostTool(runtime);
-        CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);
-        postTool.runTool(postToolCli);
-
-      } else {
-        throw new IllegalArgumentException(
-            "This Solr distribution does not include example data."
-            + "('slim' Docker image). Please use the full Solr "
-            + "distribution to run the techproducts example.");
-      }
     } else if ("films".equals(exampleName) && !alreadyExists) {
+      Path filmsJsonFile =
+          requireExampleData(Path.of("films", "films.json"), Files::isRegularFile, "films");
+
       try (SolrClient solrClient =
           CLIUtils.getSolrClient(
               solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
@@ -508,7 +499,6 @@ public class RunExampleTool extends ToolBase {
                         }
                 """);
 
-        Path filmsJsonFile = this.exampleDir.resolve("films").resolve("films.json");
         echo("Indexing films example docs from " + filmsJsonFile.toAbsolutePath());
         String[] args =
             new String[] {
@@ -536,6 +526,28 @@ public class RunExampleTool extends ToolBase {
               + solrUrl
               + " to visit the Solr Admin UI");
     }
+  }
+
+  protected Path requireExampleData(Path relativePath, Predicate<Path> exists, String exampleName) {
+    Path dataPath = this.exampleDir.resolve(relativePath);
+    if (exists.test(dataPath)) {
+      return dataPath;
+    }
+
+    Path readOnlyDataPath = serverDir.resolveSibling("example").resolve(relativePath);
+    if (exists.test(readOnlyDataPath)) {
+      return readOnlyDataPath;
+    }
+
+    throw new IllegalArgumentException(
+        "Cannot find "
+            + relativePath
+            + " needed to run the "
+            + exampleName
+            + " example; checked "
+            + dataPath.toAbsolutePath()
+            + " and "
+            + readOnlyDataPath.toAbsolutePath());
   }
 
   protected void runCloudExample(CommandLine cli) throws Exception {
