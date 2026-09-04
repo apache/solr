@@ -254,7 +254,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
   /** Expose a Map interface to the solr field value collection. */
   public Map<String, Collection<Object>> getFieldValuesMap() {
     return new Map<>() {
-      /* Get the field Value */
+      /** Get the field Value */
       @Override
       public Collection<Object> get(Object key) {
         return getFieldValues((String) key);
@@ -327,7 +327,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
   /** Expose a Map interface to the solr fields. This function is useful for JSTL */
   public Map<String, Object> getFieldValueMap() {
     return new Map<>() {
-      /* Get the field Value */
+      /** Get the field Value */
       @Override
       public Object get(Object key) {
         return getFirstValue((String) key);

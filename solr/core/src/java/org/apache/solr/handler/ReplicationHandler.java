@@ -1497,7 +1497,7 @@ public class ReplicationHandler extends RequestHandlerBase
    */
   private SolrEventListener getEventListener(final boolean snapshoot, final boolean getCommit) {
     return new SolrEventListener() {
-      /*
+      /**
        * This refreshes the latest replicateable index commit and optionally can create Snapshots as
        * well
        */

@@ -2255,9 +2255,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf
   // and copies the stock files in there.
 
+  /** Copies the test collection1 config into {@code dstRoot}/{@code collection}/conf */
   /**
-   * Copies the test collection1 config into {@code dstRoot}/{@code collection}/conf
-   *
    * @deprecated Use a basic config plus whatever is needed, or the default config, instead of
    *     copying the full collection1 test config.
    */
@@ -2537,6 +2536,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * directly
    *
    * @param url the base URL for a Solr node. Should not contain a core or collection name.
+   */
+  /**
    * @deprecated Prefer an existing client, e.g. from a {@link
    *     org.apache.solr.util.SolrClientTestRule} or {@link
    *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.
@@ -2546,9 +2547,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return new HttpJettySolrClient.Builder(url).build();
   }
 
+  /** Create a basic HttpSolrClient pointed at the specified replica */
   /**
-   * Create a basic HttpSolrClient pointed at the specified replica
-   *
    * @deprecated Prefer an existing client, e.g. from a {@link
    *     org.apache.solr.util.SolrClientTestRule} or {@link
    *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.
@@ -2566,6 +2566,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param url the base URL of a Solr node. Should <em>not</em> include a collection or core name.
    * @param defaultCoreName the name of a core that the created client should default to when making
    *     core-aware requests
+   */
+  /**
    * @deprecated Prefer an existing client, e.g. from a {@link
    *     org.apache.solr.util.SolrClientTestRule} or {@link
    *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.

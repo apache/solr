@@ -456,7 +456,7 @@ allprojects {prj ->
             '-Xep:NonCanonicalType:WARN',
             '-Xep:NonOverridingEquals:WARN',
             //'-Xep:NonFinalStaticField:WARN', // todo there are problems that should be fixed
-            '-Xep:NotJavadoc:WARN',
+            // '-Xep:NotJavadoc:OFF', // too many false positives on stacked/non-public-API comments
             '-Xep:NullOptional:WARN',
             // '-Xep:NullableConstructor:OFF', // we don't use this annotation
             '-Xep:NullableOptional:WARN',
