@@ -36,6 +36,8 @@ import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
  * of it, so -- exactly like {@code AIJoinColumnWriter}'s single {@code addBatch} -- the whole batch
  * is guaranteed to end up doc-for-doc (list index == doc id) in one sidecar segment, keeping doc
  * 0's edges and every from-doc id aligned the same way.
+ *
+ * @lucene.experimental
  */
 final class JoinColumnDocWriter extends JoinColumWriter {
 

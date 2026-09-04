@@ -87,6 +87,8 @@ import org.slf4j.LoggerFactory;
  * and so to one search thread, but nothing enforces that. A context whose confirmation never
  * converges emits no {@code evt=done} line -- absence of one is itself the signal that laziness
  * paid off for that segment, at the cost of that context's final counters going unreported.
+ *
+ * @lucene.experimental
  */
 class JoinIndexScorerSupplier extends ScorerSupplier {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

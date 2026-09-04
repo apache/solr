@@ -30,6 +30,9 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.JoinSegmentReference;
 
+/**
+ * @lucene.experimental
+ */
 final class JoinIndexWeight extends Weight {
   final IndexSearcher maybeStaleJoinSearcher;
   final Map<String, JoinSegmentReference> existingJoinSegments;

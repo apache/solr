@@ -25,6 +25,8 @@ import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
  * Isolates every write-side representation of a join batch behind this one write-only surface, so
  * {@link AuxIndexManager} and {@link JoinIndexUtils} deal only in {@link JoinColumnModel} and never
  * need to import a particular field-writing API themselves.
+ *
+ * @lucene.experimental
  */
 abstract class JoinColumWriter {
 

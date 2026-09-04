@@ -25,6 +25,9 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @lucene.experimental
+ */
 class FromLeafJoinContext {
   final JoinIndexUtils.CacheAndCount matches;
   final ForeignKeyColumn fkColumn;

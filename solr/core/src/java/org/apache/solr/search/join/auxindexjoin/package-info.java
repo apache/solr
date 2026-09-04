@@ -104,5 +104,8 @@
  *       pair one is {@code to_doc_nums<maxdocs(to-side)/2} and {@code
  *       to_doc_nums>=maxdocs(to-side)/2}
  * </ul>
+ *
+ * @lucene.experimental
+ *     <p>This is experimental API and subject to change.
  */
 package org.apache.solr.search.join.auxindexjoin;

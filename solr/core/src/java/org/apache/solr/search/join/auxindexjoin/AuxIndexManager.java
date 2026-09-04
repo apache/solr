@@ -54,6 +54,9 @@ import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
  * <p>After either side reopens, the next query builds only the missing (from, to) segment pairs:
  * pair columns are addressed by both sides' persistent segment keys, which survive reopens. Pair
  * columns orphaned by merges are not reclaimed yet; see package's javadoc.
+ *
+ * @lucene.experimental
+ *     <p>This is experimental API and subject to change.
  */
 public final class AuxIndexManager implements Closeable {
 
