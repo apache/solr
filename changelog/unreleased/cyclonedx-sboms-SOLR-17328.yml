@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Ship a CycloneDX SBOM for the binary distributions, as bom.json in the archive root and as
+  solr-<version>.tgz.cdx.json next to the archive
+type: added
+authors:
+  - name: Piotr P. Karwasz
+    nick: ppkarwasz
+links:
+  - name: SOLR-17328
+    url: https://issues.apache.org/jira/browse/SOLR-17328

@@ -25,14 +25,43 @@ javadoc.enabled(false)
 compileJava.enabled(false)
 
 configurations {
-  libExt
+  // === Custom configurations used to assemble the Solr server binary distribution ===
+
+  // 1. Jetty Bootstrap JAR
+  // Output Path: server/start.jar
+  // Description: Contains the Jetty bootstrap JAR responsible for launching the Solr server.
+  startJar
+
+  // 2. Server Libraries
+  // Output Path: server/lib/
+  // Description: Contains core libraries required by the Solr server at runtime (mostly Jetty-related JARs).
   serverLib
+
+  // 3. Extended Server Libraries
+  // Output Path: server/lib/ext/
+  // Description: Includes optional runtime libraries such as logging (SLF4J, Log4j) and metrics (Dropwizard, etc.).
+  libExt
+
+  // 4. Solr Core JAR
+  // Output Path: server/solr-webapp/webapp/WEB-INF/lib/
+  // Description: Contains the solr-core JAR, which includes the core functionality and indexing logic of Solr.
   solrCore
+
+  // 5. Solr Web Application Libraries
+  // Output Path: server/solr-webapp/webapp/WEB-INF/lib/
+  // Description: Contains the remaining Solr modules, packaged in exploded WAR format for deployment via Jetty.
+  webapp
+
+  // === Runtime Configuration ===
+
+  // Combines core runtime dependencies for launching the Solr server,
+  // aggregating required libraries from serverLib, libExt, and solrCore.
   runtimeClasspath {
     extendsFrom serverLib, libExt, solrCore
   }
-  startJar
-  webapp
+
+  // Internal configuration used by packaging tasks (e.g., creating distributions).
+  // This configuration only includes the `packagingDir` folder generated during assembly
   packaging
 }
 
