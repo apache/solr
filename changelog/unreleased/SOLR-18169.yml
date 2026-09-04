@@ -1,0 +1,9 @@
+title: >
+  `bin/solr start -e techproducts` now fails with a clear error instead of silently
+  creating an empty collection when the example documents are missing on "slim"
+type: fixed
+authors:
+  - name: r4mercur
+links:
+  - name: SOLR-18169
+    url: https://issues.apache.org/jira/browse/SOLR-18169
