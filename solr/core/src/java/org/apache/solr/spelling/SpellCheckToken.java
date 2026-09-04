@@ -19,11 +19,14 @@ package org.apache.solr.spelling;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * One term occurrence carried through the spellchecker API. Unlike the old {@code Token} it
- * replaces, this is a plain, immutable record -- not a Lucene {@code AttributeImpl} subclass -- and
- * exists only because {@link SolrSpellChecker#mergeSuggestions} has to key suggestions by (text,
- * offset) pairs deserialized from a remote shard's response, where there is no {@link
- * org.apache.lucene.analysis.TokenStream} to read from at all.
+ * One term occurrence carried through the spellchecker API, and the key type of {@link
+ * SpellingResult}. Unlike the old {@code Token} it replaces, this is a plain, immutable record --
+ * not a Lucene {@code AttributeImpl} subclass.
+ *
+ * <p>A value type is needed here, rather than reading terms off a stream, because {@link
+ * SolrSpellChecker#mergeSuggestions} keys suggestions by (text, offset) pairs deserialized from a
+ * remote shard's response, where there is no {@link org.apache.lucene.analysis.TokenStream} to read
+ * from at all.
  */
 public record SpellCheckToken(
     String text,

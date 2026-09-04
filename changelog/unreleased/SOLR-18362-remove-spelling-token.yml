@@ -1,0 +1,15 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: >
+  The spellchecker API no longer passes terms around as `org.apache.solr.spelling.Token`, which is
+  removed; it consumes Lucene `TokenStream`s directly instead. Custom plugins in the
+  `org.apache.solr.spelling` package need updating: `QueryConverter.convert(String)` now returns a
+  `TokenStream` rather than a `Collection<Token>`, `SpellingOptions` carries a
+  `Supplier<TokenStream>` in place of its `tokens` field, and `SpellingResult` is keyed by the new
+  immutable record `SpellCheckToken` wherever it previously took a `Token`. Behaviour of the shipped
+  spellcheckers and of the `/spell` request handler is unchanged.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18362
+    url: https://issues.apache.org/jira/browse/SOLR-18362
