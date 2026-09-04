@@ -129,7 +129,6 @@ Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstart
     "/c/gettingstarted/config":["POST", "GET"],
     "/c/gettingstarted/schema":["POST", "GET"],
     "/c/gettingstarted/export":["POST", "GET"],
-    "/c/gettingstarted/admin/ping":["POST", "GET"],
     "/c/gettingstarted/update":["POST"]}
 }
 ----

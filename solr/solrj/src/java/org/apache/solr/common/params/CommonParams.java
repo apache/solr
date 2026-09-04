@@ -75,26 +75,8 @@ public interface CommonParams {
   String INDENT = "indent";
 
   // SOLR-4228 start
-  /**
-   * handler value for SolrPing
-   *
-   * @deprecated <code>PingRequestHandler</code> (the <code>/admin/ping</code> endpoint) is
-   *     deprecated and will be removed in a future release.
-   */
-  @Deprecated(since = "10.1")
-  String PING_HANDLER = "/admin/ping";
-
-  /** "action" parameter for SolrPing */
+  /** "action" parameter name, used by several admin/collection-management APIs */
   String ACTION = "action";
-
-  /** "disable" value for SolrPing action */
-  String DISABLE = "disable";
-
-  /** "enable" value for SolrPing action */
-  String ENABLE = "enable";
-
-  /** "ping" value for SolrPing action */
-  String PING = "ping";
 
   // SOLR-4228 end
 

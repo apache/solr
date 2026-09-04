@@ -174,28 +174,6 @@ limitations under the License.
       </div>
     </div>
 
-    <div class="block fieldlist" id="healthcheck" ng-class="{disabled: healthcheckMessage}">
-
-      <h2><span>Healthcheck</span></h2>
-
-      <div class="message-container" ng-show="healthcheckMessage">
-        <div class="message">{{healthcheckMessage}}</div>
-      </div>
-
-      <div class="content" ng-show="!healthcheckMessage">
-        <dl>
-
-          <dt class="status">Status:</dt>
-          <dd class="status value ico ico-1" ng-show="healthcheckStatus" ng-click="toggleHealthcheck()">
-            <button class="healthcheck-status enabled">Healthcheck Status</button>
-          </dd>
-          <dd class="status value ico ico-0" ng-show="!healthcheckStatus" ng-click="toggleHealthcheck()">
-            <button class="healthcheck-status">enable ping</button>
-          </dd>
-        </dl>
-      </div>
-
-    </div>
 
   </div>
 

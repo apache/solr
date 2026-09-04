@@ -80,19 +80,6 @@ This handler must have a collection name in the path to the endpoint.
 |`solr/<collection>/admin/luke` |{solr-javadocs}/core/org/apache/solr/handler/admin/LukeRequestHandler.html[LukeRequestHandler] |`_ADMIN_LUKE`
 |===
 
-Ping:: Health check.
-This handler must have a collection name in the path to the endpoint.
-+
-CAUTION: `PingRequestHandler` is deprecated and will be removed in a future release. Use the `Health` endpoint below instead.
-+
-*Documentation*: xref:deployment-guide:ping.adoc[]
-+
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/ping` |{solr-javadocs}/core/org/apache/solr/handler/PingRequestHandler.html[PingRequestHandler] |`_ADMIN_PING`
-|===
-
 System Properties:: Return JRE system properties.
 Secret values are redacted.
 +
