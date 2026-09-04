@@ -179,6 +179,11 @@ public class {{classname}} {
             {{#bodyParam}}
             {{#vars}}
             // TODO find a way to add required parameters in the request body to the class constructor
+            // The setter parameter (and the requestBody.<field> access below) both use the
+            // "name" var: openapi-generator's Java-safe sanitization of this property's wire
+            // name (e.g. the reserved word "class" becomes "propertyClass"). The hand-written
+            // requestBody model class's field MUST be named to match exactly, or the field
+            // access below fails to compile.
             {{#description}}
             /**
              * @param {{name}} {{description}}
