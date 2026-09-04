@@ -48,5 +48,13 @@ public class AdminUiSchemaDesignerTest extends AdminUiTestBase {
 
     waitForPageContains("designer_title");
     assertNoSevereConsoleErrors();
+
+    // add a field through the UI
+    click(By.cssSelector("#addField"));
+    setText(By.id("add_name"), "extra_test_field");
+    click(By.xpath("//button[@ng-click='addField()']"));
+
+    waitForPageContains("extra_test_field");
+    assertNoSevereConsoleErrors();
   }
 }
