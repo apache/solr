@@ -87,11 +87,14 @@ public class TikaServerParser {
     for (Object o : list) {
       if (!(o instanceof Map)) continue;
       Map map = (Map) o;
+      // Tika 4.x renamed X-TIKA:content to tk:content (TIKA-4816); accept either so this also
+      // works against a Tika Server 3.x still on the old key.
+      String contentKey = map.containsKey("tk:content") ? "tk:content" : "X-TIKA:content";
       // Copy metadata
       for (Object k : map.keySet()) {
         String key = String.valueOf(k);
         Object val = map.get(k);
-        if ("X-TIKA:content".equalsIgnoreCase(key)) {
+        if (contentKey.equalsIgnoreCase(key)) {
           // handled below
           continue;
         }
@@ -103,7 +106,7 @@ public class TikaServerParser {
           md.add(key, String.valueOf(val));
         }
       }
-      Object content = map.get("X-TIKA:content");
+      Object content = map.get(contentKey);
       if (content != null) {
         String xhtml = String.valueOf(content);
         if (!xhtml.isEmpty() && handler != null) {

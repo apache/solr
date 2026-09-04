@@ -78,7 +78,7 @@ The quickest way to run Tika Server for development is using Docker. The example
 
 [,bash]
 ----
-docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
+docker run --rm -p 9998:9998 --name tika -d apache/tika:4.0.0-full
 ----
 
 NOTE: If Solr runs in Docker too, ensure both containers share a network and use the Tika container name as the host in `tikaserver.url`.
@@ -92,7 +92,7 @@ First we start a tika server on port 9998, using Docker.
 [source,bash]
 ----
 # Start Tika Server in the background
-docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
+docker run --rm -p 9998:9998 --name tika -d apache/tika:4.0.0-full
 
 # To stop the server when done, run `docker stop tika`
 ----
@@ -384,6 +384,18 @@ Example: `passwordsFile=/path/to/passwords.txt`
 // +
 // Only applicable for `tikaserver` backend. Can only be set in `solrconfig.xml`, not per request.
 
+`tikaserver.config`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A raw JSON object sent as the per-request parser configuration for Tika Server (e.g., `{"pdf-parser":{"ocr":{"strategy":"NO_OCR"}}}`).
+See <<Parser-Specific Properties>> below for details and an important security note: this requires `allowPerRequestConfig=true` on the Tika Server, which is off by default.
++
+Example: `tikaserver.config={"pdf-parser":{"ocr":{"strategy":"NO_OCR"}}}`
+
 `tikaserver.maxChars`::
 +
 [%autowidth,frame=none]
@@ -540,9 +552,33 @@ So you can use the other URPs without worrying about unexpected field additions.
 
 === Parser-Specific Properties
 
-Parser-specific properties for Tika must be configured directly on your Tika Server instance. Consult the https://tika.apache.org/[Apache Tika documentation] for details.
+Server-wide parser properties (things that should apply to every request) must be configured directly on your Tika Server instance, via its own JSON configuration file. Consult the https://tika.apache.org/[Apache Tika documentation] for details.
 
-NOTE: In earlier versions of Solr Cell you could supply Tika configuration directly to Solr. This is no longer possible.
+For a single request, you can instead pass parser-specific options through Solr using the `tikaserver.config` parameter, whose value is a raw JSON object matching Tika Server's per-request configuration format.
+For example, to disable OCR for one request:
+
+[,console]
+----
+$ bin/solr post -c gettingstarted example/exampledocs/solr-word.pdf --params 'literal.id=doc1&tikaserver.config={"pdf-parser":{"ocr":{"strategy":"NO_OCR"}}}'
+----
+
+[IMPORTANT]
+====
+`tikaserver.config` requires your Tika Server to be started with `allowPerRequestConfig: true` in its own JSON configuration (under the `server` section).
+This is off by default, and Tika Server logs a warning when it is enabled, because it lets any client that can reach `/update/extract` inject arbitrary parser configuration, including options that spawn external processes such as OCR.
+Only enable it if you need per-request configuration, and treat access to your Solr instance's extraction endpoint accordingly.
+
+[source,json]
+----
+{
+  "server": {
+    "allowPerRequestConfig": true
+  }
+}
+----
+====
+
+`tikaserver.config` is combined with any password resolved from `resource.password` or `passwordsFile` (see <<Indexing Encrypted Documents>>) into a single request to Tika Server, and is only supported for non-recursive extraction (`tikaserver.recursive=false`, the default); Tika Server has no way to accept per-request configuration for recursive extraction while also returning the XHTML content Solr Cell needs.
 
 === Indexing Encrypted Documents
 

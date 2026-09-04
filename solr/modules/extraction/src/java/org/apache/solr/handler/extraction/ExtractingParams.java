@@ -157,4 +157,14 @@ public interface ExtractingParams {
 
   /** Default or per-request timeout in seconds for TikaServer HTTP calls. */
   String TIKASERVER_TIMEOUT_SECS = "tikaserver.timeoutSeconds";
+
+  /**
+   * Optional raw JSON object sent as the "config" part of a per-request TikaServer configuration
+   * call (e.g. {@code {"pdf-parser":{"ocr":{"strategy":"no_ocr"}}}}). Tika Server 4.x removed its
+   * X-Tika-* configuration headers in favor of this JSON mechanism; the server must additionally
+   * have {@code allowPerRequestConfig=true} set, or the request is rejected with 403. Ignored for
+   * recursive (tikaserver.recursive) requests, since TikaServer has no XML-output variant of
+   * /rmeta/config.
+   */
+  String TIKASERVER_CONFIG_JSON = "tikaserver.config";
 }
