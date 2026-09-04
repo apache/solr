@@ -1,0 +1,8 @@
+title: Fix misleading deprecation warning for SOLR_HOST_ADVERTISE
+type: fixed
+authors:
+  - name: Eric Pugh
+  - name: Mikael Sterner
+links:
+  - name: SOLR-18337
+    url: https://issues.apache.org/jira/browse/SOLR-18337
