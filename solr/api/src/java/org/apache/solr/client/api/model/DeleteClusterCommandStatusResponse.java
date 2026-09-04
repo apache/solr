@@ -14,23 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.handler.sql.functions;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
- * Operator for filtering on Solr multivalued fields with "AND" clause. Example:
- * ARRAY_CONTAINS_ALL(field, ('val1', 'val2')) will be transformed to filter query field:("val1" AND
- * "val2").
+ * Response body for {@code DELETE /api/cluster/commands} and {@code DELETE
+ * /api/cluster/commands/{requestId}}.
  */
-public class ArrayContainsAll extends ArrayContains {
-  private static final String UDF_NAME = "ARRAY_CONTAINS_ALL";
+public class DeleteClusterCommandStatusResponse extends SolrJerseyResponse {
 
-  public ArrayContainsAll() {
-    super(UDF_NAME);
-  }
-
-  @Override
-  public String getAllowedSignatures(String opNameToUse) {
-    return "ARRAY_CONTAINS_ALL(IDENTIFIER, ('val1', 'val2'))";
-  }
+  @JsonProperty("status")
+  @Schema(description = "A message describing the result of the delete.")
+  public String status;
 }
