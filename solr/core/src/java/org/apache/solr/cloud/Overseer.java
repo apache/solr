@@ -782,9 +782,6 @@ public class Overseer implements SolrCloseable {
     assert ObjectReleaseTracker.track(this);
   }
 
-  /** Start {@link ClusterSingleton} plugins when we become the leader. */
-
-  /** Stop {@link ClusterSingleton} plugins when we lose leadership. */
   public Stats getStats() {
     return stats;
   }
