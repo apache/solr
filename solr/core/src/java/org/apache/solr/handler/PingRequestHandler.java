@@ -105,8 +105,12 @@ import org.slf4j.LoggerFactory;
  *       healthcheck file exists ("<code>enabled</code>") or not ("<code>disabled</code>")
  * </ul>
  *
+ * @deprecated This handler is deprecated and will be removed in a future release. For load balancer
+ *     or orchestration health checks, use {@link org.apache.solr.handler.admin.HealthCheckHandler}
+ *     instead. instead.
  * @since solr 1.3
  */
+@Deprecated(since = "10.1")
 public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
