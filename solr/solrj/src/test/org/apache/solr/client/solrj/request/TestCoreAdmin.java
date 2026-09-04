@@ -30,6 +30,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
@@ -47,6 +48,14 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.Test;
 
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void testAdminRequestsChooseExplicitHttpMethods() {
+    assertEquals(METHOD.POST, new CoreAdminRequest().getMethod());
+    assertEquals(METHOD.POST, new CoreAdminRequest.Create().getMethod());
+    assertEquals(METHOD.GET, new CoreAdminRequest.ListSnapshots().getMethod());
+  }
 
   @Test
   public void testConfigSet() throws Exception {
