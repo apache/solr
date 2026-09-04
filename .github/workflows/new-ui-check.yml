@@ -1,0 +1,43 @@
+name: Solr UI Tests
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - 'new-ui-check.yml'
+      # the new UI
+      - 'ui/**'
+      # the v2 API contract the UI is built against
+      # - 'solr/api/**'
+      # the v2 API implementations backing the UI screens
+      - 'solr/core/src/java/org/apache/solr/handler/admin/api/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run New UI tests
+
+    # ubuntu-latest has Chrome preinstalled
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: ./.github/actions/prepare-for-build
+
+    - name: Run the New UI checks
+      run: ./gradlew -p ui check
+
+    - name: Archive test output
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: test-output
+        path: |
+          ui/shared/build/test-results/**
