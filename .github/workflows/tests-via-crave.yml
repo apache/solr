@@ -7,6 +7,8 @@ on:
     paths:
       - 'solr/**/src/**'
       - 'gradle/libs.versions.toml'
+      - 'versions.props'
+      - 'versions.lock'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
