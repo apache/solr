@@ -1,6 +1,5 @@
-# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 title: The UnifiedHighlighter now supports an hl.passageSort option to control passage ordering within a document by startOffset, endOffset, or score.
-type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+type: added
 authors:
   - name: Seunghan Jung
     nick: Seunghan-Jung
