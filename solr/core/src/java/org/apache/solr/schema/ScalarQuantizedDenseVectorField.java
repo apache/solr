@@ -123,19 +123,19 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
     }
 
     super.init(schema, args);
-
-    if (VectorEncoding.BYTE.equals(getVectorEncoding())
-        && FLAT_ALGORITHM.equals(getKnnAlgorithm())) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "vectorEncoding 'BYTE' is not supported for ScalarQuantizedDenseVectorField"
-              + " with knnAlgorithm 'flat'");
-    }
   }
 
-  // Unlike DenseVectorField, the scalar-quantized flat format supports KNN queries.
   @Override
-  public void checkKnnQueryParsersSupported() throws SolrException {}
+  public void checkKnnQueryParsersSupported() throws SolrException {
+    if (FLAT_ALGORITHM.equals(getKnnAlgorithm())
+        && VectorEncoding.BYTE.equals(getVectorEncoding())) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "KNN vector queries are not supported for ScalarQuantizedDenseVectorField using "
+              + "knnAlgorithm=\"flat\" with vectorEncoding=\"BYTE\". "
+              + "Use vectorSimilarity() function queries instead.");
+    }
+  }
 
   @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {
