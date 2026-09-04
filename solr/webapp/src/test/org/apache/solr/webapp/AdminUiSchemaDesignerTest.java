@@ -16,7 +16,6 @@
  */
 package org.apache.solr.webapp;
 
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -25,11 +24,9 @@ import org.openqa.selenium.WebElement;
  * Happy-path test of the Schema Designer screen: create a new schema, paste a sample document and
  * let the designer analyze it.
  *
- * <p>AwaitsFix: the designer backend transiently fails its own prep/analyze calls ("version
- * mismatch, retry", "Error loading solr config") when driven at automation speed, making this test
- * flaky even with retries.
+ * <p>The Analyze action remains disabled until creation of the mutable schema has completed, so a
+ * fast user cannot race the prep and analyze requests.
  */
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18347")
 public class AdminUiSchemaDesignerTest extends AdminUiTestBase {
 
   @Test
@@ -47,34 +44,9 @@ public class AdminUiSchemaDesignerTest extends AdminUiTestBase {
     WebElement sampleDocs = waitFor(By.cssSelector("#sample-docs textarea#document"));
     sampleDocs.clear();
     sampleDocs.sendKeys("[{\"id\":\"1\",\"designer_title\":\"Hello Designer\"}]");
-    click(By.id("analyze"));
+    click(By.cssSelector("#analyze:not([disabled])"));
 
-    // the analyzed schema lists the field derived from the sample doc. The designer
-    // backend transiently fails its own calls ("version mismatch, retry", "Error
-    // loading solr config") and surfaces an error dialog - dismiss it and analyze
-    // again, with a generous budget since each round trips several requests
-    long deadlineNanos = System.nanoTime() + WAIT_TIMEOUT.multipliedBy(3).toNanos();
-    boolean analyzed = false;
-    while (!analyzed && System.nanoTime() < deadlineNanos) {
-      analyzed = driver.getPageSource().contains("designer_title");
-      if (!analyzed) {
-        for (String dismissButton : new String[] {"Reload Schema", "OK"}) {
-          driver.findElements(By.xpath("//button[contains(., '" + dismissButton + "')]")).stream()
-              .filter(WebElement::isDisplayed)
-              .findFirst()
-              .ifPresent(WebElement::click);
-        }
-        driver.findElements(By.id("analyze")).stream()
-            .filter(WebElement::isDisplayed)
-            .findFirst()
-            .ifPresent(WebElement::click);
-        Thread.sleep(500);
-      }
-    }
-    assertTrue("Analyzed schema should list the sample doc field", analyzed);
-    // the designer's own API calls (prep/analyze/luke against its temp core) error
-    // transiently while it persists and reloads the schema - it recovers via its retry
-    // dialog, so only unrelated console errors fail the test
-    assertNoSevereConsoleErrors("schema-designer/", "._designer_");
+    waitForPageContains("designer_title");
+    assertNoSevereConsoleErrors();
   }
 }

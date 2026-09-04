@@ -24,6 +24,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   $scope.sortableFields = [];
   $scope.hlFields = [];
   $scope.types = [];
+  $scope.preparingSchema = false;
 
   $scope.onWarning = function (warnMsg, warnDetails) {
     $scope.updateWorking = false;
@@ -34,6 +35,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   
   $scope.onError = function (errorMsg, errorCode, errorDetails) {
     $scope.updateWorking = false;
+    $scope.preparingSchema = false;
     delete $scope.updateStatusMessage;
     $scope.designerAPIError = errorMsg;
     if (errorDetails) {
@@ -330,12 +332,14 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     $scope.currentSchema = $scope.newSchema;
     $scope.sampleMessage = "Please upload or paste some sample documents to analyze for building the '" + $scope.currentSchema + "' schema.";
 
+    $scope.preparingSchema = true;
     SchemaDesignerV2.prepNewSchema($scope.newSchema, {copyFrom: $scope.copyFrom}, function (error, data, response) {
       $timeout(function () {
         if (error) {
           $scope.errorHandlerV2(response);
           return;
         }
+        $scope.preparingSchema = false;
         $scope.initDesignerSettingsFromResponse(data);
       });
     });
@@ -484,9 +488,11 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     // re-apply the filters on the updated schema
     $scope.onTreeFilterOptionChanged();
 
-    // Load the Luke schema
-    Luke.schema({core: data.core}, function (schema) {
-      Luke.raw({core: data.core}, function (index) {
+    // Load the Luke schema. Route through the temporary collection so the request reaches its
+    // active replica even when the Admin UI is connected to a different node.
+    var lukeTarget = data.tempCollection || data.core;
+    Luke.schema({core: lukeTarget}, function (schema) {
+      Luke.raw({core: lukeTarget}, function (index) {
         $scope.luke = mergeIndexAndSchemaData(index, schema.schema);
         $scope.types = Object.keys(schema.schema.types);
         $scope.showSchemaActions = true;
