@@ -49,6 +49,8 @@ import org.slf4j.LoggerFactory;
  * id and whose value is the matching to-side doc id. Pair columns missing from the join index are
  * built on demand at weight creation, so no explicit build step exists; obtain instances via {@link
  * AuxIndexManager#newJoinQuery}. Matches score a constant.
+ *
+ * @lucene.experimental
  */
 class AuxIndexJoinQuery extends Query {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

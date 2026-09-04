@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
  * An {@link java.util.concurrent.ExecutorService} that runs every submitted task immediately on the
  * calling thread, preserving the ordering and stack of the submitter. Useful to make asynchronous
  * join work deterministic (e.g. in tests) or when the caller wants no background concurrency.
+ *
+ * @lucene.experimental
  */
 final class DirectExecutorService extends AbstractExecutorService {
 

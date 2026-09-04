@@ -39,6 +39,8 @@ import org.slf4j.LoggerFactory;
  * resolve a to-side term to the from-ord it shares. {@link #toDocByFromDoc} is zero-filled to
  * {@code -1} and indexed by each live from-doc's from-ord by ; the to-side stage rewrites it in
  * place from from-ords to to-docs.
+ *
+ * @lucene.experimental
  */
 final class ForeignKeyColumn {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

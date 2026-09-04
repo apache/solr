@@ -93,6 +93,9 @@ import org.slf4j.LoggerFactory;
  * org.apache.solr.handler.component.SearchComponent} -- never created ad-hoc per request ({@link
  * QParser#getParser(String, SolrQueryRequest)} resolves the already registered instance via {@code
  * req.getCore().getQueryPlugin(name)}).
+ *
+ * @lucene.experimental
+ *     <p>This is experimental API and subject to change.
  */
 public class AuxIndexJoinQParserPlugin extends QParserPlugin
     implements QueryResponseWriter, SolrCoreAware {

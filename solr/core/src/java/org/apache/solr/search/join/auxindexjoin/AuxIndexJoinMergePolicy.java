@@ -35,6 +35,9 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Bits;
 
+/**
+ * @lucene.experimental
+ */
 final class AuxIndexJoinMergePolicy extends MergePolicy {
   @Override
   public MergePolicy.MergeSpecification findMerges(

@@ -43,6 +43,8 @@ import org.slf4j.LoggerFactory;
  * field name, computes the in-memory {@link JoinColumnModel}s, double-checks a fresh join-index
  * searcher for pairs persisted since the caller looked, and persists what is still missing through
  * {@link AuxIndexManager#writeBatch}.
+ *
+ * @lucene.experimental
  */
 final class JoinColumnIndexer {
 

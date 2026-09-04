@@ -74,6 +74,8 @@ import org.slf4j.event.Level;
  * named {@link #pairFieldName}, whose doc number is the from-side doc id and whose value is the
  * to-side doc id whose {@code toField} term equals the from doc's {@code fromField} term, plus two
  * companion edges columns persisting the pair's {min, max} from-doc and to-doc bounds.
+ *
+ * @lucene.experimental
  */
 final class JoinIndexUtils {
 

@@ -30,6 +30,9 @@ import org.apache.lucene.store.Directory;
  *
  * <p>Once passed to {@link AuxIndexManager#AuxIndexManager(Directory, AuxIndexJoinConfig)}, changes
  * to this object no longer affect the created {@link AuxIndexManager} instance.
+ *
+ * @lucene.experimental
+ *     <p>This is experimental API and subject to change.
  */
 public final class AuxIndexJoinConfig {
 
