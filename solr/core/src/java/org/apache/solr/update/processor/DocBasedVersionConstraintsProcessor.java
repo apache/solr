@@ -414,6 +414,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       return;
     }
 
+    rejectClientSuppliedVersion(cmd);
+
     final SolrInputDocument newDoc = cmd.getSolrInputDocument();
     Object[] newVersions = getUserVersionsFromDocument(newDoc);
     validateUserVersions(newVersions, versionFieldNames, "Doc does not have versionField: ");
@@ -438,6 +440,28 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
         throw e; // rethrow
       }
     }
+  }
+
+  /**
+   * Rejects an update carrying Solr's native <code>_version_</code>. This processor overwrites that
+   * field to guard its own read-then-write, so a client precondition could not be honored. Consults
+   * the same sources, in the same order, as {@link DistributedUpdateProcessor} would.
+   *
+   * <p>NOTE: Perhaps we could do either-or, or combine both somehow.
+   */
+  private static void rejectClientSuppliedVersion(AddUpdateCommand cmd) {
+    if (cmd.getVersion() == 0
+        && cmd.getSolrInputDocument().getField(CommonParams.VERSION_FIELD) == null
+        && cmd.getReq().getParams().get(CommonParams.VERSION_FIELD) == null) {
+      return;
+    }
+    throw new SolrException(
+        BAD_REQUEST,
+        "Optimistic concurrency via "
+            + CommonParams.VERSION_FIELD
+            + " is not supported when DocBasedVersionConstraintsProcessorFactory is configured,"
+            + " since it uses that field itself. Express version constraints with the configured"
+            + " versionField(s) instead.");
   }
 
   private static void logOverlyFailedRetries(int i, UpdateCommand cmd) {
