@@ -20,57 +20,27 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 @ThreadLeakFilters(filters = {SolrIgnoredThreadsFilter.class, QuickPatchThreadsFilter.class})
 public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHandlerTestAbstract {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static GenericContainer<?> tika;
+  @ClassRule
+  public static final TikaServerContainerRule tikaContainer = new TikaServerContainerRule();
 
   @BeforeClass
-  @SuppressWarnings("resource")
-  public static void beforeClassTika() {
-    Assume.assumeFalse(
-        "Skipping on s390x", "s390x".equalsIgnoreCase(System.getProperty("os.arch")));
-
-    String baseUrl;
-    try {
-      tika =
-          new GenericContainer<>("apache/tika:3.2.3.0-full")
-              .withExposedPorts(9998)
-              .waitingFor(Wait.forListeningPort());
-      tika.start();
-      baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
-      System.setProperty("solr.test.tikaserver.url", baseUrl);
-      System.setProperty("solr.test.extraction.backend", "tikaserver");
-      System.setProperty("solr.test.tikaserver.metadata.compatibility", "true");
-      log.info("Using extraction backend 'tikaserver'. Tika server running on {}", baseUrl);
-      initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
-    } catch (Throwable t) {
-      // Skip tests if Docker/Testcontainers are not available in the environment
-      Assume.assumeNoException("Docker/Testcontainers not available; skipping test", t);
-    }
-  }
-
-  @AfterClass
-  public static void afterClassTika() {
-    if (tika != null) {
-      try {
-        tika.stop();
-      } catch (Throwable t) {
-        // ignore
-      } finally {
-        tika = null;
-      }
-    }
+  public static void beforeClassTika() throws Exception {
+    String baseUrl = tikaContainer.getBaseUrl();
+    System.setProperty("solr.test.tikaserver.url", baseUrl);
+    System.setProperty("solr.test.extraction.backend", "tikaserver");
+    System.setProperty("solr.test.tikaserver.metadata.compatibility", "true");
+    log.info("Using extraction backend 'tikaserver'. Tika server running on {}", baseUrl);
+    initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
   }
 
   @Test

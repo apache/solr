@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -503,22 +502,26 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     assertTrue("some core start times did not change on reload", allTimesAreCorrect);
   }
 
-  private void checkInstanceDirs(JettySolrRunner jetty) throws IOException {
+  private void checkInstanceDirs(JettySolrRunner jetty) {
     CoreContainer cores = jetty.getCoreContainer();
-    Collection<SolrCore> theCores = cores.getCores();
-    for (SolrCore core : theCores) {
-      // look for core props file
-      Path instancedir = core.getInstancePath();
-      assertTrue(
-          "Could not find expected core.properties file",
-          Files.exists(instancedir.resolve("core.properties")));
+    cores.forEachLoadedCore(
+        core -> {
+          // look for core props file
+          Path instancedir = core.getInstancePath();
+          assertTrue(
+              "Could not find expected core.properties file",
+              Files.exists(instancedir.resolve("core.properties")));
 
-      Path expected = Path.of(jetty.getSolrHome()).resolve(core.getName());
+          Path expected = Path.of(jetty.getSolrHome()).resolve(core.getName());
 
-      assertTrue(
-          "Expected: " + expected + "\nFrom core stats: " + instancedir,
-          Files.isSameFile(expected, instancedir));
-    }
+          try {
+            assertTrue(
+                "Expected: " + expected + "\nFrom core stats: " + instancedir,
+                Files.isSameFile(expected, instancedir));
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   private boolean waitForReloads(String collectionName, Map<String, Long> urlToTimeBefore)

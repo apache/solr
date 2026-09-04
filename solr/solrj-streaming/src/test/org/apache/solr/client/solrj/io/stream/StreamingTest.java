@@ -2129,7 +2129,7 @@ public class StreamingTest extends SolrCloudTestCase {
           "expr",
           "rollup(search("
               + COLLECTIONORALIAS
-              + ",q=\"*:*\",fl=\"a_s,a_i,a_f,b_f\",sort=\"a_s asc\",partitionKeys=\"a_s\", qt=\"/export\"),over=\"a_s\",sum(a_i),sum(a_f),min(a_i),min(a_f),max(a_i),max(a_f),avg(a_i),avg(a_f),count(*),missing(b_f))\n");
+              + ",q=\"*:*\",fl=\"a_s,a_i,a_f,b_f\",sort=\"a_s asc\",partitionKeys=\"a_s\", path=\"/export\"),over=\"a_s\",sum(a_i),sum(a_f),min(a_i),min(a_f),max(a_i),max(a_f),avg(a_i),avg(a_f),count(*),missing(b_f))\n");
       SolrStream solrStream = new SolrStream(shardUrls.get(0), "/stream", solrParams);
       streamContext = new StreamContext();
       solrStream.setStreamContext(streamContext);
@@ -3176,7 +3176,7 @@ public class StreamingTest extends SolrCloudTestCase {
     String expr =
         "search("
             + MULTI_REPLICA_COLLECTIONORALIAS
-            + ",q=*:*,fl=\"a_i\", qt=\"/export\", sort=\"a_i asc\")";
+            + ",q=*:*,fl=\"a_i\", path=\"/export\", sort=\"a_i asc\")";
     try (CloudSolrStream stream =
         new CloudSolrStream(StreamExpressionParser.parse(expr), streamFactory)) {
       stream.setStreamContext(streamContext);

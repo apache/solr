@@ -253,18 +253,18 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     try {
       // assert zero cores
-      assertEquals("There should not be cores", 0, cores.getCores().size());
+      assertEquals("There should not be cores", 0, cores.getLoadedCoreNames().size());
 
       // add a new core
       cores.create("core1", Map.of("configSet", "minimal"));
 
       // assert one registered core
 
-      assertEquals("There core registered", 1, cores.getCores().size());
+      assertEquals("There core registered", 1, cores.getLoadedCoreNames().size());
 
       cores.unload("core1");
       // assert cero cores
-      assertEquals("There should not be cores", 0, cores.getCores().size());
+      assertEquals("There should not be cores", 0, cores.getLoadedCoreNames().size());
 
       // try and remove a core that does not exist
       SolrException thrown =
