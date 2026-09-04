@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.request;
 
 import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.util.NamedList;
@@ -25,6 +26,14 @@ import org.junit.Test;
 
 /** Basic error checking of ConfigSetAdminRequests. */
 public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void testAdminRequestsChooseExplicitHttpMethods() {
+    assertEquals(METHOD.POST, new MyConfigSetAdminRequest().getMethod());
+    assertEquals(METHOD.POST, new ConfigSetAdminRequest.Create().getMethod());
+    assertEquals(METHOD.GET, new ConfigSetAdminRequest.List().getMethod());
+  }
 
   @Test
   public void testNoAction() {
