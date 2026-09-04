@@ -127,8 +127,8 @@ public class FieldValueFeature extends Feature {
     }
 
     /**
-     * Override this method in sub classes that wish to use not an absolute time but an interval
-     * such as document age or remaining shelf life relative to a specific date or relative to now.
+     * Override this method in subclasses that wish to use not an absolute time but an interval such
+     * as document age or remaining shelf life relative to a specific date or relative to now.
      *
      * @param val value of the field
      * @return value after transformation
@@ -179,14 +179,12 @@ public class FieldValueFeature extends Feature {
     /** A FeatureScorer that reads the stored value for a field */
     public class FieldValueFeatureScorer extends FeatureScorer {
 
-      private final LeafReaderContext context;
       private final StoredFields storedFields;
 
       public FieldValueFeatureScorer(
           FeatureWeight weight, LeafReaderContext context, DocIdSetIterator itr)
           throws IOException {
         super(weight, itr);
-        this.context = context;
         this.storedFields = (context == null ? null : context.reader().storedFields());
       }
 
@@ -205,7 +203,7 @@ public class FieldValueFeature extends Feature {
           } else {
             final String string = indexableField.stringValue();
             if (string.length() == 1) {
-              // boolean values in the index are encoded with the
+              // boolean values in the index are encoded with
               // a single char contained in TRUE_TOKEN or FALSE_TOKEN
               // (see BoolField)
               if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
@@ -217,8 +215,7 @@ public class FieldValueFeature extends Feature {
             }
           }
         } catch (final IOException e) {
-          throw new FeatureException(
-              e.toString() + ": " + "Unable to extract feature for " + name, e);
+          throw new FeatureException(e + ": " + "Unable to extract feature for " + name, e);
         }
         return getDefaultValue();
       }
@@ -320,7 +317,7 @@ public class FieldValueFeature extends Feature {
       private float readSortedDocValues(BytesRef bytesRef) {
         String string = bytesRef.utf8ToString();
         if (string.length() == 1) {
-          // boolean values in the index are encoded with the
+          // boolean values in the index are encoded with
           // a single char contained in TRUE_TOKEN or FALSE_TOKEN
           // (see BoolField)
           if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
