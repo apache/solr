@@ -1,5 +1,5 @@
 type: deprecated
-title: Deprecate PingRequestHandler (the "/admin/ping" endpoint) in favor of `/api/node/health` (v2) or `/solr/admin/info/health` (v1).
+title: Deprecate PingRequestHandler (the "/admin/ping" endpoint), SolrPing, SolrPingResponse, and SolrClient.ping()/ping(String).
 authors:
   - name: Jason Gerlowski
 links:
