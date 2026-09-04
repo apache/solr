@@ -46,8 +46,12 @@ import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +68,20 @@ import org.slf4j.LoggerFactory;
 public abstract class HttpSolrClient extends SolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
+
+  /** Default set are interesting for routing or fundamental request purpose */
+  private static final Set<String> DEFAULT_URL_PARAM_NAMES =
+      Set.of(
+          CoreAdminParams.ACTION,
+          CommonAdminParams.ASYNC,
+          CollectionAdminParams.COLLECTION,
+          "name", // core/collection name
+          "command", // e.g. for replication
+          ShardParams.IS_SHARD,
+          CommonParams.DISTRIB,
+          ShardParams._ROUTE_,
+          ShardParams.SHARDS_PREFERENCE,
+          ShardParams.SHARDS_PURPOSE);
 
   protected final String baseUrl;
   protected final long requestTimeoutMillis;
@@ -87,11 +105,7 @@ public abstract class HttpSolrClient extends SolrClient {
       this.parser = builder.responseParser;
     }
     this.defaultCollection = builder.defaultCollection;
-    if (builder.urlParamNames != null) {
-      this.urlParamNames = builder.urlParamNames;
-    } else {
-      this.urlParamNames = Set.of();
-    }
+    this.urlParamNames = Objects.requireNonNullElse(builder.urlParamNames, DEFAULT_URL_PARAM_NAMES);
   }
 
   private static String extractBaseUrl(String serverBaseUrl) {
