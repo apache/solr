@@ -667,6 +667,29 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     }
   }
 
+  /**
+   * A streaming response may be silent for a long time before its first byte (e.g. a streaming
+   * expression that must compute before emitting anything). The builder's idle timeout must govern
+   * that; nothing at the Jetty HttpClient level may cap it. See SOLR-17871.
+   */
+  @Test
+  public void testIdleTimeoutBeyondOneMinute() throws Exception {
+    String url = solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
+    long silenceMs = 65_000;
+    try (var client =
+        new HttpJettySolrClient.Builder(url)
+            .withIdleTimeout(silenceMs + 30_000, TimeUnit.MILLISECONDS)
+            .build()) {
+      var params = new ModifiableSolrParams().set("count", "1").set("packetMs", "" + silenceMs);
+      QueryRequest req = new QueryRequest(params);
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      NamedList<Object> response = client.request(req);
+      try (InputStream is = (InputStream) response.get("stream")) {
+        assertEquals("0", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+      }
+    }
+  }
+
   @Test
   public void testIdleTimeoutWithHttpClient() throws Exception {
     String url = solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
