@@ -101,6 +101,59 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void updateSucceedsAfterMigrateTargetIsDeleted() throws Exception {
+    String sourceCollection = "deletedMigrateTarget-source";
+    CollectionAdminRequest.createCollection(sourceCollection, "conf", 1, 2)
+        .process(cluster.getSolrClient());
+    String targetCollection = "deletedMigrateTarget-target";
+    CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+
+    cluster.getSolrClient().add(sourceCollection, new SolrInputDocument("id", "a!1"));
+    cluster.getSolrClient().commit(sourceCollection);
+
+    invokeCollectionMigration(
+        CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "a!")
+            .setForwardTimeout(45));
+    waitForState(
+        "Expected to find routing rule for split key a",
+        sourceCollection,
+        c -> {
+          if (c == null) return false;
+          Map<String, RoutingRule> routingRules = c.getSlice("shard1").getRoutingRules();
+          return routingRules != null && routingRules.containsKey("a!");
+        });
+
+    CollectionAdminRequest.deleteCollection(targetCollection).process(cluster.getSolrClient());
+    waitForState("Expected target collection deletion", targetCollection, c -> c == null);
+
+    cluster.getSolrClient().add(sourceCollection, new SolrInputDocument("id", "a!2"));
+    cluster.getSolrClient().commit(sourceCollection);
+
+    DocCollection sourceState = getCollectionState(sourceCollection);
+    assertEquals(2, sourceState.getSlice("shard1").getReplicas().size());
+    for (Replica replica : sourceState.getSlice("shard1")) {
+      try (SolrClient replicaClient = getHttpSolrClient(replica)) {
+        SolrQuery query = new SolrQuery("id:\"a!2\"");
+        query.set("distrib", false);
+        assertEquals(
+            "Document missing from replica " + replica.getName(),
+            1,
+            replicaClient.query(query).getResults().getNumFound());
+      }
+    }
+
+    waitForState(
+        "Expected dangling routing rule removal",
+        sourceCollection,
+        c -> {
+          if (c == null) return false;
+          Map<String, RoutingRule> routingRules = c.getSlice("shard1").getRoutingRules();
+          return routingRules == null || !routingRules.containsKey("a!");
+        });
+  }
+
+  @Test
   public void multipleShardMigrateTest() throws Exception {
 
     String sourceCollection = "sourceCollection";

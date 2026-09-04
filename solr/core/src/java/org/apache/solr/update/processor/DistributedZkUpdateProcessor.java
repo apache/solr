@@ -1011,7 +1011,17 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                 int hash = compositeIdRouter.sliceHash(id, doc, null, coll);
                 for (DocRouter.Range range : ranges) {
                   if (range.includes(hash)) {
-                    DocCollection targetColl = cstate.getCollection(rule.getTargetCollectionName());
+                    DocCollection targetColl =
+                        cstate.getCollectionOrNull(rule.getTargetCollectionName());
+                    if (targetColl == null) {
+                      if (log.isInfoEnabled()) {
+                        log.info(
+                            "Removing shard update routing rule because the target collection {} doesn't exist",
+                            rule.getTargetCollectionName());
+                      }
+                      removeRoutingRule(myShardId, routeKey);
+                      break;
+                    }
                     Collection<Slice> activeSlices =
                         targetColl.getRouter().getSearchSlicesSingle(id, null, targetColl);
                     if (activeSlices == null || activeSlices.isEmpty()) {
@@ -1031,52 +1041,55 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                 }
               }
             } else {
-              ReentrantLock ruleExpiryLock = req.getCore().getRuleExpiryLock();
-              if (!ruleExpiryLock.isLocked()) {
-                try {
-                  if (ruleExpiryLock.tryLock(10, TimeUnit.MILLISECONDS)) {
-                    log.info("Going to expire routing rule");
-                    try {
-                      Map<String, Object> map =
-                          Map.of(
-                              Overseer.QUEUE_OPERATION,
-                              OverseerAction.REMOVEROUTINGRULE.toLower(),
-                              ZkStateReader.COLLECTION_PROP,
-                              collection,
-                              ZkStateReader.SHARD_ID_PROP,
-                              myShardId,
-                              "routeKey",
-                              routeKey + "!");
-                      if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
-                        ZkNodeProps message = new ZkNodeProps(map);
-                        distributedClusterStateUpdater.doSingleStateUpdate(
-                            DistributedClusterStateUpdater.MutatingCommand.SliceRemoveRoutingRule,
-                            message,
-                            zkController.getOverseer().getSolrCloudManager(),
-                            zkController.getOverseer().getZkStateReader());
-                      } else {
-                        zkController.getOverseer().offerStateUpdate(Utils.toJSON(map));
-                      }
-                    } catch (KeeperException e) {
-                      log.warn(
-                          "Exception while removing routing rule for route key: {}", routeKey, e);
-                    } catch (Exception e) {
-                      log.error(
-                          "Exception while removing routing rule for route key: {}", routeKey, e);
-                    } finally {
-                      ruleExpiryLock.unlock();
-                    }
-                  }
-                } catch (InterruptedException e) {
-                  Thread.currentThread().interrupt();
-                }
-              }
+              log.info("Removing shard update routing rule because it has expired");
+              removeRoutingRule(myShardId, routeKey);
             }
           }
         }
       }
     }
     return nodes;
+  }
+
+  private void removeRoutingRule(String shardId, String routeKey) {
+    ReentrantLock ruleExpiryLock = req.getCore().getRuleExpiryLock();
+    if (ruleExpiryLock.isLocked()) {
+      return;
+    }
+    try {
+      if (ruleExpiryLock.tryLock(10, TimeUnit.MILLISECONDS)) {
+        try {
+          Map<String, Object> map =
+              Map.of(
+                  Overseer.QUEUE_OPERATION,
+                  OverseerAction.REMOVEROUTINGRULE.toLower(),
+                  ZkStateReader.COLLECTION_PROP,
+                  collection,
+                  ZkStateReader.SHARD_ID_PROP,
+                  shardId,
+                  "routeKey",
+                  routeKey + "!");
+          if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
+            ZkNodeProps message = new ZkNodeProps(map);
+            distributedClusterStateUpdater.doSingleStateUpdate(
+                DistributedClusterStateUpdater.MutatingCommand.SliceRemoveRoutingRule,
+                message,
+                zkController.getOverseer().getSolrCloudManager(),
+                zkController.getOverseer().getZkStateReader());
+          } else {
+            zkController.getOverseer().offerStateUpdate(Utils.toJSON(map));
+          }
+        } catch (KeeperException e) {
+          log.warn("Exception while removing routing rule for route key: {}", routeKey, e);
+        } catch (Exception e) {
+          log.error("Exception while removing routing rule for route key: {}", routeKey, e);
+        } finally {
+          ruleExpiryLock.unlock();
+        }
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   private void doDefensiveChecks(DistribPhase phase, UpdateCommand updateCommand) {
