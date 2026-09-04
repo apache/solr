@@ -36,10 +36,10 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClientTestBase;
 import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
+import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
@@ -177,7 +177,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
       try {
         // if client base url is null, request url will be used in exception message
         client.requestWithBaseUrl(
-            solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH, new SolrPing(), DEFAULT_COLLECTION);
+            solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH,
+            new HealthCheckRequest(),
+            DEFAULT_COLLECTION);
 
         fail("Didn't get excepted exception from oversided request");
       } catch (SolrException e) {

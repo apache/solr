@@ -510,7 +510,7 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, CollectionsV2, AliasesV2, SystemV2, Ping, Constants, SchemaDesigner, ApiErrorHandler) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, CollectionsV2, AliasesV2, SystemV2, Constants, SchemaDesigner, ApiErrorHandler) {
 
   $rootScope.exceptions={};
 
@@ -638,14 +638,6 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
   $scope.isMultiDestAlias = function(selectedColl) {
     return selectedColl && selectedColl.type === 'alias' && selectedColl.collections.includes(',');
-  };
-
-  $scope.ping = function() {
-    Ping.ping({core: $scope.currentCore.name}, function(data) {
-      $scope.showPing = true;
-      $scope.pingMS = data.responseHeader.QTime;
-    });
-    // @todo .attr( 'title', '/admin/ping is not configured (' + xhr.status + ': ' + error_thrown + ')' );
   };
 
   $scope.dumpCloud = function() {

@@ -179,7 +179,6 @@ Here are sections throughout the Guide describing each screen of the Admin UI:
 // tag::ui-core-tools[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| xref:deployment-guide:ping.adoc[]: Ping a named core to determine whether it is active.
 | xref:deployment-guide:plugins-stats-screen.adoc[]: Statistics for request handlers, search components, plugins, and other installed components.
 | xref:deployment-guide:user-managed-index-replication.adoc#replication-screen[Replication Screen]: Enable replication for a core and view current replication status.
 | xref:configuration-guide:index-segments-merging.adoc#segments-info-screen[Segments Info Screen]: Visualization of the underlying Lucene index segments.

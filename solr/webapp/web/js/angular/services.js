@@ -304,15 +304,6 @@ solrAdminServices.factory('Metrics',
       "field": {params: {"analysis.showmatch": true}}
     });
   }])
-.factory('Ping',
-  ['$resource', function($resource) {
-    return $resource(':core/admin/ping', {wt:'json', core: '@core', ts:Date.now(), _:Date.now()}, {
-     "ping": {},
-     "enable": {params:{action:"enable"}, headers: {doNotIntercept: "true"}},
-     "disable": {params:{action:"disable"}, headers: {doNotIntercept: "true"}},
-     "status": {params:{action:"status"}, headers: {doNotIntercept: "true"}
-    }});
-  }])
 .factory('Files',
   ['$resource', function($resource) {
     return $resource(':core/admin/file', {'wt':'json', core: '@core', '_':Date.now()}, {

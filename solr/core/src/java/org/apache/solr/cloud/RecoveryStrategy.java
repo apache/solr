@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
+import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -824,7 +825,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       try (SolrClient httpSolrClient =
           recoverySolrClientBuilder(leaderReplica.getBaseUrl(), leaderReplica.getCoreName())
               .build()) {
-        httpSolrClient.ping();
+        new HealthCheckRequest().process(httpSolrClient);
         return leaderReplica;
       } catch (IOException e) {
         log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());

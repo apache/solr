@@ -26,12 +26,10 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.FastStreamingDocsCallback;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.ResponseParser;
-import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.StreamingJavaBinResponseParser;
 import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -885,31 +883,6 @@ public abstract class SolrClient implements Serializable, Closeable {
   public UpdateResponse deleteByQuery(String query, int commitWithinMs)
       throws SolrServerException, IOException {
     return deleteByQuery(null, query, commitWithinMs);
-  }
-
-  /**
-   * Issues a ping request to check if the collection's replicas are alive
-   *
-   * @param collection collection to ping
-   * @return a {@link org.apache.solr.client.solrj.response.SolrPingResponse} containing the
-   *     response from the server
-   * @throws IOException If there is a low-level I/O error.
-   * @throws SolrServerException if there is an error on the server
-   */
-  public SolrPingResponse ping(String collection) throws SolrServerException, IOException {
-    return new SolrPing().process(this, collection);
-  }
-
-  /**
-   * Issues a ping request to check if the server is alive
-   *
-   * @return a {@link org.apache.solr.client.solrj.response.SolrPingResponse} containing the
-   *     response from the server
-   * @throws IOException If there is a low-level I/O error.
-   * @throws SolrServerException if there is an error on the server
-   */
-  public SolrPingResponse ping() throws SolrServerException, IOException {
-    return new SolrPing().process(this, null);
   }
 
   /**

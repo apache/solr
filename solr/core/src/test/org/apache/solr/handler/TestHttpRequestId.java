@@ -28,7 +28,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
-import org.apache.solr.client.solrj.request.SolrPing;
+import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -106,7 +106,7 @@ public class TestHttpRequestId extends SolrTestCaseJ4 {
         MDC.put(key, value);
         cf =
             client
-                .requestAsync(new SolrPing(), null)
+                .requestAsync(new HealthCheckRequest(), null)
                 .whenComplete((nl, e) -> assertEquals(value, MDC.get(key)));
       } finally {
         ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
