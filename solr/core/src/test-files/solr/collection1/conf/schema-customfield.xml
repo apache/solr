@@ -40,11 +40,13 @@
   </fieldType>
 
   <fieldType name="customintfield" class="${solr.tests.CustomIntFieldType}" docValues="${solr.tests.numeric.dv}" />
+  <fieldType name="missingdocvaluesfield" class="org.apache.solr.schema.MissingDocValuesFieldType" docValues="true"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="intfield" type="int" indexed="true" stored="true"/>
   <field name="swap_foo_bar_in_prefix_query" type="customfield" indexed="true" stored="true" multiValued="true"/>
   <field name="int_prefix_as_range" type="customintfield" indexed="true" stored="true"/>
+  <field name="bad_exists" type="missingdocvaluesfield" indexed="true" stored="false"/>
 
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
 
