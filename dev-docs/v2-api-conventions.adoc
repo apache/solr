@@ -142,7 +142,7 @@ In these cases, developers may:
 
 == Response POJOs
 
-Every v2 response body extends `SolrJerseyResponse`, which provides `responseHeader` and `error`.
+Every v2 response body extends `SolrJerseyResponse`, which provides `responseHeader` and `error` - except for the raw/streaming APIs described under "Streaming" above, whose interface methods return `StreamingOutput` instead.
 Beyond that base, pick the narrowest existing response type that fits before writing a new one:
 
 * `SolrJerseyResponse` - plain success/error response with no extra data. The default for simple mutations.
@@ -175,7 +175,9 @@ This convention exists for a few reasons:
 
 How this delegation is implemented differs depending on whether the API executes synchronously or is processed by the Overseer.
 
-=== Synchronous (core-level) APIs
+=== Synchronous (CoreAdminAPIBase) APIs
+
+Note: this is distinct from "per-core" APIs generally (see the "API Types" section of link:apis.adoc[apis.adoc]), which are registered on individual `SolrCore` objects (e.g. `/select`, `/update`, `/admin/ping`). `CoreAdminAPIBase`-derived APIs are instead a "cluster" API registered on the `CoreContainer`, corresponding to the legacy `/admin/cores` handler.
 
 For `CoreAdminAPIBase`-derived APIs (i.e. `/api/cores/...`), the v1 `CoreAdminHandler.CoreAdminOp` implementation is reduced to a thin adapter: parse the v1 `SolrParams` into the v2 request-body POJO, construct the v2 API class, call it, and squash the response back into the v1 `NamedList` via `V2ApiUtils.squashIntoSolrResponseWithoutHeader`.
 
@@ -196,9 +198,11 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
 
 See `RenameCore`/`CoreAdminOperation.RENAME_OP`, `MergeIndexes`/`MergeIndexesOp`, and `SplitCoreAPI`/`SplitOp` for examples of this pattern.
 
-=== Overseer-driven (collection-level) APIs
+=== Overseer-driven (AdminAPIBase) APIs
 
-For `AdminAPIBase`-derived APIs (i.e. `/api/collections/...`) that are processed asynchronously by the Overseer via a ZK-based command queue, the underlying `cloud/api/collections/*Cmd.java` executor (e.g. `SplitShardCmd`, `CreateShardCmd`) is *not* moved into v2 - it stays registered in `CollApiCmds.java` and continues to execute on the Overseer thread exactly as before.
+Note: not all collection-level APIs are Overseer-driven, and that's expected to become even less true over time. This section covers only the subset of `AdminAPIBase`-derived APIs that are processed asynchronously by the Overseer via a ZK-based command queue.
+
+For these APIs (i.e. `/api/collections/...`), the underlying `cloud/api/collections/*Cmd.java` executor (e.g. `SplitShardCmd`, `CreateShardCmd`) is *not* moved into v2 - it stays registered in `CollApiCmds.java` and continues to execute on the Overseer thread exactly as before.
 "Logic in v2" here means the v2 class is responsible for:
 
 1. Validating parameters (including any cross-parameter conflict checks previously done by the v1 handler, so the check applies uniformly to v1 and native v2 requests)
