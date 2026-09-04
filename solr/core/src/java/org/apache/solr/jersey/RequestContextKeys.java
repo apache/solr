@@ -66,7 +66,7 @@ public interface RequestContextKeys {
    * A flag set by {@link NotFoundExceptionMapper} indicating that a 404 error response was
    * suppressed.
    *
-   * <p>Used primarily to allow Solr to lookup certian APIs in multiple JAX-RS applications.
+   * <p>Used primarily to allow Solr to lookup certain APIs in multiple JAX-RS applications.
    *
    * @see NotFoundExceptionMapper
    */

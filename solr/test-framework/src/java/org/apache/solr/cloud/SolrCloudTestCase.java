@@ -56,7 +56,6 @@ import org.apache.solr.common.cloud.LiveNodesPredicate;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -95,8 +94,6 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static volatile MiniSolrCloudCluster cluster;
 
   protected static SolrZkClient zkClient() {
-    ZkStateReader reader = cluster.getZkStateReader();
-    if (reader == null) cluster.getSolrClient().connect();
     return cluster.getZkStateReader().getZkClient();
   }
 

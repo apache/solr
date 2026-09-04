@@ -1,0 +1,8 @@
+title: Update io.ktor:ktor-bom to v3.5.1
+type: dependency_update
+authors:
+- name: solrbot
+- name: Jalaz Kumar
+links:
+- name: PR#4588
+  url: https://github.com/apache/solr/pull/4588

@@ -63,8 +63,8 @@ public class UpdateRequest extends AbstractUpdateRequest {
     super(METHOD.POST, "/update");
   }
 
-  public UpdateRequest(String url) {
-    super(METHOD.POST, url);
+  public UpdateRequest(String path) {
+    super(METHOD.POST, path);
   }
 
   /** clear the pending documents and delete commands */
@@ -250,11 +250,10 @@ public class UpdateRequest extends AbstractUpdateRequest {
         String leaderUrl = urls.get(0);
         LBSolrClient.Req request = routes.get(leaderUrl);
         if (request == null) {
-          UpdateRequest updateRequest = new UpdateRequest();
+          UpdateRequest updateRequest = new UpdateRequest(getPath());
           updateRequest.setMethod(getMethod());
           updateRequest.setCommitWithin(getCommitWithin());
           updateRequest.setParams(params);
-          updateRequest.setPath(getPath());
           updateRequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
           updateRequest.setResponseParser(getResponseParser());
           updateRequest.addHeaders(getHeaders());

@@ -66,7 +66,7 @@ public class FastWriter extends Writer {
   }
 
   @Override
-  public void write(char arr[], int off, int len) throws IOException {
+  public void write(char[] arr, int off, int len) throws IOException {
     for (; ; ) {
       int space = buf.length - pos;
 

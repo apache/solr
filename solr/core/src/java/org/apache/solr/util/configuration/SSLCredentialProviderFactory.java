@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ public class SSLCredentialProviderFactory {
   private String providerChain;
 
   public SSLCredentialProviderFactory() {
-    this.providerChain = System.getProperty(PROVIDER_CHAIN_KEY, DEFAULT_PROVIDER_CHAIN);
+    this.providerChain = EnvUtils.getProperty(PROVIDER_CHAIN_KEY, DEFAULT_PROVIDER_CHAIN);
   }
 
   public SSLCredentialProviderFactory(String providerChain) {

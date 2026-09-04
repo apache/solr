@@ -318,9 +318,8 @@ public class HttpSolrCall {
       }
     }
 
-    String msg = "no handler, collection, or core for " + path;
-    sendError(404, msg);
-    log.info(msg); // not "error" since Solr isn't necessarily at fault
+    sendError(404, "no handler, collection, or core for " + path);
+    log.info("path={} status=404", path); // not "error" since Solr isn't necessarily at fault
     action = RETURN;
   }
 

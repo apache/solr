@@ -40,9 +40,11 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Ignore("Flaky from Jetty 12.1.10 upgrade https://issues.apache.org/jira/browse/SOLR-18297")
 public class TestGracefulJettyShutdown extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -85,8 +87,7 @@ public class TestGracefulJettyShutdown extends SolrTestCaseJ4 {
       final List<Future<QueryResponse>> results = new ArrayList<>(13);
 
       try (SolrClient jettyClient = nodeToStop.newClient()) {
-        final QueryRequest req = new QueryRequest(params("q", "foo_s:aaa"));
-        req.setPath(handler);
+        final QueryRequest req = new QueryRequest(handler, params("q", "foo_s:aaa"));
 
         // check inflight requests using both clients...
         for (SolrClient client : Arrays.asList(cloudClient, jettyClient)) {

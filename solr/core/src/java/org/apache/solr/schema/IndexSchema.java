@@ -510,19 +510,6 @@ public class IndexSchema {
     try {
       rootNode = is.get();
       name = rootNode.attributes().get("name");
-      StringBuilder sb = new StringBuilder();
-      // Another case where the initialization from the test harness is different than the "real
-      // world"
-      if (name == null) {
-        sb.append("schema has no name!");
-        log.warn("{}", sb);
-      } else {
-        sb.append("Schema ");
-        sb.append(NAME);
-        sb.append("=");
-        sb.append(name);
-        log.info("{}", sb);
-      }
 
       version = Float.parseFloat(rootNode.attributes().getOrDefault("version", "1.0f"));
 

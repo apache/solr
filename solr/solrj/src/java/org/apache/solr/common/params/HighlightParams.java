@@ -21,10 +21,10 @@ package org.apache.solr.common.params;
  */
 public interface HighlightParams {
   // primary
-  public static final String HIGHLIGHT = "hl";
-  public static final String METHOD = HIGHLIGHT + ".method"; // original|fastVector|postings|unified
-  public static final String FIELDS = HIGHLIGHT + ".fl";
-  public static final String SNIPPETS = HIGHLIGHT + ".snippets";
+  String HIGHLIGHT = "hl";
+  String METHOD = HIGHLIGHT + ".method"; // original|fastVector|postings|unified
+  String FIELDS = HIGHLIGHT + ".fl";
+  String SNIPPETS = HIGHLIGHT + ".snippets";
 
   //    KEY:
   // OH = (original) Highlighter   (AKA the standard Highlighter)
@@ -32,71 +32,66 @@ public interface HighlightParams {
   // UH = UnifiedHighlighter (evolved from PostingsHighlighter)
 
   // query interpretation
-  public static final String Q = HIGHLIGHT + ".q"; // all
-  public static final String QPARSER = HIGHLIGHT + ".qparser"; // all
-  public static final String FIELD_MATCH = HIGHLIGHT + ".requireFieldMatch"; // OH, FVH, UH
-  public static final String QUERY_FIELD_PATTERN = HIGHLIGHT + ".queryFieldPattern"; // UH
-  public static final String USE_PHRASE_HIGHLIGHTER =
-      HIGHLIGHT + ".usePhraseHighlighter"; // OH, FVH, UH
-  public static final String HIGHLIGHT_MULTI_TERM = HIGHLIGHT + ".highlightMultiTerm"; // all
+  String Q = HIGHLIGHT + ".q"; // all
+  String QPARSER = HIGHLIGHT + ".qparser"; // all
+  String FIELD_MATCH = HIGHLIGHT + ".requireFieldMatch"; // OH, FVH, UH
+  String QUERY_FIELD_PATTERN = HIGHLIGHT + ".queryFieldPattern"; // UH
+  String USE_PHRASE_HIGHLIGHTER = HIGHLIGHT + ".usePhraseHighlighter"; // OH, FVH, UH
+  String HIGHLIGHT_MULTI_TERM = HIGHLIGHT + ".highlightMultiTerm"; // all
 
   // if no snippets...
-  public static final String DEFAULT_SUMMARY = HIGHLIGHT + ".defaultSummary"; // UH
-  public static final String ALTERNATE_FIELD = HIGHLIGHT + ".alternateField"; // OH, FVH
-  public static final String ALTERNATE_FIELD_LENGTH =
-      HIGHLIGHT + ".maxAlternateFieldLength"; // OH, FVH
-  public static final String HIGHLIGHT_ALTERNATE = HIGHLIGHT + ".highlightAlternate"; // OH, FVH
+  String DEFAULT_SUMMARY = HIGHLIGHT + ".defaultSummary"; // UH
+  String ALTERNATE_FIELD = HIGHLIGHT + ".alternateField"; // OH, FVH
+  String ALTERNATE_FIELD_LENGTH = HIGHLIGHT + ".maxAlternateFieldLength"; // OH, FVH
+  String HIGHLIGHT_ALTERNATE = HIGHLIGHT + ".highlightAlternate"; // OH, FVH
 
   // sizing
-  public static final String FRAGSIZE = HIGHLIGHT + ".fragsize"; // OH, FVH, UH
-  public static final String FRAGSIZEISMINIMUM = HIGHLIGHT + ".fragsizeIsMinimum"; // UH
-  public static final String FRAGALIGNRATIO = HIGHLIGHT + ".fragAlignRatio"; // UH
-  public static final String FRAGMENTER = HIGHLIGHT + ".fragmenter"; // OH
-  public static final String INCREMENT = HIGHLIGHT + ".increment"; // OH
-  public static final String REGEX = "regex"; // OH
-  public static final String SLOP = HIGHLIGHT + "." + REGEX + ".slop"; // OH
-  public static final String PATTERN = HIGHLIGHT + "." + REGEX + ".pattern"; // OH
-  public static final String MAX_RE_CHARS = HIGHLIGHT + "." + REGEX + ".maxAnalyzedChars"; // OH
-  public static final String BOUNDARY_SCANNER = HIGHLIGHT + ".boundaryScanner"; // FVH
-  public static final String BS_MAX_SCAN = HIGHLIGHT + ".bs.maxScan"; // FVH
-  public static final String BS_CHARS = HIGHLIGHT + ".bs.chars"; // FVH
-  public static final String BS_TYPE = HIGHLIGHT + ".bs.type"; // FVH, UH
-  public static final String BS_LANGUAGE = HIGHLIGHT + ".bs.language"; // FVH, UH
-  public static final String BS_COUNTRY = HIGHLIGHT + ".bs.country"; // FVH, UH
-  public static final String BS_VARIANT = HIGHLIGHT + ".bs.variant"; // FVH, UH
-  public static final String BS_SEP = HIGHLIGHT + ".bs.separator"; // UH
+  String FRAGSIZE = HIGHLIGHT + ".fragsize"; // OH, FVH, UH
+  String FRAGSIZEISMINIMUM = HIGHLIGHT + ".fragsizeIsMinimum"; // UH
+  String FRAGALIGNRATIO = HIGHLIGHT + ".fragAlignRatio"; // UH
+  String FRAGMENTER = HIGHLIGHT + ".fragmenter"; // OH
+  String INCREMENT = HIGHLIGHT + ".increment"; // OH
+  String REGEX = "regex"; // OH
+  String SLOP = HIGHLIGHT + "." + REGEX + ".slop"; // OH
+  String PATTERN = HIGHLIGHT + "." + REGEX + ".pattern"; // OH
+  String MAX_RE_CHARS = HIGHLIGHT + "." + REGEX + ".maxAnalyzedChars"; // OH
+  String BOUNDARY_SCANNER = HIGHLIGHT + ".boundaryScanner"; // FVH
+  String BS_MAX_SCAN = HIGHLIGHT + ".bs.maxScan"; // FVH
+  String BS_CHARS = HIGHLIGHT + ".bs.chars"; // FVH
+  String BS_TYPE = HIGHLIGHT + ".bs.type"; // FVH, UH
+  String BS_LANGUAGE = HIGHLIGHT + ".bs.language"; // FVH, UH
+  String BS_COUNTRY = HIGHLIGHT + ".bs.country"; // FVH, UH
+  String BS_VARIANT = HIGHLIGHT + ".bs.variant"; // FVH, UH
+  String BS_SEP = HIGHLIGHT + ".bs.separator"; // UH
 
   // formatting
-  public static final String FORMATTER = HIGHLIGHT + ".formatter"; // OH
-  public static final String ENCODER = HIGHLIGHT + ".encoder"; // all
-  public static final String MERGE_CONTIGUOUS_FRAGMENTS = HIGHLIGHT + ".mergeContiguous"; // OH
-  public static final String SIMPLE = "simple"; // OH
-  public static final String SIMPLE_PRE = HIGHLIGHT + "." + SIMPLE + ".pre"; // OH
-  public static final String SIMPLE_POST = HIGHLIGHT + "." + SIMPLE + ".post"; // OH
-  public static final String FRAGMENTS_BUILDER = HIGHLIGHT + ".fragmentsBuilder"; // FVH
-  public static final String TAG_PRE = HIGHLIGHT + ".tag.pre"; // FVH, UH
-  public static final String TAG_POST = HIGHLIGHT + ".tag.post"; // FVH, UH
-  public static final String TAG_ELLIPSIS = HIGHLIGHT + ".tag.ellipsis"; // FVH, UH
-  public static final String MULTI_VALUED_SEPARATOR =
-      HIGHLIGHT + ".multiValuedSeparatorChar"; // FVH
+  String FORMATTER = HIGHLIGHT + ".formatter"; // OH
+  String ENCODER = HIGHLIGHT + ".encoder"; // all
+  String MERGE_CONTIGUOUS_FRAGMENTS = HIGHLIGHT + ".mergeContiguous"; // OH
+  String SIMPLE = "simple"; // OH
+  String SIMPLE_PRE = HIGHLIGHT + "." + SIMPLE + ".pre"; // OH
+  String SIMPLE_POST = HIGHLIGHT + "." + SIMPLE + ".post"; // OH
+  String FRAGMENTS_BUILDER = HIGHLIGHT + ".fragmentsBuilder"; // FVH
+  String TAG_PRE = HIGHLIGHT + ".tag.pre"; // FVH, UH
+  String TAG_POST = HIGHLIGHT + ".tag.post"; // FVH, UH
+  String TAG_ELLIPSIS = HIGHLIGHT + ".tag.ellipsis"; // FVH, UH
+  String MULTI_VALUED_SEPARATOR = HIGHLIGHT + ".multiValuedSeparatorChar"; // FVH
 
   // ordering
-  public static final String PRESERVE_MULTI = HIGHLIGHT + ".preserveMulti"; // OH
-  public static final String FRAG_LIST_BUILDER = HIGHLIGHT + ".fragListBuilder"; // FVH
-  public static final String SCORE = "score"; // UH
-  public static final String SCORE_K1 = HIGHLIGHT + "." + SCORE + ".k1"; // UH
-  public static final String SCORE_B = HIGHLIGHT + "." + SCORE + ".b"; // UH
-  public static final String SCORE_PIVOT = HIGHLIGHT + "." + SCORE + ".pivot"; // UH
+  String PRESERVE_MULTI = HIGHLIGHT + ".preserveMulti"; // OH
+  String FRAG_LIST_BUILDER = HIGHLIGHT + ".fragListBuilder"; // FVH
+  String SCORE = "score"; // UH
+  String SCORE_K1 = HIGHLIGHT + "." + SCORE + ".k1"; // UH
+  String SCORE_B = HIGHLIGHT + "." + SCORE + ".b"; // UH
+  String SCORE_PIVOT = HIGHLIGHT + "." + SCORE + ".pivot"; // UH
 
   // misc
-  public static final String MAX_CHARS = HIGHLIGHT + ".maxAnalyzedChars"; // all
-  public static final String PAYLOADS = HIGHLIGHT + ".payloads"; // OH
-  public static final String MAX_MULTIVALUED_TO_EXAMINE =
-      HIGHLIGHT + ".maxMultiValuedToExamine"; // OH
-  public static final String MAX_MULTIVALUED_TO_MATCH = HIGHLIGHT + ".maxMultiValuedToMatch"; // OH
-  public static final String PHRASE_LIMIT = HIGHLIGHT + ".phraseLimit"; // FVH
-  public static final String OFFSET_SOURCE = HIGHLIGHT + ".offsetSource"; // UH
-  public static final String CACHE_FIELD_VAL_CHARS_THRESHOLD =
-      HIGHLIGHT + ".cacheFieldValCharsThreshold"; // UH
-  public static final String WEIGHT_MATCHES = HIGHLIGHT + ".weightMatches"; // UH
+  String MAX_CHARS = HIGHLIGHT + ".maxAnalyzedChars"; // all
+  String PAYLOADS = HIGHLIGHT + ".payloads"; // OH
+  String MAX_MULTIVALUED_TO_EXAMINE = HIGHLIGHT + ".maxMultiValuedToExamine"; // OH
+  String MAX_MULTIVALUED_TO_MATCH = HIGHLIGHT + ".maxMultiValuedToMatch"; // OH
+  String PHRASE_LIMIT = HIGHLIGHT + ".phraseLimit"; // FVH
+  String OFFSET_SOURCE = HIGHLIGHT + ".offsetSource"; // UH
+  String CACHE_FIELD_VAL_CHARS_THRESHOLD = HIGHLIGHT + ".cacheFieldValCharsThreshold"; // UH
+  String WEIGHT_MATCHES = HIGHLIGHT + ".weightMatches"; // UH
 }

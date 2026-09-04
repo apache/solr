@@ -516,7 +516,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
   }
 
   @Test
-  @Repeat(iterations = 3)
+  @Repeat(iterations = 1)
   public void testPng() {
     // We test via round-trip randomized data:
 

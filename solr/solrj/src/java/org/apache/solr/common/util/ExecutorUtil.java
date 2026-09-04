@@ -119,24 +119,6 @@ public class ExecutorUtil {
     awaitTermination(pool);
   }
 
-  /**
-   * Shutdown the {@link ExecutorService} and wait forever for the threads to complete. More detail
-   * on the waiting can be found in {@link #awaitTerminationForever(ExecutorService)}.
-   *
-   * <p>This should likely not be used in {@code close()} methods, as we want to time bound when
-   * shutting down. However, sometimes {@link ExecutorService}s are used to submit a list of tasks
-   * and awaiting termination is akin to waiting on the list of {@link Future}s to complete. In that
-   * case, this method should be used as there is no inherent time bound to waiting on those tasks
-   * to complete.
-   *
-   * @param pool The ExecutorService to shut down and wait on
-   */
-  public static void shutdownAndAwaitTerminationForever(ExecutorService pool) {
-    if (pool == null) return;
-    pool.shutdown(); // Disable new tasks from being submitted
-    awaitTerminationForever(pool);
-  }
-
   public static void shutdownNowAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
     pool.shutdownNow(); // Disable new tasks from being submitted; interrupt existing tasks

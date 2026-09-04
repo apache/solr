@@ -38,6 +38,7 @@ import org.apache.solr.index.TieredMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
@@ -69,6 +70,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testRequireUniqueKey() {
     // Add a valid document
     assertU(adoc("id", "1"));
@@ -77,9 +79,9 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertFailedU(adoc("id", "2", "id", "ignore_exception", "text", "foo"));
 
     // No id should fail
-    ignoreException("id");
-    assertFailedU(adoc("text", "foo"));
-    resetExceptionIgnores();
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("id")) {
+      assertFailedU(adoc("text", "foo"));
+    }
   }
 
   @Test

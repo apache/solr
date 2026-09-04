@@ -19,9 +19,7 @@ import groovy.xml.XmlSlurper
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 
 buildscript {
-  repositories {
-    mavenCentral()
-  }
+  apply from: rootProject.file('build-tools/build-infra/declare-repositories.gradle'), to: delegate
 
   dependencies {
     classpath libs.eclipse.jgit.jgit
@@ -248,6 +246,9 @@ allprojects {
       }
     })
     inputFileTrees.add(defaultScanFileTree)
+
+    // RAT is noisy, even when there's no problem.  So log at DEBUG
+    logging.captureStandardOutput(LogLevel.DEBUG)
   }
 }
 

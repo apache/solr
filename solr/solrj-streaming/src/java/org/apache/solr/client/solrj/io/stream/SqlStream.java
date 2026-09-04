@@ -35,9 +35,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.URLUtil;
 
 /**
  * @since 7.0.0
@@ -195,8 +195,9 @@ public class SqlStream extends TupleStream implements Expressible {
       Collections.shuffle(shardUrls, new Random());
       String url = shardUrls.get(0);
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
-      mParams.add(CommonParams.QT, "/sql");
-      this.tupleStream = new SolrStream(url, mParams);
+      this.tupleStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(url), URLUtil.extractCoreFromCoreUrl(url), "/sql", mParams);
       if (streamContext != null) {
         tupleStream.setStreamContext(streamContext);
         if (streamContext.isLocal()) {

@@ -1,0 +1,8 @@
+title: SOLR-18408 CrossDC Consumer fix incorrect nextOffset commits
+  
+type: fixed
+authors:
+  - name: Andrzej Bialecki
+links:
+  - name: SOLR-18408
+    url: https://issues.apache.org/jira/browse/SOLR-18408

@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,7 +155,7 @@ public class CollectionMutator {
     }
     // other aux properties are also modifiable
     for (String prop : message.keySet()) {
-      if (prop.startsWith(CollectionAdminRequest.PROPERTY_PREFIX)) {
+      if (prop.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
         hasAnyOps = true;
         if (message.get(prop) == null) {
           props.remove(prop);

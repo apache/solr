@@ -20,20 +20,22 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Enumeration;
-import org.apache.solr.api.AnnotatedApi;
+import java.util.List;
 import org.apache.solr.api.Api;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.NodePropertiesResponse;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.NodeConfig;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.NodePropertiesAPI;
+import org.apache.solr.handler.admin.api.GetNodeProperties;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 
 /**
+ * v1 implementation of {@code GET /admin/info/properties}. Business logic lives in {@link
+ * GetNodeProperties}.
+ *
  * @since solr 1.2
  */
 public class PropertiesRequestHandler extends RequestHandlerBase {
@@ -51,21 +53,12 @@ public class PropertiesRequestHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    NamedList<String> props = new SimpleOrderedMap<>();
-    String name = req.getParams().get(NAME);
-    NodeConfig nodeConfig = getCoreContainer(req).getNodeConfig();
-    if (name != null) {
-      String property = nodeConfig.getRedactedSysPropValue(name);
-      props.add(name, property);
-    } else {
-      Enumeration<?> enumeration = System.getProperties().propertyNames();
-      while (enumeration.hasMoreElements()) {
-        name = (String) enumeration.nextElement();
-        props.add(name, nodeConfig.getRedactedSysPropValue(name));
-      }
-    }
-    rsp.add("system.properties", props);
     rsp.setHttpCaching(false);
+    final GetNodeProperties api = new GetNodeProperties(getCoreContainer(req));
+    final NodePropertiesResponse response = new NodePropertiesResponse();
+    // v1 ?name= returns the key even if unset; the v2 path form 404s for unknown names.
+    response.systemProperties = api.collectProperties(req.getParams().get(NAME));
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -82,7 +75,12 @@ public class PropertiesRequestHandler extends RequestHandlerBase {
 
   @Override
   public Collection<Api> getApis() {
-    return AnnotatedApi.getApis(new NodePropertiesAPI(this));
+    return List.of();
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(GetNodeProperties.class);
   }
 
   @Override

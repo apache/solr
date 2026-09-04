@@ -45,6 +45,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -198,32 +199,32 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   }
 
   /** Sanity check that malformed requests produce errors */
+  @SuppressWarnings("try")
   public void testMalformedGivesError() {
-
-    ignoreException(".*'join' domain change.*");
-
-    for (String join :
-        Arrays.asList(
-            "bogus",
-            "{ }",
-            "{ from:null, to:foo_s }",
-            "{ from:foo_s }",
-            "{ from:foo_s, to:foo_s, bogus:'what what?' }",
-            "{ to:foo_s, bogus:'what what?' }")) {
-      SolrException e =
-          expectThrows(
-              SolrException.class,
-              () -> {
-                final SolrParams req =
-                    params(
-                        "q",
-                        "*:*",
-                        "json.facet",
-                        "{ x : { type:terms, field:x_s, domain: { join:" + join + " } } }");
-                getRandClient(random()).request(new QueryRequest(req));
-              });
-      assertEquals(join + " -> " + e, SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-      assertTrue(join + " -> " + e, e.getMessage().contains("'join' domain change"));
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".*'join' domain change.*")) {
+      for (String join :
+          Arrays.asList(
+              "bogus",
+              "{ }",
+              "{ from:null, to:foo_s }",
+              "{ from:foo_s }",
+              "{ from:foo_s, to:foo_s, bogus:'what what?' }",
+              "{ to:foo_s, bogus:'what what?' }")) {
+        SolrException e =
+            expectThrows(
+                SolrException.class,
+                () -> {
+                  final SolrParams req =
+                      params(
+                          "q",
+                          "*:*",
+                          "json.facet",
+                          "{ x : { type:terms, field:x_s, domain: { join:" + join + " } } }");
+                  getRandClient(random()).request(new QueryRequest(req));
+                });
+        assertEquals(join + " -> " + e, SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue(join + " -> " + e, e.getMessage().contains("'join' domain change"));
+      }
     }
   }
 

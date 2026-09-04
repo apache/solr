@@ -58,7 +58,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   @Test
   public void testCacheVetoException() throws Exception {
-    String url = getSelectUrl("q", "xyz_ignore_exception:solr", "qt", "standard");
+    String url = getSelectUrl("q", "xyz_ignore_exception:solr");
     // We force an exception from Solr. This should emit "no-cache" HTTP headers
     ContentResponse response = getHttpClient().GET(url);
     assertNotEquals(200, response.getStatus());

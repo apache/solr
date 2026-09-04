@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.SpellCheckResponse.Collation;
 import org.apache.solr.client.solrj.response.SpellCheckResponse.Correction;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.ExternalPaths;
@@ -72,10 +71,9 @@ public class TestSpellCheckResponse extends SolrTestCase {
     client.commit(true, true);
 
     SolrQuery query = new SolrQuery("*:*");
-    query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
     query.set(SpellingParams.SPELLCHECK_Q, "samsang");
-    QueryRequest request = new QueryRequest(query);
+    QueryRequest request = new QueryRequest("/spell", query);
     SpellCheckResponse response = request.process(client).getSpellCheckResponse();
     assertEquals("samsung", response.getFirstSuggestion("samsang"));
   }
@@ -91,11 +89,10 @@ public class TestSpellCheckResponse extends SolrTestCase {
     client.commit(true, true);
 
     SolrQuery query = new SolrQuery("*:*");
-    query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
     query.set(SpellingParams.SPELLCHECK_Q, "samsang");
     query.set(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, true);
-    QueryRequest request = new QueryRequest(query);
+    QueryRequest request = new QueryRequest("/spell", query);
     SpellCheckResponse response = request.process(client).getSpellCheckResponse();
     assertEquals("samsung", response.getFirstSuggestion("samsang"));
 
@@ -148,11 +145,10 @@ public class TestSpellCheckResponse extends SolrTestCase {
 
     // Test Backwards Compatibility
     SolrQuery query = new SolrQuery("name:(+fauth +home +loane)");
-    query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
     query.set(SpellingParams.SPELLCHECK_COUNT, 10);
     query.set(SpellingParams.SPELLCHECK_COLLATE, true);
-    QueryRequest request = new QueryRequest(query);
+    QueryRequest request = new QueryRequest("/spell", query);
     SpellCheckResponse response = request.process(client).getSpellCheckResponse();
     response = request.process(client).getSpellCheckResponse();
     assertEquals("name:(+faith +hope +loaves)", response.getCollatedResult());
@@ -161,7 +157,7 @@ public class TestSpellCheckResponse extends SolrTestCase {
     query.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, true);
     query.set(SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, 10);
     query.set(SpellingParams.SPELLCHECK_MAX_COLLATIONS, 2);
-    request = new QueryRequest(query);
+    request = new QueryRequest("/spell", query);
     response = request.process(client).getSpellCheckResponse();
     assertTrue(
         "name:(+faith +hope +love)".equals(response.getCollatedResult())

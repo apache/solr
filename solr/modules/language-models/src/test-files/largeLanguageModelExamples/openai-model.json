@@ -1,0 +1,13 @@
+{
+  "class": "dev.langchain4j.model.openai.OpenAiChatModel",
+  "name": "openai-1",
+  "params": {
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "apiKey-openAI",
+    "modelName": "gpt-5.4-nano",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}

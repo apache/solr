@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -165,11 +164,7 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
       }
       String enabledVal = collectionProperties.get("crossdc.enabled");
       if (enabledVal != null) {
-        if (Boolean.parseBoolean(enabledVal.toString())) {
-          this.enabled = true;
-        } else {
-          this.enabled = false;
-        }
+        this.enabled = Boolean.parseBoolean(enabledVal);
       }
     } catch (Exception e) {
       log.error("Exception looking for CrossDC configuration in Zookeeper", e);
@@ -221,14 +216,6 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
 
     producerMetrics = new ProducerMetrics(core.getSolrMetricsContext().getChildContext(this), core);
     mirroringHandler = new KafkaRequestMirroringHandler(sink);
-  }
-
-  private static Integer getIntegerPropValue(String name, Properties props) {
-    String value = props.getProperty(name);
-    if (value == null) {
-      return null;
-    }
-    return Integer.parseInt(value);
   }
 
   @Override

@@ -17,11 +17,7 @@
 
 var solrAdminServices = angular.module('solrAdminServices', ['ngResource']);
 
-solrAdminServices.factory('System',
-  ['$resource', function($resource) {
-    return $resource('admin/info/system', {"wt":"json", "nodes": "@nodes", "_":Date.now()});
-  }])
-.factory('Metrics',
+solrAdminServices.factory('Metrics',
   ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
     return $resource('admin/metrics', {"wt":"prometheus", "node": "@node", "_":Date.now()}, {
       get: {
@@ -44,53 +40,153 @@ solrAdminServices.factory('System',
       }
     });
   }])
+.factory('ApiErrorHandler',
+    ['$rootScope', '$location', '$timeout', function($rootScope, $location, $timeout) {
+      // v2 API calls go through the generated OpenAPI client, which uses superagent directly and
+      // so never passes through Angular's $http -- meaning httpInterceptor in app.js (the global
+      // error banner, 401 redirect, 403 handling) never fires for them. This mirrors
+      // httpInterceptor's responseError handling for v2's superagent responses, so a failure looks
+      // the same to the user regardless of which API generation served it. Call from any v2
+      // callback's error branch: `if (error) { ApiErrorHandler.handle(response); return; }`
+      function handle(response) {
+        if (!response) {
+          return;
+        }
+        // superagent callbacks fire outside Angular's digest cycle, so changes here are invisible
+        // until the next digest -- $timeout both defers and triggers one.
+        $timeout(function() {
+          if (response.status === 401) {
+            var headers = response.headers || {};
+            sessionStorage.setItem("auth.wwwAuthHeader", headers['www-authenticate']);
+            sessionStorage.setItem("auth.authDataHeader", headers['x-solr-authdata']);
+            sessionStorage.setItem("auth.statusText", response.statusText);
+            sessionStorage.setItem("http401", "true");
+            sessionStorage.removeItem("auth.scheme");
+            sessionStorage.removeItem("auth.realm");
+            sessionStorage.removeItem("auth.username");
+            sessionStorage.removeItem("auth.header");
+            sessionStorage.removeItem("auth.state");
+            if ($location.path().includes('/login')) {
+              if (!sessionStorage.getItem("auth.location")) {
+                sessionStorage.setItem("auth.location", "/");
+              }
+            } else {
+              sessionStorage.setItem("auth.location", $location.path());
+              $location.path('/login');
+            }
+          } else if (response.status === 403) {
+            $rootScope.showAuthzFailures = true;
+          } else {
+            var url = (response.req && response.req.url) || (response.status + ' ' + $location.url());
+            var body = response.body || {};
+            var msg = (body.error && body.error.msg) || response.statusText || "Unknown error";
+            // MainController normally sets this up first, but don't assume that ordering here.
+            $rootScope.exceptions = $rootScope.exceptions || {};
+            $rootScope.exceptions[url] = {msg: msg};
+          }
+        });
+      }
+      return {handle: handle};
+    }])
 .factory('CollectionsV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.CollectionsApi();
     })
+.factory('CoresV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.CoresApi();
+    })
+.factory('LoggingV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.LoggingApi();
+    })
+.factory('SystemV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SystemApi();
+    })
+.factory('AliasesV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.AliasesApi();
+    })
+.factory('ShardsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ShardsApi();
+    })
+.factory('ReplicasV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ReplicasApi();
+    })
+.factory('ConfigSetsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ConfigsetsApi();
+    })
+.factory('ClusterV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ClusterApi();
+    })
+.factory('SegmentsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SegmentsApi();
+    })
+.factory('SchemaDesignerV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SchemaDesignerApi();
+    })
 .factory('Collections',
-  ['$resource', function($resource) {
-    return $resource('admin/collections',
-    {'wt':'json', '_':Date.now()}, {
-    "list": {params:{action: "LIST"}},
-    "listaliases": {params:{action: "LISTALIASES"}},
-    "status": {params:{action: "CLUSTERSTATUS"}},
-    "add": {params:{action: "CREATE"}},
-    "delete": {params:{action: "DELETE"}},
-    "rename": {params:{action: "RENAME"}},
-    "createAlias": {params:{action: "CREATEALIAS"}},
-    "deleteAlias": {params:{action: "DELETEALIAS"}},
-    "deleteReplica": {params:{action: "DELETEREPLICA"}},
-    "addReplica": {params:{action: "ADDREPLICA"}},
-    "deleteShard": {params:{action: "DELETESHARD"}},
-    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}}
+  ['$resource', function ($resource) {
+    // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
+    // that v1's CLUSTERSTATUS action used, so the response shape is byte-identical -- no
+    // generated solrApi client class exists for it (old-style @EndPoint API, predates the
+    // OpenAPI-based v2 framework), so this stays a plain $resource, like Threads/ParamSet.
+    return $resource('/api/cluster', {'wt':'json', '_':Date.now()}, {
+      "status": {}
     });
   }])
-.factory('ConfigSets',
- ['$resource', function ($resource) {
-    return $resource('admin/configs', {'wt': 'json', '_': Date.now()}, {"configs": {params: {action: "LIST"}}
-    });
+.factory('ConfigSetFiles',
+ ['$http', function ($http) {
+    // Fetches a single file from a configset via V2 /api/configsets/{name}/files/{path}.
+    // Each path segment is encoded separately so subdirectory paths like "lang/stopwords.txt"
+    // preserve their slashes (encoding them as %2F gets rejected by Jetty).
+    // transformResponse is overridden to skip JSON parsing since files are raw text.
+    return {
+      get: function (params, successFn, errorFn) {
+        var url = "/api/configsets/" + encodeURIComponent(params.configSet) +
+                  "/files/" + params.filePath.split("/").map(encodeURIComponent).join("/");
+        $http.get(url, {transformResponse: [function (data) { return data; }]}).then(
+          function (response) { if (successFn) successFn({content: response.data}); },
+          function (response) { if (errorFn) errorFn(response); }
+        );
+      }
+    };
  }])
-.factory('Cores',
-  ['$resource', function($resource) {
-    return $resource('admin/cores',
-    {'wt':'json', '_':Date.now()}, {
-    "query": {},
-    "list": {params:{indexInfo: false}},
-    "add": {params:{action: "CREATE"}},
-    "unload": {params:{action: "UNLOAD", core: "@core"}},
-    "rename": {params:{action: "RENAME"}},
-    "swap": {params:{action: "SWAP"}},
-    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}, headers:{doNotIntercept: "true"}}
-    });
-  }])
 .factory('Logging',
   ['$resource', function($resource) {
+    // This v1 factory only covers "setLevel", which needs the "nodes=all" broadcast-to-every-node
+    // behavior that the v2 NodeLoggingApis endpoint doesn't support yet (see SOLR-16738). Retire
+    // this factory once setLevel moves to LoggingV2.
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
-      "events": {params: {since:'0'}},
-      "levels": {},
       "setLevel": {params: {nodes:'all'}}
       });
   }])
@@ -115,11 +211,11 @@ solrAdminServices.factory('System',
   }])
 .factory('Threads',
   ['$resource', function($resource) {
-    return $resource('admin/info/threads', {'wt':'json', '_':Date.now()});
-  }])
-.factory('Properties',
-  ['$resource', function($resource) {
-    return $resource('admin/info/properties', {'wt':'json', '_':Date.now()});
+    // v2 NodeThreadsAPI (/api/node/threads) still just delegates straight through to the same v1
+    // ThreadDumpHandler, so the response shape is byte-identical -- no generated solrApi client
+    // class exists for it (it predates the OpenAPI-based v2 API framework), so this stays a plain
+    // $resource, like Security and (partially) SchemaDesigner.
+    return $resource('/api/node/threads', {'wt':'json', '_':Date.now()});
   }])
 .factory('Replication',
   ['$resource', function($resource) {
@@ -144,7 +240,16 @@ solrAdminServices.factory('System',
   }])
 .factory('ParamSet',
   ['$resource', function($resource) {
-    return $resource(':core/config/params/:name', {core: '@core', wt:'json', _:Date.now()}, {
+    // v2 GetConfigAPI/ModifyParamSetAPI (/api/(cores|collections)/:core/config/params) still
+    // delegate straight through to the same v1 SolrConfigHandler, so the response shape is
+    // byte-identical -- no generated solrApi client class exists for it (old-style @EndPoint API,
+    // predates the OpenAPI-based v2 framework), so this stays a plain $resource, like Threads.
+    // NB: unlike v1's flexible routing, the v2 API requires knowing up front whether ":core" is a
+    // collection name (SolrCloud) or an actual core name (standalone/user-managed) --
+    // /api/collections/... 500s in standalone mode (it tries to resolve aliases, which needs ZK),
+    // and there's no such thing as a "collection" there anyway. Callers must pass "indexType" as
+    // "collections" or "cores" (see paramsets.js, driven by $scope.isCloudEnabled).
+    return $resource('/api/:indexType/:core/config/params/:name', {core: '@core', indexType: '@indexType', wt:'json', _:Date.now()}, {
       "submit": {headers: {'Content-type': 'application/json'}, method: "POST"},
       "get": {headers: {'Content-type': 'application/json'}, method: "GET"}
     });
@@ -249,12 +354,6 @@ solrAdminServices.factory('System',
        }
        return resource;
 }])
-.factory('Segments',
-   ['$resource', function($resource) {
-       return $resource(':core/admin/segments', {'wt':'json', core: '@core', _:Date.now()}, {
-           get: {}
-       });
-}])
 .factory('Schema',
    ['$resource', function($resource) {
      return $resource(':core/schema', {wt: 'json', core: '@core', _:Date.now()}, {
@@ -271,10 +370,16 @@ solrAdminServices.factory('System',
 }])
 .factory('SchemaDesigner',
    ['$resource', function($resource) {
-     return $resource('/api/schema-designer/:path', {wt: 'json', path: '@path', _:Date.now()}, {
+     // Schema Designer's analyze (sample-doc upload/paste, dynamic content-type) and query
+     // (arbitrary forwarded Solr query params) endpoints read their request bodies/params in ways
+     // the OpenAPI-generated SchemaDesignerApi client can't express: analyze() always sends a null
+     // body (the server deliberately reads the raw content stream, dispatched by Content-Type,
+     // rather than a formal parameter) and query() takes no query params at all (the server
+     // forwards arbitrary SolrParams straight through). Both stay on this plain $resource, like
+     // Threads/Collections/ParamSet. Every other Schema Designer endpoint uses SchemaDesignerV2.
+     return $resource('/api/schema-designer/:configSet/:path', {wt: 'json', path: '@path', configSet: '@configSet', filePath: '@filePath', _:Date.now()}, {
        get: {method: "GET"},
        post: {method: "POST", timeout: 90000},
-       put: {method: "PUT"},
        postXml: {headers: {'Content-type': 'text/xml'}, method: "POST", timeout: 90000},
        postCsv: {headers: {'Content-type': 'application/csv'}, method: "POST", timeout: 90000},
        upload: {method: "POST", transformRequest: angular.identity, headers: {'Content-Type': undefined}, timeout: 90000}
@@ -360,6 +465,8 @@ solrAdminServices.factory('System',
         service.SetCredentials = function (username, password) {
           var authdata = base64.encode(username + ':' + password);
 
+          // The V2 solrApi client picks this up automatically via the superagent plugin
+          // registered in app.js .config().
           sessionStorage.setItem("auth.header", "Basic " + authdata);
           sessionStorage.setItem("auth.username", username);
         };

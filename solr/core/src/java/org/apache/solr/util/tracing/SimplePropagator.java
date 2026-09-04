@@ -25,6 +25,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,11 +42,11 @@ public class SimplePropagator implements TextMapPropagator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String TRACE_HOST_NAME =
-      System.getProperty("solr.traceHostName", System.getProperty("host"));
+      EnvUtils.getProperty("solr.traceHostName", EnvUtils.getProperty("host"));
   private static final TextMapPropagator INSTANCE = new SimplePropagator();
   private static final ContextKey<String> TRACE_ID_KEY = ContextKey.named("trace_id");
 
-  static final String TRACE_ID = System.getProperty("solr.traceIdHeader", "X-Trace-Id");
+  static final String TRACE_ID = EnvUtils.getProperty("solr.traceIdHeader", "X-Trace-Id");
   private static final List<String> FIELDS = List.of(TRACE_ID);
 
   private static final AtomicLong traceCounter = new AtomicLong(0);

@@ -110,6 +110,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.solrj.http.jetty.customizer|solr.httpclient.builder.factory||A class loaded to customize HttpJettySolrClient upon creation.
 
+|solr.sql.connection.params.allowed||caseSensitive, quoting, quotedCasing, unquotedCasing, conformance, fun,typeCoercion, lenientOperatorLookup, defaultNullCollation, timeZone, locale|A comma separated list of request parameters to forward to Apache Calcite as connection properties.
+
 |solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
 
 |solr.streamingexpressions.macros.enabled|StreamingExpressionMacros|false|Controls whether to expand URL parameters inside of the `expr` parameter.

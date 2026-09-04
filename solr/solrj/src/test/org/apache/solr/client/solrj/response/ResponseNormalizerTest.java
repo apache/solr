@@ -315,7 +315,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     SolrDocumentList out = (SolrDocumentList) ResponseNormalizer.normalize(in).get("response");
     SolrDocument outParent = out.get(0);
     assertTrue("child documents must be reconstructed", outParent.hasChildDocuments());
-    assertEquals(1, outParent.getChildDocumentCount());
+    assertEquals(1, outParent.getChildDocuments().size());
     assertEquals("kid1", outParent.getChildDocuments().get(0).getFieldValue("id"));
     assertNull(
         "the raw field must not remain alongside the children",

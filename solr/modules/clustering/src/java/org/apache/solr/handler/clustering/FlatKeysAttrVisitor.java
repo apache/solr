@@ -49,7 +49,7 @@ class FlatKeysAttrVisitor implements AttrVisitor {
 
   /**
    * @param attrs A map of attributes to set. Note the map has ordered keys: this is required for
-   *     complex sub-types so that instantiation of a value precedes setting its attributes.
+   *     complex subtypes so that instantiation of a value precedes setting its attributes.
    */
   FlatKeysAttrVisitor(LinkedHashMap<String, String> attrs) {
     this.attrs = attrs;
