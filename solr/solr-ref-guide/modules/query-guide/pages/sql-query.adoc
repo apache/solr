@@ -171,7 +171,7 @@ The SQL query interface supports and pushes down most common SQL operators, spec
 |>= |Greater than or equals |`fielda >= 10` |`fielda:[10 TO *]`
 |< |Less than |`fielda < 10` |`fielda:[* TO 10}`
 |\<= |Less than or equals |`fielda \<= 10` |`fielda:[* TO 10]`
-|IN |Specify multiple values (shorthand for multiple OR clasues) |`fielda IN (10,20,30)` |`(fielda:10 OR fielda:20 OR fielda:30)`
+|IN |Specify multiple values (shorthand for multiple OR clauses) |`fielda IN (10,20,30)` |`(fielda:10 OR fielda:20 OR fielda:30)`
 |LIKE |Wildcard match on string or text fields |`fielda LIKE 'day%'` |`{!complexphrase}fielda:"day*"`
 |BETWEEN |Range match |`fielda BETWEEN 2 AND 4` |`fielda: [2 TO 4]`
 |IS NULL |Match columns with null value |`fielda IS NULL` |+++(*:* -field:*)+++
@@ -408,21 +408,7 @@ Below is sample code for creating a connection and executing a query with the JD
 
 [source,java]
 ----
-Connection con = null;
-try {
-    con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1&aggregationMode=map_reduce&numWorkers=2");
-    stmt = con.createStatement();
-    rs = stmt.executeQuery("SELECT a_s, sum(a_f) as sum FROM collection1 GROUP BY a_s ORDER BY sum desc");
-
-    while(rs.next()) {
-        String a_s = rs.getString("a_s");
-        double s = rs.getDouble("sum");
-    }
-} finally {
-    rs.close();
-    stmt.close();
-    con.close();
-}
+include::example$ParallelSqlRefGuideExamplesTest.java[tag=jdbc-query-interface]
 ----
 
 The connection URL must contain the `zkHost` and the `collection` parameters.
@@ -562,11 +548,34 @@ Please refer to the https://search.maven.org/artifact/org.apache.solr/solr-solrj
 
 If you are using Maven, the `org.apache.solr.solr-solrj` artifact contains the required jars.
 
-Once the jars are available on the classpath, the Solr JDBC driver name is `org.apache.solr.client.solrj.io.sql.DriverImpl` and a connection can be made with the following connection string format:
+Once the jars are available on the classpath, the Solr JDBC driver name is `org.apache.solr.client.solrj.io.sql.DriverImpl` and a connection can be made with the following connection string formats:
 
+==== HTTP-based JDBC URL
+[source,plain]
+----
+jdbc:solr:http://SOLR_HTTP_CONNECTION_STRING?collection=COLLECTION_NAME
+----
+
+For example:
+
+[source,plain]
+----
+jdbc:solr:http://solr1.example.com:8983/solr?collection=COLLECTION_NAME
+----
+
+
+==== ZooKeeper-based JDBC URL
 [source,plain]
 ----
 jdbc:solr://SOLR_ZK_CONNECTION_STRING?collection=COLLECTION_NAME
 ----
+
+For example:
+
+[source,plain]
+----
+jdbc:solr://zoo.example.com:2181/solr?collection=COLLECTION_NAME
+----
+
 
 There are other parameters that can be optionally added to the connection string like `aggregationMode` and `numWorkers`.

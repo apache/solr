@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +27,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.curator.test.KillSession;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
 import org.apache.solr.common.cloud.DocCollection;
@@ -48,8 +49,6 @@ import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.TestableZooKeeper;
-import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +78,7 @@ public class ChaosMonkey {
   // NOTE: CONN_LOSS and EXP are currently being set to "false" intentionally here. Remove the
   // default value once we know tests pass reliably under those conditions
   private static final String CONN_LOSS =
-      System.getProperty("solr.tests.cloud.cm.connloss", "false");
+      System.getProperty("solr.tests.cloud.cm.connloss.enabled", "false");
   private static final String EXP = System.getProperty("solr.tests.cloud.cm.exp", "false");
 
   private ZkTestServer zkServer;
@@ -103,7 +102,7 @@ public class ChaosMonkey {
 
   /**
    * Our own Random, seeded from LuceneTestCase on init, so that we can produce a consistent
-   * sequence of random chaos regardless of if/how othe threads access the test randomness in other
+   * sequence of random chaos regardless of if/how the threads access the test randomness in other
    * threads
    *
    * @see LuceneTestCase#random()
@@ -148,11 +147,24 @@ public class ChaosMonkey {
 
   // TODO: expire all clients at once?
   public void expireSession(final JettySolrRunner jetty) {
+    expireSession(jetty, zkServer);
+  }
+
+  public static void expireSession(final JettySolrRunner jetty, final ZkTestServer zkServer) {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
-      monkeyLog("expire session for " + jetty.getLocalPort() + " !");
+      monkeyLog("expire session for node " + jetty.getBaseUrl() + " !");
+      SolrZkClient zkClient = cores.getZkController().getZkClient();
+      long sessionId = zkClient.getZkSessionId();
+      zkServer.expire(sessionId);
       causeConnectionLoss(jetty);
-      zkServer.expire(cores.getZkController().getZkClient().getZooKeeper().getSessionId());
+      // Loop until either the Zookeeper Client is no longer connected, or the zkSessionID changes
+      // (which means the connection was lost in the client)
+      while (zkClient.getCuratorFramework().getZookeeperClient().isConnected()) {
+        if (zkClient.getZkSessionId() != sessionId) {
+          break;
+        }
+      }
     }
   }
 
@@ -180,23 +192,13 @@ public class ChaosMonkey {
   public static void causeConnectionLoss(JettySolrRunner jetty) {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
-      monkeyLog("Will cause connection loss on " + jetty.getLocalPort());
+      monkeyLog("Will cause connection loss on node " + jetty.getBaseUrl());
       SolrZkClient zkClient = cores.getZkController().getZkClient();
-      causeConnectionLoss(zkClient.getZooKeeper());
-    }
-  }
-
-  public static void causeConnectionLoss(ZooKeeper zooKeeper) {
-    assert zooKeeper instanceof TestableZooKeeper
-        : "Can only cause connection loss for TestableZookeeper";
-    if (zooKeeper instanceof TestableZooKeeper) {
       try {
-        ((TestableZooKeeper) zooKeeper).testableConnloss();
-      } catch (IOException ignored) {
-        // best effort
+        KillSession.kill(zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
+      } catch (Exception e) {
+        log.warn("Exception causing connection loss", e);
       }
-    } else {
-      // TODO what now?
     }
   }
 
@@ -244,13 +246,6 @@ public class ChaosMonkey {
       for (CloudJettyRunner jetty : jetties) {
         jetty.jetty.start();
       }
-    }
-  }
-
-  public void stopShard(String slice) throws Exception {
-    List<CloudJettyRunner> jetties = shardToJetty.get(slice);
-    for (CloudJettyRunner jetty : jetties) {
-      stopJetty(jetty);
     }
   }
 
@@ -359,7 +354,7 @@ public class ChaosMonkey {
     }
 
     int chance = chaosRandom.nextInt(10);
-    CloudJettyRunner cjetty = null;
+    CloudJettyRunner cjetty;
     if (chance <= 5 && aggressivelyKillLeaders && canKillIndexer) {
       // if killLeader, really aggressively go after leaders
       cjetty = shardToLeaderJetty.get(slice);
@@ -380,7 +375,7 @@ public class ChaosMonkey {
         }
       }
 
-      ZkNodeProps leader = null;
+      ZkNodeProps leader;
       try {
         leader = zkStateReader.getLeaderRetry(collection, slice);
       } catch (Throwable t) {
@@ -644,7 +639,7 @@ public class ChaosMonkey {
             new SolrNamedThreadFactory("ChaosMonkey"),
             false);
     for (JettySolrRunner jetty : jettys) {
-      executor.submit(
+      executor.execute(
           () -> {
             try {
               jetty.stop();
@@ -668,7 +663,7 @@ public class ChaosMonkey {
             new SolrNamedThreadFactory("ChaosMonkey"),
             false);
     for (JettySolrRunner jetty : jettys) {
-      executor.submit(
+      executor.execute(
           () -> {
             try {
               jetty.start();
@@ -711,7 +706,7 @@ public class ChaosMonkey {
       builder.append(slice.getName()).append(": {");
       for (Replica replica : slice.getReplicas()) {
         log.info("{}", replica);
-        java.util.regex.Matcher m = portPattern.matcher(replica.getBaseUrl());
+        Matcher m = portPattern.matcher(replica.getBaseUrl());
         m.find();
         String jettyPort = m.group(1);
         builder.append(

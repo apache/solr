@@ -56,8 +56,8 @@ public class NestableJsonFacet {
           || entry.getValue() instanceof Date) {
         // Stat/agg facet value
         statsByName.put(key, entry.getValue());
-      } else if (entry.getValue() instanceof NamedList) { // Either heatmap/query/range/terms facet
-        final NamedList<?> facet = (NamedList<?>) entry.getValue();
+      } else if (entry.getValue()
+          instanceof NamedList<?> facet) { // Either heatmap/query/range/terms facet
         final boolean isBucketBased = facet.get("buckets") != null;
         final boolean isHeatmap = HeatmapJsonFacet.isHeatmapFacet(facet);
         if (isBucketBased) {

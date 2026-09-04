@@ -42,8 +42,7 @@ public class ResultEntry {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (!(obj instanceof ResultEntry)) return false;
-    ResultEntry other = (ResultEntry) obj;
+    if (!(obj instanceof ResultEntry other)) return false;
     return freq == other.freq
         && Objects.equals(suggestion, other.suggestion)
         && Objects.equals(token, other.token);

@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Adding GPU details on the Admin UI using OpenTelemetry
+type: added
+authors:
+  - name: Puneet Ahuja
+links:
+  - name: SOLR-17937
+    url: https://issues.apache.org/jira/browse/SOLR-17937

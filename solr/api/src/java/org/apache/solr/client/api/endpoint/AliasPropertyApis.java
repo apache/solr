@@ -24,6 +24,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.GetAliasPropertyResponse;
 import org.apache.solr.client.api.model.GetAllAliasPropertiesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -56,7 +57,7 @@ public interface AliasPropertyApis {
   @Operation(
       summary = "Update properties for a collection alias.",
       tags = {"alias-properties"})
-  SolrJerseyResponse updateAliasProperties(
+  AsyncJerseyResponse updateAliasProperties(
       @Parameter(description = "Alias Name") @PathParam("aliasName") String aliasName,
       @RequestBody(description = "Properties that need to be updated", required = true)
           UpdateAliasPropertiesRequestBody requestBody)

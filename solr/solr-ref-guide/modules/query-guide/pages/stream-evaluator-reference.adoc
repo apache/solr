@@ -1822,7 +1822,7 @@ The supported continuous distribution functions are:
 <<empiricalDistribution>>, <<triangularDistribution>>, <<weibullDistribution>>,
 <<uniformDistribution>>, <<constantDistribution>>
 
-The supported discreet distributions are:
+The supported discrete distributions are:
 <<poissonDistribution>>, <<binomialDistribution>>, <<enumeratedDistribution>>, <<zipFDistribution>>,
 <<geometricDistribution>>, <<uniformIntegerDistribution>>
 

@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -47,9 +46,9 @@ public final class WrappedQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
+  public Query rewrite(IndexSearcher searcher) throws IOException {
     // currently no need to continue wrapping at this point.
-    return q.rewrite(reader);
+    return q.rewrite(searcher);
   }
 
   @Override

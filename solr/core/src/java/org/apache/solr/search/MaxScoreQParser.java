@@ -54,8 +54,7 @@ public class MaxScoreQParser extends LuceneQParser {
   public Query parse() throws SyntaxError {
     Query q = super.parse();
     float boost = 1f;
-    if (q instanceof BoostQuery) {
-      BoostQuery bq = (BoostQuery) q;
+    if (q instanceof BoostQuery bq) {
       boost = bq.getBoost();
       q = bq.getQuery();
     }

@@ -20,8 +20,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -35,9 +35,9 @@ import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -57,7 +57,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     String extCollectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
@@ -72,7 +72,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     log.info("Delete shard invoked");
-    Slice slice = clusterState.getCollection(collectionName).getSlice(sliceId);
+    Slice slice = adminCmdContext.getClusterState().getCollection(collectionName).getSlice(sliceId);
     if (slice == null)
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -124,14 +124,11 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
 
-    String asyncId = message.getStr(ASYNC);
-
     try {
       List<ZkNodeProps> replicas = getReplicasForSlice(collectionName, slice);
       CountDownLatch cleanupLatch = new CountDownLatch(replicas.size());
       for (ZkNodeProps r : replicas) {
-        final ZkNodeProps replica =
-            r.plus(message.getProperties()).plus("parallel", "true").plus(ASYNC, asyncId);
+        final ZkNodeProps replica = r.plus(message.getProperties()).plus("parallel", "true");
         if (log.isInfoEnabled()) {
           log.info(
               "Deleting replica for collection={} shard={} on node={}",
@@ -143,7 +140,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
         try {
           new DeleteReplicaCmd(ccc)
               .deleteReplica(
-                  clusterState,
+                  adminCmdContext.subRequestContext(DELETEREPLICA),
                   replica,
                   deleteResult,
                   () -> {
@@ -201,7 +198,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
       } else {
         ccc.offerStateUpdate(m);
       }
-
+      cleanupZooKeeperShardMetadata(collectionName, sliceId);
       zkStateReader.waitForState(
           collectionName, 45, TimeUnit.SECONDS, (c) -> c.getSlice(sliceId) == null);
 
@@ -237,5 +234,34 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
       sourceReplicas.add(props);
     }
     return sourceReplicas;
+  }
+
+  /**
+   * Best effort to delete Zookeeper nodes that stored other details than the shard itself in
+   * cluster state. If we fail for any reason, we just log and the shard is still deleted.
+   */
+  private void cleanupZooKeeperShardMetadata(String collection, String sliceId)
+      throws InterruptedException {
+
+    String[] cleanupPaths =
+        new String[] {
+          ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/" + sliceId,
+          ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + sliceId,
+          ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms/" + sliceId
+        };
+
+    SolrZkClient client = ccc.getZkStateReader().getZkClient();
+    for (String path : cleanupPaths) {
+      try {
+        client.clean(path);
+      } catch (KeeperException ex) {
+        log.warn(
+            "Non-fatal error occurred when deleting shard metadata {}/{} at path {}",
+            collection,
+            sliceId,
+            path,
+            ex);
+      }
+    }
   }
 }

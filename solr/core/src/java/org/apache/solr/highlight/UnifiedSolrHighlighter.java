@@ -19,7 +19,6 @@ package org.apache.solr.highlight;
 import java.io.IOException;
 import java.text.BreakIterator;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
@@ -164,7 +163,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     UnifiedHighlighter highlighter = getHighlighter(req);
     Map<String, String[]> snippets =
         fieldNames.length == 0
-            ? Collections.emptyMap()
+            ? Map.of()
             : highlighter.highlightFields(fieldNames, query, docIDs, maxPassages);
     return encodeSnippets(keys, fieldNames, snippets);
   }

@@ -18,16 +18,18 @@
 package org.apache.solr.api;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN_OR_REMOTEQUERY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
+import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
+import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN_OR_REMOTEPROXY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.PROCESS;
+import static org.apache.solr.servlet.HttpSolrCall.Action.REMOTEPROXY;
 
 import io.opentelemetry.api.trace.Span;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -35,8 +37,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -57,7 +57,6 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.servlet.HttpSolrCall;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -79,12 +78,8 @@ public class V2HttpCall extends HttpSolrCall {
   static final Set<String> knownPrefixes = Set.of("cluster", "node", "collections", "cores", "c");
 
   public V2HttpCall(
-      SolrDispatchFilter solrDispatchFilter,
-      CoreContainer cc,
-      HttpServletRequest request,
-      HttpServletResponse response,
-      boolean retry) {
-    super(solrDispatchFilter, cc, request, response, retry);
+      CoreContainer cc, HttpServletRequest request, HttpServletResponse response, boolean retry) {
+    super(cc, request, response, retry);
   }
 
   @Override
@@ -156,8 +151,9 @@ public class V2HttpCall extends HttpSolrCall {
                   + this.collectionsList);
         } else {
           String collectionName = collectionsList.get(0);
-          // Certain HTTP methods are only used for admin APIs, check for those and short-circuit
-          if (List.of("delete").contains(req.getMethod().toLowerCase(Locale.ROOT))) {
+          // Short-circuit for coll-deletion, so it can happen without acquiring a 'SolrCore' ref.
+          if (List.of("delete").contains(req.getMethod().toLowerCase(Locale.ROOT))
+              && pathSegments.size() == 2) {
             initAdminRequest(path);
             return;
           }
@@ -165,16 +161,17 @@ public class V2HttpCall extends HttpSolrCall {
           core = getCoreByCollection(collectionName, isPreferLeader);
           if (core == null) {
             // this collection exists , but this node does not have a replica for that collection
-            extractRemotePath(collectionName, collectionName);
-            if (action == REMOTEQUERY) {
-              action = ADMIN_OR_REMOTEQUERY;
+            extractRemotePath(collectionName);
+            if (action == REMOTEPROXY) {
+              action = ADMIN_OR_REMOTEPROXY;
               coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
-              this.path = path = path.substring(prefix.length() + collectionName.length() + 2);
+              normalizeAndSetPath(path.substring(prefix.length() + collectionName.length() + 2));
+              path = this.path;
               return;
             }
           }
         }
-      } else if ("cores".equals(prefix)) {
+      } else if ("cores".equals(prefix) && pathSegments.size() > 1) {
         origCorename = pathSegments.get(1);
         core = cores.getCore(origCorename);
       }
@@ -187,7 +184,10 @@ public class V2HttpCall extends HttpSolrCall {
       }
 
       Thread.currentThread().setContextClassLoader(core.getResourceLoader().getClassLoader());
-      this.path = path = path.substring(prefix.length() + pathSegments.get(1).length() + 2);
+      normalizeAndSetPath(path.substring(prefix.length() + pathSegments.get(1).length() + 2));
+      path = this.path;
+      // Core-level API, so populate "collection" template val
+      parts.put(COLLECTION_PROP, origCorename);
       Api apiInfo = getApiInfo(core.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
       if (isCompositeApi && apiInfo instanceof CompositeApi) {
         ((CompositeApi) this.api).add(apiInfo);
@@ -213,6 +213,11 @@ public class V2HttpCall extends HttpSolrCall {
     solrReq.getContext().put(CoreContainer.class.getName(), cores);
     requestType = AuthorizationContext.RequestType.ADMIN;
     action = ADMIN;
+
+    String callingLockId = req.getHeader(CALLING_LOCK_ID_HEADER);
+    if (callingLockId != null && !callingLockId.isBlank()) {
+      solrReq.getContext().put(CALLING_LOCK_ID_HEADER, callingLockId);
+    }
   }
 
   protected void parseRequest() throws Exception {
@@ -347,7 +352,7 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   /**
-   * Differentiate between "admin" and "remotequery"-type requests; executing each as appropriate.
+   * Differentiate between "admin" and "remoteproxy"-type requests; executing each as appropriate.
    *
    * <p>The JAX-RS framework used by {@link V2HttpCall} doesn't provide any easy way to check in
    * advance whether a Jersey application can handle an incoming request. This, in turn, makes it
@@ -358,7 +363,7 @@ public class V2HttpCall extends HttpSolrCall {
    * <p>This method uses this strategy to differentiate between admin requests that don't require a
    * {@link SolrCore}, but whose path happen to contain a core/collection name (e.g.
    * ADDREPLICAPROP's path of
-   * /collections/collName/shards/shardName/replicas/replicaName/properties), and "REMOTEQUERY"
+   * /collections/collName/shards/shardName/replicas/replicaName/properties), and "REMOTEPROXY"
    * requests which do require a local SolrCore to process.
    */
   @Override
@@ -381,8 +386,8 @@ public class V2HttpCall extends HttpSolrCall {
     }
 
     // If no admin/container-level Jersey resource was found for this API, then this should be
-    // treated as a REMOTEQUERY
-    sendRemoteQuery();
+    // treated as a REMOTEPROXY
+    sendRemoteProxy();
   }
 
   @Override
@@ -434,7 +439,12 @@ public class V2HttpCall extends HttpSolrCall {
         // SolrCore counter
         core.close();
         core = null;
-        response.getHeaderNames().stream().forEach(name -> response.setHeader(name, null));
+        // Skip specific headers
+        // workaround for response.setHeader(name, null)
+        response.getHeaderNames().stream()
+            .filter(name -> !name.equalsIgnoreCase("Content-Length"))
+            .forEach(name -> response.setHeader(name, ""));
+        response.setContentLength(-1);
         invokeJerseyRequest(
             cores, null, cores.getJerseyApplicationHandler(), cores.getRequestHandlers(), rsp);
       }
@@ -478,7 +488,7 @@ public class V2HttpCall extends HttpSolrCall {
     // myColName -> collection
     final Map<String, String> pathTemplateValKey;
     if (pathTemplateKeyVal.isEmpty()) { // typical
-      pathTemplateValKey = Collections.emptyMap();
+      pathTemplateValKey = Map.of();
     } else if (pathTemplateKeyVal.size() == 1) { // typical
       Map.Entry<String, String> entry = pathTemplateKeyVal.entrySet().iterator().next();
       pathTemplateValKey = Map.of(entry.getValue(), entry.getKey());

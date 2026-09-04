@@ -62,6 +62,10 @@ It is recommended that this be set for as long as is reasonable given the applic
 A hard commit means that, if a server crashes, Solr will know exactly where your data was stored; a soft commit means that the data is stored, but the location information isn't yet stored.
 The tradeoff is that a soft commit gives you faster visibility because it's not waiting for background merges to finish.
 
+In a TLOG/PULL replica setup, the commit configuration also influences the interval at which the replica is polling the shard leader.
+Users wishing to use a different polling interval in their TLOG/PULL replicas can do so by specifying a `commitPollInterval` value of the form "hh:mm:ss".
+"01:00:00" to poll every hour, "00:15:00" to poll every fifteen minutes, etc.
+
 === Explicit Commits
 
 When a client includes a `commit=true` parameter with an update request, this ensures that all index segments affected by the adds and deletes on an update are written to disk as soon as index updates are completed.

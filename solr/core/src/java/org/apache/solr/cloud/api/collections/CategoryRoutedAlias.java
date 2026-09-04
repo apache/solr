@@ -21,13 +21,12 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import org.apache.solr.client.solrj.RoutedAliasTypes;
+import org.apache.solr.client.solrj.request.RoutedAliasTypes;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
@@ -260,7 +259,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
       }
       return actionList;
     } else {
-      return Collections.emptyList();
+      return List.of();
     }
   }
 }

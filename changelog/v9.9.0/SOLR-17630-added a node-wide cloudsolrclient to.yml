@@ -1,0 +1,9 @@
+title: Added a node-wide CloudSolrClient to ZkController, and accessible via SolrCloudManager
+  too. Uses Jetty HttpClient. Deprecated CloudSolrClient.getSolrClientCache. Redirected
+  some callers.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17630
+  url: https://issues.apache.org/jira/browse/SOLR-17630

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.ltr.norm;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
@@ -26,7 +26,7 @@ import org.junit.Test;
 public class TestStandardNormalizer extends SolrTestCaseJ4 {
 
   private final SolrResourceLoader solrResourceLoader =
-      new SolrResourceLoader(Paths.get("").toAbsolutePath());
+      new SolrResourceLoader(Path.of("").toAbsolutePath());
 
   private Normalizer implTestStandard(
       Map<String, Object> params, float expectedAvg, float expectedStd) {
@@ -119,7 +119,7 @@ public class TestStandardNormalizer extends SolrTestCaseJ4 {
     final StandardNormalizer n2 =
         (StandardNormalizer)
             Normalizer.getInstance(
-                new SolrResourceLoader(Paths.get("").toAbsolutePath()),
+                new SolrResourceLoader(Path.of("").toAbsolutePath()),
                 StandardNormalizer.class.getName(),
                 params);
     assertEquals(n1.getAvg(), n2.getAvg(), 1e-6);

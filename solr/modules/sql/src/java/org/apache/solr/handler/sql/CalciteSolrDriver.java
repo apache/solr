@@ -26,6 +26,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.util.Holder;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.handler.sql.functions.ArrayContainsAll;
 import org.apache.solr.handler.sql.functions.ArrayContainsAny;
@@ -87,7 +88,8 @@ public class CalciteSolrDriver extends Driver {
     if (schemaName == null) {
       throw new SQLException("zk must be set");
     }
-    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache);
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(schemaName);
+    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache, solrConnection);
     rootSchema.add(schemaName, solrSchema);
 
     registerUDFs();
@@ -97,7 +99,14 @@ public class CalciteSolrDriver extends Driver {
     return calciteConnection;
   }
 
+  @SuppressWarnings("deprecation")
   private void registerUDFs() {
+    // register() is deprecated in favour of SqlOperatorTables.of/chain, but Calcite's JDBC stack
+    // builds the validator's operator table via CalcitePrepareImpl.createSqlValidator (private
+    // static), leaving no protected hook to chain a custom SqlOperatorTable without subclassing
+    // private inner classes. Mutating the global SqlStdOperatorTable singleton is the only viable
+    // injection point available through the public API today.
+    // See https://issues.apache.org/jira/browse/CALCITE-7730
     final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
     stdOpTab.register(new ArrayContainsAll());
     stdOpTab.register(new ArrayContainsAny());

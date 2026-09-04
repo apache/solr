@@ -21,6 +21,7 @@ import java.util.Arrays;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,10 +31,9 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   private static SolrInstances servers; // for distributed testing
   private static String cache;
 
-  @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     JSONTestUtil.failRepeatedKeys = true;
 
     // we need DVs on point fields to compute stats & facets
@@ -51,10 +51,8 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
     }
   }
 
-  @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
-    systemClearPropertySolrDisableUrlAllowList();
     JSONTestUtil.failRepeatedKeys = false;
     if (servers != null) {
       servers.stop();
@@ -63,7 +61,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   }
 
   public void indexSimple(Client client) throws Exception {
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     client.add(
         sdoc(
             "id",
@@ -248,7 +246,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
 
   private void doDateFacets(Client client) throws Exception {
     client.queryDefaults().set("cache", cache);
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     boolean multiValue = random().nextBoolean();
     String dateField = multiValue ? "b_dts" : "b_dt";
     String dateRange = multiValue ? "b_drfs" : "b_drf";
@@ -376,7 +374,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
 
   private void doRangeFacetWithRanges(Client client) throws Exception {
     client.queryDefaults().set("cache", cache);
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     indexSimple(client);
 
     final SolrParams p = params("q", "*:*", "rows", "0");
@@ -461,7 +459,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
 
   private void doRangeFacetWithRangesInNewFormat(Client client) throws Exception {
     client.queryDefaults().set("cache", cache);
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     indexSimple(client);
     SolrParams p = params("q", "*:*", "rows", "0");
 

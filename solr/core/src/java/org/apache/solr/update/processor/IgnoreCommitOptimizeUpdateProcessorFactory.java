@@ -50,13 +50,13 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
 
   @Override
   public void init(final NamedList<?> args) {
-    SolrParams params = (args != null) ? args.toSolrParams() : null;
-    if (params == null) {
+    if (args == null) {
       errorCode = ErrorCode.FORBIDDEN; // default is 403 error
       responseMsg = DEFAULT_RESPONSE_MSG;
       ignoreOptimizeOnly = false;
       return;
     }
+    SolrParams params = args.toSolrParams();
 
     ignoreOptimizeOnly = params.getBool("ignoreOptimizeOnly", false);
 
@@ -139,7 +139,7 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
         IgnoreCommitOptimizeUpdateProcessorFactory.log.info(
             "{} from client application ignored with status code: 200", cmdType);
         if (responseMsg != null) {
-          NamedList<Object> responseHeader = rsp.getResponseHeader();
+          SimpleOrderedMap<Object> responseHeader = rsp.getResponseHeader();
           if (responseHeader != null) {
             responseHeader.add("msg", responseMsg);
           } else {

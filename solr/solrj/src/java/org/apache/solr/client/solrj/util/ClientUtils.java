@@ -17,28 +17,21 @@
 package org.apache.solr.client.solrj.util;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.apache.solr.client.solrj.SolrClient;
+import java.util.Objects;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.XML;
 
 /**
@@ -51,50 +44,27 @@ public class ClientUtils {
 
   public static final String DEFAULT_PATH = "/select";
 
-  /** Take a string and make it an iterable ContentStream */
-  public static Collection<ContentStream> toContentStreams(
-      final String str, final String contentType) {
-    if (str == null) return null;
-
-    ArrayList<ContentStream> streams = new ArrayList<>(1);
-    ContentStreamBase ccc = new ContentStreamBase.StringStream(str);
-    ccc.setContentType(contentType);
-    streams.add(ccc);
-    return streams;
-  }
-
   /**
    * Create the full URL for a SolrRequest (excepting query parameters) as a String
    *
    * @param solrRequest the {@link SolrRequest} to build the URL for
-   * @param requestWriter a {@link RequestWriter} from the {@link SolrClient} that will be sending
-   *     the request
-   * @param serverRootUrl the root URL of the Solr server being targeted. May be overridden {@link
-   *     SolrRequest#getBasePath()}, if present.
+   * @param serverRootUrl the root URL of the Solr server being targeted.
    * @param collection the collection to send the request to. May be null if no collection is
    *     needed.
-   * @throws MalformedURLException if {@code serverRootUrl} or {@link SolrRequest#getBasePath()}
-   *     contain a malformed URL string
+   * @throws MalformedURLException if {@code serverRootUrl} contains a malformed URL string
    */
   public static String buildRequestUrl(
-      SolrRequest<?> solrRequest,
-      RequestWriter requestWriter,
-      String serverRootUrl,
-      String collection)
+      SolrRequest<?> solrRequest, String serverRootUrl, String collection)
       throws MalformedURLException {
-    String basePath = solrRequest.getBasePath() == null ? serverRootUrl : solrRequest.getBasePath();
 
+    String basePath = Objects.requireNonNull(serverRootUrl);
     if (solrRequest.getApiVersion() == SolrRequest.ApiVersion.V2) {
-      if (solrRequest instanceof V2Request && System.getProperty("solr.v2RealPath") != null) {
-        basePath = serverRootUrl + "/____v2";
-      } else {
-        basePath = addNormalV2ApiRoot(basePath);
-      }
+      basePath = addNormalV2ApiRoot(basePath);
     }
 
     if (solrRequest.requiresCollection() && collection != null) basePath += "/" + collection;
 
-    String path = requestWriter.getPath(solrRequest);
+    String path = solrRequest.getPath();
     if (path == null || !path.startsWith("/")) {
       path = DEFAULT_PATH;
     }
@@ -111,6 +81,8 @@ public class ClientUtils {
   private static String buildReplacementV2Path(String existingPath) {
     if (existingPath.contains("/solr")) {
       return existingPath.replaceFirst("/solr", "/api");
+    } else if (existingPath.endsWith("/api")) {
+      return existingPath;
     } else {
       return existingPath + "/api";
     }
@@ -136,8 +108,7 @@ public class ClientUtils {
           for (Entry<Object, Object> entry : ((Map<Object, Object>) v).entrySet()) {
             update = entry.getKey().toString();
             v = entry.getValue();
-            if (v instanceof Collection) {
-              Collection<?> values = (Collection<?>) v;
+            if (v instanceof Collection<?> values) {
               for (Object value : values) {
                 writeVal(writer, name, value, update);
               }
@@ -164,11 +135,9 @@ public class ClientUtils {
       throws IOException {
     if (v instanceof Date) {
       v = ((Date) v).toInstant().toString();
-    } else if (v instanceof byte[]) {
-      byte[] bytes = (byte[]) v;
+    } else if (v instanceof byte[] bytes) {
       v = Base64.getEncoder().encodeToString(bytes);
-    } else if (v instanceof ByteBuffer) {
-      ByteBuffer bytes = (ByteBuffer) v;
+    } else if (v instanceof ByteBuffer bytes) {
       v =
           new String(
               Base64.getEncoder()
@@ -182,8 +151,7 @@ public class ClientUtils {
     }
 
     XML.Writable valWriter = null;
-    if (v instanceof SolrInputDocument) {
-      final SolrInputDocument solrDoc = (SolrInputDocument) v;
+    if (v instanceof SolrInputDocument solrDoc) {
       valWriter = (writer1) -> writeXML(solrDoc, writer1);
     } else if (v != null) {
       final Object val = v;
@@ -202,15 +170,6 @@ public class ClientUtils {
         XML.writeXML(writer, "field", valWriter, "name", name, "update", update);
       }
     }
-  }
-
-  public static String toXML(SolrInputDocument doc) {
-    StringWriter str = new StringWriter();
-    try {
-      writeXML(doc, str);
-    } catch (Exception ex) {
-    }
-    return str.toString();
   }
 
   // ---------------------------------------------------------------------------------------
@@ -264,8 +223,19 @@ public class ClientUtils {
     int len = val.length();
     if (0 == len) return "''"; // quoted empty string
 
+    // Note: QueryParsing#parseLocalParams's peek() (used to check for a '=' or the closing quote
+    // char) skips leading whitespace as a side effect, so an unquoted empty value would silently
+    // absorb the whitespace meant to separate it from the next local param, corrupting parsing of
+    // everything that follows. Quoting sidesteps this entirely.
+
     int i = 0;
-    if (len > 0 && val.charAt(0) != '$') {
+    char first = val.charAt(0);
+    // A leading '$' would be read back as a param dereference, and a leading quote char would be
+    // read back as the start of a quoted string (StrParser#getQuotedString accepts both ' and "
+    // as delimiters); both must be quoted regardless of the rest of the value.
+    if (first == '$' || first == '\'' || first == '"') {
+      // leave i == 0 so the quoting branch below is taken
+    } else {
       for (; i < len; i++) {
         char ch = val.charAt(i);
         if (Character.isWhitespace(ch) || ch == '}') break;
@@ -274,12 +244,16 @@ public class ClientUtils {
 
     if (i >= len) return val;
 
-    // We need to enclose in quotes... but now we need to escape
+    // We need to enclose in quotes... but now we need to escape.  Both the quote delimiter itself
+    // and a literal backslash must be escaped: StrParser#getQuotedString treats any '\' as the
+    // start of an escape sequence when reading a quoted value, so an un-escaped '\' here would be
+    // silently consumed (or worse, combined with the following char into an unintended escape like
+    // \n) when the value is parsed back.
     StringBuilder sb = new StringBuilder(val.length() + 4);
     sb.append('\'');
     for (i = 0; i < len; i++) {
       char ch = val.charAt(i);
-      if (ch == '\'') {
+      if (ch == '\'' || ch == '\\') {
         sb.append('\\');
       }
       sb.append(ch);
@@ -312,7 +286,7 @@ public class ClientUtils {
    * @param request the {@link SolrRequest} being executed
    */
   public static boolean shouldApplyDefaultCollection(
-      String providedCollection, SolrRequest<? extends SolrResponse> request) {
+      String providedCollection, SolrRequest<?> request) {
     return providedCollection == null && request.requiresCollection();
   }
 }

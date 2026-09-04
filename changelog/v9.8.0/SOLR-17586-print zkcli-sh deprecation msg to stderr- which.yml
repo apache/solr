@@ -1,0 +1,8 @@
+title: Print zkcli.sh deprecation msg to stderr, which fixes Solr Operator upload
+  of security.json to zookeeper
+type: fixed
+authors:
+- name: Jan Høydahl
+links:
+- name: SOLR-17586
+  url: https://issues.apache.org/jira/browse/SOLR-17586

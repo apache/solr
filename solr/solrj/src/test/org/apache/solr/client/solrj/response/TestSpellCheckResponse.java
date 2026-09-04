@@ -17,18 +17,19 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
-import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.SpellCheckResponse.Collation;
 import org.apache.solr.client.solrj.response.SpellCheckResponse.Correction;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
@@ -36,16 +37,20 @@ import org.junit.Test;
  *
  * @since solr 1.3
  */
-public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
+public class TestSpellCheckResponse extends SolrTestCase {
+
+  @ClassRule
+  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
+
   private static SolrClient client;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule.startSolr();
+    solrTestRule.startSolr();
 
-    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
-    client = getSolrClient();
+    client = solrTestRule.getSolrClient();
   }
 
   @AfterClass
@@ -66,10 +71,9 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
     client.commit(true, true);
 
     SolrQuery query = new SolrQuery("*:*");
-    query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
     query.set(SpellingParams.SPELLCHECK_Q, "samsang");
-    QueryRequest request = new QueryRequest(query);
+    QueryRequest request = new QueryRequest("/spell", query);
     SpellCheckResponse response = request.process(client).getSpellCheckResponse();
     assertEquals("samsung", response.getFirstSuggestion("samsang"));
   }
@@ -85,11 +89,10 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
     client.commit(true, true);
 
     SolrQuery query = new SolrQuery("*:*");
-    query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
     query.set(SpellingParams.SPELLCHECK_Q, "samsang");
     query.set(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, true);
-    QueryRequest request = new QueryRequest(query);
+    QueryRequest request = new QueryRequest("/spell", query);
     SpellCheckResponse response = request.process(client).getSpellCheckResponse();
     assertEquals("samsung", response.getFirstSuggestion("samsang"));
 
@@ -142,11 +145,10 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
     // Test Backwards Compatibility
     SolrQuery query = new SolrQuery("name:(+fauth +home +loane)");
-    query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
     query.set(SpellingParams.SPELLCHECK_COUNT, 10);
     query.set(SpellingParams.SPELLCHECK_COLLATE, true);
-    QueryRequest request = new QueryRequest(query);
+    QueryRequest request = new QueryRequest("/spell", query);
     SpellCheckResponse response = request.process(client).getSpellCheckResponse();
     response = request.process(client).getSpellCheckResponse();
     assertEquals("name:(+faith +hope +loaves)", response.getCollatedResult());
@@ -155,7 +157,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
     query.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, true);
     query.set(SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, 10);
     query.set(SpellingParams.SPELLCHECK_MAX_COLLATIONS, 2);
-    request = new QueryRequest(query);
+    request = new QueryRequest("/spell", query);
     response = request.process(client).getSpellCheckResponse();
     assertTrue(
         "name:(+faith +hope +love)".equals(response.getCollatedResult())

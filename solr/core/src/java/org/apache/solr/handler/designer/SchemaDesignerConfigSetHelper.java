@@ -18,79 +18,64 @@
 package org.apache.solr.handler.designer;
 
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
-import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.apache.solr.common.util.Utils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
-import static org.apache.solr.handler.designer.SchemaDesignerAPI.getConfigSetZkPath;
-import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
+import static org.apache.solr.handler.designer.SchemaDesigner.getConfigSetZkPath;
+import static org.apache.solr.handler.designer.SchemaDesigner.getMutableId;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
 
-import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.file.PathUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.IOSupplier;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.filestore.ClusterFileStore;
+import org.apache.solr.filestore.DistribFileStore;
+import org.apache.solr.filestore.FileStore;
+import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.FieldType;
@@ -128,64 +113,34 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   Map<String, Object> analyzeField(String configSet, String fieldName, String fieldText)
       throws IOException {
     final String mutableId = getMutableId(configSet);
-    final URI uri;
+    var solrParams = new ModifiableSolrParams();
+    solrParams.set("analysis.showmatch", true);
+    solrParams.set("analysis.fieldname", fieldName);
+    solrParams.set("analysis.fieldvalue", "POST");
+    var request =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.POST,
+                "/analysis/field",
+                SolrRequest.SolrRequestType.ADMIN,
+                solrParams)
+            .setRequiresCollection(true);
+    request.withContent(fieldText.getBytes(StandardCharsets.UTF_8), "text/plain");
+    request.setResponseParser(new JsonMapResponseParser());
     try {
-      uri =
-          collectionApiEndpoint(mutableId, "analysis", "field")
-              .setParameter(CommonParams.WT, CommonParams.JSON)
-              .setParameter("analysis.showmatch", "true")
-              .setParameter("analysis.fieldname", fieldName)
-              .setParameter("analysis.fieldvalue", "POST")
-              .build();
-    } catch (URISyntaxException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      var resp = request.process(cloudClient(), mutableId).getResponse();
+      return (Map<String, Object>) resp.get("analysis");
+    } catch (SolrServerException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
-
-    Map<String, Object> analysis = Collections.emptyMap();
-    HttpPost httpPost = new HttpPost(uri);
-    httpPost.setHeader("Content-Type", "text/plain");
-    httpPost.setEntity(new ByteArrayEntity(fieldText.getBytes(StandardCharsets.UTF_8)));
-    try {
-      HttpResponse resp = ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpPost);
-      int statusCode = resp.getStatusLine().getStatusCode();
-      if (statusCode != HttpStatus.SC_OK) {
-        throw new SolrException(
-            SolrException.ErrorCode.getErrorCode(statusCode),
-            EntityUtils.toString(resp.getEntity(), StandardCharsets.UTF_8));
-      }
-
-      Map<String, Object> response =
-          (Map<String, Object>)
-              fromJSONString(EntityUtils.toString(resp.getEntity(), StandardCharsets.UTF_8));
-      if (response != null) {
-        analysis = (Map<String, Object>) response.get("analysis");
-      }
-    } finally {
-      httpPost.releaseConnection();
-    }
-
-    return analysis;
   }
 
   List<String> listCollectionsForConfig(String configSet) {
-    final List<String> collections = new ArrayList<>();
-    Map<String, ClusterState.CollectionRef> states =
-        zkStateReader().getClusterState().getCollectionStates();
-    for (Map.Entry<String, ClusterState.CollectionRef> e : states.entrySet()) {
-      final String coll = e.getKey();
-      if (coll.startsWith(DESIGNER_PREFIX)) {
-        continue; // ignore temp
-      }
-
-      try {
-        if (configSet.equals(e.getValue().get().getConfigName()) && e.getValue().get() != null) {
-          collections.add(coll);
-        }
-      } catch (Exception exc) {
-        log.warn("Failed to get config name for {}", coll, exc);
-      }
-    }
-    return collections;
+    return zkStateReader()
+        .getClusterState()
+        .collectionStream()
+        .filter(c -> configSet.equals(c.getConfigName()))
+        .map(DocCollection::getName)
+        .toList();
   }
 
   @SuppressWarnings("unchecked")
@@ -211,7 +166,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       Object dest = map.get("dest");
       List<String> destFields = null;
       if (dest instanceof String) {
-        destFields = Collections.singletonList((String) dest);
+        destFields = List.of((String) dest);
       } else if (dest instanceof List) {
         destFields = (List<String>) dest;
       } else if (dest instanceof Collection) {
@@ -337,8 +292,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     // nice, the json for this field looks like
     // "synonymQueryStyle":
     // "org.apache.solr.parser.SolrQueryParserBase$SynonymQueryStyle:AS_SAME_TERM"
-    if (typeAttrs.get("synonymQueryStyle") instanceof String) {
-      String synonymQueryStyle = (String) typeAttrs.get("synonymQueryStyle");
+    if (typeAttrs.get("synonymQueryStyle") instanceof String synonymQueryStyle) {
       if (synonymQueryStyle.lastIndexOf(':') != -1) {
         typeAttrs.put(
             "synonymQueryStyle",
@@ -416,7 +370,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       }
     }
 
-    // detect if they're trying to copy multi-valued fields into a single-valued field
+    // detect if they're trying to copy multivalued fields into a single-valued field
     Object multiValued = diff.get(MULTIVALUED);
     if (multiValued == null) {
       // mv not overridden explicitly, but we need the actual value, which will come from the new
@@ -437,7 +391,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
               name,
               src);
           multiValued = Boolean.TRUE;
-          diff.put(MULTIVALUED, multiValued);
+          diff.put(MULTIVALUED, true);
           break;
         }
       }
@@ -448,8 +402,8 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       validateMultiValuedChange(configSet, schemaField, Boolean.FALSE);
     }
 
-    // switch from single-valued to multi-valued requires a full rebuild
-    // See SOLR-12185 ... if we're switching from single to multi-valued, then it's a big operation
+    // switch from single-valued to multivalued requires a full rebuild
+    // See SOLR-12185 ... if we're switching from single to multivalued, then it's a big operation
     if (fieldHasMultiValuedChange(multiValued, schemaField)) {
       needsRebuild = true;
       log.warn(
@@ -488,7 +442,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   protected void validateMultiValuedChange(String configSet, SchemaField field, Boolean multiValued)
       throws IOException {
-    List<SolrInputDocument> docs = getStoredSampleDocs(configSet);
+    List<SolrInputDocument> docs = retrieveSampleDocs(configSet);
     if (!docs.isEmpty()) {
       boolean isMV = schemaSuggester.isMultiValued(field.getName(), docs);
       if (isMV && !multiValued) {
@@ -508,62 +462,58 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           SolrException.ErrorCode.BAD_REQUEST,
           "Cannot change type of the _version_ field; it must be a plong.");
     }
-    List<SolrInputDocument> docs = getStoredSampleDocs(configSet);
+    List<SolrInputDocument> docs = retrieveSampleDocs(configSet);
     if (!docs.isEmpty()) {
       schemaSuggester.validateTypeChange(field, toType, docs);
     }
   }
 
+  String getSampleDocsPathFromConfigSet(String configSet) {
+    return "schemadesigner" + "/" + configSet + "_sampledocs.javabin";
+  }
+
   void deleteStoredSampleDocs(String configSet) {
-    try {
-      cloudClient().deleteByQuery(BLOB_STORE_ID, "id:" + configSet + "_sample/*", 10);
-    } catch (IOException | SolrServerException | SolrException exc) {
-      final String excStr = exc.toString();
-      log.warn("Failed to delete sample docs from blob store for {} due to: {}", configSet, excStr);
-    }
+    String path = getSampleDocsPathFromConfigSet(configSet);
+    // why do I have to do this in two stages?
+    DistribFileStore.deleteZKFileEntry(cc.getZkController().getZkClient(), path);
+    cc.getFileStore().delete(path);
   }
 
   @SuppressWarnings("unchecked")
-  List<SolrInputDocument> getStoredSampleDocs(final String configSet) throws IOException {
-    List<SolrInputDocument> docs = null;
+  List<SolrInputDocument> retrieveSampleDocs(final String configSet) throws IOException {
+    AtomicReference<List<SolrInputDocument>> docs = new AtomicReference<>(List.of());
+    String path = getSampleDocsPathFromConfigSet(configSet);
 
-    final URI uri;
     try {
-      uri =
-          collectionApiEndpoint(BLOB_STORE_ID, "blob", configSet + "_sample")
-              .setParameter(CommonParams.WT, "filestream")
-              .build();
-    } catch (URISyntaxException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      cc.getFileStore()
+          .get(
+              path,
+              entry -> {
+                try (InputStream is = entry.getInputStream()) {
+                  docs.set((List<SolrInputDocument>) Utils.fromJavabin(is));
+                } catch (IOException e) {
+                  log.error("Error reading file content at path {}", path, e);
+                }
+              },
+              true);
+    } catch (FileNotFoundException e) {
+      log.info("File at path {} not found.", path);
     }
 
-    HttpGet httpGet = new HttpGet(uri);
-    try {
-      HttpResponse entity =
-          ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpGet);
-      int statusCode = entity.getStatusLine().getStatusCode();
-      if (statusCode == HttpStatus.SC_OK) {
-        byte[] bytes = readAllBytes(() -> entity.getEntity().getContent());
-        if (bytes.length > 0) {
-          docs = (List<SolrInputDocument>) Utils.fromJavabin(bytes);
-        }
-      } else if (statusCode != HttpStatus.SC_NOT_FOUND) {
-        byte[] bytes = readAllBytes(() -> entity.getEntity().getContent());
-        throw new IOException(
-            "Failed to lookup stored docs for "
-                + configSet
-                + " due to: "
-                + new String(bytes, StandardCharsets.UTF_8));
-      } // else not found is ok
-    } finally {
-      httpGet.releaseConnection();
-    }
-    return docs != null ? docs : Collections.emptyList();
+    return docs.get();
   }
 
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
     docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
-    postDataToBlobStore(cloudClient(), configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
+    storeSampleDocs(configSet, readAllBytes(() -> toJavabin(docs)));
+  }
+
+  protected void storeSampleDocs(String configSet, byte[] bytes) throws IOException {
+    String path = getSampleDocsPathFromConfigSet(configSet);
+
+    FileStoreAPI.MetaData meta = ClusterFileStore._createJsonMetaData(bytes, null);
+
+    cc.getFileStore().put(new FileStore.FileEntry(ByteBuffer.wrap(bytes), meta, path));
   }
 
   /** Gets the stream, reads all the bytes, closes the stream. */
@@ -571,67 +521,6 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     try (InputStream in = hasStream.get()) {
       return in.readAllBytes();
     }
-  }
-
-  protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)
-      throws IOException {
-    final URI uri;
-    try {
-      uri = collectionApiEndpoint(BLOB_STORE_ID, "blob", blobName).build();
-    } catch (URISyntaxException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
-
-    HttpPost httpPost = new HttpPost(uri);
-    try {
-      httpPost.setHeader("Content-Type", "application/octet-stream");
-      httpPost.setEntity(new ByteArrayEntity(bytes));
-      HttpResponse resp = ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpPost);
-      int statusCode = resp.getStatusLine().getStatusCode();
-      if (statusCode != HttpStatus.SC_OK) {
-        throw new SolrException(
-            SolrException.ErrorCode.getErrorCode(statusCode),
-            EntityUtils.toString(resp.getEntity(), StandardCharsets.UTF_8));
-      }
-    } finally {
-      httpPost.releaseConnection();
-    }
-  }
-
-  private String getBaseUrl(final String collection) {
-    String baseUrl = null;
-    try {
-      Set<String> liveNodes = zkStateReader().getClusterState().getLiveNodes();
-      DocCollection docColl = zkStateReader().getCollection(collection);
-      if (docColl != null && !liveNodes.isEmpty()) {
-        Optional<Replica> maybeActive =
-            docColl.getReplicas().stream().filter(r -> r.isActive(liveNodes)).findAny();
-        if (maybeActive.isPresent()) {
-          baseUrl = maybeActive.get().getBaseUrl();
-        }
-      }
-    } catch (Exception exc) {
-      log.warn("Failed to lookup base URL for collection {}", collection, exc);
-    }
-
-    if (baseUrl == null) {
-      baseUrl = zkStateReader().getBaseUrlForNodeName(cc.getZkController().getNodeName());
-    }
-
-    return baseUrl;
-  }
-
-  private URIBuilder collectionApiEndpoint(
-      final String collection, final String... morePathSegments) throws URISyntaxException {
-    URI baseUrl = new URI(getBaseUrl(collection));
-    // build up a list of path segments including any path in the base URL, collection, and
-    // additional segments provided by caller
-    List<String> path = new ArrayList<>(URLEncodedUtils.parsePathSegments(baseUrl.getPath()));
-    path.add(collection);
-    if (morePathSegments != null && morePathSegments.length > 0) {
-      path.addAll(Arrays.asList(morePathSegments));
-    }
-    return new URIBuilder(baseUrl).setPathSegments(path);
   }
 
   protected String getManagedSchemaZkPath(final String configSet) {
@@ -659,9 +548,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       schema =
           (ManagedIndexSchema)
               schema.addField(
-                  schema.newField(
-                      NEST_PATH_FIELD_NAME, NEST_PATH_FIELD_NAME, Collections.emptyMap()),
-                  false);
+                  schema.newField(NEST_PATH_FIELD_NAME, NEST_PATH_FIELD_NAME, Map.of()), false);
       madeChanges = true;
     }
 
@@ -691,9 +578,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   SolrConfig loadSolrConfig(String configSet) {
     ZkSolrResourceLoader zkLoader = zkLoaderForConfigSet(configSet);
-    boolean trusted = isConfigSetTrusted(configSet);
-
-    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, trusted, null);
+    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, null);
   }
 
   ManagedIndexSchema loadLatestSchema(String configSet) {
@@ -710,7 +595,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     int currentVersion = -1;
     final String path = getManagedSchemaZkPath(configSet);
     try {
-      Stat stat = cc.getZkController().getZkClient().exists(path, null, true);
+      Stat stat = cc.getZkController().getZkClient().exists(path, null);
       if (stat != null) {
         currentVersion = stat.getVersion();
       }
@@ -748,7 +633,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   protected CloudSolrClient cloudClient() {
-    return cc.getSolrClientCache().getCloudSolrClient(cc.getZkController().getZkServerAddress());
+    return cc.getZkController().getSolrClient();
   }
 
   protected ZkStateReader zkStateReader() {
@@ -786,7 +671,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           continue; // cannot copy to self
         }
 
-        // make sure the field exists and is multi-valued if this field is
+        // make sure the field exists and is multivalued if this field is
         SchemaField toAddField = schema.getFieldOrNull(toAdd);
         if (toAddField != null) {
           if (!field.multiValued() || toAddField.multiValued()) {
@@ -896,8 +781,8 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     final Set<String> toRemove =
         types.values().stream()
             .filter(this::isTextType)
-            .filter(t -> !languages.contains(t.getTypeName().substring(TEXT_PREFIX_LEN)))
             .map(FieldType::getTypeName)
+            .filter(typeName -> !languages.contains(typeName.substring(TEXT_PREFIX_LEN)))
             .filter(t -> !usedTypes.contains(t)) // not explicitly used by a field
             .collect(Collectors.toSet());
 
@@ -932,7 +817,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
     for (String path : toRemoveFiles) {
       try {
-        zkClient.delete(path, -1, false);
+        zkClient.delete(path, -1);
       } catch (KeeperException.NoNodeException nne) {
         // no-op
       } catch (KeeperException | InterruptedException e) {
@@ -998,9 +883,11 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       for (String path : langFilesToRestore) {
         String copyToPath = path.replace(origPathDir, replacePathDir);
         try {
-          if (!zkClient.exists(copyToPath, true)) {
-            zkClient.makePath(copyToPath, false, true);
-            zkClient.setData(copyToPath, zkClient.getData(path, null, null, true), true);
+          // Only restore files that are missing -- do not overwrite an existing file with the
+          // copyFrom version.
+          if (!zkClient.exists(copyToPath)) {
+            zkClient.makePath(copyToPath, false);
+            zkClient.setData(copyToPath, zkClient.getData(path, null, null));
           }
         } catch (KeeperException | InterruptedException e) {
           throw new IOException(
@@ -1038,9 +925,9 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
       List<SchemaField> addDynFields =
           Arrays.stream(copyFromSchema.getDynamicFields())
-              .filter(df -> langFieldTypeNames.contains(df.getPrototype().getType().getTypeName()))
-              .filter(df -> !existingDynFields.contains(df.getPrototype().getName()))
               .map(IndexSchema.DynamicField::getPrototype)
+              .filter(prototype -> langFieldTypeNames.contains(prototype.getType().getTypeName()))
+              .filter(prototype -> !existingDynFields.contains(prototype.getName()))
               .collect(Collectors.toList());
       if (!addDynFields.isEmpty()) {
         schema = schema.addDynamicFields(addDynFields, null, false);
@@ -1068,7 +955,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       }
     }
 
-    // if we fall thru to here, then the file should be excluded
+    // if we fall through to here, then the file should be excluded
     return false;
   }
 
@@ -1112,8 +999,8 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
             .collect(Collectors.toSet());
     List<SchemaField> toAdd =
         Arrays.stream(dynamicFields)
-            .filter(df -> !existingDFNames.contains(df.getPrototype().getName()))
             .map(IndexSchema.DynamicField::getPrototype)
+            .filter(prototype -> !existingDFNames.contains(prototype.getName()))
             .collect(Collectors.toList());
 
     // only restore language specific dynamic fields that match our langSet
@@ -1175,74 +1062,6 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   List<String> listConfigsInZk() throws IOException {
     return cc.getConfigSetService().listConfigs();
-  }
-
-  byte[] downloadAndZipConfigSet(String configId) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    Path tmpDirectory =
-        Files.createTempDirectory("schema-designer-" + FilenameUtils.getName(configId));
-    try {
-      cc.getConfigSetService().downloadConfig(configId, tmpDirectory);
-      try (ZipOutputStream zipOut = new ZipOutputStream(baos)) {
-        Files.walkFileTree(
-            tmpDirectory,
-            new SimpleFileVisitor<>() {
-              @Override
-              public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                  throws IOException {
-                if (Files.isHidden(dir)) {
-                  return FileVisitResult.SKIP_SUBTREE;
-                }
-
-                String dirName = tmpDirectory.relativize(dir).toString();
-                if (!dirName.endsWith("/")) {
-                  dirName += "/";
-                }
-                zipOut.putNextEntry(new ZipEntry(dirName));
-                zipOut.closeEntry();
-                return FileVisitResult.CONTINUE;
-              }
-
-              @Override
-              public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                  throws IOException {
-                if (!Files.isHidden(file)) {
-                  try (InputStream fis = Files.newInputStream(file)) {
-                    ZipEntry zipEntry = new ZipEntry(tmpDirectory.relativize(file).toString());
-                    zipOut.putNextEntry(zipEntry);
-                    fis.transferTo(zipOut);
-                  }
-                }
-                return FileVisitResult.CONTINUE;
-              }
-            });
-      }
-    } finally {
-      PathUtils.deleteDirectory(tmpDirectory);
-    }
-    return baos.toByteArray();
-  }
-
-  public boolean isConfigSetTrusted(String configSetName) {
-    try {
-      return cc.getConfigSetService().isConfigSetTrusted(configSetName);
-    } catch (IOException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Could not load conf " + configSetName + ": " + e.getMessage(),
-          e);
-    }
-  }
-
-  public void removeConfigSetTrust(String configSetName) {
-    try {
-      cc.getConfigSetService().setConfigSetTrust(configSetName, false);
-    } catch (IOException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Could not remove trusted flag for configSet " + configSetName + ": " + e.getMessage(),
-          e);
-    }
   }
 
   protected ZkSolrResourceLoader zkLoaderForConfigSet(final String configSet) {

@@ -21,10 +21,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-public class MapWriterMap implements MapWriter {
+/** Wraps a {@link Map} as a {@link MapWriter}; obtain via {@link NavigableObject#wrap(Object)}. */
+class MapWriterMap implements MapWriter {
   private final Map<String, Object> delegate;
 
-  public MapWriterMap(Map<String, Object> delegate) {
+  MapWriterMap(Map<String, Object> delegate) {
     this.delegate = delegate;
   }
 
@@ -34,9 +35,9 @@ public class MapWriterMap implements MapWriter {
   }
 
   @Override
-  public Object _get(String path, Object def) {
-    if (path.indexOf('/') == -1) return delegate.getOrDefault(path, def);
-    return MapWriter.super._get(path, def);
+  public Object _get(String path) {
+    if (path.indexOf('/') == -1) return delegate.get(path);
+    return MapWriter.super._get(path);
   }
 
   @Override
@@ -48,10 +49,5 @@ public class MapWriterMap implements MapWriter {
   @Override
   public int _size() {
     return delegate.size();
-  }
-
-  @Override
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    return delegate;
   }
 }

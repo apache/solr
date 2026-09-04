@@ -16,11 +16,8 @@
  */
 package org.apache.solr.logging;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +29,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
-import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.QueryResponseWriter;
@@ -41,6 +37,7 @@ import org.apache.solr.util.TimeOut;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.CharArr;
+import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,25 +130,14 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
     SolrQueryRequest req = new SolrQueryRequestBase(null, new ModifiableSolrParams()) {};
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.addResponse(docs);
-    String output;
-    if (responseWriter instanceof BinaryQueryResponseWriter) {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      ((BinaryQueryResponseWriter) responseWriter).write(baos, req, rsp);
-      baos.close();
-      output = baos.toString(StandardCharsets.UTF_8);
-    } else {
-      StringWriter writer = new StringWriter();
-      responseWriter.write(writer, req, rsp);
-      writer.close();
-      output = writer.toString();
-    }
+    String output = responseWriter.writeToString(req, rsp);
     assertTrue("found: " + output, output.contains(expectMsg));
     validateWrite(docs, expectMsg);
   }
 
   private static void validateWrite(SolrDocumentList docs, String expectMsg) throws IOException {
     CharArr arr = new CharArr();
-    org.noggit.JSONWriter w = new org.noggit.JSONWriter(arr, 2);
+    JSONWriter w = new JSONWriter(arr, 2);
     docs.writeMap(
         new MapWriter.EntryWriter() {
           boolean first = true;

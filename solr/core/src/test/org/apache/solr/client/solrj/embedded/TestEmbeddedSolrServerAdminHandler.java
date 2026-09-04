@@ -18,13 +18,9 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.core.NodeConfig;
 import org.junit.Test;
 
@@ -40,30 +36,8 @@ public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
 
     try (final EmbeddedSolrServer server = new EmbeddedSolrServer(config, "collection1")) {
       final SystemInfoRequest info = new SystemInfoRequest();
-      final NamedList<?> response = server.request(info);
-      assertTrue(response.size() > 0);
-    }
-  }
-
-  private static class SystemInfoRequest extends SolrRequest<QueryResponse> {
-
-    public SystemInfoRequest() {
-      super(METHOD.GET, "/admin/info/system");
-    }
-
-    @Override
-    public SolrParams getParams() {
-      return new ModifiableSolrParams();
-    }
-
-    @Override
-    protected QueryResponse createResponse(final SolrClient client) {
-      return new QueryResponse();
-    }
-
-    @Override
-    public String getRequestType() {
-      return SolrRequest.SolrRequestType.ADMIN.toString();
+      final SystemInfoResponse response = info.process(server);
+      assertTrue(response.getResponse().size() > 0);
     }
   }
 }

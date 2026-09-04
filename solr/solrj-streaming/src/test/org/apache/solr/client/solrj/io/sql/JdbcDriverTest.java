@@ -16,12 +16,9 @@
  */
 package org.apache.solr.client.solrj.io.sql;
 
-import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
@@ -54,30 +51,5 @@ public class JdbcDriverTest extends SolrTestCaseJ4 {
     final String sampleZkHost = "zoo1:9983/foo";
     DriverManager.getConnection(
         "solr:jdbc://" + sampleZkHost + "?collection=collection1", new Properties());
-  }
-
-  @Test
-  public void testProcessUrl() throws Exception {
-    DriverImpl driver = new DriverImpl();
-
-    List<String> zkHostStrings =
-        Arrays.asList("zoo1", "zoo1:9983", "zoo1,zoo2,zoo3", "zoo1:9983,zoo2:9983,zoo3:9983");
-    List<String> chroots = Arrays.asList("", "/", "/foo", "/foo/bar");
-    List<String> paramStrings =
-        Arrays.asList("", "collection=collection1", "collection=collection1&test=test1");
-
-    for (String zkHostString : zkHostStrings) {
-      for (String chroot : chroots) {
-        for (String paramString : paramStrings) {
-          String url = "jdbc:solr://" + zkHostString + chroot + "?" + paramString;
-
-          URI uri = driver.processUrl(url);
-
-          assertEquals(zkHostString, uri.getAuthority());
-          assertEquals(chroot, uri.getPath());
-          assertEquals(paramString, uri.getQuery());
-        }
-      }
-    }
   }
 }

@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Modernize Jetty xml files
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Houston Putman
+    nick: HoustonPutman
+    url: https://home.apache.org/phonebook.html?uid=houston
+links:
+- name: SOLR-17770
+  url: https://issues.apache.org/jira/browse/SOLR-17770
+

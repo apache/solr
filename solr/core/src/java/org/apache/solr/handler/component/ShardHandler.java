@@ -55,8 +55,9 @@ public abstract class ShardHandler {
   public abstract void submit(ShardRequest sreq, String shard, ModifiableSolrParams params);
 
   /**
-   * returns a ShardResponse of the last response correlated with a ShardRequest. This won't return
-   * early if it runs into an error.
+   * Returns a ShardResponse of the last response correlated with a ShardRequest. This won't return
+   * early if it runs into an error. Callers are responsible for ensuring that this can't be called
+   * before requests have been submitted with submit.
    */
   public abstract ShardResponse takeCompletedIncludingErrors();
 
@@ -64,8 +65,9 @@ public abstract class ShardHandler {
   // distinguish between different ShardRequest objects as it seems to advertise? What's going on
   // here?
   /**
-   * returns a ShardResponse of the last response correlated with a ShardRequest, or immediately
-   * returns a ShardResponse if there was an error detected
+   * Returns a ShardResponse of the last response correlated with a ShardRequest, or immediately
+   * returns a ShardResponse if there was an error detected. Callers are responsible for ensuring
+   * that this can't be called before requests have been submitted with submit.
    */
   public abstract ShardResponse takeCompletedOrError();
 

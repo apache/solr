@@ -18,12 +18,13 @@ package org.apache.solr.core;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.StrUtils;
@@ -33,7 +34,7 @@ import org.apache.solr.common.util.Utils;
  * This class encapsulates the config overlay json file. It is immutable and any edit operations
  * performed on this gives a new copy of the object with the changed value
  */
-public class ConfigOverlay implements MapSerializable {
+public class ConfigOverlay implements MapWriter {
   private final int version;
   private final Map<String, Object> data;
   private Map<String, Object> props;
@@ -41,13 +42,13 @@ public class ConfigOverlay implements MapSerializable {
 
   @SuppressWarnings({"unchecked"})
   public ConfigOverlay(Map<String, Object> jsonObj, int version) {
-    if (jsonObj == null) jsonObj = Collections.emptyMap();
+    if (jsonObj == null) jsonObj = Map.of();
     this.version = version;
     data = Collections.unmodifiableMap(jsonObj);
     props = (Map<String, Object>) data.get("props");
-    if (props == null) props = Collections.emptyMap();
+    if (props == null) props = Map.of();
     userProps = (Map<String, Object>) data.get("userProps");
-    if (userProps == null) userProps = Collections.emptyMap();
+    if (userProps == null) userProps = Map.of();
   }
 
   public Object getXPathProperty(String xpath) {
@@ -193,8 +194,7 @@ public class ConfigOverlay implements MapSerializable {
       if (hierarchy != null) hierarchy.add(part);
       if (obj == null) return null;
       if (i == parts.size() - 1) {
-        if (obj instanceof Map<?, ?>) {
-          Map<?, ?> map = (Map<?, ?>) obj;
+        if (obj instanceof Map<?, ?> map) {
           Object o = map.get(part);
           return checkType(o, isXpath, isAttr);
         }
@@ -209,8 +209,7 @@ public class ConfigOverlay implements MapSerializable {
       new Class<?>[] {String.class, Boolean.class, Integer.class, Float.class};
 
   private static Class<?> checkType(Object o, boolean isXpath, boolean isAttr) {
-    if (o instanceof Long) {
-      Long aLong = (Long) o;
+    if (o instanceof Long aLong) {
       int ten = aLong.intValue() / 10;
       int one = aLong.intValue() % 10;
       if (isXpath && isAttr && one != 0) return null;
@@ -235,16 +234,15 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    map.put(ZNODEVER, version);
-    map.putAll(data);
-    return map;
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put(ZNODEVER, version);
+    data.forEach(ew::putNoEx);
   }
 
   @SuppressWarnings({"unchecked"})
   public Map<String, Map<String, Object>> getNamedPlugins(String typ) {
     Map<String, Map<String, Object>> reqHandlers = (Map<String, Map<String, Object>>) data.get(typ);
-    if (reqHandlers == null) return Collections.emptyMap();
+    if (reqHandlers == null) return Map.of();
     return Collections.unmodifiableMap(reqHandlers);
   }
 

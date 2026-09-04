@@ -212,6 +212,8 @@ This parameter allows faceting to be faster in the presence of rapid index chang
 
 +
 The default value is `fc` (except for fields using the `BoolField` field type and when `facet.exists=true` is requested) since it tends to use less memory and is faster when a field has many unique terms in the index.
+[NOTE]
+If you request a method that is not compatible with the field you are faceting, Solr will automatically choose a different method that is compatible.  You can see the method you requested (`requestedMethod`) and the method Solr used (`appliedMethod`) by running a query with `debug=timing` or `debug=all`.
 
 `facet.enum.cache.minDf`::
 +
@@ -358,7 +360,7 @@ f.lastModified_dt.facet.range.gap=+1DAY
 How to handle cases where the `facet.range.gap` does not divide evenly between `facet.range.start` and `facet.range.end`.
 +
 If `true`, the last range constraint will have the `facet.range.end` value as an upper bound.
-If `false`, the last range will have the smallest possible upper bound greater then `facet.range.end` so the range is the exact width of the specified range gap.
+If `false`, the last range will have the smallest possible upper bound greater than `facet.range.end` so the range is the exact width of the specified range gap.
 +
 This parameter can be specified on a per field basis with the syntax `f.<fieldname>.facet.range.hardend`.
 

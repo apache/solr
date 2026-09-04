@@ -56,7 +56,7 @@ import org.apache.solr.schema.SimilarityFactory;
  * <p>Optional settings:
  *
  * <ul>
- *   <li>discountOverlaps (bool): Sets {@link IBSimilarity#setDiscountOverlaps(boolean)}
+ *   <li>discountOverlaps (bool): Sets {link Similarity#getDiscountOverlaps()}
  * </ul>
  *
  * @lucene.experimental
@@ -100,8 +100,6 @@ public class IBSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    IBSimilarity sim = new IBSimilarity(distribution, lambda, normalization);
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    return new IBSimilarity(distribution, lambda, normalization, discountOverlaps);
   }
 }

@@ -16,13 +16,14 @@
  */
 package org.apache.solr.client.solrj.util;
 
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.search.QueryParsing;
 import org.junit.Test;
 
 /**
@@ -36,6 +37,49 @@ public class ClientUtilsTest extends SolrTestCase {
     assertEquals("with\\ space", ClientUtils.escapeQueryChars("with space"));
     assertEquals("h\\:ello\\!", ClientUtils.escapeQueryChars("h:ello!"));
     assertEquals("h\\~\\!", ClientUtils.escapeQueryChars("h~!"));
+  }
+
+  // FYI also tested via org.apache.solr.common.params.SolrParamTest.testLocalParamRoundTripParsing
+  public void testEncodeLocalParamValRoundTrip() throws Exception {
+    // Values that require quoting (whitespace, '}', or a leading '$') must round-trip through
+    // Solr's own local-params reader, in particular values containing a literal backslash or
+    // single quote.
+    assertRoundTrips("");
+    assertRoundTrips("'leadingQuote");
+    assertRoundTrips("\"leadingDoubleQuote");
+    assertRoundTrips("plain");
+    assertRoundTrips("has space");
+    assertRoundTrips("trailing}brace");
+    assertRoundTrips("has'quote and space");
+    assertRoundTrips("has\\backslash and space");
+    assertRoundTrips("both\\'kinds together");
+    assertRoundTrips("$dollarPrefixed");
+    assertRoundTrips("$dollarPrefixed with space");
+    assertRoundTrips("$\\'mix of everything");
+
+    for (int i = 0; i < 100; i++) {
+      assertRoundTrips(TestUtil.randomUnicodeString(random()));
+    }
+  }
+
+  private void assertRoundTrips(String original) throws Exception {
+    String encoded = ClientUtils.encodeLocalParamVal(original);
+    String txt = "{!key=" + encoded + "}";
+    ModifiableSolrParams target = new ModifiableSolrParams();
+    QueryParsing.parseLocalParams(txt, 0, target, null);
+    assertEquals(
+        "encodeLocalParamVal(" + original + ") -> " + encoded + " did not round-trip",
+        original,
+        target.get("key"));
+
+    // Also confirm the encoded value doesn't swallow whatever follows it.
+    String txtFollowedByAnother = "{!key=" + encoded + " next=followed}";
+    ModifiableSolrParams targetFollowedByAnother = new ModifiableSolrParams();
+    QueryParsing.parseLocalParams(txtFollowedByAnother, 0, targetFollowedByAnother, null);
+    assertEquals(
+        "encodeLocalParamVal(" + original + ") -> " + encoded + " swallowed the next local param",
+        "followed",
+        targetFollowedByAnother.get("next"));
   }
 
   @Test
@@ -56,11 +100,10 @@ public class ClientUtilsTest extends SolrTestCase {
 
   @Test
   public void testUrlBuilding() throws Exception {
-    final var rw = new RequestWriter();
     // Simple case, non-collection request
     {
       final var request = new HealthCheckRequest();
-      final var url = ClientUtils.buildRequestUrl(request, rw, "http://localhost:8983/solr", null);
+      final var url = ClientUtils.buildRequestUrl(request, "http://localhost:8983/solr", null);
       assertEquals("http://localhost:8983/solr/admin/info/health", url);
     }
 
@@ -68,40 +111,15 @@ public class ClientUtilsTest extends SolrTestCase {
     {
       final var request = new QueryRequest();
       final var url =
-          ClientUtils.buildRequestUrl(request, rw, "http://localhost:8983/solr", "someColl");
+          ClientUtils.buildRequestUrl(request, "http://localhost:8983/solr", "someColl");
       assertEquals("http://localhost:8983/solr/someColl/select", url);
-    }
-
-    // Uses SolrRequest.getBasePath() to override baseUrl
-    {
-      final var request = new HealthCheckRequest();
-      request.setBasePath("http://alternate-url:7574/solr");
-      final var url = ClientUtils.buildRequestUrl(request, rw, "http://localhost:8983/solr", null);
-      assertEquals("http://alternate-url:7574/solr/admin/info/health", url);
-    }
-
-    // V2 path is correct when solr.v2RealPath sysprop set
-    {
-      System.setProperty("solr.v2RealPath", "true");
-      final var request = new V2Request.Builder("/collections").build();
-      final var url = ClientUtils.buildRequestUrl(request, rw, "http://localhost:8983/solr", null);
-      assertEquals("http://localhost:8983/solr/____v2/collections", url);
-    }
-
-    // V2 path is correct when solr.v2RealPath sysprop NOT set
-    {
-      System.clearProperty("solr.v2RealPath");
-      final var request = new V2Request.Builder("/collections").build();
-      final var url = ClientUtils.buildRequestUrl(request, rw, "http://localhost:8983/solr", null);
-      assertEquals("http://localhost:8983/api/collections", url);
     }
 
     // Ignores collection when not needed (i.e. obeys SolrRequest.requiresCollection)
     {
       final var request = new HealthCheckRequest();
       final var url =
-          ClientUtils.buildRequestUrl(
-              request, rw, "http://localhost:8983/solr", "unneededCollection");
+          ClientUtils.buildRequestUrl(request, "http://localhost:8983/solr", "unneededCollection");
       assertEquals("http://localhost:8983/solr/admin/info/health", url);
     }
   }

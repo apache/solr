@@ -38,11 +38,16 @@
             </Item>
           </Array>
         </Arg>
-        <Set name="host"><Property name="solr.jetty.host" default="127.0.0.1"/></Set>
-        <Set name="port"><Property name="jetty.port" default="8983" /></Set>
+        <Set name="host"><Property name="solr.host.bind" default="127.0.0.1"/></Set>
+        <Set name="port"><Property name="solr.port.listen" default="8983" /></Set>
         <Set name="idleTimeout"><Property name="solr.jetty.http.idleTimeout" default="120000"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="solr.jetty.http.acceptorPriorityDelta" default="0"/></Set>
         <Set name="acceptQueueSize"><Property name="solr.jetty.http.acceptQueueSize" default="0"/></Set>
+        <Set name="reuseAddress"><Property name="solr.jetty.http.reuseAddress" default="true"/></Set>
+        <Set name="reusePort"><Property name="solr.jetty.http.reusePort" default="false"/></Set>
+        <Set name="acceptedTcpNoDelay"><Property name="solr.jetty.http.acceptedTcpNoDelay" default="true"/></Set>
+        <Set name="acceptedReceiveBufferSize" property="solr.jetty.http.acceptedReceiveBufferSize" />
+        <Set name="acceptedSendBufferSize" property="solr.jetty.http.acceptedSendBufferSize" />
       </New>
     </Arg>
   </Call>

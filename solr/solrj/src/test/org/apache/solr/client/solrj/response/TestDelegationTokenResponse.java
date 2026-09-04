@@ -22,9 +22,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.DelegationTokenRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -35,9 +35,19 @@ public class TestDelegationTokenResponse extends SolrTestCase {
       DelegationTokenRequest<?, ?> request, DelegationTokenResponse response, String responseBody)
       throws Exception {
     ResponseParser parser = request.getResponseParser();
-    response.setResponse(
-        parser.processResponse(
-            new ByteArrayInputStream(responseBody.getBytes(StandardCharsets.UTF_8)), "UTF-8"));
+
+    // InputStreamResponseParser doesn't support processResponse(),
+    // so we need to handle it differently
+    if (parser instanceof InputStreamResponseParser) {
+      // For InputStreamResponseParser (used by Cancel request),
+      // create a NamedList directly since it expects empty response
+      response.setResponse(new NamedList<>());
+    } else {
+      // For JsonMapResponseParser (used by Get and Renew requests)
+      response.setResponse(
+          parser.processResponse(
+              new ByteArrayInputStream(responseBody.getBytes(StandardCharsets.UTF_8)), "UTF-8"));
+    }
   }
 
   private String getNestedMapJson(String outerKey, String innerKey, Object innerValue) {

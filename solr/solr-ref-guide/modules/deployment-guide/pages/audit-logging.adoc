@@ -230,20 +230,17 @@ See the javadocs for the base class at {solr-javadocs}/core/org/apache/solr/secu
 
 == Metrics
 
-Audit logging plugins record metrics about count and timing of log requests, as well as queue size for async loggers.
-The metrics keys are all recorded on the `SECURITY` category, and each metric name are prefixed with a scope of `/auditlogging` and the class name of the logger, e.g., `SolrLogAuditLoggerPlugin`.
+The metrics keys are all recorded on the `SECURITY` category, and each metric includes attributes for the handler (e.g., `/auditlogging`) and the class name of the logger (e.g., `SolrLogAuditLoggerPlugin`).
 The individual metrics are:
 
-* `count`: (_meter_) Records number and rate of audit logs written.
-* `errors`: (_meter_) Records number and rate of errors.
-* `lost`: (_meter_) Records number and rate of events lost if the queue is full and `blockAsync=false`.
-* `requestTimes`: (_timer_) Records latency and percentiles for audit logging performance.
-* `totalTime`: (_counter_) Records total time spent logging.
-* `queueCapacity`: (_gauge_) Records the maximum size of the async logging queue.
-* `queueSize`: (_gauge_) Records the number of events currently waiting in the queue.
-* `queuedTime`: (_timer_) Records the amount of time events waited in queue.
-Adding this with the `requestTimes` metric will show the total time from event to logging complete.
-* `async`: (_gauge_) Tells whether this logger is in async mode.
+* `solr_auditlogger_count_total`: (_counter_) Records number of audit logs written.
+* `solr_auditlogger_errors_total`: (_counter_) Records number of errors.
+* `solr_auditlogger_lost_total`: (_counter_) Records number of events lost if the queue is full and `blockAsync=false`.
+* `solr_auditlogger_request_times_nanoseconds`: (_histogram_) Records latency and percentiles for audit logging performance.
+* `solr_auditlogger_queue`: (_gauge_) Records the maximum size (`type=capacity`) and current size (`type=size`) of the async logging queue.
+* `solr_auditlogger_queued_time_nanoseconds`: (_histogram_) Records the amount of time events waited in queue.
+Adding this with the `solr_auditlogger_request_times_nanoseconds` metric will show the total time from event to logging complete.
+* `solr_auditlogger_async_enabled`: (_gauge_) Tells whether this logger is in async mode (1) or not (0).
 
-TIP: If you experience a very high request rate and have a slow audit logger plugin, you may see the `queueSize` and `queuedTime` metrics increase, and possibly start dropping events (shown by an increase in `lost` count).
+TIP: If you experience a very high request rate and have a slow audit logger plugin, you may see the `solr_auditlogger_queue` size metric increase, and possibly start dropping events (shown by an increase in `solr_auditlogger_lost_total` count).
 In this case you may want to increase the `numThreads` setting.

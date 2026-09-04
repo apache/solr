@@ -1,5 +1,11 @@
-# Ignore all differences in line endings for the lock file.
+# Ignore all differences in line endings for lock files.
 versions.lock text eol=lf
+**/*.lockfile text eol=lf
 
 # Gradle files are always in LF.
 *.gradle          text eol=lf
+
+# Exclude from source release tarball (git archive).  Avoids ASF license header requirements.
+/.*               export-ignore
+/dev-docs         export-ignore
+AGENTS.md         export-ignore

@@ -17,42 +17,53 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.mockito.Mockito.when;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.ReloadCollectionRequestBody;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionParams;
+import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link ReloadCollectionAPI} */
-public class ReloadCollectionAPITest extends SolrTestCaseJ4 {
+public class ReloadCollectionAPITest extends MockV2APITest {
+
+  private ReloadCollectionAPI api;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new ReloadCollectionAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
+
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
     final SolrException thrown =
         expectThrows(
             SolrException.class,
-            () -> {
-              final var api = new ReloadCollectionAPI(null, null, null);
-              api.reloadCollection(null, new ReloadCollectionRequestBody());
-            });
+            () -> api.reloadCollection(null, new ReloadCollectionRequestBody()));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: collection", thrown.getMessage());
   }
 
-  // TODO message creation
   @Test
-  public void testCreateRemoteMessageAllProperties() {
+  public void testCreateRemoteMessageAllProperties() throws Exception {
     final var requestBody = new ReloadCollectionRequestBody();
     requestBody.async = "someAsyncId";
-    final var remoteMessage =
-        ReloadCollectionAPI.createRemoteMessage("someCollName", requestBody).getProperties();
 
-    assertEquals(3, remoteMessage.size());
-    assertEquals("reload", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someCollName", remoteMessage.get(NAME));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
+    api.reloadCollection("someCollName", requestBody);
+
+    validateRunCommand(
+        CollectionParams.CollectionAction.RELOAD,
+        requestBody.async,
+        message -> {
+          assertEquals(1, message.size());
+          assertEquals("someCollName", message.get(NAME));
+        });
   }
 }

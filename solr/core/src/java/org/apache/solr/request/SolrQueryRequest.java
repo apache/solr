@@ -18,15 +18,19 @@ package org.apache.solr.request;
 
 import io.opentelemetry.api.trace.Span;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.ResponseWritersRegistry;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.HttpSolrCall;
@@ -39,7 +43,39 @@ import org.apache.solr.util.RTimerTree;
  */
 public interface SolrQueryRequest extends AutoCloseable {
 
-  /** returns the current request parameters */
+  /** This is the system property for {@link #ALLOW_PARTIAL_RESULTS_DEFAULT} */
+  String SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT = "solr.allowPartialResultsDefault";
+
+  /**
+   * Users can set {@link SolrQueryRequest#SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT} system property to
+   * true, and solr will omit results when any shard fails due query execution limits (time, cpu
+   * etc.). By default, this is set to true. Setting it to false will reduce processing, cpu and
+   * network associated with collecting and transmitting partial results. This setting can be
+   * overridden (in either direction) on a per-request basis with {@code
+   * &allowPartialResults=[true|false]}. When results have been omitted the response header should
+   * contain a partialResults element with the value "omitted"
+   */
+  boolean ALLOW_PARTIAL_RESULTS_DEFAULT =
+      EnvUtils.getPropertyAsBool(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT, true);
+
+  /**
+   * Tests if the partials for the request should be discarded. Examines {@link
+   * SolrQueryRequest#ALLOW_PARTIAL_RESULTS_DEFAULT} system property and also examines {@link
+   * CommonParams#PARTIAL_RESULTS} request param. The Request Parameter takes precedence if both are
+   * set.
+   *
+   * @return true if partials should be discarded.
+   * @param params the request parameters
+   */
+  static boolean allowPartialResults(SolrParams params) {
+    return params.getBool(CommonParams.PARTIAL_RESULTS, ALLOW_PARTIAL_RESULTS_DEFAULT);
+  }
+
+  static boolean disallowPartialResults(SolrParams params) {
+    return !allowPartialResults(params);
+  }
+
+  /** The parameters for this request; never null. Use {@link #setParams(SolrParams)} to change. */
   SolrParams getParams();
 
   /**
@@ -52,8 +88,8 @@ public interface SolrQueryRequest extends AutoCloseable {
   Iterable<ContentStream> getContentStreams();
 
   /**
-   * Returns the original request parameters. As this does not normally include configured defaults
-   * it's more suitable for logging.
+   * The original request parameters; never null. As this does not normally include configured
+   * defaults, it's more suitable for logging.
    */
   SolrParams getOriginalParams();
 
@@ -80,17 +116,17 @@ public interface SolrQueryRequest extends AutoCloseable {
   /** The index searcher associated with this request */
   SolrIndexSearcher getSearcher();
 
-  /** The solr core (coordinator, etc) associated with this request */
+  /** The solr core (coordinator, etc.) associated with this request */
   SolrCore getCore();
 
   /** The schema snapshot from core.getLatestSchema() at request creation. */
-  public IndexSchema getSchema();
+  IndexSchema getSchema();
 
   /** Replaces the current schema snapshot with the latest from the core. */
-  public void updateSchemaToLatest();
+  void updateSchemaToLatest();
 
   /** Returns a string representing all the important parameters. Suitable for logging. */
-  public String getParamString();
+  String getParamString();
 
   /**
    * Returns any associated JSON (or null if none) in deserialized generic form. Java classes used
@@ -108,11 +144,11 @@ public interface SolrQueryRequest extends AutoCloseable {
 
   /**
    * Only for V2 API. Returns a map of path segments and their values. For example, if the path is
-   * configured as /path/{segment1}/{segment2} and a reguest is made as /path/x/y the returned map
+   * configured as /path/{segment1}/{segment2} and a request is made as /path/x/y the returned map
    * would contain {segment1:x ,segment2:y}
    */
   default Map<String, String> getPathTemplateValues() {
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   /**
@@ -122,11 +158,11 @@ public interface SolrQueryRequest extends AutoCloseable {
    * @param validateInput , If true it is validated against the json schema spec
    */
   default List<CommandOperation> getCommands(boolean validateInput) {
-    return Collections.emptyList();
+    return List.of();
   }
 
   default String getHttpMethod() {
-    return (String) getContext().get("httpMethod");
+    return ((SolrRequest.METHOD) getContext().get("httpMethod")).name();
   }
 
   default HttpSolrCall getHttpSolrCall() {
@@ -150,7 +186,70 @@ public interface SolrQueryRequest extends AutoCloseable {
     return core == null ? null : core.getCoreContainer();
   }
 
+  /** The CloudDescriptor, which may be different from that of the core on the coordinator. */
   default CloudDescriptor getCloudDescriptor() {
     return getCore().getCoreDescriptor().getCloudDescriptor();
+  }
+
+  /**
+   * The writer to use for this request, considering {@link CommonParams#WT}. Never null.
+   *
+   * <p>If a core is available, uses the core's response writer registry. If no core is available
+   * (e.g., for node/container requests), uses a minimal set of node/container-appropriate writers.
+   */
+  default QueryResponseWriter getResponseWriter() {
+    // it's weird this method is here instead of SolrQueryResponse, but it's practical/convenient
+    return ResponseWritersRegistry.getWriter(getParams().get(CommonParams.WT), getCore());
+  }
+
+  /**
+   * Returns a new "Sub Request" of the current request.
+   *
+   * <p>This is useful in situations where some code handling an existing request wishes to invoke a
+   * new request -- as if it came from the same user. The request returned uses the same {@link
+   * #getSearcher} and {@link #getUserPrincipal} as the current request, and is initialized using
+   * the same {@link #getSchema()} (but {@link #updateSchemaToLatest} is handled independently for
+   * the two requests)
+   *
+   * <p>The behavior of a sub-request is undefined if the original request is closed.
+   */
+  default SolrQueryRequest subRequest(final SolrParams params) {
+    final SolrQueryRequest outerRequest = this;
+    // NOTE: we explicitly do not use DelegatingSolrQueryRequest because we do not want
+    // any existing (or future) "setter" methods to delegate to the outerRequest
+    return new SolrQueryRequestBase(outerRequest.getCore(), params) {
+      { // super() implicitly uses core.getLatestSchema(), but we want
+        // whatever outerRequest is currently using
+        this.schema = outerRequest.getSchema();
+      }
+
+      @Override
+      public SolrIndexSearcher getSearcher() {
+        // We do not use/set this.searcherHolder, so that super.close() doesn't
+        // double close
+        return outerRequest.getSearcher();
+      }
+
+      @Override
+      public Principal getUserPrincipal() {
+        return outerRequest.getUserPrincipal();
+      }
+    };
+  }
+
+  /**
+   * Returns a request that explicitly uses the specified <code>SolrIndexSearcher</code> (even if it
+   * is not registered or fully initialized) in conjunction with the <code>SolrCore</code>
+   * identified via {@link SolrIndexSearcher#getCore}
+   */
+  static SolrQueryRequest wrapSearcher(final SolrIndexSearcher searcher, final SolrParams params) {
+    return new SolrQueryRequestBase(searcher.getCore(), params) {
+      @Override
+      public SolrIndexSearcher getSearcher() {
+        // We do not use/set this.searcherHolder, so that super.close() doesn't
+        // double close
+        return searcher;
+      }
+    };
   }
 }

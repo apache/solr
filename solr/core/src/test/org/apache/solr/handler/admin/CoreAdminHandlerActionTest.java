@@ -17,7 +17,6 @@
 package org.apache.solr.handler.admin;
 
 import java.util.Locale;
-import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -82,11 +81,11 @@ public class CoreAdminHandlerActionTest extends SolrTestCaseJ4 {
 
     admin.handleRequestBody(req(CoreAdminParams.ACTION, action), response);
 
-    Map<String, Object> actionResponse = ((NamedList<Object>) response.getResponse()).asMap();
+    var actionResponse = (NamedList<Object>) response.getResponse();
 
     assertTrue(
         String.format(Locale.ROOT, "Action response should contain %s property", propertyName),
-        actionResponse.containsKey(propertyName));
+        actionResponse.get(propertyName) != null);
     assertEquals(
         String.format(
             Locale.ROOT,

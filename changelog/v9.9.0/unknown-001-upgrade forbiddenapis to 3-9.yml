@@ -1,0 +1,5 @@
+title: Upgrade forbiddenapis to 3.9.
+type: dependency_update
+authors:
+- name: Uwe Schindler
+links: []

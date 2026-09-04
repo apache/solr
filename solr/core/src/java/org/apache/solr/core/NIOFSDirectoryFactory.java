@@ -26,8 +26,7 @@ import org.apache.lucene.store.NIOFSDirectory;
 public class NIOFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
-  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
-      throws IOException {
+  protected Directory create(String path, LockFactory lockFactory) throws IOException {
     return new NIOFSDirectory(Path.of(path), lockFactory);
   }
 }

@@ -26,11 +26,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MatchNoDocsQuery;
@@ -38,11 +35,11 @@ import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
@@ -105,7 +102,6 @@ public class Grouping {
   private int maxMatches; // max number of matches from any grouping command
   private float maxScore = Float.NaN; // max score seen in any doclist
   private boolean signalCacheWarning = false;
-  private TimeLimitingCollector timeLimitingCollector;
 
   // output if one of the grouping commands should be used as the main result.
   public DocList mainResult;
@@ -179,24 +175,16 @@ public class Grouping {
   }
 
   public void addFunctionCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
-    QParser parser = QParser.getParser(groupByStr, FunctionQParserPlugin.NAME, request);
-    Query q = parser.getQuery();
+    ValueSource valueSource = FunctionQParser.parseAsValueSource(groupByStr, request);
     final Grouping.Command<?> gc;
-    if (q instanceof FunctionQuery) {
-      ValueSource valueSource = ((FunctionQuery) q).getValueSource();
-      if (valueSource instanceof StrFieldSource) {
-        String field = ((StrFieldSource) valueSource).getField();
-        CommandField commandField = new CommandField();
-        commandField.groupBy = field;
-        gc = commandField;
-      } else {
-        CommandFunc commandFunc = new CommandFunc();
-        commandFunc.groupBy = valueSource;
-        gc = commandFunc;
-      }
+    if (valueSource instanceof StrFieldSource) {
+      String field = ((StrFieldSource) valueSource).getField();
+      CommandField commandField = new CommandField();
+      commandField.groupBy = field;
+      gc = commandField;
     } else {
       CommandFunc commandFunc = new CommandFunc();
-      commandFunc.groupBy = new QueryValueSource(q, 0.0f);
+      commandFunc.groupBy = valueSource;
       gc = commandFunc;
     }
     gc.withinGroupSort = withinGroupSort;
@@ -308,7 +296,9 @@ public class Grouping {
     qr.setDocListAndSet(out);
 
     SolrIndexSearcher.ProcessedFilter pf = searcher.getProcessedFilter(cmd.getFilterList());
-    final Query filterQuery = pf.filter;
+
+    final Query searchQuery =
+        QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
     maxDoc = searcher.maxDoc();
 
     needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
@@ -365,7 +355,7 @@ public class Grouping {
     }
 
     if (allCollectors != null) {
-      searchWithTimeLimiter(filterQuery, allCollectors);
+      searchWithTimeLimiter(searchQuery, allCollectors);
 
       if (allCollectors instanceof DelegatingCollector) {
         ((DelegatingCollector) allCollectors).complete();
@@ -398,14 +388,14 @@ public class Grouping {
                     "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent",
                     maxDocsPercentageToCache));
             log.warn("Please increase cache size or disable group caching.");
-            searchWithTimeLimiter(filterQuery, secondPhaseCollectors);
+            searchWithTimeLimiter(searchQuery, secondPhaseCollectors);
           }
         } else {
           if (pf.postFilter != null) {
             pf.postFilter.setLastDelegate(secondPhaseCollectors);
             secondPhaseCollectors = pf.postFilter;
           }
-          searchWithTimeLimiter(filterQuery, secondPhaseCollectors);
+          searchWithTimeLimiter(searchQuery, secondPhaseCollectors);
         }
         if (secondPhaseCollectors instanceof DelegatingCollector) {
           ((DelegatingCollector) secondPhaseCollectors).complete();
@@ -435,34 +425,9 @@ public class Grouping {
    * Invokes search with the specified filter and collector. If a time limit has been specified,
    * wrap the collector in a TimeLimitingCollector
    */
-  private void searchWithTimeLimiter(final Query filterQuery, Collector collector)
+  private void searchWithTimeLimiter(final Query searchQuery, Collector collector)
       throws IOException {
-    if (cmd.getTimeAllowed() > 0) {
-      if (timeLimitingCollector == null) {
-        timeLimitingCollector =
-            new TimeLimitingCollector(
-                collector, TimeLimitingCollector.getGlobalCounter(), cmd.getTimeAllowed());
-      } else {
-        /*
-         * This is so the same timer can be used for grouping's multiple phases.
-         * We don't want to create a new TimeLimitingCollector for each phase because that would
-         * reset the timer for each phase.  If time runs out during the first phase, the
-         * second phase should timeout quickly.
-         */
-        timeLimitingCollector.setCollector(collector);
-      }
-      collector = timeLimitingCollector;
-    }
-    try {
-      searcher.search(QueryUtils.combineQueryAndFilter(query, filterQuery), collector);
-    } catch (TimeLimitingCollector.TimeExceededException
-        | ExitableDirectoryReader.ExitingReaderException x) {
-      // INFO log the (possibly quite long) query object separately
-      log.info("Query: {}; ", query);
-      // to make WARN logged exception content more visible
-      log.warn("Query: {}; ", query.getClass().getName(), x);
-      qr.setPartialResults(true);
-    }
+    searcher.search(searchQuery, collector);
   }
 
   /**
@@ -603,7 +568,10 @@ public class Grouping {
     protected void populateScoresIfNecessary() throws IOException {
       if (needScores) {
         for (GroupDocs<?> groups : result.groups) {
-          TopFieldCollector.populateScores(groups.scoreDocs, searcher, query);
+          if (log.isDebugEnabled()) {
+            log.debug("Group score is 1: {}", groups.maxScore());
+          }
+          TopFieldCollector.populateScores(groups.scoreDocs(), searcher, query);
         }
       }
     }
@@ -623,8 +591,8 @@ public class Grouping {
     }
 
     protected DocList getDocList(GroupDocs<?> groups) {
-      assert groups.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-      int max = Math.toIntExact(groups.totalHits.value);
+      assert groups.totalHits().relation() == TotalHits.Relation.EQUAL_TO;
+      int max = Math.toIntExact(groups.totalHits().value());
       int off = groupOffset;
       int len = docsPerGroup;
       if (format == Format.simple) {
@@ -634,24 +602,27 @@ public class Grouping {
       int docsToCollect = getMax(off, len, max);
 
       // TODO: implement a DocList impl that doesn't need to start at offset=0
-      int docsCollected = Math.min(docsToCollect, groups.scoreDocs.length);
+      int docsCollected = Math.min(docsToCollect, groups.scoreDocs().length);
 
       int ids[] = new int[docsCollected];
       float[] scores = needScores ? new float[docsCollected] : null;
       for (int i = 0; i < ids.length; i++) {
-        ids[i] = groups.scoreDocs[i].doc;
-        if (scores != null) scores[i] = groups.scoreDocs[i].score;
+        ids[i] = groups.scoreDocs()[i].doc;
+        if (scores != null) scores[i] = groups.scoreDocs()[i].score;
       }
 
-      float score = groups.maxScore;
+      float score = groups.maxScore();
       maxScore = maxAvoidNaN(score, maxScore);
+      if (log.isDebugEnabled()) {
+        log.debug("Here, score is {} and maxScore is {}", score, maxScore);
+      }
       DocSlice docs =
           new DocSlice(
               off,
               Math.max(0, ids.length - off),
               ids,
               scores,
-              groups.totalHits.value,
+              groups.totalHits().value(),
               score,
               TotalHits.Relation.EQUAL_TO);
 
@@ -680,9 +651,9 @@ public class Grouping {
 
       outer:
       for (GroupDocs<T> group : groups) {
-        maxScore = maxAvoidNaN(maxScore, group.maxScore);
+        maxScore = maxAvoidNaN(maxScore, group.maxScore());
 
-        for (ScoreDoc scoreDoc : group.scoreDocs) {
+        for (ScoreDoc scoreDoc : group.scoreDocs()) {
           if (docsGathered >= docsToGather) {
             break outer;
           }
@@ -757,7 +728,7 @@ public class Grouping {
       groupSort = groupSort == null ? Sort.RELEVANCE : groupSort;
       firstPass =
           new FirstPassGroupingCollector<>(
-              new TermGroupSelector(groupBy), groupSort, actualGroupsToFind);
+              new TermGroupSelector(groupBy), searcher.weightSort(groupSort), actualGroupsToFind);
       return firstPass;
     }
 
@@ -843,20 +814,20 @@ public class Grouping {
         // To keep the response format compatable with trunk.
         // In trunk MutableValue can convert an indexed value to its native type. E.g. string to int
         // The only option I currently see is the use the FieldType for this
-        if (group.groupValue != null) {
+        if (group.groupValue() != null) {
           SchemaField schemaField = searcher.getSchema().getField(groupBy);
           FieldType fieldType = schemaField.getType();
           // use createFields so that fields having doc values are also supported
           // TODO: currently, this path is called only for string field, so
           // should we just use fieldType.toObject(schemaField, group.groupValue) here?
-          List<IndexableField> fields = schemaField.createFields(group.groupValue.utf8ToString());
+          List<IndexableField> fields = schemaField.createFields(group.groupValue().utf8ToString());
           if (fields != null && !fields.isEmpty()) {
             nl.add("groupValue", fieldType.toObject(fields.get(0)));
           } else {
             throw new SolrException(
                 ErrorCode.INVALID_STATE,
                 "Couldn't create schema field for grouping, group value: "
-                    + group.groupValue.utf8ToString()
+                    + group.groupValue().utf8ToString()
                     + ", field: "
                     + schemaField);
           }
@@ -905,11 +876,14 @@ public class Grouping {
       Collector subCollector;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
         subCollector =
-            topCollector = TopScoreDocCollector.create(groupDocsToCollect, Integer.MAX_VALUE);
+            topCollector =
+                new TopScoreDocCollectorManager(groupDocsToCollect, Integer.MAX_VALUE)
+                    .newCollector();
       } else {
         topCollector =
-            TopFieldCollector.create(
-                searcher.weightSort(withinGroupSort), groupDocsToCollect, Integer.MAX_VALUE);
+            new TopFieldCollectorManager(
+                    searcher.weightSort(withinGroupSort), groupDocsToCollect, Integer.MAX_VALUE)
+                .newCollector();
         if (needScores) {
           maxScoreCollector = new MaxScoreCollector();
           subCollector = MultiCollector.wrap(topCollector, maxScoreCollector);
@@ -929,6 +903,9 @@ public class Grouping {
         maxScore = topDocs.scoreDocs.length == 0 ? Float.NaN : topDocs.scoreDocs[0].score;
       } else if (needScores) {
         // use top-level query to populate the scores
+        if (log.isDebugEnabled()) {
+          log.debug("Group score is 2: {}", maxScoreCollector.getMaxScore());
+        }
         TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, Grouping.this.query);
         maxScore = maxScoreCollector.getMaxScore();
       } else {
@@ -1070,7 +1047,7 @@ public class Grouping {
       for (GroupDocs<MutableValue> group : result.groups) {
         NamedList<Object> nl = new SimpleOrderedMap<>();
         groupList.add(nl); // grouped={ key={ groups=[ {
-        nl.add("groupValue", group.groupValue.toObject());
+        nl.add("groupValue", group.groupValue().toObject());
         addDocList(nl, group);
       }
     }

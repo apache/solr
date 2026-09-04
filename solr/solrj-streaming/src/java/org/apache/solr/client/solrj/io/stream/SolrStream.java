@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -25,10 +24,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -37,6 +34,7 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -54,6 +52,8 @@ public class SolrStream extends TupleStream {
   private static final long serialVersionUID = 1;
 
   private String baseUrl;
+  private String core;
+  private String path;
   private SolrParams params;
   private int numWorkers;
   private int workerID;
@@ -62,27 +62,60 @@ public class SolrStream extends TupleStream {
   private transient TupleStreamParser tupleStreamParser;
   private String slice;
   private long checkpoint = -1;
-  private Closeable closeableHttpResponse;
   private boolean distrib = true;
   private String user;
   private String password;
-  private String core;
 
   private transient SolrClientCache clientCache;
   private transient boolean doCloseCache;
 
+  // TODO SOLR-17995 proposes that we should deprecate this constructor in favor of one of the other
+  // constructors that requires users to provide the core as an explicit parameter
   /**
-   * @param baseUrl Base URL of the stream.
-   * @param params Map&lt;String, String&gt; of parameters
+   * @param collectionOrCoreUrl URL of the Solr core or collection to query, typically of the form
+   *     "http://host:8983/solr/myCore".
+   * @param params query-parameters sent with the streaming request
    */
-  public SolrStream(String baseUrl, SolrParams params) {
-    this.baseUrl = baseUrl;
+  public SolrStream(String collectionOrCoreUrl, SolrParams params) {
+    this.baseUrl = collectionOrCoreUrl;
     this.params = params;
   }
 
-  SolrStream(String baseUrl, SolrParams params, String core) {
-    this(baseUrl, params);
+  // TODO SOLR-17995 proposes that we should deprecate this constructor in favor of one of the other
+  // constructors that requires users to provide the core as an explicit parameter
+  /**
+   * @param collectionOrCoreUrl URL of the Solr core or collection to query, typically of the form
+   *     "http://host:8983/solr/myCore".
+   * @param path the request handler path to query (e.g. "/export"). If not provided, defaults to
+   *     "/select".
+   * @param params query-parameters sent with the streaming request
+   */
+  public SolrStream(String collectionOrCoreUrl, String path, SolrParams params) {
+    this(collectionOrCoreUrl, null, path, params);
+  }
+
+  /**
+   * @param baseUrl the Solr node's "base" URL (i.e. no core or collection in the path
+   * @param params query-parameters sent with the streaming request
+   * @param core the name of the collection or core to query; must be hosted at {@code baseUrl}
+   */
+  public SolrStream(String baseUrl, SolrParams params, String core) {
+    this(baseUrl, core, null, params);
+  }
+
+  /**
+   * @param baseUrl the Solr node's "base" URL (i.e. no core or collection in the path
+   * @param core the name of the collection or core to query; must be hosted at {@code baseUrl}
+   * @param path the request handler path to query (e.g. "/export"). If not provided (i.e. {@code
+   *     null}), the handler is instead resolved from a "qt" param embedded in {@code params}, or
+   *     defaults to "/select" if no such param is present.
+   * @param params query-parameters sent with the streaming request
+   */
+  public SolrStream(String baseUrl, String core, String path, SolrParams params) {
+    this.baseUrl = baseUrl;
     this.core = core;
+    this.path = path;
+    this.params = params;
   }
 
   public void setFieldMappings(Map<String, String> fieldMappings) {
@@ -189,7 +222,6 @@ public class SolrStream extends TupleStream {
   @Override
   public void close() throws IOException {
     IOUtils.closeQuietly(tupleStreamParser);
-    IOUtils.closeQuietly(closeableHttpResponse);
     if (doCloseCache) {
       IOUtils.closeQuietly(clientCache);
     }
@@ -274,53 +306,29 @@ public class SolrStream extends TupleStream {
 
   private TupleStreamParser constructParser(SolrParams requestParams)
       throws IOException, SolrServerException {
-    String p = requestParams.get("qt");
-    if (p != null) {
-      ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
-      modifiableSolrParams.remove("qt");
-      // performance optimization - remove extra whitespace by default when streaming
-      modifiableSolrParams.set("indent", modifiableSolrParams.get("indent", "off"));
-    }
+    // performance optimization - remove extra whitespace when streaming
+    requestParams = SolrParams.wrapDefaults(requestParams, SolrParams.of("indent", "off"));
 
+    QueryRequest query =
+        path == null
+            ? new QueryRequest(requestParams, SolrRequest.METHOD.POST)
+            : new QueryRequest(path, requestParams, SolrRequest.METHOD.POST);
     String wt = requestParams.get(CommonParams.WT, "json");
-    QueryRequest query = new QueryRequest(requestParams);
-
-    // in order to reuse HttpSolrClient objects per node, we need to cache them without the core
-    // name in the URL
-    if (core != null) {
-      query.setPath("/" + core + (p != null ? p : "/select"));
-    } else {
-      query.setPath(p);
-    }
-
     query.setResponseParser(new InputStreamResponseParser(wt));
-    query.setMethod(SolrRequest.METHOD.POST);
 
     if (user != null && password != null) {
       query.setBasicAuthCredentials(user, password);
     }
 
     var client = clientCache.getHttpSolrClient(baseUrl);
-    NamedList<Object> genericResponse = client.request(query);
-    InputStream stream = (InputStream) genericResponse.get("stream");
-
-    CloseableHttpResponse httpResponse =
-        (CloseableHttpResponse) genericResponse.get("closeableResponse");
-    // still attempting to read http status from http response for backwards compatibility reasons
-    // since 9.4 the updated format will have a dedicated status field
-    final int statusCode;
-    if (httpResponse != null) {
-      statusCode = httpResponse.getStatusLine().getStatusCode();
-    } else {
-      statusCode = (int) genericResponse.get("responseStatus");
-    }
+    NamedList<Object> genericResponse = client.request(query, core);
+    InputStream stream = (InputStream) genericResponse.get(InputStreamResponseParser.STREAM_KEY);
+    // since 9.4 the updated format has a dedicated status field
+    final Integer statusCode = (Integer) genericResponse.get("responseStatus");
 
     if (statusCode == 401
         || statusCode == 403) { // auth response comes as html, so propagate as string
       String errMsg = consumeStreamAsErrorMessage(stream);
-      if (httpResponse != null) {
-        httpResponse.close();
-      }
       throw new IOException(
           "Query to '"
               + query.getPath()
@@ -332,7 +340,6 @@ public class SolrStream extends TupleStream {
               + errMsg);
     }
 
-    this.closeableHttpResponse = httpResponse;
     if (CommonParams.JAVABIN.equals(wt)) {
       return new JavabinTupleStreamParser(stream, true);
     } else {

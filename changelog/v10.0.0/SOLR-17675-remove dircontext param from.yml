@@ -1,0 +1,8 @@
+title: Remove DirContext param from DirectoryFactory.create method.
+type: other
+authors:
+- name: Bruno Roustant
+- name: David Smiley
+links:
+- name: SOLR-17675
+  url: https://issues.apache.org/jira/browse/SOLR-17675

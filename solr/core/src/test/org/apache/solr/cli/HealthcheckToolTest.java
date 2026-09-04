@@ -17,11 +17,7 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.findTool;
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
 import java.util.Set;
-import org.apache.commons.cli.CommandLine;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -48,7 +44,7 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
 
     String[] args =
         new String[] {"healthcheck", "-c", "bob", "-z", cluster.getZkClient().getZkServerAddress()};
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, HealthcheckTool.class));
   }
 
   @Test
@@ -60,7 +56,7 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
         ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(firstLiveNode);
 
     String[] args = new String[] {"healthcheck", "-c", "bob", "--solr-url", solrUrl};
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, HealthcheckTool.class));
   }
 
   @Test
@@ -74,13 +70,25 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
     solrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
 
     String[] args = new String[] {"healthcheck", "-c", "bob", "--solr-url", solrUrl};
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, HealthcheckTool.class));
   }
 
-  private int runTool(String[] args) throws Exception {
-    Tool tool = findTool(args);
-    assertTrue(tool instanceof HealthcheckTool);
-    CommandLine cli = parseCmdLine(tool, args);
-    return tool.runTool(cli);
+  @Test
+  public void testHealthcheckWithSolrConnectionParameter() throws Exception {
+    String[] connStrings = {
+      getZookeeperSolrConnection().toString(), getHttpSolrConnection().toString()
+    };
+    for (String connectionString : connStrings) {
+      String[] args =
+          new String[] {"healthcheck", "-c", "bob", "--solr-connection", connectionString};
+      assertEquals(0, CLITestHelper.runTool(args, HealthcheckTool.class));
+    }
+  }
+
+  @Test
+  public void testHealthcheckWithZookeeperParameter() throws Exception {
+    String zkHost = cluster.getZkServer().getZkAddress();
+    String[] args = new String[] {"healthcheck", "-c", "bob", "--zk-host", zkHost};
+    assertEquals(0, CLITestHelper.runTool(args, HealthcheckTool.class));
   }
 }

@@ -31,8 +31,9 @@ import org.locationtech.spatial4j.shape.Shape;
  * org.apache.lucene.queries.function.FunctionValues#objectVal(int)}.
  *
  * @lucene.internal
+ * @deprecated Internal helper for {@link BBoxStrategy}, which is deprecated.
  */
-@Deprecated
+@Deprecated(since = "9.0")
 class BBoxValueSource extends ShapeValuesSource {
 
   private final BBoxStrategy strategy;
@@ -88,9 +89,7 @@ class BBoxValueSource extends ShapeValuesSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof BBoxValueSource)) return false;
-
-    BBoxValueSource that = (BBoxValueSource) o;
+    if (!(o instanceof BBoxValueSource that)) return false;
 
     return strategy.equals(that.strategy);
   }

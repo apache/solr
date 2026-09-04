@@ -18,7 +18,6 @@
 package org.apache.solr.handler.component;
 
 import java.lang.reflect.Array;
-import java.util.Collections;
 import java.util.List;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.security.AllowListUrlChecker;
@@ -43,7 +42,7 @@ class StandaloneReplicaSource implements ReplicaSource {
   @Override
   public List<String> getSliceNames() {
     // there are no logical slice names in non-cloud
-    return Collections.emptyList();
+    return List.of();
   }
 
   @Override

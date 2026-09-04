@@ -18,10 +18,10 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -34,8 +34,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 
@@ -56,10 +54,10 @@ public class ZkDistribStateManager implements DistribStateManager {
     try {
       data = getData(path);
     } catch (KeeperException.NoNodeException | NoSuchElementException e) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     if (data == null || data.getData() == null || data.getData().length == 0) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     return (Map<String, Object>) Utils.fromJSON(data.getData());
   }
@@ -67,7 +65,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   @Override
   public boolean hasData(String path) throws IOException, KeeperException, InterruptedException {
     try {
-      return zkClient.exists(path, true);
+      return zkClient.exists(path);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new AlreadyClosedException();
@@ -78,7 +76,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   public List<String> listData(String path, Watcher watcher)
       throws NoSuchElementException, IOException, KeeperException, InterruptedException {
     try {
-      return zkClient.getChildren(path, watcher, true);
+      return zkClient.getChildren(path, watcher);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (InterruptedException e) {
@@ -98,7 +96,7 @@ public class ZkDistribStateManager implements DistribStateManager {
       throws NoSuchElementException, IOException, KeeperException, InterruptedException {
     Stat stat = new Stat();
     try {
-      byte[] bytes = zkClient.getData(path, watcher, stat, true);
+      byte[] bytes = zkClient.getData(path, watcher, stat);
       return new VersionedData(
           stat.getVersion(),
           bytes,
@@ -129,7 +127,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   public void makePath(String path, byte[] data, CreateMode createMode, boolean failOnExists)
       throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
     try {
-      zkClient.makePath(path, data, createMode, null, failOnExists, true);
+      zkClient.makePath(path, data, createMode, null, failOnExists);
     } catch (KeeperException.NodeExistsException e) {
       throw new AlreadyExistsException(path);
     } catch (InterruptedException e) {
@@ -146,7 +144,7 @@ public class ZkDistribStateManager implements DistribStateManager {
           KeeperException,
           InterruptedException {
     try {
-      return zkClient.create(path, data, mode, true);
+      return zkClient.create(path, data, mode);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (KeeperException.NodeExistsException e) {
@@ -166,7 +164,7 @@ public class ZkDistribStateManager implements DistribStateManager {
           KeeperException,
           InterruptedException {
     try {
-      zkClient.delete(path, version, true);
+      zkClient.delete(path, version);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (KeeperException.NotEmptyException e) {
@@ -187,7 +185,7 @@ public class ZkDistribStateManager implements DistribStateManager {
           KeeperException,
           InterruptedException {
     try {
-      zkClient.setData(path, data, version, true);
+      zkClient.setData(path, data, version);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (KeeperException.BadVersionException e) {
@@ -199,7 +197,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public List<OpResult> multi(Iterable<Op> ops)
+  public List<CuratorTransactionResult> multi(List<SolrZkClient.CuratorOpBuilder> ops)
       throws BadVersionException,
           AlreadyExistsException,
           NoSuchElementException,
@@ -207,7 +205,7 @@ public class ZkDistribStateManager implements DistribStateManager {
           KeeperException,
           InterruptedException {
     try {
-      return zkClient.multi(ops, true);
+      return zkClient.multi(ops);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(ops.toString());
     } catch (KeeperException.NodeExistsException e) {

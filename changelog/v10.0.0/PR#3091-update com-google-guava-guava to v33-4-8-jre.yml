@@ -1,0 +1,7 @@
+title: Update com.google.guava:guava to v33.4.8-jre
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3091
+  url: https://github.com/apache/solr/pull/3091

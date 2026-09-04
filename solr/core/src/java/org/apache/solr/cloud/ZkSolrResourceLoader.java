@@ -17,13 +17,11 @@
 package org.apache.solr.cloud;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceNotFoundException;
@@ -58,7 +56,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   public Pair<String, Integer> getZkResourceInfo(String resource) {
     String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
     try {
-      Stat stat = zkController.getZkClient().exists(file, null, true);
+      Stat stat = zkController.getZkClient().exists(file, null);
       if (stat != null) {
         return new Pair<>(file, stat.getVersion());
       } else {
@@ -87,7 +85,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
       try {
         if (zkController.pathExists(file)) {
           Stat stat = new Stat();
-          byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
+          byte[] bytes = zkController.getZkClient().getData(file, null, stat);
           return new ZkByteArrayInputStream(bytes, file, stat);
         } else {
           // Path does not exist. We only retry for session expired exceptions.
@@ -121,7 +119,9 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
 
     try {
       // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
-      is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+      is =
+          classLoader.getResourceAsStream(
+              resource.replace(FileSystems.getDefault().getSeparator(), "/"));
     } catch (Exception e) {
       throw new IOException("Error opening " + resource, e);
     }
@@ -151,13 +151,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     public Stat getStat() {
       return stat;
     }
-  }
-
-  @Override
-  public String getConfigDir() {
-    throw new ZooKeeperException(
-        ErrorCode.SERVER_ERROR,
-        "ZkSolrResourceLoader does not support getConfigDir() - likely, what you are trying to do is not supported in ZooKeeper mode");
   }
 
   public String getConfigSetZkPath() {

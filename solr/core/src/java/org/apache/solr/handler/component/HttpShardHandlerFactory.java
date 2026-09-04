@@ -18,6 +18,8 @@ package org.apache.solr.handler.component;
 
 import static org.apache.solr.util.stats.InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES;
 
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.List;
@@ -30,10 +32,12 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.LBAsyncSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
+import org.apache.solr.client.solrj.jetty.MutableListenerFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
@@ -45,6 +49,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
@@ -54,21 +59,19 @@ import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Creates {@link HttpShardHandler} instances */
 public class HttpShardHandlerFactory extends ShardHandlerFactory
-    implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
+    implements PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String DEFAULT_SCHEME = "http";
 
@@ -82,9 +85,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   // This executor is initialized in the init method
   protected ExecutorService commExecutor;
 
-  protected volatile Http2SolrClient defaultClient;
+  protected volatile HttpJettySolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
-  protected LBHttp2SolrClient loadbalancer;
+  private final MutableListenerFactory securityListenerFactory = new MutableListenerFactory();
+  protected LBAsyncSolrClient loadbalancer;
+  private ObservableLongGauge asyncRequestsGauge;
 
   int corePoolSize = 0;
   int maximumPoolSize = Integer.MAX_VALUE;
@@ -106,6 +111,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
   // URL scheme to be used in distributed search.
   static final String INIT_URL_SCHEME = "urlScheme";
+
+  // system property to enable ssl or tls for communication within Solr
+  static final String SOLR_SSL_ENABLED = "solr.ssl.enabled";
 
   // The core size of the threadpool servicing requests
   static final String INIT_CORE_POOL_SIZE = "corePoolSize";
@@ -225,11 +233,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
     NamedList<?> args = info.initArgs;
-    this.scheme = getParameter(args, INIT_URL_SCHEME, null, sb);
-    if (this.scheme != null && this.scheme.endsWith("://")) {
-      this.scheme = this.scheme.replace("://", "");
-    }
-
+    this.scheme = initUrlScheme(args, sb);
     String strategy =
         getParameter(
             args, "metricNameStrategy", UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, sb);
@@ -261,12 +265,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             sb);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy, sb);
 
-    if (args != null && args.get("shardsWhitelist") != null) {
-      log.warn(
-          "Property 'shardsWhitelist' is deprecated, please use '{}' instead.",
-          AllowListUrlChecker.URL_ALLOW_LIST);
-    }
-
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
     String v = System.getProperty("tests.shardhandler.randomSeed");
     if (v != null) {
@@ -294,27 +292,29 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     int connectionTimeout =
         getParameter(
             args,
-            HttpClientUtil.PROP_CONNECTION_TIMEOUT,
-            HttpClientUtil.DEFAULT_CONNECT_TIMEOUT,
+            SolrHttpConstants.PROP_CONNECTION_TIMEOUT,
+            SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT,
             sb);
     int maxConnectionsPerHost =
         getParameter(
             args,
-            HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST,
-            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
+            SolrHttpConstants.PROP_MAX_CONNECTIONS_PER_HOST,
+            SolrHttpConstants.DEFAULT_MAXCONNECTIONSPERHOST,
             sb);
     int soTimeout =
-        getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT, HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
+        getParameter(
+            args, SolrHttpConstants.PROP_SO_TIMEOUT, SolrHttpConstants.DEFAULT_SO_TIMEOUT, sb);
 
     this.defaultClient =
-        new Http2SolrClient.Builder()
+        new HttpJettySolrClient.Builder()
             .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withExecutor(commExecutor)
             .withMaxConnectionsPerHost(maxConnectionsPerHost)
+            .addListenerFactory(this.httpListenerFactory)
+            .addListenerFactory(this.securityListenerFactory)
             .build();
-    this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient.Builder(defaultClient).build();
+    this.loadbalancer = new LBJettySolrClient.Builder(defaultClient).build();
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 
@@ -324,7 +324,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   @Override
   public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {
     if (clientBuilderPlugin != null) {
-      clientBuilderPlugin.setup(defaultClient);
+      clientBuilderPlugin.setup(securityListenerFactory);
     }
   }
 
@@ -356,6 +356,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
         ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
       }
     }
+    IOUtils.closeQuietly(asyncRequestsGauge);
     try {
       SolrMetricProducer.super.close();
     } catch (Exception e) {
@@ -412,6 +413,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
               .toString(),
           zkController.getNodeName(),
           zkController.getBaseUrl(),
+          zkController.getHostName(),
           zkController.getSysPropsCacher());
     } else {
       return requestReplicaListTransformerGenerator.getReplicaListTransformer(params);
@@ -436,16 +438,45 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     return url;
   }
 
+  /**
+   * Get url scheme of host
+   *
+   * @return http or https or null
+   */
+  private String initUrlScheme(NamedList<?> args, StringBuilder sb) {
+    final Boolean isSolrSslEnabled = EnvUtils.getPropertyAsBool(SOLR_SSL_ENABLED, null);
+    if (isSolrSslEnabled != null) {
+      return isSolrSslEnabled ? "https" : "http";
+    }
+    String urlScheme =
+        getParameter(args, INIT_URL_SCHEME, EnvUtils.getProperty(INIT_URL_SCHEME), sb);
+    if (urlScheme != null && urlScheme.endsWith("://")) {
+      urlScheme = urlScheme.replace("://", "");
+    }
+    return urlScheme;
+  }
+
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
-    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    httpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
+    httpListenerFactory.initializeMetrics(solrMetricsContext, Attributes.empty());
     commExecutor =
-        MetricUtils.instrumentedExecutorService(
-            commExecutor,
-            null,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
+        solrMetricsContext.instrumentedExecutorService(
+            commExecutor, "solr.core.executor", "httpShardExecutor", SolrInfoBean.Category.QUERY);
+    if (defaultClient != null) {
+      asyncRequestsGauge =
+          solrMetricsContext.observableLongGauge(
+              "solr.client.request.async_permits",
+              "Outstanding async HTTP request permits in the Jetty SolrJ client"
+                  + " (state=max: configured ceiling; state=available: currently unused permits).",
+              measurement -> {
+                measurement.record(
+                    defaultClient.asyncTrackerMaxPermits(), Attributes.of(STATE_KEY_ATTR, "max"));
+                measurement.record(
+                    defaultClient.asyncTrackerAvailablePermits(),
+                    Attributes.of(STATE_KEY_ATTR, "available"));
+              },
+              null);
+    }
   }
 }

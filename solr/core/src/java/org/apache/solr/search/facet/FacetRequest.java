@@ -61,8 +61,7 @@ public abstract class FacetRequest {
 
     @Override
     public boolean equals(Object other) {
-      if (other instanceof FacetSort) {
-        final FacetSort that = (FacetSort) other;
+      if (other instanceof FacetSort that) {
         return this.sortVariable.equals(that.sortVariable)
             && this.sortDirection.equals(that.sortDirection);
       }
@@ -330,7 +329,8 @@ public abstract class FacetRequest {
         // does...
         wrappedFromQuery.setCache(false);
 
-        GraphQueryParser graphParser = new GraphQueryParser(null, localParams, null, fcontext.req);
+        GraphQueryParser graphParser =
+            new GraphQueryParser(null, localParams, fcontext.req.getParams(), fcontext.req);
         try {
           GraphQuery graphQuery = (GraphQuery) graphParser.parse();
           graphQuery.setQ(wrappedFromQuery);

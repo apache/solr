@@ -28,20 +28,10 @@ import org.apache.solr.common.params.SolrParams;
 public class GapFragmenter extends HighlightingPluginBase implements SolrFragmenter {
   @Override
   public Fragmenter getFragmenter(String fieldName, SolrParams params) {
-    numRequests.inc();
     params = SolrParams.wrapDefaults(params, defaults);
 
     int fragsize = params.getFieldInt(fieldName, HighlightParams.FRAGSIZE, 100);
     return (fragsize <= 0) ? new NullFragmenter() : new LuceneGapFragmenter(fragsize);
-  }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "GapFragmenter";
   }
 }
 

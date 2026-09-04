@@ -1,0 +1,7 @@
+title: Removing redundant check if field exists in TextToVectorUpdateProcessorFactory
+type: changed
+authors:
+- name: Renato Haeberli
+links:
+- name: GITHUB#3666
+  url: https://github.com/apache/solr/pull/3666

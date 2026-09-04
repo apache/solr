@@ -38,7 +38,7 @@ public class IntegrateEvaluator extends RecursiveObjectEvaluator implements Many
       throw new IOException("The integrate function requires at most 3 parameters");
     }
 
-    if (!(values[0] instanceof VectorFunction)) {
+    if (!(values[0] instanceof VectorFunction vectorFunction)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -47,12 +47,9 @@ public class IntegrateEvaluator extends RecursiveObjectEvaluator implements Many
               values[0].getClass().getSimpleName()));
     }
 
-    VectorFunction vectorFunction = (VectorFunction) values[0];
-    if (!(vectorFunction.getFunction() instanceof UnivariateFunction)) {
+    if (!(vectorFunction.getFunction() instanceof UnivariateFunction func)) {
       throw new IOException("Cannot evaluate integral from parameter.");
     }
-
-    UnivariateFunction func = (UnivariateFunction) vectorFunction.getFunction();
 
     if (values.length == 3) {
 

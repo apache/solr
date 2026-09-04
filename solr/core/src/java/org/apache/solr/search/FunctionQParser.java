@@ -26,7 +26,6 @@ import org.apache.lucene.queries.function.valuesource.ConstKnnFloatValueSource;
 import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
 import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -36,6 +35,13 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.AggValueSource;
 import org.apache.solr.search.function.FieldNameValueSource;
 
+/**
+ * Does "function query" parsing of function-call like strings, producing a {@link ValueSource}. As
+ * this implements {@link QParser}, we produce a {@link Query}, but more often {@link
+ * #parseAsValueSource()} is called instead.
+ *
+ * @see ValueSourceParser
+ */
 public class FunctionQParser extends QParser {
 
   public static final int FLAG_CONSUME_DELIMITER = 0x01; // consume delimiter after parsing arg
@@ -53,14 +59,23 @@ public class FunctionQParser extends QParser {
    */
   public StrParser sp;
 
-  boolean parseMultipleSources = true;
-  boolean parseToEnd = true;
+  private boolean parseToEnd = true;
 
   public FunctionQParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
     setFlags(FLAG_DEFAULT);
     setString(qstr);
+  }
+
+  /**
+   * Parses the string to a {@link ValueSource}. Typically, this is not used, however.
+   *
+   * @see QParser#parseAsValueSource()
+   */
+  public static ValueSource parseAsValueSource(String string, SolrQueryRequest request)
+      throws SyntaxError {
+    return getParser(string, FunctionQParserPlugin.NAME, request).parseAsValueSource();
   }
 
   @Override
@@ -71,33 +86,40 @@ public class FunctionQParser extends QParser {
     }
   }
 
-  public void setParseMultipleSources(boolean parseMultipleSources) {
-    this.parseMultipleSources = parseMultipleSources;
-  }
-
-  /** parse multiple comma separated value sources */
-  public boolean getParseMultipleSources() {
-    return parseMultipleSources;
-  }
-
   public void setParseToEnd(boolean parseToEnd) {
     this.parseToEnd = parseToEnd;
   }
 
   /** throw exception if there is extra stuff at the end of the parsed valuesource(s). */
   public boolean getParseToEnd() {
-    return parseMultipleSources;
+    return parseToEnd;
   }
 
   @Override
   public Query parse() throws SyntaxError {
+    return new FunctionQuery(parseAsValueSource());
+  }
+
+  /**
+   * Parses as a ValueSource, not a Query. <em>NOT</em> intended to be called by {@link
+   * ValueSourceParser#parse(FunctionQParser)}; it's intended for general code that has a {@link
+   * QParser} but actually wants to parse a ValueSource.
+   *
+   * @return the parsed {@link ValueSource}.
+   */
+  @Override
+  public ValueSource parseAsValueSource() throws SyntaxError {
+    return parseAsValueSource(false);
+  }
+
+  private ValueSource parseAsValueSource(boolean collectMultiple) throws SyntaxError {
     ValueSource vs = null;
     List<ValueSource> lst = null;
 
     for (; ; ) {
       ValueSource valsource = parseValueSource(getFlags() & ~FLAG_CONSUME_DELIMITER);
       sp.eatws();
-      if (!parseMultipleSources) {
+      if (!collectMultiple) {
         vs = valsource;
         break;
       } else {
@@ -126,8 +148,7 @@ public class FunctionQParser extends QParser {
     if (lst != null) {
       vs = new VectorValueSource(lst);
     }
-
-    return new FunctionQuery(vs);
+    return vs;
   }
 
   /**
@@ -424,18 +445,12 @@ public class FunctionQParser extends QParser {
         valueSource = new FieldNameValueSource(val);
       } else {
         QParser subParser = subQuery(val, "func");
-        if (subParser instanceof FunctionQParser) {
-          FunctionQParser subFunc = (FunctionQParser) subParser;
-          subFunc.setParseMultipleSources(true);
+        if (subParser instanceof FunctionQParser subFunc) {
           subFunc.setFlags(flags);
-        }
-        Query subQuery = subParser.getQuery();
-        if (subQuery == null) {
-          valueSource = new ConstValueSource(0.0f);
-        } else if (subQuery instanceof FunctionQuery) {
-          valueSource = ((FunctionQuery) subQuery).getValueSource();
+          // e.g. geodist($pt) with pt=lat,lon: collect the referenced comma separated values
+          valueSource = subFunc.parseAsValueSource(true);
         } else {
-          valueSource = new QueryValueSource(subQuery, 0.0f);
+          valueSource = subParser.parseAsValueSource();
         }
       }
 

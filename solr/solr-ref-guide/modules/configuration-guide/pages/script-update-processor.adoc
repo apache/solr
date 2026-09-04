@@ -122,8 +122,21 @@ To try out scripting, enable the `<updateRequestProcessorChain name="script">` c
 file `./server/solr/configsets/sample_techproducts_configs/conf/solrconfig.xml`. Then start Solr via
 `bin/solr start -e techproducts -Dsolr.modules=scripting`.
 
-This URL demonstrates specifying the "script" update chain: `http://localhost:8983/solr/techproducts/update?commit=true&stream.contentType=text/csv&fieldnames=id,description&stream.body=1,foo&update.chain=script` which logs the following:
+This URL demonstrates specifying the "script" update chain:
 
+[source,bash]
+----
+http://localhost:8983/solr/techproducts/update?update.chain=script -H "Content-Type: text/xml" --data-binary '
+<add>
+  <doc>
+    <field name="id">1</field>
+    <field name="description">foo</field>
+  </doc>
+</add>'
+----
+
+Which logs the following:
+ 
 [source,text]
 ----
 INFO: update-script#processAdd: id=1

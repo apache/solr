@@ -79,7 +79,8 @@ public class ApiToolTest extends SolrCloudTestCase {
     }
     cluster.getSolrClient().request(ur, COLLECTION_NAME);
 
-    ApiTool tool = new ApiTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    ApiTool tool = new ApiTool(runtime);
 
     String response =
         tool.callGet(
@@ -101,7 +102,7 @@ public class ApiToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testSolrUrlParsing() throws Exception {
+  public void testSolrUrlParsing() {
     assertEquals(
         "https://test-host.solr:8983/solr",
         ApiTool.getSolrUrlFromUri(URI.create("https://test-host.solr:8983/solr")));

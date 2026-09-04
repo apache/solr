@@ -187,7 +187,7 @@ class CollectionTester {
         sb.append(seg);
         sb.append(']');
       } else {
-        sb.append(seg.toString());
+        sb.append(seg);
       }
     }
     return sb.toString();
@@ -233,8 +233,7 @@ class CollectionTester {
     // generic fallback
     if (!expected.equals(val)) {
 
-      if (expected instanceof String) {
-        String str = (String) expected;
+      if (expected instanceof String str) {
         if (str.length() > 6 && str.startsWith("///") && str.endsWith("///")) {
           return handleSpecialString(str);
         }

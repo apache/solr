@@ -1,0 +1,8 @@
+
+title: Support blank/zero-byte files in configset zip uploads
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-16341
+    url: https://issues.apache.org/jira/browse/SOLR-16341

@@ -17,7 +17,6 @@
 package org.apache.solr.handler.clustering;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -76,7 +75,7 @@ public class MockClusteringAlgorithm extends AttrComposite implements Clustering
 
   @Override
   public Set<Class<?>> requiredLanguageComponents() {
-    return Collections.emptySet();
+    return Set.of();
   }
 
   @Override

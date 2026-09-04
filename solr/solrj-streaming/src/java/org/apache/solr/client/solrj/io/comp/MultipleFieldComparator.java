@@ -60,8 +60,7 @@ public class MultipleFieldComparator implements StreamComparator {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof MultipleFieldComparator)) return false;
-    MultipleFieldComparator that = (MultipleFieldComparator) o;
+    if (!(o instanceof MultipleFieldComparator that)) return false;
     return Arrays.equals(comps, that.comps);
   }
 
@@ -93,8 +92,7 @@ public class MultipleFieldComparator implements StreamComparator {
     if (null == base) {
       return false;
     }
-    if (base instanceof MultipleFieldComparator) {
-      MultipleFieldComparator baseComp = (MultipleFieldComparator) base;
+    if (base instanceof MultipleFieldComparator baseComp) {
 
       if (baseComp.comps.length >= comps.length) {
         for (int idx = 0; idx < comps.length; ++idx) {

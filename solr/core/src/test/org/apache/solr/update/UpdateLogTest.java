@@ -19,7 +19,12 @@ package org.apache.solr.update;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.hamcrest.core.StringContains.containsString;
 
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.Locale;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
@@ -195,7 +200,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     // sanity check that the update log has one document, and RTG returns the document
     assertEquals(1, ulog.map.size());
     assertJQ(
-        req("qt", "/get", "id", "1"),
+        reqWithPath("/get", "id", "1"),
         "=={'doc':{ 'id':'1', 'val1_i_dvo':3, '_version_':102, 'title_s':'title1', "
             // fields with default values
             + "'inplace_updatable_int_with_default':666, 'inplace_updatable_float_with_default':42.0}}");
@@ -210,12 +215,29 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
       assertTrue(String.valueOf(ulog.prevMap), ulog.prevMap == null || ulog.prevMap.size() == 0);
       assertTrue(String.valueOf(ulog.prevMap2), ulog.prevMap2 == null || ulog.prevMap2.size() == 0);
       // verify that the document is deleted, by doing an RTG call
-      assertJQ(req("qt", "/get", "id", "1"), "=={'doc':null}");
+      assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':null}");
     } else { // dbi
       List<?> entry = ((List<?>) ulog.lookup(DOC_1_INDEXED_ID));
       assertEquals(
           UpdateLog.DELETE, (int) entry.get(UpdateLog.FLAGS_IDX) & UpdateLog.OPERATION_MASK);
     }
+  }
+
+  @Test
+  public void testLogCleanupWhenNewTransactionLogConstructionFails() throws Exception {
+    // Simulate the appearance of a new log file after UpdateLog.init().
+    Path tlogDir = Path.of(ulog.getTlogDir());
+    long lastLogId = scanLastLogId(tlogDir);
+    String newLogName =
+        String.format(
+            Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, lastLogId + 1);
+    Path newLogPath = tlogDir.resolve(newLogName);
+    createLogFile(newLogPath);
+
+    // Add a doc and expect no "New transaction log already exists" error when creating the new
+    // transaction log.
+    ulogAdd(
+        ulog, null, sdoc("id", "1", "title_s", "title1", "val1_i_dvo", "1", "_version_", "100"));
   }
 
   /** Simulate a commit on a given updateLog */
@@ -288,5 +310,22 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     assertTrue("", cmd.solrDoc.containsKey(VERSION_FIELD));
     cmd.setVersion(Long.parseLong(cmd.solrDoc.getFieldValue(VERSION_FIELD).toString()));
     return cmd;
+  }
+
+  private long scanLastLogId(Path tlogDir) throws IOException {
+    try (UpdateLog uLog = new UpdateLog()) {
+      String[] tlogFiles = uLog.getLogList(tlogDir);
+      return UpdateLog.scanLastLogId(tlogFiles);
+    }
+  }
+
+  private void createLogFile(Path logPath) throws IOException {
+    FileChannel fc =
+        FileChannel.open(
+            logPath,
+            StandardOpenOption.READ,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE_NEW);
+    fc.close();
   }
 }

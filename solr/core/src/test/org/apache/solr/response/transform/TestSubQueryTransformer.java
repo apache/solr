@@ -29,14 +29,12 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -47,7 +45,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
     initCore("solrconfig-basic.xml", "schema-docValuesJoin.xml");
     peopleMultiplier = atLeast(1);
     deptMultiplier = atLeast(1);
@@ -615,7 +613,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   @SuppressWarnings("unchecked")
   @Test
   public void testJustJohnJavabin() throws Exception {
-    final SolrQueryRequest johnTwoFL = req(johnAndNancyParams);
+    final SolrQueryRequest johnTwoFL = reqWithPath("/select", johnAndNancyParams);
     ModifiableSolrParams params = new ModifiableSolrParams(johnTwoFL.getParams());
     params.set("q", "name_s:john");
     params.set("wt", "javabin");
@@ -627,13 +625,10 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(johnTwoFL, rsp));
 
-    SolrQueryResponse response =
-        h.queryAndResponse(johnTwoFL.getParams().get(CommonParams.QT), johnTwoFL);
+    SolrQueryResponse response = h.queryAndResponse(null, johnTwoFL);
 
-    BinaryQueryResponseWriter responseWriter =
-        (BinaryQueryResponseWriter) core.getQueryResponseWriter(johnTwoFL);
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-    responseWriter.write(bytes, johnTwoFL, response);
+    johnTwoFL.getResponseWriter().write(bytes, johnTwoFL, response);
 
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       unmarshalled =

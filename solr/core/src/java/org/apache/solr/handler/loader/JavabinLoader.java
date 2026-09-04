@@ -19,7 +19,6 @@ package org.apache.solr.handler.loader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -164,9 +163,8 @@ public class JavabinLoader extends ContentStreamLoader {
                 params = ((NamedList) o).toSolrParams();
               } else {
                 try {
-                  if (o instanceof byte[]) {
+                  if (o instanceof byte[] buf) {
                     if (params != null) req.setParams(params);
-                    byte[] buf = (byte[]) o;
                     contentStreamLoader.load(
                         req, rsp, new ContentStreamBase.ByteArrayStream(buf, null), processor);
                   } else {
@@ -180,7 +178,7 @@ public class JavabinLoader extends ContentStreamLoader {
                 }
               }
             }
-            return Collections.emptyList();
+            return List.of();
           }
         }) {
       jbc.unmarshal(in);

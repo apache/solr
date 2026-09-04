@@ -76,8 +76,7 @@ public class BackupRepositoryFactory {
     BackupRepository backupRepository = loader.newInstance(repo.className, BackupRepository.class);
     backupRepository.init(repo.initArgs);
 
-    if (backupRepository instanceof DelegatingBackupRepository) {
-      DelegatingBackupRepository delegatingRepo = (DelegatingBackupRepository) backupRepository;
+    if (backupRepository instanceof DelegatingBackupRepository delegatingRepo) {
       String delegateName = (String) repo.initArgs.get(PARAM_DELEGATE_REPOSITORY_NAME);
       if (delegateName == null) {
         throw new SolrException(

@@ -22,6 +22,8 @@ public class DocInfo extends HashMap<String, Object> {
 
   // Name of key used to store the original score of a doc
   private static final String ORIGINAL_DOC_SCORE = "ORIGINAL_DOC_SCORE";
+  // Name of key used to store the original id of a doc
+  private static final String ORIGINAL_DOC_ID = "ORIGINAL_DOC_ID";
 
   public DocInfo() {
     super();
@@ -37,5 +39,13 @@ public class DocInfo extends HashMap<String, Object> {
 
   public boolean hasOriginalDocScore() {
     return containsKey(ORIGINAL_DOC_SCORE);
+  }
+
+  public void setOriginalDocId(int docId) {
+    put(ORIGINAL_DOC_ID, docId);
+  }
+
+  public int getOriginalDocId() {
+    return (int) get(ORIGINAL_DOC_ID);
   }
 }

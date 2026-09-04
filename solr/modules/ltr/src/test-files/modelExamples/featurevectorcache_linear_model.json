@@ -1,0 +1,26 @@
+{
+  "class": "org.apache.solr.ltr.model.LinearModel",
+  "name": "featurevectorcache_linear_model",
+  "features": [
+    {
+      "name": "value_feature_1"
+    },
+    {
+      "name": "efi_feature"
+    },
+    {
+      "name": "match_w1_title"
+    },
+    {
+      "name": "popularity_value"
+    }
+  ],
+  "params": {
+    "weights": {
+      "value_feature_1": 1,
+      "efi_feature": 0.2,
+      "match_w1_title": 0.5,
+      "popularity_value": 0.8
+    }
+  }
+}

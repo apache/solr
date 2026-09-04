@@ -19,15 +19,13 @@ package org.apache.solr.common;
 import static org.apache.solr.client.api.model.ErrorInfo.ERROR_CLASS;
 import static org.apache.solr.client.api.model.ErrorInfo.ROOT_ERROR_CLASS;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
-import org.slf4j.Logger;
-import org.slf4j.MDC;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /** */
 public class SolrException extends RuntimeException {
-
-  private final Map<String, String> mdcContext;
 
   /**
    * This list of valid HTTP Status error codes that Solr may return when there is a "Server Side"
@@ -45,11 +43,12 @@ public class SolrException extends RuntimeException {
     TOO_MANY_REQUESTS(429),
     SERVER_ERROR(500),
     SERVICE_UNAVAILABLE(503),
+    GATEWAY_TIMEOUT(504),
     INVALID_STATE(510),
     UNKNOWN(0);
     public final int code;
 
-    private ErrorCode(int c) {
+    ErrorCode(int c) {
       code = c;
     }
 
@@ -59,24 +58,21 @@ public class SolrException extends RuntimeException {
       }
       return UNKNOWN;
     }
-  };
+  }
 
   public SolrException(ErrorCode code, String msg) {
     super(msg);
     this.code = code.code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
   public SolrException(ErrorCode code, String msg, Throwable th) {
     super(msg, th);
     this.code = code.code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
   public SolrException(ErrorCode code, Throwable th) {
     super(th);
     this.code = code.code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
   /**
@@ -87,11 +83,11 @@ public class SolrException extends RuntimeException {
   protected SolrException(int code, String msg, Throwable th) {
     super(msg, th);
     this.code = code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
-  int code = 0;
+  int code;
   protected NamedList<String> metadata;
+  protected List<Map<String, Object>> details;
 
   /**
    * The HTTP Status code associated with this Exception. For SolrExceptions thrown by Solr "Server
@@ -121,8 +117,20 @@ public class SolrException extends RuntimeException {
     if (key == null || value == null)
       throw new IllegalArgumentException("Exception metadata cannot be null!");
 
-    if (metadata == null) metadata = new NamedList<>();
+    if (metadata == null) metadata = new SimpleOrderedMap<>();
     metadata.add(key, value);
+  }
+
+  public void setDetails(List<Map<String, Object>> details) {
+    this.details = details;
+  }
+
+  public List<Map<String, Object>> getDetails() {
+    return details;
+  }
+
+  public String getResponseMessage() {
+    return getMessage();
   }
 
   public String getThrowable() {
@@ -146,6 +154,26 @@ public class SolrException extends RuntimeException {
     return t;
   }
 
+  /** Cause chains are shallow in practice; the cap only guards against a cyclic chain. */
+  private static final int MAX_CAUSE_DEPTH = 100;
+
+  /**
+   * Whether {@code t} or anything in its cause chain is of the given type. Prefer this to {@link
+   * #getRootCause} when classifying a failure, since a transport may report it wrapped at any
+   * depth.
+   */
+  public static boolean hasCause(Throwable t, Class<? extends Throwable> type) {
+    int depth = 0;
+    for (Throwable cause = t;
+        cause != null && depth++ < MAX_CAUSE_DEPTH;
+        cause = cause.getCause()) {
+      if (type.isInstance(cause)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * Ensure that the provided tragic exception is wrapped in a 5xx SolrException
    *
@@ -157,42 +185,11 @@ public class SolrException extends RuntimeException {
    *     no-op.
    */
   public static SolrException wrapLuceneTragicExceptionIfNecessary(Exception e) {
-    if (e instanceof SolrException) {
-      final SolrException solrException = (SolrException) e;
+    if (e instanceof SolrException solrException) {
       assert solrException.code() >= 500 && solrException.code() < 600;
       return solrException;
     }
 
     return new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
-  }
-
-  public void logInfoWithMdc(Logger logger, String msg) {
-    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
-    MDC.setContextMap(mdcContext);
-    try {
-      logger.info(msg);
-    } finally {
-      MDC.setContextMap(previousMdcContext);
-    }
-  }
-
-  public void logDebugWithMdc(Logger logger, String msg) {
-    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
-    MDC.setContextMap(mdcContext);
-    try {
-      logger.debug(msg);
-    } finally {
-      MDC.setContextMap(previousMdcContext);
-    }
-  }
-
-  public void logWarnWithMdc(Logger logger, String msg) {
-    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
-    MDC.setContextMap(mdcContext);
-    try {
-      logger.warn(msg);
-    } finally {
-      MDC.setContextMap(previousMdcContext);
-    }
   }
 }

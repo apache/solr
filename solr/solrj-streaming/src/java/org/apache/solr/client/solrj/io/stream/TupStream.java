@@ -229,8 +229,7 @@ public class TupStream extends TupleStream implements Expressible {
       for (Object o : values.values()) {
         if (o instanceof Tuple) {
           unnestedTuple = (Tuple) o;
-        } else if (o instanceof List) {
-          List<?> l = (List<?>) o;
+        } else if (o instanceof List<?> l) {
           if (l.size() > 0 && l.get(0) instanceof Tuple) {
             @SuppressWarnings({"unchecked"})
             List<Tuple> tl = (List<Tuple>) l;

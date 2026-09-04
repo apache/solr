@@ -16,6 +16,8 @@
  */
 package org.apache.solr.uninverting;
 
+import static org.apache.lucene.sandbox.facet.iterators.OrdinalIterator.NO_MORE_ORDS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -814,9 +816,10 @@ public class DocTermOrds implements Accountable {
         // This value was inlined, and then read into a single buffer
         return bufferLength;
       } else {
-        // scan logic taken from read()
+        // scan logic taken from read() - count the number of term ordinals
         int start = index[doc] & 0x7fffffff;
         int cursor = start;
+        int count = 0;
         for (; ; ) {
           int delta = 0;
           for (; ; ) {
@@ -825,9 +828,10 @@ public class DocTermOrds implements Accountable {
             if ((b & 0x80) == 0) break;
           }
           if (delta == 0) break;
+          count++;
         }
 
-        return cursor - start - 1;
+        return count;
       }
     }
 

@@ -139,6 +139,9 @@ public abstract class TabularResponseWriter extends TextResponseWriter {
   public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {}
 
   @Override
+  public void writeArray(String name, Iterator<?> val, int size, boolean raw) throws IOException {}
+
+  @Override
   public void writeDate(String name, Date val) throws IOException {
     writeDate(name, val.toInstant().toString());
   }

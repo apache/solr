@@ -66,10 +66,8 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
               first.getClass().getSimpleName()));
     }
 
-    if (first instanceof RegressionEvaluator.RegressionTuple) {
+    if (first instanceof RegressionEvaluator.RegressionTuple regressedTuple) {
 
-      RegressionEvaluator.RegressionTuple regressedTuple =
-          (RegressionEvaluator.RegressionTuple) first;
       if (second instanceof Number) {
         return regressedTuple.predict(((Number) second).doubleValue());
       } else {
@@ -79,10 +77,8 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
                 .collect(Collectors.toList());
       }
 
-    } else if (first instanceof OLSRegressionEvaluator.MultipleRegressionTuple) {
+    } else if (first instanceof OLSRegressionEvaluator.MultipleRegressionTuple regressedTuple) {
 
-      OLSRegressionEvaluator.MultipleRegressionTuple regressedTuple =
-          (OLSRegressionEvaluator.MultipleRegressionTuple) first;
       if (second instanceof List) {
         @SuppressWarnings({"unchecked"})
         List<Number> list = (List<Number>) second;
@@ -93,9 +89,8 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
         }
 
         return regressedTuple.predict(predictors);
-      } else if (second instanceof Matrix) {
+      } else if (second instanceof Matrix m) {
 
-        Matrix m = (Matrix) second;
         double[][] data = m.getData();
         List<Number> predictions = new ArrayList<>();
         for (double[] predictors : data) {
@@ -104,9 +99,7 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
         return predictions;
       }
 
-    } else if (first instanceof KnnRegressionEvaluator.KnnRegressionTuple) {
-      KnnRegressionEvaluator.KnnRegressionTuple regressedTuple =
-          (KnnRegressionEvaluator.KnnRegressionTuple) first;
+    } else if (first instanceof KnnRegressionEvaluator.KnnRegressionTuple regressedTuple) {
 
       if (regressedTuple.getBivariate()) {
         // Handle bi-variate regression
@@ -141,9 +134,8 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
           }
 
           return regressedTuple.predict(predictors);
-        } else if (second instanceof Matrix) {
+        } else if (second instanceof Matrix m) {
 
-          Matrix m = (Matrix) second;
           if (regressedTuple.getScale()) {
             m = regressedTuple.scale(m);
           }
@@ -155,8 +147,7 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
           return predictions;
         }
       }
-    } else if (first instanceof VectorFunction) {
-      VectorFunction vectorFunction = (VectorFunction) first;
+    } else if (first instanceof VectorFunction vectorFunction) {
       UnivariateFunction univariateFunction = (UnivariateFunction) vectorFunction.getFunction();
       if (second instanceof Number) {
         double x = ((Number) second).doubleValue();
@@ -167,8 +158,7 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
                 .map(value -> univariateFunction.value(((Number) value).doubleValue()))
                 .collect(Collectors.toList());
       }
-    } else if (first instanceof BivariateFunction) {
-      BivariateFunction bivariateFunction = (BivariateFunction) first;
+    } else if (first instanceof BivariateFunction bivariateFunction) {
       if (objects.length == 3) {
         Object third = objects[2];
         double x = 0.0;
@@ -181,8 +171,7 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
           throw new IOException("BivariateFunction requires two numeric parameters.");
         }
       } else if (objects.length == 2) {
-        if (second instanceof Matrix) {
-          Matrix m = (Matrix) second;
+        if (second instanceof Matrix m) {
           double[][] data = m.getData();
           if (data[0].length == 2) {
             List<Number> out = new ArrayList<>();

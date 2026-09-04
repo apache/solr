@@ -1,5 +1,6 @@
 import java.nio.charset.Charset
-import java.util.function.Function
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,21 +27,21 @@ configure(rootProject) {
   }
 
   dependencies {
-    javacc "net.java.dev.javacc:javacc:${scriptDepVersions['javacc']}"
+    javacc libs.javacc.javacc
   }
 
   task javacc() {
     description "Regenerate sources for corresponding javacc grammar files."
     group "generation"
 
-    dependsOn allprojects.collect { prj -> prj.tasks.withType(JavaCCTask) }
+    dependsOn allprojects.collect {prj -> prj.tasks.withType(JavaCCTask)}
   }
 }
 
-def commonCleanups = { FileTree generatedFiles ->
+def commonCleanups = {FileTree generatedFiles ->
   // This is a minor typo in a comment that nonetheless people have hand-corrected in the past.
-  generatedFiles.matching({ include "CharStream.java" }).each {file ->
-    modifyFile(file, { text ->
+  generatedFiles.matching({include "CharStream.java"}).each {file ->
+    modifyFile(file, {text ->
       return text.replace(
           "implemetation",
           "implementation");
@@ -48,7 +49,7 @@ def commonCleanups = { FileTree generatedFiles ->
   }
 
   generatedFiles.each {file ->
-    modifyFile(file, { text ->
+    modifyFile(file, {text ->
       // Normalize EOLs and tabs (EOLs are a side-effect of modifyFile).
       text = text.replace("\t", "    ");
       text = text.replaceAll("JavaCC - OriginalChecksum=[^*]+", "(filtered)")
@@ -57,8 +58,8 @@ def commonCleanups = { FileTree generatedFiles ->
     })
   }
 
-  generatedFiles.matching({ include "*TokenManager.java" }).each { file ->
-    modifyFile(file, { text ->
+  generatedFiles.matching({include "*TokenManager.java"}).each {file ->
+    modifyFile(file, {text ->
       // Remove redundant imports.
       text = text.replaceAll(
           /(?m)^import .+/,
@@ -66,14 +67,13 @@ def commonCleanups = { FileTree generatedFiles ->
       // Add CharStream imports.
       text = text.replaceAll(
           /package (.+)/,
-'''package $1
+          '''package $1
 import javax.annotation.processing.Generated;
 import org.apache.lucene.queryparser.charstream.CharStream;'''.trim())
       text = text.replace(
-              "/** Token Manager. */",
-'''/** Token Manager. */
-@Generated("JavaCC")'''
-      )
+          "/** Token Manager. */",
+          '''/** Token Manager. */
+@Generated("JavaCC")''')
       // Eliminates redundant cast message.
       text = text.replace(
           "int hiByte = (int)(curChar >> 8);",
@@ -98,9 +98,9 @@ configure(project(":solr:core")) {
     javaccFile = file('src/java/org/apache/solr/parser/QueryParser.jj')
 
     afterGenerate << commonCleanups
-    afterGenerate << { FileTree generatedFiles ->
-      generatedFiles.matching { include "QueryParser.java" }.each { file ->
-        modifyFile(file, { text ->
+    afterGenerate << {FileTree generatedFiles ->
+      generatedFiles.matching {include "QueryParser.java"}.each {file ->
+        modifyFile(file, {text ->
           text = text.replace(
               "public QueryParser(CharStream ",
               "protected QueryParser(CharStream ")
@@ -118,7 +118,10 @@ configure(project(":solr:core")) {
 }
 
 // We always regenerate, no need to declare outputs.
-class JavaCCTask extends DefaultTask {
+abstract class JavaCCTask extends DefaultTask {
+  @Inject
+  abstract ExecOperations getExecOperations()
+
   @InputFile
   File javaccFile
 
@@ -160,13 +163,13 @@ class JavaCCTask extends DefaultTask {
     // and can post-process them easily.
     def tempDir = this.getTemporaryDir()
     tempDir.mkdirs()
-    project.delete project.fileTree(tempDir, { include: "**/*.java" })
+    project.delete project.fileTree(tempDir, {include: "**/*.java"})
 
     def targetDir = javaccFile.parentFile
     logger.lifecycle("Recompiling JavaCC: ${project.rootDir.relativePath(javaccFile)}")
 
     def output = new ByteArrayOutputStream()
-    def result = project.javaexec {
+    def result = execOperations.javaexec {
       classpath {
         project.rootProject.configurations.javacc
       }

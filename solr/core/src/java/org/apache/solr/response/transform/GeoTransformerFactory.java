@@ -18,7 +18,6 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +40,7 @@ import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.schema.AbstractSpatialFieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocIterationInfo;
 import org.locationtech.spatial4j.io.GeoJSONWriter;
 import org.locationtech.spatial4j.io.ShapeWriter;
 import org.locationtech.spatial4j.io.SupportedFormats;
@@ -95,7 +95,7 @@ public class GeoTransformerFactory extends TransformerFactory
           ErrorCode.BAD_REQUEST,
           this.getClass().getSimpleName() + " using unknown field: " + fname);
     }
-    if (!(sf.getType() instanceof AbstractSpatialFieldType)) {
+    if (!(sf.getType() instanceof AbstractSpatialFieldType<?> sdv)) {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
           "GeoTransformer requested non-spatial field: "
@@ -111,7 +111,6 @@ public class GeoTransformerFactory extends TransformerFactory
     updater.display_error = display + "_error";
 
     final ShapeValuesSource shapes;
-    AbstractSpatialFieldType<?> sdv = (AbstractSpatialFieldType<?>) sf.getType();
     SpatialStrategy strategy = sdv.getStrategy(fname);
     if (strategy instanceof CompositeSpatialStrategy) {
       shapes = ((CompositeSpatialStrategy) strategy).getGeometryStrategy().makeShapeValueSource();
@@ -142,7 +141,8 @@ public class GeoTransformerFactory extends TransformerFactory
     if (shapes != null) {
       return new GeoDocTransformer(updater) {
         @Override
-        public void transform(SolrDocument doc, int docid) throws IOException {
+        public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo)
+            throws IOException {
           int leafOrd =
               ReaderUtil.subIndex(docid, context.getSearcher().getTopReaderContext().leaves());
           LeafReaderContext ctx = context.getSearcher().getTopReaderContext().leaves().get(leafOrd);
@@ -168,7 +168,8 @@ public class GeoTransformerFactory extends TransformerFactory
     return new GeoDocTransformer(updater) {
 
       @Override
-      public void transform(SolrDocument doc, int docid) throws IOException {
+      public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo)
+          throws IOException {
         Object val = copy ? doc.get(updater.field) : doc.remove(updater.field);
         if (val != null) {
           updater.setValue(doc, val);
@@ -197,7 +198,7 @@ public class GeoTransformerFactory extends TransformerFactory
 
     @Override
     public Collection<String> getRawFields() {
-      return updater.isJSON ? Collections.singleton(updater.display) : Collections.emptySet();
+      return updater.isJSON ? Set.of(updater.display) : Set.of();
     }
   }
 

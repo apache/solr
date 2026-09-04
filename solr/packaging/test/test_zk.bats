@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -DminStateByteLenForCompression=0 -c
+  solr start -DminStateByteLenForCompression=0
 }
 
 teardown_file() {
@@ -59,24 +59,18 @@ teardown() {
 }
 
 @test "listing out files" {
-  sleep 1
-  run solr zk ls / -z localhost:${ZK_PORT}
+  run solr zk ls / -z localhost:${ZK_PORT} --recursive
   assert_output --partial "aliases.json"
 }
 
 @test "connecting to solr via various solr urls and zk hosts" {
-  sleep 1
-  run solr zk ls / -solrUrl http://localhost:${SOLR_PORT}
-  assert_output --partial "aliases.json"
-  # We do mapping in bin/solr script from -solrUrl to --solr-url that prevents deprecation warning
-  #assert_output --partial "Deprecated for removal since 9.7: Use --solr-url instead"
-
-  run solr zk ls / -url http://localhost:${SOLR_PORT}
-  assert_output --partial "aliases.json"
-  # We do mapping in bin/solr script from -solrUrl to --solr-url that prevents deprecation warning
-  #assert_output --partial "Deprecated for removal since 9.7: Use --solr-url instead"
-
   run solr zk ls / --solr-url http://localhost:${SOLR_PORT}
+  assert_output --partial "aliases.json"
+
+  run solr zk ls / --solr-connection http://localhost:${SOLR_PORT}
+  assert_output --partial "aliases.json"
+  
+  run solr zk ls / -s http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"
 
   run solr zk ls /
@@ -87,11 +81,6 @@ teardown() {
 
   run solr zk ls / --zk-host localhost:${ZK_PORT}
   assert_output --partial "aliases.json"
-
-  run solr zk ls / -zkHost localhost:${ZK_PORT}
-  assert_output --partial "aliases.json"
-  # We do mapping in bin/solr script from -zkHost to --zk-host that prevents deprecation warning
-  #assert_output --partial "Deprecated for removal since 9.7: Use --zk-host instead"
 }
 
 @test "copying files around" {
@@ -99,20 +88,17 @@ teardown() {
 
   run solr zk cp myfile.txt zk:/myfile.txt -z localhost:${ZK_PORT}
   assert_output --partial "Copying from 'myfile.txt' to 'zk:/myfile.txt'. ZooKeeper at localhost:${ZK_PORT}"
-  sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}
   assert_output --partial "myfile.txt"
 
   touch myfile2.txt
   run solr zk cp myfile2.txt zk:myfile2.txt -z localhost:${ZK_PORT}
-  sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}
   assert_output --partial "myfile2.txt"
 
   touch myfile3.txt
   run solr zk cp myfile3.txt zk:/myfile3.txt -z localhost:${ZK_PORT}
   assert_output --partial "Copying from 'myfile3.txt' to 'zk:/myfile3.txt'. ZooKeeper at localhost:${ZK_PORT}"
-  sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}
   assert_output --partial "myfile3.txt"
 
@@ -134,8 +120,8 @@ teardown() {
   assert_output --partial "Uploading"
   refute_output --partial "ERROR"
 
-  sleep 1
-  run curl "http://localhost:${SOLR_PORT}/api/cluster/configs?omitHeader=true"
+  wait_for 10 1 bash -c "curl -s 'http://localhost:${SOLR_PORT}/api/configsets' | grep -q techproducts2"
+  run curl "http://localhost:${SOLR_PORT}/api/configsets"
   assert_output --partial '"configSets":["_default","techproducts2"]'
 }
 
@@ -178,4 +164,24 @@ teardown() {
   #assert_output --partial 'Compression of state.json has been enabled'
 
   rm afile.txt
+}
+
+@test "env var ZK_HOST is honored" {
+  # Need to unset SOLR_PORT to avoid the tool being smart and look at SOLR_PORT
+  export SOLR_PORT_KEEP=$SOLR_PORT_LISTEN
+  unset SOLR_PORT_LISTEN
+
+  # First test a command that will fail (no ZK_HOST set, no SOLR_PORT)
+  run solr zk ls / --recursive
+  assert_output --partial "assuming solr url is http://localhost:8983"
+  refute_output --partial "aliases.json"
+
+  # Then set the ZK_HOST variable and test again
+  export ZK_HOST=localhost:${ZK_PORT}
+  run solr zk ls / --recursive
+  assert_output --partial "aliases.json"
+
+  # Restore SOLR_PORT
+  export SOLR_PORT_LISTEN=$SOLR_PORT_KEEP
+  unset ZK_HOST
 }

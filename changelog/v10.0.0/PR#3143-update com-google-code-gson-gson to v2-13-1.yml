@@ -1,0 +1,7 @@
+title: Update com.google.code.gson:gson to v2.13.1
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3143
+  url: https://github.com/apache/solr/pull/3143

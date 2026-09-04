@@ -56,7 +56,7 @@ public class ProbabilityEvaluator extends RecursiveObjectEvaluator implements Ma
                 "Invalid expression %s - null found for the second value",
                 toExpression(constructingFactory)));
       }
-      if (!(first instanceof IntegerDistribution)) {
+      if (!(first instanceof IntegerDistribution d)) {
         throw new IOException(
             String.format(
                 Locale.ROOT,
@@ -64,7 +64,7 @@ public class ProbabilityEvaluator extends RecursiveObjectEvaluator implements Ma
                 toExpression(constructingFactory),
                 first.getClass().getSimpleName()));
       }
-      if (!(second instanceof Number)) {
+      if (!(second instanceof Number predictOver)) {
         throw new IOException(
             String.format(
                 Locale.ROOT,
@@ -73,8 +73,6 @@ public class ProbabilityEvaluator extends RecursiveObjectEvaluator implements Ma
                 first.getClass().getSimpleName()));
       }
 
-      IntegerDistribution d = (IntegerDistribution) first;
-      Number predictOver = (Number) second;
       return d.probability(predictOver.intValue());
 
     } else if (values.length == 3) {
@@ -82,7 +80,7 @@ public class ProbabilityEvaluator extends RecursiveObjectEvaluator implements Ma
       second = values[1];
       third = values[2];
 
-      if (!(first instanceof AbstractRealDistribution)) {
+      if (!(first instanceof AbstractRealDistribution realDistribution)) {
         throw new IOException(
             String.format(
                 Locale.ROOT,
@@ -90,7 +88,7 @@ public class ProbabilityEvaluator extends RecursiveObjectEvaluator implements Ma
                 toExpression(constructingFactory),
                 first.getClass().getSimpleName()));
       }
-      if (!(second instanceof Number)) {
+      if (!(second instanceof Number start)) {
         throw new IOException(
             String.format(
                 Locale.ROOT,
@@ -99,7 +97,7 @@ public class ProbabilityEvaluator extends RecursiveObjectEvaluator implements Ma
                 first.getClass().getSimpleName()));
       }
 
-      if (!(third instanceof Number)) {
+      if (!(third instanceof Number end)) {
         throw new IOException(
             String.format(
                 Locale.ROOT,
@@ -108,9 +106,6 @@ public class ProbabilityEvaluator extends RecursiveObjectEvaluator implements Ma
                 first.getClass().getSimpleName()));
       }
 
-      AbstractRealDistribution realDistribution = (AbstractRealDistribution) first;
-      Number start = (Number) second;
-      Number end = (Number) third;
       return realDistribution.probability(start.doubleValue(), end.doubleValue());
     } else {
       throw new IOException("The probability function expects 2 or 3 parameters");

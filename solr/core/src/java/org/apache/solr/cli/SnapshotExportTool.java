@@ -16,11 +16,9 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
-import java.util.List;
-import java.util.Optional;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -28,12 +26,53 @@ import org.apache.solr.common.params.CollectionAdminParams;
 /** Supports snapshot-export command in the bin/solr script. */
 public class SnapshotExportTool extends ToolBase {
 
-  public SnapshotExportTool() {
-    this(CLIO.getOutStream());
-  }
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Name of collection to be snapshot.")
+          .get();
 
-  public SnapshotExportTool(PrintStream stdout) {
-    super(stdout);
+  private static final Option SNAPSHOT_NAME_OPTION =
+      Option.builder()
+          .longOpt("snapshot-name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Name of the snapshot to be exported.")
+          .get();
+
+  private static final Option DEST_DIR_OPTION =
+      Option.builder()
+          .longOpt("dest-dir")
+          .hasArg()
+          .argName("DIR")
+          .required()
+          .desc("Path of a temporary directory on local filesystem during snapshot export command.")
+          .get();
+
+  private static final Option BACKUP_REPO_NAME_OPTION =
+      Option.builder()
+          .longOpt("backup-repo-name")
+          .hasArg()
+          .argName("DIR")
+          .desc(
+              "Specifies name of the backup repository to be used during snapshot export preparation.")
+          .get();
+
+  private static final Option ASYNC_ID_OPTION =
+      Option.builder()
+          .longOpt("async-id")
+          .hasArg()
+          .argName("ID")
+          .desc(
+              "Specifies the async request identifier to be used during snapshot export preparation.")
+          .get();
+
+  public SnapshotExportTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -42,63 +81,26 @@ public class SnapshotExportTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_SOLRURL,
-        Option.builder("c")
-            .longOpt("name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of collection to be snapshot.")
-            .build(),
-        Option.builder()
-            .longOpt("snapshot-name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of the snapshot to be exported.")
-            .build(),
-        Option.builder()
-            .longOpt("dest-dir")
-            .argName("DIR")
-            .hasArg()
-            .required(true)
-            .desc(
-                "Path of a temporary directory on local filesystem during snapshot export command.")
-            .build(),
-        Option.builder()
-            .longOpt("backup-repo-name")
-            .argName("DIR")
-            .hasArg()
-            .required(false)
-            .desc(
-                "Specifies name of the backup repository to be used during snapshot export preparation.")
-            .build(),
-        Option.builder("i")
-            .longOpt("async-id")
-            .argName("ID")
-            .hasArg()
-            .required(false)
-            .desc(
-                "Specifies the async request identifier to be used during snapshot export preparation.")
-            .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(SNAPSHOT_NAME_OPTION)
+        .addOption(DEST_DIR_OPTION)
+        .addOption(BACKUP_REPO_NAME_OPTION)
+        .addOption(ASYNC_ID_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    //
-    String snapshotName = cli.getOptionValue("snapshot-name");
-    String collectionName = cli.getOptionValue("name");
-    String destDir = cli.getOptionValue("dest-dir");
-    Optional<String> backupRepo = Optional.ofNullable(cli.getOptionValue("backup-repo-name"));
-    Optional<String> asyncReqId = Optional.ofNullable(cli.getOptionValue("async-id"));
+    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
+    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
+    String destDir = cli.getOptionValue(DEST_DIR_OPTION);
+    String backupRepo = cli.getOptionValue(BACKUP_REPO_NAME_OPTION);
+    String asyncReqId = cli.getOptionValue(ASYNC_ID_OPTION);
 
-    try (var solrClient = SolrCLI.getSolrClient(cli)) {
+    try (var solrClient = CLIUtils.getSolrClient(cli)) {
       exportSnapshot(solrClient, collectionName, snapshotName, destDir, backupRepo, asyncReqId);
     }
   }
@@ -108,19 +110,19 @@ public class SnapshotExportTool extends ToolBase {
       String collectionName,
       String snapshotName,
       String destPath,
-      Optional<String> backupRepo,
-      Optional<String> asyncReqId) {
+      String backupRepo,
+      String asyncReqId) {
     try {
       CollectionAdminRequest.Backup backup =
           new CollectionAdminRequest.Backup(collectionName, snapshotName);
       backup.setCommitName(snapshotName);
       backup.setIndexBackupStrategy(CollectionAdminParams.COPY_FILES_STRATEGY);
       backup.setLocation(destPath);
-      if (backupRepo.isPresent()) {
-        backup.setRepositoryName(backupRepo.get());
+      if (backupRepo != null) {
+        backup.setRepositoryName(backupRepo);
       }
       // if asyncId is null, processAsync will block and throw an Exception with any error
-      backup.processAsync(asyncReqId.orElse(null), solrClient);
+      backup.processAsync(asyncReqId, solrClient);
     } catch (Exception e) {
       throw new IllegalStateException(
           "Failed to backup collection meta-data for collection "

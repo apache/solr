@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.math3.primes.Primes;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -410,7 +410,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                   ModifiableSolrParams params = new ModifiableSolrParams();
                   if (realTime) {
                     params.set("wt", "json");
-                    params.set("qt", "/get");
                     params.set("ids", Integer.toString(id));
                   } else {
                     params.set("wt", "json");
@@ -421,7 +420,11 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                   int clientId = rand.nextInt(clients.size());
                   if (!realTime) clientId = clientIndexUsedForCommit;
 
-                  QueryResponse response = clients.get(clientId).query(params);
+                  SolrClient client = clients.get(clientId);
+                  QueryResponse response =
+                      realTime
+                          ? new QueryRequest("/get", params).process(client)
+                          : client.query(params);
                   if (response.getResults().size() == 0) {
                     // there's no info we can get back from a delete operation, so not much we
                     // can check
@@ -625,11 +628,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("versions", "true");
-
     UpdateRequest ureq = new UpdateRequest();
-    ureq.setParams(params);
+    ureq.getParams().set("versions", true);
     ureq.add(doc);
     UpdateResponse resp;
 
@@ -647,10 +647,10 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
   protected long deleteDocAndGetVersion(
       String id, ModifiableSolrParams params, boolean deleteByQuery) throws Exception {
-    params.add("versions", "true");
-
     UpdateRequest ureq = new UpdateRequest();
-    ureq.setParams(params);
+    ureq.getParams().add(params);
+    ureq.getParams().set("versions", true);
+
     if (deleteByQuery) {
       ureq.deleteByQuery("id:" + id);
     } else {
@@ -682,9 +682,9 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     Slice shard1 = clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1);
     leader = shard1.getLeader();
 
-    for (SolrClient client : clients) {
+    for (var client : clients) {
       String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
-      if (((HttpSolrClient) client).getBaseURL().startsWith(leaderBaseUrl)) {
+      if (client.getBaseURL().startsWith(leaderBaseUrl)) {
         return client;
       }
     }

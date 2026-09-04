@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: New SolrJ SolrRequest.processWithBaseUrl, new HttpSolrClientBase.requestWithBaseUrl. Existing callers will require updates due to a signature change.
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-17996
+    url: https://issues.apache.org/jira/browse/SOLR-17996

@@ -69,8 +69,7 @@ public abstract class WrapperModel extends AdapterModel {
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (!super.equals(obj)) return false;
-    if (!(obj instanceof WrapperModel)) return false;
-    WrapperModel other = (WrapperModel) obj;
+    if (!(obj instanceof WrapperModel other)) return false;
     return Objects.equals(model, other.model)
         && Objects.equals(solrResourceLoader, other.solrResourceLoader);
   }

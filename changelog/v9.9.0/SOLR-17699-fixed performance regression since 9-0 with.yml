@@ -1,0 +1,8 @@
+title: Fixed performance regression since 9.0 with "frange" queries embedded in other
+  queries. May also affect some numeric range queries when the minimum is negative.
+type: fixed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17699
+  url: https://issues.apache.org/jira/browse/SOLR-17699

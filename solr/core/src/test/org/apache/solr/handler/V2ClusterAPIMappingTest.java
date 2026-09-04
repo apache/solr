@@ -19,12 +19,10 @@ package org.apache.solr.handler;
 
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +31,14 @@ import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -128,27 +127,9 @@ public class V2ClusterAPIMappingTest extends SolrTestCaseJ4 {
     assertEquals("some_role", v1Params.get("role"));
   }
 
-  @Test
-  public void testSetPropertyAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cluster",
-            "POST",
-            "{'set-property': {" + "'name': 'some_prop_name', " + "'val':'some_value'}}");
-
-    assertEquals(CollectionParams.CollectionAction.CLUSTERPROP.toString(), v1Params.get(ACTION));
-    assertEquals("some_prop_name", v1Params.get(NAME));
-    assertEquals("some_value", v1Params.get("val"));
-  }
-
   private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody)
       throws Exception {
     return doCaptureParams(path, method, v2RequestBody, mockCollectionsHandler);
-  }
-
-  private SolrParams captureConvertedConfigsetV1Params(
-      String path, String method, String v2RequestBody) throws Exception {
-    return doCaptureParams(path, method, v2RequestBody, mockConfigSetHandler);
   }
 
   private SolrParams doCaptureParams(
@@ -157,11 +138,11 @@ public class V2ClusterAPIMappingTest extends SolrTestCaseJ4 {
     final HashMap<String, String> parts = new HashMap<>();
     final Api api = apiBag.lookup(path, method, parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
-    final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, Map.of()) {
+    final SolrQueryRequestBase req =
+        new SolrQueryRequestBase(null, new ModifiableSolrParams()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
-            if (v2RequestBody == null) return Collections.emptyList();
+            if (v2RequestBody == null) return List.of();
             return ApiBag.getCommandOperations(
                 new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
           }

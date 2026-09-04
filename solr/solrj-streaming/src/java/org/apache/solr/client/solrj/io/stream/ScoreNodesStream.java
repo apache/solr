@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -36,7 +37,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
@@ -57,7 +57,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String zkHost;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   private TupleStream stream;
   private Map<String, Tuple> nodes = new HashMap<>();
   private Iterator<Tuple> tuples;
@@ -95,10 +95,10 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
               streamExpressions.size()));
     }
 
-    zkHost = factory.getDefaultZkHost();
+    solrConnection = factory.getDefaultSolrConnection();
 
-    if (null == zkHost) {
-      throw new IOException("zkHost not found");
+    if (null == solrConnection) {
+      throw new IOException("solrConnection not found");
     }
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
@@ -109,8 +109,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
   private void init(TupleStream tupleStream, String termFreq) throws IOException {
     this.stream = tupleStream;
     this.termFreq = termFreq;
-    if (stream instanceof FacetStream) {
-      FacetStream facetStream = (FacetStream) stream;
+    if (stream instanceof FacetStream facetStream) {
 
       if (facetStream.getBuckets().length != 1) {
         throw new IOException(
@@ -220,18 +219,16 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
       builder.append(nodeId);
     }
 
-    CloudSolrClient client = clientCache.getCloudSolrClient(zkHost);
+    CloudSolrClient client = clientCache.getCloudSolrClient(solrConnection);
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.QT, "/terms");
     params.add(TermsParams.TERMS_FIELD, field);
     params.add(TermsParams.TERMS_STATS, "true");
     params.add(TermsParams.TERMS_LIST, builder.toString());
     params.add(TermsParams.TERMS_LIMIT, Integer.toString(nodes.size()));
 
-    QueryRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest("/terms", params);
 
     try {
-
       // Get the response from the terms component
       NamedList<?> response = client.request(request, collection);
       @SuppressWarnings({"unchecked"})
@@ -240,28 +237,23 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
       @SuppressWarnings({"unchecked"})
       NamedList<NamedList<Number>> fields = (NamedList<NamedList<Number>>) response.get("terms");
 
-      int size = fields.size();
-      for (int i = 0; i < size; i++) {
-        String fieldName = fields.getName(i);
-        NamedList<Number> terms = fields.get(fieldName);
-        int tsize = terms.size();
-        for (int t = 0; t < tsize; t++) {
-          String term = terms.getName(t);
-          Number docFreq = terms.get(term);
-          Tuple tuple = nodes.get(term);
-          if (!tuple.getFields().containsKey(termFreq)) {
-            throw new Exception("termFreq field not present in the Tuple");
-          }
-          Number termFreqValue = (Number) tuple.get(termFreq);
-          float score =
-              (float) (Math.log(termFreqValue.floatValue()) + 1.0)
-                  * (float) (Math.log((numDocs + 1) / (docFreq.doubleValue() + 1)) + 1.0);
-          tuple.put("nodeScore", score);
-          tuple.put("docFreq", docFreq);
-          tuple.put("numDocs", numDocs);
-        }
-      }
-    } catch (Exception e) {
+      fields.forEach(
+          (fieldName, terms) ->
+              terms.forEach(
+                  (term, docFreq) -> {
+                    Tuple tuple = nodes.get(term);
+                    if (!tuple.getFields().containsKey(termFreq)) {
+                      throw new RuntimeException("termFreq field not present in the Tuple");
+                    }
+                    Number termFreqValue = (Number) tuple.get(termFreq);
+                    float score =
+                        (float) (Math.log(termFreqValue.floatValue()) + 1.0)
+                            * (float) (Math.log((numDocs + 1) / (docFreq.doubleValue() + 1)) + 1.0);
+                    tuple.put("nodeScore", score);
+                    tuple.put("docFreq", docFreq);
+                    tuple.put("numDocs", numDocs);
+                  }));
+    } catch (SolrServerException e) {
       throw new IOException(e);
     }
 

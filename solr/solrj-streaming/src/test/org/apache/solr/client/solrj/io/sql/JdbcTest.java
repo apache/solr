@@ -29,14 +29,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
@@ -64,7 +62,6 @@ public class JdbcTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
@@ -83,7 +80,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collection, 2, 2);
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         collection, cluster.getZkStateReader(), false, true, DEFAULT_TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
@@ -649,11 +646,9 @@ public class JdbcTest extends SolrCloudTestCase {
       }
 
       CloudSolrClient solrClient = cluster.getSolrClient();
-      solrClient.connect();
       ZkStateReader zkStateReader = ZkStateReader.from(solrClient);
 
-      Set<String> collectionsSet = zkStateReader.getClusterState().getCollectionsMap().keySet();
-      SortedSet<String> tables = new TreeSet<>(collectionsSet);
+      var tables = new TreeSet<String>(zkStateReader.getClusterState().getCollectionNames());
 
       Aliases aliases = zkStateReader.getAliases();
       tables.addAll(aliases.getCollectionAliasListMap().keySet());

@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -48,7 +48,7 @@ public class MockResponseBuilder extends ResponseBuilder {
     SchemaField uniqueIdField = new SchemaField("id", new StrField());
 
     // we need this because QueryComponent adds a property to it.
-    NamedList<Object> responseHeader = new NamedList<>();
+    SimpleOrderedMap<Object> responseHeader = new SimpleOrderedMap<>();
 
     // the mock implementations
     Mockito.when(request.getSchema()).thenReturn(indexSchema);
@@ -56,6 +56,7 @@ public class MockResponseBuilder extends ResponseBuilder {
     Mockito.when(params.getBool(ShardParams.SHARDS_INFO)).thenReturn(false);
     Mockito.when(request.getParams()).thenReturn(params);
     Mockito.when(response.getResponseHeader()).thenReturn(responseHeader);
+    Mockito.when(response.getReturnFields()).thenCallRealMethod();
 
     List<SearchComponent> components = new ArrayList<>();
     return new MockResponseBuilder(request, response, components);

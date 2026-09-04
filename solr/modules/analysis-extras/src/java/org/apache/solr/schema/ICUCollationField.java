@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
@@ -106,9 +105,9 @@ public class ICUCollationField extends FieldType {
 
   private static void warnOrFailUdvas(boolean failHardOnUdvas) {
     // NOTE: it may seem odd that we're checking these conditions ourselves rather than relying on
-    // the internal
-    // checking of `assertWarnOrFail(...)`. But the main reason we're logging this error via
-    // `XMLConfigFile.assertWarnOrFail(...)` is because this is at its root an xml config file
+    // the internal checking of `assertWarnOrFail(...)`. But the main reason we're logging this
+    // error via `XMLConfigFile.assertWarnOrFail(...)` is because this is at its root a xml config
+    // file
     // error, so we log in a way that's consistent with that.
     assertWarnOrFail(UDVAS_MESSAGE, false, failHardOnUdvas);
   }
@@ -135,7 +134,7 @@ public class ICUCollationField extends FieldType {
     super.init(schema, args);
   }
 
-  /** Setup the field according to the provided parameters */
+  /** Set up the field according to the provided parameters */
   private void setup(ResourceLoader loader, Map<String, String> args) {
     String custom = args.remove("custom");
     String localeID = args.remove("locale");
@@ -333,7 +332,7 @@ public class ICUCollationField extends FieldType {
       }
       return fields;
     } else {
-      return Collections.singletonList(createField(field, value));
+      return List.of(createField(field, value));
     }
   }
 

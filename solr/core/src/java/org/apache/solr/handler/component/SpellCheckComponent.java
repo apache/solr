@@ -397,7 +397,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   @Override
   public void finishStage(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
-    if (!params.getBool(COMPONENT_NAME, false) || rb.stage != ResponseBuilder.STAGE_GET_FIELDS)
+    if (!params.getBool(COMPONENT_NAME, false) || rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS)
       return;
 
     boolean extendedResults = params.getBool(SPELLCHECK_EXTENDED_RESULTS, false);
@@ -717,9 +717,11 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (initParams != null) {
       log.debug("Initializing spell checkers");
       boolean hasDefault = false;
-      for (int i = 0; i < initParams.size(); i++) {
-        if (initParams.getName(i).equals("spellchecker")) {
-          Object cfg = initParams.getVal(i);
+      // TODO addSpellChecker response should set hasDefault!
+
+      for (Map.Entry<String, ?> initEntry : initParams) {
+        if ("spellchecker".equals(initEntry.getKey())) {
+          Object cfg = initEntry.getValue();
           if (cfg instanceof NamedList) {
             addSpellChecker(core, hasDefault, (NamedList<?>) cfg);
           } else if (cfg instanceof Map) {
@@ -873,17 +875,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     return Collections.unmodifiableMap(spellCheckers);
   }
 
-  // ///////////////////////////////////////////
-  // / SolrInfoBean
-  // //////////////////////////////////////////
-
   @Override
   public String getDescription() {
     return "A Spell Checker component";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.SPELLCHECKER;
   }
 }

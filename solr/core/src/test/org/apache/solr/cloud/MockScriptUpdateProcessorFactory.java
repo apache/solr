@@ -17,36 +17,19 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * The scripting update processor capability is something that is only allowed by a trusted
- * configSet. The actual code lives in the /modules/scripting project, however the test for trusted
- * configsets lives in TestConfigSetsAPI. This class is meant to simulate the
- * ScriptUpdateProcessorFactory for this test.
+ * Mock implementation of ScriptUpdateProcessorFactory for testing purposes. The actual code lives
+ * in the /modules/scripting project, however the test lives in TestConfigSetsAPI. This class is
+ * meant to simulate the ScriptUpdateProcessorFactory for this test.
  */
-public class MockScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
-    implements SolrCoreAware {
-
-  @Override
-  public void inform(SolrCore core) {
-    if (!core.getCoreDescriptor().isConfigSetTrusted()) {
-      throw new SolrException(
-          ErrorCode.UNAUTHORIZED,
-          "The configset for this collection was uploaded without any authentication in place,"
-              + " and this operation is not available for collections with untrusted configsets. To use this component, re-upload the configset"
-              + " after enabling authentication and authorization.");
-    }
-  }
+public class MockScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   @Override
   public UpdateRequestProcessor getInstance(

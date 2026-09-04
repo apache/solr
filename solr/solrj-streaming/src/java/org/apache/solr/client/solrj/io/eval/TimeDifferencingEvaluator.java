@@ -95,11 +95,10 @@ public class TimeDifferencingEvaluator extends RecursiveObjectEvaluator implemen
                   (timeseriesValues.get(n).doubleValue()
                       - timeseriesValues.get(n - lag).doubleValue()))
           .collect(Collectors.toList());
-    } else if (values[0] instanceof Matrix) {
+    } else if (values[0] instanceof Matrix matrix) {
 
       // Diff each row of the matrix
 
-      Matrix matrix = (Matrix) values[0];
       double[][] data = matrix.getData();
       double[][] diffedData = new double[data.length][];
       Number lagValue = 1;

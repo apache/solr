@@ -47,8 +47,7 @@ public class RateLimiterPayload implements ReflectMapWriter {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof RateLimiterPayload) {
-      RateLimiterPayload that = (RateLimiterPayload) obj;
+    if (obj instanceof RateLimiterPayload that) {
       return Objects.equals(this.enabled, that.enabled)
           && Objects.equals(this.guaranteedSlots, that.guaranteedSlots)
           && Objects.equals(this.allowedRequests, that.allowedRequests)

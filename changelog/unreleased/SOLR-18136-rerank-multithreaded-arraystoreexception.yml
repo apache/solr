@@ -1,0 +1,7 @@
+title: Fix ArrayStoreException when combining rerank with sort under multi-threaded segment-parallel search
+type: fixed
+authors:
+  - name: Shiming Li
+links:
+  - name: SOLR-18136
+    url: https://issues.apache.org/jira/browse/SOLR-18136

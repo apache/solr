@@ -454,7 +454,7 @@ abstract class FacetParser<T extends FacetRequest> {
     // HACK, but NamedList already handles the list processing for us...
     NamedList<String> nl = new NamedList<>();
     nl.addAll(jsonObject);
-    return SolrParams.toSolrParams(nl);
+    return nl.toSolrParams();
   }
 
   // TODO Make this private (or at least not static) and introduce
@@ -612,8 +612,7 @@ abstract class FacetParser<T extends FacetRequest> {
 
       FacetRequest.FacetSort facetSort = null;
 
-      if (sort instanceof String) {
-        String sortStr = (String) sort;
+      if (sort instanceof String sortStr) {
         if (sortStr.endsWith(" asc")) {
           facetSort =
               new FacetRequest.FacetSort(

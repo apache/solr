@@ -53,7 +53,7 @@ import org.apache.lucene.util.BytesRef;
  *       can be reset, clone it again.
  * </ul>
  */
-@Deprecated
+@Deprecated(since = "7.0")
 public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, PayloadAttribute {
 
   // TODO Refactor the spellchecker API to use TokenStreams properly, rather than this hack
@@ -132,9 +132,8 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
   @Override
   public boolean equals(Object obj) {
     if (obj == this) return true;
-    if (!(obj instanceof Token)) return false;
+    if (!(obj instanceof Token other)) return false;
 
-    final Token other = (Token) obj;
     return (flags == other.flags && (Objects.equals(payload, other.payload)) && super.equals(obj));
   }
 

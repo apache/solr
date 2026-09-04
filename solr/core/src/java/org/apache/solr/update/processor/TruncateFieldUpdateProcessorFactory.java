@@ -89,8 +89,7 @@ public final class TruncateFieldUpdateProcessorFactory extends FieldMutatingUpda
         getSelector(),
         next,
         src -> {
-          if (src instanceof CharSequence) {
-            CharSequence s = (CharSequence) src;
+          if (src instanceof CharSequence s) {
             if (maxLength < s.length()) {
               return s.subSequence(0, maxLength);
             }

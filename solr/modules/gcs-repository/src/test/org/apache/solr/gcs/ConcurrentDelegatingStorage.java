@@ -203,6 +203,11 @@ public class ConcurrentDelegatingStorage implements Storage {
   }
 
   @Override
+  public synchronized Blob moveBlob(MoveBlobRequest request) {
+    return delegate.moveBlob(request);
+  }
+
+  @Override
   public synchronized byte[] readAllBytes(String bucket, String blob, BlobSourceOption... options) {
     return delegate.readAllBytes(bucket, blob, options);
   }

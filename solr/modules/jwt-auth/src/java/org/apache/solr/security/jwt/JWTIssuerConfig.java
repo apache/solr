@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,9 +79,9 @@ public class JWTIssuerConfig {
   private Collection<X509Certificate> trustedCerts;
 
   public static boolean ALLOW_OUTBOUND_HTTP =
-      Boolean.parseBoolean(EnvUtils.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
+      EnvUtils.getPropertyAsBool("solr.auth.jwt.outbound.http.enabled", false);
   public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG =
-      "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.";
+      "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.outbound.http.enabled=true to allow HTTP for test purposes.";
   private static final String DEFAULT_AUTHORIZATION_FLOW =
       "implicit"; // 'implicit' to be deprecated
   private static final Set<String> VALID_AUTHORIZATION_FLOWS =
@@ -129,7 +128,7 @@ public class JWTIssuerConfig {
         iss = wellKnownDiscoveryConfig.getIssuer();
       }
       if (jwksUrl == null) {
-        jwksUrl = Collections.singletonList(wellKnownDiscoveryConfig.getJwksUrl());
+        jwksUrl = List.of(wellKnownDiscoveryConfig.getJwksUrl());
       }
       if (authorizationEndpoint == null) {
         authorizationEndpoint = wellKnownDiscoveryConfig.getAuthorizationEndpoint();
@@ -265,8 +264,7 @@ public class JWTIssuerConfig {
    */
   @SuppressWarnings("unchecked")
   public JWTIssuerConfig setJwksUrl(Object jwksUrlListOrString) {
-    if (jwksUrlListOrString instanceof String)
-      this.jwksUrl = Collections.singletonList((String) jwksUrlListOrString);
+    if (jwksUrlListOrString instanceof String) this.jwksUrl = List.of((String) jwksUrlListOrString);
     else if (jwksUrlListOrString instanceof List) this.jwksUrl = (List<String>) jwksUrlListOrString;
     else if (jwksUrlListOrString != null)
       throw new SolrException(
@@ -514,7 +512,7 @@ public class JWTIssuerConfig {
      * Fetch well-known config from a URL, with optional list of trusted certificates
      *
      * @param url the url to fetch
-     * @param trustedCerts optional list of trusted SSL certs. May be null to fall-back to Java's
+     * @param trustedCerts optional list of trusted SSL certs. May be null to fall back to Java's
      *     defaults
      * @return an instance of WellKnownDiscoveryConfig object
      */

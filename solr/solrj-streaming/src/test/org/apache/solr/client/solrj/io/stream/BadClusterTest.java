@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
@@ -32,10 +34,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
+import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Tests behaviors of CloudSolrStream when the cluster is behaving badly. */
+@Nightly
 @SolrTestCaseJ4.SuppressSSL
 public class BadClusterTest extends SolrCloudTestCase {
 
@@ -46,6 +50,7 @@ public class BadClusterTest extends SolrCloudTestCase {
       new StreamFactory().withFunctionName("search", CloudSolrStream.class);
 
   private static String zkHost;
+  private static CloudSolrClient.CloudSolrClientConnection solrConnection;
 
   @BeforeClass
   public static void configureCluster() throws Exception {
@@ -53,7 +58,6 @@ public class BadClusterTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
@@ -65,7 +69,8 @@ public class BadClusterTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collection, 1, 1);
 
     zkHost = cluster.getZkServer().getZkAddress();
-    streamFactory.withCollectionZkHost(collection, zkHost);
+    solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    streamFactory.withCollectionUseThisConnection(collection, solrConnection);
   }
 
   // test order is important because the cluster progressively gets worse, but it is only created
@@ -80,34 +85,35 @@ public class BadClusterTest extends SolrCloudTestCase {
   }
 
   private void testEmptyCollection() throws Exception {
-    CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory);
-    assertEquals(0, getTuples(stream).size());
+    try (CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory)) {
+      assertEquals(0, getTuples(stream).size());
+    }
   }
 
   private void testAllNodesDown() throws Exception {
-
-    CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory);
-    cluster.expireZkSession(cluster.getReplicaJetty(getReplicas().get(0)));
-
-    try {
-      getTuples(stream);
-      fail("Expected IOException");
-    } catch (IOException ioe) {
+    try (CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory)) {
+      // Pre-warm the streaming clients, so that the following getTuples can fail quickly
+      assertEquals(0, getTuples(stream).size());
+      cluster.expireZkSession(cluster.getReplicaJetty(getReplicas().getFirst()));
+      expectThrows(IOException.class, () -> getTuples(stream));
     }
   }
 
   private void testClusterShutdown() throws Exception {
-
-    CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory);
-    cluster.shutdown();
-
-    try {
-      getTuples(stream);
-      fail("Expected IOException: SolrException: TimeoutException");
-    } catch (IOException ioe) {
+    try (CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory)) {
+      cluster.shutdown();
+      IOException ioe = expectThrows(IOException.class, () -> getTuples(stream));
+      assertNotNull("IOException must have a SolrException cause", ioe.getCause());
+      assertThat(
+          "Cause of IOException is incorrect",
+          ioe.getCause(),
+          Matchers.instanceOf(SolrException.class));
       SolrException se = (SolrException) ioe.getCause();
-      TimeoutException te = (TimeoutException) se.getCause();
-      assertNotNull(te);
+      assertNotNull("SolrException must have a TimeoutException cause", se.getCause());
+      assertThat(
+          "Cause of SolrException is incorrect",
+          se.getCause(),
+          Matchers.instanceOf(TimeoutException.class));
     }
   }
 
@@ -121,7 +127,8 @@ public class BadClusterTest extends SolrCloudTestCase {
   }
 
   private List<Replica> getReplicas() throws IOException {
-    return TupleStream.getReplicas(zkHost, collection, null, new MultiMapSolrParams(Map.of()));
+    return TupleStream.getReplicas(
+        solrConnection, collection, null, new MultiMapSolrParams(Map.of()));
   }
 
   private List<Tuple> getTuples(TupleStream tupleStream) throws IOException {

@@ -25,7 +25,6 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import org.apache.commons.io.file.PathUtils;
@@ -55,21 +54,21 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   @Test
   public void testDefaultConfigSetBasePathResolution() {
-    Path solrHome = Paths.get("/path/to/solr/home");
+    Path solrHome = Path.of("/path/to/solr/home");
 
     NodeConfig config =
         SolrXmlConfig.fromString(
             solrHome, "<solr><str name=\"configSetBaseDir\">configsets</str></solr>");
     assertThat(
         config.getConfigSetBaseDirectory().toAbsolutePath(),
-        is(Paths.get("/path/to/solr/home/configsets").toAbsolutePath()));
+        is(Path.of("/path/to/solr/home/configsets").toAbsolutePath()));
 
     NodeConfig absConfig =
         SolrXmlConfig.fromString(
             solrHome, "<solr><str name=\"configSetBaseDir\">/path/to/configsets</str></solr>");
     assertThat(
         absConfig.getConfigSetBaseDirectory().toAbsolutePath(),
-        is(Paths.get("/path/to/configsets").toAbsolutePath()));
+        is(Path.of("/path/to/configsets").toAbsolutePath()));
   }
 
   @Test
@@ -77,12 +76,12 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     CoreContainer container = null;
     try {
       container = setupContainer(TEST_PATH().resolve("configsets").toString());
-      Path solrHome = Paths.get(container.getSolrHome());
+      Path solrHome = container.getSolrHome();
 
       SolrCore core1 = container.create("core1", Map.of("configSet", "configset-2"));
       assertThat(core1.getCoreDescriptor().getName(), is("core1"));
       assertThat(
-          Paths.get(core1.getDataDir()).toString(),
+          Path.of(core1.getDataDir()).toString(),
           is(solrHome.resolve("core1").resolve("data").toString()));
     } finally {
       if (container != null) container.shutdown();
@@ -91,7 +90,8 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   @Test
   public void testNonExistentConfigSetThrowsException() {
-    final CoreContainer container = setupContainer(getFile("solr/configsets").getAbsolutePath());
+    final CoreContainer container =
+        setupContainer(getFile("solr/configsets").toAbsolutePath().toString());
     try {
       Exception thrown =
           expectThrows(
@@ -112,7 +112,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     Path testDirectory = createTempDir("core-reload");
     Path configSetsDir = testDirectory.resolve("configsets");
 
-    PathUtils.copyDirectory(getFile("solr/configsets").toPath(), configSetsDir);
+    PathUtils.copyDirectory(getFile("solr/configsets"), configSetsDir);
 
     String csd = configSetsDir.toAbsolutePath().toString();
     System.setProperty("configsets", csd);
@@ -129,7 +129,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
     // Now copy in a config with a /dump handler and reload
     Files.copy(
-        getFile("solr/collection1/conf/solrconfig-withgethandler.xml").toPath(),
+        getFile("solr/collection1/conf/solrconfig-withgethandler.xml"),
         configSetsDir.resolve("configset-2/conf").resolve("solrconfig.xml"),
         StandardCopyOption.REPLACE_EXISTING);
     container.reload("core1");

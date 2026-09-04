@@ -16,12 +16,17 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-public class SolrZkClientTimeout {
-  public static final int DEFAULT_ZK_CLIENT_TIMEOUT = Integer.getInteger("zkClientTimeout", 30000);
-  public static final int DEFAULT_ZK_CONNECT_TIMEOUT =
-      Integer.getInteger("zkConnectTimeout", 15000);
+import org.apache.solr.common.util.EnvUtils;
 
-  interface SolrZkClientTimeoutAware {
+public class SolrZkClientTimeout {
+  public static final int DEFAULT_ZK_CLIENT_TIMEOUT =
+      EnvUtils.getPropertyAsInteger("solr.zookeeper.client.timeout", 30000);
+  // Make this overridable for tests. A lot take 15 seconds to timeout because of this.
+  // or CURATOR-720
+  public static final int DEFAULT_ZK_CONNECT_TIMEOUT =
+      EnvUtils.getPropertyAsInteger("solr.zookeeper.client.connect.timeout", 15000);
+
+  public interface SolrZkClientTimeoutAware {
     void setZkClientTimeout(int zkClientTimeout);
 
     void setZkConnectTimeout(int zkConnectTimeout);

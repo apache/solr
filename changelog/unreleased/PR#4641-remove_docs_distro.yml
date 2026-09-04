@@ -1,0 +1,8 @@
+title: >
+  Remove docs/ from the Solr binary distribution.  Add online links to such in README.txt
+type: other
+authors:
+  - name: David Smiley
+links:
+  - name: PR#4641
+    url: https://github.com/apache/solr/pull/4641

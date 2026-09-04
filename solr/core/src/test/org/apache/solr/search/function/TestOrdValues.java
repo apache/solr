@@ -97,7 +97,7 @@ public class TestOrdValues extends SolrTestCase {
             : "IC"; // smaller than all ids of docs in this test ("ID0001", etc.)
 
     for (int i = 0; i < h.length; i++) {
-      String resID = s.doc(h[i].doc).get(ID_FIELD);
+      String resID = s.storedFields().document(h[i].doc).get(ID_FIELD);
       log(i + ".   score=" + h[i].score + "  -  " + resID);
       log(s.explain(q, h[i].doc));
       if (inOrder) {
@@ -136,7 +136,7 @@ public class TestOrdValues extends SolrTestCase {
     }
     Query q = new FunctionQuery(vs);
     TopDocs td = s.search(q, 1000);
-    assertEquals("All docs should be matched!", N_DOCS, td.totalHits.value);
+    assertEquals("All docs should be matched!", N_DOCS, td.totalHits.value());
     ScoreDoc sd[] = td.scoreDocs;
     StoredFields storedFields = s.getIndexReader().storedFields();
     for (int i = 0; i < sd.length; i++) {

@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
@@ -154,10 +155,24 @@ public class DistributedReRankExplainTest extends SolrCloudTestCase {
     final QueryRequest queryRequest =
         new QueryRequest(
             SolrParams.wrapDefaults(
-                params, params(CommonParams.Q, "test_s:hello", "fl", "id,test_s,score")));
+                params,
+                params(
+                    CommonParams.Q,
+                    "test_s:hello",
+                    "fl",
+                    "id,test_s,score,matchScore:originalScore(),originalScore()")));
 
     final QueryResponse queryResponse = queryRequest.process(client, COLLECTIONORALIAS);
-    assertNotNull(queryResponse.getResults().get(0).getFieldValue("test_s"));
+    for (SolrDocument doc : queryResponse.getResults()) {
+      assertNotNull("test_s", doc.getFieldValue("test_s"));
+      assertNotNull("originalScore()", doc.getFieldValue("originalScore()"));
+      assertTrue(queryResponse.toString(), doc.getFieldValue("originalScore()") instanceof Float);
+      assertNotNull("matchScore", doc.getFieldValue("matchScore"));
+      assertTrue(
+          doc.getFieldValue("matchScore").toString(),
+          doc.getFieldValue("matchScore") instanceof Float);
+      assertEquals(doc.getFieldValue("originalScore()"), doc.getFieldValue("matchScore"));
+    }
     return queryResponse;
   }
 }

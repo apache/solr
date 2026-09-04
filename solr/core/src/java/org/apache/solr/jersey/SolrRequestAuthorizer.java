@@ -17,6 +17,8 @@
 
 package org.apache.solr.jersey;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ResourceInfo;
@@ -26,8 +28,6 @@ import jakarta.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.AuthorizationContext;
@@ -48,10 +48,6 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Context private ResourceInfo resourceInfo;
-
-  public SolrRequestAuthorizer() {
-    log.info("Creating a new SolrRequestAuthorizer");
-  }
 
   @SuppressWarnings("unchecked")
   @Override
@@ -89,7 +85,7 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
         AuthorizationUtils.authorize(servletRequest, servletResponse, coreContainer, authzContext);
     if (authzFailure != null) {
       final Response failureResponse =
-          Response.status(authzFailure.getStatusCode()).entity(authzFailure.getMessage()).build();
+          Response.status(authzFailure.statusCode()).entity(authzFailure.message()).build();
       requestContext.abortWith(failureResponse);
     }
   }

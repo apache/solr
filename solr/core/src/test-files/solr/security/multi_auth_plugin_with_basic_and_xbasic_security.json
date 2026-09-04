@@ -1,0 +1,26 @@
+{
+  "authentication": {
+    "class": "solr.MultiAuthPlugin",
+    "schemes": [
+      {
+        "scheme": "xbasic",
+        "realm": "xBasicRealm",
+        "blockUnknown": true,
+        "class": "solr.BasicAuthPlugin",
+        "credentials": {
+          "xadmin": "orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw="
+        },
+        "forwardCredentials": false
+      },{
+        "scheme": "basic",
+        "realm": "basicRealm",
+        "blockUnknown": true,
+        "class": "solr.BasicAuthPlugin",
+        "credentials": {
+          "admin": "orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw="
+        },
+        "forwardCredentials": false
+      }
+    ]
+  }
+}

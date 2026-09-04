@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -25,31 +24,30 @@ import java.security.SecureRandom;
 import java.security.SecureRandomParameters;
 import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.regex.Pattern;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.ssl.SSLContexts;
-import org.apache.lucene.util.Constants;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
- * An SSLConfig that provides {@link SSLConfig} and {@link SocketFactoryRegistryProvider} for both
- * clients and servers that supports reading key/trust store information directly from resource
- * files provided with the Solr test-framework classes
+ * An SSLConfig that provides {@link SSLConfig} for both clients and servers that supports reading
+ * key/trust store information directly from resource files provided with the Solr test-framework
+ * classes
  */
 public class SSLTestConfig {
   private static final String TEST_KEYSTORE_BOGUSHOST_RESOURCE =
@@ -101,20 +99,16 @@ public class SSLTestConfig {
    * @param clientAuth - whether client authentication should be required.
    * @param checkPeerName - whether the client should validate the 'peer name' of the SSL
    *     Certificate (and which testing Cert should be used)
-   * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
+   * @see SolrHttpConstants#SYS_PROP_CHECK_PEER_NAME
    */
   public SSLTestConfig(boolean useSsl, boolean clientAuth, boolean checkPeerName) {
     this.useSsl = useSsl;
     this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
 
-    if (this.useSsl) {
-      assumeSslIsSafeToTest();
-    }
-
     final String resourceName =
         checkPeerName ? TEST_KEYSTORE_LOCALHOST_RESOURCE : TEST_KEYSTORE_BOGUSHOST_RESOURCE;
-    trustStore = keyStore = Resource.newClassPathResource(resourceName);
+    trustStore = keyStore = ResourceFactory.root().newClassLoaderResource(resourceName, true);
     if (null == keyStore || !keyStore.exists()) {
       throw new IllegalStateException(
           "Unable to locate keystore resource file in classpath: " + resourceName);
@@ -136,23 +130,6 @@ public class SSLTestConfig {
   }
 
   /**
-   * Creates a {@link SocketFactoryRegistryProvider} for HTTP <b>clients</b> to use when
-   * communicating with servers which have been configured based on the settings of this object.
-   * When {@link #isSSLMode} is true, this <code>SocketFactoryRegistryProvider</code> will
-   * <i>only</i> support HTTPS (no HTTP scheme) using the appropriate certs. When {@link #isSSLMode}
-   * is false, <i>only</i> HTTP (no HTTPS scheme) will be supported.
-   */
-  public SocketFactoryRegistryProvider buildClientSocketFactoryRegistryProvider() {
-    if (isSSLMode()) {
-      SSLConnectionSocketFactory sslConnectionFactory = buildClientSSLConnectionSocketFactory();
-      assert null != sslConnectionFactory;
-      return new SSLSocketFactoryRegistryProvider(sslConnectionFactory);
-    } else {
-      return HTTP_ONLY_SCHEMA_PROVIDER;
-    }
-  }
-
-  /**
    * Builds a new SSLContext for HTTP <b>clients</b> to use when communicating with servers which
    * have been configured based on the settings of this object.
    *
@@ -168,22 +145,25 @@ public class SSLTestConfig {
 
     assert isSSLMode();
 
-    SSLContextBuilder builder = SSLContexts.custom();
-    builder.setSecureRandom(NotSecurePseudoRandom.INSTANCE);
-
     // NOTE: KeyStore & TrustStore are swapped because they are from configured from server
     // perspective...
     // we are a client - our keystore contains the keys the server trusts, and vice versa
-    builder
-        .loadTrustMaterial(buildKeyStore(keyStore, TEST_PASSWORD), new TrustSelfSignedStrategy())
-        .build();
+    var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+    tmf.init(buildKeyStore(keyStore, TEST_PASSWORD));
 
+    KeyManager[] keyManagers = null;
     if (isClientAuthMode()) {
-      builder.loadKeyMaterial(
-          buildKeyStore(trustStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
+      var kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      kmf.init(buildKeyStore(trustStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
+      keyManagers = kmf.getKeyManagers();
     }
 
-    return builder.build();
+    SSLContext sslContext = SSLContext.getInstance("TLS");
+    sslContext.init(
+        keyManagers,
+        trustSelfSignedStrategy(tmf.getTrustManagers()),
+        NotSecurePseudoRandom.INSTANCE);
+    return sslContext;
   }
 
   public SSLConfig buildClientSSLConfig() {
@@ -215,7 +195,7 @@ public class SSLTestConfig {
    *
    * <p>NOTE: Uses a completely insecure {@link SecureRandom} instance to prevent tests from
    * blocking due to lack of entropy, also explicitly allows the use of self-signed certificates
-   * (since that's what is almost always used during testing). almost always used during testing).
+   * (since that's what is almost always used during testing).
    */
   public SSLConfig buildServerSSLConfig() {
     if (!isSSLMode()) {
@@ -227,24 +207,69 @@ public class SSLTestConfig {
       public SslContextFactory.Server createContextFactory() {
         SslContextFactory.Server factory = new SslContextFactory.Server();
         try {
-          SSLContextBuilder builder = SSLContexts.custom();
-          builder.setSecureRandom(NotSecurePseudoRandom.INSTANCE);
+          var kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+          kmf.init(buildKeyStore(keyStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
 
-          builder.loadKeyMaterial(
-              buildKeyStore(keyStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
-
+          TrustManager[] trustManagers = null;
           if (isClientAuthMode()) {
-            builder
-                .loadTrustMaterial(
-                    buildKeyStore(trustStore, TEST_PASSWORD), new TrustSelfSignedStrategy())
-                .build();
+            var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(buildKeyStore(trustStore, TEST_PASSWORD));
+            trustManagers = trustSelfSignedStrategy(tmf.getTrustManagers());
           }
-          factory.setSslContext(builder.build());
+
+          SSLContext sslContext = SSLContext.getInstance("TLS");
+          sslContext.init(kmf.getKeyManagers(), trustManagers, NotSecurePseudoRandom.INSTANCE);
+          factory.setSslContext(sslContext);
         } catch (Exception e) {
           throw new RuntimeException("ssl context init failure: " + e.getMessage(), e);
         }
         factory.setNeedClientAuth(isClientAuthMode());
         return factory;
+      }
+    };
+  }
+
+  /**
+   * Returns trust managers that accept self-signed certs, delegating all others to {@code
+   * delegates}.
+   */
+  private static TrustManager[] trustSelfSignedStrategy(TrustManager[] delegates) {
+    return new TrustManager[] {
+      new X509TrustManager() {
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType)
+            throws CertificateException {
+          if (chain.length == 1) return;
+          for (TrustManager tm : delegates) {
+            if (tm instanceof X509TrustManager) {
+              ((X509TrustManager) tm).checkClientTrusted(chain, authType);
+              return;
+            }
+          }
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType)
+            throws CertificateException {
+          if (chain.length == 1) return;
+          for (TrustManager tm : delegates) {
+            if (tm instanceof X509TrustManager) {
+              ((X509TrustManager) tm).checkServerTrusted(chain, authType);
+              return;
+            }
+          }
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+          List<X509Certificate> issuers = new ArrayList<>();
+          for (TrustManager tm : delegates) {
+            if (tm instanceof X509TrustManager) {
+              issuers.addAll(Arrays.asList(((X509TrustManager) tm).getAcceptedIssuers()));
+            }
+          }
+          return issuers.toArray(new X509Certificate[0]);
+        }
       }
     };
   }
@@ -275,76 +300,18 @@ public class SSLTestConfig {
   }
 
   /**
-   * Constructs a new SSLConnectionSocketFactory for HTTP <b>clients</b> to use when communicating
-   * with servers which have been configured based on the settings of this object. Will return null
-   * unless {@link #isSSLMode} is true.
-   */
-  public SSLConnectionSocketFactory buildClientSSLConnectionSocketFactory() {
-    if (!isSSLMode()) {
-      return null;
-    }
-    SSLConnectionSocketFactory sslConnectionFactory;
-    try {
-      SSLContext sslContext = buildClientSSLContext();
-      if (checkPeerName == false) {
-        sslConnectionFactory =
-            new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
-      } else {
-        sslConnectionFactory = new SSLConnectionSocketFactory(sslContext);
-      }
-    } catch (KeyManagementException
-        | UnrecoverableKeyException
-        | NoSuchAlgorithmException
-        | KeyStoreException e) {
-      throw new IllegalStateException(
-          "Unable to setup https scheme for HTTPClient to test SSL.", e);
-    }
-    return sslConnectionFactory;
-  }
-
-  /**
-   * A SocketFactoryRegistryProvider that only knows about SSL using a specified
-   * SSLConnectionSocketFactory
-   */
-  private static class SSLSocketFactoryRegistryProvider extends SocketFactoryRegistryProvider {
-    private final SSLConnectionSocketFactory sslConnectionFactory;
-
-    public SSLSocketFactoryRegistryProvider(SSLConnectionSocketFactory sslConnectionFactory) {
-      this.sslConnectionFactory = sslConnectionFactory;
-    }
-
-    @Override
-    public Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
-      return RegistryBuilder.<ConnectionSocketFactory>create()
-          .register("https", sslConnectionFactory)
-          .build();
-    }
-  }
-
-  /** A SocketFactoryRegistryProvider that only knows about HTTP */
-  private static final SocketFactoryRegistryProvider HTTP_ONLY_SCHEMA_PROVIDER =
-      new SocketFactoryRegistryProvider() {
-        @Override
-        public Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
-          return RegistryBuilder.<ConnectionSocketFactory>create()
-              .register("http", PlainConnectionSocketFactory.getSocketFactory())
-              .build();
-        }
-      };
-
-  /**
    * A mocked up instance of SecureRandom that just uses {@link Random} under the covers. This is to
    * prevent blocking issues that arise in platform default SecureRandom instances due to too many
-   * instances / not enough random entropy. Tests do not need secure SSL.
+   * instances / not enough random entropy. Tests do not need to use secure SSL.
    */
   private static class NotSecurePseudoRandom extends SecureRandom {
     public static final SecureRandom INSTANCE = new NotSecurePseudoRandom();
 
     /**
-     * Helper method that can be used to fill an array with non-zero data. (Attempted workarround of
+     * Helper method that can be used to fill an array with non-zero data. (Attempted workaround of
      * Solaris SSL Padding bug: SOLR-9068)
      */
-    private static final byte[] fillData(byte[] data) {
+    private static byte[] fillData(byte[] data) {
       ThreadLocalRandom.current().nextBytes(data);
       return data;
     }
@@ -414,50 +381,4 @@ public class SSLTestConfig {
       /* NOOP */
     }
   }
-
-  /**
-   * Helper method for sanity checking if it's safe to use SSL on this JVM
-   *
-   * @see <a href="https://issues.apache.org/jira/browse/SOLR-12988">SOLR-12988</a>
-   * @throws org.junit.internal.AssumptionViolatedException if this JVM is known to have SSL
-   *     problems
-   */
-  public static void assumeSslIsSafeToTest() {
-    if (Constants.JVM_NAME.startsWith("OpenJDK")
-        || Constants.JVM_NAME.startsWith("Java HotSpot(TM)")) {
-      RandomizedTest.assumeFalse(
-          "Test (or randomization for this seed) wants to use SSL, "
-              + "but SSL is known to fail on your JVM: "
-              + Constants.JVM_NAME
-              + " / "
-              + Constants.JVM_VERSION,
-          isOpenJdkJvmVersionKnownToHaveProblems(Constants.JVM_VERSION));
-    }
-  }
-
-  /**
-   * package visibility for tests
-   *
-   * @see Constants#JVM_VERSION
-   * @lucene.internal
-   */
-  static boolean isOpenJdkJvmVersionKnownToHaveProblems(final String jvmVersion) {
-    // TODO: would be nice to replace with Runtime.Version once we don't have to
-    // worry about java8 support when backporting to branch_8x
-    return KNOWN_BAD_OPENJDK_JVMS.matcher(jvmVersion).matches();
-  }
-
-  private static final Pattern KNOWN_BAD_OPENJDK_JVMS =
-      Pattern.compile( // 11 to 11.0.2 were all definitely problematic
-          // - https://bugs.openjdk.java.net/browse/JDK-8212885
-          // - https://bugs.openjdk.java.net/browse/JDK-8213202
-          "(^11(\\.0(\\.0|\\.1|\\.2)?)?($|(\\_|\\+|\\-).*$))|"
-              +
-              // early (pre-ea) "testing" builds of 11, 12, and 13 were also buggy
-              // - https://bugs.openjdk.java.net/browse/JDK-8224829
-              "(^(11|12|13).*-testing.*$)|"
-              +
-              // So far, all 13-ea builds (up to 13-ea-26) have been buggy
-              // - https://bugs.openjdk.java.net/browse/JDK-8226338
-              "(^13-ea.*$)");
 }

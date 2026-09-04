@@ -19,10 +19,6 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 
-/**
- * One of several possible responses from {@link
- * org.apache.solr.client.api.endpoint.NodeFileStoreApis#getFile(String, Boolean, String, Boolean)}
- */
 public class FileStoreDirectoryListingResponse extends SolrJerseyResponse {
   @JsonProperty public Map<String, Object> files;
 }

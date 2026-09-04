@@ -1,0 +1,8 @@
+title: Introduce new test variant of waitForState(), that does not wait on live node
+  changes when we're only interested in the collection state.
+type: other
+authors:
+- name: Pierre Salagnac
+links:
+- name: SOLR-17581
+  url: https://issues.apache.org/jira/browse/SOLR-17581

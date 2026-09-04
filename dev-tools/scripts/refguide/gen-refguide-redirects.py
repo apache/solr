@@ -129,13 +129,6 @@ def main():
         print("# Paths we could not map")
         for key in failed:
             print("# %s: %s" % (key, failed[key]))
-
-        print("""
-
-# Do not index old reference guide pages on search engines, except for pages that don't exist in 9+
-<If "%%{REQUEST_URI} =~ m#/guide/(6|7|8)_.*# && %%{REQUEST_URI} !~ m#/guide/8_11/%s$#">
-  Header set X-Robots-Tag "noindex,nofollow,noarchive"
-</If>""" % old_version_pages_regex)
     else:
         out("Regex mappings:")
         pprint(regex_new)

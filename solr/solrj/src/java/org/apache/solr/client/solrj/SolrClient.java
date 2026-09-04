@@ -21,17 +21,19 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
-import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.FastStreamingDocsCallback;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.response.StreamingJavaBinResponseParser;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -51,7 +53,6 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   private static final long serialVersionUID = 1L;
 
-  private DocumentObjectBinder binder;
   protected String defaultCollection;
 
   /**
@@ -260,7 +261,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public UpdateResponse addBean(String collection, Object obj, int commitWithinMs)
       throws IOException, SolrServerException {
-    return add(collection, getBinder().toSolrInputDocument(obj), commitWithinMs);
+    return add(collection, DocumentObjectBinder.INSTANCE.toSolrInputDocument(obj), commitWithinMs);
   }
 
   /**
@@ -276,7 +277,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public UpdateResponse addBean(Object obj, int commitWithinMs)
       throws IOException, SolrServerException {
-    return add(null, getBinder().toSolrInputDocument(obj), commitWithinMs);
+    return add(null, DocumentObjectBinder.INSTANCE.toSolrInputDocument(obj), commitWithinMs);
   }
 
   /**
@@ -323,15 +324,14 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
    * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   * @see SolrClient#getBinder()
+   * @see DocumentObjectBinder
    * @since solr 5.1
    */
   public UpdateResponse addBeans(String collection, Collection<?> beans, int commitWithinMs)
       throws SolrServerException, IOException {
-    DocumentObjectBinder binder = this.getBinder();
     ArrayList<SolrInputDocument> docs = new ArrayList<>(beans.size());
     for (Object bean : beans) {
-      docs.add(binder.toSolrInputDocument(bean));
+      docs.add(DocumentObjectBinder.INSTANCE.toSolrInputDocument(bean));
     }
     return add(collection, docs, commitWithinMs);
   }
@@ -347,7 +347,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
    * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   * @see SolrClient#getBinder()
+   * @see DocumentObjectBinder
    * @since solr 3.5
    */
   public UpdateResponse addBeans(Collection<?> beans, int commitWithinMs)
@@ -379,7 +379,7 @@ public abstract class SolrClient implements Serializable, Closeable {
           public SolrInputDocument next() {
             Object o = beanIterator.next();
             if (o == null) return null;
-            return getBinder().toSolrInputDocument(o);
+            return DocumentObjectBinder.INSTANCE.toSolrInputDocument(o);
           }
 
           @Override
@@ -991,21 +991,21 @@ public abstract class SolrClient implements Serializable, Closeable {
   public QueryResponse queryAndStreamResponse(
       String collection, SolrParams params, StreamingResponseCallback callback)
       throws SolrServerException, IOException {
-    return getQueryResponse(collection, params, new StreamingBinaryResponseParser(callback));
+    return getQueryResponse(collection, params, new StreamingJavaBinResponseParser(callback));
   }
 
   public QueryResponse queryAndStreamResponse(
       String collection, SolrParams params, FastStreamingDocsCallback callback)
       throws SolrServerException, IOException {
-    return getQueryResponse(collection, params, new StreamingBinaryResponseParser(callback));
+    return getQueryResponse(collection, params, new StreamingJavaBinResponseParser(callback));
   }
 
   private QueryResponse getQueryResponse(
       String collection, SolrParams params, ResponseParser parser)
       throws SolrServerException, IOException {
     QueryRequest req = new QueryRequest(params);
-    if (parser instanceof StreamingBinaryResponseParser) {
-      req.setStreamingResponseCallback(((StreamingBinaryResponseParser) parser).callback);
+    if (parser instanceof StreamingJavaBinResponseParser) {
+      req.setStreamingResponseCallback(((StreamingJavaBinResponseParser) parser).callback);
     }
     req.setResponseParser(parser);
     return req.process(this, collection);
@@ -1071,7 +1071,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public SolrDocument getById(String collection, String id, SolrParams params)
       throws SolrServerException, IOException {
-    SolrDocumentList docs = getById(collection, Collections.singletonList(id), params);
+    SolrDocumentList docs = getById(collection, List.of(id), params);
     if (!docs.isEmpty()) {
       return docs.get(0);
     }
@@ -1195,24 +1195,13 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Get the {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder} for this client.
-   *
-   * @return a DocumentObjectBinder
-   * @see SolrClient#addBean
-   * @see SolrClient#addBeans
-   */
-  public DocumentObjectBinder getBinder() {
-    if (binder == null) {
-      binder = new DocumentObjectBinder();
-    }
-    return binder;
-  }
-
-  /**
    * This method defines the context in which this Solr client is being used (e.g. for internal
    * communication between Solr nodes or as an external client). The default value is {@code
    * SolrClientContext#Client}
+   *
+   * @deprecated No replacement has been designed yet; see SOLR-14720.
    */
+  @Deprecated(since = "10.1") // TODO replace or refactor; see SOLR-14720 related
   public SolrRequest.SolrClientContext getContext() {
     return SolrRequest.SolrClientContext.CLIENT;
   }
@@ -1224,5 +1213,11 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public String getDefaultCollection() {
     return defaultCollection;
+  }
+
+  /** A lambda intended for invoking SolrClient operations */
+  @FunctionalInterface
+  public interface SolrClientFunction<C extends SolrClient, R> {
+    R apply(C c) throws IOException, SolrServerException;
   }
 }

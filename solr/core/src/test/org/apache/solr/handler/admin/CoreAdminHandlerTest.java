@@ -18,31 +18,29 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.CoreStatus;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -51,6 +49,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.TaskObject;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -77,11 +76,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Files.createDirectories(subHome);
 
     // Be sure we pick up sysvars when we create this
-    String srcDir = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    Files.copy(Path.of(srcDir, "schema-tiny.xml"), subHome.resolve("schema_ren.xml"));
-    Files.copy(Path.of(srcDir, "solrconfig-minimal.xml"), subHome.resolve("solrconfig_ren.xml"));
+    Path srcDir = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");
+    Files.copy(srcDir.resolve("schema-tiny.xml"), subHome.resolve("schema_ren.xml"));
+    Files.copy(srcDir.resolve("solrconfig-minimal.xml"), subHome.resolve("solrconfig_ren.xml"));
     Files.copy(
-        Path.of(srcDir, "solrconfig.snippet.randomindexconfig.xml"),
+        srcDir.resolve("solrconfig.snippet.randomindexconfig.xml"),
         subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
 
     final CoreContainer cores = h.getCoreContainer();
@@ -134,6 +133,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testCoreAdminHandler() throws Exception {
     final Path workDir = createTempDir();
 
@@ -196,26 +196,25 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertEquals(cd.getCoreProperty("foo", null), "baz");
 
     // attempt to create a bogus core and confirm failure
-    ignoreException("Could not load config");
-    se =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              admin.handleRequestBody(
-                  req(
-                      CoreAdminParams.ACTION,
-                      CoreAdminParams.CoreAdminAction.CREATE.toString(),
-                      CoreAdminParams.NAME,
-                      "bogus_dir_core",
-                      CoreAdminParams.INSTANCE_DIR,
-                      "dir_does_not_exist_127896"),
-                  new SolrQueryResponse());
-            });
-    // :NOOP:
-    // :TODO: CoreAdminHandler's exception messages are terrible, otherwise we could assert
-    // something useful here
-
-    unIgnoreException("Could not load config");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Could not load config")) {
+      se =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                admin.handleRequestBody(
+                    req(
+                        CoreAdminParams.ACTION,
+                        CoreAdminParams.CoreAdminAction.CREATE.toString(),
+                        CoreAdminParams.NAME,
+                        "bogus_dir_core",
+                        CoreAdminParams.INSTANCE_DIR,
+                        "dir_does_not_exist_127896"),
+                    new SolrQueryResponse());
+              });
+      // :NOOP:
+      // :TODO: CoreAdminHandler's exception messages are terrible, otherwise we could assert
+      // something useful here
+    }
 
     // check specifically for status of the failed core name
     resp = new SolrQueryResponse();
@@ -230,8 +229,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Map<String, Exception> failures = (Map<String, Exception>) resp.getValues().get("initFailures");
     assertNotNull("core failures is null", failures);
 
-    NamedList<?> status = (NamedList<?>) resp.getValues().get("status");
-    assertNotNull("core status is null", status);
+    final var statusByCore =
+        JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+            resp.getValues().get("status"),
+            new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
+    assertNotNull("core status is null", statusByCore);
 
     assertEquals("wrong number of core failures", 1, failures.size());
     Exception fail = failures.get("bogus_dir_core");
@@ -240,10 +242,10 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         "init failure doesn't mention problem: " + fail.getCause().getMessage(),
         0 < fail.getCause().getMessage().indexOf("dir_does_not_exist"));
 
-    assertEquals(
-        "bogus_dir_core status isn't empty",
-        0,
-        ((NamedList<?>) status.get("bogus_dir_core")).size());
+    assertTrue("bogus_dir_core status isn't empty", statusByCore.containsKey("bogus_dir_core"));
+    final var bogusDirCoreStatus = statusByCore.get("bogus_dir_core");
+    assertNull(bogusDirCoreStatus.name);
+    assertNull(bogusDirCoreStatus.config);
 
     // Try renaming the core, we should fail
     // First assert that the props core exists
@@ -297,11 +299,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testDeleteInstanceDir() throws Exception {
     Path solrHomeDirectory = createTempDir("solr-home");
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corex");
+    copySolrHomeToTemp(solrHomeDirectory, "corex");
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
 
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corerename");
+    copySolrHomeToTemp(solrHomeDirectory, "corerename");
 
     Path coreRename = solrHomeDirectory.resolve("corerename");
     Path renamePropFile = coreRename.resolve("core.properties");
@@ -312,23 +314,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
             solrHomeDirectory.toAbsolutePath().toString(), JettyConfig.builder().build());
     runner.start();
 
-    try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withDefaultCollection("corex")
-            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", "123");
-      client.add(doc);
-      client.commit();
-    }
+    var client = runner.getSolrClient();
+    {
+      client.add("corex", sdoc("id", "123"));
+      client.commit("corex");
 
-    try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
       CoreAdminRequest.Unload req = new CoreAdminRequest.Unload(false);
       req.setDeleteInstanceDir(true);
       req.setCoreName("corex");
@@ -339,11 +329,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     // 1> has the property persisted (SOLR-11783)
     // 2> is deleted after rename properly.
 
-    try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
+    {
       CoreAdminRequest.renameCore("corerename", "brand_new_core_name", client);
       Properties props = new Properties();
       try (Reader is = Files.newBufferedReader(renamePropFile, StandardCharsets.UTF_8)) {
@@ -353,11 +339,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
           "Name should have been persisted!", "brand_new_core_name", props.getProperty("name"));
     }
 
-    try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
+    {
       CoreAdminRequest.Unload req = new CoreAdminRequest.Unload(false);
       req.setDeleteInstanceDir(true);
       req.setCoreName("brand_new_core_name");
@@ -378,7 +360,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testUnloadForever() throws Exception {
     Path solrHomeDirectory = createTempDir("solr-home");
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corex");
+    copySolrHomeToTemp(solrHomeDirectory, "corex");
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =
@@ -386,50 +368,30 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
             solrHomeDirectory.toAbsolutePath().toString(), JettyConfig.builder().build());
     runner.start();
 
-    try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withDefaultCollection("corex")
-            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", "123");
-      client.add(doc);
-      client.commit();
+    var client = runner.getSolrClient();
+    {
+      client.add("corex", sdoc("id", "123"));
+      client.commit("corex");
     }
 
-    try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withDefaultCollection("corex")
-            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
-      QueryResponse result = client.query(new SolrQuery("id:*"));
+    {
+      QueryResponse result = client.query("corex", new SolrQuery("id:*"));
       assertEquals(1, result.getResults().getNumFound());
     }
 
-    try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
+    {
       CoreAdminRequest.Unload req = new CoreAdminRequest.Unload(false);
       req.setDeleteInstanceDir(false); // random().nextBoolean());
       req.setCoreName("corex");
       req.process(client);
     }
 
-    BaseHttpSolrClient.RemoteSolrException rse =
+    RemoteSolrException rse =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
-              try (SolrClient client =
-                  new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-                      .withDefaultCollection("corex")
-                      .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-                      .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT * 1000, TimeUnit.MILLISECONDS)
-                      .build()) {
-                client.query(new SolrQuery("id:*"));
+              try {
+                runner.getSolrClient().query("corex", new SolrQuery("id:*"));
               } finally {
                 runner.stop();
               }
@@ -443,7 +405,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         "Ignore test on windows because it does not delete data directory immediately after unload",
         Constants.WINDOWS);
     Path solrHomeDirectory = createTempDir("solr-home");
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corex");
+    copySolrHomeToTemp(solrHomeDirectory, "corex");
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =
@@ -451,48 +413,36 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
             solrHomeDirectory.toAbsolutePath().toString(), JettyConfig.builder().build());
     runner.start();
 
-    try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withDefaultCollection("corex")
-            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", "123");
-      client.add(doc);
-      client.commit();
-    }
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "123");
+    runner.getSolrClient().add("corex", doc);
+    runner.getSolrClient().commit("corex");
 
     Path dataDir = null;
     try (SolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
-      CoreStatus status = CoreAdminRequest.getCoreStatus("corex", true, client);
-      String dataDirectory = status.getDataDirectory();
-      dataDir = Paths.get(dataDirectory);
+      final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
+      String dataDirectory = status.dataDir;
+      dataDir = Path.of(dataDirectory);
       assertTrue(Files.exists(dataDir));
     }
 
     Path subHome = solrHomeDirectory.resolve("corex").resolve("conf");
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");
     Files.copy(
-        Path.of(top, "bad-error-solrconfig.xml"),
+        top.resolve("bad-error-solrconfig.xml"),
         subHome.resolve("solrconfig.xml"),
         StandardCopyOption.REPLACE_EXISTING);
 
-    try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
-      // this is expected because we put a bad solrconfig -- ignore
-      expectThrows(Exception.class, () -> CoreAdminRequest.reloadCore("corex", client));
+    // this is expected because we put a bad solrconfig -- ignore
+    expectThrows(
+        Exception.class, () -> CoreAdminRequest.reloadCore("corex", runner.getSolrClient()));
 
-      CoreAdminRequest.Unload req = new CoreAdminRequest.Unload(false);
-      req.setDeleteDataDir(true);
-      // important because the data directory is inside the instance directory
-      req.setDeleteInstanceDir(false);
-      req.setCoreName("corex");
-      req.process(client);
-    }
+    CoreAdminRequest.Unload unloadReq = new CoreAdminRequest.Unload(false);
+    unloadReq.setDeleteDataDir(true);
+    // important because the data directory is inside the instance directory
+    unloadReq.setDeleteInstanceDir(false);
+    unloadReq.setCoreName("corex");
+    unloadReq.process(runner.getSolrClient());
 
     runner.stop();
 

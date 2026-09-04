@@ -33,6 +33,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
 import org.junit.Before;
@@ -51,11 +52,9 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
 
-    systemSetPropertySolrDisableUrlAllowList("true");
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
 
-    leader =
-        new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
     leaderJetty = ReplicationTestHelper.createAndStartJetty(leader);
     leaderClient =
@@ -65,8 +64,7 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
         ReplicationTestHelper.createNewSolrClient(buildUrl(leaderJetty.getLocalPort()));
 
     follower =
-        new SolrInstance(
-            createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+        new SolrInstance(createTempDir("solr-instance"), "follower", leaderJetty.getLocalPort());
     follower.setUp();
     followerJetty = createAndStartJetty(follower);
     followerClient =
@@ -74,8 +72,6 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
             buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
     followerClientHealthCheck =
         ReplicationTestHelper.createNewSolrClient(buildUrl(followerJetty.getLocalPort()));
-
-    System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
 
   public void clearIndexWithReplication() throws Exception {
@@ -116,7 +112,6 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
       followerClientHealthCheck.close();
       followerClientHealthCheck = null;
     }
-    System.clearProperty("solr.indexfetcher.sotimeout");
   }
 
   @Test

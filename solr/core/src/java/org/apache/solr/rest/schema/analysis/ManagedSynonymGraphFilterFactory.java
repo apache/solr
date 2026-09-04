@@ -217,8 +217,7 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
         Set<String> output = cpsm.mappings.get(origTerm);
 
         Object val = jsonMap.get(origTerm); // IMPORTANT: use the original
-        if (val instanceof String) {
-          String strVal = (String) val;
+        if (val instanceof String strVal) {
 
           if (output == null) {
             output = new TreeSet<>();
@@ -434,7 +433,7 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
 
             ManagedSynonymParser parser =
                 new ManagedSynonymParser((SynonymManager) res, dedup, analyzer);
-            // null is safe here because there's no actual parsing done against a input Reader
+            // null is safe here because there's no actual parsing done against an input Reader
             parser.parse(null);
             return parser.build();
           }

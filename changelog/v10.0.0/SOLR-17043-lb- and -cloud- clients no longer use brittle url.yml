@@ -1,0 +1,9 @@
+title: '"LB" and "Cloud" clients no longer use brittle URL pattern-matching when routing
+  requests.'
+type: changed
+authors:
+- name: Jude Muriithi
+- name: Jason Gerlowski
+links:
+- name: SOLR-17043
+  url: https://issues.apache.org/jira/browse/SOLR-17043

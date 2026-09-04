@@ -72,8 +72,11 @@ import org.locationtech.spatial4j.shape.Shape;
  * org.apache.lucene.index.LeafReader#getNumericDocValues}.
  *
  * @lucene.experimental
+ * @deprecated This class lives in the {@code org.apache.solr.legacy} package, which is being
+ *     removed; no replacement has been identified yet for {@link org.apache.solr.schema.BBoxField},
+ *     which uses this strategy.
  */
-@Deprecated
+@Deprecated(since = "9.0")
 public class BBoxStrategy extends SpatialStrategy {
 
   // note: we use a FieldType to articulate the options we want on the field.  We don't use it as-is
@@ -82,7 +85,11 @@ public class BBoxStrategy extends SpatialStrategy {
   /** pointValues, docValues, and nothing else. */
   public static FieldType DEFAULT_FIELDTYPE;
 
-  @Deprecated public static LegacyFieldType LEGACY_FIELDTYPE;
+  /**
+   * @deprecated Use {@link #DEFAULT_FIELDTYPE} instead.
+   */
+  @Deprecated(since = "10.0")
+  public static LegacyFieldType LEGACY_FIELDTYPE;
 
   static {
     // Default: pointValues + docValues
@@ -142,9 +149,10 @@ public class BBoxStrategy extends SpatialStrategy {
    * Creates a new {@link BBoxStrategy} instance that uses {@link LegacyDoubleField} for backwards
    * compatibility
    *
-   * @deprecated LegacyNumerics will be removed
+   * @deprecated LegacyNumerics will be removed. Use {@link #newInstance(SpatialContext, String)}
+   *     instead.
    */
-  @Deprecated
+  @Deprecated(since = "7.0")
   public static BBoxStrategy newLegacyInstance(SpatialContext ctx, String fieldNamePrefix) {
     return new BBoxStrategy(ctx, fieldNamePrefix, LEGACY_FIELDTYPE);
   }
@@ -177,13 +185,12 @@ public class BBoxStrategy extends SpatialStrategy {
       numQuads++;
     }
     if (fieldType.indexOptions() != IndexOptions.NONE
-        && fieldType instanceof LegacyFieldType
-        && ((LegacyFieldType) fieldType).numericType() != null) {
+        && fieldType instanceof LegacyFieldType legacyType
+        && legacyType.numericType() != null) {
       if (hasPointVals) {
         throw new IllegalArgumentException(
             "pointValues and LegacyNumericType are mutually exclusive");
       }
-      final LegacyFieldType legacyType = (LegacyFieldType) fieldType;
       if (legacyType.numericType() != LegacyNumericType.DOUBLE) {
         throw new IllegalArgumentException(
             getClass() + " does not support " + legacyType.numericType());
@@ -302,10 +309,9 @@ public class BBoxStrategy extends SpatialStrategy {
   @Override
   public Query makeQuery(SpatialArgs args) {
     Shape shape = args.getShape();
-    if (!(shape instanceof Rectangle))
+    if (!(shape instanceof Rectangle bbox))
       throw new UnsupportedOperationException("Can only query by Rectangle, not " + shape);
 
-    Rectangle bbox = (Rectangle) shape;
     Query spatial;
 
     // Useful for understanding Relations:

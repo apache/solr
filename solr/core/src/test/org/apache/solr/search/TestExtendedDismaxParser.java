@@ -25,6 +25,7 @@ import static org.apache.solr.util.QueryMatchers.termQuery;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.isA;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -41,6 +42,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
@@ -50,6 +52,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrPluginUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,7 +61,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
     index();
   }
@@ -140,6 +144,18 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
           req("defType", "edismax", "q", "doesnotexist_s:( * * * )", "sow", sow),
           "/response/numFound==0" // nothing should be found
           );
+    }
+  }
+
+  @Test
+  public void testMatchAllDocs() throws Exception {
+    for (String sow : Arrays.asList("true", "false")) {
+      for (String q : Arrays.asList("*:*", "*")) {
+        try (SolrQueryRequest req = req("sow", sow, "qf", "id")) {
+          QParser qParser = QParser.getParser(q, "edismax", req);
+          assertThat(qParser.getQuery(), isA(MatchAllDocsQuery.class));
+        }
+      }
     }
   }
 
@@ -363,6 +379,12 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "q.op", "AND",
             "q", "the big"),
         oner);
+
+    // test for ignoring stopwords when all query terms are stopwords
+    assertQ(req("defType", "edismax", "qf", "text_sw", "q", "the"), oner);
+
+    // test for not ignoring stopwords when all query terms are stopwords and alwaysStopwords is set
+    assertQ(req("defType", "edismax", "qf", "text_sw", "q", "the", "alwaysStopwords", "true"), nor);
 
     // searching for a literal colon value when clearly not used for a field
     assertQ(
@@ -955,26 +977,23 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** SOLR-13203 * */
+  @SuppressWarnings("try")
   public void testUfDynamicField() {
-    try {
-      ignoreException("dynamic field");
-
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("dynamic field")) {
       SolrException exception =
           expectThrows(
               SolrException.class, () -> h.query(req("uf", "fl=trait*,id", "defType", "edismax")));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
       assertEquals("dynamic field name must start or end with *", exception.getMessage());
-    } finally {
-      resetExceptionIgnores();
     }
 
     // simple test to validate dynamic uf parsing works
     assertQ(req("uf", "trait* id", "defType", "edismax"));
   }
 
+  @SuppressWarnings("try")
   public void testCyclicAliasing() {
-    try {
-      ignoreException(".*Field aliases lead to a cycle.*");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".*Field aliases lead to a cycle.*")) {
 
       SolrException e =
           expectThrows(
@@ -1089,8 +1108,6 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                           "f.myalias.qf",
                           "who")));
       assertCyclicDetectionErrorMessage(e);
-    } finally {
-      resetExceptionIgnores();
     }
   }
 
@@ -3124,8 +3141,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       Query query, String field, String value, int boost, boolean fuzzy) {
 
     float queryBoost = 1f;
-    if (query instanceof BoostQuery) {
-      BoostQuery bq = (BoostQuery) query;
+    if (query instanceof BoostQuery bq) {
       query = bq.getQuery();
       queryBoost = bq.getBoost();
     }
@@ -3159,7 +3175,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   private boolean containsClause(
       BooleanQuery query, String field, String value, int boost, boolean fuzzy) {
     for (BooleanClause clause : query) {
-      if (containsClause(clause.getQuery(), field, value, boost, fuzzy)) {
+      if (containsClause(clause.query(), field, value, boost, fuzzy)) {
         return true;
       }
     }
@@ -3272,13 +3288,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
           boolean rewrittenSubQ = false; // dirty flag: rebuild the repacked query?
           BooleanQuery.Builder builder = newBooleanQuery();
           for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-            Query subQ = clause.getQuery();
+            Query subQ = clause.query();
             if (subQ instanceof TermQuery) {
               Term subTerm = ((TermQuery) subQ).getTerm();
               if (frequentlyMisspelledWords.contains(subTerm.text())) {
                 rewrittenSubQ = true;
                 Query fuzzySubQ = newFuzzyQuery(subTerm, MIN_SIMILARITY, getFuzzyPrefixLength());
-                clause = newBooleanClause(fuzzySubQ, clause.getOccur());
+                clause = newBooleanClause(fuzzySubQ, clause.occur());
               }
             }
             builder.add(clause);

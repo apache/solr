@@ -34,9 +34,7 @@ public class Suggestion {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof Suggestion)) return false;
-
-    Suggestion that = (Suggestion) o;
+    if (!(o instanceof Suggestion that)) return false;
 
     return payload.equals(that.payload) && term.equals(that.term);
   }

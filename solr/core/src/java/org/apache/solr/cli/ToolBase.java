@@ -17,35 +17,77 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
+import org.apache.solr.util.StartupLoggingUtils;
 
 public abstract class ToolBase implements Tool {
 
-  protected PrintStream stdout;
-  protected boolean verbose = false;
+  protected final ToolRuntime runtime;
 
-  protected ToolBase() {
-    this(CLIO.getOutStream());
+  private boolean verbose = false;
+
+  protected ToolBase(ToolRuntime runtime) {
+    this.runtime = runtime;
   }
 
-  protected ToolBase(PrintStream stdout) {
-    this.stdout = stdout;
+  /** Is this tool being run in a verbose mode? */
+  protected boolean isVerbose() {
+    return verbose;
   }
 
-  protected void echoIfVerbose(final String msg, CommandLine cli) {
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+  protected void echoIfVerbose(final String msg) {
+    if (verbose) {
       echo(msg);
     }
   }
 
+  protected void echoIfVerbose(Object response) throws JsonProcessingException {
+    if (verbose && response != null) {
+      echo(
+          JacksonContentWriter.DEFAULT_MAPPER
+              .writerWithDefaultPrettyPrinter()
+              .writeValueAsString(response));
+    }
+  }
+
   protected void echo(final String msg) {
-    stdout.println(msg);
+    runtime.println(msg);
+  }
+
+  @Override
+  public Options getOptions() {
+    return new Options()
+        .addOption(CommonCLIOptions.HELP_OPTION)
+        .addOption(CommonCLIOptions.VERBOSE_OPTION);
+  }
+
+  @Override
+  public ToolRuntime getRuntime() {
+    return runtime;
+  }
+
+  /**
+   * Provides the connection options for CLI Tools: {@code --solr-url}, {@code --zk-host}, and the
+   * unified {@code --solr-connection} (which accepts either form).
+   *
+   * @return OptionGroup that enforces only one of the connection options is supplied.
+   */
+  public OptionGroup getConnectionOptions() {
+    OptionGroup optionGroup = new OptionGroup();
+    optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
+    optionGroup.addOption(CommonCLIOptions.ZK_HOST_OPTION);
+    optionGroup.addOption(CommonCLIOptions.SOLR_CONNECTION_OPTION);
+    return optionGroup;
   }
 
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
+    verbose = cli.hasOption(CommonCLIOptions.VERBOSE_OPTION);
+    raiseLogLevelUnlessVerbose();
 
     int toolExitStatus = 0;
     try {
@@ -64,6 +106,12 @@ public abstract class ToolBase implements Tool {
       }
     }
     return toolExitStatus;
+  }
+
+  private void raiseLogLevelUnlessVerbose() {
+    if (!verbose) {
+      StartupLoggingUtils.changeLogLevel("WARN");
+    }
   }
 
   public abstract void runImpl(CommandLine cli) throws Exception;

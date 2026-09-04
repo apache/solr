@@ -1,0 +1,22 @@
+{
+  "authentication": {
+    "class": "solr.MultiAuthPlugin",
+    "schemes": [
+      {
+        "scheme": "mock",
+        "realm": "mockRealm",
+        "class": "org.apache.solr.security.MultiAuthPluginTest$MockAuthPluginForTesting",
+        "blockUnknown": true
+      },{
+        "scheme": "basic",
+        "realm": "basicRealm",
+        "blockUnknown": true,
+        "class": "solr.BasicAuthPlugin",
+        "credentials": {
+          "admin": "orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw="
+        },
+        "forwardCredentials": false
+      }
+    ]
+  }
+}

@@ -152,13 +152,11 @@ public class ZplotStream extends TupleStream implements Expressible {
       }
 
       Object o = entry.getValue();
-      if (o instanceof StreamEvaluator) {
+      if (o instanceof StreamEvaluator evaluator) {
         Tuple eTuple = new Tuple(lets);
-        StreamEvaluator evaluator = (StreamEvaluator) o;
         evaluator.setStreamContext(streamContext);
         Object eo = evaluator.evaluate(eTuple);
-        if (eo instanceof List) {
-          List<?> l = (List<?>) eo;
+        if (eo instanceof List<?> l) {
           if (numTuples == -1) {
             numTuples = l.size();
           } else {
@@ -175,8 +173,7 @@ public class ZplotStream extends TupleStream implements Expressible {
         }
       } else {
         Object eval = lets.get(o);
-        if (eval instanceof List) {
-          List<?> l = (List<?>) eval;
+        if (eval instanceof List<?> l) {
           if (numTuples == -1) {
             numTuples = l.size();
           } else {
@@ -223,8 +220,7 @@ public class ZplotStream extends TupleStream implements Expressible {
       }
     } else if (clusters) {
       Object o = evaluated.get("clusters");
-      if (o instanceof KmeansEvaluator.ClusterTuple) {
-        KmeansEvaluator.ClusterTuple ct = (KmeansEvaluator.ClusterTuple) o;
+      if (o instanceof KmeansEvaluator.ClusterTuple ct) {
         List<CentroidCluster<KmeansEvaluator.ClusterPoint>> cs = ct.getClusters();
         int clusterNum = 0;
         for (CentroidCluster<KmeansEvaluator.ClusterPoint> c : cs) {
@@ -238,8 +234,7 @@ public class ZplotStream extends TupleStream implements Expressible {
             outTuples.add(tuple);
           }
         }
-      } else if (o instanceof DbscanEvaluator.ClusterTuple) {
-        DbscanEvaluator.ClusterTuple ct = (DbscanEvaluator.ClusterTuple) o;
+      } else if (o instanceof DbscanEvaluator.ClusterTuple ct) {
         List<Cluster<DbscanEvaluator.ClusterPoint>> cs = ct.getClusters();
         int clusterNum = 0;
         for (Cluster<DbscanEvaluator.ClusterPoint> c : cs) {
@@ -256,11 +251,9 @@ public class ZplotStream extends TupleStream implements Expressible {
       }
     } else if (distribution) {
       Object o = evaluated.get("dist");
-      if (o instanceof RealDistribution) {
-        RealDistribution realDistribution = (RealDistribution) o;
+      if (o instanceof RealDistribution realDistribution) {
         List<SummaryStatistics> binStats = null;
-        if (realDistribution instanceof EmpiricalDistribution) {
-          EmpiricalDistribution empiricalDistribution = (EmpiricalDistribution) realDistribution;
+        if (realDistribution instanceof EmpiricalDistribution empiricalDistribution) {
           binStats = empiricalDistribution.getBinStats();
         } else {
           double[] samples = realDistribution.sample(500000);
@@ -288,8 +281,7 @@ public class ZplotStream extends TupleStream implements Expressible {
             outTuples.add(tuple);
           }
         }
-      } else if (o instanceof IntegerDistribution) {
-        IntegerDistribution integerDistribution = (IntegerDistribution) o;
+      } else if (o instanceof IntegerDistribution integerDistribution) {
         int[] samples = integerDistribution.sample(50000);
         Frequency frequency = new Frequency();
         for (int i : samples) {
@@ -314,8 +306,7 @@ public class ZplotStream extends TupleStream implements Expressible {
           tuple.put("y", y[i]);
           outTuples.add(tuple);
         }
-      } else if (o instanceof List) {
-        List<?> list = (List<?>) o;
+      } else if (o instanceof List<?> list) {
         if (list.get(0) instanceof Tuple) {
           @SuppressWarnings({"unchecked"})
           List<Tuple> tlist = (List<Tuple>) o;
@@ -340,8 +331,7 @@ public class ZplotStream extends TupleStream implements Expressible {
     } else if (table) {
       // Handle the Tuple and List of Tuples
       Object o = evaluated.get("table");
-      if (o instanceof Matrix) {
-        Matrix m = (Matrix) o;
+      if (o instanceof Matrix m) {
         List<String> rowLabels = m.getRowLabels();
         List<String> colLabels = m.getColumnLabels();
         double[][] data = m.getData();
@@ -371,8 +361,7 @@ public class ZplotStream extends TupleStream implements Expressible {
     } else if (heat) {
       // Handle the Tuple and List of Tuples
       Object o = evaluated.get("heat");
-      if (o instanceof Matrix) {
-        Matrix m = (Matrix) o;
+      if (o instanceof Matrix m) {
         List<String> rowLabels = m.getRowLabels();
         List<String> colLabels = m.getColumnLabels();
         double[][] data = m.getData();

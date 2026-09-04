@@ -1,0 +1,8 @@
+title: Fix rare deadlock in CollectionProperties internals.
+type: fixed
+authors:
+- name: Aparna Suresh
+- name: Houston Putman
+links:
+- name: SOLR-17720
+  url: https://issues.apache.org/jira/browse/SOLR-17720

@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -128,7 +127,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   protected final SolrQueryResponse rsp;
   private final AtomicUpdateDocumentMerger docMerger;
 
-  private final UpdateLog ulog;
+  protected final UpdateLog ulog;
   private final VersionInfo vinfo;
   private final boolean versionsStored;
   private boolean returnVersions;
@@ -681,8 +680,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     params.set(DISTRIB, false);
     params.set("getInputDocument", id);
     params.set("onlyIfActive", true);
-    SolrRequest<SimpleSolrResponse> ur =
-        new GenericSolrRequest(METHOD.GET, "/get", params).setRequiresCollection(true);
+    var ur =
+        new GenericSolrRequest(METHOD.GET, "/get", SolrRequest.SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
 
     String leaderUrl = getLeaderUrl(id);
 
@@ -692,8 +692,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     NamedList<Object> rsp;
     try {
-      ur.setBasePath(leaderUrl);
-      rsp = updateShardHandler.getUpdateOnlyHttpClient().request(ur);
+      rsp = updateShardHandler.getUpdateOnlyHttpClient().requestWithBaseUrl(leaderUrl, ur, null);
     } catch (SolrServerException e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
@@ -1226,8 +1225,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // create a merged copy of the metadata from all wrapped exceptions
       NamedList<String> metadata = new NamedList<>();
       for (SolrError error : errors) {
-        if (error.e instanceof SolrException) {
-          SolrException e = (SolrException) error.e;
+        if (error.e instanceof SolrException e) {
           NamedList<String> eMeta = e.getMetadata();
           if (null != eMeta) {
             metadata.addAll(eMeta);

@@ -193,8 +193,7 @@ public class HashQParserPlugin extends QParserPlugin {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof HashCodeValuesSource)) return false;
-      HashCodeValuesSource that = (HashCodeValuesSource) o;
+      if (!(o instanceof HashCodeValuesSource that)) return false;
       return Arrays.equals(fields, that.fields);
     }
 
@@ -240,8 +239,7 @@ public class HashQParserPlugin extends QParserPlugin {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof HashPartitionPredicate)) return false;
-      HashPartitionPredicate that = (HashPartitionPredicate) o;
+      if (!(o instanceof HashPartitionPredicate that)) return false;
       return workers == that.workers && worker == that.worker;
     }
 

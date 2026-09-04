@@ -16,10 +16,9 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -37,10 +36,10 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreAdminRequestStatus() throws Exception {
-    final File workDir = createTempDir().toFile();
+    final Path workDir = createTempDir();
 
     final CoreContainer cores = h.getCoreContainer();
-    cores.getAllowPaths().add(workDir.toPath()); // Allow core to be created in workDir
+    cores.getAllowPaths().add(workDir); // Allow core to be created in workDir
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -52,8 +51,8 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4 {
       }
 
       assertTrue("instDir doesn't exist: " + instDir, Files.exists(instDir));
-      final File instPropFile = new File(workDir, "instProp");
-      FileUtils.copyDirectory(instDir.toFile(), instPropFile);
+      final Path instPropFile = workDir.resolve("instProp");
+      PathUtils.copyDirectory(instDir, instPropFile);
 
       // create a new core (using CoreAdminHandler) w/ properties
 
@@ -63,7 +62,7 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4 {
               CoreAdminParams.ACTION,
               CoreAdminParams.CoreAdminAction.CREATE.toString(),
               CoreAdminParams.INSTANCE_DIR,
-              instPropFile.getAbsolutePath(),
+              instPropFile.toString(),
               CoreAdminParams.NAME,
               "dummycore",
               CommonAdminParams.ASYNC,

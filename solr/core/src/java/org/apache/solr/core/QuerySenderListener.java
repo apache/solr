@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.ResultContext;
@@ -59,16 +58,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
         if (params.get(DISTRIB) == null) {
           params.add(DISTRIB, false);
         }
-        SolrQueryRequest req =
-            new LocalSolrQueryRequest(getCore(), params) {
-              @Override
-              public SolrIndexSearcher getSearcher() {
-                return searcher;
-              }
-
-              @Override
-              public void close() {}
-            };
+        SolrQueryRequest req = SolrQueryRequest.wrapSearcher(searcher, params.toSolrParams());
         SolrQueryResponse rsp = new SolrQueryResponse();
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
         try {
@@ -82,13 +72,11 @@ public class QuerySenderListener extends AbstractSolrEventListener {
           for (int i = 0; i < values.size(); i++) {
             Object o = values.getVal(i);
             SolrDocumentFetcher docFetcher = null;
-            if (o instanceof ResultContext) {
-              ResultContext ctx = (ResultContext) o;
+            if (o instanceof ResultContext ctx) {
               o = ctx.getDocList();
               docFetcher = ctx.getDocFetcher();
             }
-            if (o instanceof DocList) {
-              DocList docs = (DocList) o;
+            if (o instanceof DocList docs) {
               if (docFetcher == null) {
                 docFetcher = newSearcher.getDocFetcher();
               }

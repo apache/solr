@@ -107,13 +107,11 @@ public class FieldEqualitor implements StreamEqualitor {
     if (null == base) {
       return false;
     }
-    if (base instanceof FieldEqualitor) {
-      FieldEqualitor baseEq = (FieldEqualitor) base;
+    if (base instanceof FieldEqualitor baseEq) {
       return leftFieldName.equals(baseEq.leftFieldName)
           && rightFieldName.equals(baseEq.rightFieldName);
-    } else if (base instanceof MultipleFieldEqualitor) {
+    } else if (base instanceof MultipleFieldEqualitor baseEqs) {
       // must equal the first one
-      MultipleFieldEqualitor baseEqs = (MultipleFieldEqualitor) base;
       if (baseEqs.getEqs().length > 0) {
         return isDerivedFrom(baseEqs.getEqs()[0]);
       }
@@ -127,13 +125,11 @@ public class FieldEqualitor implements StreamEqualitor {
     if (null == base) {
       return false;
     }
-    if (base instanceof FieldComparator) {
-      FieldComparator baseComp = (FieldComparator) base;
+    if (base instanceof FieldComparator baseComp) {
       return leftFieldName.equals(baseComp.getLeftFieldName())
           || rightFieldName.equals(baseComp.getRightFieldName());
-    } else if (base instanceof MultipleFieldComparator) {
+    } else if (base instanceof MultipleFieldComparator baseComps) {
       // must equal the first one
-      MultipleFieldComparator baseComps = (MultipleFieldComparator) base;
       if (baseComps.getComps().length > 0) {
         return isDerivedFrom(baseComps.getComps()[0]);
       }

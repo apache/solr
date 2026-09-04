@@ -20,7 +20,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -81,18 +80,17 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
       String data2 = "myStringData2";
       String longData = "myLongStringData";
       // create zk nodes that have the same path length
-      zkClient.create("/myPath", null, CreateMode.PERSISTENT, true);
-      zkClient.create(path, null, CreateMode.PERSISTENT, true);
+      zkClient.create("/myPath", null, CreateMode.PERSISTENT);
+      zkClient.create(path, null, CreateMode.PERSISTENT);
       zkClient.create(
-          path + "/file1.txt", data1.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
-      zkClient.create(path + "/nothing.txt", null, CreateMode.PERSISTENT, true);
+          path + "/file1.txt", data1.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
+      zkClient.create(path + "/nothing.txt", null, CreateMode.PERSISTENT);
       zkClient.create(
-          path + "/file2.txt", data2.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+          path + "/file2.txt", data2.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
       zkClient.create(
           path + "/some_longer_file2.txt",
           longData.getBytes(StandardCharsets.UTF_8),
-          CreateMode.PERSISTENT,
-          true);
+          CreateMode.PERSISTENT);
 
       /* RUN */
       // delete all nodes that contain "file"
@@ -100,7 +98,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
 
       /* CHECK */
       String listZnode = zkClient.listZnode(path, false);
-      // list of node must not contain file1, file2 or some_longer_file2 because they where deleted
+      // list of nodes must not contain file1, file2 or some_longer_file2 because they were deleted
       assertFalse(listZnode.contains("file1"));
       assertFalse(listZnode.contains("file2"));
       assertFalse(listZnode.contains("some_longer_file2"));
@@ -138,9 +136,9 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
             .withUrl(zkServer.getZkHost())
             .withTimeout(10000, TimeUnit.MILLISECONDS)
             .build()) {
-      zkClient.makePath("/testTraverseZkTree/1/1", true, true);
-      zkClient.makePath("/testTraverseZkTree/1/2", false, true);
-      zkClient.makePath("/testTraverseZkTree/2", false, true);
+      zkClient.makePath("/testTraverseZkTree/1/1", true);
+      zkClient.makePath("/testTraverseZkTree/1/2", false);
+      zkClient.makePath("/testTraverseZkTree/2", false);
       assertEquals(
           Arrays.asList(
               "/testTraverseZkTree",
@@ -148,7 +146,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
               "/testTraverseZkTree/1/1",
               "/testTraverseZkTree/1/2",
               "/testTraverseZkTree/2"),
-          getTraverseedZNodes(
+          getTraversedZNodes(
               zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_PRE));
       assertEquals(
           Arrays.asList(
@@ -157,7 +155,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
               "/testTraverseZkTree/1",
               "/testTraverseZkTree/2",
               "/testTraverseZkTree"),
-          getTraverseedZNodes(
+          getTraversedZNodes(
               zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST));
     }
   }
@@ -174,18 +172,18 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
       oneByte[0] = 0x30;
       zkClient.makePath("/test1byte/one", oneByte, true);
 
-      Path tmpDest = Paths.get(createTempDir().toFile().getAbsolutePath(), "MustBeOne");
+      Path tmpDest = createTempDir().resolve("MustBeOne");
       ZkMaintenanceUtils.downloadFromZK(zkClient, "/test1byte/one", tmpDest);
 
       try (FileInputStream fis = new FileInputStream(tmpDest.toFile())) {
         byte[] data = fis.readAllBytes();
-        assertEquals("Should have downloaded a one-byte file", data.length, 1);
+        assertEquals("Should have downloaded a one-byte file", 1, data.length);
         assertEquals("contents of the one-byte file should be 0x30", 0x30, data[0]);
       }
     }
   }
 
-  private List<String> getTraverseedZNodes(
+  private List<String> getTraversedZNodes(
       SolrZkClient zkClient, String path, ZkMaintenanceUtils.VISIT_ORDER visitOrder)
       throws KeeperException, InterruptedException {
     List<String> result = new ArrayList<>();
@@ -196,7 +194,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
         new ZkMaintenanceUtils.ZkVisitor() {
 
           @Override
-          public void visit(String path) throws InterruptedException, KeeperException {
+          public void visit(String path) {
             result.add(path);
           }
         });

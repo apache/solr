@@ -47,7 +47,7 @@ public class SimpleMLTQParser extends AbstractMLTQParser {
 
     try {
       TopDocs td = searcher.search(docIdQuery, 2);
-      if (td.totalHits.value != 1)
+      if (td.totalHits.value() != 1)
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Error completing MLT request. Could not fetch "

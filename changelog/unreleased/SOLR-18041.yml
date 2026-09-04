@@ -1,0 +1,10 @@
+title: Path exclusions for the admin UI no longer need bespoke Solr code.
+type: other
+authors:
+  - name: Gus Heck
+  - name: David Smiley
+links:
+  - name: SOLR-18041
+    url: https://issues.apache.org/jira/browse/SOLR-18041
+  - name: SOLR-18168
+    url: https://issues.apache.org/jira/browse/SOLR-18168

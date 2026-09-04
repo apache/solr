@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestBase;
@@ -46,7 +46,7 @@ public class TestConfigSetImmutable extends RestTestBase {
   public void before() throws Exception {
     Path tmpSolrHome = createTempDir();
     Path tmpConfDir = tmpSolrHome.resolve(confDir);
-    PathUtils.copyDirectory(Path.of(TEST_HOME()), tmpSolrHome);
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
     // make the ConfigSet immutable
     Files.writeString(
         tmpConfDir.resolve("configsetprops.json"),
@@ -55,23 +55,12 @@ public class TestConfigSetImmutable extends RestTestBase {
 
     System.setProperty("managed.schema.mutable", "true");
 
-    createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(),
-        "solrconfig-schemaless.xml",
-        "schema-rest.xml",
-        "/solr",
-        true,
-        null);
+    createJettyAndHarness(tmpSolrHome, "solrconfig-schemaless.xml", "schema-rest.xml");
   }
 
   @After
   public void after() throws Exception {
-    solrClientTestRule.reset();
-
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
+    solrTestRule.reset();
   }
 
   @Test

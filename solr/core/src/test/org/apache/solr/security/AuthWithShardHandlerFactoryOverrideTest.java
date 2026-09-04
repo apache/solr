@@ -18,7 +18,7 @@ package org.apache.solr.security;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
@@ -38,7 +38,7 @@ public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCa
           + "  \"authentication\":{\n"
           + "   \"blockUnknown\": true,\n"
           + "   \"class\":\"solr.BasicAuthPlugin\",\n"
-          + "   \"credentials\":{\"solr\":\"EEKn7ywYk5jY8vG9TyqlG2jvYuvh1Q7kCCor6Hqm320= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
+          + "   \"credentials\":{\"solr\":\"JeRyxP8A3dVWhFgFbf/Eg2RXmuoU8BE5gbNQyxmGAJQ= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
           + "  },\n"
           + "  \"authorization\":{\n"
           + "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n"
@@ -56,11 +56,11 @@ public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCa
         .withSecurityJson(SECURITY_CONF)
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 4, 1)
-        .setBasicAuthCredentials("solr", "solr")
+        .setBasicAuthCredentials("solr", "SolrRocks")
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.createAlias(ALIAS, COLLECTION)
-        .setBasicAuthCredentials("solr", "solr")
+        .setBasicAuthCredentials("solr", "SolrRocks")
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(COLLECTION, 4, 4);
@@ -83,13 +83,13 @@ public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCa
   @Test
   public void collectionTest() throws Exception {
     try (SolrClient client =
-        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
 
       for (int i = 0; i < 30; i++) {
         SolrResponse response =
             new QueryRequest(params("q", "*:*"))
-                .setBasicAuthCredentials("solr", "solr")
+                .setBasicAuthCredentials("solr", "SolrRocks")
                 .process(client, COLLECTION);
         // likely to be non-null, even if an error occurred
         assertNotNull(response);
@@ -103,13 +103,13 @@ public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCa
   @Test
   public void aliasTest() throws Exception {
     try (SolrClient client =
-        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
 
       for (int i = 0; i < 30; i++) {
         SolrResponse response =
             new QueryRequest(params("q", "*:*"))
-                .setBasicAuthCredentials("solr", "solr")
+                .setBasicAuthCredentials("solr", "SolrRocks")
                 .process(client, ALIAS);
         // likely to be non-null, even if an error occurred
         assertNotNull(response);

@@ -18,6 +18,7 @@ package org.apache.solr.handler.sql;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -55,6 +56,7 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 
 class SolrSchema extends AbstractSchema implements Closeable {
   final Properties properties;
+  final CloudSolrClient.CloudSolrClientConnection solrConnection;
   final SolrClientCache solrClientCache;
   private volatile boolean isClosed = false;
 
@@ -63,10 +65,14 @@ class SolrSchema extends AbstractSchema implements Closeable {
   // every statement gets a new SolrSchema instance
   private Map<String, RelDataType> schemaCache = new ConcurrentHashMap<>();
 
-  SolrSchema(Properties properties, SolrClientCache solrClientCache) {
+  SolrSchema(
+      Properties properties,
+      SolrClientCache solrClientCache,
+      CloudSolrClient.CloudSolrClientConnection solrConnection) {
     super();
     this.properties = properties;
     this.solrClientCache = solrClientCache;
+    this.solrConnection = solrConnection;
   }
 
   public SolrClientCache getSolrClientCache() {
@@ -84,35 +90,24 @@ class SolrSchema extends AbstractSchema implements Closeable {
 
   @Override
   protected Map<String, Table> getTableMap() {
-    String zk = this.properties.getProperty("zk");
-    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(solrConnection);
     ClusterState clusterState = cloudSolrClient.getClusterState();
-
-    final Map<String, Table> builder = new HashMap<>();
-
-    Set<String> collections = clusterState.getCollectionsMap().keySet();
-    for (String collection : collections) {
-      builder.put(collection, new SolrTable(this, collection));
-    }
-
     Aliases aliases = ZkStateReader.from(cloudSolrClient).getAliases();
-    for (String alias : aliases.getCollectionAliasListMap().keySet()) {
-      // don't create duplicate entries
-      if (!collections.contains(alias)) {
-        builder.put(alias, new SolrTable(this, alias));
-      }
-    }
 
-    return Map.copyOf(builder);
+    Collection<String> collectionNames = clusterState.getCollectionNames();
+    Set<String> aliasNames = aliases.getCollectionAliasListMap().keySet();
+    return Stream.concat(collectionNames.stream(), aliasNames.stream())
+        .collect(Collectors.toMap(n -> n, n -> new SolrTable(this, n), (t1, t2) -> t1));
   }
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(final String collection) {
-    final String zk = this.properties.getProperty("zk");
     PKIAuthenticationPlugin.withServerIdentity(true);
     try {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);
-      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection).getFieldInfo();
+      return lukeRequest
+          .process(solrClientCache.getCloudSolrClient(solrConnection), collection)
+          .getFieldInfo();
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
     } finally {
@@ -121,13 +116,12 @@ class SolrSchema extends AbstractSchema implements Closeable {
   }
 
   private LukeResponse getSchema(final String collection) {
-    final String zk = this.properties.getProperty("zk");
     PKIAuthenticationPlugin.withServerIdentity(true);
     try {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setShowSchema(true); // for empty fields and custom type info ...
       lukeRequest.setNumTerms(0);
-      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection);
+      return lukeRequest.process(solrClientCache.getCloudSolrClient(solrConnection), collection);
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
     } finally {

@@ -19,10 +19,11 @@ package org.apache.solr.servlet;
 
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PARAM;
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
+import static org.apache.solr.core.RateLimiterConfig.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,23 +38,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
-import javax.servlet.http.HttpServletRequest;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.RateLimiterConfig;
-import org.eclipse.jetty.server.Request;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class TestRequestRateLimiter extends SolrCloudTestCase {
   private static final String FIRST_COLLECTION = "c1";
@@ -61,18 +64,19 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
     configureCluster(1).addConfig(FIRST_COLLECTION, configset("cloud-minimal")).configure();
   }
 
   @Test
   public void testConcurrentQueries() throws Exception {
-    try (CloudSolrClient client =
-        cluster.basicSolrClientBuilder().withDefaultCollection(FIRST_COLLECTION).build()) {
+    try (CloudSolrClient client = newHttp1SolrClient(FIRST_COLLECTION)) {
 
       CollectionAdminRequest.createCollection(FIRST_COLLECTION, 1, 1).process(client);
       cluster.waitForActiveCollection(FIRST_COLLECTION, 1, 1);
 
-      SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
+      RateLimitFilter rateLimitFilter =
+          cluster.getJettySolrRunner(0).getFilter(RateLimitFilter.class);
 
       RateLimiterConfig rateLimiterConfig =
           new RateLimiterConfig(
@@ -85,11 +89,10 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes
       // its parent here
       RateLimitManager.Builder builder =
-          new MockBuilder(
-              null /* dummy SolrZkClient */, new MockRequestRateLimiter(rateLimiterConfig));
+          new MockBuilder(new MockRequestRateLimiter(rateLimiterConfig));
       RateLimitManager rateLimitManager = builder.build();
 
-      solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
+      rateLimitFilter.setRateLimitManager(rateLimitManager);
 
       int numDocs = TEST_NIGHTLY ? 10000 : 100;
 
@@ -275,42 +278,24 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     assertTrue(mgr.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE).isEmpty());
   }
 
-  private static final HttpServletRequest QUERY_REQ = new DummyRequest(null, "QUERY");
-  private static final HttpServletRequest UPDATE_REQ = new DummyRequest(null, "UPDATE");
-
-  private static class DummyRequest extends Request {
-
-    private final String ctx;
-    private final String type;
-
-    public DummyRequest(String ctx, String type) {
-      super(null, null);
-      this.ctx = ctx;
-      this.type = type;
-    }
-
-    @Override
-    public String getHeader(String name) {
-      switch (name) {
-        case SOLR_REQUEST_CONTEXT_PARAM:
-          return ctx;
-        case SOLR_REQUEST_TYPE_PARAM:
-          return type;
-        default:
-          throw new IllegalArgumentException();
-      }
-    }
+  private static HttpServletRequest newRequest(String type, String ctx) {
+    HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+    Mockito.when(req.getHeader(SOLR_REQUEST_TYPE_PARAM)).thenReturn(type);
+    Mockito.when(req.getHeader(SOLR_REQUEST_CONTEXT_PARAM)).thenReturn(ctx);
+    return req;
   }
+
+  private static final HttpServletRequest QUERY_REQ = newRequest("QUERY", null);
+  private static final HttpServletRequest UPDATE_REQ = newRequest("UPDATE", null);
 
   @Nightly
   public void testSlotBorrowing() throws Exception {
-    try (CloudSolrClient client =
-        cluster.basicSolrClientBuilder().withDefaultCollection(SECOND_COLLECTION).build()) {
+    try (CloudSolrClient client = newHttp1SolrClient(SECOND_COLLECTION)) {
 
       CollectionAdminRequest.createCollection(SECOND_COLLECTION, 1, 1).process(client);
       cluster.waitForActiveCollection(SECOND_COLLECTION, 1, 1);
 
-      SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
+      var rateLimitFilter = cluster.getJettySolrRunner(0).getFilter(RateLimitFilter.class);
 
       RateLimiterConfig queryRateLimiterConfig =
           new RateLimiterConfig(
@@ -332,12 +317,11 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       // its parent
       RateLimitManager.Builder builder =
           new MockBuilder(
-              null /*dummy SolrZkClient */,
               new MockRequestRateLimiter(queryRateLimiterConfig),
               new MockRequestRateLimiter(indexRateLimiterConfig));
       RateLimitManager rateLimitManager = builder.build();
 
-      solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
+      rateLimitFilter.setRateLimitManager(rateLimitManager);
 
       int numDocs = 10000;
 
@@ -446,22 +430,28 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     }
   }
 
+  private CloudSolrClient newHttp1SolrClient(String collection) {
+    return new CloudJettySolrClient.Builder(
+            new ZkClientClusterStateProvider(cluster.getZkServer().getZkAddress()))
+        .withDefaultCollection(collection)
+        .withHttpClientBuilder(new HttpJettySolrClient.Builder().useHttp1_1(true))
+        .build();
+  }
+
   private static class MockBuilder extends RateLimitManager.Builder {
     private final RequestRateLimiter queryRequestRateLimiter;
     private final RequestRateLimiter indexRequestRateLimiter;
 
-    public MockBuilder(SolrZkClient zkClient, RequestRateLimiter queryRequestRateLimiter) {
-      super(zkClient);
+    public MockBuilder(RequestRateLimiter queryRequestRateLimiter) {
+      super();
 
       this.queryRequestRateLimiter = queryRequestRateLimiter;
       this.indexRequestRateLimiter = null;
     }
 
     public MockBuilder(
-        SolrZkClient zkClient,
-        RequestRateLimiter queryRequestRateLimiter,
-        RequestRateLimiter indexRequestRateLimiter) {
-      super(zkClient);
+        RequestRateLimiter queryRequestRateLimiter, RequestRateLimiter indexRequestRateLimiter) {
+      super();
 
       this.queryRequestRateLimiter = queryRequestRateLimiter;
       this.indexRequestRateLimiter = indexRequestRateLimiter;

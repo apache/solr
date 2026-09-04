@@ -19,6 +19,7 @@ package org.apache.solr.jersey;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -26,7 +27,9 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import jakarta.ws.rs.ext.ContextResolver;
 import jakarta.ws.rs.ext.Provider;
 import java.io.IOException;
+import java.util.Map;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /** Customizes the ObjectMapper settings used for serialization/deserialization in Jersey */
 @SuppressWarnings("rawtypes")
@@ -47,8 +50,12 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
   private static ObjectMapper createObjectMapper() {
     final SimpleModule customTypeModule = new SimpleModule();
     customTypeModule.addSerializer(new NamedListSerializer(NamedList.class));
+    customTypeModule.addSerializer(new SimpleOrderedMapSerializer(SimpleOrderedMap.class));
 
     return new ObjectMapper()
+        // TODO Should failOnUnknown=false be made available on a "permissive" object mapper instead
+        // of the "main" one?
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
         .registerModule(customTypeModule);
   }
@@ -66,7 +73,40 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
     @Override
     public void serialize(NamedList value, JsonGenerator gen, SerializerProvider provider)
         throws IOException {
-      gen.writeObject(value.asShallowMap());
+      // SimpleOrderedMap goes through SimpleOrderedMapSerializer below instead. asMap(0) avoids
+      // recursing into this same serializer for plain NamedLists.
+      gen.writeObject(value.asMap(0));
+    }
+  }
+
+  /**
+   * Writes a {@link SimpleOrderedMap} out directly via its {@link Map} entries, without the copy
+   * {@link NamedListSerializer} needs to dodge infinite recursion -- {@link SimpleOrderedMap} is
+   * already a {@link Map}, so there is nothing to convert.
+   */
+  public static class SimpleOrderedMapSerializer extends StdSerializer<SimpleOrderedMap> {
+
+    public SimpleOrderedMapSerializer() {
+      this(null);
+    }
+
+    public SimpleOrderedMapSerializer(Class<SimpleOrderedMap> somClazz) {
+      super(somClazz);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void serialize(SimpleOrderedMap value, JsonGenerator gen, SerializerProvider provider)
+        throws IOException {
+      final Map<String, Object> map = (Map<String, Object>) value;
+      gen.writeStartObject();
+      for (Map.Entry<String, Object> entry : map.entrySet()) {
+        // defaultSerializeField() doesn't honor NON_NULL inclusion itself -- skip nulls here.
+        if (entry.getValue() != null) {
+          provider.defaultSerializeField(entry.getKey(), entry.getValue(), gen);
+        }
+      }
+      gen.writeEndObject();
     }
   }
 }

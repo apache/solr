@@ -272,6 +272,7 @@ import org.apache.solr.client.solrj.io.stream.Facet2DStream;
 import org.apache.solr.client.solrj.io.stream.FacetStream;
 import org.apache.solr.client.solrj.io.stream.FeaturesSelectionStream;
 import org.apache.solr.client.solrj.io.stream.FetchStream;
+import org.apache.solr.client.solrj.io.stream.FullOuterJoinStream;
 import org.apache.solr.client.solrj.io.stream.GetStream;
 import org.apache.solr.client.solrj.io.stream.HashJoinStream;
 import org.apache.solr.client.solrj.io.stream.HashRollupStream;
@@ -324,6 +325,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MissingMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.PercentileMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.StdMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
@@ -355,6 +357,7 @@ public class Lang {
         .withFunctionName("stats", StatsStream.class)
         .withFunctionName("innerJoin", InnerJoinStream.class)
         .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class)
+        .withFunctionName("fullOuterJoin", FullOuterJoinStream.class)
         .withFunctionName("hashJoin", HashJoinStream.class)
         .withFunctionName("outerHashJoin", OuterHashJoinStream.class)
         .withFunctionName("intersect", IntersectStream.class)
@@ -368,8 +371,6 @@ public class Lang {
         .withFunctionName("nodes", GatherNodesStream.class)
         .withFunctionName("select", SelectStream.class)
         .withFunctionName("shortestPath", ShortestPathStream.class)
-        .withFunctionName("gatherNodes", GatherNodesStream.class)
-        .withFunctionName("nodes", GatherNodesStream.class)
         .withFunctionName("scoreNodes", ScoreNodesStream.class)
         .withFunctionName("model", ModelStream.class)
         .withFunctionName("fetch", FetchStream.class)
@@ -404,6 +405,7 @@ public class Lang {
         .withFunctionName("std", StdMetric.class)
         .withFunctionName("count", CountMetric.class)
         .withFunctionName("countDist", CountDistinctMetric.class)
+        .withFunctionName("missing", MissingMetric.class)
 
         // tuple manipulation operations
         .withFunctionName("replace", ReplaceOperation.class)

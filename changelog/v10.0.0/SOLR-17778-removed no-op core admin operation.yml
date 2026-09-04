@@ -1,0 +1,8 @@
+title: Removed no-op core admin operation FORCEPREPAREFORLEADERSHIP and its SolrJ
+  peer OverrideLastPublished.
+type: removed
+authors:
+- name: Pierre Salagnac
+links:
+- name: SOLR-17778
+  url: https://issues.apache.org/jira/browse/SOLR-17778

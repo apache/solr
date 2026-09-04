@@ -53,6 +53,7 @@ public class QueryParsing {
   public static final char LOCALPARAM_END = '}';
   // true if the value was specified by the "v" param (i.e. v=myval, or v=$param)
   public static final String VAL_EXPLICIT = "__VAL_EXPLICIT__";
+  public static final String NAME = "name";
 
   /**
    * @param txt Text to parse
@@ -230,13 +231,11 @@ public class QueryParsing {
     // clear the boosted / is clause flags for recursion
     int subflag = flags & ~(FLAG_BOOSTED | FLAG_IS_CLAUSE);
 
-    if (query instanceof TermQuery) {
-      TermQuery q = (TermQuery) query;
+    if (query instanceof TermQuery q) {
       Term t = q.getTerm();
       FieldType ft = writeFieldName(t.field(), schema, out, flags);
       writeFieldVal(t.bytes(), ft, out, flags);
-    } else if (query instanceof TermRangeQuery) {
-      TermRangeQuery q = (TermRangeQuery) query;
+    } else if (query instanceof TermRangeQuery q) {
       String fname = q.getField();
       FieldType ft = writeFieldName(fname, schema, out, flags);
       out.append(q.includesLower() ? '[' : '{');
@@ -257,8 +256,7 @@ public class QueryParsing {
       }
 
       out.append(q.includesUpper() ? ']' : '}');
-    } else if (query instanceof LegacyNumericRangeQuery) {
-      LegacyNumericRangeQuery<?> q = (LegacyNumericRangeQuery<?>) query;
+    } else if (query instanceof LegacyNumericRangeQuery<?> q) {
       String fname = q.getField();
       FieldType ft = writeFieldName(fname, schema, out, flags);
       out.append(q.includesMin() ? '[' : '{');
@@ -279,8 +277,7 @@ public class QueryParsing {
       }
 
       out.append(q.includesMax() ? ']' : '}');
-    } else if (query instanceof BooleanQuery) {
-      BooleanQuery q = (BooleanQuery) query;
+    } else if (query instanceof BooleanQuery q) {
       boolean needParens = false;
 
       if (q.getMinimumNumberShouldMatch() != 0 || (flags & (FLAG_IS_CLAUSE | FLAG_BOOSTED)) != 0) {
@@ -302,7 +299,7 @@ public class QueryParsing {
         } else if (c.isRequired()) {
           out.append('+');
         }
-        Query subQuery = c.getQuery();
+        Query subQuery = c.query();
 
         toString(subQuery, schema, out, subflag | FLAG_IS_CLAUSE);
       }
@@ -315,8 +312,7 @@ public class QueryParsing {
         out.append(Integer.toString(q.getMinimumNumberShouldMatch()));
       }
 
-    } else if (query instanceof PrefixQuery) {
-      PrefixQuery q = (PrefixQuery) query;
+    } else if (query instanceof PrefixQuery q) {
       Term prefix = q.getPrefix();
       FieldType ft = writeFieldName(prefix.field(), schema, out, flags);
       out.append(prefix.text());
@@ -327,12 +323,10 @@ public class QueryParsing {
       out.append(query.toString());
     } else if (query instanceof ConstantScoreQuery) {
       out.append(query.toString());
-    } else if (query instanceof WrappedQuery) {
-      WrappedQuery q = (WrappedQuery) query;
+    } else if (query instanceof WrappedQuery q) {
       out.append(q.getOptions());
       toString(q.getWrappedQuery(), schema, out, subflag);
-    } else if (query instanceof BoostQuery) {
-      BoostQuery q = (BoostQuery) query;
+    } else if (query instanceof BoostQuery q) {
       toString(q.getQuery(), schema, out, subflag | FLAG_BOOSTED);
       out.append('^');
       out.append(Float.toString(q.getBoost()));

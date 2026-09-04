@@ -23,7 +23,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 /**
  * V2 API definition for recreating replicas in one node (the source) on another node(s) (the
@@ -35,7 +35,7 @@ public interface ReplaceNodeApi {
   @Operation(
       summary = "'Replace' a specified node by moving all replicas elsewhere",
       tags = {"node"})
-  SolrJerseyResponse replaceNode(
+  SubResponseAccumulatingJerseyResponse replaceNode(
       @Parameter(description = "The name of the node to be replaced.", required = true)
           @PathParam("sourceNodeName")
           String sourceNodeName,

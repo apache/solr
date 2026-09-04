@@ -560,8 +560,8 @@
 
   <fieldType name="location" class="solr.LatLonPointSpatialField" />
 
-  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
-
+  <fieldType name="currency" class="solr.CurrencyFieldType" amountLongSuffix="_l_ns" codeStrSuffix="_s_ns" currencyConfig="currency.xml" multiValued="false"/>
+  
   <fieldType name="shingle23" class="solr.TextField" enableGraphQueries="false" multiValued="true">
     <analyzer>
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
@@ -773,6 +773,10 @@
   <dynamicField name="*_f_norms" type="float" indexed="true" stored="true" omitNorms="false" docValues="false"/>
   <dynamicField name="*_d_norms" type="double" indexed="true" stored="true" omitNorms="false" docValues="false"/>
 
+  <!-- Subfields used with CurrencyFieldType -->
+  <dynamicField name="*_s_ns" type="string" indexed="true" stored="false" />
+  <dynamicField name="*_l_ns" type="long" indexed="true" stored="false"/>
+  
   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
   <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>
 

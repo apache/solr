@@ -21,7 +21,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -30,6 +37,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.ValueSourceParser.LongConstValueSource;
 
 /**
  * <b>Note: This API is experimental and may change in non backward-compatible ways in the
@@ -58,14 +66,16 @@ public abstract class QParser {
       stringIncludingLocalParams; // the original query string including any local params
   protected boolean valFollowedParams; // true if the value "qstr" followed the localParams
   protected int localParamsEnd; // the position one past where the localParams ended
+  protected boolean autoFixPureNegative;
 
   /**
    * Constructor for the QParser
    *
-   * @param qstr The part of the query string specific to this parser
-   * @param localParams The set of parameters that are specific to this QParser. See
+   * @param qstr The query string to be parsed
+   * @param localParams Params scoped to this query, customizing the parsing. Null if none. Most
+   *     params the parser needs are resolved here first, overlaying the request. See
    *     https://solr.apache.org/guide/solr/latest/query-guide/local-params.html
-   * @param params The rest of the {@link org.apache.solr.common.params.SolrParams}
+   * @param params Params for the request, taken from {@link SolrQueryRequest#getParams()}; not null
    * @param req The original {@link org.apache.solr.request.SolrQueryRequest}.
    */
   public QParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -97,8 +107,15 @@ public abstract class QParser {
       }
     }
 
-    this.params = params;
+    this.params = Objects.requireNonNull(params);
     this.req = req;
+
+    if (req != null && req.getCore() != null && req.getCore().getSolrConfig() != null) {
+      this.autoFixPureNegative =
+          req.getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_10_2_0);
+    } else {
+      this.autoFixPureNegative = true;
+    }
   }
 
   /**
@@ -160,7 +177,7 @@ public abstract class QParser {
   }
 
   public void setParams(SolrParams params) {
-    this.params = params;
+    this.params = Objects.requireNonNull(params);
   }
 
   public SolrQueryRequest getReq() {
@@ -179,6 +196,14 @@ public abstract class QParser {
     this.qstr = s;
   }
 
+  public boolean isAutoFixPureNegative() {
+    return autoFixPureNegative;
+  }
+
+  public void setAutoFixPureNegative(boolean autoFixPureNegative) {
+    this.autoFixPureNegative = autoFixPureNegative;
+  }
+
   /**
    * Returns the resulting query from this QParser, calling parse() only the first time and caching
    * the Query result. <em>A null return is possible!</em>
@@ -189,6 +214,14 @@ public abstract class QParser {
       query = parse();
 
       if (localParams != null) {
+        // MUST come before extendedQuery() calls below: NamedMatches is not an ExtendedQuery,
+        // so wrapping must happen first so that extendedQuery() can wrap it in a WrappedQuery
+        // that preserves the cache/cost settings as the outermost layer.
+        String name = localParams.get(QueryParsing.NAME);
+        if (name != null && !name.isBlank() && query != null) {
+          query = NamedMatches.wrapQuery(name, query);
+        }
+
         String cacheStr = localParams.get(CommonParams.CACHE);
         if (cacheStr != null) {
           if (CommonParams.FALSE.equals(cacheStr)) {
@@ -251,6 +284,7 @@ public abstract class QParser {
     // TODO: this would be better passed in to the constructor... change to a ParserContext object?
     nestedParser.flags = this.flags;
     nestedParser.recurseCount = recurseCount;
+    nestedParser.autoFixPureNegative = this.autoFixPureNegative;
     recurseCount--;
     return nestedParser;
   }
@@ -322,6 +356,21 @@ public abstract class QParser {
     }
 
     return getReq().getCore().getSolrConfig().prefixQueryMinPrefixLength;
+  }
+
+  /**
+   * Parse the string into a {@link ValueSource} <em>instead of a {@link Query}</em>. Solr calls
+   * this in most places that "function queries" go. Overridden by {@link FunctionQParser}.
+   */
+  public ValueSource parseAsValueSource() throws SyntaxError {
+    Query q = getQuery();
+    return switch (q) {
+      case null -> new LongConstValueSource(0);
+      case FunctionQuery functionQuery -> functionQuery.getValueSource();
+      case FunctionScoreQuery functionQuery ->
+          ValueSource.fromDoubleValuesSource(functionQuery.getSource());
+      default -> new QueryValueSource(q, 0.0f);
+    };
   }
 
   /**

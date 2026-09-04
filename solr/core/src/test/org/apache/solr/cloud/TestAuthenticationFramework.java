@@ -16,18 +16,15 @@
  */
 package org.apache.solr.cloud;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -46,9 +43,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
   private static final String configName = "solrCloudCollectionConfig";
   private static final String collectionName = "testcollection";
 
-  static String requestUsername = MockAuthenticationPlugin.expectedUsername;
-  static String requestPassword = MockAuthenticationPlugin.expectedPassword;
-
   @Override
   public void setUp() throws Exception {
     setupAuthenticationPlugin();
@@ -58,7 +52,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
   private void setupAuthenticationPlugin() {
     System.setProperty(
-        "authenticationPlugin",
+        "solr.security.auth.plugin",
         "org.apache.solr.cloud.TestAuthenticationFramework$MockAuthenticationPlugin");
     MockAuthenticationPlugin.expectedUsername = null;
     MockAuthenticationPlugin.expectedPassword = null;
@@ -73,11 +67,9 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
     // Should fail with 401
     try {
-      BaseHttpSolrClient.RemoteSolrException e =
-          expectThrows(
-              BaseHttpSolrClient.RemoteSolrException.class,
-              this::collectionCreateSearchDeleteTwice);
-      assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
+      RemoteSolrException e =
+          expectThrows(RemoteSolrException.class, this::collectionCreateSearchDeleteTwice);
+      assertEquals(401, e.code()); // Authentication failed
     } finally {
       MockAuthenticationPlugin.expectedUsername = null;
       MockAuthenticationPlugin.expectedPassword = null;
@@ -86,7 +78,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    System.clearProperty("authenticationPlugin");
     shutdownCluster();
     super.tearDown();
   }
@@ -130,7 +121,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
       implements HttpClientBuilderPlugin {
     public static String expectedUsername;
     public static String expectedPassword;
-    private HttpRequestInterceptor interceptor;
 
     @Override
     public void init(Map<String, Object> pluginConfig) {}
@@ -155,23 +145,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
         response.sendError(401, "Unauthorized request");
         return false;
       }
-    }
-
-    @Override
-    public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder httpClientBuilder) {
-      interceptor =
-          (req, rsp) -> {
-            req.addHeader("username", requestUsername);
-            req.addHeader("password", requestPassword);
-          };
-
-      HttpClientUtil.addRequestInterceptor(interceptor);
-      return httpClientBuilder;
-    }
-
-    @Override
-    public void close() {
-      HttpClientUtil.removeRequestInterceptor(interceptor);
     }
   }
 }

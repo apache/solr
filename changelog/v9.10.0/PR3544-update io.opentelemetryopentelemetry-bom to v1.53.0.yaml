@@ -1,0 +1,7 @@
+title: Update io.opentelemetry:opentelemetry-bom to v1.53.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3544
+  url: https://github.com/apache/solr/pull/3544

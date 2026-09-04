@@ -16,37 +16,20 @@
  */
 package org.apache.solr.handler.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
+import static org.apache.solr.client.solrj.response.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 
 import jakarta.ws.rs.core.MediaType;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
 public class V2ApiUtilsTest extends SolrTestCaseJ4 {
 
   @Test
-  public void testReadsDisableV2ApiSysprop() {
-    System.clearProperty("disable.v2.api");
-    assertTrue("v2 API should be enabled if sysprop not specified", V2ApiUtils.isEnabled());
-
-    System.setProperty("disable.v2.api", "false");
-    assertTrue("v2 API should be enabled if sysprop explicitly enables it", V2ApiUtils.isEnabled());
-
-    System.setProperty("disable.v2.api", "asdf");
-    assertTrue("v2 API should be enabled if sysprop has unexpected value", V2ApiUtils.isEnabled());
-
-    System.setProperty("disable.v2.api", "true");
-    assertFalse(
-        "v2 API should be disabled if sysprop explicitly disables it", V2ApiUtils.isEnabled());
-  }
-
-  @Test
   public void testConvertsWtToMediaTypeString() {
-    assertEquals(
-        "someDefault",
-        V2ApiUtils.getMediaTypeFromWtParam(new ModifiableSolrParams(), "someDefault"));
+    assertEquals("someDefault", V2ApiUtils.getMediaTypeFromWtParam(SolrParams.of(), "someDefault"));
 
     var params = new ModifiableSolrParams();
     params.add("wt", "json");
@@ -56,7 +39,7 @@ public class V2ApiUtilsTest extends SolrTestCaseJ4 {
     assertEquals(MediaType.APPLICATION_XML, V2ApiUtils.getMediaTypeFromWtParam(params, null));
 
     params.set("wt", "javabin");
-    assertEquals(BINARY_CONTENT_TYPE_V2, V2ApiUtils.getMediaTypeFromWtParam(params, null));
+    assertEquals(JAVABIN_CONTENT_TYPE_V2, V2ApiUtils.getMediaTypeFromWtParam(params, null));
 
     params.set("wt", FILE_STREAM);
     assertEquals(

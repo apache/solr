@@ -1,0 +1,8 @@
+title: Splitting shards now routes child-docs with their _root_ field when available
+  so they maintain parent relationship.
+type: fixed
+authors:
+- name: Zack Kendall
+links:
+- name: SOLR-11191
+  url: https://issues.apache.org/jira/browse/SOLR-11191

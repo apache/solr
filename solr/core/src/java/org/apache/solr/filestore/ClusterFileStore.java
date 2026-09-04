@@ -18,23 +18,37 @@
 package org.apache.solr.filestore;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
+import static org.apache.solr.response.RawResponseWriter.CONTENT;
 
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ClusterFileStoreApis;
+import org.apache.solr.client.api.model.FileStoreDirectoryListingResponse;
+import org.apache.solr.client.api.model.FileStoreEntryMetadata;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.request.SolrQueryRequest;
@@ -82,7 +96,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       coreContainer
           .getZkController()
           .getZkClient()
-          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL, true);
+          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL);
 
       if (requestBody == null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no payload");
@@ -132,13 +146,134 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage());
     } finally {
       try {
-        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true);
+        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1);
       } catch (Exception e) {
         log.error("Unexpected error  ", e);
       }
     }
 
     return response;
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.FILESTORE_READ_PERM)
+  public SolrJerseyResponse getFile(String path) {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+
+    final var type = fileStore.getType(path, false);
+    if (type == FileStore.FileType.NOFILE) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          "Requested path [" + path + "] not found in filestore");
+    } else if (type == FileStore.FileType.DIRECTORY) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Requested path [" + path + "] is a directory and has no returnable contents");
+    }
+
+    attachFileToResponse(path, fileStore, req, rsp);
+    return response;
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.FILESTORE_READ_PERM)
+  public FileStoreDirectoryListingResponse getMetadata(String path) {
+    if (path == null) {
+      path = "";
+    }
+    FileStore.FileType type = fileStore.getType(path, false);
+    return getMetadata(type, path, fileStore);
+  }
+
+  public static void attachFileToResponse(
+      String path, FileStore fileStore, SolrQueryRequest req, SolrQueryResponse rsp) {
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    solrParams.add(CommonParams.WT, FILE_STREAM);
+    req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
+    rsp.add(
+        CONTENT,
+        (SolrCore.RawWriter)
+            os ->
+                fileStore.get(
+                    path,
+                    it -> {
+                      try {
+                        InputStream inputStream = it.getInputStream();
+                        if (inputStream != null) {
+                          inputStream.transferTo(os);
+                        }
+                      } catch (IOException e) {
+                        throw new SolrException(
+                            SolrException.ErrorCode.SERVER_ERROR, "Error reading file " + path);
+                      }
+                    },
+                    false));
+  }
+
+  @SuppressWarnings("fallthrough")
+  @SuppressForbidden(reason = "singletonMap with null value is intentional")
+  public static FileStoreDirectoryListingResponse getMetadata(
+      FileStore.FileType type, String path, FileStore fileStore) {
+    final var dirListingResponse = new FileStoreDirectoryListingResponse();
+    if (path == null) {
+      path = "";
+    }
+
+    switch (type) {
+      case NOFILE:
+        dirListingResponse.files = Collections.singletonMap(path, null);
+        break;
+      case METADATA:
+      case FILE:
+        int idx = path.lastIndexOf('/');
+        String fileName = path.substring(idx + 1);
+        String parentPath = path.substring(0, path.lastIndexOf('/'));
+        List<FileStore.FileDetails> l = fileStore.list(parentPath, s -> s.equals(fileName));
+
+        FileStoreEntryMetadata entry = l.isEmpty() ? null : convertToResponse(l.get(0));
+        dirListingResponse.files = Collections.singletonMap(path, entry);
+        break;
+      case DIRECTORY:
+        final var directoryContents =
+            fileStore.list(path, null).stream()
+                .map(details -> convertToResponse(details))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        dirListingResponse.files = Map.of(path, directoryContents);
+        break;
+    }
+
+    return dirListingResponse;
+  }
+
+  // TODO Modify the filestore implementation itself to return this object, so conversion isn't
+  // needed.
+  private static FileStoreEntryMetadata convertToResponse(FileStore.FileDetails details) {
+    final var entryMetadata = new FileStoreEntryMetadata();
+
+    entryMetadata.name = details.getSimpleName();
+    if (details.isDir()) {
+      entryMetadata.dir = true;
+      return entryMetadata;
+    }
+
+    long size = details.size();
+    if (size < 0) {
+      // File was deleted concurrently between listing and reading its attributes.
+      return null;
+    }
+    final var timestamp = details.getTimeStamp();
+    if (timestamp == null) {
+      // File was deleted concurrently between reading its size and timestamp.
+      return null;
+    }
+    entryMetadata.size = size;
+    entryMetadata.timestamp = timestamp;
+    if (details.getMetaData() != null) {
+      Utils.convertToMap(details.getMetaData(), entryMetadata.unknownProperties());
+    }
+
+    return entryMetadata;
   }
 
   private void doLocalDelete(String filePath) {
@@ -156,14 +291,14 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       coreContainer
           .getZkController()
           .getZkClient()
-          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL, true);
+          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL);
       fileStore.delete(filePath);
     } catch (Exception e) {
       log.error("Unknown error", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
       try {
-        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true);
+        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1);
       } catch (Exception e) {
         log.error("Unexpected error  ", e);
       }
@@ -194,6 +329,63 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
     return response;
   }
 
+  @Override
+  @PermissionName(PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
+  public SolrJerseyResponse fetchFile(String path, String getFrom) {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    if (path == null) {
+      path = "";
+    }
+
+    // Ensure 'getFrom' points to a node in this cluster
+    final var zkStateReader = coreContainer.getZkController().getZkStateReader();
+    if (StrUtils.isNotBlank(getFrom)
+        && !getFrom.equals("*")
+        && !zkStateReader.isNodeLive(getFrom)) {
+      throw new SolrException(
+          BAD_REQUEST,
+          "File store cannot fetch from source node ["
+              + getFrom
+              + "] as it does not appear in live-nodes");
+    }
+
+    pullFileFromNode(coreContainer, fileStore, path, getFrom);
+    return response;
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
+  public SolrJerseyResponse syncFile(String path) {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    syncToAllNodes(fileStore, path);
+    return response;
+  }
+
+  public static void syncToAllNodes(FileStore fileStore, String path) {
+    try {
+      fileStore.syncToAllNodes(path);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error getting file ", e);
+    }
+  }
+
+  public static void pullFileFromNode(
+      CoreContainer coreContainer, FileStore fileStore, String path, String getFrom) {
+    coreContainer
+        .getUpdateShardHandler()
+        .getUpdateExecutor()
+        .submit(
+            () -> {
+              log.debug("Downloading file {}", path);
+              try {
+                fileStore.fetch(path, getFrom);
+              } catch (Exception e) {
+                log.error("Failed to download file: {}", path, e);
+              }
+              log.info("downloaded file: {}", path);
+            });
+  }
+
   private List<String> readSignatures(List<String> signatures, byte[] buf)
       throws SolrException, IOException {
     if (signatures == null || signatures.isEmpty()) return null;
@@ -208,7 +400,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "File store does not have any keys");
     }
-    CryptoKeys cryptoKeys = null;
+    CryptoKeys cryptoKeys;
     try {
       cryptoKeys = new CryptoKeys(keys);
     } catch (Exception e) {

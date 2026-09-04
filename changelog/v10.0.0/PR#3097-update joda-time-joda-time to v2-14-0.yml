@@ -1,0 +1,7 @@
+title: Update joda-time:joda-time to v2.14.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3097
+  url: https://github.com/apache/solr/pull/3097

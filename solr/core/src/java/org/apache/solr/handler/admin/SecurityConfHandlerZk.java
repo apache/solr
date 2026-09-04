@@ -22,7 +22,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_SECURITY_CONF_PATH
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.CommandOperation;
@@ -63,7 +63,7 @@ public class SecurityConfHandlerZk extends SecurityConfHandler {
         cores.getZkController().getZkStateReader().getSecurityProps(false);
     Object o = map == null ? null : map.data.get(key);
     if (o == null) {
-      rsp.add(CommandOperation.ERR_MSGS, Collections.singletonList("No " + key + " configured"));
+      rsp.add(CommandOperation.ERR_MSGS, List.of("No " + key + " configured"));
     } else {
       rsp.add(key + ".enabled", getPlugin(key) != null);
       rsp.add(key, o);
@@ -79,8 +79,7 @@ public class SecurityConfHandlerZk extends SecurityConfHandler {
           .setData(
               SOLR_SECURITY_CONF_PATH,
               Utils.toJSON(securityConfig.getData()),
-              securityConfig.getVersion(),
-              true);
+              securityConfig.getVersion());
       log.debug("Persisted security.json to {}", SOLR_SECURITY_CONF_PATH);
       return true;
     } catch (KeeperException.BadVersionException bdve) {

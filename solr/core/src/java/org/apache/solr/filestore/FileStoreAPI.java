@@ -57,8 +57,7 @@ public class FileStoreAPI {
 
     @Override
     public boolean equals(Object that) {
-      if (that instanceof MetaData) {
-        MetaData metaData = (MetaData) that;
+      if (that instanceof MetaData metaData) {
         return Objects.equals(sha512, metaData.sha512)
             && Objects.equals(signatures, metaData.signatures)
             && Objects.equals(otherAttribs, metaData.otherAttribs);

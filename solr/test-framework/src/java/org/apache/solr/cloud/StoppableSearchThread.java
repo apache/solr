@@ -20,9 +20,9 @@ import java.lang.invoke.MethodHandles;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

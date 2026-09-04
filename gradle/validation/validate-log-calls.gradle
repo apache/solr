@@ -34,18 +34,18 @@ import org.apache.tools.ant.BuildException
 
 // See the associated help task "gradlew helpValidateLogCalls"
 
-configure(subprojects.findAll { it.path.startsWith(':solr') }) {
+configure(subprojects.findAll {it.path.startsWith(':solr')}) {
   plugins.withType(JavaPlugin) {
-    task validateLogCalls(type: ValidateLogCallsTask) { task ->
+    task validateLogCalls(type: ValidateLogCallsTask) {task ->
       description "Checks that log calls are either validated or conform to efficient patterns."
       group "verification"
 
       sourceFiles = files(sourceSets*.java)
     }
- 
+
     // Add log validation to per-project checks as well.
     check.dependsOn validateLogCalls
- }
+  }
 }
 
 class ValidateLogCallsTask extends DefaultTask {
@@ -70,11 +70,13 @@ class ValidateLogCallsTask extends DefaultTask {
     }
     // Strip all of the comments, things in quotes and the like.
     def stripped =
-        line.replaceFirst("//.*", " ") // remove comment to EOL. May be fragile due to the possibility of embedded double slashes
+        line.replaceFirst("//.*",
+            " ") // remove comment to EOL. May be fragile due to the possibility of embedded double slashes
             .replaceFirst(/.*?\(/, " ") // Get rid of "log.whatever("
             .replaceFirst(/\);/, " ") // get rid of the closing ");"
             .replaceFirst("/\\*.*?\\*/", " ") // replace embedded comments "/*....*/"
-            .replaceAll(/".*?"/, '""') // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
+            .replaceAll(/".*?"/,
+                '""') // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
             .replaceAll(/timeLeft\(.*?\)/, " ") // used all over tests, it's benign
             .replaceAll(/TimeUnit\..*?\.convert\(.*?\)/, " ") // again, a pattern that's efficient
             .replaceAll("\\s", "")
@@ -93,7 +95,7 @@ class ValidateLogCallsTask extends DefaultTask {
       }
     }
     //TODO remove me
-    String cause =  ""
+    String cause = ""
     // Get the level of this log message.
     // We don't really care about checking for method calls for WARN and more severe, the presumption
     // is that they _should_ always be reported.
@@ -107,7 +109,8 @@ class ValidateLogCallsTask extends DefaultTask {
       reportViolation(String.format("Found an unexpected log level: %s, file: %s:%d"
           , level, file.getAbsolutePath(), lineNumber))
     }
-    boolean persnicketyLevel = !(level.equals("fatal") || level.equals("error") || level.equals("warn"))
+    boolean persnicketyLevel = !(level.equals("fatal") || level.equals("error") ||
+        level.equals("warn"))
 
     // Check that previous line isn't an if statement for always-reported log levels.
     // There's a convention to declare a member variable for whether a level is enabled and check that rather than
@@ -125,7 +128,8 @@ class ValidateLogCallsTask extends DefaultTask {
       def hasParens = m.find()
 
       if (hasParens && prevLineNotIf && persnicketyLevel) {
-        cause = "hasParens " + hasParens + " prevLineNotIf " + prevLineNotIf + " pernicketyLevel " + persnicketyLevel
+        cause = "hasParens " + hasParens + " prevLineNotIf " + prevLineNotIf + " pernicketyLevel " +
+            persnicketyLevel
         violation = true
       }
     }
@@ -143,8 +147,13 @@ class ValidateLogCallsTask extends DefaultTask {
       violation = true;
     }
     if (violation) {
-      reportViolation(String.format("cause: '%s' Suspicious logging call, Parameterize and possibly surround with 'if (log.is*Enabled) {..}'. Help at: 'gradlew helpValidateLogCalls' %s    %s:%d"
-          , cause , System.lineSeparator, file.getAbsolutePath(), lineNumber))
+      reportViolation(String.format(
+          "cause: '%s' Suspicious logging call, Parameterize and possibly surround with 'if (log.is*Enabled) {..}'. Help at: 'gradlew helpValidateLogCalls' %s    %s:%d"
+          ,
+          cause,
+          System.lineSeparator,
+          file.getAbsolutePath(),
+          lineNumber))
     }
     return
   }
@@ -156,7 +165,8 @@ class ValidateLogCallsTask extends DefaultTask {
       if (line.replaceAll("\\s", "").toLowerCase().contains("//nowarn")) {
         return
       }
-      reportViolation("Change the logger name to lower-case 'log' in " + file.name + " " + line + " project" + project)
+      reportViolation("Change the logger name to lower-case 'log' in " + file.name + " " + line +
+          " project" + project)
     }
   }
 
@@ -168,7 +178,7 @@ class ValidateLogCallsTask extends DefaultTask {
     // We have to assemble line-by-line to get the full log statement. We require that all loggers (except requestLog
     // and slowLog) be exactly "log". That will be checked as well.
     String prevLine = ""
-    file.eachLine { String line ->
+    file.eachLine {String line ->
       lineNumber++
       checkLogName(file, line)
       switch (state) {
@@ -189,7 +199,8 @@ class ValidateLogCallsTask extends DefaultTask {
         case 1: // collecting a log line
           if (line.replaceFirst("//.*", " ")
               .replaceFirst("/\\*.*?\\*/", " ") // replace embedded comments "/*....*/"
-              .replaceAll(/".*?"/, '""') // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
+              .replaceAll(/".*?"/,
+                  '""') // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
               .trim().endsWith(");")) {
             state = 2
           }
@@ -203,16 +214,16 @@ class ValidateLogCallsTask extends DefaultTask {
 
       // It's just easier to do this here rather than read another line in the switch above.
       if (state == 0) {
-          // Not collecting a log line
-          prevLine = line.toLowerCase();
+        // Not collecting a log line
+        prevLine = line.toLowerCase();
       } else if (state == 1) {
-          // collecting a logging line.
+        // collecting a logging line.
       } else if (state == 2) {
-          // We've collected the complete log line.
-          checkLine(file, sb.toString(), lineNumber, prevLine)
-          state = 0
+        // We've collected the complete log line.
+        checkLine(file, sb.toString(), lineNumber, prevLine)
+        state = 0
       } else {
-          assert false
+        assert false
       }
     }
   }
@@ -223,12 +234,13 @@ class ValidateLogCallsTask extends DefaultTask {
 
   @TaskAction
   def checkLogLines() {
-    sourceFiles.each { checkFile(it) }
+    sourceFiles.each {checkFile(it)}
     logger.info("Checked: ${sourceFiles.files.size()}")
 
     if (errsFound > 0) {
-      throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
-          errsFound, violations.join(', ')));
+      throw new BuildException(String
+          .format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
+              errsFound, violations.join(', ')));
     }
   }
 }

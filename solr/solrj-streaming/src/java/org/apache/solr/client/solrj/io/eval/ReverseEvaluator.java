@@ -43,8 +43,7 @@ public class ReverseEvaluator extends RecursiveObjectEvaluator implements OneVal
   public Object doWork(Object value) {
     if (null == value) {
       return null;
-    } else if (value instanceof List) {
-      List<?> actual = (List<?>) value;
+    } else if (value instanceof List<?> actual) {
 
       List<Object> reversed = new ArrayList<>();
       for (int idx = actual.size() - 1; idx >= 0; --idx) {

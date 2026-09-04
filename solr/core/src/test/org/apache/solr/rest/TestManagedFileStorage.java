@@ -16,7 +16,7 @@
  */
 package org.apache.solr.rest;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,10 +35,10 @@ public class TestManagedFileStorage extends SolrTestCaseJ4 {
   /** Runs persisted managed resource creation and update tests on JSON storage. */
   @Test
   public void testFileBasedJsonStorage() throws Exception {
-    File instanceDir = createTempDir("json-storage").toFile();
-    try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir.toPath())) {
+    Path instanceDir = createTempDir("json-storage");
+    try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir)) {
       NamedList<String> initArgs = new NamedList<>();
-      String managedDir = instanceDir.getAbsolutePath() + File.separator + "managed";
+      String managedDir = instanceDir.resolve("managed").toString();
       initArgs.add(ManagedResourceStorage.STORAGE_DIR_INIT_ARG, managedDir);
       FileStorageIO fileStorageIO = new FileStorageIO();
       fileStorageIO.configure(loader, initArgs);

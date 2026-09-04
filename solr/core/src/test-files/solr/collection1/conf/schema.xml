@@ -436,20 +436,12 @@
   <fieldType name="tenD" class="solr.PointType" dimension="10" subFieldType="double"/>
   <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
 
-  <!-- Currency type -->
-  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
-  <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="solr.MockExchangeRateProvider" foo="bar"
-             multiValued="false"/>
-  <fieldType name="oer_currency"
-             class="solr.CurrencyField"
-             multiValued="false"
-             providerClass="solr.OpenExchangeRatesOrgProvider"
-             ratesFileLocation="open-exchange-rates.json"/>
-  <fieldType name="currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
+  <!-- Currency type --> 
+  <fieldType name="currency" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
              currencyConfig="currency.xml" multiValued="false"/>
-  <fieldType name="mock_currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
+  <fieldType name="mock_currency" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
              providerClass="solr.MockExchangeRateProvider" foo="bar" multiValued="false"/>
-  <fieldType name="oer_currency_CFT"
+  <fieldType name="oer_currency"
              class="solr.CurrencyFieldType"
              amountLongSuffix="_l1_ns"
              codeStrSuffix="_s1_ns"
@@ -479,12 +471,13 @@
     </analyzer>
   </fieldType>
   <!-- 
-    Example of using PathHierarchyTokenizerFactory at query time, so
-    queries for paths match documents at that path, or in ancestor paths
+    Example of using PathHierarchyTokenizerFactory for ancestor queries.
+    Since Lucene 10 produces sequential tokens, we need to store paths at index time
+    to match against sequential query tokens properly.
   -->
   <fieldType name="ancestor_path" class="solr.TextField">
     <analyzer type="index">
-      <tokenizer class="solr.KeywordTokenizerFactory"/>
+      <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
@@ -528,11 +521,10 @@
   </fieldType>
   <copyField source="*_commongrams" dest="*_commongrams_stop" />
   
-  <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  <fieldType name="severityType" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"/>
   
   <fieldType name="binary" class="solr.BinaryField" />
   <fieldType name="collation" class="solr.CollationField" language="en" />
-  <fieldType name="externalFile" class="solr.ExternalFileField" />
   <fieldType name="icuCollation" class="solr.ICUCollationField" locale="en" />
   <fieldType name="latLonPointSpatial" class="solr.LatLonPointSpatialField" />
   <fieldType name="randomSort" class="solr.RandomSortField" />
@@ -579,9 +571,6 @@
   <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
   <field name="mock_amount" type="mock_currency" indexed="true" stored="true"/>
   <field name="oer_amount" type="oer_currency" indexed="true" stored="true"/>
-  <field name="amount_CFT" type="currency_CFT" indexed="true" stored="true" multiValued="false"/>
-  <field name="mock_amount_CFT" type="mock_currency_CFT" indexed="true" stored="true"/>
-  <field name="oer_amount_CFT" type="oer_currency_CFT" indexed="true" stored="true"/>
 
   <!-- test different combinations of indexed and stored -->
   <field name="bind" type="boolean" indexed="true" stored="false" docValues="false"/>
@@ -668,7 +657,6 @@
   <field name="datePointRemove" type="pdate" indexed="true" stored="true" multiValued="true"/>
   <field name="dateRangeRemove" type="dateRange" indexed="true" stored="true" multiValued="true"/>
   <field name="doublePointRemove" type="pdouble" indexed="true" stored="true" multiValued="true"/>
-  <field name="externalFileRemove" type="externalFile" indexed="true" stored="true" multiValued="true"/>
   <field name="floatPointRemove" type="pfloat" indexed="true" stored="true" multiValued="true"/>
   <field name="icuCollationRemove" type="icuCollation" indexed="true" stored="true" multiValued="true"/>
   <field name="intPointRemove" type="pint" indexed="true" stored="true" multiValued="true"/>
@@ -702,7 +690,7 @@
   
   <!-- EnumType -->
   <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
-
+  
   <field name="max_chars" type="string" indexed="false" stored="true"/>
   <field name="no_max_chars" type="string" indexed="false" stored="true"/>
   <field name="large_max_chars" type="string" indexed="false" stored="true"/>

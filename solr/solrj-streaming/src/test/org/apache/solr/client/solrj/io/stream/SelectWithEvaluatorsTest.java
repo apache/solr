@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -52,19 +52,13 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
                 .resolve("conf"))
         .addConfig(
             "ml",
-            getFile("solrj")
-                .toPath()
-                .resolve("solr")
-                .resolve("configsets")
-                .resolve("ml")
-                .resolve("conf"))
+            getFile("solrj").resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
 
     String collection;
@@ -76,7 +70,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     }
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         collection, cluster.getZkStateReader(), false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
@@ -105,7 +99,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("select", SelectStream.class)
             .withFunctionName("add", AddEvaluator.class)

@@ -1,0 +1,8 @@
+title: Move Zk Arg parsing into Java Code from bin/solr scripts.
+type: other
+authors:
+- name: Eric Pugh
+- name: Rahul Goswami
+links:
+- name: SOLR-17359
+  url: https://issues.apache.org/jira/browse/SOLR-17359

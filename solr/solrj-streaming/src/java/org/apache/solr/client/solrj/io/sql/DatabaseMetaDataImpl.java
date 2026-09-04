@@ -25,14 +25,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
-import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.URLUtil;
 
 class DatabaseMetaDataImpl implements DatabaseMetaData {
   private final ConnectionImpl connection;
@@ -111,8 +110,6 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
   @Override
   public String getDatabaseProductVersion() throws SQLException {
     // Returns the version for the first live node in the Solr cluster.
-    SolrQuery sysQuery = new SolrQuery();
-    sysQuery.setRequestHandler("/admin/info/system");
 
     CloudSolrClient cloudSolrClient = this.connection.getClient();
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -123,12 +120,13 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
             .getClusterProperty(ClusterState.URL_SCHEME, "http");
     for (String node : liveNodes) {
       try {
-        String nodeURL = Utils.getBaseUrlForNodeName(node, urlScheme);
-        solrClient = new Builder(nodeURL).build();
+        String nodeURL = URLUtil.getBaseUrlForNodeName(node, urlScheme);
+        solrClient = HttpSolrClient.builder(nodeURL).build();
 
-        QueryResponse rsp = solrClient.query(sysQuery);
-        return String.valueOf(
-            ((SimpleOrderedMap) rsp.getResponse().get("lucene")).get("solr-spec-version"));
+        SystemInfoRequest req = new SystemInfoRequest();
+        SystemInfoResponse resp = req.process(solrClient);
+
+        return resp.getSolrSpecVersion();
       } catch (SolrServerException | IOException ignore) {
         return "";
       } finally {

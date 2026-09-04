@@ -18,7 +18,7 @@ package org.apache.solr.search.mlt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
@@ -177,8 +177,7 @@ public class CloudMLTQContentParserTest extends SolrCloudTestCase {
         new String[] {"lowerfilt_u:bmw lowerfilt_u:usa", "lowerfilt_u:usa lowerfilt_u:bmw"};
 
     String[] actualParsedQueries;
-    if (queryResponse.getDebugMap().get("parsedquery") instanceof String) {
-      String parsedQueryString = (String) queryResponse.getDebugMap().get("parsedquery");
+    if (queryResponse.getDebugMap().get("parsedquery") instanceof String parsedQueryString) {
       assertTrue(
           parsedQueryString.equals(expectedQueryStrings[0])
               || parsedQueryString.equals(expectedQueryStrings[1]));

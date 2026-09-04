@@ -28,6 +28,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.RTimer;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -49,12 +50,9 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   public static Iterable<Object[]> parameters() {
     return Arrays.asList(
         new Object[][] {
-          {"amount", FileExchangeRateProvider.class}, // CurrencyField
-          {"mock_amount", MockExchangeRateProvider.class}, // CurrencyField
-          {"oer_amount", OpenExchangeRatesOrgProvider.class}, // CurrencyField
-          {"amount_CFT", FileExchangeRateProvider.class}, // CurrencyFieldType
-          {"mock_amount_CFT", MockExchangeRateProvider.class}, // CurrencyFieldType
-          {"oer_amount_CFT", OpenExchangeRatesOrgProvider.class} // CurrencyFieldType
+          {"amount", FileExchangeRateProvider.class}, // CurrencyFieldType
+          {"mock_amount", MockExchangeRateProvider.class}, // CurrencyFieldType
+          {"oer_amount", OpenExchangeRatesOrgProvider.class} // CurrencyFieldType
         });
   }
 
@@ -87,14 +85,8 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
     assertTrue(amount.isPolyField());
 
     CurrencyFieldType type = (CurrencyFieldType) amount.getType();
-    String currencyDynamicField =
-        "*"
-            + (type instanceof CurrencyField ? FieldType.POLY_FIELD_SEPARATOR : "")
-            + type.fieldSuffixCurrency;
-    String amountDynamicField =
-        "*"
-            + (type instanceof CurrencyField ? FieldType.POLY_FIELD_SEPARATOR : "")
-            + type.fieldSuffixAmountRaw;
+    String currencyDynamicField = "*" + type.fieldSuffixCurrency;
+    String amountDynamicField = "*" + type.fieldSuffixAmountRaw;
 
     SchemaField[] dynFields = schema.getDynamicFieldPrototypes();
     boolean seenCurrency = false;
@@ -249,14 +241,15 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testBogusCurrency() {
-    ignoreException("HOSS");
-
-    // bogus currency
-    assertQEx(
-        "Expected exception for invalid currency",
-        req("fl", "*,score", "q", fieldName + ":[3,HOSS TO *]"),
-        400);
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("HOSS")) {
+      // bogus currency
+      assertQEx(
+          "Expected exception for invalid currency",
+          req("fl", "*,score", "q", fieldName + ":[3,HOSS TO *]"),
+          400);
+    }
   }
 
   @Test

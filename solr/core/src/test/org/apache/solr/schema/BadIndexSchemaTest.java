@@ -64,9 +64,6 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
   }
 
   public void testMultivaluedCurrency() throws Exception {
-    doTest("bad-schema-currency-ft-multivalued.xml", "types can not be multiValued: currency");
-    doTest("bad-schema-currency-multivalued.xml", "fields can not be multiValued: money");
-    doTest("bad-schema-currency-dynamic-multivalued.xml", "fields can not be multiValued: *_c");
     doTest(
         "bad-schema-currencyfieldtype-ft-multivalued.xml",
         "types can not be multiValued: currency");
@@ -77,20 +74,12 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
   }
 
   public void testCurrencyOERNoRates() throws Exception {
-    doTest("bad-schema-currency-ft-oer-norates.xml", "ratesFileLocation");
     doTest("bad-schema-currencyfieldtype-ft-oer-norates.xml", "ratesFileLocation");
   }
 
   public void testCurrencyBogusCode() throws Exception {
-    doTest("bad-schema-currency-ft-bogus-default-code.xml", "HOSS");
-    doTest("bad-schema-currency-ft-bogus-code-in-xml.xml", "HOSS");
     doTest("bad-schema-currencyfieldtype-ft-bogus-default-code.xml", "HOSS");
     doTest("bad-schema-currencyfieldtype-ft-bogus-code-in-xml.xml", "HOSS");
-  }
-
-  public void testCurrencyDisallowedSuffixParams() throws Exception {
-    doTest("bad-schema-currency-ft-code-suffix.xml", "Unknown parameter(s)");
-    doTest("bad-schema-currency-ft-amount-suffix.xml", "Unknown parameter(s)");
   }
 
   public void testCurrencyBogusSuffixes() throws Exception {

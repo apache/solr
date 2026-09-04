@@ -1,0 +1,8 @@
+title: Add support for cuVS-Lucene as a pluggable codec in Solr
+type: added
+authors:
+- name: Vivek Narang
+- name: Ishan Chattopadhyaya
+links:
+- name: SOLR-17892
+  url: https://issues.apache.org/jira/browse/SOLR-17892

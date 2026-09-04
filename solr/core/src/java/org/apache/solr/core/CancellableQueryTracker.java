@@ -56,7 +56,7 @@ public class CancellableQueryTracker {
       }
     }
 
-    activeQueriesGenerated.put(queryID, req.getHttpSolrCall().getReq().getQueryString());
+    activeQueriesGenerated.put(queryID, req.getParamString());
 
     return queryID;
   }

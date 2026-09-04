@@ -1,0 +1,7 @@
+title: Update io.morethan.jmhreport to v0.9.6
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3064
+  url: https://github.com/apache/solr/pull/3064

@@ -97,13 +97,10 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     setAuthIfNeeded(CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2))
         .process(cluster.getSolrClient());
 
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            COLLECTION,
-            DEFAULT_TIMEOUT,
-            TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    waitForState(
+        "Waiting for collection creation",
+        COLLECTION,
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 2, 2));
   }
 
   @Test
@@ -288,40 +285,41 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     DocCollection collectionState =
         cluster.getSolrClient().getClusterState().getCollection(COLLECTION);
 
-    for (Replica replica : collectionState.getReplicas()) {
+    for (Slice slice : collectionState) {
+      for (Replica replica : slice.getReplicas()) {
 
-      String coreName = replica.getCoreName();
-      try (SolrClient client = getHttpSolrClient(replica)) {
+        String coreName = replica.getCoreName();
+        try (SolrClient client = getHttpSolrClient(replica)) {
 
-        ModifiableSolrParams params = new ModifiableSolrParams();
-        params.set("command", "indexversion");
-        params.set("_trace", "getIndexVersion");
-        params.set("qt", ReplicationHandler.PATH);
-        QueryRequest req = setAuthIfNeeded(new QueryRequest(params));
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set("command", "indexversion");
+          params.set("_trace", "getIndexVersion");
+          QueryRequest req = setAuthIfNeeded(new QueryRequest(ReplicationHandler.PATH, params));
 
-        NamedList<Object> res = client.request(req);
-        assertNotNull("null response from server: " + coreName, res);
+          NamedList<Object> res = client.request(req);
+          assertNotNull("null response from server: " + coreName, res);
 
-        Object version = res.get("indexversion");
-        assertNotNull("null version from server: " + coreName, version);
-        assertTrue("version isn't a long: " + coreName, version instanceof Long);
+          Object version = res.get("indexversion");
+          assertNotNull("null version from server: " + coreName, version);
+          assertTrue("version isn't a long: " + coreName, version instanceof Long);
 
-        long numDocs =
-            setAuthIfNeeded(
-                    new QueryRequest(
-                        params(
-                            "q", "*:*",
-                            "distrib", "false",
-                            "rows", "0",
-                            "_trace", "counting_docs")))
-                .process(client)
-                .getResults()
-                .getNumFound();
+          long numDocs =
+              setAuthIfNeeded(
+                      new QueryRequest(
+                          params(
+                              "q", "*:*",
+                              "distrib", "false",
+                              "rows", "0",
+                              "_trace", "counting_docs")))
+                  .process(client)
+                  .getResults()
+                  .getNumFound();
 
-        final ReplicaData data =
-            new ReplicaData(replica.getShard(), coreName, (Long) version, numDocs);
-        log.info("{}", data);
-        results.put(coreName, data);
+          final ReplicaData data =
+              new ReplicaData(replica.getShard(), coreName, (Long) version, numDocs);
+          log.info("{}", data);
+          results.put(coreName, data);
+        }
       }
     }
 
@@ -384,8 +382,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
     @Override
     public boolean equals(Object other) {
-      if (other instanceof ReplicaData) {
-        ReplicaData that = (ReplicaData) other;
+      if (other instanceof ReplicaData that) {
         return this.shardName.equals(that.shardName)
             && this.coreName.equals(that.coreName)
             && (this.indexVersion == that.indexVersion)

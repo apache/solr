@@ -21,15 +21,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -96,7 +93,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
             COLLECTION_NAME,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 2));
 
     // now query each replica and check for consistency
     assertConsistentReplicas(
@@ -117,12 +114,9 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     long numFound = Long.MIN_VALUE;
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
-      SolrClient client =
-          new Builder(replica.getBaseUrl())
-              .withDefaultCollection(replica.getCoreName())
-              .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
-              .build();
-      QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
+      SolrClient client = cluster.getReplicaJetty(replica).getSolrClient();
+      QueryResponse response =
+          client.query(replica.getCoreName(), params("q", "*:*", "distrib", "false"));
       //      log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(),
       // replica.getCoreUrl());
       if (numFound == Long.MIN_VALUE) {

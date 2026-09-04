@@ -103,19 +103,14 @@ public class StatsComponent extends SearchComponent {
 
       NamedList<NamedList<?>> stats_fields = unwrapStats(stats);
       if (stats_fields != null) {
-        for (int i = 0; i < stats_fields.size(); i++) {
-          String key = stats_fields.getName(i);
-          StatsValues stv = allStatsValues.get(key);
-          NamedList<?> shardStv = stats_fields.get(key);
-          stv.accumulate(shardStv);
-        }
+        stats_fields.forEach((key, shardStv) -> allStatsValues.get(key).accumulate(shardStv));
       }
     }
   }
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (!rb.doStats || rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
+    if (!rb.doStats || rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) return;
     // wait until STAGE_GET_FIELDS
     // so that "result" is already stored in the response (for aesthetics)
 

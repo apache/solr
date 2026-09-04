@@ -82,11 +82,8 @@ public class FieldStatsInfo implements Serializable {
           List<FieldStatsInfo> vals = new ArrayList<>();
           facets.put(ev.getKey(), vals);
           @SuppressWarnings("unchecked")
-          NamedList<NamedList<Object>> vnl = (NamedList<NamedList<Object>>) ev.getValue();
-          for (int i = 0; i < vnl.size(); i++) {
-            String n = vnl.getName(i);
-            vals.add(new FieldStatsInfo(vnl.getVal(i), n));
-          }
+          var vnl = (NamedList<NamedList<Object>>) ev.getValue();
+          vnl.forEach((name, value) -> vals.add(new FieldStatsInfo(value, name)));
         }
       } else if ("percentiles".equals(entry.getKey())) {
         @SuppressWarnings("unchecked")

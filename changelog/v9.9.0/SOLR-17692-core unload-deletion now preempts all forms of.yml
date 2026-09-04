@@ -1,0 +1,8 @@
+title: Core unload/deletion now preempts all forms of ongoing "recovery", rather than
+  inadvertently waiting for completion in some cases.
+type: fixed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-17692
+  url: https://issues.apache.org/jira/browse/SOLR-17692

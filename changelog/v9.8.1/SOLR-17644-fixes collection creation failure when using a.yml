@@ -1,0 +1,10 @@
+title: Fixes collection creation failure when using a replica placement plugin with
+  basic auth. SolrCloudManager now directly uses HttpSolrClientProvider's client,
+  resolving missing auth listeners.
+type: fixed
+authors:
+- name: Sanjay Dutt
+- name: David Smiley
+links:
+- name: SOLR-17644
+  url: https://issues.apache.org/jira/browse/SOLR-17644

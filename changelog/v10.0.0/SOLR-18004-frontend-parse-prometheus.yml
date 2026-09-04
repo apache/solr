@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Admin UI "Nodes" view now works with the new Prometheus formatted metrics endpoint
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+  - name: David Smiley
+links:
+  - name: SOLR-18004
+    url: https://issues.apache.org/jira/browse/SOLR-18004

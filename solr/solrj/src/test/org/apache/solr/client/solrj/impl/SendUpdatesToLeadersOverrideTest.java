@@ -24,17 +24,14 @@ import static org.hamcrest.Matchers.not;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
@@ -48,7 +45,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Test the behavior of {@link CloudSolrClient#isUpdatesToLeaders} and {@link
- * IsUpdateRequest#isSendToLeaders}.
+ * UpdateRequest#isSendToLeaders}.
  *
  * <p>This class uses {@link TrackingUpdateProcessorFactory} instances (configured both before, and
  * after the <code>distrib</code> processor) to inspect which replicas receive various {@link
@@ -83,12 +80,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
     configureCluster(numNodes)
         .addConfig(
             CONFIG,
-            getFile("solrj")
-                .toPath()
-                .resolve("solr")
-                .resolve("configsets")
-                .resolve(CONFIG)
-                .resolve("conf"))
+            getFile("solrj").resolve("solr").resolve("configsets").resolve(CONFIG).resolve("conf"))
         .configure();
 
     // create 2 shard collection with 1 NRT (leader) and 1 PULL replica
@@ -100,7 +92,12 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
             .isSuccess());
 
     final List<Replica> allReplicas =
-        cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME).getReplicas();
+        cluster
+            .getSolrClient()
+            .getClusterState()
+            .getCollection(COLLECTION_NAME)
+            .replicaStream()
+            .collect(Collectors.toList());
     assertEquals(
         "test preconditions were broken, each replica should have it's own node",
         numNodes,
@@ -207,54 +204,20 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
    * setting <code>shards.preference=replica.type:PULL</code> on the input req, and then returning
    * that req
    */
-  private static AbstractUpdateRequest prefPull(final AbstractUpdateRequest req) {
+  private static UpdateRequest prefPull(final UpdateRequest req) {
     req.setParam("shards.preference", "replica.type:PULL");
     return req;
   }
 
   public void testBuilderImplicitBehavior() throws Exception {
-    try (CloudSolrClient client =
-        new CloudLegacySolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .build()) {
+    try (CloudSolrClient client = cluster.newSolrClientBuilder().build()) {
       assertTrue(client.isUpdatesToLeaders());
-    }
-    try (CloudSolrClient client =
-        new CloudHttp2SolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .build()) {
-      assertTrue(client.isUpdatesToLeaders());
-    }
-  }
-
-  public void testLegacyClientThatDefaultsToLeaders() throws Exception {
-    try (CloudSolrClient client =
-        new CloudLegacySolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .sendUpdatesOnlyToShardLeaders()
-            .build()) {
-      checkUpdatesDefaultToLeaders(client);
-      checkUpdatesWithSendToLeadersFalse(client);
-    }
-  }
-
-  public void testLegacyClientThatDoesNotDefaultToLeaders() throws Exception {
-    try (CloudSolrClient client =
-        new CloudLegacySolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .sendUpdatesToAnyReplica()
-            .build()) {
-      checkUpdatesWithShardsPrefPull(client);
-      checkUpdatesWithSendToLeadersFalse(client);
     }
   }
 
   public void testHttp2ClientThatDefaultsToLeaders() throws Exception {
     try (CloudSolrClient client =
-        new CloudHttp2SolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .sendUpdatesOnlyToShardLeaders()
-            .build()) {
+        cluster.newSolrClientBuilder().sendUpdatesOnlyToShardLeaders().build()) {
       checkUpdatesDefaultToLeaders(client);
       checkUpdatesWithSendToLeadersFalse(client);
     }
@@ -262,10 +225,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
 
   public void testHttp2ClientThatDoesNotDefaultToLeaders() throws Exception {
     try (CloudSolrClient client =
-        new CloudHttp2SolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .sendUpdatesToAnyReplica()
-            .build()) {
+        cluster.newSolrClientBuilder().sendUpdatesToAnyReplica().build()) {
       checkUpdatesWithShardsPrefPull(client);
       checkUpdatesWithSendToLeadersFalse(client);
     }
@@ -486,7 +446,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
   }
 
   /**
-   * Given a SolrClient, sends various updates were {@link IsUpdateRequest#isSendToLeaders} returns
+   * Given a SolrClient, sends various updates were {@link UpdateRequest#isSendToLeaders} returns
    * false, and asserts expectations that requests using {@link #prefPull} are all sent to PULL
    * replicas, regardless of how the client is configured.
    */

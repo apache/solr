@@ -18,7 +18,6 @@ package org.apache.solr.highlight;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,11 +35,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.QueryCommand;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -1387,8 +1388,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     Query query =
         new SpanPayloadCheckQuery(
             new SpanTermQuery(new Term(FIELD_NAME, "word")),
-            Collections.singletonList(
-                new BytesRef(new byte[] {0, 0, 0, 7}))); // bytes for integer 7
+            List.of(new BytesRef(new byte[] {0, 0, 0, 7}))); // bytes for integer 7
 
     // invoke highlight component... the hard way
     final SearchComponent hlComp = h.getCore().getSearchComponent("highlight");
@@ -1396,15 +1396,23 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         req("hl", "true", "hl.fl", FIELD_NAME, HighlightParams.USE_PHRASE_HIGHLIGHTER, "true");
     try {
       SolrQueryResponse resp = new SolrQueryResponse();
-      ResponseBuilder rb = new ResponseBuilder(req, resp, Collections.singletonList(hlComp));
+      ResponseBuilder rb = new ResponseBuilder(req, resp, List.of(hlComp));
       rb.setHighlightQuery(query);
-      rb.setResults(req.getSearcher().getDocListAndSet(query, null, 0, 1));
+      rb.setResults(
+          new QueryCommand()
+              .setQuery(query)
+              .setOffset(0)
+              .setLen(1)
+              .setNeedDocSet(true)
+              .search(req.getSearcher())
+              .getDocListAndSet());
       // highlight:
       hlComp.prepare(rb);
       hlComp.process(rb);
       // inspect response
+      NamedList<Object> entries = resp.getValues();
       final String[] snippets =
-          (String[]) resp.getValues().findRecursive("highlighting", "0", FIELD_NAME);
+          (String[]) entries._get(List.of("highlighting", "0", FIELD_NAME), null);
       assertEquals("<em>word|7</em> word|2", snippets[0]);
     } finally {
       req.close();

@@ -30,11 +30,6 @@ public interface CollectionParams {
 
   String NAME = "name";
 
-  /**
-   * @deprecated use {@link #SOURCE_NODE} instead
-   */
-  @Deprecated String FROM_NODE = "fromNode";
-
   String SOURCE_NODE = "sourceNode";
   String TARGET_NODE = "targetNode";
   String SOURCE_NODES = "sourceNodes";
@@ -69,6 +64,10 @@ public interface CollectionParams {
     public boolean isHigherOrEqual(LockLevel that) {
       return height >= that.height;
     }
+
+    public boolean isEqual(LockLevel that) {
+      return height == that.height;
+    }
   }
 
   /**
@@ -98,10 +97,20 @@ public interface CollectionParams {
     DELETEREPLICA(true, LockLevel.SHARD),
     FORCELEADER(true, LockLevel.SHARD),
     MIGRATE(true, LockLevel.COLLECTION),
+    /**
+     * @deprecated This API will be removed in Solr 11. Use Node Roles ({@code -Dsolr.node.roles})
+     *     at startup instead.
+     */
+    @Deprecated(since = "10.1")
     ADDROLE(true, LockLevel.NONE),
+    /**
+     * @deprecated This API will be removed in Solr 11. Use Node Roles ({@code -Dsolr.node.roles})
+     *     at startup instead.
+     */
+    @Deprecated(since = "10.1")
     REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
-    COLLECTIONPROP(true, LockLevel.COLLECTION),
+    COLLECTIONPROP(true, LockLevel.NONE), // atomic; no lock
     REQUESTSTATUS(false, LockLevel.NONE),
     DELETESTATUS(false, LockLevel.NONE),
     ADDREPLICA(true, LockLevel.SHARD),
@@ -111,8 +120,8 @@ public interface CollectionParams {
     DISTRIBUTEDAPIPROCESSING(false, LockLevel.NONE),
     LIST(false, LockLevel.NONE),
     CLUSTERSTATUS(false, LockLevel.NONE),
-    ADDREPLICAPROP(true, LockLevel.REPLICA),
-    DELETEREPLICAPROP(true, LockLevel.REPLICA),
+    ADDREPLICAPROP(true, LockLevel.NONE), // atomic; no lock
+    DELETEREPLICAPROP(true, LockLevel.NONE), // atomic; no lock
     BALANCESHARDUNIQUE(true, LockLevel.COLLECTION),
     REBALANCELEADERS(true, LockLevel.COLLECTION),
     MODIFYCOLLECTION(true, LockLevel.COLLECTION),
@@ -136,7 +145,7 @@ public interface CollectionParams {
     // TODO when we have a node level lock use it here
     BALANCE_REPLICAS(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
-    MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
+    MOCK_REPLICA_TASK(true, LockLevel.REPLICA),
     NONE(false, LockLevel.NONE),
     // TODO: not implemented yet
     MERGESHARDS(true, LockLevel.SHARD),

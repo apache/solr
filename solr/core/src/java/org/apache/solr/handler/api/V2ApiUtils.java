@@ -17,9 +17,9 @@
 
 package org.apache.solr.handler.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.response.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.common.params.CommonParams.WT;
-import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -31,6 +31,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -38,10 +39,6 @@ import org.apache.solr.response.SolrQueryResponse;
 public class V2ApiUtils {
   private V2ApiUtils() {
     /* Private ctor prevents instantiation */
-  }
-
-  public static boolean isEnabled() {
-    return !"true".equals(System.getProperty("disable.v2.api", "false"));
   }
 
   public static void flattenMapWithPrefix(
@@ -101,9 +98,13 @@ public class V2ApiUtils {
       case "xml":
         return "application/xml";
       case "javabin":
-        return BINARY_CONTENT_TYPE_V2;
+        return JAVABIN_CONTENT_TYPE_V2;
       case FILE_STREAM:
         return RawResponseWriter.CONTENT_TYPE;
+      case "prometheus":
+        return PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS;
+      case "openmetrics":
+        return PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS;
       default:
         return defaultMediaType;
     }

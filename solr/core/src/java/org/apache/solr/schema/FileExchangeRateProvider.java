@@ -132,9 +132,7 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof FileExchangeRateProvider)) return false;
-
-    FileExchangeRateProvider that = (FileExchangeRateProvider) o;
+    if (!(o instanceof FileExchangeRateProvider that)) return false;
 
     return Objects.equals(rates, that.rates);
   }

@@ -7,6 +7,7 @@
 <!-- and either jetty-https.xml or jetty-spdy.xml (but not both)   -->
 <!-- ============================================================= -->
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
+  <Set name="Provider" property="solr.jetty.ssl.provider" />
   <Call class="org.apache.solr.util.configuration.SSLConfigurationsFactory" name="current">
     <Call name="init" />
   </Call>
@@ -18,11 +19,17 @@
   <Set name="KeyStorePassword"><Ref refid="keyStorePassword"/></Set>
   <Set name="TrustStorePath"><Property name="solr.jetty.truststore" default="./etc/solr-ssl.keystore.jks"/></Set>
   <Set name="TrustStorePassword"><Ref refid="trustStorePassword"/></Set>
-  <Set name="NeedClientAuth"><Property name="solr.jetty.ssl.needClientAuth" default="false"/></Set>
-  <Set name="WantClientAuth"><Property name="solr.jetty.ssl.wantClientAuth" default="false"/></Set>
+  <Set name="NeedClientAuth"><Property name="solr.jetty.ssl.need.client.auth.enabled" default="false"/></Set>
+  <Set name="WantClientAuth"><Property name="solr.jetty.ssl.want.client.auth.enabled" default="false"/></Set>
   <Set name="KeyStoreType"><Property name="solr.jetty.keystore.type" default="PKCS12"/></Set>
   <Set name="TrustStoreType"><Property name="solr.jetty.truststore.type" default="PKCS12"/></Set>
   <Set name="EndpointIdentificationAlgorithm"><Property name="solr.jetty.ssl.verifyClientHostName"/></Set>
+  <Set name="useCipherSuitesOrder" property="solr.jetty.ssl.useCipherSuitesOrder" />
+  <Set name="sslSessionCacheSize" property="solr.jetty.ssl.sslSessionCacheSize" />
+  <Set name="sslSessionTimeout" property="solr.jetty.ssl.sslSessionTimeout" />
+  <Set name="RenegotiationAllowed" property="solr.jetty.ssl.renegotiationAllowed" />
+  <Set name="RenegotiationLimit" property="solr.jetty.ssl.renegotiationLimit" />
+  <Set name="SniRequired"><Property name="solr.jetty.ssl.sniRequired" default="false"/></Set>
 
   <!-- =========================================================== -->
   <!-- Create a TLS specific HttpConfiguration based on the        -->
@@ -35,10 +42,10 @@
     <Call name="addCustomizer">
       <Arg>
         <New class="org.eclipse.jetty.server.SecureRequestCustomizer">
-          <Arg name="sniRequired" type="boolean"><Property name="solr.jetty.ssl.sniRequired" default="false"/></Arg>
-          <Arg name="sniHostCheck" type="boolean"><Property name="solr.jetty.ssl.sniHostCheck" default="true"/></Arg>
-          <Arg name="stsMaxAgeSeconds" type="int"><Property name="solr.jetty.ssl.stsMaxAgeSeconds" default="-1"/></Arg>
-          <Arg name="stsIncludeSubdomains" type="boolean"><Property name="solr.jetty.ssl.stsIncludeSubdomains" default="false"/></Arg>
+          <Arg name="sniRequired" type="boolean"><Property name="solr.jetty.ssl.sni.required.enabled" default="false"/></Arg>
+          <Arg name="sniHostCheck" type="boolean"><Property name="solr.jetty.ssl.sni.host.check.enabled" default="true"/></Arg>
+          <Arg name="stsMaxAgeSeconds" type="int"><Property name="solr.jetty.ssl.sts.max.age.secs" default="-1"/></Arg>
+          <Arg name="stsIncludeSubdomains" type="boolean"><Property name="solr.jetty.ssl.sts.include.subdomains.enabled" default="false"/></Arg>
         </New>
       </Arg>
     </Call>

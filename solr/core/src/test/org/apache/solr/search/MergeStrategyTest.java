@@ -90,7 +90,7 @@ public class MergeStrategyTest extends BaseDistributedSearchTestCase {
     params.add("sort", "sort_i asc");
     params.add("fl", "*,score");
     setDistributedParams(params);
-    QueryResponse rsp = queryServer(params);
+    QueryResponse rsp = query(params);
     assertOrder(rsp, "10", "11", "9", "2", "13", "12", "6", "1", "5", "8", "7");
 
     params = new ModifiableSolrParams();
@@ -99,7 +99,7 @@ public class MergeStrategyTest extends BaseDistributedSearchTestCase {
     params.add("sort", "sort_i asc");
     params.add("fl", "*,score");
     setDistributedParams(params);
-    rsp = queryServer(params);
+    rsp = query(params);
     assertOrder(rsp, "7", "8", "5", "1", "6", "12", "13", "2", "9", "11", "10");
 
     MergeStrategy m1 =

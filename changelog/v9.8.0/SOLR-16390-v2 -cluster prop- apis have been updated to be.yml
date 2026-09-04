@@ -1,0 +1,12 @@
+title: v2 "cluster prop" APIs have been updated to be more REST-ful. Cluster prop
+  creation/update are now available at `PUT /api/cluster/properties/somePropName`.
+  Deletion is now available at `DELETE /api/cluster/properties/somePropName`. New
+  APIs for listing-all and fetching-single cluster props are also now available at
+  `GET /api/cluster/properties` and `GET /api/cluster/properties/somePropName`, respectively.
+type: changed
+authors:
+- name: Carlos Ugarte
+- name: Jason Gerlowski
+links:
+- name: SOLR-16390
+  url: https://issues.apache.org/jira/browse/SOLR-16390

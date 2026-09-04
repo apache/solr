@@ -1,0 +1,9 @@
+title: Update bouncycastle to v1.84
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3677
+  url: https://github.com/apache/solr/pull/3677
+- name: PR#4305
+  url: https://github.com/apache/solr/pull/4305

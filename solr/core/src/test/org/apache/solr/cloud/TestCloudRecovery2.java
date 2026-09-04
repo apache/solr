@@ -18,8 +18,8 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -41,7 +41,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION, "config", 1, 2)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         COLLECTION, cluster.getZkStateReader(), false, true, 30);
   }
 
@@ -159,7 +159,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     waitForState(
         "",
         COLLECTION,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Replica leader = collectionState.getLeader("shard1");
           return leader != null && leader.getNodeName().equals(node2.getNodeName());
         });

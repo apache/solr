@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: The /admin/info/logging endpoint (or just a tests) could yield partial logging hierarchies after log4j was upgraded.  It should now be robust.
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18107
+    url: https://issues.apache.org/jira/browse/SOLR-18107

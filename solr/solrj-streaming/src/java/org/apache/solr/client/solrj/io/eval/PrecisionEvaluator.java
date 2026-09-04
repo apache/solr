@@ -49,9 +49,8 @@ public class PrecisionEvaluator extends RecursiveObjectEvaluator implements TwoV
           .stream()
               .map(innerValue -> doWork(innerValue, ((Number) value2).intValue()))
               .collect(Collectors.toList());
-    } else if (value instanceof Matrix) {
+    } else if (value instanceof Matrix matrix) {
       int p = ((Number) value2).intValue();
-      Matrix matrix = (Matrix) value;
       double[][] data = matrix.getData();
       for (int i = 0; i < data.length; ++i) {
         for (int j = 0; j < data[i].length; j++) {

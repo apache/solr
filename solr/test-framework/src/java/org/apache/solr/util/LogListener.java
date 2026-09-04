@@ -18,11 +18,13 @@
 package org.apache.solr.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,13 +46,13 @@ import org.apache.logging.log4j.message.Message;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * Helper code to listen for {@link LogEvent} messages (via a {@link Queue}) that you expect as a
- * result of the things you are testing, So you can make assertions about when a particular action
- * should/shouldn't cause Solr to produce a particular Log message
+ * Helper code to listen for {@link LogEvent} messages (via a {@link BlockingQueue}) that you expect
+ * as a result of the things you are testing, So you can make assertions about when a particular
+ * action should/shouldn't cause Solr to produce a particular Log message
  *
  * <p><code>
  * // simplest possible usage...
- * // Listen for any erors from the SolrCore logger, and assert that there are none...
+ * // Listen for any errors from the SolrCore logger, and assert that there are none...
  * try (LogListener errLog = LogListener.error(SolrCore.class)) {
  *   // ... some test code ...
  *
@@ -62,7 +64,7 @@ import org.apache.solr.common.util.SuppressForbidden;
  * try (LogListener secWarnLog = LogListener.warn("org.apache.solr.security").substring("PKI")) {
  *   // ... some test code ...
  *
- *   // convinience method for only dealing with Message String of the LogEvent
+ *   // convenience method for only dealing with Message String of the LogEvent
  *   assertThat(secWarnLog.pollMessage(), containsString("hoss"));
  *   assertThat(secWarnLog.getQueue().isEmpty()); // no other WARNings matching PKI
  *
@@ -76,9 +78,9 @@ import org.apache.solr.common.util.SuppressForbidden;
  * </code>
  *
  * <p>Each <code>LogListener</code> captures &amp; queues matching Log events until it is {@link
- * #close()}ed. By default the Queue is bounded at a max capacity of 100. Regardless of what Queue
- * is used, if a Log event can't be queued (due to capacity limiting), or if events are still left
- * in the Queue when the listener is closed, then the {@link #close()} method will cause a test
+ * #close()}ed. The default Queue is bounded at a max capacity of 100. Regardless of what Queue is
+ * used, if a Log event can't be queued (due to capacity limiting), or if events are still left in
+ * the Queue when the listener is closed, then the {@link #close()} method will cause a test
  * failure.
  *
  * <p>Filtering methods such {@link #substring} and {@link #regex} can be used to restrict which Log
@@ -95,8 +97,10 @@ import org.apache.solr.common.util.SuppressForbidden;
 @SuppressForbidden(reason = "We need to use log4J2 classes directly")
 public final class LogListener implements Closeable, AutoCloseable {
 
-  // far easier to use FQN for our (one) slf4j Logger then to use a FQN every time we refe to log4j2
+  // far easier to use FQN for our (one) slf4j Logger then to use a FQN every time we refer to
+  // log4j2
   // Logger
+  @SuppressWarnings("UnnecessarilyFullyQualified") // disambiguates from log4j2 Logger
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(
           MethodHandles.lookup().lookupClass()); // nowarn_valid_logger
@@ -108,18 +112,13 @@ public final class LogListener implements Closeable, AutoCloseable {
    */
   private static final AtomicInteger ID_GEN = new AtomicInteger(0);
 
-  /** generate a unique name for each instance to use in it's own lifecycle logging */
+  /** generate a unique name for each instance to use in its own lifecycle logging */
   private static String createName(final Level level) {
     return MethodHandles.lookup().lookupClass().getSimpleName()
         + "-"
         + level
         + "-"
         + ID_GEN.incrementAndGet();
-  }
-
-  /** Listens for ERROR log messages at the ROOT logger */
-  public static LogListener error() {
-    return error("");
   }
 
   /** Listens for ERROR log messages for the specified logger */
@@ -132,11 +131,6 @@ public final class LogListener implements Closeable, AutoCloseable {
     return create(Level.ERROR, logger);
   }
 
-  /** Listens for WARN log messages at the ROOT logger */
-  public static LogListener warn() {
-    return warn("");
-  }
-
   /** Listens for WARN log messages for the specified logger */
   public static LogListener warn(final Class<?> logger) {
     return warn(logger.getName());
@@ -147,11 +141,6 @@ public final class LogListener implements Closeable, AutoCloseable {
     return create(Level.WARN, logger);
   }
 
-  /** Listens for INFO log messages at the ROOT logger */
-  public static LogListener info() {
-    return info("");
-  }
-
   /** Listens for INFO log messages for the specified logger */
   public static LogListener info(final Class<?> logger) {
     return info(logger.getName());
@@ -160,11 +149,6 @@ public final class LogListener implements Closeable, AutoCloseable {
   /** Listens for INFO log messages for the specified logger */
   public static LogListener info(final String logger) {
     return create(Level.INFO, logger);
-  }
-
-  /** Listens for DEBUG log messages at the ROOT logger */
-  public static LogListener debug() {
-    return debug("");
   }
 
   /** Listens for DEBUG log messages for the specified logger */
@@ -178,7 +162,6 @@ public final class LogListener implements Closeable, AutoCloseable {
   }
 
   // TODO: more factories for other levels?
-  // TODO: no-arg factory variants that use "" -- simpler syntax for ROOT logger?
 
   private static LogListener create(final Level level, final String logger) {
     final String name = createName(level);
@@ -219,7 +202,7 @@ public final class LogListener implements Closeable, AutoCloseable {
       config.addLogger(loggerName, loggerConfig);
     }
 
-    // Regardless of wether loggerConfig exactly matches loggerName, or is an ancestor, if it's
+    // Regardless of whether loggerConfig exactly matches loggerName, or is an ancestor, if it's
     // level is (strictly) more specific
     // then our configured level, it will be impossible to listen for the events we want - so track
     // the original level and modify as needed...
@@ -236,8 +219,9 @@ public final class LogListener implements Closeable, AutoCloseable {
     }
 
     // Note: we don't just pass our level to addAppender, because that would only require it be "as
-    // specifc"
-    // we use a wrapper that requres an exact level match (and other predicates can be added to this
+    // specific"
+    // we use a wrapper that requires an exact level match (and other predicates can be added to
+    // this
     // filter later)...
     this.filter = new MutablePredicateFilter(level);
     this.loggerAppender = new QueueAppender(name);
@@ -248,7 +232,7 @@ public final class LogListener implements Closeable, AutoCloseable {
 
   @Override
   public void close() {
-    if (!closed.getAndSet(true)) { // Don't muck with log4j if we accidently get a double close
+    if (!closed.getAndSet(true)) { // Don't muck with log4j if we accidentally get a double close
       final LoggerConfig loggerConfig = CTX.getConfiguration().getLoggerConfig(loggerName);
       loggerConfig.removeAppender(loggerAppender.getName());
       if (null != resetLevelWhenDone) {
@@ -262,7 +246,7 @@ public final class LogListener implements Closeable, AutoCloseable {
       }
       assertEquals(
           this.name
-              + " processed log events that it could not record beause queue capacity was exceeded",
+              + " processed log events that it could not record because queue capacity was exceeded",
           0,
           loggerAppender.getNumCapacityExceeded());
       assertEquals(
@@ -278,9 +262,14 @@ public final class LogListener implements Closeable, AutoCloseable {
    *
    * @see #getQueue
    */
-  public LogListener setQueue(Queue<LogEvent> queue) {
+  public LogListener setQueue(BlockingQueue<LogEvent> queue) {
     loggerAppender.setQueue(queue);
     return this;
+  }
+
+  /** Clear the queue of any recorded events */
+  public void clearQueue() {
+    loggerAppender.getQueue().clear();
   }
 
   /**
@@ -346,21 +335,22 @@ public final class LogListener implements Closeable, AutoCloseable {
   }
 
   /**
-   * Direct access to the Queue of Log events that have been recorded, for {@link Queue#poll}ing
-   * messages or any other inspection/manipulation.
+   * Direct access to the Queue of Log events that have been recorded, for {@link
+   * BlockingQueue#poll}ing messages or any other inspection/manipulation.
    *
    * <p>If a Log event is ever processed but can not be added to this queue (because {@link
-   * Queue#offer} returns false) then the {@link #close} method of this listener will fail the test.
+   * BlockingQueue#offer} returns false) then the {@link #close} method of this listener will fail
+   * the test.
    *
    * @see #setQueue
    * @see #pollMessage
    */
-  public Queue<LogEvent> getQueue() {
+  public BlockingQueue<LogEvent> getQueue() {
     return loggerAppender.getQueue();
   }
 
   /**
-   * Convinience method for tests that want to assert things about the (formated) message string at
+   * Convenience method for tests that want to assert things about the (formated) message string at
    * the head of the queue, w/o needing to know/call methods on the underlying {@link LogEvent}
    * class.
    *
@@ -374,7 +364,27 @@ public final class LogListener implements Closeable, AutoCloseable {
   }
 
   /**
-   * The total number of Log events so far processed by this instance, regardless of wether they
+   * Convenience method for tests that want to assert things about the (formated) message string at
+   * the head of the queue, waiting up to the specified timeout for the message to arrive.
+   *
+   * @param timeout the duration value
+   * @param unit the duration unit
+   * @return the formatted message string of head of the queue, or null if the queue remained empty
+   *     until the specified timeout.
+   */
+  public String pollMessage(long timeout, TimeUnit unit) {
+    LogEvent event = null;
+    try {
+      event = getQueue().poll(timeout, unit);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      fail("Our thread was interrupted while polling the queue.");
+    }
+    return null == event ? null : event.getMessage().getFormattedMessage();
+  }
+
+  /**
+   * The total number of Log events so far processed by this instance, regardless of whether they
    * have already been removed from the queue, or if they could not be added to the queue due to
    * capacity restrictions.
    */
@@ -582,7 +592,7 @@ public final class LogListener implements Closeable, AutoCloseable {
     public Result filter(LogEvent event) {
       // NOTE: For our usage, we're not worried about needing to filter LogEvents rom remote JVMs
       // with ThrowableProxy
-      // stand ins for Throwabls that don't exist in our classloader...
+      // stand ins for Throwables that don't exist in our classloader...
       return doFilter(
           event.getLevel(), event.getMessage().getFormattedMessage(), event.getThrown());
     }
@@ -598,7 +608,7 @@ public final class LogListener implements Closeable, AutoCloseable {
   private static final class QueueAppender extends AbstractAppender {
 
     // may be mutated in main thread while background thread is actively logging
-    private final AtomicReference<Queue<LogEvent>> queue =
+    private final AtomicReference<BlockingQueue<LogEvent>> queue =
         new AtomicReference<>(new ArrayBlockingQueue<>(100));
     final AtomicInteger count = new AtomicInteger(0);
     final AtomicInteger capacityExceeded = new AtomicInteger(0);
@@ -611,7 +621,7 @@ public final class LogListener implements Closeable, AutoCloseable {
 
     @Override
     public void append(final LogEvent event) {
-      final Queue<LogEvent> q = queue.get(); // read from reference once
+      final BlockingQueue<LogEvent> q = queue.get(); // read from reference once
       final LogEvent memento =
           (event instanceof MutableLogEvent) ? ((MutableLogEvent) event).createMemento() : event;
       final int currentCount = count.incrementAndGet();
@@ -648,20 +658,20 @@ public final class LogListener implements Closeable, AutoCloseable {
      * Returns the number of times this appender was unable to queue a LogEvent due to exceeding
      * capacity
      *
-     * @see Queue#offer
+     * @see BlockingQueue#offer
      */
     public int getNumCapacityExceeded() {
       return capacityExceeded.get();
     }
 
     /** Changes the queue that will be used for any future events that are appended */
-    public void setQueue(final Queue<LogEvent> q) {
+    public void setQueue(final BlockingQueue<LogEvent> q) {
       assert null != q;
       this.queue.set(q);
     }
 
     /** Returns Raw access to the (current) queue */
-    public Queue<LogEvent> getQueue() {
+    public BlockingQueue<LogEvent> getQueue() {
       return queue.get();
     }
   }

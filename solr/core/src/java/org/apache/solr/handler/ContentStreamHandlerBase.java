@@ -79,6 +79,7 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
     }
     try {
       SolrParams params = req.getParams();
+      assert params != null;
       UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessorChain(params);
 
       UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);

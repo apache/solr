@@ -28,7 +28,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.index.NoMergePolicyFactory;
@@ -42,7 +41,7 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
   private static final int DOC_COUNT = 1000;
 
   @ClassRule
-  public static final SolrClientTestRule solrClientTestRule =
+  public static final SolrClientTestRule solrTestRule =
       new EmbeddedSolrServerTestRule() {
         @Override
         protected void before() throws Throwable {
@@ -50,13 +49,7 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
           // existence of multiple segments; if the merge policy happens to combine into a single
           // segment, no OrdinalMap will be built, throwing off our tests
           systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
-          startSolr(LuceneTestCase.createTempDir());
-        }
-
-        @Override
-        protected void after() {
-          systemClearPropertySolrTestsMergePolicyFactory();
-          super.after();
+          startSolr();
         }
       };
 
@@ -74,7 +67,7 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
   @SuppressWarnings("try")
   public void test() throws Exception {
     Path configSet = LuceneTestCase.createTempDir();
-    SolrTestCaseJ4.copyMinConf(configSet.toFile());
+    SolrTestCaseJ4.copyMinConf(configSet);
     Path schemaXml = configSet.resolve("conf/schema.xml");
     Files.writeString(
         schemaXml,
@@ -82,15 +75,14 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
             .replace(
                 "</schema>", fieldConfig(SINGLE, false) + fieldConfig(MULTI, true) + "</schema>"));
 
-    solrClientTestRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection().withConfigSet(configSet).create();
 
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
 
     Random r = random();
     String[][] expectVals = indexDocs(client, r);
 
-    try (SolrCore core =
-        ((EmbeddedSolrServer) client).getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+    try (SolrCore core = solrTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
       RefCounted<SolrIndexSearcher> sref = core.getSearcher();
       try (Closeable c = sref::decref) {
         SolrIndexSearcher s = sref.get();

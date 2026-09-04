@@ -47,7 +47,7 @@ solrAdminApp.controller('LoginController',
           sessionStorage.setItem("auth.scheme", authScheme);
         }
 
-        var supportedSchemes = ['Basic', 'Bearer', 'Negotiate', 'Certificate'];
+        var supportedSchemes = ['Basic', 'Bearer', 'Certificate'];
         $scope.authSchemeSupported = supportedSchemes.includes(authScheme);
 
         if (authScheme === 'Bearer') {
@@ -147,6 +147,8 @@ solrAdminApp.controller('LoginController',
               }
 
               if (errorText === "") {
+                // The V2 solrApi client picks these up automatically via the superagent plugin
+                // registered in app.js .config()                
                 sessionStorage.setItem("auth.username", payload['sub']);
                 sessionStorage.setItem("auth.header", "Bearer " + accessToken);
                 sessionStorage.removeItem("auth.statusText");

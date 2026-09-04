@@ -71,7 +71,7 @@ public class ZkClusterPluginsSource implements ClusterPluginsSource {
     try {
       Map<String, Object> clusterPropsJson =
           (Map<String, Object>)
-              Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+              Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat()));
       return Map.copyOf(
           (Map<String, Object>)
               clusterPropsJson.computeIfAbsent(

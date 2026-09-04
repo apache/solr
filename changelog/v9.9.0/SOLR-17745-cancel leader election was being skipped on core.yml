@@ -1,0 +1,9 @@
+title: Cancel leader election was being skipped on core container shutdown due to
+  incorrect zkClient check
+type: fixed
+authors:
+- name: Matthew Biscocho
+- name: Luke Kot-Zaniewski
+links:
+- name: SOLR-17745
+  url: https://issues.apache.org/jira/browse/SOLR-17745

@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
@@ -53,9 +52,8 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
     System.setProperty("managed.schema.mutable", "" + random().nextBoolean());
     Path tmpHome = createTempDir("tmp-home");
     Path coreDir = tmpHome.resolve(DEFAULT_TEST_CORENAME);
-    copyMinConf(coreDir.toFile(), null, "solrconfig-managed-schema.xml");
-    initCore(
-        "solrconfig.xml" /*it's renamed to*/, "schema.xml", tmpHome.toAbsolutePath().toString());
+    copyMinConf(coreDir, null, "solrconfig-managed-schema.xml");
+    initCore("solrconfig.xml" /*it's renamed to*/, "schema.xml", tmpHome.toAbsolutePath());
 
     server = new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_TEST_CORENAME);
   }
@@ -66,7 +64,6 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
       server.close();
       server = null;
     }
-    System.clearProperty("managed.schema.mutable");
   }
 
   @Before
@@ -108,8 +105,8 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   private static void assertFailedSchemaResponse(
       ThrowingRunnable runnable, String expectedErrorMessage) {
-    ApiBag.ExceptionWithErrObject e = expectThrows(ApiBag.ExceptionWithErrObject.class, runnable);
-    String msg = e.getErrs().get(0).get("errorMessages").toString();
+    SolrException e = expectThrows(SolrException.class, runnable);
+    String msg = e.getDetails().get(0).get("errorMessages").toString();
     assertTrue(msg.contains(expectedErrorMessage));
   }
 }

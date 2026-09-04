@@ -37,8 +37,8 @@ public class PivotFacet extends FacetBase {
 
   /**
    * Local param used to indicate that refinements are required on a pivot. Should also be used as
-   * the prefix for concatenating with the value to determine the name of the multi-valued param
-   * that will contain all of the values needed for refinement.
+   * the prefix for concatenating with the value to determine the name of the multivalued param that
+   * will contain all the values needed for refinement.
    */
   public static final String REFINE_PARAM = "fpt";
 
@@ -84,7 +84,7 @@ public class PivotFacet extends FacetBase {
   public List<PivotFacetValue> getQueuedRefinements(int shardNumber) {
     List<PivotFacetValue> raw = queuedRefinements.get(shardNumber);
     if (null == raw) {
-      raw = Collections.<PivotFacetValue>emptyList();
+      raw = List.of();
     }
     return Collections.unmodifiableList(raw);
   }
@@ -119,7 +119,7 @@ public class PivotFacet extends FacetBase {
   public List<NamedList<Object>> getTrimmedPivotsAsListOfNamedLists() {
     if (null == pivotFacetField) {
       // no values in any shard for the top field of this pivot
-      return Collections.<NamedList<Object>>emptyList();
+      return List.of();
     }
 
     pivotFacetField.trim();

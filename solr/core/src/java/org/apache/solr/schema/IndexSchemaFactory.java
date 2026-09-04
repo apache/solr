@@ -168,8 +168,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
               return c.get();
             };
 
-    if (loader instanceof ZkSolrResourceLoader) {
-      ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+    if (loader instanceof ZkSolrResourceLoader zkLoader) {
       ObjectCache objectCache = objectCacheSupplier.get();
       if (objectCache == null) return cfgLoader.get();
       Map<String, VersionedConfig> confCache =

@@ -1,0 +1,12 @@
+title: Remove log4j-jul jar and use slf4j bridge for JUL to prevent exception from
+  being logged when remote JMX is enabled
+type: fixed
+authors:
+- name: Shawn Heisey
+- name: Stephen Zhou
+- name: Eric Pugh
+- name: Christine Poerschke
+- name: David Smiley
+links:
+- name: SOLR-16976
+  url: https://issues.apache.org/jira/browse/SOLR-16976

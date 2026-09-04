@@ -16,7 +16,6 @@
  */
 package org.apache.solr.request.macro;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
@@ -138,8 +137,8 @@ public class TestMacroExpander extends SolrTestCase {
     request.put("three_ref", new String[] {"three"});
     // I believe that so long as this is sure to be reset before the end of the test we should
     // be fine with respect to other tests.
-    String oldVal = System.getProperty("StreamingExpressionMacros", "false");
-    System.setProperty("StreamingExpressionMacros", "true");
+    String oldVal = System.getProperty("solr.streamingexpressions.macros.enabled", "false");
+    System.setProperty("solr.streamingexpressions.macros.enabled", "true");
     try {
       Map<String, String[]> expanded = MacroExpander.expand(request);
       assertEquals("zero", expanded.get("fq")[0]);
@@ -148,13 +147,13 @@ public class TestMacroExpander extends SolrTestCase {
       assertEquals("three", expanded.get("fq")[3]);
       assertEquals("one", expanded.get("expr")[0]);
     } finally {
-      System.setProperty("StreamingExpressionMacros", oldVal);
+      System.setProperty("solr.streamingexpressions.macros.enabled", oldVal);
     }
   }
 
   @Test
   public void testUnbalanced() { // SOLR-13181
-    final Map<String, String[]> request = Collections.singletonMap("answer", new String[] {"42"});
+    final Map<String, String[]> request = Map.of("answer", new String[] {"42"});
     final MacroExpander meSkipOnMissingParams = new MacroExpander(request);
     final MacroExpander meFailOnMissingParams = new MacroExpander(request, true);
     assertEquals("${noClose", meSkipOnMissingParams.expand("${noClose"));

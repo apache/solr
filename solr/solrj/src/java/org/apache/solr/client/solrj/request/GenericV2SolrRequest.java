@@ -34,14 +34,38 @@ public class GenericV2SolrRequest extends GenericSolrRequest {
 
   /**
    * @param m the HTTP method to use for this request
+   * @param path the HTTP path to use for this request. Path may include the v2 API root path (i.e.
+   *     "/api"), but does not need to. If users are making a collection-aware request (i.e. {@link
+   *     #setRequiresCollection(boolean)} is called with 'true'), only the section of the API path
+   *     following the collection or core should be provided here.
+   * @param requestType the type of this request
+   */
+  public GenericV2SolrRequest(METHOD m, String path, SolrRequestType requestType) {
+    super(m, removeLeadingApiRoot(path), requestType);
+  }
+
+  /**
+   * @param m the HTTP method to use for this request
    * @param path the HTTP path to use for this request. If users are making a collection-aware
    *     request (i.e. {@link #setRequiresCollection(boolean)} is called with 'true'), only the
    *     section of the API path following the collection or core should be provided here.
    * @param params query parameter names and values for making this request.
    */
   public GenericV2SolrRequest(METHOD m, String path, SolrParams params) {
-    super(m, path);
-    this.params = params;
+    super(m, removeLeadingApiRoot(path), params);
+  }
+
+  /**
+   * @param m the HTTP method to use for this request
+   * @param path the HTTP path to use for this request. If users are making a collection-aware
+   *     request (i.e. {@link #setRequiresCollection(boolean)} is called with 'true'), only the
+   *     section of the API path following the collection or core should be provided here.
+   * @param requestType the type of this request
+   * @param params query parameter names and values for making this request.
+   */
+  public GenericV2SolrRequest(
+      METHOD m, String path, SolrRequestType requestType, SolrParams params) {
+    super(m, removeLeadingApiRoot(path), requestType, params);
   }
 
   @Override

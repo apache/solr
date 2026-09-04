@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import static java.util.Collections.emptyMap;
-
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -242,7 +240,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
               collectionPropsObservers.remove(coll);
 
               // This is the one time we know it's safe to throw this out. We just failed to set the
-              // watch due to an NoNodeException, so it isn't held by ZK and can't re-set itself due
+              // watch due to a NoNodeException, so it isn't held by ZK and can't re-set itself due
               // to an update.
               collectionPropsWatchers.remove(coll);
             }
@@ -316,7 +314,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
     while (true) {
       try {
         Stat stat = new Stat();
-        byte[] data = zkClient.getData(znodePath, watcher, stat, true);
+        byte[] data = zkClient.getData(znodePath, watcher, stat);
         @SuppressWarnings("unchecked")
         Map<String, String> props = (Map<String, String>) Utils.fromJSON(data);
         return new VersionedCollectionProps(stat.getVersion(), props);
@@ -328,21 +326,21 @@ public class CollectionPropertiesZkStateReader implements Closeable {
       } catch (KeeperException.NoNodeException e) {
         if (watcher != null) {
           // Leave an exists watch in place in case a collectionprops.json is created later.
-          Stat exists = zkClient.exists(znodePath, watcher, true);
+          Stat exists = zkClient.exists(znodePath, watcher);
           if (exists != null) {
             // Rare race condition, we tried to fetch the data and couldn't find it, then we found
             // it exists. Loop and try again.
             continue;
           }
         }
-        return new VersionedCollectionProps(-1, emptyMap());
+        return new VersionedCollectionProps(-1, Map.of());
       }
     }
   }
 
   private void notifyPropsWatchers(String collection, Map<String, String> properties) {
     try {
-      collectionPropsNotifications.submit(new PropsNotification(collection, properties));
+      collectionPropsNotifications.execute(new PropsNotification(collection, properties));
     } catch (RejectedExecutionException e) {
       if (!closed) {
         log.error("Couldn't run collection properties notifications for {}", collection, e);
@@ -393,19 +391,22 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   }
 
   public void removeCollectionPropsWatcher(String collection, CollectionPropsWatcher watcher) {
-    collectionPropsObservers.compute(
-        collection,
-        (k, v) -> {
-          if (v == null) return null;
-          v.stateWatchers.remove(watcher);
-          if (v.canBeRemoved()) {
-            // don't want this to happen in middle of other blocks that might add it back.
-            synchronized (getCollectionLock(collection)) {
+    // don't want removal from watchedCollectionProps to happen in middle of other blocks that might
+    // add it back.
+    // Need to lock outside of the compute() call or risk a deadlock with the locking done in
+    // collectionPropsObservers
+    synchronized (getCollectionLock(collection)) {
+      collectionPropsObservers.compute(
+          collection,
+          (k, v) -> {
+            if (v == null) return null;
+            v.stateWatchers.remove(watcher);
+            if (v.canBeRemoved()) {
               watchedCollectionProps.remove(collection);
               return null;
             }
-          }
-          return v;
-        });
+            return v;
+          });
+    }
   }
 }

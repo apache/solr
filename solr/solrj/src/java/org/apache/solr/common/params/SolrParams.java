@@ -18,31 +18,26 @@ package org.apache.solr.common.params;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.StringJoiner;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 
 /**
  * SolrParams is designed to hold parameters to Solr, often from the request coming into Solr. It's
  * basically a MultiMap of String keys to one or more String values. Neither keys nor values may be
  * null. Unlike a general Map/MultiMap, the size is unknown without iterating over each parameter
- * name.
+ * name, if you want to count the different values for a key separately.
  */
 public abstract class SolrParams
     implements Serializable, MapWriter, Iterable<Map.Entry<String, String[]>> {
@@ -73,18 +68,17 @@ public abstract class SolrParams
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    // TODO don't call toNamedList; more efficiently implement here
-    // note: multiple values, if present, are a String[] under 1 key
-    toNamedList()
-        .forEach(
-            (k, v) -> {
-              if (v == null || "".equals(v)) return;
-              try {
-                ew.put(k, v);
-              } catch (IOException e) {
-                throw new RuntimeException("Error serializing", e);
-              }
-            });
+    for (Entry<String, String[]> entry : this) {
+      String[] value = entry.getValue();
+      // if only one value, don't wrap in an array
+      if (value.length == 1) {
+        assert value[0] != null;
+        ew.put(entry.getKey(), value[0]);
+      } else if (value.length > 1) {
+        // values shouldn't be null; not bothering to assert it
+        ew.put(entry.getKey(), value);
+      }
+    }
   }
 
   /** Returns an Iterator of {@code Map.Entry} providing a multi-map view. Treat it as read-only. */
@@ -198,21 +192,10 @@ public abstract class SolrParams
    * Returns the Boolean value of the field param, or the value for param, or null if neither is
    * set. Use this method only when you want to be explicit about absence of a value (<code>null
    * </code>) vs the default value <code>false</code>.
-   *
-   * @see #getFieldBool(String, String, boolean)
-   * @see #getPrimitiveFieldBool(String, String)
    */
   public Boolean getFieldBool(String field, String param) {
     String val = getFieldParam(field, param);
     return val == null ? null : StrUtils.parseBool(val);
-  }
-
-  /**
-   * Returns the boolean value of the field param, or the value for param or the default value of
-   * boolean - <code>false</code>
-   */
-  public boolean getPrimitiveFieldBool(String field, String param) {
-    return getFieldBool(field, param, false);
   }
 
   /**
@@ -365,7 +348,6 @@ public abstract class SolrParams
    * about absence of a value (<code>null</code>) vs the default value zero (<code>0.0f</code>).
    *
    * @see #getFieldFloat(String, String, float)
-   * @see #getPrimitiveFieldFloat(String, String)
    */
   public Float getFieldFloat(String field, String param) {
     String val = getFieldParam(field, param);
@@ -374,14 +356,6 @@ public abstract class SolrParams
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex);
     }
-  }
-
-  /**
-   * Returns the float value of the field param or the value for param or the default value for
-   * float - zero (<code>0.0f</code>)
-   */
-  public float getPrimitiveFieldFloat(String field, String param) {
-    return getFieldFloat(field, param, 0.0f);
   }
 
   /**
@@ -435,135 +409,23 @@ public abstract class SolrParams
     return AppendedSolrParams.wrapAppended(params, defaults);
   }
 
-  /** Create a Map&lt;String,String&gt; from a NamedList given no keys are repeated */
-  @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
-  public static Map<String, String> toMap(NamedList<?> params) {
-    HashMap<String, String> map = new HashMap<>();
-    for (int i = 0; i < params.size(); i++) {
-      map.put(params.getName(i), params.getVal(i).toString());
-    }
-    return map;
-  }
-
-  /** Create a Map&lt;String,String[]&gt; from a NamedList */
-  @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
-  public static Map<String, String[]> toMultiMap(NamedList<?> params) {
-    HashMap<String, String[]> map = new HashMap<>();
-    for (int i = 0; i < params.size(); i++) {
-      String name = params.getName(i);
-      Object val = params.getVal(i);
-      if (val instanceof String[]) {
-        MultiMapSolrParams.addParam(name, (String[]) val, map);
-      } else if (val instanceof List) {
-        List<?> l = (List<?>) val;
-        String[] s = new String[l.size()];
-        for (int j = 0; j < l.size(); j++) {
-          s[j] = l.get(j) == null ? null : String.valueOf(l.get(j));
-        }
-        MultiMapSolrParams.addParam(name, s, map);
-      } else {
-        MultiMapSolrParams.addParam(name, val.toString(), map);
-      }
-    }
-    return map;
-  }
-
-  /**
-   * Create SolrParams from NamedList.
-   *
-   * @deprecated Use {@link NamedList#toSolrParams()}.
-   */
-  @Deprecated // move to NamedList to allow easier flow
-  public static SolrParams toSolrParams(NamedList<?> params) {
-    return params.toSolrParams();
-  }
-
-  @Deprecated
-  public SolrParams toFilteredSolrParams(List<String> names) {
-    // TODO do this better somehow via a view that filters?  See SolrCore.preDecorateResponse.
-    //   ... and/or add some optional predicates to iterator()?
-    NamedList<String> nl = new NamedList<>();
-    for (Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
-      final String name = it.next();
-      if (names.contains(name)) {
-        final String[] values = getParams(name);
-        for (String value : values) {
-          nl.add(name, value);
-        }
-      }
-    }
-    return nl.toSolrParams();
-  }
-
-  /**
-   * Convert this to a NamedList of unique keys with either String or String[] values depending on
-   * how many values there are for the parameter.
-   */
-  public NamedList<Object> toNamedList() {
-    final SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
-
-    for (Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
-      final String name = it.next();
-      final String[] values = getParams(name);
-      if (values.length == 1) {
-        result.add(name, values[0]);
-      } else {
-        // currently, no reason not to use the same array
-        result.add(name, values);
-      }
-    }
-    return result;
-  }
-
-  // Deprecated because there isn't a universal way to deal with multi-values (always
-  //  String[] or only for > 1 or always 1st value).  And what to do with nulls or empty string.
-  //  And SolrParams now implements MapWriter.toMap(Map) (a default method).  So what do we do?
-  @Deprecated
-  public Map<String, Object> getAll(Map<String, Object> sink, Collection<String> params) {
-    if (sink == null) sink = new LinkedHashMap<>();
-    for (String param : params) {
-      String[] v = getParams(param);
-      if (v != null && v.length > 0) {
-        if (v.length == 1) {
-          sink.put(param, v[0]);
-        } else {
-          sink.put(param, v);
-        }
-      }
-    }
-    return sink;
-  }
-
-  /** Copy all params to the given map or if the given map is null create a new one */
-  @Deprecated
-  public Map<String, Object> getAll(Map<String, Object> sink, String... params) {
-    return getAll(sink, params == null ? Collections.emptyList() : Arrays.asList(params));
-  }
-
   /**
    * Returns this SolrParams as a proper URL encoded string, starting with {@code "?"}, if not
    * empty.
    */
   public String toQueryString() {
-    try {
-      final String charset = StandardCharsets.UTF_8.name();
-      final StringBuilder sb = new StringBuilder(128);
-      boolean first = true;
-      for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
-        final String name = it.next(), nameEnc = URLEncoder.encode(name, charset);
-        for (String val : getParams(name)) {
-          sb.append(first ? '?' : '&')
-              .append(nameEnc)
-              .append('=')
-              .append(URLEncoder.encode(val, charset));
-          first = false;
-        }
+    final Charset charset = StandardCharsets.UTF_8;
+
+    var output = new StringJoiner("&", "?", "");
+    output.setEmptyValue("");
+    for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
+      final String name = it.next();
+      final String nameEnc = URLEncoder.encode(name, charset);
+      for (String val : getParams(name)) {
+        output.add(nameEnc + "=" + URLEncoder.encode(val, charset));
       }
-      return sb.toString();
-    } catch (UnsupportedEncodingException e) {
-      // impossible!
-      throw new AssertionError(e);
     }
+    return output.toString();
   }
 
   /**
@@ -602,18 +464,55 @@ public abstract class SolrParams
    */
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder(128);
-    boolean first = true;
+    StringJoiner query = new StringJoiner("&");
     for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
       final String name = it.next();
       for (String val : getParams(name)) {
-        if (!first) sb.append('&');
-        first = false;
-        StrUtils.partialURLEncodeVal(sb, name);
-        sb.append('=');
-        StrUtils.partialURLEncodeVal(sb, val);
+        query.add(StrUtils.partialURLEncodeVal(name) + "=" + StrUtils.partialURLEncodeVal(val));
       }
     }
-    return sb.toString();
+    return query.toString();
+  }
+
+  /**
+   * A SolrParams is equal to another if they have the same keys and values. The order of keys does
+   * not matter.
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) return true;
+    if (!(obj instanceof SolrParams b)) return false;
+
+    // iterating this params, see if other has the same values for each key
+    int count = 0;
+    for (Entry<String, String[]> thisEntry : this) {
+      String name = thisEntry.getKey();
+      if (!Arrays.equals(thisEntry.getValue(), b.getParams(name))) return false;
+      count++;
+    }
+    // does other params have the same number of keys?  It might have more but not less.
+    Iterator<String> bNames = b.getParameterNamesIterator();
+    while (bNames.hasNext()) {
+      bNames.next();
+      count--;
+      if (count < 0) return false;
+    }
+    assert count == 0;
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    throw new UnsupportedOperationException();
+  }
+
+  /** An empty, immutable SolrParams. */
+  public static SolrParams of() {
+    return EmptySolrParams.INSTANCE;
+  }
+
+  /** An immutable SolrParams holding one pair (not null). */
+  public static SolrParams of(String k, String v) {
+    return new MapSolrParams(Map.of(k, v));
   }
 }

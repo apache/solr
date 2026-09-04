@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
@@ -37,8 +36,8 @@ public class ClusteringResponse {
     clusters = new ArrayList<>();
     for (NamedList<Object> clusterNode : clusterInfo) {
       List<String> labelList, docIdList;
-      List<Cluster> subclusters = Collections.emptyList();
-      labelList = docIdList = Collections.emptyList();
+      List<Cluster> subclusters = List.of();
+      labelList = docIdList = List.of();
       Double score = 0d;
       boolean otherTopics = false;
       for (Map.Entry<String, ?> e : clusterNode) {

@@ -18,7 +18,6 @@ package org.apache.solr.spelling;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -219,15 +218,15 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     }
     breakSuggestionList.addAll(noBreakSuggestionList);
 
-    List<ResultEntry> combineSuggestionList = Collections.emptyList();
+    List<ResultEntry> combineSuggestionList = List.of();
     CombineSuggestion[] combineSuggestions =
         wbsp.suggestWordCombinations(
             termArr.toArray(new Term[0]), numSuggestions, ir, options.suggestMode);
     if (combineWords) {
       combineSuggestionList = new ArrayList<>(combineSuggestions.length);
       for (CombineSuggestion cs : combineSuggestions) {
-        int firstTermIndex = cs.originalTermIndexes[0];
-        int lastTermIndex = cs.originalTermIndexes[cs.originalTermIndexes.length - 1];
+        int firstTermIndex = cs.originalTermIndexes()[0];
+        int lastTermIndex = cs.originalTermIndexes()[cs.originalTermIndexes().length - 1];
         sb.delete(0, sb.length());
         for (int i = firstTermIndex; i <= lastTermIndex; i++) {
           if (i > firstTermIndex) {
@@ -240,7 +239,8 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
                 sb.toString(),
                 tokenArrWithSeparators.get(firstTermIndex).startOffset(),
                 tokenArrWithSeparators.get(lastTermIndex).endOffset());
-        combineSuggestionList.add(new ResultEntry(token, cs.suggestion.string, cs.suggestion.freq));
+        combineSuggestionList.add(
+            new ResultEntry(token, cs.suggestion().string, cs.suggestion().freq));
       }
     }
 
@@ -321,7 +321,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
       String suggestion,
       int suggestionFrequency) {
     if (suggestion == null) {
-      result.add(token, Collections.<String>emptyList());
+      result.add(token, List.of());
       result.addFrequency(token, tokenFrequency);
     } else {
       result.add(token, suggestion, suggestionFrequency);

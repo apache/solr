@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +33,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 
@@ -129,11 +131,14 @@ public class ClusterStateMockUtil {
           collectionProps.put(
               ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
           docCollection =
-              new DocCollection(
+              DocCollection.create(
                   collName = "collection" + (collectionStates.size() + 1),
                   slices,
                   collectionProps,
-                  DocRouter.DEFAULT);
+                  DocRouter.DEFAULT,
+                  Integer.MAX_VALUE,
+                  Instant.EPOCH,
+                  null);
           collectionStates.put(docCollection.getName(), docCollection);
           break;
         case "s":
@@ -241,7 +246,8 @@ public class ClusterStateMockUtil {
     int port = 8982 + Integer.parseInt(node);
     String nodeName = String.format(Locale.ROOT, "baseUrl%s:%d_", node, port);
     replicaPropMap.put(ZkStateReader.NODE_NAME_PROP, nodeName);
-    replicaPropMap.put(ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName(nodeName, "http"));
+    replicaPropMap.put(
+        ZkStateReader.BASE_URL_PROP, URLUtil.getBaseUrlForNodeName(nodeName, "http"));
     replicaPropMap.put(ZkStateReader.STATE_PROP, state.toString());
     replicaPropMap.put(ZkStateReader.CORE_NAME_PROP, sliceName + "_" + replicaName);
     replicaPropMap.put(ZkStateReader.REPLICA_TYPE, replicaType.name());

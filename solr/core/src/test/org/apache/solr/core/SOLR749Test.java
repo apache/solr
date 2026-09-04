@@ -160,6 +160,22 @@ public class SOLR749Test extends SolrTestCaseJ4 {
           "//result[@numFound=5]");
       assertEquals(10, CountUsageValueSourceParser.getAndClearCount("lowCost"));
       assertEquals(9, CountUsageValueSourceParser.getAndClearCount("lastFilter"));
+
+      // Tests that TwoPhaseIterator is employed optimally:
+      // Tests a disjunction (OR), that the function isn't called if another clause matches
+      // note: map(countUsage(frange_or,0),0,0,id_i1) == return "id_i1" value & keep track of access
+      assertQ(
+          "frange with disjunction",
+          req(
+              "q",
+              "{!notfoo}id_i1:[0 TO 49]",
+              "fq",
+              "{!notfoo cache=false}id_i1:[20 TO 39] OR {!frange l=35 u=40 v='map(countUsage(frange_or,0),0,0,id_i1)'}"),
+          "//result[@numFound=21]");
+      // the first fq range query matches 20 docs.
+      // the frange grabbed one additional doc (#40), hence result is 21.
+      // the frange(countUsage) should test 50 docs minus the 20 from the numeric range
+      assertEquals(50 - 20, CountUsageValueSourceParser.getAndClearCount("frange_or"));
     } finally {
       CountUsageValueSourceParser.clearCounters();
     }

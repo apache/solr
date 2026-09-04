@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.hamcrest.Matchers;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,18 +39,29 @@ public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrC
         TEST_PATH().resolve("configsets").resolve("cloud-minimal-field-limiting").resolve("conf");
     configureCluster(1).addConfig(FIELD_LIMITING_CS_NAME, configPath).configure();
 
+    System.setProperty("solr.test.fieldLimit.warnOnly", "false");
+    System.setProperty("solr.test.maxFields", String.valueOf(100));
+  }
+
+  @Before
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+
+    System.setProperty("solr.test.fieldLimit.warnOnly", "false");
+    System.setProperty("solr.test.maxFields", String.valueOf(100));
+
+    // Collection might already exist if test is being run multiple times
+    final var collections = CollectionAdminRequest.listCollections(cluster.getSolrClient());
+    if (collections.contains(COLLECTION_NAME)) {
+      final var deleteRequest = CollectionAdminRequest.deleteCollection(COLLECTION_NAME);
+      deleteRequest.processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    }
+
     final var createRequest =
         CollectionAdminRequest.createCollection(COLLECTION_NAME, FIELD_LIMITING_CS_NAME, 1, 1);
     createRequest.process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 20, TimeUnit.SECONDS, 1, 1);
-  }
-
-  private void setFieldLimitTo(int value) throws Exception {
-    System.setProperty("solr.test.maxFields", String.valueOf(value));
-
-    final var reloadRequest = CollectionAdminRequest.reloadCollection(COLLECTION_NAME);
-    final var reloadResponse = reloadRequest.process(cluster.getSolrClient());
-    assertEquals(0, reloadResponse.getStatus());
   }
 
   @Test
@@ -62,6 +74,28 @@ public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrC
     }
 
     // Adding any additional docs should fail because we've exceeded the field limit
+    ensureNewFieldCreationTriggersExpectedFailure();
+
+    // Switch to warn only mode and ensure that updates succeed again
+    setWarnOnly(true);
+    ensureNewFieldsCanBeCreated();
+
+    // Switch back to "hard" limit mode and ensure things fail again
+    setWarnOnly(false);
+    ensureNewFieldCreationTriggersExpectedFailure();
+
+    // Raise the limit and ensure that updates succeed again
+    setFieldLimitTo(300);
+    ensureNewFieldsCanBeCreated();
+  }
+
+  private void ensureNewFieldsCanBeCreated() throws Exception {
+    for (int i = 0; i < 3; i++) {
+      addNewFieldsAndCommit(10);
+    }
+  }
+
+  private void ensureNewFieldCreationTriggersExpectedFailure() throws Exception {
     final var thrown =
         expectThrows(
             Exception.class,
@@ -70,12 +104,22 @@ public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrC
             });
     assertThat(
         thrown.getMessage(), Matchers.containsString("exceeding the max-fields limit of 100"));
+  }
 
-    // After raising the limit, updates succeed again
-    setFieldLimitTo(150);
-    for (int i = 0; i < 3; i++) {
-      addNewFieldsAndCommit(10);
-    }
+  private void setWarnOnly(boolean warnOnly) throws Exception {
+    System.setProperty("solr.test.fieldLimit.warnOnly", String.valueOf(warnOnly));
+
+    final var reloadRequest = CollectionAdminRequest.reloadCollection(COLLECTION_NAME);
+    final var reloadResponse = reloadRequest.process(cluster.getSolrClient());
+    assertEquals(0, reloadResponse.getStatus());
+  }
+
+  private void setFieldLimitTo(int value) throws Exception {
+    System.setProperty("solr.test.maxFields", String.valueOf(value));
+
+    final var reloadRequest = CollectionAdminRequest.reloadCollection(COLLECTION_NAME);
+    final var reloadResponse = reloadRequest.process(cluster.getSolrClient());
+    assertEquals(0, reloadResponse.getStatus());
   }
 
   private void addNewFieldsAndCommit(int numFields) throws Exception {

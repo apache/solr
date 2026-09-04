@@ -76,9 +76,9 @@ public class RequestUtil {
       String[] jsonFromParams = map.remove(JSON);
 
       for (ContentStream cs : req.getContentStreams()) {
-        // if BinaryResponseParser.BINARY_CONTENT_TYPE, let the following fail below - we may have
+        // if BinaryResponseParser.JAVABIN_CONTENT_TYPE, let the following fail below - we may have
         // adjusted the content without updating the content type
-        // problem in this case happens in a few tests, one seems to happen with kerberos and remote
+        // problem in this case happens in a few tests including a remote
         // node query (HttpSolrCall's request proxy)
 
         String contentType = cs.getContentType();
@@ -246,7 +246,7 @@ public class RequestUtil {
               arr = true;
               isQuery = true;
               convertJsonPropertyToLocalParams(
-                  newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
+                  req, newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
             }
             continue;
           } else {
@@ -262,7 +262,7 @@ public class RequestUtil {
               SolrException.ErrorCode.BAD_REQUEST,
               "Unknown top-level key in JSON request : " + key);
         }
-        convertJsonPropertyToLocalParams(newMap, jsonQueryConverter, entry, out, isQuery, arr);
+        convertJsonPropertyToLocalParams(req, newMap, jsonQueryConverter, entry, out, isQuery, arr);
       }
     }
 
@@ -272,6 +272,7 @@ public class RequestUtil {
   }
 
   private static void convertJsonPropertyToLocalParams(
+      SolrQueryRequest req,
       Map<String, String[]> outMap,
       JsonQueryConverter jsonQueryConverter,
       Map.Entry<String, Object> jsonProperty,
@@ -293,17 +294,19 @@ public class RequestUtil {
         for (int i = 0; i < jsonSize; i++) {
           Object v = lst.get(i);
           newval[existingSize + i] =
-              isQuery ? jsonQueryConverter.toLocalParams(v, outMap) : v.toString();
+              isQuery ? jsonQueryConverter.toLocalParams(req, v, outMap) : v.toString();
         }
       } else {
         newval[newval.length - 1] =
-            isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString();
+            isQuery ? jsonQueryConverter.toLocalParams(req, val, outMap) : val.toString();
       }
       outMap.put(outKey, newval);
     } else {
       outMap.put(
           outKey,
-          new String[] {isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString()});
+          new String[] {
+            isQuery ? jsonQueryConverter.toLocalParams(req, val, outMap) : val.toString()
+          });
     }
   }
 
@@ -363,8 +366,7 @@ public class RequestUtil {
 
         if (val == null) {
           params.remove(key);
-        } else if (val instanceof List) {
-          List<?> lst = (List<?>) val;
+        } else if (val instanceof List<?> lst) {
           String[] vals = new String[lst.size()];
           for (int i = 0; i < vals.length; i++) {
             vals[i] = lst.get(i).toString();

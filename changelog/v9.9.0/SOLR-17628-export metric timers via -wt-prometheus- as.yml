@@ -1,0 +1,8 @@
+title: Export metric timers via `wt=prometheus` as Prometheus summaries.
+type: changed
+authors:
+- name: Jude Muriithi
+- name: Matthew Biscocho
+links:
+- name: SOLR-17628
+  url: https://issues.apache.org/jira/browse/SOLR-17628

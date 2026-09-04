@@ -33,7 +33,7 @@ public class GetMembershipMatrixEvaluator extends RecursiveObjectEvaluator
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if (!(value instanceof KmeansEvaluator.ClusterTuple)) {
+    if (!(value instanceof KmeansEvaluator.ClusterTuple clusterTuple)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -41,7 +41,6 @@ public class GetMembershipMatrixEvaluator extends RecursiveObjectEvaluator
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     } else {
-      KmeansEvaluator.ClusterTuple clusterTuple = (KmeansEvaluator.ClusterTuple) value;
       return clusterTuple.getMembershipMatrix();
     }
   }

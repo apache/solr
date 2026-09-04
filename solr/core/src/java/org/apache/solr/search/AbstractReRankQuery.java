@@ -16,10 +16,10 @@
  */
 package org.apache.solr.search;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -34,6 +34,11 @@ import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrRequestInfo;
 
 public abstract class AbstractReRankQuery extends RankQuery {
+  public static final String RERANK_CUTOFF_RESPONSE_HEADER_KEY = "reRankCutoff";
+  public static final String RERANK_CUTOFF_BY_SHARD_RESPONSE_HEADER_KEY = "reRankCutoffByShard";
+  public static final String RERANK_CUTOFF_ECHO_REQUEST_CONTEXT_KEY =
+      "solr.rerank.echoReRankCutoff";
+
   protected Query mainQuery;
   protected final int reRankDocs;
   protected final Rescorer reRankQueryRescorer;
@@ -58,6 +63,26 @@ public abstract class AbstractReRankQuery extends RankQuery {
     this.mainQuery = mainQuery;
     this.reRankDocs = reRankDocs;
     this.reRankQueryRescorer = reRankQueryRescorer;
+  }
+
+  @VisibleForTesting
+  int getReRankDocs() {
+    return reRankDocs;
+  }
+
+  @VisibleForTesting
+  Rescorer getRescorer() {
+    return reRankQueryRescorer;
+  }
+
+  @VisibleForTesting
+  ReRankOperator getReRankOperator() {
+    return reRankOperator;
+  }
+
+  @VisibleForTesting
+  ReRankScaler getReRankScaler() {
+    return reRankScaler;
   }
 
   @Override
@@ -97,12 +122,12 @@ public abstract class AbstractReRankQuery extends RankQuery {
   }
 
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
-    Query q = mainQuery.rewrite(reader);
+  public Query rewrite(IndexSearcher searcher) throws IOException {
+    Query q = mainQuery.rewrite(searcher);
     if (!q.equals(mainQuery)) {
       return rewrite(q);
     }
-    return super.rewrite(reader);
+    return super.rewrite(searcher);
   }
 
   protected abstract Query rewrite(Query rewrittenMainQuery) throws IOException;

@@ -28,10 +28,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -40,8 +39,10 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -51,6 +52,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+// PRS Defaulting is currently not working, so disable for now
+@SolrCloudTestCase.NoPrs
 public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 
   private static final int REPLICATION_TIMEOUT_SECS = 10;
@@ -71,7 +74,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.zkclienttimeout", "20000");
+    System.setProperty("solr.zookeeper.client.timeout", "20000");
 
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
     // Add proxies
@@ -118,7 +121,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
       log.info("Collection deleted");
-      waitForDeletion(collectionName);
+      TestPullReplica.waitForDeletion(collectionName);
     }
     collectionName = null;
     super.tearDown();
@@ -249,16 +252,19 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     DocCollection docCollection = assertNumberOfReplicas(1, 0, 1, false, true);
     Slice s = docCollection.getSlices().iterator().next();
     JettySolrRunner jetty = getJettyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
-    SolrCore core = jetty.getCoreContainer().getCores().iterator().next();
+    CoreContainer coreContainer = jetty.getCoreContainer();
 
-    for (int i = 0; i < (TEST_NIGHTLY ? 5 : 2); i++) {
-      cluster.expireZkSession(jetty);
-      waitForState(
-          "Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
-      waitForState("Expecting node to reconnect", collectionName, activeReplicaCount(1, 0, 1));
-      // We have two active ReplicationHandler with two close hooks each, one for triggering
-      // recovery and one for doing interval polling
-      assertEquals(5, core.getCloseHooks().size());
+    // held open across the reconnects below, so the same core instance is checked each time
+    try (SolrCore core = coreContainer.getCore(coreContainer.getLoadedCoreNames().get(0))) {
+      for (int i = 0; i < (TEST_NIGHTLY ? 5 : 2); i++) {
+        cluster.expireZkSession(jetty);
+        waitForState(
+            "Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
+        waitForState("Expecting node to reconnect", collectionName, activeReplicaCount(1, 0, 1));
+        // We have two active ReplicationHandler with two close hooks each, one for triggering
+        // recovery and one for doing interval polling
+        assertEquals(5, core.getCloseHooks().size());
+      }
     }
   }
 
@@ -303,19 +309,19 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     assertEquals(
         "Unexpected number of writer replicas: " + docCollection,
         numWriter,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of pull replicas: " + docCollection,
         numPassive,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of active replicas: " + docCollection,
         numActive,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     return docCollection;
@@ -343,22 +349,6 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     }
     assertNotNull("No proxy found for " + baseUri + "!", proxy);
     return proxy;
-  }
-
-  private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
-    TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cluster.getSolrClient().getClusterState().hasCollection(collection)) {
-      log.info("Collection not yet deleted");
-      try {
-        Thread.sleep(100);
-        if (t.hasTimedOut()) {
-          fail("Timed out waiting for collection " + collection + " to be deleted.");
-        }
-        cluster.getZkStateReader().forceUpdateCollection(collection);
-      } catch (SolrException e) {
-        return;
-      }
-    }
   }
 
   private CollectionStatePredicate activeReplicaCount(

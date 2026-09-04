@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.cloud.DistributedCollectionLockFactory;
@@ -24,12 +25,15 @@ import org.apache.solr.cloud.DistributedLock;
 import org.apache.solr.cloud.DistributedMultiLock;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class implements a higher level locking abstraction for the Collection API using lower level
  * read and write locks.
  */
 public class CollectionApiLockFactory {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final DistributedCollectionLockFactory lockFactory;
 
@@ -54,7 +58,8 @@ public class CollectionApiLockFactory {
    *     prevent other threads from locking.
    */
   DistributedMultiLock createCollectionApiLock(
-      CollectionParams.LockLevel lockLevel, String collName, String shardId, String replicaName) {
+      AdminCmdContext adminCmdContext, String collName, String shardId, String replicaName) {
+    CollectionParams.LockLevel lockLevel = adminCmdContext.getAction().lockLevel;
     if (lockLevel == CollectionParams.LockLevel.NONE) {
       return new DistributedMultiLock(List.of());
     }
@@ -102,22 +107,37 @@ public class CollectionApiLockFactory {
       // CollectionParams.LockLevel.COLLECTION;
     }
 
-    // The first requested lock is a write one (on the target object for the action, depending on
-    // lock level), then requesting read locks on "higher" levels (collection > shard > replica here
-    // for the level. Note LockLevel "height" is other way around).
-    boolean requestWriteLock = true;
+    List<String> callingLockIdList =
+        DistributedMultiLock.splitLockIds(adminCmdContext.getCallingLockId());
+
     final CollectionParams.LockLevel[] iterationOrder = {
-      CollectionParams.LockLevel.REPLICA,
+      CollectionParams.LockLevel.COLLECTION,
       CollectionParams.LockLevel.SHARD,
-      CollectionParams.LockLevel.COLLECTION
+      CollectionParams.LockLevel.REPLICA
     };
     List<DistributedLock> locks = new ArrayList<>(iterationOrder.length);
+    int lockLevelCount = 0;
+
     for (CollectionParams.LockLevel level : iterationOrder) {
       // This comparison is based on the LockLevel height value that classifies replica > shard >
       // collection.
       if (lockLevel.isHigherOrEqual(level)) {
-        locks.add(lockFactory.createLock(requestWriteLock, level, collName, shardId, replicaName));
-        requestWriteLock = false;
+        // The last requested lock is either a write or read one (on the target object for the
+        // action, depending on lock level) depending on what the action is. All "higher" levels of
+        // locks are reads (collection > shard > replica here for the level. Note LockLevel "height"
+        // is other way around).
+        boolean requestWriteLock = lockLevel.isEqual(level) && adminCmdContext.getAction().isWrite;
+        // Find the matching callingLockId for this level, if it was provided. All levels must be
+        // provided in order by the caller, so when we run out of callingLockIds, we are done
+        // mirroring and should start getting new locks.
+        String callingLockIdMatch = null;
+        if (lockLevelCount < callingLockIdList.size()) {
+          callingLockIdMatch = callingLockIdList.get(lockLevelCount++);
+        }
+        DistributedLock lock =
+            lockFactory.createLock(
+                requestWriteLock, level, collName, shardId, replicaName, callingLockIdMatch);
+        locks.add(lock);
       }
     }
 

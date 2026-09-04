@@ -17,23 +17,28 @@
 package org.apache.solr.s3;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Rule;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 /** Test for reading files from S3 'the Solr way'. */
 public class S3IndexInputTest extends SolrTestCaseJ4 {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  public Path temporaryFolder;
+
+  @Before
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    temporaryFolder = createTempDir("junit");
+  }
 
   /** Simulates fetching a file from S3 in more than one read operation. */
   @Test
@@ -63,19 +68,20 @@ public class S3IndexInputTest extends SolrTestCaseJ4 {
   private void doTestPartialRead(boolean directBuffer, String content, int slice)
       throws IOException {
 
-    File tmp = temporaryFolder.newFolder();
-    File file = new File(tmp, "content");
-    Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
+    Path tmp = Files.createTempDirectory(temporaryFolder, "junit");
 
-    try (SliceInputStream slicedStream = new SliceInputStream(new FileInputStream(file), slice);
-        S3IndexInput input = new S3IndexInput(slicedStream, "path", file.length())) {
+    Path file = tmp.resolve("content");
+    Files.writeString(file, content, StandardCharsets.UTF_8);
+
+    try (SliceInputStream slicedStream = new SliceInputStream(Files.newInputStream(file), slice);
+        S3IndexInput input = new S3IndexInput(slicedStream, "path", Files.size(file))) {
 
       // Now read the file
       ByteBuffer buffer;
       if (directBuffer) {
-        buffer = ByteBuffer.allocateDirect((int) file.length());
+        buffer = ByteBuffer.allocateDirect((int) Files.size(file));
       } else {
-        buffer = ByteBuffer.allocate((int) file.length());
+        buffer = ByteBuffer.allocate((int) Files.size(file));
       }
       input.readInternal(buffer);
 

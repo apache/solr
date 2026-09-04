@@ -17,6 +17,7 @@
 package org.apache.solr.request;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.lucene.index.DocValues;
@@ -40,6 +41,8 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.util.LongPriorityQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Computes term facets for docvalues field (single or multivalued).
@@ -415,7 +418,7 @@ public class DocValuesFacets {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (si.advanceExact(doc)) {
-        // strange do-while to collect the missing count (first ord is NO_MORE_ORDS)
+        /*// strange do-while to collect the missing count (first ord is NO_MORE_ORDS)
         int term = (int) si.nextOrd();
         do {
           if (map != null) {
@@ -423,7 +426,18 @@ public class DocValuesFacets {
           }
           int arrIdx = term - startTermIndex;
           if (arrIdx >= 0 && arrIdx < counts.length) counts[arrIdx]++;
-        } while ((term = (int) si.nextOrd()) >= 0);
+        } while ((term = (int) si.nextOrd()) >= 0);*/
+        for (int o = 0; o < si.docValueCount(); o++) {
+          long ord = si.nextOrd();
+          if (ord == -1) // NO_MORE_ORDS
+          break;
+          int term = (int) ord;
+          if (map != null) {
+            term = (int) ordMap.get(term);
+          }
+          int arrIdx = term - startTermIndex;
+          if (arrIdx >= 0 && arrIdx < counts.length) counts[arrIdx]++;
+        }
       } else if (startTermIndex == -1) {
         counts[0]++; // missing count
       }
@@ -448,10 +462,13 @@ public class DocValuesFacets {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (si.advanceExact(doc)) {
-        int term = (int) si.nextOrd();
-        do {
+        for (int o = 0; o < si.docValueCount(); o++) {
+          long ord = si.nextOrd();
+          if (ord == -1) // NO_MORE_ORDS
+          break;
+          int term = (int) ord;
           segCounts[1 + term]++;
-        } while ((term = (int) si.nextOrd()) >= 0);
+        }
       } else {
         counts[0]++; // missing
       }
@@ -462,6 +479,8 @@ public class DocValuesFacets {
       migrateGlobal(counts, segCounts, subIndex, map);
     }
   }
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** folds counts in segment ordinal space (segCounts) into global ordinal space (counts) */
   static void migrateGlobal(int counts[], int segCounts[], int subIndex, OrdinalMap map) {

@@ -444,8 +444,7 @@ public class TestTrie extends SolrTestCaseJ4 {
 
   private void checkPrecisionSteps(String fieldType) {
     FieldType type = h.getCore().getLatestSchema().getFieldType(fieldType);
-    if (type instanceof TrieField) {
-      TrieField field = (TrieField) type;
+    if (type instanceof TrieField field) {
       assertTrue(field.getPrecisionStep() > 0 && field.getPrecisionStep() < 64);
     }
   }

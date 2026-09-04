@@ -26,7 +26,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
@@ -124,15 +123,8 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
   }
 
   protected void setAssumeContentType(String ct) {
-    if (invariants == null) {
-      Map<String, String> map = new HashMap<>();
-      map.put(UpdateParams.ASSUME_CONTENT_TYPE, ct);
-      invariants = new MapSolrParams(map);
-    } else {
-      ModifiableSolrParams params = new ModifiableSolrParams(invariants);
-      params.set(UpdateParams.ASSUME_CONTENT_TYPE, ct);
-      invariants = params;
-    }
+    invariants =
+        SolrParams.wrapDefaults(SolrParams.of(UpdateParams.ASSUME_CONTENT_TYPE, ct), invariants);
   }
 
   private Map<String, ContentStreamLoader> pathVsLoaders = new HashMap<>();

@@ -16,10 +16,9 @@
  */
 package org.apache.solr.core;
 
-import static java.util.Collections.singletonMap;
-
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestHandler;
@@ -55,7 +54,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
         new PluginInfo(
             "requestHandler",
             new HashMap<>(),
-            new NamedList<>(singletonMap("defaults", new NamedList<>(singletonMap("a", "A1")))),
+            new NamedList<>(Map.of("defaults", new NamedList<>(Map.of("a", "A1")))),
             null);
     initParams.apply(pluginInfo);
     assertEquals("A", initParams.defaults.get("a"));
@@ -116,15 +115,14 @@ public class TestInitParams extends SolrTestCaseJ4 {
 
   public void testMatchPath() {
     InitParams initParams =
-        new InitParams(new PluginInfo(InitParams.TYPE, singletonMap("path", "/update/json/docs")));
+        new InitParams(new PluginInfo(InitParams.TYPE, Map.of("path", "/update/json/docs")));
     assertFalse(initParams.matchPath("/update"));
     assertTrue(initParams.matchPath("/update/json/docs"));
-    initParams =
-        new InitParams(new PluginInfo(InitParams.TYPE, singletonMap("path", "/update/**")));
+    initParams = new InitParams(new PluginInfo(InitParams.TYPE, Map.of("path", "/update/**")));
     assertTrue(initParams.matchPath("/update/json/docs"));
     assertTrue(initParams.matchPath("/update/json"));
     assertTrue(initParams.matchPath("/update"));
-    initParams = new InitParams(new PluginInfo(InitParams.TYPE, singletonMap("path", "/update/*")));
+    initParams = new InitParams(new PluginInfo(InitParams.TYPE, Map.of("path", "/update/*")));
     assertFalse(initParams.matchPath("/update/json/docs"));
     assertTrue(initParams.matchPath("/update/json"));
     assertTrue(initParams.matchPath("/update"));

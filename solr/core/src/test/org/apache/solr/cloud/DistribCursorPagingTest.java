@@ -36,6 +36,7 @@ import org.apache.solr.CursorPagingTest;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -47,6 +48,7 @@ import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.CursorMark;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Test;
 
 /**
@@ -594,7 +596,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
             assertFullWalkNoDupsElevated(
                 wrapDefaults(
                     params(
-                        "qt", "/elevate",
                         "fl", "id,[elevated]",
                         "forceElevation", "true",
                         "elevateIds", "50,20,80"),
@@ -648,8 +649,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
           assertFullWalkNoDupsElevated(
               wrapDefaults(
                   params(
-                      "qt",
-                      "/elevate",
                       "fl",
                       fl + ",[elevated]",
                       // HACK: work around SOLR-15307... same results should match, just not same
@@ -693,10 +692,10 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   }
 
   /** execute a request, verify that we get an expected error */
+  @SuppressWarnings("try")
   public void assertFail(SolrParams p, ErrorCode expCode, String expSubstr) throws Exception {
 
-    try {
-      ignoreException(expSubstr);
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expSubstr)) {
       query(p);
       fail("no exception matching expected: " + expCode.code + ": " + expSubstr);
     } catch (SolrException e) {
@@ -704,8 +703,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
       assertTrue(
           "Expected substr not found: " + expSubstr + " <!< " + e.getMessage(),
           e.getMessage().contains(expSubstr));
-    } finally {
-      unIgnoreException(expSubstr);
     }
   }
 
@@ -766,9 +763,9 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   /**
    * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as
-   * long as a non-0 number of docs ar returned. This method records the the set of all id's (must
-   * be positive ints) encountered and throws an assertion failure if any id is encountered more
-   * than once, or if an id is encountered which is not expected, or if an id is <code>[elevated]
+   * long as a non-0 number of docs ar returned. This method records the set of all id's (must be
+   * positive ints) encountered and throws an assertion failure if any id is encountered more than
+   * once, or if an id is encountered which is not expected, or if an id is <code>[elevated]
    * </code> and comes "after" any ids which were not <code>[elevated]</code>
    *
    * @return set of all elevated ids encountered in the walk
@@ -781,6 +778,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     final SentinelIntSet idsElevated = new SentinelIntSet(32, -1);
 
     assertFullWalkNoDups(
+        "/elevate",
         params,
         (doc) -> {
           final int id = Integer.parseInt(doc.get("id").toString());
@@ -822,9 +820,9 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   /**
    * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as
-   * long as a non-0 number of docs ar returned. This method records the the set of all id's (must
-   * be positive ints) encountered and throws an assertion failure if any id is encountered more
-   * then once, or if the set grows above maxSize
+   * long as a non-0 number of docs ar returned. This method records the set of all id's (must be
+   * positive ints) encountered and throws an assertion failure if any id is encountered more then
+   * once, or if the set grows above maxSize
    *
    * <p>Note that this method explicitly uses the "cloudClient" for executing the queries, instead
    * of relying on the test infrastructure to execute the queries redundently against both the cloud
@@ -882,12 +880,21 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
    */
   public void assertFullWalkNoDups(SolrParams params, Consumer<SolrDocument> consumer)
       throws Exception {
+    assertFullWalkNoDups("/select", params, consumer);
+  }
+
+  /**
+   * Identical to {@link #assertFullWalkNoDups(SolrParams,Consumer)}, but dispatches the query to
+   * the specified request handler path.
+   */
+  public void assertFullWalkNoDups(
+      String requestHandler, SolrParams params, Consumer<SolrDocument> consumer) throws Exception {
 
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
     while (0 < docsOnThisPage) {
       final SolrParams p = p(params, CURSOR_MARK_PARAM, cursorMark);
-      QueryResponse rsp = cloudClient.query(p);
+      QueryResponse rsp = new QueryRequest(requestHandler, p).process(cloudClient);
       String nextCursorMark = assertHashNextCursorMark(rsp);
       SolrDocumentList docs = extractDocList(rsp);
       docsOnThisPage = docs.size();

@@ -49,7 +49,7 @@ public class MovingMedianEvaluator extends RecursiveNumericEvaluator implements 
               "Invalid expression %s - null found for the second value",
               toExpression(constructingFactory)));
     }
-    if (!(first instanceof List<?>)) {
+    if (!(first instanceof List<?> values)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -66,7 +66,6 @@ public class MovingMedianEvaluator extends RecursiveNumericEvaluator implements 
               first.getClass().getSimpleName()));
     }
 
-    List<?> values = (List<?>) first;
     int window = ((Number) second).intValue();
 
     List<Number> moving = new ArrayList<>();

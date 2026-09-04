@@ -1,0 +1,7 @@
+title: EmbeddedSolrServer now considers the ResponseParser
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17390
+  url: https://issues.apache.org/jira/browse/SOLR-17390

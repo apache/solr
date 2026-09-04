@@ -17,11 +17,9 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -34,12 +32,8 @@ import org.apache.solr.common.cloud.SolrZkClient;
 public class UpdateACLTool extends ToolBase {
   // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 
-  public UpdateACLTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public UpdateACLTool(PrintStream stdout) {
-    super(stdout);
+  public UpdateACLTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -53,14 +47,14 @@ public class UpdateACLTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(SolrCLI.OPTION_ZKHOST, SolrCLI.OPTION_ZKHOST_DEPRECATED);
+  public Options getOptions() {
+    return super.getOptions().addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
 
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
     String path = cli.getArgs()[0];
 
     if (!ZkController.checkChrootPath(zkHost, true)) {

@@ -117,7 +117,7 @@ public abstract class BaseTestHarness {
   }
 
   /**
-   * A helper that creates an xml &lt;doc&gt; containing all of the fields and values specified
+   * A helper that creates a xml &lt;doc&gt; containing all fields and values specified
    *
    * @param fieldsAndValues 0 and Even numbered args are fields names odds are field values.
    */
@@ -185,7 +185,7 @@ public abstract class BaseTestHarness {
   }
 
   /**
-   * Helper that returns an &lt;optimize&gt; String with optional key/val pairs.
+   * Helper that returns a &lt;optimize&gt; String with optional key/val pairs.
    *
    * @param args 0 and Even numbered args are params, Odd numbered args are values.
    */
@@ -204,7 +204,7 @@ public abstract class BaseTestHarness {
   }
 
   /**
-   * Helper that returns an &lt;commit&gt; String with optional key/val pairs.
+   * Helper that returns a &lt;commit&gt; String with optional key/val pairs.
    *
    * @param args 0 and Even numbered args are params, Odd numbered args are values.
    */

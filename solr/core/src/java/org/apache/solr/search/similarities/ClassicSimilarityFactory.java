@@ -31,7 +31,7 @@ import org.apache.solr.schema.SimilarityFactory;
  * <p>Optional settings:
  *
  * <ul>
- *   <li>discountOverlaps (bool): Sets {@link ClassicSimilarity#setDiscountOverlaps(boolean)}
+ *   <li>discountOverlaps (bool): Sets {@link ClassicSimilarity#getDiscountOverlaps()}.
  * </ul>
  *
  * @see TFIDFSimilarity
@@ -41,13 +41,13 @@ public class ClassicSimilarityFactory extends SimilarityFactory {
 
   /**
    * Init param name for specifying the value to use in {@link
-   * ClassicSimilarity#setDiscountOverlaps(boolean)}
+   * ClassicSimilarity#getDiscountOverlaps()}.
    */
   public static final String DISCOUNT_OVERLAPS = "discountOverlaps";
 
   /**
-   * Controls the value of {@link ClassicSimilarity#setDiscountOverlaps(boolean)} on newly
-   * constructed instances of {@link ClassicSimilarity}
+   * Controls the value of {@link ClassicSimilarity#getDiscountOverlaps()} on newly constructed
+   * instances of {@link ClassicSimilarity}
    */
   protected boolean discountOverlaps = true;
 
@@ -59,8 +59,6 @@ public class ClassicSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    ClassicSimilarity sim = new ClassicSimilarity();
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    return new ClassicSimilarity(discountOverlaps);
   }
 }

@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.request.schema.AnalyzerDefinition;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**
  * This class is used to wrap the response messages retrieved from Solr Schema API.
@@ -38,13 +39,12 @@ public class SchemaResponse extends SolrResponseBase {
   private static <T> Map<String, T> extractAttributeMap(NamedList<T> namedList) {
     if (namedList == null) return null;
     LinkedHashMap<String, T> result = new LinkedHashMap<>();
-    for (int i = 0; i < namedList.size(); i++) {
-      T val = namedList.getVal(i);
-      String name = namedList.getName(i);
-      if (!(val instanceof NamedList) && !(val instanceof List)) {
-        result.put(name, val);
-      }
-    }
+    namedList.forEach(
+        (name, val) -> {
+          if (!(val instanceof NamedList) && !(val instanceof List)) {
+            result.put(name, val);
+          }
+        });
 
     return result;
   }
@@ -268,7 +268,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      schemaName = SchemaResponse.getSchemaName(response.asShallowMap());
+      schemaName = SchemaResponse.getSchemaName(new SimpleOrderedMap<>(response));
     }
 
     public String getSchemaName() {
@@ -283,7 +283,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      schemaVersion = SchemaResponse.getSchemaVersion(response.asShallowMap());
+      schemaVersion = SchemaResponse.getSchemaVersion(new SimpleOrderedMap<>(response));
     }
 
     public float getSchemaVersion() {
@@ -315,7 +315,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      fields = SchemaResponse.getFields(response.asShallowMap());
+      fields = SchemaResponse.getFields(new SimpleOrderedMap<>(response));
     }
 
     public List<Map<String, Object>> getFields() {
@@ -362,7 +362,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      uniqueKey = SchemaResponse.getSchemaUniqueKey(response.asShallowMap());
+      uniqueKey = SchemaResponse.getSchemaUniqueKey(new SimpleOrderedMap<>(response));
     }
 
     public String getUniqueKey() {
@@ -377,7 +377,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      similarity = SchemaResponse.getSimilarity(response.asShallowMap());
+      similarity = SchemaResponse.getSimilarity(new SimpleOrderedMap<>(response));
     }
 
     public Map<String, Object> getSimilarity() {
@@ -392,7 +392,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      copyFields = SchemaResponse.getCopyFields(response.asShallowMap());
+      copyFields = SchemaResponse.getCopyFields(new SimpleOrderedMap<>(response));
     }
 
     public List<Map<String, Object>> getCopyFields() {
@@ -424,7 +424,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      fieldTypes = SchemaResponse.getFieldTypeRepresentations(response.asShallowMap());
+      fieldTypes = SchemaResponse.getFieldTypeRepresentations(new SimpleOrderedMap<>(response));
     }
 
     public List<FieldTypeRepresentation> getFieldTypes() {

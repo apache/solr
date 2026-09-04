@@ -69,8 +69,7 @@ public class KolmogorovSmirnovEvaluator extends RecursiveObjectEvaluator impleme
     double[] data =
         ((List<?>) second).stream().mapToDouble(item -> ((Number) item).doubleValue()).toArray();
 
-    if (first instanceof RealDistribution) {
-      RealDistribution realDistribution = (RealDistribution) first;
+    if (first instanceof RealDistribution realDistribution) {
 
       Tuple tuple = new Tuple();
       tuple.put(StreamParams.P_VALUE, ks.kolmogorovSmirnovTest(realDistribution, data));

@@ -46,7 +46,7 @@ public class ClassificationUpdateProcessorIntegrationTest extends SolrTestCaseJ4
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
     initCore("solrconfig-classification.xml", "schema-classification.xml");
   }
 
@@ -283,7 +283,7 @@ public class ClassificationUpdateProcessorIntegrationTest extends SolrTestCaseJ4
       TermQuery query = new TermQuery(new Term(ID, id));
       TopDocs doc1 = searcher.search(query, 1);
       ScoreDoc scoreDoc = doc1.scoreDocs[0];
-      return searcher.doc(scoreDoc.doc);
+      return searcher.getDocFetcher().doc(scoreDoc.doc);
     }
   }
 

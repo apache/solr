@@ -22,6 +22,7 @@ import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -43,10 +44,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import org.apache.http.client.HttpClient;
+import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -56,8 +58,10 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -72,6 +76,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
@@ -128,7 +133,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static DistribStateManager distribStateManagerMock;
   private static CoreContainer coreContainerMock;
   private static UpdateShardHandler updateShardHandlerMock;
-  private static HttpClient httpClientMock;
 
   @SuppressWarnings("rawtypes")
   private final PlacementPluginFactory placementPluginFactory = new SimplePlacementFactory();
@@ -144,10 +148,16 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private OverseerCollectionConfigSetProcessorToBeTested underTest;
 
   private Thread thread;
-  private final Queue<QueueEvent> queue = new ArrayBlockingQueue<>(10);
+  private final Queue<QueueEvent> queue = new LinkedBlockingQueue<>();
 
   private static class OverseerCollectionConfigSetProcessorToBeTested
       extends OverseerCollectionConfigSetProcessor {
+
+    /**
+     * If non-null, all the threads will wait on this latch after task execution. This is used to
+     * force thread contention in post-processing.
+     */
+    private final CountDownLatch postLatch;
 
     public OverseerCollectionConfigSetProcessorToBeTested(
         ZkStateReader zkStateReader,
@@ -159,7 +169,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         Overseer overseer,
         DistributedMap completedMap,
         DistributedMap failureMap,
-        SolrMetricsContext solrMetricsContext) {
+        SolrMetricsContext solrMetricsContext,
+        CountDownLatch postLatch) {
       super(
           zkStateReader,
           myId,
@@ -173,11 +184,52 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           completedMap,
           failureMap,
           solrMetricsContext);
+
+      this.postLatch = postLatch;
     }
 
     @Override
     protected LeaderStatus amILeader() {
       return LeaderStatus.YES;
+    }
+
+    @Override
+    protected Runner createRunner(
+        OverseerMessageHandler messageHandler,
+        ZkNodeProps message,
+        String operation,
+        QueueEvent head,
+        OverseerMessageHandler.Lock lock) {
+      return new LatchRunner(messageHandler, message, operation, head, lock);
+    }
+
+    /** Override the default runner to wait on a latch once the task is completed. */
+    private class LatchRunner extends Runner {
+
+      public LatchRunner(
+          OverseerMessageHandler messageHandler,
+          ZkNodeProps message,
+          String operation,
+          QueueEvent head,
+          OverseerMessageHandler.Lock lock) {
+        super(messageHandler, message, operation, head, lock);
+      }
+
+      @Override
+      public void run() {
+        super.run();
+
+        if (postLatch != null) {
+          try {
+            boolean success = postLatch.await(MAX_WAIT_MS, TimeUnit.MILLISECONDS);
+            if (!success) {
+              throw new RuntimeException("Timed out waiting for postLatch");
+            }
+          } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      }
     }
   }
 
@@ -207,7 +259,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     distribStateManagerMock = mock(DistribStateManager.class);
     coreContainerMock = mock(CoreContainer.class);
     updateShardHandlerMock = mock(UpdateShardHandler.class);
-    httpClientMock = mock(HttpClient.class);
     solrMetricsContextMock = mock(SolrMetricsContext.class);
   }
 
@@ -234,7 +285,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     distribStateManagerMock = null;
     coreContainerMock = null;
     updateShardHandlerMock = null;
-    httpClientMock = null;
     solrMetricsContextMock = null;
   }
 
@@ -267,7 +317,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(distribStateManagerMock);
     reset(coreContainerMock);
     reset(updateShardHandlerMock);
-    reset(httpClientMock);
     reset(solrMetricsContextMock);
 
     zkClientData.clear();
@@ -278,7 +327,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
-    stopComponentUnderTest();
+    stopProcessor();
     super.tearDown();
   }
 
@@ -289,15 +338,18 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(workQueueMock.peekTopN(anyInt(), any(), anyLong()))
         .thenAnswer(
             invocation -> {
-              Object result;
-              int count = 0;
-              while ((result = queue.peek()) == null) {
-                Thread.sleep(1000);
-                count++;
-                if (count > 1) return null;
-              }
+              int n = invocation.getArgument(0);
 
-              return List.of(result);
+              int retries = 0;
+              while (retries < 2) {
+                List<Object> results = queue.stream().limit(n).collect(Collectors.toList());
+                if (!results.isEmpty()) {
+                  return results;
+                }
+                Thread.sleep(1000);
+                retries++;
+              }
+              return List.of();
             });
 
     when(workQueueMock.getTailId())
@@ -327,7 +379,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
               return null;
             })
         .when(workQueueMock)
-        .remove(any(QueueEvent.class));
+        .remove(any(QueueEvent.class), anyBoolean());
 
     when(workQueueMock.poll())
         .thenAnswer(
@@ -399,7 +451,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     when(clusterStateMock.getLiveNodes()).thenReturn(liveNodes);
 
-    when(solrZkClientMock.setData(anyString(), any(), anyInt(), anyBoolean()))
+    when(solrZkClientMock.setData(anyString(), any(), anyInt()))
         .then(
             invocation -> {
               System.out.println(
@@ -412,7 +464,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
               return null;
             });
 
-    when(solrZkClientMock.getData(anyString(), any(), any(), anyBoolean()))
+    when(solrZkClientMock.getData(anyString(), any(), any()))
         .thenAnswer(
             invocation -> {
               byte[] data = zkClientData.get(invocation.getArgument(0));
@@ -422,14 +474,14 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
               return data;
             });
 
-    when(solrZkClientMock.create(any(), any(), any(), anyBoolean()))
+    when(solrZkClientMock.create(any(), any(), any()))
         .thenAnswer(
             invocation -> {
               zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
               return invocation.getArgument(0);
             });
 
-    when(solrZkClientMock.exists(any(String.class), anyBoolean()))
+    when(solrZkClientMock.exists(any(String.class)))
         .thenAnswer(
             invocation -> {
               String key = invocation.getArgument(0);
@@ -447,7 +499,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(coreContainerMock.getPlacementPluginFactory()).thenReturn(placementPluginFactory);
     when(coreContainerMock.getConfigSetService())
         .thenReturn(new ZkConfigSetService(solrZkClientMock));
-    when(updateShardHandlerMock.getDefaultHttpClient()).thenReturn(httpClientMock);
 
     when(zkControllerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
     when(cloudDataProviderMock.getClusterStateProvider()).thenReturn(clusterStateProviderMock);
@@ -517,7 +568,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         .when(distribStateManagerMock)
         .makePath(anyString());
 
-    when(solrZkClientMock.exists(any(String.class), isNull(), anyBoolean()))
+    when(solrZkClientMock.exists(any(String.class), isNull()))
         .thenAnswer(
             invocation -> {
               String key = invocation.getArgument(0);
@@ -534,7 +585,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     when(overseerMock.getSolrCloudManager()).thenReturn(cloudManagerMock);
 
-    when(overseerMock.getStateUpdateQueue(any())).thenReturn(stateUpdateQueueMock);
     when(overseerMock.getStateUpdateQueue()).thenReturn(stateUpdateQueueMock);
 
     // Selecting the cluster state update strategy: Overseer when distributedClusterStateUpdates is
@@ -570,22 +620,20 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           .record(any(), any());
     } else {
       // Mocking for state change via the Overseer queue
+      Mockito.doCallRealMethod().when(overseerMock).offerStateUpdate((MapWriter) any());
       Mockito.doAnswer(
-              new Answer<Void>() {
-                @Override
-                public Void answer(InvocationOnMock invocation) {
-                  try {
-                    handleCreateCollMessage(invocation.getArgument(0));
-                    verify(stateUpdateQueueMock, Mockito.atLeast(0))
-                        .offer((byte[]) invocation.getArgument(0));
-                  } catch (KeeperException e) {
-                    throw new RuntimeException(e);
-                  } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException(e);
-                  }
-                  return null;
+              invocation -> {
+                try {
+                  handleCreateCollMessage(invocation.getArgument(0));
+                  verify(stateUpdateQueueMock, Mockito.atLeast(0))
+                      .offer((byte[]) invocation.getArgument(0));
+                } catch (KeeperException e) {
+                  throw new RuntimeException(e);
+                } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                  throw new RuntimeException(e);
                 }
+                return null;
               })
           .when(overseerMock)
           .offerStateUpdate((byte[]) any());
@@ -700,12 +748,26 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     }
   }
 
-  protected void startComponentUnderTest() {
+  protected void createAndStartProcessor(CountDownLatch postLatch) {
+    underTest =
+        new OverseerCollectionConfigSetProcessorToBeTested(
+            zkStateReaderMock,
+            "1234",
+            shardHandlerFactoryMock,
+            ADMIN_PATH,
+            workQueueMock,
+            runningMapMock,
+            overseerMock,
+            completedMapMock,
+            failureMapMock,
+            solrMetricsContextMock,
+            postLatch);
+
     thread = new Thread(underTest);
     thread.start();
   }
 
-  protected void stopComponentUnderTest() throws Exception {
+  protected void stopProcessor() throws Exception {
     if (null != underTest) {
       underTest.close();
       underTest = null;
@@ -753,6 +815,20 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
             lastProcessMessageResult = OverseerSolrResponseSerializer.deserialize(bytes);
           }
         };
+    queue.add(qe);
+  }
+
+  /** Submit a dumb job to the overseer that does nothing. */
+  private void issueMockJob(String id) {
+    Map<String, Object> propMap =
+        Map.of(
+            Overseer.QUEUE_OPERATION,
+            CollectionParams.CollectionAction.MOCK_COLL_TASK.toLower(),
+            "name",
+            id);
+
+    ZkNodeProps props = new ZkNodeProps(propMap);
+    QueueEvent qe = new QueueEvent(id, Utils.toJSON(props), null);
     queue.add(qe);
   }
 
@@ -957,24 +1033,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     if (random().nextBoolean()) Collections.shuffle(createNodeList, random());
 
-    underTest =
-        new OverseerCollectionConfigSetProcessorToBeTested(
-            zkStateReaderMock,
-            "1234",
-            shardHandlerFactoryMock,
-            ADMIN_PATH,
-            workQueueMock,
-            runningMapMock,
-            overseerMock,
-            completedMapMock,
-            failureMapMock,
-            solrMetricsContextMock);
-
-    if (log.isInfoEnabled()) {
-      log.info("clusterstate {}", clusterStateMock.hashCode());
-    }
-
-    startComponentUnderTest();
+    createAndStartProcessor(null);
 
     final List<String> createNodeListToSend =
         ((createNodeListOption != CreateNodeListOptions.SEND_NULL) ? createNodeList : null);
@@ -1349,5 +1408,135 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         numberOfSlices,
         false,
         distributedClusterStateUpdates);
+  }
+
+  /** Check no overseer task is rejected when the queue is flooded. */
+  @Test
+  public void testFloodQueue() throws Exception {
+
+    commonMocks(2, false);
+
+    // Set a latch, so all thread will be waiting once the task processing completes, but before
+    // the thread are returned to the pool.
+    // This validates that the main thread (that reads tasks from the distributed queue) does not
+    // submit more tasks than the pool can handle, even if the previous tasks were already
+    // completed.
+    CountDownLatch postLatch = new CountDownLatch(1);
+    createAndStartProcessor(postLatch);
+
+    for (int i = 0; i < OverseerTaskProcessor.MAX_PARALLEL_TASKS + 10; i++) {
+      issueMockJob(Integer.toString(i));
+    }
+
+    Thread.sleep(1000);
+    underTest.postLatch.countDown();
+
+    waitForEmptyQueue();
+    stopProcessor();
+  }
+
+  /**
+   * Verify that when lockTask throws a SolrException due to a callingLockId from an unrelated
+   * collection, the async task is properly marked as failed rather than silently swallowed or
+   * retried forever. This test exercises the real LockTree validation code path.
+   */
+  @Test
+  public void testLockTaskExceptionFailsAsyncTask() throws Exception {
+    commonMocks(2, false);
+
+    String asyncId = "lock-fail-test-async-123";
+
+    // Create a real OverseerCollectionMessageHandler so we exercise the real LockTree locking
+    OverseerCollectionMessageHandler collHandler =
+        new OverseerCollectionMessageHandler(
+            zkStateReaderMock,
+            "1234",
+            shardHandlerFactoryMock,
+            ADMIN_PATH,
+            new Stats(),
+            overseerMock,
+            new OverseerNodePrioritizer(
+                zkStateReaderMock, overseerMock, ADMIN_PATH, shardHandlerFactoryMock));
+
+    // Acquire a lock on collA by calling lockTask directly.
+    // This puts a real lock into the LockTree's allLocks map.
+    ZkNodeProps collAMessage =
+        new ZkNodeProps(
+            Map.of(
+                Overseer.QUEUE_OPERATION,
+                CollectionParams.CollectionAction.MOCK_COLL_TASK.toLower(),
+                "name",
+                "collA"));
+    OverseerMessageHandler.Lock collALock = collHandler.lockTask(collAMessage, 1, null);
+    assertNotNull("Should have acquired lock on collA", collALock);
+    String collALockId = collALock.id();
+
+    // Build a selector that always returns our real handler
+    OverseerTaskProcessor.OverseerMessageHandlerSelector selector =
+        new OverseerTaskProcessor.OverseerMessageHandlerSelector() {
+          @Override
+          public void close() {
+            IOUtils.closeQuietly(collHandler);
+          }
+
+          @Override
+          public OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message) {
+            return collHandler;
+          }
+        };
+
+    // Create a processor using the real handler
+    OverseerTaskProcessor processor =
+        new OverseerTaskProcessor(
+            zkStateReaderMock,
+            "1234",
+            new Stats(),
+            selector,
+            mock(OverseerNodePrioritizer.class),
+            workQueueMock,
+            runningMapMock,
+            completedMapMock,
+            failureMapMock,
+            solrMetricsContextMock) {
+          @Override
+          protected LeaderStatus amILeader() {
+            return LeaderStatus.YES;
+          }
+        };
+
+    Thread processorThread = new Thread(processor);
+    processorThread.start();
+
+    try {
+      // Submit an async task for collB, but with collA's lock ID as the callingLockId.
+      // The real LockTree will find collA's lock, call validateSubpath, and throw SolrException
+      // because collB != collA.
+      Map<String, Object> propMap =
+          Map.of(
+              Overseer.QUEUE_OPERATION,
+              CollectionParams.CollectionAction.MOCK_COLL_TASK.toLower(),
+              "name",
+              "collB",
+              CollectionAdminParams.CALLING_LOCK_ID_HEADER,
+              collALockId,
+              "async",
+              asyncId);
+      ZkNodeProps props = new ZkNodeProps(propMap);
+      QueueEvent qe = new QueueEvent("lockFailTask", Utils.toJSON(props), null);
+      queue.add(qe);
+
+      waitForEmptyQueue();
+
+      // Verify the task was put in the failure map
+      verify(failureMapMock, times(1)).put(eq(asyncId), any(byte[].class));
+
+      // Verify the task was NOT put in the running map (it should fail before reaching that point)
+      verify(runningMapMock, times(0)).put(eq(asyncId), any());
+    } finally {
+      collALock.unlock();
+      processor.close();
+      processorThread.interrupt();
+      processorThread.join(MAX_WAIT_MS);
+    }
   }
 }

@@ -73,18 +73,18 @@ public class AddReplicaTest extends SolrCloudTestCase {
 
     DocCollection docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
-    assertEquals(4, docCollection.getReplicas().size());
-    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-    assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
-    assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    assertEquals(4, docCollection.replicaStream().count());
+    assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).size());
+    assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).size());
+    assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).size());
 
     docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
-    assertEquals(4, docCollection.getReplicas().size());
-    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-    assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
-    assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    assertEquals(4, docCollection.replicaStream().count());
+    assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).size());
+    assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).size());
+    assertEquals(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).size());
 
     // adding any number of replicas is supported if an explicit create node set is specified
     // so test that as well
@@ -106,10 +106,10 @@ public class AddReplicaTest extends SolrCloudTestCase {
     docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
-    assertEquals(9, docCollection.getReplicas().size());
-    assertEquals(5, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
-    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    assertEquals(9, docCollection.replicaStream().count());
+    assertEquals(5, getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).size());
+    assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).size());
+    assertEquals(2, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).size());
   }
 
   @Test
@@ -211,7 +211,13 @@ public class AddReplicaTest extends SolrCloudTestCase {
     // Verify that the new core was created with user-defined properties coming from the request
     // and inherited from the collection (the former taking precedence over the latter).
     Replica replica =
-        cloudClient.getClusterState().getCollection(collectionName).getReplicas().get(1);
+        cloudClient
+            .getClusterState()
+            .getCollection(collectionName)
+            .replicaStream()
+            .skip(1)
+            .findFirst()
+            .orElseThrow();
     CoreDescriptor coreDescriptor =
         cluster
             .getReplicaJetty(replica)

@@ -16,9 +16,8 @@
  */
 package org.apache.solr.update;
 
-import java.util.HashMap;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
@@ -40,8 +39,7 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
 
-    MapSolrParams params = new MapSolrParams(new HashMap<>());
-    params.getMap().put("update.processor", "nonexistent");
+    var params = new ModifiableSolrParams().set("update.processor", "nonexistent");
 
     // Add a single document
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -59,8 +57,8 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
     }
 
     // Then check that the new param behaves correctly
-    params.getMap().remove("update.processor");
-    params.getMap().put(UpdateParams.UPDATE_CHAIN, "nonexistent");
+    params.remove("update.processor");
+    params.set(UpdateParams.UPDATE_CHAIN, "nonexistent");
     req.setParams(params);
     try {
       handler.handleRequestBody(req, rsp);

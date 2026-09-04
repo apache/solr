@@ -93,13 +93,13 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
   /**
    * Create a {@link ClusterEventProducer} based on the current plugin configurations.
    *
-   * <p>NOTE: this method can only be called once because it has side-effects, such as transferring
+   * <p>NOTE: this method can only be called once because it has side effects, such as transferring
    * the initially collected listeners to the resulting producer's instance, and installing a {@link
    * org.apache.solr.api.ContainerPluginsRegistry.PluginRegistryListener}. Calling this method more
    * than once will result in an exception.
    *
    * @param plugins current plugin configurations
-   * @return configured instance of cluster event producer (with side-effects, see above)
+   * @return configured instance of cluster event producer (with side effects, see above)
    */
   public DelegatingClusterEventProducer create(ContainerPluginsRegistry plugins) {
     if (created) {
@@ -133,8 +133,7 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
               return;
             }
             Object instance = plugin.getInstance();
-            if (instance instanceof ClusterEventListener) {
-              ClusterEventListener listener = (ClusterEventListener) instance;
+            if (instance instanceof ClusterEventListener listener) {
               clusterEventProducer.registerListener(listener);
             } else if (instance instanceof ClusterEventProducer) {
               if (ClusterEventProducer.PLUGIN_NAME.equals(plugin.getInfo().name)) {
@@ -162,8 +161,7 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
               return;
             }
             Object instance = plugin.getInstance();
-            if (instance instanceof ClusterEventListener) {
-              ClusterEventListener listener = (ClusterEventListener) instance;
+            if (instance instanceof ClusterEventListener listener) {
               clusterEventProducer.unregisterListener(listener);
             } else if (instance instanceof ClusterEventProducer) {
               if (ClusterEventProducer.PLUGIN_NAME.equals(plugin.getInfo().name)) {
@@ -203,9 +201,8 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
       plugins.unregisterListener(initialPluginListener);
       // transfer listeners that are already registered
       listeners.forEach(
-          (type, listenersSet) -> {
-            listenersSet.forEach(listener -> target.registerListener(listener, type));
-          });
+          (type, listenersSet) ->
+              listenersSet.forEach(listener -> target.registerListener(listener, type)));
       listeners.clear();
     }
   }

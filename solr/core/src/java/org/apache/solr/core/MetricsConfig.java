@@ -16,7 +16,7 @@
  */
 package org.apache.solr.core;
 
-import java.util.Collections;
+import java.util.Map;
 
 /** */
 public class MetricsConfig {
@@ -96,7 +96,7 @@ public class MetricsConfig {
   public static final String NOOP_IMPL_CLASS = "__noop__";
 
   private static final PluginInfo NO_OP_PLUGIN =
-      new PluginInfo("typeUnused", Collections.singletonMap("class", NOOP_IMPL_CLASS), null, null);
+      new PluginInfo("typeUnused", Map.of("class", NOOP_IMPL_CLASS), null, null);
 
   public PluginInfo getCounterSupplier() {
     if (enabled) {

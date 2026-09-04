@@ -1,0 +1,10 @@
+title: The CLUSTERSTATUS API will now stream each collection's status to the response,
+  fetching and computing it on the fly. To avoid a backwards compatibility concern,
+  this won't work for wt=javabin.
+type: changed
+authors:
+- name: Matthew Biscocho
+- name: David Smiley
+links:
+- name: SOLR-17582
+  url: https://issues.apache.org/jira/browse/SOLR-17582

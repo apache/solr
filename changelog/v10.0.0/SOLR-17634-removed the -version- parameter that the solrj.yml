@@ -1,0 +1,8 @@
+title: Removed the "version" parameter that the SolrJ client would add to almost all
+  Solr requests in relation to the version of the response format parsing ("wt" param).
+type: removed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17634
+  url: https://issues.apache.org/jira/browse/SOLR-17634

@@ -1,0 +1,10 @@
+title: SolrJ CloudSolrClient configured with a Solr URL (not ZK) now refreshes liveNodes
+  in the background. This will reduce spikes in request latency when the cached liveNodes
+  have expired.
+type: changed
+authors:
+- name: Houston Putman
+- name: David Smiley
+links:
+- name: SOLR-17921
+  url: https://issues.apache.org/jira/browse/SOLR-17921

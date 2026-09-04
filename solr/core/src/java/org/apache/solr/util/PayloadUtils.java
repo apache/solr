@@ -50,10 +50,9 @@ public class PayloadUtils {
     // component that encodes payloads as floats
     String encoder = null;
     Analyzer a = fieldType.getIndexAnalyzer();
-    if (a instanceof TokenizerChain) {
+    if (a instanceof TokenizerChain tc) {
       // examine the indexing analysis chain for DelimitedPayloadTokenFilterFactory or
       // NumericPayloadTokenFilterFactory
-      TokenizerChain tc = (TokenizerChain) a;
       TokenFilterFactory[] factories = tc.getTokenFilterFactories();
       for (TokenFilterFactory factory : factories) {
         if (factory instanceof DelimitedPayloadTokenFilterFactory) {

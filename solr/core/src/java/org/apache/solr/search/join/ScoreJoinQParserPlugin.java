@@ -44,8 +44,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.JoinQParserPlugin;
 import org.apache.solr.search.QParser;
@@ -138,7 +138,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         fromCore.close();
         fromHolder.decref();
       }
-      return joinQuery.rewrite(searcher.getIndexReader()).createWeight(searcher, scoreMode, boost);
+      return joinQuery.rewrite(searcher).createWeight(searcher, scoreMode, boost);
     }
 
     @Override
@@ -154,8 +154,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (!super.equals(obj)) return false;
-      if (!(obj instanceof OtherCoreJoinQuery)) return false;
-      OtherCoreJoinQuery other = (OtherCoreJoinQuery) obj;
+      if (!(obj instanceof OtherCoreJoinQuery other)) return false;
       return (fromCoreOpenTime == other.fromCoreOpenTime)
           && Objects.equals(fromIndex, other.fromIndex);
     }
@@ -193,7 +192,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       final Query jq =
           JoinUtil.createJoinQuery(
               fromField, true, toField, fromQuery, info.getReq().getSearcher(), this.scoreMode);
-      return jq.rewrite(searcher.getIndexReader()).createWeight(searcher, scoreMode, boost);
+      return jq.rewrite(searcher).createWeight(searcher, scoreMode, boost);
     }
 
     @Override
@@ -285,7 +284,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
           }
 
           long fromCoreOpenTime = 0;
-          LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
+          SolrQueryRequestBase otherReq = new SolrQueryRequestBase(fromCore, params);
 
           try {
             QParser fromQueryParser = QParser.getParser(fromQueryStr, otherReq);
@@ -497,7 +496,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     final String nodeName = zkController.getNodeName();
     String fromReplica = null;
 
-    for (Slice slice : fromCollection.getActiveSlicesArr()) {
+    for (Slice slice : fromCollection.getActiveSlices()) {
       assert fromReplica == null;
       for (Replica replica : slice.getReplicas()) {
         if (replica.getNodeName().equals(nodeName)) {

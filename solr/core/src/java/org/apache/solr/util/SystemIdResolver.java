@@ -16,10 +16,10 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.FileSystems;
 import javax.xml.stream.XMLResolver;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.Source;
@@ -167,7 +167,7 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
   }
 
   public static String createSystemIdFromResourceName(String name) {
-    name = name.replace(File.separatorChar, '/');
+    name = name.replace(FileSystems.getDefault().getSeparator(), "/");
     final String authority;
     if (name.startsWith("/")) {
       // a hack to preserve absolute filenames and keep them absolute after resolving, we set the

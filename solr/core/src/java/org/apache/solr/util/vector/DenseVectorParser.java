@@ -51,11 +51,24 @@ public abstract class DenseVectorParser {
   }
 
   protected void parseIndexVector() {
-    if (!(inputValue instanceof List)) {
+    if (inputValue instanceof float[] fa) {
+      checkVectorDimension(fa.length);
+      for (int i = 0; i < dimension; i++) {
+        addNumberElement(fa[i]);
+      }
+      return;
+    }
+    if (inputValue instanceof double[] da) {
+      checkVectorDimension(da.length);
+      for (int i = 0; i < dimension; i++) {
+        addNumberElement((float) da[i]);
+      }
+      return;
+    }
+    if (!(inputValue instanceof List<?> inputVector)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "incorrect vector format. " + errorMessage());
     }
-    List<?> inputVector = (List<?>) inputValue;
     checkVectorDimension(inputVector.size());
     if (inputVector.get(0) instanceof CharSequence) {
       for (int i = 0; i < dimension; i++) {

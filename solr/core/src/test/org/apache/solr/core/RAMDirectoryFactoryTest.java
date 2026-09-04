@@ -20,6 +20,7 @@ import java.io.IOException;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 
@@ -31,12 +32,17 @@ public class RAMDirectoryFactoryTest extends SolrTestCase {
     dotestOpenSucceedForEmptyDir();
   }
 
+  public void testLockTypeNone() throws IOException {
+    RAMDirectoryFactory factory = new RAMDirectoryFactory();
+    assertSame(NoLockFactory.INSTANCE, factory.createLockFactory(DirectoryFactory.LOCK_TYPE_NONE));
+  }
+
   private void dotestOpenReturnsTheSameForSamePath() throws IOException {
     final Directory directory = new ByteBuffersDirectory();
     RAMDirectoryFactory factory =
         new RAMDirectoryFactory() {
           @Override
-          protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
+          protected Directory create(String path, LockFactory lockFactory) {
             return directory;
           }
         };

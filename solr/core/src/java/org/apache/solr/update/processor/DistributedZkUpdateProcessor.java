@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -161,7 +160,15 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     assert TestInjection.injectFailUpdateRequests();
 
     if (isReadOnly()) {
-      throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
+      if (cmd.failOnReadOnly) {
+        throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
+      } else {
+        // Committing on a readOnly core/collection is a no-op, since the core was committed when
+        // becoming read-only and hasn't had any updates since.
+        assert ulog == null || !ulog.hasUncommittedChanges()
+            : "Uncommitted changes found when trying to commit on a read-only collection";
+        return;
+      }
     }
 
     List<SolrCmdDistributor.Node> nodes = null;
@@ -546,20 +553,20 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         Replica leaderReplica =
             zkController.getZkStateReader().getLeaderRetry(collection, myShardId);
         // DBQ forwarded to NRT and TLOG replicas
-        List<ZkCoreNodeProps> replicaProps =
+        List<Replica> foundReplicas =
             zkController
                 .getZkStateReader()
-                .getReplicaProps(
+                .getReplicas(
                     collection,
                     myShardId,
                     leaderReplica.getName(),
                     null,
                     Replica.State.DOWN,
                     EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
-        if (replicaProps != null) {
-          final List<SolrCmdDistributor.Node> myReplicas = new ArrayList<>(replicaProps.size());
-          for (ZkCoreNodeProps replicaProp : replicaProps) {
-            myReplicas.add(new SolrCmdDistributor.StdNode(replicaProp, collection, myShardId));
+        if (foundReplicas != null) {
+          final List<SolrCmdDistributor.Node> myReplicas = new ArrayList<>(foundReplicas.size());
+          for (Replica replica : foundReplicas) {
+            myReplicas.add(new SolrCmdDistributor.StdNode(replica, collection, myShardId));
           }
           cmdDistrib.distribDelete(
               cmd, myReplicas, params, false, rollupReplicationTracker, leaderReplicationTracker);
@@ -620,20 +627,20 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // TODO: what if we are no longer the leader?
 
       forwardToLeader = false;
-      List<ZkCoreNodeProps> replicaProps =
+      List<Replica> replicas =
           zkController
               .getZkStateReader()
-              .getReplicaProps(
+              .getReplicas(
                   collection,
                   shardId,
                   leaderReplica.getName(),
                   null,
                   Replica.State.DOWN,
                   EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
-      if (replicaProps != null) {
-        nodes = new ArrayList<>(replicaProps.size());
-        for (ZkCoreNodeProps props : replicaProps) {
-          nodes.add(new SolrCmdDistributor.StdNode(props, collection, shardId));
+      if (replicas != null) {
+        nodes = new ArrayList<>(replicas.size());
+        for (Replica replica : replicas) {
+          nodes.add(new SolrCmdDistributor.StdNode(replica, collection, shardId));
         }
       }
     } catch (InterruptedException e) {
@@ -680,11 +687,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   @Override
   void setupRequest(UpdateCommand cmd) {
     zkCheck(cmd);
-    if (cmd instanceof AddUpdateCommand) {
-      AddUpdateCommand acmd = (AddUpdateCommand) cmd;
+    if (cmd instanceof AddUpdateCommand acmd) {
       nodes = setupRequest(acmd.getIndexedIdStr(), acmd.getSolrInputDocument(), null, cmd);
-    } else if (cmd instanceof DeleteUpdateCommand) {
-      DeleteUpdateCommand dcmd = (DeleteUpdateCommand) cmd;
+    } else if (cmd instanceof DeleteUpdateCommand dcmd) {
       nodes =
           setupRequest(
               dcmd.getId(),
@@ -785,7 +790,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       } else {
         // I need to forward on to the leader...
         forwardToLeader = true;
-        return Collections.singletonList(
+        return List.of(
             new SolrCmdDistributor.ForwardNode(
                 new ZkCoreNodeProps(leaderReplica),
                 zkController.getZkStateReader(),
@@ -975,8 +980,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       ClusterState cstate, DocCollection coll, String id, SolrInputDocument doc) {
     DocRouter router = coll.getRouter();
     List<SolrCmdDistributor.Node> nodes = null;
-    if (router instanceof CompositeIdRouter) {
-      CompositeIdRouter compositeIdRouter = (CompositeIdRouter) router;
+    if (router instanceof CompositeIdRouter compositeIdRouter) {
       String myShardId = cloudDesc.getShardId();
       Slice slice = coll.getSlice(myShardId);
       Map<String, RoutingRule> routingRules = slice.getRoutingRules();
@@ -987,9 +991,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           for (Map.Entry<String, RoutingRule> entry : routingRules.entrySet()) {
             String targetCollectionName = entry.getValue().getTargetCollectionName();
             final DocCollection docCollection = cstate.getCollectionOrNull(targetCollectionName);
-            if (docCollection != null && docCollection.getActiveSlicesArr().length > 0) {
-              final Slice[] activeSlices = docCollection.getActiveSlicesArr();
-              Slice any = activeSlices[0];
+            if (docCollection != null && !docCollection.getActiveSlices().isEmpty()) {
+              final Collection<Slice> activeSlices = docCollection.getActiveSlices();
+              Slice any = activeSlices.stream().findAny().orElseThrow();
               if (nodes == null) nodes = new ArrayList<>();
               nodes.add(new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(any.getLeader())));
             }
@@ -1248,8 +1252,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       String collection = null;
       String shardId = null;
 
-      if (error.req.node instanceof SolrCmdDistributor.StdNode) {
-        SolrCmdDistributor.StdNode stdNode = (SolrCmdDistributor.StdNode) error.req.node;
+      if (error.req.node instanceof SolrCmdDistributor.StdNode stdNode) {
         collection = stdNode.getCollection();
         shardId = stdNode.getShardId();
 
@@ -1275,14 +1278,14 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               getLeaderExc);
         }
 
-        List<ZkCoreNodeProps> myReplicas =
+        List<Replica> myReplicas =
             zkController
                 .getZkStateReader()
-                .getReplicaProps(collection, cloudDesc.getShardId(), cloudDesc.getCoreNodeName());
+                .getReplicas(collection, cloudDesc.getShardId(), cloudDesc.getCoreNodeName());
         boolean foundErrorNodeInReplicaList = false;
         if (myReplicas != null) {
-          for (ZkCoreNodeProps replicaProp : myReplicas) {
-            if (((Replica) replicaProp.getNodeProps())
+          for (Replica replica : myReplicas) {
+            if (replica
                 .getName()
                 .equals(((Replica) stdNode.getNodeProps().getNodeProps()).getName())) {
               foundErrorNodeInReplicaList = true;
@@ -1382,7 +1385,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     // Streaming updates can delay shutdown and cause big update reorderings (new streams can't be
     // initiated, but existing streams carry on).  This is why we check if the CC is shutdown.
-    // See SOLR-8203 and loop HdfsChaosMonkeyNothingIsSafeTest (and check for inconsistent shards)
+    // See SOLR-8203 and loop ChaosMonkeyNothingIsSafeTest (and check for inconsistent shards)
     // to test.
     if (req.getCoreContainer().isShutDown()) {
       throw new SolrException(
@@ -1394,7 +1397,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       return;
     }
 
-    if (!zkController.getZkClient().getConnectionManager().isLikelyExpired()) {
+    if (zkController.isConnected()) {
       return;
     }
 

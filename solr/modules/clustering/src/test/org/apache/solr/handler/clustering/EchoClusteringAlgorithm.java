@@ -17,7 +17,6 @@
 package org.apache.solr.handler.clustering;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -39,7 +38,7 @@ public class EchoClusteringAlgorithm extends AttrComposite implements Clustering
 
   @Override
   public Set<Class<?>> requiredLanguageComponents() {
-    return Collections.emptySet();
+    return Set.of();
   }
 
   @Override

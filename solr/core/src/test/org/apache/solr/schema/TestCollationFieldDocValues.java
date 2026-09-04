@@ -31,7 +31,7 @@ public class TestCollationFieldDocValues extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     String home = setupSolrHome();
-    initCore("solrconfig.xml", "schema.xml", home);
+    initCore("solrconfig.xml", "schema.xml", Path.of(home));
     // add some docs
     assertU(adoc("id", "1", "text", "\u0633\u0627\u0628"));
     assertU(adoc("id", "2", "text", "I WİLL USE TURKİSH CASING"));
@@ -64,14 +64,12 @@ public class TestCollationFieldDocValues extends SolrTestCaseJ4 {
 
     // copy over configuration files
     Files.copy(
-        getFile("solr/collection1/conf/solrconfig-basic.xml").toPath(),
-        confDir.resolve("solrconfig.xml"));
+        getFile("solr/collection1/conf/solrconfig-basic.xml"), confDir.resolve("solrconfig.xml"));
     Files.copy(
-        getFile("solr/collection1/conf/solrconfig.snippet.randomindexconfig.xml").toPath(),
+        getFile("solr/collection1/conf/solrconfig.snippet.randomindexconfig.xml"),
         confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
     Files.copy(
-        getFile("solr/collection1/conf/schema-collate-dv.xml").toPath(),
-        confDir.resolve("schema.xml"));
+        getFile("solr/collection1/conf/schema-collate-dv.xml"), confDir.resolve("schema.xml"));
 
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
     RuleBasedCollator baseCollator =

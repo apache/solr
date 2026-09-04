@@ -253,7 +253,7 @@ May be specified as a single value.
 
 `inc`::
 Increments or decrements a numeric field's value by a specific amount, specified as a single integer or float.
-Postive amounts increment the field's value, and negative decrement.
+Positive amounts increment the field's value, and negative decrement.
 
 [TIP]
 ====

@@ -8,6 +8,7 @@ RedirectMatch 301 ^/guide/(major-changes-in-solr-7|major-changes-in-solr-8|solr-
 # Page renames between 8.x and 9.0
 RewriteRule ^guide/9_0/solr-tutorial.html /guide/solr/latest/getting-started/solr-tutorial.html [R=301,NE,L]
 RewriteRule ^guide/a-quick-overview.html /guide/solr/latest/getting-started/introduction.html [R=301,NE,L]
+RewriteRule ^guide/a-step-closer.html /guide/solr/latest/configuration-guide/configuration-files.html [R=301,NE,L]
 RewriteRule ^guide/about-filters.html /guide/solr/latest/indexing-guide/filters.html [R=301,NE,L]
 RewriteRule ^guide/about-tokenizers.html /guide/solr/latest/indexing-guide/tokenizers.html [R=301,NE,L]
 RewriteRule ^guide/aws-solrcloud-tutorial.html /guide/solr/latest/getting-started/tutorial-aws.html [R=301,NE,L]
@@ -32,6 +33,7 @@ RewriteRule ^guide/files-screen.html /guide/solr/latest/configuration-guide/conf
 RewriteRule ^guide/filter-descriptions.html /guide/solr/latest/indexing-guide/filters.html [R=301,NE,L]
 RewriteRule ^guide/format-of-solr-xml.html /guide/solr/latest/configuration-guide/configuring-solr-xml.html [R=301,NE,L]
 RewriteRule ^guide/further-assistance.html https://solr.apache.org/community.html [R=301,NE,L]
+RewriteRule ^guide/getting-assistance.html https://solr.apache.org/community.html [R=301,NE,L]
 RewriteRule ^guide/getting-started-with-solrcloud.html /guide/solr/latest/getting-started/tutorial-solrcloud.html [R=301,NE,L]
 RewriteRule ^guide/getting-started.html /guide/solr/latest/getting-started/introduction.html [R=301,NE,L]
 RewriteRule ^guide/how-solrcloud-works.html /guide/solr/latest/deployment-guide/cluster-types.html#solrcloud-mode [R=301,NE,L]
@@ -45,10 +47,12 @@ RewriteRule ^guide/introduction-to-scaling-and-distribution.html /guide/solr/lat
 RewriteRule ^guide/introduction-to-solr-indexing.html /guide/solr/latest/getting-started/solr-indexing.html [R=301,NE,L]
 RewriteRule ^guide/java-properties.html /guide/solr/latest/deployment-guide/jvm-settings.html [R=301,NE,L]
 RewriteRule ^guide/legacy-scaling-and-distribution.html /guide/solr/latest/deployment-guide/cluster-types.html#user-managed-mode [R=301,NE,L]
+RewriteRule ^guide/lib-directives-in-solrconfig.html /guide/solr/latest/configuration-guide/libs.html [R=301,NE,L]
 RewriteRule ^guide/local-parameters-in-queries.html /guide/solr/latest/query-guide/local-params.html [R=301,NE,L]
 RewriteRule ^guide/logging.html /guide/solr/latest/deployment-guide/configuring-logging.html [R=301,NE,L]
 RewriteRule ^guide/major-changes-from-solr-5-to-solr-6.html /guide/solr/latest/upgrade-notes/major-changes-in-solr-6.html [R=301,NE,L]
 RewriteRule ^guide/making-and-restoring-backups.html /guide/solr/latest/deployment-guide/backup-restore.html [R=301,NE,L]
+RewriteRule ^guide/managing-solr.html /guide/solr/latest/deployment-guide/solr-control-script-reference.html [R=301,NE,L]
 RewriteRule ^guide/merging-indexes.html /guide/solr/latest/configuration-guide/coreadmin-api.html [R=301,NE,L]
 RewriteRule ^guide/monitoring-solr-with-prometheus-and-grafana.html /guide/solr/latest/deployment-guide/monitoring-with-prometheus-and-grafana.html [R=301,NE,L]
 RewriteRule ^guide/monitoring-solr.html /guide/solr/latest/deployment-guide/configuring-logging.html [R=301,NE,L]
@@ -61,11 +65,14 @@ RewriteRule ^guide/parallel-sql-interface.html /guide/solr/latest/query-guide/sq
 RewriteRule ^guide/parameter-reference.html /guide/solr/latest/configuration-guide/configuring-solr-xml.html [R=301,NE,L]
 RewriteRule ^guide/query-settings-in-solrconfig.html /guide/solr/latest/configuration-guide/caches-warming.html [R=301,NE,L]
 RewriteRule ^guide/query-syntax-and-parsing.html /guide/solr/latest/query-guide/query-syntax-and-parsers.html [R=301,NE,L]
+RewriteRule ^guide/read-and-write-side-fault-tolerance.html /guide/solr/latest/deployment-guide/solrcloud-recoveries-and-write-tolerance.html [R=301,NE,L]
 RewriteRule ^guide/replication-screen.html /guide/solr/latest/deployment-guide/user-managed-index-replication.html [R=301,NE,L]
 RewriteRule ^guide/requestdispatcher-in-solrconfig.html /guide/solr/latest/configuration-guide/requestdispatcher.html [R=301,NE,L]
 RewriteRule ^guide/requesthandlers-and-searchcomponents-in-solrconfig.html /guide/solr/latest/configuration-guide/requesthandlers-searchcomponents.html [R=301,NE,L]
+RewriteRule ^guide/resource-and-plugin-loading.html /guide/solr/latest/configuration-guide/resource-loading.html [R=301,NE,L]
 RewriteRule ^guide/running-solr-on-hdfs.html /guide/solr/latest/deployment-guide/solr-on-hdfs.html [R=301,NE,L]
 RewriteRule ^guide/running-your-analyzer.html /guide/solr/latest/indexing-guide/analysis-screen.html [R=301,NE,L]
+RewriteRule ^guide/running-solr.html /guide/solr/latest/deployment-guide/installing-solr.html [R=301,NE,L]
 RewriteRule ^guide/schema-factory-definition-in-solrconfig.html /guide/solr/latest/configuration-guide/schema-factory.html [R=301,NE,L]
 RewriteRule ^guide/searching.html /guide/solr/latest/query-guide/query-syntax-and-parsers.html [R=301,NE,L]
 RewriteRule ^guide/segments-info.html /guide/solr/latest/configuration-guide/index-segments-merging.html [R=301,NE,L]
@@ -85,6 +92,11 @@ RewriteRule ^guide/solrcloud-configuration-and-parameters.html /guide/solr/lates
 RewriteRule ^guide/solrcloud-query-routing-and-read-tolerance.html /guide/solr/latest/deployment-guide/solrcloud-distributed-requests.html [R=301,NE,L]
 RewriteRule ^guide/solrcloud-resilience.html /guide/solr/latest/deployment-guide/solrcloud-recoveries-and-write-tolerance.html [R=301,NE,L]
 RewriteRule ^guide/solrcloud.html /guide/solr/latest/deployment-guide/cluster-types.html#solrcloud-mode [R=301,NE,L]
+RewriteRule ^guide/statistical-programming.html /guide/solr/latest/query-guide/math-expressions.html [R=301,NE,L]
+RewriteRule ^guide/stream-decorators.html /guide/solr/latest/query-guide/stream-decorator-reference.html [R=301,NE,L]
+RewriteRule ^guide/stream-evaluators.html /guide/solr/latest/query-guide/stream-evaluator-reference.html [R=301,NE,L]
+RewriteRule ^guide/stream-sources.html /guide/solr/latest/query-guide/stream-source-reference.html [R=301,NE,L]
+RewriteRule ^guide/time-routed-aliases.html https://solr.apache.org/guide/solr/latest/deployment-guide/aliases.html#time-routed-aliases [R=301,NE,L]
 RewriteRule ^guide/the-dismax-query-parser.html /guide/solr/latest/query-guide/dismax-query-parser.html [R=301,NE,L]
 RewriteRule ^guide/the-extended-dismax-query-parser.html /guide/solr/latest/query-guide/edismax-query-parser.html [R=301,NE,L]
 RewriteRule ^guide/the-query-elevation-component.html /guide/solr/latest/query-guide/query-elevation-component.html [R=301,NE,L]
@@ -95,9 +107,11 @@ RewriteRule ^guide/the-term-vector-component.html /guide/solr/latest/query-guide
 RewriteRule ^guide/the-terms-component.html /guide/solr/latest/query-guide/terms-component.html [R=301,NE,L]
 RewriteRule ^guide/the-well-configured-solr-instance.html /guide/solr/latest/configuration-guide/configuration-files.html [R=301,NE,L]
 RewriteRule ^guide/transforming-result-documents.html /guide/solr/latest/query-guide/document-transformers.html [R=301,NE,L]
+RewriteRule ^guide/uima-integration.html https://solr.apache.org/guide/7_4/uima-integration.html [R=301,NE,L]
 RewriteRule ^guide/understanding-analyzers-tokenizers-and-filters.html /guide/solr/latest/indexing-guide/document-analysis.html [R=301,NE,L]
 RewriteRule ^guide/updatehandlers-in-solrconfig.html /guide/solr/latest/configuration-guide/commits-transaction-logs.html [R=301,NE,L]
 RewriteRule ^guide/updating-parts-of-documents.html /guide/solr/latest/indexing-guide/partial-document-updates.html [R=301,NE,L]
+RewriteRule ^guide/upgrading-solr.html /guide/solr/latest/deployment-guide/upgrading-a-solr-cluster.html [R=301,NE,L]
 RewriteRule ^guide/uploading-data-with-index-handlers.html /guide/solr/latest/indexing-guide/indexing-with-update-handlers.html [R=301,NE,L]
 RewriteRule ^guide/uploading-data-with-solr-cell-using-apache-tika.html /guide/solr/latest/indexing-guide/indexing-with-tika.html [R=301,NE,L]
 RewriteRule ^guide/using-javascript.html /guide/solr/latest/deployment-guide/javascript.html [R=301,NE,L]
@@ -107,6 +121,7 @@ RewriteRule ^guide/using-solr-from-ruby.html /guide/solr/latest/deployment-guide
 RewriteRule ^guide/using-solrj.html /guide/solr/latest/deployment-guide/solrj.html [R=301,NE,L]
 RewriteRule ^guide/using-the-solr-administration-user-interface.html /guide/solr/latest/getting-started/solr-admin-ui.html [R=301,NE,L]
 RewriteRule ^guide/using-zookeeper-to-manage-configuration-files.html /guide/solr/latest/deployment-guide/zookeeper-file-management.html [R=301,NE,L]
+RewriteRule ^guide/vectorization.html /guide/solr/latest/query-guide/math-expressions.html [R=301,NE,L]
 RewriteRule ^guide/working-with-currencies-and-exchange-rates.html /guide/solr/latest/indexing-guide/currencies-exchange-rates.html [R=301,NE,L]
 RewriteRule ^guide/working-with-dates.html /guide/solr/latest/indexing-guide/date-formatting-math.html [R=301,NE,L]
 RewriteRule ^guide/working-with-enum-fields.html /guide/solr/latest/indexing-guide/enum-fields.html [R=301,NE,L]
@@ -118,9 +133,3 @@ RewriteRule ^guide/real-time-get.html /guide/solr/latest/configuration-guide/rea
 # Removed pages redirected to latest 8.x guide
 RedirectMatch 301 ^/guide/(adding-custom-plugins-in-solrcloud-mode|blob-store-api|blockjoin-faceting|cdcr-api|cdcr-architecture|cdcr-config|cdcr-operations|colocating-collections|cross-data-center-replication-cdcr|dataimport-screen|errata|metrics-history|migrate-to-policy-rule|putting-the-pieces-together|rule-based-replica-placement|solrcloud-autoscaling-api|solrcloud-autoscaling-auto-add-replicas|solrcloud-autoscaling-fault-tolerance|solrcloud-autoscaling-listeners|solrcloud-autoscaling-overview|solrcloud-autoscaling-policy-preferences|solrcloud-autoscaling-trigger-actions|solrcloud-autoscaling-triggers|solrcloud-autoscaling|suggestions-screen|uploading-structured-data-store-data-with-the-data-import-handler|velocity-response-writer|velocity-search-ui)\.html /guide/8_11/$1.html
 # Paths we could not map
-
-
-# Do not index old reference guide pages on search engines, except for pages that don't exist in 9+
-<If "%{REQUEST_URI} =~ m#/guide/(6|7|8)_.*# && %{REQUEST_URI} !~ m#/guide/8_11/(adding-custom-plugins-in-solrcloud-mode|blob-store-api|blockjoin-faceting|cdcr-api|cdcr-architecture|cdcr-config|cdcr-operations|colocating-collections|cross-data-center-replication-cdcr|dataimport-screen|errata|metrics-history|migrate-to-policy-rule|putting-the-pieces-together|rule-based-replica-placement|solrcloud-autoscaling-api|solrcloud-autoscaling-auto-add-replicas|solrcloud-autoscaling-fault-tolerance|solrcloud-autoscaling-listeners|solrcloud-autoscaling-overview|solrcloud-autoscaling-policy-preferences|solrcloud-autoscaling-trigger-actions|solrcloud-autoscaling-triggers|solrcloud-autoscaling|suggestions-screen|uploading-structured-data-store-data-with-the-data-import-handler|velocity-response-writer|velocity-search-ui)\.html$#">
-  Header set X-Robots-Tag "noindex,nofollow,noarchive"
-</If>

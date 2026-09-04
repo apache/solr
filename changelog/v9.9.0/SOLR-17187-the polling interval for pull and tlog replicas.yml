@@ -1,0 +1,10 @@
+title: The polling interval for PULL and TLOG replicas can now be overridden using
+  the `commitPollInterval` setting, which takes a String formatted as "HH:mm:ss"
+type: changed
+authors:
+- name: Torsten Koster
+- name: Christine Poerschke
+- name: Jason Gerlowski
+links:
+- name: SOLR-17187
+  url: https://issues.apache.org/jira/browse/SOLR-17187

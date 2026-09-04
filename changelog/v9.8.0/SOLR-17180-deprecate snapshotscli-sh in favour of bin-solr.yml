@@ -1,0 +1,9 @@
+title: Deprecate snapshotscli.sh in favour of bin/solr snapshot sub commands. Now
+  able to manage Snapshots from the CLI. HDFS module specific snapshot script now
+  ships as part of that module in the modules/hdfs/bin directory.
+type: changed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-17180
+  url: https://issues.apache.org/jira/browse/SOLR-17180

@@ -16,7 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
@@ -28,8 +29,8 @@ import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
@@ -77,8 +78,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testMaximumResultsForSuggest() throws Exception {
     assertJQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
@@ -99,8 +99,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         Exception.class,
         () -> {
           assertJQ(
-              req(
-                  "qt",
+              reqWithPath(
                   rh,
                   SpellCheckComponent.COMPONENT_NAME,
                   "true",
@@ -118,8 +117,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         });
 
     assertJQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
@@ -144,8 +142,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         Exception.class,
         () -> {
           assertJQ(
-              req(
-                  "qt",
+              reqWithPath(
                   rh,
                   SpellCheckComponent.COMPONENT_NAME,
                   "true",
@@ -167,8 +164,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         });
 
     assertJQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
@@ -193,8 +189,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         Exception.class,
         () -> {
           assertJQ(
-              req(
-                  "qt",
+              reqWithPath(
                   rh,
                   SpellCheckComponent.COMPONENT_NAME,
                   "true",
@@ -219,8 +214,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testExtendedResultsCount() throws Exception {
     assertJQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
@@ -236,8 +230,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         "/spellcheck/suggestions/[1]/numFound==5");
 
     assertJQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
@@ -253,25 +246,24 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void test() throws Exception {
     assertJQ(
-        req("qt", rh, SpellCheckComponent.COMPONENT_NAME, "true", "q", "documemt"),
+        reqWithPath(rh, SpellCheckComponent.COMPONENT_NAME, "true", "q", "documemt"),
         "/spellcheck=={'suggestions':['documemt',{'numFound':1,'startOffset':0,'endOffset':8,'suggestion':['document']}]}");
   }
 
   @Test
   public void testNumericQuery() throws Exception {
     assertJQ(
-        req("qt", rh, SpellCheckComponent.COMPONENT_NAME, "true", "q", "12346"),
+        reqWithPath(rh, SpellCheckComponent.COMPONENT_NAME, "true", "q", "12346"),
         "/spellcheck=={'suggestions':['12346',{'numFound':1,'startOffset':0,'endOffset':5,'suggestion':['12345']}]}");
   }
 
   @Test
   public void testPerDictionary() throws Exception {
     assertJQ(
-        req(
+        reqWithPath(
+            rh,
             "json.nl",
             "map",
-            "qt",
-            rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             SpellingParams.SPELLCHECK_BUILD,
@@ -293,11 +285,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertQEx(
         "Invalid specified dictionary should throw exception",
         "Specified dictionaries do not exist: INVALID",
-        req(
+        reqWithPath(
+            rh,
             "json.nl",
             "map",
-            "qt",
-            rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             "q",
@@ -309,11 +300,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertQEx(
         "Invalid specified dictionary should throw exception",
         "Specified dictionaries do not exist: INVALID2",
-        req(
+        reqWithPath(
+            rh,
             "json.nl",
             "map",
-            "qt",
-            rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             "q",
@@ -328,11 +318,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testCollate() throws Exception {
     assertJQ(
-        req(
+        reqWithPath(
+            rh,
             "json.nl",
             "map",
-            "qt",
-            rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             SpellingParams.SPELLCHECK_BUILD,
@@ -343,11 +332,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
             "true"),
         "/spellcheck/collations/collation=='document'");
     assertJQ(
-        req(
+        reqWithPath(
+            rh,
             "json.nl",
             "map",
-            "qt",
-            rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             "q",
@@ -356,11 +344,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
             "true"),
         "/spellcheck/collations/collation=='document lowerfilt:brown^4'");
     assertJQ(
-        req(
+        reqWithPath(
+            rh,
             "json.nl",
             "map",
-            "qt",
-            rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             "q",
@@ -369,11 +356,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
             "true"),
         "/spellcheck/collations/collation=='document brown'");
     assertJQ(
-        req(
+        reqWithPath(
+            rh,
             "json.nl",
             "map",
-            "qt",
-            rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             "q",
@@ -414,8 +400,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   private void implTestCollateExtendedResultsWithJsonNl(
       String q, String jsonNl, boolean collateExtendedResults, String... tests) throws Exception {
     final SolrQueryRequest solrQueryRequest =
-        req(
-            CommonParams.QT,
+        reqWithPath(
             rh,
             CommonParams.Q,
             q,
@@ -434,11 +419,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   public void testCorrectSpelling() throws Exception {
     // Make sure correct spellings are signaled in the response
     assertJQ(
-        req(
+        reqWithPath(
+            rh,
             "json.nl",
             "map",
-            "qt",
-            rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             "q",
@@ -447,11 +431,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
             "true"),
         "/spellcheck/correctlySpelled==true");
     assertJQ(
-        req(
+        reqWithPath(
+            rh,
             "json.nl",
             "map",
-            "qt",
-            rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             "spellcheck.dictionary",
@@ -462,11 +445,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
             "true"),
         "/spellcheck/correctlySpelled==true");
     assertJQ(
-        req(
+        reqWithPath(
+            rh,
             "json.nl",
             "map",
-            "qt",
-            rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             "spellcheck.dictionary",
@@ -481,14 +463,14 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testRelativeIndexDirLocation() {
     SolrCore core = h.getCore();
-    File indexDir = new File(core.getDataDir() + File.separator + "spellchecker1");
-    assertTrue(indexDir.exists());
+    Path indexDir = Path.of(core.getDataDir(), "spellchecker1");
+    assertTrue(Files.exists(indexDir));
 
-    indexDir = new File(core.getDataDir() + File.separator + "spellchecker2");
-    assertTrue(indexDir.exists());
+    indexDir = Path.of(core.getDataDir(), "spellchecker2");
+    assertTrue(Files.exists(indexDir));
 
-    indexDir = new File(core.getDataDir() + File.separator + "spellchecker3");
-    assertTrue(indexDir.exists());
+    indexDir = Path.of(core.getDataDir(), "spellchecker3");
+    assertTrue(Files.exists(indexDir));
   }
 
   @Test
@@ -496,8 +478,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "0", "lowerfilt", "This is a title"));
     assertU(commit());
     SolrQueryRequest request =
-        req(
-            "qt",
+        reqWithPath(
             "/spellCheckCompRH",
             "q",
             "*:*",
@@ -525,8 +506,6 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
     request =
         req(
-            "qt",
-            "/spellCheckCompRH",
             "q",
             "*:*",
             "spellcheck.q",
@@ -557,8 +536,8 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testRebuildOnCommit() throws Exception {
     SolrQueryRequest req =
-        req("q", "lowerfilt:lucenejavt", "qt", "/spellCheckCompRH", "spellcheck", "true");
-    String response = h.query(req);
+        reqWithPath("/spellCheckCompRH", "q", "lowerfilt:lucenejavt", "spellcheck", "true");
+    String response = h.query("/spellCheckCompRH", req);
     assertFalse("No suggestions should be returned", response.contains("lucenejava"));
 
     assertU(adoc("id", "11231", "lowerfilt", "lucenejava"));
@@ -575,8 +554,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     // while "document" is present.
 
     assertJQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
@@ -591,8 +569,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         "/spellcheck/suggestions/[1]/suggestion==[{'word':'document','freq':2}]");
 
     assertJQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SpellCheckComponent.COMPONENT_NAME,
             "true",
@@ -621,7 +598,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     SolrRequestHandler handler = core.getRequestHandler("/spellCheckCompRH");
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap<>());
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+    SolrQueryRequest req = new SolrQueryRequestBase(core, params);
     handler.handleRequest(req, rsp);
     req.close();
     NamedList<?> values = rsp.getValues();
@@ -634,7 +611,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
     rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap<>());
-    req = new LocalSolrQueryRequest(core, params);
+    req = new SolrQueryRequestBase(core, params);
     handler.handleRequest(req, rsp);
     req.close();
     values = rsp.getValues();
@@ -642,5 +619,17 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     suggestions = (NamedList<?>) spellCheck.get("suggestions");
     assertNull(suggestions.get("suggestion"));
     assertFalse((Boolean) spellCheck.get("correctlySpelled"));
+  }
+
+  @Test
+  public void testFirstSearcherWarming() throws Exception {
+
+    final long preRestart = h.getCore().withSearcher(s -> s.getOpenNanoTime());
+
+    h.reload();
+
+    try (SolrCore current = h.getCoreInc()) {
+      assertNotEquals(preRestart, (long) current.withSearcher(s -> s.getOpenNanoTime()));
+    }
   }
 }

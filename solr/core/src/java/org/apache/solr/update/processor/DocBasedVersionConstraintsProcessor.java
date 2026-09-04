@@ -86,7 +86,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     this.supportMissingVersionOnOldDocs = supportMissingVersionOnOldDocs;
     this.core = req.getCore();
     this.versionFieldNames = versionFields.toArray(EMPTY_STR_ARR);
-    IndexSchema schema = core.getLatestSchema();
+    IndexSchema schema = req.getSchema();
     userVersionFields = new SchemaField[versionFieldNames.length];
     for (int i = 0; i < versionFieldNames.length; i++) {
       userVersionFields[i] = schema.getField(versionFieldNames[i]);
@@ -142,11 +142,10 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   }
 
   /**
-   * Returns true if the specified new version values are greater the the ones already known to
-   * exist for the document, or if the document does not already exist. Returns false if the
-   * specified new versions are not high enough but the processor has been configured with
-   * ignoreOldUpdates=true Throws a SolrException if the version is not high enough and
-   * ignoreOldUpdates=false
+   * Returns true if the specified new version values are greater the ones already known to exist
+   * for the document, or if the document does not already exist. Returns false if the specified new
+   * versions are not high enough but the processor has been configured with ignoreOldUpdates=true
+   * Throws a SolrException if the version is not high enough and ignoreOldUpdates=false
    */
   private boolean isVersionNewEnough(BytesRef indexedDocId, Object[] newUserVersions)
       throws IOException {
@@ -470,7 +469,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
 
       SolrInputDocument newDoc =
           createTombstoneDocument(
-              core.getLatestSchema(),
+              cmd.getReq().getSchema(),
               cmd.getId(),
               versionFieldNames,
               deleteParamValues,
@@ -501,7 +500,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
 
         SolrInputDocument newDoc =
             createTombstoneDocument(
-                core.getLatestSchema(),
+                cmd.getReq().getSchema(),
                 cmd.getId(),
                 versionFieldNames,
                 deleteParamValues,

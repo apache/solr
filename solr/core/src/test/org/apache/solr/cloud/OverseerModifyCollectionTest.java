@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import java.util.Collections;
+import java.util.Map;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.junit.BeforeClass;
@@ -43,10 +43,9 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
 
     // Modify configSet
     RequestStatusState requestStatusState =
-        CollectionAdminRequest.modifyCollection(
-                collName, Collections.singletonMap("collection.configName", "conf2"))
+        CollectionAdminRequest.modifyCollection(collName, Map.of("collection.configName", "conf2"))
             .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    assertEquals(requestStatusState, RequestStatusState.COMPLETED);
+    assertEquals(RequestStatusState.COMPLETED, requestStatusState);
 
     String configName =
         cluster.getSolrClient().getClusterStateProvider().getCollection(collName).getConfigName();
@@ -58,8 +57,7 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
             Exception.class,
             () -> {
               CollectionAdminRequest.modifyCollection(
-                      collName,
-                      Collections.singletonMap("collection.configName", "notARealConfigName"))
+                      collName, Map.of("collection.configName", "notARealConfigName"))
                   .process(cluster.getSolrClient());
             });
 

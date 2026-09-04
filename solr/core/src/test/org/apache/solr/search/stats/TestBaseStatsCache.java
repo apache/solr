@@ -36,7 +36,6 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
   @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
-    System.clearProperty("solr.statsCache");
   }
 
   // in this case, as the number of shards increases, per-shard scores should

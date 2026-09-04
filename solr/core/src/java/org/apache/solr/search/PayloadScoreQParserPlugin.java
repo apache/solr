@@ -31,8 +31,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.PayloadUtils;
 
 /**
- * Creates a PayloadScoreQuery wrapping a SpanQuery created from the input value, applying text
- * analysis and constructing SpanTermQuery or SpanNearQuery based on number of terms. <br>
+ * Creates a {@link PayloadScoreQuery} wrapping a SpanQuery created from the input value, applying
+ * text analysis and constructing SpanTermQuery or SpanNearQuery based on number of terms. <br>
  * Other parameters: <br>
  * <code>f</code>, the field (required) <br>
  * <code>func</code>, payload function (min, max, or average; required) <br>
@@ -69,7 +69,7 @@ public class PayloadScoreQParserPlugin extends QParserPlugin {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "query string missing");
         }
 
-        FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
+        FieldType ft = req.getSchema().getFieldType(field);
         Analyzer analyzer = ft.getQueryAnalyzer();
         SpanQuery query;
         try {
@@ -87,7 +87,7 @@ public class PayloadScoreQParserPlugin extends QParserPlugin {
         PayloadFunction payloadFunction = PayloadUtils.getPayloadFunction(func);
         if (payloadFunction == null) throw new SyntaxError("Unknown payload function: " + func);
 
-        PayloadDecoder payloadDecoder = req.getCore().getLatestSchema().getPayloadDecoder(field);
+        PayloadDecoder payloadDecoder = req.getSchema().getPayloadDecoder(field);
         return new PayloadScoreQuery(query, payloadFunction, payloadDecoder, includeSpanScore);
       }
     };

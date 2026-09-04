@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -70,7 +69,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
     final ShardBackupId shardBackupId = new ShardBackupId("shard1", BackupId.zero());
 
     final CoreContainer cores = h.getCoreContainer();
-    cores.getAllowPaths().add(Paths.get(locationUri));
+    cores.getAllowPaths().add(Path.of(locationUri));
     try (final CoreAdminHandler admin = new CoreAdminHandler(cores)) {
       SolrQueryResponse resp = new SolrQueryResponse();
       admin.handleRequestBody(

@@ -322,55 +322,6 @@ With class name (legacy)::
 
 *Out:* "I", "can", "t"
 
-== Lower Case Tokenizer
-
-Tokenizes the input stream by delimiting at non-letters and then converting all letters to lowercase.
-Whitespace and non-letters are discarded.
-
-*Factory class:* `solr.LowerCaseTokenizerFactory`
-
-*Arguments:*
-
-`maxTokenLen`::
-+
-[%autowidth,frame=none]
-|===
-s|Optional |Default: `255`
-|===
-+
-Maximum token length the tokenizer will emit.
-
-*Example:*
-
-[tabs#tokenizer-lowercase]
-======
-With name::
-+
-====
-[source,xml]
-----
-<analyzer>
-  <tokenizer name="lowercase"/>
-</analyzer>
-----
-====
-
-With class name (legacy)::
-+
-====
-[source,xml]
-----
-<analyzer>
-  <tokenizer class="solr.LowerCaseTokenizerFactory"/>
-</analyzer>
-----
-====
-======
-
-*In:* "I just \*LOVE* my iPhone!"
-
-*Out:* "i", "just", "love", "my", "iphone"
-
 == N-Gram Tokenizer
 
 Reads the field text and generates n-gram tokens of sizes in the given range.

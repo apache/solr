@@ -344,8 +344,8 @@ public class GCSBackupRepository extends AbstractBackupRepository {
     final BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, blobName).build();
     try (IndexInput input =
         shouldVerifyChecksum
-            ? sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)
-            : sourceDir.openInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+            ? sourceDir.openChecksumInput(sourceFileName)
+            : sourceDir.openInput(sourceFileName, IOContext.READONCE)) {
       if (input.length() <= CodecUtil.footerLength()) {
         throw new CorruptIndexException("file is too small:" + input.length(), input);
       }
@@ -361,24 +361,26 @@ public class GCSBackupRepository extends AbstractBackupRepository {
   public void copyIndexFileTo(
       URI sourceRepo, String sourceFileName, Directory dest, String destFileName)
       throws IOException {
-    try {
-      String blobName = sourceRepo.toString();
-      blobName = appendTrailingSeparatorIfNecessary(blobName);
-      blobName += sourceFileName;
-      final BlobId blobId = BlobId.of(bucketName, blobName);
-      try (final ReadChannel readChannel = storage.reader(blobId);
-          IndexOutput output =
-              dest.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
-        ByteBuffer buffer = ByteBuffer.allocate(readBufferSizeBytes);
-        while (readChannel.read(buffer) > 0) {
-          buffer.flip();
-          byte[] arr = buffer.array();
-          output.writeBytes(arr, buffer.position(), buffer.limit() - buffer.position());
-          buffer.clear();
-        }
+    String blobName = sourceRepo.toString();
+    blobName = appendTrailingSeparatorIfNecessary(blobName);
+    blobName += sourceFileName;
+    final BlobId blobId = BlobId.of(bucketName, blobName);
+    try (final ReadChannel readChannel = storage.reader(blobId);
+        IndexOutput output = dest.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+      ByteBuffer buffer = ByteBuffer.allocate(readBufferSizeBytes);
+      while (readChannel.read(buffer) != -1) {
+        buffer.flip();
+        byte[] arr = buffer.array();
+        output.writeBytes(arr, buffer.position(), buffer.limit() - buffer.position());
+        buffer.clear();
       }
-    } catch (Exception e) {
-      log.info("Here's an exception e", e);
+    } catch (IOException e) {
+      log.error("Failed to copy index file from GCS: {}/{}", bucketName, blobName, e);
+      throw e;
+    } catch (RuntimeException e) {
+      log.error("Failed to copy index file from GCS: {}/{}", bucketName, blobName, e);
+      throw new IOException(
+          "Failed to copy index file from GCS: " + bucketName + "/" + blobName, e);
     }
   }
 

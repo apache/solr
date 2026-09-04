@@ -65,7 +65,7 @@ public class SizeLimitedDistributedMap extends DistributedMap {
   private void shrinkIfNeeded() throws KeeperException, InterruptedException {
     if (this.size() >= maxSize) {
       // Bring down the size
-      List<String> children = zookeeper.getChildren(dir, null, true);
+      List<String> children = zookeeper.getChildren(dir, null);
 
       int cleanupSize = maxSize / 10;
 
@@ -79,7 +79,7 @@ public class SizeLimitedDistributedMap extends DistributedMap {
 
       Map<String, Long> childToModificationZxid = CollectionUtil.newHashMap(children.size());
       for (String child : children) {
-        Stat stat = zookeeper.exists(dir + "/" + child, null, true);
+        Stat stat = zookeeper.exists(dir + "/" + child, null);
         if (stat != null) {
           priorityQueue.insertWithOverflow(stat.getMzxid());
           childToModificationZxid.put(child, stat.getMzxid());

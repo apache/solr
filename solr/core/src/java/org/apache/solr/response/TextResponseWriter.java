@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -87,9 +86,7 @@ public abstract class TextResponseWriter implements TextWriter {
       this.rawReturnFields = NO_RAW_FIELDS;
     } else {
       this.rawFields =
-          rawFields.size() == 1
-              ? Collections.singleton(rawFields.iterator().next())
-              : new HashSet<>(rawFields);
+          rawFields.size() == 1 ? Set.of(rawFields.iterator().next()) : new HashSet<>(rawFields);
       this.rawShim = new RawShimTextResponseWriter(this);
       this.rawReturnFields = returnFields;
     }
@@ -176,8 +173,7 @@ public abstract class TextResponseWriter implements TextWriter {
       return;
     }
 
-    if (val instanceof IndexableField) {
-      IndexableField f = (IndexableField) val;
+    if (val instanceof IndexableField f) {
       SchemaField sf = schema.getFieldOrNull(f.name());
       if (sf != null) {
         sf.getType().write(raw ? rawShim : this, name, f);
@@ -206,8 +202,7 @@ public abstract class TextResponseWriter implements TextWriter {
       // restricts the fields to write...?
     } else if (val instanceof SolrDocumentList) {
       writeSolrDocumentList(name, (SolrDocumentList) val, returnFields);
-    } else if (val instanceof BytesRef) {
-      BytesRef arr = (BytesRef) val;
+    } else if (val instanceof BytesRef arr) {
       writeByteArr(name, arr.bytes, arr.offset, arr.length);
     } else {
       TextWriter.super.writeVal(name, val, raw);

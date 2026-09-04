@@ -73,18 +73,6 @@ For a list of other tutorials and introductory articles.
 Notes About These Examples
 --------------------------
 
-### References to Jar Files Outside This Directory
-
-Various example SolrHome dirs contained in this directory may use "<lib>"
-statements in the solrconfig.xml file to reference plugin jars outside of
-this directory for loading modules via relative paths.  
-
-If you make a copy of this example server and wish to use the
-ExtractingRequestHandler (SolrCell), the clustering component,
-or any other modules, you will need to
-copy the required jars or update the paths to those jars in your
-solrconfig.xml.
-
 ### Logging
 
 By default, Jetty & Solr will log to the console and logs/solr.log. This can

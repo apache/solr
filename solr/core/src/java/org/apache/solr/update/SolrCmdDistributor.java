@@ -32,14 +32,13 @@ import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -55,6 +54,9 @@ import org.slf4j.LoggerFactory;
 /** Used for distributing commands from a shard leader to its replicas. */
 public class SolrCmdDistributor implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /** Cause chains are shallow in practice; the cap only guards against a cyclic chain. */
+  private static final int MAX_CAUSE_DEPTH = 100;
 
   private StreamingSolrClients clients;
   private boolean finished = false; // see finish()
@@ -308,15 +310,16 @@ public class SolrCmdDistributor implements Closeable {
     // Copy user principal from the original request to the new update request, for later
     // authentication interceptor use
     if (SolrRequestInfo.getRequestInfo() != null) {
-      req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
+      req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getUserPrincipal());
     }
 
     if (req.synchronous) {
       blockAndDoRetries();
 
       try {
-        req.uReq.setBasePath(req.node.getUrl());
-        clients.getHttpClient().request(req.uReq);
+        clients
+            .getHttpClient()
+            .requestWithBaseUrl(req.node.getBaseUrl(), req.uReq, req.node.getCoreName());
       } catch (Exception e) {
         log.error("Exception making request", e);
         SolrError error = new SolrError();
@@ -430,7 +433,7 @@ public class SolrCmdDistributor implements Closeable {
     // care when assembling the final response to check both the rollup and leader trackers on the
     // aggregator node.
     public void trackRequestResult(
-        org.eclipse.jetty.client.api.Response resp, InputStream respBody, boolean success) {
+        org.eclipse.jetty.client.Response resp, InputStream respBody, boolean success) {
 
       // Returning Integer.MAX_VALUE here means there was no "rf" on the response, therefore we just
       // need to increment our achieved rf if we are a leader, i.e. have a leaderTracker.
@@ -448,7 +451,7 @@ public class SolrCmdDistributor implements Closeable {
     private int getRfFromResponse(InputStream inputStream) {
       if (inputStream != null) {
         try {
-          BinaryResponseParser brp = new BinaryResponseParser();
+          JavaBinResponseParser brp = new JavaBinResponseParser();
           NamedList<Object> nl = brp.processResponse(inputStream, null);
           Object hdr = nl.get("responseHeader");
           if (hdr != null && hdr instanceof NamedList) {
@@ -482,8 +485,8 @@ public class SolrCmdDistributor implements Closeable {
     /**
      * NOTE: This is the request that happened to be executed when this error was <b>triggered</b>
      * the error, but because of how {@link StreamingSolrClients} uses {@link
-     * ConcurrentUpdateSolrClient} it might not actaully be the request that <b>caused</b> the error
-     * -- multiple requests are merged &amp; processed as a sequential batch.
+     * ConcurrentUpdateBaseSolrClient} it might not actaully be the request that <b>caused</b> the
+     * error -- multiple requests are merged &amp; processed as a sequential batch.
      */
     public Req req;
 
@@ -524,6 +527,10 @@ public class SolrCmdDistributor implements Closeable {
 
     public StdNode(ZkCoreNodeProps nodeProps) {
       this(nodeProps, null, null, 0);
+    }
+
+    public StdNode(Replica replica, String collection, String shardId) {
+      this(new ZkCoreNodeProps(replica), collection, shardId);
     }
 
     public StdNode(ZkCoreNodeProps nodeProps, String collection, String shardId) {
@@ -567,25 +574,30 @@ public class SolrCmdDistributor implements Closeable {
       }
 
       // if it's a connect exception, lets try again
-      if (err.e instanceof SolrServerException) {
-        if (isRetriableException(((SolrServerException) err.e).getRootCause())) {
-          return true;
-        }
-      } else {
-        if (isRetriableException(err.e)) {
+      return isRetriableException(err.e);
+    }
+
+    /**
+     * Inspects the whole cause chain, because a retriable failure is not always the outermost or
+     * the deepest exception. The async client reports a connection failure wrapped in an
+     * ExecutionException, and Jetty's ClientConnector wraps the underlying failure in a
+     * SocketException of its own, so neither the top-level type nor the root cause alone identifies
+     * every retriable case.
+     *
+     * @return true if Solr should retry in case of hitting this exception false otherwise
+     */
+    private boolean isRetriableException(Throwable t) {
+      // Bounded: a cause chain can be cyclic, as the TODO on SolrException.getRootCause notes.
+      // Real chains are a handful of frames deep.
+      int depth = 0;
+      for (Throwable cause = t;
+          cause != null && depth++ < MAX_CAUSE_DEPTH;
+          cause = cause.getCause()) {
+        if (cause instanceof SocketException || cause instanceof SocketTimeoutException) {
           return true;
         }
       }
       return false;
-    }
-
-    /**
-     * @return true if Solr should retry in case of hitting this exception false otherwise
-     */
-    private boolean isRetriableException(Throwable t) {
-      return t instanceof SocketException
-          || t instanceof NoHttpResponseException
-          || t instanceof SocketTimeoutException;
     }
 
     @Override
@@ -616,8 +628,7 @@ public class SolrCmdDistributor implements Closeable {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof StdNode)) return false;
-      StdNode other = (StdNode) obj;
+      if (!(obj instanceof StdNode other)) return false;
       return (this.retry == other.retry)
           && (this.maxRetries == other.maxRetries)
           && Objects.equals(this.nodeProps.getBaseUrl(), other.nodeProps.getBaseUrl())
@@ -642,6 +653,18 @@ public class SolrCmdDistributor implements Closeable {
 
     private ZkStateReader zkStateReader;
 
+    private static boolean hasConnectExceptionInChain(Throwable t) {
+      int depth = 0;
+      for (Throwable cause = t;
+          cause != null && depth++ < MAX_CAUSE_DEPTH;
+          cause = cause.getCause()) {
+        if (cause instanceof ConnectException) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     public ForwardNode(
         ZkCoreNodeProps nodeProps,
         ZkStateReader zkStateReader,
@@ -662,10 +685,7 @@ public class SolrCmdDistributor implements Closeable {
       }
 
       // if it's a connect exception, lets try again
-      if (err.e instanceof SolrServerException
-          && ((SolrServerException) err.e).getRootCause() instanceof ConnectException) {
-        doRetry = true;
-      } else if (err.e instanceof ConnectException) {
+      if (hasConnectExceptionInChain(err.e)) {
         doRetry = true;
       }
       if (doRetry) {
@@ -699,8 +719,7 @@ public class SolrCmdDistributor implements Closeable {
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (!super.equals(obj)) return false;
-      if (!(obj instanceof ForwardNode)) return false;
-      ForwardNode other = (ForwardNode) obj;
+      if (!(obj instanceof ForwardNode other)) return false;
       return Objects.equals(nodeProps.getCoreUrl(), other.nodeProps.getCoreUrl());
     }
   }

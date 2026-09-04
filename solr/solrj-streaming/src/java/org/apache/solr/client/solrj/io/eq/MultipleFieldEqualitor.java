@@ -75,8 +75,7 @@ public class MultipleFieldEqualitor implements StreamEqualitor {
     if (null == base) {
       return false;
     }
-    if (base instanceof MultipleFieldEqualitor) {
-      MultipleFieldEqualitor baseEq = (MultipleFieldEqualitor) base;
+    if (base instanceof MultipleFieldEqualitor baseEq) {
 
       if (baseEq.eqs.length >= eqs.length) {
         for (int idx = 0; idx < eqs.length; ++idx) {

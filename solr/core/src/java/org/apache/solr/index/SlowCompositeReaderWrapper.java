@@ -26,10 +26,10 @@ import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesSkipper;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafMetaData;
@@ -46,10 +46,10 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.AcceptDocs;
 import org.apache.lucene.search.KnnCollector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
@@ -101,7 +101,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     } else {
       Version minVersion = Version.LATEST;
       for (LeafReaderContext leafReaderContext : reader.leaves()) {
-        Version leafVersion = leafReaderContext.reader().getMetaData().getMinVersion();
+        Version leafVersion = leafReaderContext.reader().getMetaData().minVersion();
         if (leafVersion == null) {
           minVersion = null;
           break;
@@ -112,12 +112,18 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       LeafMetaData leafMetaData = reader.leaves().get(0).reader().getMetaData();
       metaData =
           new LeafMetaData(
-              leafMetaData.getCreatedVersionMajor(),
+              leafMetaData.createdVersionMajor(),
               minVersion,
-              leafMetaData.getSort(),
+              leafMetaData.sort(),
               leafMetaData.hasBlocks());
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
+  }
+
+  @Override
+  public DocValuesSkipper getDocValuesSkipper(String field) throws IOException {
+    // TODO implement skipping
+    return null;
   }
 
   @Override
@@ -313,12 +319,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  @Deprecated
-  public Fields getTermVectors(int docID) throws IOException {
-    return in.getTermVectors(docID);
-  }
-
-  @Override
   public TermVectors termVectors() throws IOException {
     ensureOpen();
     return in.termVectors();
@@ -340,13 +340,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
     return in.maxDoc();
-  }
-
-  @Override
-  @Deprecated
-  public void document(int docID, StoredFieldVisitor visitor) throws IOException {
-    ensureOpen();
-    in.document(docID, visitor);
   }
 
   @Override
@@ -375,13 +368,15 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   @Override
   public void searchNearestVectors(
-      String field, float[] target, KnnCollector knnCollector, Bits acceptDocs) throws IOException {
+      String field, float[] target, KnnCollector knnCollector, AcceptDocs acceptDocs)
+      throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public void searchNearestVectors(
-      String field, byte[] target, KnnCollector knnCollector, Bits acceptDocs) throws IOException {
+      String field, byte[] target, KnnCollector knnCollector, AcceptDocs acceptDocs)
+      throws IOException {
     throw new UnsupportedOperationException();
   }
 

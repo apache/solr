@@ -45,8 +45,7 @@ public class FeatureSelectEvaluator extends RecursiveObjectEvaluator implements 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
 
-    if (value1 instanceof Matrix) {
-      Matrix matrix = (Matrix) value1;
+    if (value1 instanceof Matrix matrix) {
       double[][] data = matrix.getData();
 
       List<String> labels = matrix.getColumnLabels();

@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Improve footer UI of Solr Cloud - Graph when you have large numbers of collections.  Plus code refactor.
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18113
+    url: https://issues.apache.org/jira/browse/SOLR-18113

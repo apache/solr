@@ -86,6 +86,8 @@ Only functions with fast random access are recommended.
 
 The table below summarizes the functions available for function queries.
 
+Additionally, you can write a custom one using a tiny bit of JavaScript with the xref:expression-value-source-parser.adoc[Expression Value Source Parser].
+
 === abs Function
 Returns the absolute value of the specified value or function.
 
@@ -250,6 +252,11 @@ An expression can be any function which outputs boolean values, or even function
 
 * `if(termfreq (cat,'electronics'),popularity,42)`: This function checks each document for to see if it contains the term "electronics" in the `cat` field.
 If it does, then the value of the `popularity` field is returned, otherwise the value of `42` is returned.
+
+=== lateVector Function
+Computes a Multi-Vector similarity score between a Late Interaction vector field and a target Multi-Vector.
+
+See the xref:query-guide:dense-vector-search.adoc#late-vector-queries[Dense Vector Search] section for more details
 
 === linear Function
 Implements `m*x+c` where `m` and `c` are constants and `x` is an arbitrary function.

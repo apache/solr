@@ -30,10 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -276,7 +274,7 @@ public class StatsField {
             qplug.createParser(localParams.get(QueryParsing.V), localParams, params, rb.req);
 
         // figure out what type of query we are dealing, get the most direct ValueSource
-        vs = extractValueSource(qp.parse());
+        vs = qp.parseAsValueSource();
 
         // if this ValueSource directly corresponds to a SchemaField, act as if
         // we were asked to compute stats on it directly
@@ -324,35 +322,14 @@ public class StatsField {
     String[] facets = params.getFieldParams(key, StatsParams.STATS_FACET);
     this.facets = (null == facets) ? new String[0] : facets;
     String tagStr = localParams.get(CommonParams.TAG);
-    this.tagList =
-        (null == tagStr) ? Collections.<String>emptyList() : StrUtils.splitSmart(tagStr, ',');
+    this.tagList = (null == tagStr) ? List.of() : StrUtils.splitSmart(tagStr, ',');
 
     // figure out if we need a special base DocSet
     String excludeStr = localParams.get(CommonParams.EXCLUDE);
-    this.excludeTagList =
-        (null == excludeStr)
-            ? Collections.<String>emptyList()
-            : StrUtils.splitSmart(excludeStr, ',');
+    this.excludeTagList = (null == excludeStr) ? List.of() : StrUtils.splitSmart(excludeStr, ',');
 
     assert ((null == this.valueSource) ^ (null == this.schemaField))
         : "exactly one of valueSource & schemaField must be null";
-  }
-
-  /**
-   * Inspects a {@link Query} to see if it directly maps to a {@link ValueSource}, and if so returns
-   * it -- otherwise wraps it as needed.
-   *
-   * @param q Query whose scores we have been asked to compute stats of
-   * @returns a ValueSource to use for computing the stats
-   */
-  private static ValueSource extractValueSource(Query q) {
-    return (q instanceof FunctionQuery)
-        ?
-        // Common case: we're wrapping a func, so we can directly pull out ValueSource
-        ((FunctionQuery) q).getValueSource()
-        :
-        // asked to compute stats over a query, wrap it up as a ValueSource
-        new QueryValueSource(q, 0.0F);
   }
 
   /**
@@ -405,8 +382,7 @@ public class StatsField {
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
       if (!(olst instanceof Collection)) continue;
       for (Object o : (Collection<?>) olst) {
-        if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser) o;
+        if (!(o instanceof QParser qp)) continue;
         try {
           excludeSet.put(qp.getQuery(), Boolean.TRUE);
         } catch (SyntaxError e) {
@@ -644,7 +620,7 @@ public class StatsField {
 
     // NOTE: this explanation linked to from the java-hll jdocs...
     // https://github.com/aggregateknowledge/postgresql-hll/blob/master/README.markdown#explanation-of-parameters-and-tuning
-    // ..if i'm understanding the regwidth chart correctly, a value of 6 should be a enough
+    // ..if i'm understanding the regwidth chart correctly, a value of 6 should be enough
     // to support any max cardinality given that we're always dealing with hashes and
     // the cardinality of the set of all long values is 2**64 == 1.9e19
     //

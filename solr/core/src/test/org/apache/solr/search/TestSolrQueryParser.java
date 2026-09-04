@@ -23,23 +23,25 @@ import static org.apache.solr.util.QueryMatchers.phraseQuery;
 import static org.apache.solr.util.QueryMatchers.termQuery;
 import static org.hamcrest.core.StringContains.containsString;
 
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PointInSetQuery;
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
@@ -50,14 +52,14 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.ErrorLogMuter;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,7 +67,8 @@ import org.junit.Test;
 public class TestSolrQueryParser extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.max.booleanClauses", "42"); // lower for testing
     System.setProperty("solr.filterCache.async", "true"); // for testLocalParamsInQP
     initCore("solrconfig.xml", "schema12.xml");
@@ -337,7 +340,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     sowTrueParamsMap.put("sow", "true");
     List<MapSolrParams> paramMaps =
         Arrays.asList(
-            new MapSolrParams(Collections.emptyMap()), // no sow param (i.e. the default sow value)
+            new MapSolrParams(Map.of()), // no sow param (i.e. the default sow value)
             new MapSolrParams(sowFalseParamsMap),
             new MapSolrParams(sowTrueParamsMap));
 
@@ -372,7 +375,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setIsFilter(true); // this may change in the future
       qParser.setParams(params);
       q = qParser.getQuery();
-      assertEquals(26, ((TermInSetQuery) q).getTermData().size());
+      assertEquals(26, ((TermInSetQuery) q).getTermsCount());
 
       // large numeric filter query should use TermsQuery
       qParser =
@@ -400,7 +403,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
               ((PointInSetQuery) q).getPackedPoints().size());
         }
       } else {
-        assertEquals(20, ((TermInSetQuery) q).getTermData().size());
+        assertEquals(20, ((TermInSetQuery) q).getTermsCount());
       }
 
       // for point fields large filter query should use PointInSetQuery
@@ -426,16 +429,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setParams(params);
       q = qParser.getQuery();
       assertEquals(2, ((BooleanQuery) q).clauses().size());
-      qq = ((BooleanQuery) q).clauses().get(0).getQuery();
+      qq = ((BooleanQuery) q).clauses().get(0).query();
       if (qq instanceof TermQuery) {
-        qq = ((BooleanQuery) q).clauses().get(1).getQuery();
+        qq = ((BooleanQuery) q).clauses().get(1).query();
       }
 
       if (qq instanceof FilterQuery) {
         qq = ((FilterQuery) qq).getQuery();
       }
 
-      assertEquals(26, ((TermInSetQuery) qq).getTermData().size());
+      assertEquals(26, ((TermInSetQuery) qq).getTermsCount());
 
       // test mixed boolean query, including quotes (which shouldn't matter)
       qParser =
@@ -448,10 +451,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       assertEquals(4, ((BooleanQuery) q).clauses().size());
       qq = null;
       for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-        qq = clause.getQuery();
+        qq = clause.query();
         if (qq instanceof TermInSetQuery) break;
       }
-      assertEquals(26, ((TermInSetQuery) qq).getTermData().size());
+      assertEquals(26, ((TermInSetQuery) qq).getTermsCount());
 
       // test terms queries of two different fields (LUCENE-7637 changed to require all terms be in
       // the same field)
@@ -466,14 +469,15 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       q = qParser.getQuery();
       assertEquals(2, ((BooleanQuery) q).clauses().size());
       for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-        qq = clause.getQuery();
-        assertEquals(17, ((TermInSetQuery) qq).getTermData().size());
+        qq = clause.query();
+        assertEquals(17, ((TermInSetQuery) qq).getTermsCount());
       }
     }
     req.close();
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testManyClauses_Solr() throws Exception {
     final String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
 
@@ -482,12 +486,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     final String too_long = "id:(" + a + a + a + a + a + ")";
 
     final String expectedMsg = "Too many clauses";
-    ignoreException(expectedMsg);
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            "expected SolrException",
-            () -> assertJQ(req("q", too_long), "/response/numFound==6"));
+    SolrException e;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expectedMsg)) {
+      e =
+          expectThrows(
+              SolrException.class,
+              "expected SolrException",
+              () -> assertJQ(req("q", too_long), "/response/numFound==6"));
+    }
     assertThat(e.getMessage(), containsString(expectedMsg));
 
     // but should still work as a filter query since TermsQuery can be used...
@@ -497,6 +503,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testManyClauses_Lucene() throws Exception {
     final int numZ = IndexSearcher.getMaxClauseCount();
 
@@ -513,12 +520,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     final String way_too_long = sb.toString();
 
     final String expectedMsg = "too many boolean clauses";
-    ignoreException(expectedMsg);
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            "expected SolrException",
-            () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
+    SolrException e;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expectedMsg)) {
+      e =
+          expectThrows(
+              SolrException.class,
+              "expected SolrException",
+              () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
+    }
     assertThat(e.getMessage(), containsString(expectedMsg));
 
     assertNotNull(e.getCause());
@@ -579,54 +588,40 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     delI("777");
     assertU(commit()); // arg... commit no longer "commits" unless there has been a change.
 
-    final MetricsMap filterCacheStats =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper)
-                    h.getCore()
-                        .getCoreMetricManager()
-                        .getRegistry()
-                        .getMetrics()
-                        .get("CACHE.searcher.filterCache"))
-                .getGauge();
-    assertNotNull(filterCacheStats);
-    final MetricsMap queryCacheStats =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper)
-                    h.getCore()
-                        .getCoreMetricManager()
-                        .getRegistry()
-                        .getMetrics()
-                        .get("CACHE.searcher.queryResultCache"))
-                .getGauge();
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsInitial =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsInitial =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
 
-    assertNotNull(queryCacheStats);
-
-    long inserts = (Long) filterCacheStats.getValue().get("inserts");
-    long hits = (Long) filterCacheStats.getValue().get("hits");
+    long inserts = (long) filterInsertsInitial.getValue();
+    long hits = (long) filterHitsInitial.getValue();
 
     assertJQ(
         req("q", "doesnotexist filter(id:1) filter(qqq_s:X) filter(abcdefg)"),
         "/response/numFound==2");
 
     inserts += 3;
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter1 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter1 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter1.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter1.getValue());
 
     assertJQ(
         req("q", "doesnotexist2 filter(id:1) filter(qqq_s:X) filter(abcdefg)"),
         "/response/numFound==2");
 
     hits += 3;
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter2 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter2 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter2.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter2.getValue());
 
     // make sure normal "fq" parameters also hit the cache the same way
     assertJQ(
@@ -634,12 +629,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         "/response/numFound==0");
 
     hits += 3;
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter3 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter3 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter3.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter3.getValue());
 
     // try a query deeply nested in a FQ
     assertJQ(
@@ -652,12 +648,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     inserts += 1; // +1 for top level fq
     hits += 3;
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter4 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter4 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter4.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter4.getValue());
 
     // retry the complex FQ and make sure hashCode/equals works as expected w/ filter queries
     assertJQ(
@@ -669,24 +666,26 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         "/response/numFound==2");
 
     hits += 1; // top-level fq should have been found.
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter5 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter5 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter5.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter5.getValue());
 
     // try nested filter with multiple top-level args (i.e. a boolean query)
     assertJQ(req("q", "*:* +filter(id:1 filter(qqq_s:X) abcdefg)"), "/response/numFound==2");
 
     hits += 1; // the inner filter
     inserts += 1; // the outer filter
-    assertEquals(
-        "wrong number of inserts",
-        inserts,
-        ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(
-        "wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    CounterSnapshot.CounterDataPointSnapshot filterInsertsAfter6 =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot filterHitsAfter6 =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), SolrMetricTestUtils.FILTER_CACHE);
+    assertEquals("wrong number of inserts", inserts, (long) filterInsertsAfter6.getValue());
+    assertEquals("wrong number of hits", hits, (long) filterHitsAfter6.getValue());
 
     // test the score for a filter, and that default score is 0
     assertJQ(
@@ -1809,13 +1808,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
           assertFalse(
               "For float and double fields \""
                   + query
-                  + "\" is not an existence query, so the query returned should not be a DocValuesFieldExistsQuery.",
-              createdQuery instanceof DocValuesFieldExistsQuery);
+                  + "\" is not an existence query, so the query returned should not be a FieldExistsQuery.",
+              createdQuery instanceof FieldExistsQuery);
           assertFalse(
               "For float and double fields \""
                   + query
-                  + "\" is not an existence query, so the query returned should not be a NormsFieldExistsQuery.",
-              createdQuery instanceof NormsFieldExistsQuery);
+                  + "\" is not an existence query, so the query returned should not be a FieldExistsQuery.",
+              createdQuery instanceof FieldExistsQuery);
           assertFalse(
               "For float and double fields \""
                   + query
@@ -1831,8 +1830,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             assertTrue(
                 "Field has docValues, so existence query \""
                     + query
-                    + "\" should return DocValuesFieldExistsQuery",
-                createdQuery instanceof DocValuesFieldExistsQuery);
+                    + "\" should return FieldExistsQuery",
+                createdQuery instanceof FieldExistsQuery);
           } else if (!schemaField.omitNorms()
               && !schemaField
                   .getType()
@@ -1840,47 +1839,135 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             assertTrue(
                 "Field has norms and no docValues, so existence query \""
                     + query
-                    + "\" should return NormsFieldExistsQuery",
-                createdQuery instanceof NormsFieldExistsQuery);
+                    + "\" should return FieldExistsQuery",
+                createdQuery instanceof FieldExistsQuery);
           } else if (schemaField.getType().getNumberType() == NumberType.DOUBLE
               || schemaField.getType().getNumberType() == NumberType.FLOAT) {
-            assertTrue(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\".",
-                createdQuery instanceof ConstantScoreQuery);
-            assertTrue(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\".",
-                ((ConstantScoreQuery) createdQuery).getQuery() instanceof BooleanQuery);
-            assertEquals(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\". This boolean query must be an OR.",
-                1,
-                ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery())
-                    .getMinimumNumberShouldMatch());
-            assertEquals(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\". This boolean query must have 2 clauses.",
-                2,
-                ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).clauses().size());
+            if (schemaField.getType().isPointField()) {
+              assertTrue(
+                  "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\".",
+                  createdQuery instanceof PointRangeQuery);
+              if (schemaField.getType().getNumberType() == NumberType.DOUBLE) {
+                assertEquals(
+                    "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                        + query
+                        + "\".",
+                    Double.NaN,
+                    DoublePoint.decodeDimension(
+                        ((PointRangeQuery) createdQuery).getUpperPoint(), 0),
+                    0);
+              } else {
+                assertEquals(
+                    "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                        + query
+                        + "\".",
+                    Float.NaN,
+                    FloatPoint.decodeDimension(((PointRangeQuery) createdQuery).getUpperPoint(), 0),
+                    0);
+              }
+            } else {
+              assertTrue(
+                  "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\".",
+                  createdQuery instanceof ConstantScoreQuery);
+              assertTrue(
+                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\".",
+                  ((ConstantScoreQuery) createdQuery).getQuery() instanceof BooleanQuery);
+              assertEquals(
+                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\". This boolean query must be an OR.",
+                  1,
+                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery())
+                      .getMinimumNumberShouldMatch());
+              assertEquals(
+                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\". This boolean query must have 2 clauses.",
+                  2,
+                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).clauses().size());
+            }
           } else {
             assertFalse(
                 "Field doesn't have docValues, so existence query \""
                     + query
-                    + "\" should not return DocValuesFieldExistsQuery",
-                createdQuery instanceof DocValuesFieldExistsQuery);
+                    + "\" should not return FieldExistsQuery",
+                createdQuery instanceof FieldExistsQuery);
             assertFalse(
                 "Field doesn't have norms, so existence query \""
                     + query
-                    + "\" should not return NormsFieldExistsQuery",
-                createdQuery instanceof NormsFieldExistsQuery);
+                    + "\" should not return FieldExistsQuery",
+                createdQuery instanceof FieldExistsQuery);
           }
         }
       }
+    }
+  }
+
+  @Test
+  public void testNestedPureNegativeQuery() throws Exception {
+
+    // Standard sample data with completely unique field values to isolate matches
+    assertU(adoc("id", "9414", "v_t", "pureneg foo bar", "type_t", "negativetest"));
+    assertU(adoc("id", "9415", "v_t", "pureneg foo baz", "type_t", "negativetest"));
+    assertU(adoc("id", "9416", "v_t", "pureneg baz", "type_t", "negativetest"));
+    assertU(commit());
+
+    QParser pLatest = QParser.getParser("-foo", req());
+    assertTrue(
+        "Should default to true on latest luceneMatchVersion", pLatest.isAutoFixPureNegative());
+
+    // Top-level negative query must exclude 'bar' but successfully find our other docs
+    // Force sort by ID so the array index expectations always line up perfectly
+    assertJQ(
+        req("q", "v_t:pureneg AND -v_t:bar", "df", "v_t", "sort", "id asc"),
+        "/response/docs/[0]/id=='9415'",
+        "/response/docs/[1]/id=='9416'");
+
+    // Nested pure negative query inside a parenthesized group with AND
+    assertJQ(
+        req("q", "v_t:pureneg AND v_t:foo AND (-v_t:bar)", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9415'");
+
+    // Nested pure negative query using explicit NOT syntax
+    assertJQ(
+        req("q", "v_t:pureneg AND v_t:foo AND (NOT v_t:bar)", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9415'");
+
+    assertJQ(
+        req("q", "v_t:pureneg NOT v_t:foo", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9416'");
+
+    assertJQ(
+        req("q", "NOT v_t:pureneg", "df", "v_t", "fq", "type_t:negativetest"),
+        "/response/numFound==0");
+
+    try (SolrQueryRequest req = req("df", "v_t")) {
+      // Pure negative clause without auto-fix should NOT inject *:*
+      QParser pDisabled = QParser.getParser("-v_t:bar", req);
+      pDisabled.setAutoFixPureNegative(false);
+      assertFalse(
+          "autoFixPureNegative should be false when set explicitly",
+          pDisabled.isAutoFixPureNegative());
+
+      Query qDisabled = pDisabled.parse();
+      assertFalse(
+          "Query should NOT contain MatchAllDocsQuery when autoFixPureNegative is false",
+          qDisabled.toString().contains("*:*"));
+
+      // Sub-query propagation test: Verify subQuery inherits autoFixPureNegative = false
+      QParser subParserDisabled = pDisabled.subQuery("-v_t:bar", null);
+      assertFalse(
+          "subQuery should inherit autoFixPureNegative=false from parent parser",
+          subParserDisabled.isAutoFixPureNegative());
     }
   }
 }

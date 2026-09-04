@@ -21,7 +21,6 @@ import java.security.Principal;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.http.util.Args;
 
 /** Principal object that carries JWT token and claims for authenticated user. */
 public class JWTPrincipal implements Principal {
@@ -30,20 +29,16 @@ public class JWTPrincipal implements Principal {
   Map<String, Object> claims;
 
   /**
-   * User principal with user name as well as one or more roles that he/she belong to
+   * User principal with username as well as one or more roles that he/she belong to
    *
-   * @param username string with user name for user
+   * @param username string with username for user
    * @param token compact string representation of JWT token
    * @param claims list of verified JWT claims as a map
    */
   public JWTPrincipal(final String username, String token, Map<String, Object> claims) {
-    super();
-    Args.notNull(username, "User name");
-    Args.notNull(token, "JWT token");
-    Args.notNull(claims, "JWT claims");
-    this.token = token;
-    this.claims = claims;
-    this.username = username;
+    this.username = Objects.requireNonNull(username, "User name");
+    this.token = Objects.requireNonNull(token, "JWT token");
+    this.claims = Objects.requireNonNull(claims, "JWT claims");
   }
 
   @Override
@@ -62,8 +57,7 @@ public class JWTPrincipal implements Principal {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof JWTPrincipal)) return false;
-    JWTPrincipal that = (JWTPrincipal) o;
+    if (!(o instanceof JWTPrincipal that)) return false;
     return Objects.equals(username, that.username)
         && Objects.equals(token, that.token)
         && Objects.equals(claims, that.claims);

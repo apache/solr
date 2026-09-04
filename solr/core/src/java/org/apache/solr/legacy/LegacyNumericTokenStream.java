@@ -81,7 +81,7 @@ import org.apache.lucene.util.NumericUtils;
  * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
  * @since 2.9
  */
-@Deprecated
+@Deprecated(since = "6.0")
 public final class LegacyNumericTokenStream extends TokenStream {
 
   /** The full precision token gets this token type assigned. */
@@ -254,8 +254,7 @@ public final class LegacyNumericTokenStream extends TokenStream {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof LegacyNumericTermAttributeImpl)) return false;
-      LegacyNumericTermAttributeImpl other = (LegacyNumericTermAttributeImpl) obj;
+      if (!(obj instanceof LegacyNumericTermAttributeImpl other)) return false;
       if (precisionStep != other.precisionStep) return false;
       if (shift != other.shift) return false;
       if (value != other.value) return false;

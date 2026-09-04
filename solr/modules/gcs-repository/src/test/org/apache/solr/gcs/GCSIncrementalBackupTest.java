@@ -26,6 +26,7 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.Nightly
 @ThreadLeakLingering(linger = 10)
 @LuceneTestCase.SuppressCodecs({
   "SimpleText"
@@ -48,14 +49,19 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
           + "  <solrcloud>\n"
           + "    <str name=\"host\">127.0.0.1</str>\n"
           + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-          + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
-          + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
+          + "    <int name=\"zkClientTimeout\">${solr.zookeeper.client.timeout:30000}</int>\n"
           + "    <int name=\"leaderVoteWait\">10000</int>\n"
           + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
           + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
           + "  </solrcloud>\n"
           + "  \n"
           + "  <backup>\n"
+          + "    <repository name=\"errorBackupRepository\" class=\""
+          + ErrorThrowingTrackingBackupRepository.class.getName()
+          + "\"> \n"
+          + "      <str name=\"delegateRepoName\">localfs</str>\n"
+          + "      <str name=\"hostPort\">${hostPort:8983}</str>\n"
+          + "    </repository>\n"
           + "    <repository name=\"trackingBackupRepository\" class=\"org.apache.solr.core.TrackingBackupRepository\"> \n"
           + "      <str name=\"delegateRepoName\">localfs</str>\n"
           + "    </repository>\n"
@@ -71,9 +77,12 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    // Enable parallel backup/restore for cloud storage tests
+    System.setProperty("solr.backup.maxparalleluploads", "2");
+    System.setProperty("solr.backup.maxparalleldownloads", "2");
 
     configureCluster(NUM_NODES) // nodes
-        .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
+        .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
         .withSolrXml(SOLR_XML)
         .configure();
   }

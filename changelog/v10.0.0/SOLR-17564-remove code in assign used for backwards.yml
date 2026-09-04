@@ -1,0 +1,8 @@
+title: Remove code in Assign used for backwards compatibility with Collections created
+  prior to 7.0
+type: removed
+authors:
+- name: Paul McArthur
+links:
+- name: SOLR-17564
+  url: https://issues.apache.org/jira/browse/SOLR-17564

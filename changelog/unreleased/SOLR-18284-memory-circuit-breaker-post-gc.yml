@@ -1,0 +1,17 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: >
+  MemoryCircuitBreaker now measures post-GC live heap data, so it no longer trips when the heap is
+  full of collectible garbage.
+  Earlier versions sampled MemoryMXBean.getHeapMemoryUsage().getUsed() on a 30-second moving average
+  (6 samples), which trends toward max between collections during normal operation; if you tuned a
+  threshold against that behavior you may need to revisit it.
+  This breaks subclasses of MemoryCircuitBreaker: the deprecated MemoryCircuitBreaker(int, int)
+  constructor is removed, and the protected getAvgMemoryUsage() hook is renamed to
+  getCurrentMemoryUsage() (it no longer averages anything). The now-unused public
+  AveragingMetricProvider class is also removed.
+type: fixed
+authors:
+  - name: Mark Robert Miller
+links:
+  - name: SOLR-18284
+    url: https://issues.apache.org/jira/browse/SOLR-18284

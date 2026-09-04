@@ -178,4 +178,17 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   protected StoredField getStoredField(SchemaField sf, Object value) {
     return new StoredField(sf.getName(), (Double) this.toNativeType(value));
   }
+
+  /**
+   * Override the default existence behavior, so that the non-docValued/norms implementation matches
+   * NaN values for double and float fields. The [* TO *] query for those fields does not match
+   * 'NaN' values, so they must be matched separately.
+   *
+   * <p>For doubles and floats the query behavior is equivalent to field:[-Infinity TO NaN] since
+   * NaN has a value greater than +Infinity
+   */
+  @Override
+  public Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
+    return DoublePoint.newRangeQuery(field.getName(), Double.NEGATIVE_INFINITY, Double.NaN);
+  }
 }

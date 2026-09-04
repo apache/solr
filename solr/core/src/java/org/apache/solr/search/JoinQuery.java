@@ -22,13 +22,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -36,7 +36,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -53,8 +53,9 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.join.GraphPointsCollector;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
-class JoinQuery extends Query {
+class JoinQuery extends Query implements SolrSearcherRequirer {
   String fromField;
   String toField;
   // TODO: name is missleading here compared to JoinQParserPlugin usage - here it must be a core
@@ -80,13 +81,16 @@ class JoinQuery extends Query {
   }
 
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
+  public Query rewrite(IndexSearcher searcher) throws IOException {
     // don't rewrite the subQuery
-    return super.rewrite(reader);
+    return super.rewrite(searcher);
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {}
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor sub = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    q.visit(sub);
+  }
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
@@ -154,7 +158,7 @@ class JoinQuery extends Query {
     DocSet resultSet;
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       if (resultSet == null) {
         boolean debug = rb != null && rb.isDebug();
         RTimer timer = (debug ? new RTimer() : null);
@@ -188,7 +192,8 @@ class JoinQuery extends Query {
       if (readerSetIterator == null) {
         return null;
       }
-      return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
+      return new SolrDefaultScorerSupplier(
+          new ConstantScoreScorer(score(), scoreMode, readerSetIterator));
     }
 
     @Override
@@ -330,7 +335,7 @@ class JoinQuery extends Query {
             for (int subindex = 0; subindex < numSubs; subindex++) {
               MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
               if (sub.postingsEnum == null) continue;
-              int base = sub.slice.start;
+              int base = sub.slice.start();
               int docid;
               while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 if (fastForRandomSet.get(docid + base)) {
@@ -407,7 +412,7 @@ class JoinQuery extends Query {
                 for (int subindex = 0; subindex < numSubs; subindex++) {
                   MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
                   if (sub.postingsEnum == null) continue;
-                  int base = sub.slice.start;
+                  int base = sub.slice.start();
                   int docid;
                   while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                     resultListDocs++;

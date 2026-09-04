@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
+import java.nio.file.Path;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
@@ -27,23 +27,23 @@ public class RegexFileFilterTest extends SolrTestCase {
 
   @Test
   public void testAcceptTrue() {
-    assertTrue(endsWithDotTxt.accept(new File("/foo/bar/baz.txt")));
-    assertTrue(endsWithDotTxt.accept(new File("/baz.txt")));
-    assertTrue(endsWithDotTxt.accept(new File("~/baz.txt")));
-    assertTrue(endsWithDotTxt.accept(new File("~/1234-abc_.txt")));
-    assertTrue(endsWithDotTxt.accept(new File(".txt")));
-    assertTrue(alphaWithTxtOrPdfExt.accept(new File("/foo/bar.txt")));
-    assertTrue(alphaWithTxtOrPdfExt.accept(new File("/foo/baz.pdf")));
+    assertTrue(endsWithDotTxt.accept(Path.of("/foo/bar/baz.txt")));
+    assertTrue(endsWithDotTxt.accept(Path.of("/baz.txt")));
+    assertTrue(endsWithDotTxt.accept(Path.of("~/baz.txt")));
+    assertTrue(endsWithDotTxt.accept(Path.of("~/1234-abc_.txt")));
+    assertTrue(endsWithDotTxt.accept(Path.of(".txt")));
+    assertTrue(alphaWithTxtOrPdfExt.accept(Path.of("/foo/bar.txt")));
+    assertTrue(alphaWithTxtOrPdfExt.accept(Path.of("/foo/baz.pdf")));
   }
 
   @Test
   public void testAcceptFalse() {
-    assertFalse(endsWithDotTxt.accept(new File("/foo/bar.tx")));
-    assertFalse(endsWithDotTxt.accept(new File("/foo/bar.txts")));
-    assertFalse(endsWithDotTxt.accept(new File("/foo/bar.exe")));
-    assertFalse(alphaWithTxtOrPdfExt.accept(new File("/foo/bar/b4z.txt")));
-    assertFalse(alphaWithTxtOrPdfExt.accept(new File("/foo/bar/baz.jpg")));
-    assertFalse(alphaWithTxtOrPdfExt.accept(new File("~/foo-bar.txt")));
-    assertFalse(alphaWithTxtOrPdfExt.accept(new File("~/foobar123.txt")));
+    assertFalse(endsWithDotTxt.accept(Path.of("/foo/bar.tx")));
+    assertFalse(endsWithDotTxt.accept(Path.of("/foo/bar.txts")));
+    assertFalse(endsWithDotTxt.accept(Path.of("/foo/bar.exe")));
+    assertFalse(alphaWithTxtOrPdfExt.accept(Path.of("/foo/bar/b4z.txt")));
+    assertFalse(alphaWithTxtOrPdfExt.accept(Path.of("/foo/bar/baz.jpg")));
+    assertFalse(alphaWithTxtOrPdfExt.accept(Path.of("~/foo-bar.txt")));
+    assertFalse(alphaWithTxtOrPdfExt.accept(Path.of("./~/foobar123.txt")));
   }
 }

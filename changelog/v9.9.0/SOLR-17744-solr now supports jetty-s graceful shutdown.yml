@@ -1,0 +1,8 @@
+title: Solr now supports Jetty's Graceful Shutdown module (via SOLR_JETTY_GRACEFUL=true)
+  to prevent client connections from being abruptly terminated on orderly shutdown
+type: changed
+authors:
+- name: hossman
+links:
+- name: SOLR-17744
+  url: https://issues.apache.org/jira/browse/SOLR-17744

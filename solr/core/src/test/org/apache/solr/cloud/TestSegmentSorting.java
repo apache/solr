@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
@@ -52,7 +51,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       System.setProperty("solr.tests.id.docValues", "true");
     }
     configureCluster(NUM_SERVERS)
-        .addConfig(configName, Paths.get(TEST_HOME(), "collection1", "conf"))
+        .addConfig(configName, TEST_HOME().resolve("collection1").resolve("conf"))
         .configure();
   }
 
@@ -61,8 +60,6 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   @After
   public void ensureClusterEmpty() throws Exception {
     cluster.deleteAllCollections();
-    System.clearProperty("mergePolicySort");
-    System.clearProperty("solr.tests.id.docValues");
   }
 
   @Before
@@ -96,6 +93,33 @@ public class TestSegmentSorting extends SolrCloudTestCase {
 
     // add some documents, then optimize to get merged-sorted segments
     tstes.addDocuments(collectionName, cloudSolrClient, 10, 10, true);
+
+    // add block docs with children having different sort values than parent;
+    // Lucene sorts by parent values only, so block integrity must be preserved
+    for (int i = 0; i < 5; i++) {
+      int parentTs = random().nextInt(60);
+      int childTs = random().nextInt(60);
+      cloudSolrClient.add(
+          collectionName,
+          sdoc(
+              "id",
+              10000 + i,
+              "timestamp_i_dvo",
+              parentTs,
+              "children",
+              sdocs(sdoc("id", 10100 + i, "timestamp_i_dvo", childTs))));
+    }
+    cloudSolrClient.commit(collectionName);
+    cloudSolrClient.optimize(collectionName);
+    // verify block integrity: each child still belongs to its parent after merge-sorting
+    for (int i = 0; i < 5; i++) {
+      assertEquals(
+          2,
+          cloudSolrClient
+              .query(collectionName, params("q", "_root_:" + (10000 + i)))
+              .getResults()
+              .getNumFound());
+    }
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter intentionally absent
     tstes.queryTimestampDescending(collectionName, cloudSolrClient);

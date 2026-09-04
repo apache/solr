@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValuesType;
@@ -38,6 +38,7 @@ import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
@@ -83,10 +84,9 @@ import org.slf4j.LoggerFactory;
  *
  * @see org.apache.solr.legacy.LegacyNumericRangeQuery
  * @since solr 1.4
- * @deprecated Trie fields are deprecated as of Solr 7.0
- * @see PointField
+ * @deprecated Trie fields are deprecated as of Solr 7.0. Use {@link PointField} instead.
  */
-@Deprecated
+@Deprecated(since = "7.0")
 public class TrieField extends NumericFieldType {
   public static final int DEFAULT_PRECISION_STEP = 8;
 
@@ -352,7 +352,8 @@ public class TrieField extends NumericFieldType {
                 min == null ? null : parseIntFromUser(field.getName(), min),
                 max == null ? null : parseIntFromUser(field.getName(), max),
                 minInclusive,
-                maxInclusive);
+                maxInclusive,
+                MultiTermQuery.CONSTANT_SCORE_REWRITE);
         break;
       case FLOAT:
         query =
@@ -372,7 +373,8 @@ public class TrieField extends NumericFieldType {
                 min == null ? null : parseLongFromUser(field.getName(), min),
                 max == null ? null : parseLongFromUser(field.getName(), max),
                 minInclusive,
-                maxInclusive);
+                maxInclusive,
+                MultiTermQuery.CONSTANT_SCORE_REWRITE);
         break;
       case DOUBLE:
         query =
@@ -392,7 +394,8 @@ public class TrieField extends NumericFieldType {
                 min == null ? null : DateMathParser.parseMath(null, min).getTime(),
                 max == null ? null : DateMathParser.parseMath(null, max).getTime(),
                 minInclusive,
-                maxInclusive);
+                maxInclusive,
+                MultiTermQuery.CONSTANT_SCORE_REWRITE);
         break;
       default:
         throw new SolrException(
@@ -613,7 +616,7 @@ public class TrieField extends NumericFieldType {
     }
     ft.setNumericPrecisionStep(precisionStep);
 
-    final org.apache.lucene.document.Field f;
+    final Field f;
 
     switch (type) {
       case INTEGER:
@@ -685,7 +688,7 @@ public class TrieField extends NumericFieldType {
 
       return fields;
     } else {
-      return Collections.singletonList(createField(sf, value));
+      return List.of(createField(sf, value));
     }
   }
 
@@ -696,9 +699,8 @@ public class TrieField extends NumericFieldType {
    * expert internal use, subject to change. Returns null if no prefix or prefix not needed, or the
    * prefix of the main value of a trie field that indexes multiple precisions per value.
    */
-  public static String getMainValuePrefix(org.apache.solr.schema.FieldType ft) {
-    if (ft instanceof TrieField) {
-      final TrieField trie = (TrieField) ft;
+  public static String getMainValuePrefix(FieldType ft) {
+    if (ft instanceof TrieField trie) {
       if (trie.precisionStep == Integer.MAX_VALUE) return null;
       switch (trie.type) {
         case INTEGER:
@@ -717,7 +719,11 @@ public class TrieField extends NumericFieldType {
   }
 }
 
-@Deprecated
+/**
+ * @deprecated Internal helper for {@link TrieDateField}, which is deprecated. Use {@link
+ *     DatePointField} instead.
+ */
+@Deprecated(since = "7.0")
 class TrieDateFieldSource extends LongFieldSource {
 
   public TrieDateFieldSource(String field) {

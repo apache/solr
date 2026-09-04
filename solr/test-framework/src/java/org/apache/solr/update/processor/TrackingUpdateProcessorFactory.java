@@ -99,7 +99,6 @@ public final class TrackingUpdateProcessorFactory extends UpdateRequestProcessor
   }
 
   @Override
-  @SuppressWarnings("resource")
   public synchronized UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     final List<UpdateCommand> commands = groupToCommands.get(group);

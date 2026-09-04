@@ -21,26 +21,32 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -89,16 +95,7 @@ public class SplitShardTest extends SolrCloudTestCase {
             .setNumSubShards(5)
             .setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
-    waitForState(
-        "Timed out waiting for sub shards to be active. Number of active shards="
-            + cluster
-                .getSolrClient()
-                .getClusterState()
-                .getCollection(COLLECTION_NAME)
-                .getActiveSlices()
-                .size(),
-        COLLECTION_NAME,
-        activeClusterShape(6, 6));
+    waitForState("Waiting for 6 shards after split", COLLECTION_NAME, activeClusterShape(6, 6));
 
     try {
       splitShard =
@@ -107,7 +104,7 @@ public class SplitShardTest extends SolrCloudTestCase {
               .setNumSubShards(10);
       splitShard.process(cluster.getSolrClient());
       fail("SplitShard should throw an exception when numSubShards > 8");
-    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
+    } catch (RemoteSolrException ex) {
       assertTrue(
           ex.getMessage()
               .contains("A shard can only be split into 2 to 8 subshards in one split request."));
@@ -120,7 +117,7 @@ public class SplitShardTest extends SolrCloudTestCase {
               .setNumSubShards(1);
       splitShard.process(cluster.getSolrClient());
       fail("SplitShard should throw an exception when numSubShards < 2");
-    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
+    } catch (RemoteSolrException ex) {
       assertTrue(
           ex.getMessage()
               .contains(
@@ -154,15 +151,7 @@ public class SplitShardTest extends SolrCloudTestCase {
         CollectionAdminRequest.splitShard(collectionName).setSplitFuzz(0.5f).setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
     waitForState(
-        "Timed out waiting for sub shards to be active. Number of active shards="
-            + cluster
-                .getSolrClient()
-                .getClusterState()
-                .getCollection(collectionName)
-                .getActiveSlices()
-                .size(),
-        collectionName,
-        activeClusterShape(3, 3));
+        "Waiting for 3 active shards after split", collectionName, activeClusterShape(3, 3));
     DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(collectionName);
     Slice s1_0 = coll.getSlice("shard1_0");
     Slice s1_1 = coll.getSlice("shard1_1");
@@ -173,6 +162,52 @@ public class SplitShardTest extends SolrCloudTestCase {
     long expected1 = (Integer.MAX_VALUE >> 1) - fuzz;
     assertEquals("wrong range in s1_0", expected0, delta0);
     assertEquals("wrong range in s1_1", expected1, delta1);
+  }
+
+  @Test
+  public void testWithChildDocuments() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1).process(solrClient);
+
+    cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
+
+    List<SolrInputDocument> inputDocs = new ArrayList<>();
+    for (int idx = 0; idx < 20; ) { // 10 parents + 10 children
+      SolrInputDocument parent = new SolrInputDocument();
+      parent.addField("id", ++idx);
+      parent.addField("type_s", "parent");
+
+      // Child has different ID, so could be routed differently if used for routing.
+      SolrInputDocument child = new SolrInputDocument();
+      child.addField("id", ++idx);
+      child.addField("expected_parent_s", parent.getField("id"));
+
+      parent.addField("myChild", List.of(child));
+
+      inputDocs.add(parent);
+    }
+    solrClient.add(COLLECTION_NAME, inputDocs);
+
+    CollectionAdminRequest.SplitShard splitShard =
+        CollectionAdminRequest.splitShard(COLLECTION_NAME)
+            .setNumSubShards(2)
+            .setShardName("shard1");
+    splitShard.setWaitForFinalState(true);
+    splitShard.process(solrClient);
+    waitForState(
+        "Waiting for 2 active shards after split", COLLECTION_NAME, activeClusterShape(2, 2));
+
+    QueryRequest req =
+        new QueryRequest(new SolrQuery("type_s:parent").setFields("*", "[child]", "[shard]"));
+    QueryResponse rsp = req.process(solrClient, COLLECTION_NAME);
+    assertEquals(10, rsp.getResults().getNumFound());
+    for (SolrDocument doc : rsp.getResults()) {
+      @SuppressWarnings("unchecked")
+      List<SolrDocument> children = (List<SolrDocument>) doc.get("myChild");
+      assertEquals("only 1 child per parent", 1, children.size());
+      SolrDocument child = children.get(0);
+      assertEquals("parent-child match", doc.get("id"), child.get("expected_parent_s"));
+    }
   }
 
   private CloudSolrClient createCollection(String collectionName, int repFactor) throws Exception {
@@ -228,10 +263,13 @@ public class SplitShardTest extends SolrCloudTestCase {
         new ConcurrentHashMap<>(); // what the index should contain
     final AtomicBoolean doIndex = new AtomicBoolean(true);
     final AtomicInteger docsIndexed = new AtomicInteger();
+    List<CountDownLatch> threadLatches = Collections.synchronizedList(new ArrayList<>());
     Thread[] indexThreads = new Thread[nThreads];
     try {
 
       for (int i = 0; i < nThreads; i++) {
+        int threadIndex = i;
+        threadLatches.add(new CountDownLatch(10));
         indexThreads[i] =
             new Thread(
                 () -> {
@@ -257,6 +295,7 @@ public class SplitShardTest extends SolrCloudTestCase {
                       fail(e.getMessage());
                       break;
                     }
+                    threadLatches.get(threadIndex).countDown();
                   }
                 });
       }
@@ -265,8 +304,12 @@ public class SplitShardTest extends SolrCloudTestCase {
         thread.start();
       }
 
-      Thread.sleep(100); // wait for a few docs to be indexed before invoking split
+      // wait for a few docs (10 requests per threads) to be indexed before invoking split
+      for (int i = 0; i < nThreads; i++) {
+        assertTrue(threadLatches.get(i).await(30, TimeUnit.SECONDS));
+      }
       int docCount = model.size();
+      assertTrue("no docs indexed", docCount > 0);
 
       CollectionAdminRequest.SplitShard splitShard =
           CollectionAdminRequest.splitShard(collectionName).setShardName("shard1");
@@ -280,8 +323,14 @@ public class SplitShardTest extends SolrCloudTestCase {
       // make sure that docs were indexed during the split
       assertTrue(model.size() > docCount);
 
-      Thread.sleep(100); // wait for a few more docs to be indexed after split
-
+      // wait for a few more docs (10 more requests per thread) to be indexed after split
+      // Reset the latch of each thread, and them wait for all of them
+      for (int i = 0; i < nThreads; i++) {
+        threadLatches.set(i, new CountDownLatch(10));
+      }
+      for (int i = 0; i < nThreads; i++) {
+        assertTrue(threadLatches.get(i).await(30, TimeUnit.SECONDS));
+      }
     } finally {
       // shut down the indexers
       doIndex.set(false);
@@ -325,14 +374,12 @@ public class SplitShardTest extends SolrCloudTestCase {
     NamedList<Object> response = splitShard.process(cluster.getSolrClient()).getResponse();
     assertNotNull(response.get("success"));
 
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            COLL,
-            10,
-            TimeUnit.SECONDS,
-            (liveNodes, collectionState) ->
-                testColl(jetty, collectionState, List.of("shard1_0", "shard1_1")));
+    waitForState(
+        "Waiting for sub-shards",
+        COLL,
+        10,
+        TimeUnit.SECONDS,
+        collectionState -> testColl(jetty, collectionState, List.of("shard1_0", "shard1_1")));
 
     JettySolrRunner randomJetty = cluster.getRandomJetty(random());
     splitShard =
@@ -342,14 +389,12 @@ public class SplitShardTest extends SolrCloudTestCase {
     response = splitShard.process(cluster.getSolrClient()).getResponse();
     assertNotNull(response.get("success"));
 
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            COLL,
-            10,
-            TimeUnit.SECONDS,
-            (liveNodes, collectionState) ->
-                testColl(randomJetty, collectionState, List.of("shard2_0", "shard2_1")));
+    waitForState(
+        "Waiting for sub-shards",
+        COLL,
+        10,
+        TimeUnit.SECONDS,
+        collectionState -> testColl(randomJetty, collectionState, List.of("shard2_0", "shard2_1")));
   }
 
   private boolean testColl(
@@ -359,6 +404,7 @@ public class SplitShardTest extends SolrCloudTestCase {
         (s, replica) -> {
           if (replica.getNodeName().equals(jetty.getNodeName())
               && !replica.isLeader()
+              && replica.getState().equals(Replica.State.ACTIVE)
               && set.contains(replica.shard)) {
             set.remove(replica.shard);
           }

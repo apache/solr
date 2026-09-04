@@ -16,8 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -295,12 +295,14 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
       slices.put(slice.getName(), slice);
     }
 
-    return new DocCollection(
+    return DocCollection.create(
         "collection1",
         slices,
-        Collections.singletonMap(
-            ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-        router);
+        Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+        router,
+        Integer.MAX_VALUE,
+        Instant.EPOCH,
+        null);
   }
 
   // from negative to positive, the upper bits of the hash ranges should be

@@ -61,7 +61,6 @@ public final class RecordingUpdateProcessorFactory extends UpdateRequestProcesso
   }
 
   @Override
-  @SuppressWarnings("resource")
   public synchronized UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return recording ? new RecordingUpdateRequestProcessor(commandQueue, next) : next;

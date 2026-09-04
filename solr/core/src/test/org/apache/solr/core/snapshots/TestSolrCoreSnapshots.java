@@ -16,10 +16,9 @@
  */
 package org.apache.solr.core.snapshots;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.CreateSnapshot;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.DeleteSnapshot;
@@ -49,7 +48,6 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.BackupRestoreUtils;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -68,20 +66,13 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    System.setProperty("solr.allowPaths", "*");
+    System.setProperty("solr.security.allow.paths", "*");
     useFactory("solr.StandardDirectoryFactory");
     configureCluster(1) // nodes
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
     docsSeed = random().nextLong();
-  }
-
-  @AfterClass
-  public static void teardownClass() {
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
-    System.clearProperty("solr.allowPaths");
   }
 
   @Test
@@ -92,7 +83,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
     create.process(solrClient);
 
-    String location = createTempDir().toFile().getAbsolutePath();
+    String location = createTempDir().toString();
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
 
     DocCollection collectionState = solrClient.getClusterState().getCollection(collectionName);
@@ -110,7 +101,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     try (SolrClient adminClient =
             getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
         SolrClient leaderClient =
-            new Http2SolrClient.Builder(replica.getBaseUrl())
+            new HttpJettySolrClient.Builder(replica.getBaseUrl())
                 .withDefaultCollection(replica.getCoreName())
                 .build()) {
 
@@ -204,7 +195,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     try (SolrClient adminClient =
             getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
         SolrClient leaderClient =
-            new Http2SolrClient.Builder(replica.getBaseUrl())
+            new HttpJettySolrClient.Builder(replica.getBaseUrl())
                 .withDefaultCollection(replica.getCoreName())
                 .build()) {
 
@@ -338,13 +329,13 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   }
 
   private List<IndexCommit> listCommits(String directory) throws Exception {
-    Directory dir = new NIOFSDirectory(Paths.get(directory));
+    Directory dir = new NIOFSDirectory(Path.of(directory));
     try {
       return DirectoryReader.listCommits(dir);
     } catch (IndexNotFoundException ex) {
       // This can happen when the delete snapshot functionality cleans up the index files (when the
       // directory storing these files is not the *current* index directory).
-      return Collections.emptyList();
+      return List.of();
     }
   }
 }

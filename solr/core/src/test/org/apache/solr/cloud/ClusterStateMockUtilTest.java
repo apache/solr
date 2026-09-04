@@ -36,7 +36,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
         ClusterStateMockUtil.buildClusterState("csr", "baseUrl1:8983_")) {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
-      assertEquals(1, clusterState.getCollectionStates().size());
+      assertEquals(1, clusterState.size());
       DocCollection collection1 = clusterState.getCollectionOrNull("collection1");
       assertNotNull(collection1);
       assertEquals(DocRouter.DEFAULT, collection1.getRouter());
@@ -62,7 +62,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
         ClusterStateMockUtil.buildClusterState("csntp", "baseUrl1:8983_")) {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
-      assertEquals(1, clusterState.getCollectionStates().size());
+      assertEquals(1, clusterState.size());
       DocCollection collection1 = clusterState.getCollectionOrNull("collection1");
       assertNotNull(collection1);
       assertEquals(DocRouter.DEFAULT, collection1.getRouter());
@@ -83,7 +83,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
         ClusterStateMockUtil.buildClusterState("csrStRpDnF", "baseUrl1:8983_")) {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
-      assertEquals(1, clusterState.getCollectionStates().size());
+      assertEquals(1, clusterState.size());
       DocCollection collection1 = clusterState.getCollectionOrNull("collection1");
       assertNotNull(collection1);
       assertEquals(DocRouter.DEFAULT, collection1.getRouter());

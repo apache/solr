@@ -54,7 +54,7 @@ public class BJQFilterAccessibleTest extends SolrTestCaseJ4 {
               childQuery,
               BlockJoinParentQParser.getCachedBitSetProducer(req, parentQuery),
               ScoreMode.Max);
-      assertEquals(6, req.getSearcher().search(tpbjq, 10).totalHits.value);
+      assertEquals(6, req.getSearcher().search(tpbjq, 10).totalHits.value());
     }
   }
 }

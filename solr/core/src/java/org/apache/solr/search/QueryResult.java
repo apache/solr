@@ -19,10 +19,15 @@ package org.apache.solr.search;
 /** The result of a search. */
 public class QueryResult {
 
-  private boolean partialResults;
+  // Object for back compatibility so that we render true not "true" in json
+  private Object partialResults;
+  private Object partialResultsDetails;
   private Boolean segmentTerminatedEarly;
+  private Boolean terminatedEarly;
   private DocListAndSet docListAndSet;
   private CursorMark nextCursorMark;
+  private Boolean maxHitsTerminatedEarly;
+  private Long approximateTotalHits;
 
   public Object groupedResults; // TODO: currently for testing
 
@@ -49,11 +54,24 @@ public class QueryResult {
   }
 
   public boolean isPartialResults() {
-    return partialResults;
+    // omitted is equivalent to false/empty for java logic
+    return Boolean.parseBoolean(String.valueOf(partialResults));
   }
 
-  public void setPartialResults(boolean partialResults) {
+  public boolean isPartialResultOmitted() {
+    return "omitted".equals(partialResults);
+  }
+
+  public void setPartialResults(Object partialResults) {
     this.partialResults = partialResults;
+  }
+
+  public Object getPartialResultsDetails() {
+    return partialResultsDetails;
+  }
+
+  public void setPartialResultsDetails(Object partialResultsDetails) {
+    this.partialResultsDetails = partialResultsDetails;
   }
 
   public Boolean getSegmentTerminatedEarly() {
@@ -78,5 +96,29 @@ public class QueryResult {
 
   public CursorMark getNextCursorMark() {
     return nextCursorMark;
+  }
+
+  public Boolean getTerminatedEarly() {
+    return terminatedEarly;
+  }
+
+  public void setTerminatedEarly(boolean terminatedEarly) {
+    this.terminatedEarly = terminatedEarly;
+  }
+
+  public Boolean getMaxHitsTerminatedEarly() {
+    return maxHitsTerminatedEarly;
+  }
+
+  public void setMaxHitsTerminatedEarly(Boolean maxHitsTerminatedEarly) {
+    this.maxHitsTerminatedEarly = maxHitsTerminatedEarly;
+  }
+
+  public Long getApproximateTotalHits() {
+    return approximateTotalHits;
+  }
+
+  public void setApproximateTotalHits(long approximateTotalHits) {
+    this.approximateTotalHits = approximateTotalHits;
   }
 }

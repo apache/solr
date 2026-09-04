@@ -25,10 +25,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -55,11 +51,8 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
   @Test
   public void test() throws Exception {
     setupRestTestHarnesses();
-    try {
-      reloadTest();
-    } finally {
-      closeRestTestHarnesses();
-    }
+    reloadTest();
+    closeRestTestHarnesses();
   }
 
   private void reloadTest() throws Exception {
@@ -77,15 +70,15 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     Stat stat = new Stat();
     byte[] data = null;
     try {
-      data = client.getData(resPath, null, stat, true);
+      data = client.getData(resPath, null, stat);
     } catch (KeeperException.NoNodeException e) {
       data = "{}".getBytes(StandardCharsets.UTF_8);
       log.info("creating_node {}", resPath);
-      client.create(resPath, data, CreateMode.PERSISTENT, true);
+      client.create(resPath, data, CreateMode.PERSISTENT);
     }
     long startTime = System.nanoTime();
-    Stat newStat = client.setData(resPath, data, true);
-    client.setData("/configs/conf1", new byte[] {1}, true);
+    Stat newStat = client.setData(resPath, data);
+    client.setData("/configs/conf1", new byte[] {1});
     assertTrue(newStat.getVersion() > stat.getVersion());
     if (log.isInfoEnabled()) {
       log.info("new_version {}", newStat.getVersion());
@@ -121,20 +114,12 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
 
   @SuppressWarnings({"rawtypes"})
   private LinkedHashMapWriter getAsMap(String uri) throws Exception {
-    HttpGet get = new HttpGet(uri);
-    HttpEntity entity = null;
-    try {
-      entity =
-          ((CloudLegacySolrClient) cloudClient)
-              .getLbClient()
-              .getHttpClient()
-              .execute(get)
-              .getEntity();
-      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (LinkedHashMapWriter)
-          Utils.MAPWRITEROBJBUILDER.apply(Utils.getJSONParser(new StringReader(response))).getVal();
-    } finally {
-      EntityUtils.consumeQuietly(entity);
-    }
+    var response = cloudJettys.getFirst().jetty.getSolrClient().getHttpClient().GET(uri);
+    assertEquals(200, response.getStatus());
+    String responseStr = response.getContentAsString();
+    return (LinkedHashMapWriter)
+        Utils.MAPWRITEROBJBUILDER
+            .apply(Utils.getJSONParser(new StringReader(responseStr)))
+            .getVal();
   }
 }

@@ -20,11 +20,12 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
@@ -35,15 +36,18 @@ public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
   @Override
   public SolrClient createNewSolrClient() {
 
+    var httpJettyClient =
+        new HttpJettySolrClient.Builder()
+            .withResponseParser(new JavaBinResponseParser())
+            .withRequestWriter(new JavaBinRequestWriter())
+            .build();
     SolrClient client =
-        new ErrorTrackingConcurrentUpdateSolrClient.Builder(getBaseUrl())
+        new ErrorTrackingConcurrentUpdateSolrClient.Builder(
+                solrTestRule.getBaseUrl(), httpJettyClient, true)
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(2)
             .withThreadCount(5)
-            .withResponseParser(new BinaryResponseParser())
-            .withRequestWriter(new BinaryRequestWriter())
             .build();
-
     return client;
   }
 
@@ -74,7 +78,7 @@ public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
     QueryResponse response = client.query(query);
     assertEquals(1, response.getResults().size());
     SolrDocument parentDoc = response.getResults().get(0);
-    assertEquals(1, parentDoc.getChildDocumentCount());
+    assertEquals(1, parentDoc.getChildDocuments().size());
 
     // test streaming
     final List<SolrDocument> docs = new ArrayList<>();
@@ -92,6 +96,6 @@ public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
 
     assertEquals(1, docs.size());
     parentDoc = docs.get(0);
-    assertEquals(1, parentDoc.getChildDocumentCount());
+    assertEquals(1, parentDoc.getChildDocuments().size());
   }
 }

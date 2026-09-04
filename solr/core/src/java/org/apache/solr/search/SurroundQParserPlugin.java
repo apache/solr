@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
+import org.apache.lucene.queryparser.surround.parser.ParseException;
 import org.apache.lucene.queryparser.surround.parser.QueryParser;
 import org.apache.lucene.queryparser.surround.query.BasicQueryFactory;
 import org.apache.lucene.queryparser.surround.query.SrndQuery;
@@ -79,8 +80,8 @@ public class SurroundQParserPlugin extends QParserPlugin {
       }
       // ugh .. colliding ParseExceptions
       try {
-        sq = org.apache.lucene.queryparser.surround.parser.QueryParser.parse(qstr);
-      } catch (org.apache.lucene.queryparser.surround.parser.ParseException pe) {
+        sq = QueryParser.parse(qstr);
+      } catch (ParseException pe) {
         throw new SyntaxError(pe);
       }
 

@@ -26,6 +26,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
 import java.util.Date;
 import java.util.HashMap;
@@ -1064,43 +1065,37 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     final String inputString = "Thu Nov 13 04:35:51 AKST 2008"; // asctime + timezone1
 
     final long expectTs = 1226583351000L;
-    assertEquals(
-        expectTs,
-        DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
-            .withZone(ZoneId.of("UTC"))
-            .parse(inputString, Instant::from)
-            .toEpochMilli());
 
-    // ensure english locale and root locale return the same date
-    assertEquals(
-        expectTs + "",
-        DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
-            .withZone(ZoneId.of("UTC"))
-            .parse(inputString, Instant::from)
-            .toEpochMilli(),
-        DateTimeFormatter.ofPattern(dateFormat, Locale.ROOT)
-            .withZone(ZoneId.of("UTC"))
-            .parse(inputString, Instant::from)
-            .toEpochMilli());
+    try {
+      // ensure english locale and root locale return the same date
+      assertEquals(
+          expectTs,
+          DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
+              .withZone(ZoneId.of("UTC"))
+              .parse(inputString, Instant::from)
+              .toEpochMilli());
+
+      assertEquals(
+          expectTs,
+          DateTimeFormatter.ofPattern(dateFormat, Locale.ROOT)
+              .withZone(ZoneId.of("UTC"))
+              .parse(inputString, Instant::from)
+              .toEpochMilli());
+    } catch (DateTimeParseException e) {
+      // If the JVM's java.locale.providers can't parse these, there is no hope of this test passing
+      assumeNoException("JVM's Locale provider is incompatible with this test", e);
+    }
 
     assertParsedDate(
         inputString,
         Date.from(Instant.ofEpochMilli(expectTs)),
         "parse-date-patterns-default-config");
 
-    // A bug in Java 9 (not in 8) causes this to fail!  (not fixed yet?!)
-    // see https://bugs.openjdk.java.net/browse/JDK-8189784
-    if (System.getProperty("java.version").startsWith("1.8.")) {
-      // with daylight savings time timezone
-      assertParsedDate(
-          "Fri Oct 7 05:14:15 AKDT 2005",
-          Date.from(inst20051007131415()),
-          "parse-date-patterns-default-config");
-    } else {
-      System.err.println(
-          "Didn't test AKDT because only Java 1.8 does this right!  This Java version is: "
-              + System.getProperty("java.version"));
-    }
+    // with daylight savings time timezone
+    assertParsedDate(
+        "Fri Oct 7 05:14:15 AKDT 2005",
+        Date.from(inst20051007131415()),
+        "parse-date-patterns-default-config");
   }
 
   public void testEDTZone() throws IOException {

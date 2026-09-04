@@ -51,7 +51,8 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.filterCache.async", "true");
     initCore("solrconfig-basic.xml", "schema-docValuesJoin.xml");
   }
@@ -221,7 +222,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
 
       {
         final Query query = QParser.getParser(req.getParams().get("q"), req).getQuery();
-        final Query rewrittenQuery = query.rewrite(req.getSearcher().getIndexReader());
+        final Query rewrittenQuery = query.rewrite(req.getSearcher());
         assertEquals(
             rewrittenQuery + " is expected to be from Solr",
             ScoreJoinQParserPlugin.class.getPackage().getName(),
@@ -230,7 +231,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
       {
         final Query query =
             QParser.getParser("{!join from=dept_id_s to=dept_ss}text_t:develop", req).getQuery();
-        final Query rewrittenQuery = query.rewrite(req.getSearcher().getIndexReader());
+        final Query rewrittenQuery = query.rewrite(req.getSearcher());
         assertEquals(
             rewrittenQuery + " is expected to be from Solr",
             JoinQParserPlugin.class.getPackage().getName(),

@@ -17,7 +17,6 @@
 package org.apache.solr.response.transform;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.SolrDocument;
@@ -27,6 +26,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.search.DocIterationInfo;
 
 /**
  * @since solr 5.2
@@ -122,11 +122,11 @@ public class RawValueTransformerFactory extends TransformerFactory
 
     @Override
     public Collection<String> getRawFields() {
-      return Collections.singleton(display);
+      return Set.of(display);
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid) {
+    public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
       Object val = copy ? doc.get(field) : doc.remove(field);
       if (val != null) {
         doc.setField(display, val);

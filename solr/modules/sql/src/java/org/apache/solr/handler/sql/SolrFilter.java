@@ -263,10 +263,9 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     protected String translateIsNullOrIsNotNull(RexNode node) {
-      if (!(node instanceof RexCall)) {
+      if (!(node instanceof RexCall call)) {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
-      RexCall call = (RexCall) node;
       List<RexNode> operands = call.getOperands();
       if (operands.size() != 1) {
         throw new AssertionError("expected 1 operand for " + node);
@@ -531,10 +530,9 @@ class SolrFilter extends Filter implements SolrRel {
 
     protected Pair<Pair<String, RexLiteral>, Character> getFieldValuePairWithEscapeCharacter(
         RexNode node) {
-      if (!(node instanceof RexCall)) {
+      if (!(node instanceof RexCall call)) {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
-      RexCall call = (RexCall) node;
       if (call.getOperands().size() == 3) {
         RexNode escapeNode = call.getOperands().get(2);
         Character escapeChar = null;
@@ -552,11 +550,10 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     protected Pair<String, RexLiteral> getFieldValuePair(RexNode node) {
-      if (!(node instanceof RexCall)) {
+      if (!(node instanceof RexCall call)) {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
 
-      RexCall call = (RexCall) node;
       Pair<String, RexLiteral> binaryTranslated =
           call.getOperands().size() == 2 ? translateBinary(call) : null;
       if (binaryTranslated == null) {
@@ -588,16 +585,15 @@ class SolrFilter extends Filter implements SolrRel {
       }
 
       if (left.getKind() == SqlKind.CAST && right.getKind() == SqlKind.CAST) {
-        return translateBinary2(
-            ((RexCall) left).getOperands().get(0), ((RexCall) right).getOperands().get(0));
+        return translateBinary2(unwrapCast(left), unwrapCast(right));
       }
 
-      // for WHERE clause like: pdatex >= '2021-07-13T15:12:10.037Z'
+      // for WHERE clause like: pdatex >= CAST('2021-07-13 15:12:10.037' AS TIMESTAMP)
+      // Calcite 1.42+ may nest multiple CASTs for timestamp coercion, so unwrap recursively
       if (left.getKind() == SqlKind.INPUT_REF && right.getKind() == SqlKind.CAST) {
-        final RexCall cast = ((RexCall) right);
-        if (cast.getOperands().size() == 1
-            && cast.getOperands().get(0).getKind() == SqlKind.LITERAL) {
-          return translateBinary2(left, cast.getOperands().get(0));
+        RexNode unwrapped = unwrapCast(right);
+        if (unwrapped.getKind() == SqlKind.LITERAL) {
+          return translateBinary2(left, unwrapped);
         }
       }
 
@@ -607,7 +603,7 @@ class SolrFilter extends Filter implements SolrRel {
         String leftLit = toSolrLiteral("", (RexLiteral) left);
         String rightLit = toSolrLiteral("", (RexLiteral) right);
         if (!leftLit.equals(rightLit)) {
-          // they are equal lits ~ match no docs
+          // unequal literals (e.g. WHERE 1=0) ~ match no docs
           return new Pair<>("", (RexLiteral) right);
         }
       }
@@ -616,6 +612,13 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     /** Translates a call to a binary operator. Returns whether successful. */
+    protected static RexNode unwrapCast(RexNode node) {
+      while (node.getKind() == SqlKind.CAST) {
+        node = ((RexCall) node).getOperands().get(0);
+      }
+      return node;
+    }
+
     protected Pair<String, RexLiteral> translateBinary2(RexNode left, RexNode right) {
       if (log.isDebugEnabled()) {
         log.debug("translateBinary2 left={} right={}", left, right);
@@ -635,11 +638,11 @@ class SolrFilter extends Filter implements SolrRel {
           return new Pair<>(name, rightLiteral);
         case CAST:
           return translateBinary2(((RexCall) left).getOperands().get(0), right);
-          //        case OTHER_FUNCTION:
-          //          String itemName = SolrRules.isItem((RexCall) left);
-          //          if (itemName != null) {
-          //            return translateOp2(op, itemName, rightLiteral);
-          //          }
+        //        case OTHER_FUNCTION:
+        //          String itemName = SolrRules.isItem((RexCall) left);
+        //          if (itemName != null) {
+        //            return translateOp2(op, itemName, rightLiteral);
+        //          }
         default:
           return null;
       }
@@ -654,15 +657,13 @@ class SolrFilter extends Filter implements SolrRel {
           !expanded.getOperands().isEmpty() ? expanded.getOperands().get(0) : null;
       if (expanded.op.kind == SqlKind.AND) {
         // See if NOT IN was translated into a big AND not
-        if (peekAt0 instanceof RexCall) {
-          RexCall op0 = (RexCall) peekAt0;
+        if (peekAt0 instanceof RexCall op0) {
           if (op0.op.kind == SqlKind.NOT_EQUALS) {
             return "*:* -" + fieldName + ":" + toOrSetOnSameField(fieldName, expanded);
           }
         }
       } else if (expanded.op.kind == SqlKind.OR) {
-        if (peekAt0 instanceof RexCall) {
-          RexCall op0 = (RexCall) peekAt0;
+        if (peekAt0 instanceof RexCall op0) {
           if (op0.op.kind == SqlKind.EQUALS) {
             return fieldName + ":" + toOrSetOnSameField(fieldName, expanded);
           }
@@ -801,8 +802,8 @@ class SolrFilter extends Filter implements SolrRel {
       if (operands.size() != 2) {
         throw new AssertionError("Invalid number of arguments - " + operands.size());
       }
-      final RexNode left = operands.get(0);
-      final RexNode right = operands.get(1);
+      final RexNode left = unwrapCast(operands.get(0));
+      final RexNode right = unwrapCast(operands.get(1));
       final Pair<String, RexLiteral> a = translateBinary2(left, right);
 
       if (a != null) {

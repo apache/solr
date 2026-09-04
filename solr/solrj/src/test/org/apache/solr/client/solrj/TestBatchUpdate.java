@@ -16,17 +16,24 @@
  */
 package org.apache.solr.client.solrj;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
 import java.util.Iterator;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.beans.Field;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
@@ -35,11 +42,17 @@ import org.junit.Test;
  * @since solr 1.4
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class TestBatchUpdate extends SolrJettyTestBase {
+public class TestBatchUpdate extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP,
+        ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   static final int numdocs = 1000;
@@ -47,9 +60,10 @@ public class TestBatchUpdate extends SolrJettyTestBase {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getBaseUrl())
+        new HttpJettySolrClient.Builder(solrTestRule.getJetty().getBaseUrl().toString())
+            .withHttpClient(solrTestRule.getJetty().getSolrClient())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new RequestWriter())
+            .withRequestWriter(new XMLRequestWriter())
             .build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
@@ -59,10 +73,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getBaseUrl())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new BinaryRequestWriter())
-            .build()) {
+        solrTestRule.newSolrClientBuilder().withRequestWriter(new JavaBinRequestWriter()).build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
     }
@@ -71,10 +82,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
   @Test
   public void testWithBinaryBean() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getBaseUrl())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new BinaryRequestWriter())
-            .build()) {
+        solrTestRule.newSolrClientBuilder().withRequestWriter(new JavaBinRequestWriter()).build()) {
       client.deleteByQuery("*:*"); // delete everything!
       final int[] counter = new int[1];
       counter[0] = 0;
