@@ -122,7 +122,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     ensureSchemaMutable();
     ensureRequiredRequestBodyProvided(requestBody);
     ensureRequiredParameterProvided("fieldTypeName", fieldTypeName);
-    ensureRequiredParameterProvided("class", requestBody.className);
+    ensureRequiredParameterProvided("class", requestBody.propertyClass);
     requestBody.operationType = "add-field-type";
 
     runWithSchemaManager(List.of(requestBody), response);
