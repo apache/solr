@@ -390,6 +390,9 @@ public class ZkStateReader implements SolrCloseable {
   private final SolrZkClient zkClient;
 
   private final boolean closeClient;
+  private final AtomicBoolean zkSessionExpired = new AtomicBoolean();
+  private final OnDisconnect onDisconnect = this::onDisconnect;
+  private final OnReconnect onReconnect = this::onReconnect;
 
   private volatile boolean closed = false;
 
@@ -424,27 +427,32 @@ public class ZkStateReader implements SolrCloseable {
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
             .withUseDefaultCredsAndACLs(canUseZkACLs)
             .build();
-    this.zkClient
-        .getCuratorFramework()
-        .getConnectionStateListenable()
-        .addListener(
-            (OnReconnect)
-                () -> {
-                  // on reconnect, reload cloud info
-                  try {
-                    this.createClusterStateWatchersAndUpdate();
-                  } catch (InterruptedException e) {
-                    // Restore the interrupted status
-                    Thread.currentThread().interrupt();
-                    log.warn("Interrupted", e);
-                  } catch (Throwable e) {
-                    log.error("An error has occurred while updating the cluster state", e);
-                  }
-                });
+    this.zkClient.getCuratorFramework().getConnectionStateListenable().addListener(onReconnect);
+    this.zkClient.getCuratorFramework().getConnectionStateListenable().addListener(onDisconnect);
     this.closeClient = true;
     this.securityNodeWatcher = null;
     collectionPropertiesZkStateReader = new CollectionPropertiesZkStateReader(this);
     assert ObjectReleaseTracker.track(this);
+  }
+
+  private void onDisconnect(boolean sessionExpired) {
+    if (sessionExpired) {
+      zkSessionExpired.set(true);
+    }
+  }
+
+  private void onReconnect() {
+    if (!zkSessionExpired.compareAndSet(true, false)) {
+      return;
+    }
+    try {
+      createClusterStateWatchersAndUpdate();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.warn("Interrupted", e);
+    } catch (Throwable e) {
+      log.error("An error has occurred while updating the cluster state", e);
+    }
   }
 
   /**
