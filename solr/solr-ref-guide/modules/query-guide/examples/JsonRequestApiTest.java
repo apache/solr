@@ -26,7 +26,7 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.json.DomainMap;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
@@ -61,7 +61,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
         .process(cluster.getSolrClient());
 
-    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
+    ContentWriterUpdateRequest up = new ContentWriterUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);
     up.addFile(getFile("solrj/techproducts.xml"), "application/xml");
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);

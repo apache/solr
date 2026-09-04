@@ -29,14 +29,16 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +86,7 @@ public class MirroredSolrRequestSerializer
         Long.parseLong(String.valueOf(requestMap.getOrDefault("submitTimeNanos", "-1")));
     SolrParams params;
     if (requestMap.get("params") != null) {
-      params = new MapSolrParams((Map<String, String>) requestMap.get("params"));
+      params = new NamedList<>((Map<String, Object>) requestMap.get("params")).toSolrParams();
     } else {
       params = new ModifiableSolrParams();
     }
@@ -93,7 +95,18 @@ public class MirroredSolrRequestSerializer
       UpdateRequest updateRequest = (UpdateRequest) request;
       List docs = (List) requestMap.get("docs");
       if (docs != null) {
-        updateRequest.add(docs);
+        List<Map<String, Object>> docsParams =
+            (List<Map<String, Object>>) requestMap.get("docsParams");
+        if (docsParams.size() != docs.size()) {
+          throw new RuntimeException("docs and docsParams size mismatch");
+        }
+        for (int i = 0; i < docs.size(); i++) {
+          Map<String, Object> docParams = docsParams.get(i);
+          updateRequest.add(
+              (SolrInputDocument) docs.get(i),
+              docParams == null ? null : (Integer) docParams.get(UpdateRequest.COMMIT_WITHIN),
+              docParams == null ? null : (Boolean) docParams.get(UpdateRequest.OVERWRITE));
+        }
       } else {
         updateRequest.add("id", "1"); // TODO huh?
         updateRequest.getDocumentsMap().clear();
@@ -101,7 +114,18 @@ public class MirroredSolrRequestSerializer
 
       List<String> deletes = (List<String>) requestMap.get("deletes");
       if (deletes != null) {
-        updateRequest.deleteById(deletes);
+        List<Map<String, Object>> deletesParams =
+            (List<Map<String, Object>>) requestMap.get("deletesParams");
+        if (deletesParams.size() != deletes.size()) {
+          throw new RuntimeException("deletes and deletesParams size mismatch");
+        }
+        for (int i = 0; i < deletes.size(); i++) {
+          Map<String, Object> deleteParams = deletesParams.get(i);
+          updateRequest.deleteById(
+              deletes.get(i),
+              deleteParams == null ? null : (String) deleteParams.get(ShardParams._ROUTE_),
+              deleteParams == null ? null : (Long) deleteParams.get(UpdateRequest.VER));
+        }
       }
 
       List<String> deletesQuery = (List<String>) requestMap.get("deleteQuery");
@@ -185,14 +209,22 @@ public class MirroredSolrRequestSerializer
       map.put("params", solrRequest.getParams());
       map.put("type", request.getType().toString());
       if (solrRequest instanceof UpdateRequest update) {
-        map.put("docs", update.getDocuments());
-        map.put("deletes", update.getDeleteById());
+        Map<SolrInputDocument, Map<String, Object>> docsMap = update.getDocumentsMap();
+        if (docsMap != null && !docsMap.isEmpty()) {
+          map.put("docs", docsMap.keySet());
+          map.put("docsParams", update.getDocumentsMap().values());
+        }
+        Map<String, Map<String, Object>> deletes = update.getDeleteByIdMap();
+        if (deletes != null && !deletes.isEmpty()) {
+          map.put("deletes", deletes.keySet());
+          map.put("deletesParams", deletes.values());
+        }
         map.put("deleteQuery", update.getDeleteQuery());
       } else if (solrRequest instanceof MirroredSolrRequest.MirroredConfigSetRequest config) {
         map.put("method", config.getMethod().toString());
-        if (config.getContentStreams() != null) {
+        if (config.getRawContentStreams() != null) {
           List<Map<String, Object>> streamsList = new ArrayList<>();
-          for (ContentStream cs : config.getContentStreams()) {
+          for (ContentStream cs : config.getRawContentStreams()) {
             Map<String, Object> streamMap = new HashMap<>();
             streamMap.put("name", cs.getName());
             streamMap.put("contentType", cs.getContentType());

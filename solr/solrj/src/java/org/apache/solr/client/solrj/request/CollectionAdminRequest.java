@@ -78,13 +78,29 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
   protected final CollectionAction action;
 
-  public CollectionAdminRequest(CollectionAction action) {
-    this("/admin/collections", action);
+  public CollectionAdminRequest(METHOD method, CollectionAction action) {
+    this(method, "/admin/collections", action);
   }
 
-  public CollectionAdminRequest(String path, CollectionAction action) {
-    super(METHOD.GET, path, SolrRequestType.ADMIN);
+  public CollectionAdminRequest(METHOD method, String path, CollectionAction action) {
+    super(method, path, SolrRequestType.ADMIN);
     this.action = checkNotNull(CoreAdminParams.ACTION, action);
+  }
+
+  /**
+   * @deprecated Use {@link #CollectionAdminRequest(METHOD, CollectionAction)}.
+   */
+  @Deprecated(since = "11.0")
+  public CollectionAdminRequest(CollectionAction action) {
+    this(METHOD.POST, action);
+  }
+
+  /**
+   * @deprecated Use {@link #CollectionAdminRequest(METHOD, String, CollectionAction)}.
+   */
+  @Deprecated(since = "11.0")
+  public CollectionAdminRequest(String path, CollectionAction action) {
+    this(METHOD.POST, path, action);
   }
 
   @Override
@@ -148,8 +164,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String asyncId = null;
     protected boolean waitForFinalState = false;
 
+    public AsyncCollectionAdminRequest(METHOD method, CollectionAction action) {
+      super(method, action);
+    }
+
+    /**
+     * @deprecated Use {@link #AsyncCollectionAdminRequest(METHOD, CollectionAction)}.
+     */
+    @Deprecated(since = "11.0")
     public AsyncCollectionAdminRequest(CollectionAction action) {
-      super(action);
+      this(METHOD.POST, action);
     }
 
     @Override
@@ -255,9 +279,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String collection;
     protected Boolean followAliases;
 
-    public AsyncCollectionSpecificAdminRequest(CollectionAction action, String collection) {
-      super(action);
+    public AsyncCollectionSpecificAdminRequest(
+        METHOD method, CollectionAction action, String collection) {
+      super(method, action);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
+    }
+
+    /**
+     * @deprecated Use {@link #AsyncCollectionSpecificAdminRequest(METHOD, CollectionAction,
+     *     String)}.
+     */
+    @Deprecated(since = "11.0")
+    public AsyncCollectionSpecificAdminRequest(CollectionAction action, String collection) {
+      this(METHOD.POST, action, collection);
     }
 
     public String getCollectionName() {
@@ -284,10 +318,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String shard;
 
     public AsyncShardSpecificAdminRequest(
-        CollectionAction action, String collection, String shard) {
-      super(action);
+        METHOD method, CollectionAction action, String collection, String shard) {
+      super(method, action);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
       this.shard = checkNotNull(CoreAdminParams.SHARD, shard);
+    }
+
+    /**
+     * @deprecated Use {@link #AsyncShardSpecificAdminRequest(METHOD, CollectionAction, String,
+     *     String)}.
+     */
+    @Deprecated(since = "11.0")
+    public AsyncShardSpecificAdminRequest(
+        CollectionAction action, String collection, String shard) {
+      this(METHOD.POST, action, collection, shard);
     }
 
     @Override
@@ -305,10 +349,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String collection;
     protected String shard;
 
-    public ShardSpecificAdminRequest(CollectionAction action, String collection, String shard) {
-      super(action);
+    public ShardSpecificAdminRequest(
+        METHOD method, CollectionAction action, String collection, String shard) {
+      super(method, action);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
       this.shard = checkNotNull(CoreAdminParams.SHARD, shard);
+    }
+
+    /**
+     * @deprecated Use {@link #ShardSpecificAdminRequest(METHOD, CollectionAction, String, String)}.
+     */
+    @Deprecated(since = "11.0")
+    public ShardSpecificAdminRequest(CollectionAction action, String collection, String shard) {
+      this(METHOD.POST, action, collection, shard);
     }
 
     @Override
@@ -490,7 +543,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         Integer numShards,
         String shards,
         ReplicaCount numReplicas) {
-      super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
+      super(
+          METHOD.POST,
+          CollectionAction.CREATE,
+          SolrIdentifierValidator.validateCollectionName(collection));
       // NOTE: there's very little we can assert about the args because nothing but "collection" is
       // required by the server
       if ((null != shards) && (null != numShards)) {
@@ -682,7 +738,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   public static class Reload extends AsyncCollectionSpecificAdminRequest {
 
     private Reload(String collection) {
-      super(CollectionAction.RELOAD, collection);
+      super(METHOD.POST, CollectionAction.RELOAD, collection);
     }
   }
 
@@ -694,7 +750,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     String target;
 
     public Rename(String collection, String target) {
-      super(CollectionAction.RENAME, collection);
+      super(METHOD.POST, CollectionAction.RENAME, collection);
       this.target = target;
     }
 
@@ -718,7 +774,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @param node The node to be deleted
      */
     public DeleteNode(String node) {
-      super(CollectionAction.DELETENODE);
+      super(METHOD.POST, CollectionAction.DELETENODE);
       this.node = checkNotNull("node", node);
     }
 
@@ -739,7 +795,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @param target node where the new replicas are to be created
      */
     public ReplaceNode(String source, String target) {
-      super(CollectionAction.REPLACENODE);
+      super(METHOD.POST, CollectionAction.REPLACENODE);
       this.sourceNode = checkNotNull(CollectionParams.SOURCE_NODE, source);
       this.targetNode = target;
     }
@@ -773,7 +829,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected int timeout = -1;
 
     public MoveReplica(String collection, String replica, String targetNode) {
-      super(CollectionAction.MOVEREPLICA);
+      super(METHOD.POST, CollectionAction.MOVEREPLICA);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
       this.replica = checkNotNull(CoreAdminParams.REPLICA, replica);
       this.targetNode = checkNotNull(CollectionParams.TARGET_NODE, targetNode);
@@ -781,7 +837,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
 
     public MoveReplica(String collection, String shard, String sourceNode, String targetNode) {
-      super(CollectionAction.MOVEREPLICA);
+      super(METHOD.POST, CollectionAction.MOVEREPLICA);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
       this.shard = checkNotNull(CoreAdminParams.SHARD, shard);
       this.sourceNode = checkNotNull(CollectionParams.SOURCE_NODE, sourceNode);
@@ -848,7 +904,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
 
     public RebalanceLeaders(String collection) {
-      super(CollectionAction.REBALANCELEADERS);
+      super(METHOD.POST, CollectionAction.REBALANCELEADERS);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
     }
 
@@ -889,7 +945,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     Map<String, Object> collectionParams = new HashMap<>();
 
     private ReindexCollection(String collection) {
-      super(CollectionAction.REINDEXCOLLECTION, collection);
+      super(METHOD.POST, CollectionAction.REINDEXCOLLECTION, collection);
     }
 
     /** Target collection name (null if the same). */
@@ -982,12 +1038,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Float rawSizeSamplingPercent = null;
 
     private ColStatus(String collection) {
-      super(CollectionAction.COLSTATUS);
+      super(METHOD.GET, CollectionAction.COLSTATUS);
       this.collection = collection;
     }
 
     private ColStatus() {
-      super(CollectionAction.COLSTATUS);
+      super(METHOD.GET, CollectionAction.COLSTATUS);
     }
 
     public ColStatus setWithSegments(boolean withSegments) {
@@ -1055,7 +1111,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   public static class Delete extends AsyncCollectionSpecificAdminRequest {
 
     private Delete(String collection) {
-      super(CollectionAction.DELETE, collection);
+      super(METHOD.POST, CollectionAction.DELETE, collection);
     }
   }
 
@@ -1076,7 +1132,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Properties extraProperties;
 
     public Backup(String collection, String name) {
-      super(CollectionAction.BACKUP, collection);
+      super(METHOD.POST, CollectionAction.BACKUP, collection);
       this.name = name;
       this.repositoryName = Optional.empty();
     }
@@ -1222,7 +1278,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Integer backupId;
 
     public Restore(String collection, String backupName) {
-      super(CollectionAction.RESTORE, collection);
+      super(METHOD.POST, CollectionAction.RESTORE, collection);
       this.backupName = backupName;
       this.numReplicas = ReplicaCount.empty();
     }
@@ -1408,7 +1464,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String location;
 
     public InstallShard(String collection, String shard, String location, String backupRepository) {
-      super(CollectionAction.INSTALLSHARDDATA, collection, shard);
+      super(METHOD.POST, CollectionAction.INSTALLSHARDDATA, collection, shard);
 
       this.repositoryName = backupRepository;
       this.location = location;
@@ -1440,7 +1496,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected final String commitName;
 
     public CreateSnapshot(String collection, String commitName) {
-      super(CollectionAction.CREATESNAPSHOT, checkNotNull(CoreAdminParams.COLLECTION, collection));
+      super(
+          METHOD.POST,
+          CollectionAction.CREATESNAPSHOT,
+          checkNotNull(CoreAdminParams.COLLECTION, collection));
       this.commitName = checkNotNull(CoreAdminParams.COMMIT_NAME, commitName);
     }
 
@@ -1467,7 +1526,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected final String commitName;
 
     public DeleteSnapshot(String collection, String commitName) {
-      super(CollectionAction.DELETESNAPSHOT, checkNotNull(CoreAdminParams.COLLECTION, collection));
+      super(
+          METHOD.POST,
+          CollectionAction.DELETESNAPSHOT,
+          checkNotNull(CoreAdminParams.COLLECTION, collection));
       this.commitName = checkNotNull(CoreAdminParams.COMMIT_NAME, commitName);
     }
 
@@ -1492,7 +1554,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   @SuppressWarnings("serial")
   public static class ListSnapshots extends AsyncCollectionSpecificAdminRequest {
     public ListSnapshots(String collection) {
-      super(CollectionAction.LISTSNAPSHOTS, checkNotNull(CoreAdminParams.COLLECTION, collection));
+      super(
+          METHOD.GET,
+          CollectionAction.LISTSNAPSHOTS,
+          checkNotNull(CoreAdminParams.COLLECTION, collection));
     }
 
     @Override
@@ -1539,6 +1604,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
     private CreateShard(String collection, String shard) {
       super(
+          METHOD.POST,
           CollectionAction.CREATESHARD,
           collection,
           SolrIdentifierValidator.validateShardName(shard));
@@ -1568,7 +1634,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String sleep;
 
     private MockCollTask(String collection) {
-      super(CollectionAction.MOCK_COLL_TASK);
+      super(METHOD.POST, CollectionAction.MOCK_COLL_TASK);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
     }
 
@@ -1606,7 +1672,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String createNodeSet;
 
     private SplitShard(String collection) {
-      super(CollectionAction.SPLITSHARD);
+      super(METHOD.POST, CollectionAction.SPLITSHARD);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
     }
 
@@ -1730,7 +1796,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     private Boolean deleteDataDir;
 
     private DeleteShard(String collection, String shard) {
-      super(CollectionAction.DELETESHARD, collection, shard);
+      super(METHOD.POST, CollectionAction.DELETESHARD, collection, shard);
     }
 
     public Boolean getDeleteInstanceDir() {
@@ -1777,7 +1843,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   // FORCELEADER request
   public static class ForceLeader extends ShardSpecificAdminRequest {
     private ForceLeader(String collection, String shard) {
-      super(CollectionAction.FORCELEADER, collection, shard);
+      super(METHOD.POST, CollectionAction.FORCELEADER, collection, shard);
     }
   }
 
@@ -1810,7 +1876,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String requestId = null;
 
     private RequestStatus(String requestId) {
-      super(CollectionAction.REQUESTSTATUS);
+      super(METHOD.GET, CollectionAction.REQUESTSTATUS);
       this.requestId = checkNotNull("requestId", requestId);
     }
 
@@ -1871,7 +1937,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Boolean flush = null;
 
     private DeleteStatus(String requestId, Boolean flush) {
-      super(CollectionAction.DELETESTATUS);
+      super(METHOD.POST, CollectionAction.DELETESTATUS);
       if (requestId == null && flush == null)
         throw new IllegalArgumentException(
             "Either requestid or flush parameter must be specified.");
@@ -1922,7 +1988,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     private Map<String, String> properties = new HashMap<>();
 
     public SetAliasProperty(String aliasName) {
-      super(CollectionAction.ALIASPROP);
+      super(METHOD.POST, CollectionAction.ALIASPROP);
       this.aliasName = SolrIdentifierValidator.validateAliasName(aliasName);
     }
 
@@ -1961,7 +2027,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String aliasedCollections;
 
     private CreateAlias(String aliasName, String aliasedCollections) {
-      super(CollectionAction.CREATEALIAS);
+      super(METHOD.POST, CollectionAction.CREATEALIAS);
       this.aliasName = SolrIdentifierValidator.validateAliasName(aliasName);
       this.aliasedCollections = checkNotNull("aliasedCollections", aliasedCollections);
     }
@@ -2035,7 +2101,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         String start,
         String interval,
         Create createCollTemplate) {
-      super(CollectionAction.CREATEALIAS);
+      super(METHOD.POST, CollectionAction.CREATEALIAS);
       this.aliasName = aliasName;
       this.start = start;
       this.interval = interval;
@@ -2150,7 +2216,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
     public CreateCategoryRoutedAlias(
         String aliasName, String routerField, int maxCardinality, Create createCollTemplate) {
-      super(CollectionAction.CREATEALIAS);
+      super(METHOD.POST, CollectionAction.CREATEALIAS);
       this.aliasName = aliasName;
       this.routerField = routerField;
       this.maxCardinality = maxCardinality;
@@ -2256,7 +2322,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
     public DimensionalRoutedAlias(
         String aliasName, Create createCollTemplate, RoutedAliasAdminRequest... dims) {
-      super(CollectionAction.CREATEALIAS);
+      super(METHOD.POST, CollectionAction.CREATEALIAS);
       this.aliasName = aliasName;
       this.createCollTemplate = createCollTemplate;
       this.dims = dims;
@@ -2340,7 +2406,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String aliasName;
 
     private DeleteAlias(String aliasName) {
-      super(CollectionAction.DELETEALIAS);
+      super(METHOD.POST, CollectionAction.DELETEALIAS);
       this.aliasName = checkNotNull("aliasName", aliasName);
     }
 
@@ -2393,7 +2459,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String createNodeSet;
 
     private AddReplica(String collection, String shard, String routeKey, Replica.Type type) {
-      super(CollectionAction.ADDREPLICA);
+      super(METHOD.POST, CollectionAction.ADDREPLICA);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
       this.shard = shard;
       this.routeKey = routeKey;
@@ -2593,19 +2659,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     private Integer count;
 
     private DeleteReplica(String collection, String shard, String replica) {
-      super(CollectionAction.DELETEREPLICA, collection);
+      super(METHOD.POST, CollectionAction.DELETEREPLICA, collection);
       this.shard = shard;
       this.replica = replica;
     }
 
     private DeleteReplica(String collection, String shard, int count) {
-      super(CollectionAction.DELETEREPLICA, collection);
+      super(METHOD.POST, CollectionAction.DELETEREPLICA, collection);
       this.shard = shard;
       this.count = count;
     }
 
     private DeleteReplica(String collection, int count) {
-      super(CollectionAction.DELETEREPLICA, collection);
+      super(METHOD.POST, CollectionAction.DELETEREPLICA, collection);
       this.count = count;
     }
 
@@ -2692,7 +2758,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     private String propertyValue;
 
     private ClusterProp(String propertyName, String propertyValue) {
-      super(CollectionAction.CLUSTERPROP);
+      super(METHOD.POST, CollectionAction.CLUSTERPROP);
       this.propertyName = checkNotNull("propertyName", propertyName);
       this.propertyValue = propertyValue;
     }
@@ -2732,7 +2798,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     private String propertyValue;
 
     private CollectionProp(String collection, String propertyName, String propertyValue) {
-      super(CollectionAction.COLLECTIONPROP, collection);
+      super(METHOD.POST, CollectionAction.COLLECTIONPROP, collection);
       this.propertyName = checkNotNull("propertyName", propertyName);
       this.propertyValue = propertyValue;
     }
@@ -2775,7 +2841,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     private Properties properties;
 
     private Migrate(String collection, String targetCollection, String splitKey) {
-      super(CollectionAction.MIGRATE);
+      super(METHOD.POST, CollectionAction.MIGRATE);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
       this.targetCollection = checkNotNull("targetCollection", targetCollection);
       this.splitKey = checkNotNull("split.key", splitKey);
@@ -2837,7 +2903,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   public static class OverseerStatus extends AsyncCollectionAdminRequest {
 
     public OverseerStatus() {
-      super(CollectionAction.OVERSEERSTATUS);
+      super(METHOD.GET, CollectionAction.OVERSEERSTATUS);
     }
   }
 
@@ -2846,7 +2912,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       extends CollectionAdminRequest<RequestApiDistributedProcessingResponse> {
 
     public RequestApiDistributedProcessing() {
-      super(CollectionAction.DISTRIBUTEDAPIPROCESSING);
+      super(METHOD.GET, CollectionAction.DISTRIBUTEDAPIPROCESSING);
     }
 
     @Override
@@ -2875,7 +2941,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String routeKey = null;
 
     public ClusterStatus() {
-      super(CollectionAction.CLUSTERSTATUS);
+      super(METHOD.GET, CollectionAction.CLUSTERSTATUS);
     }
 
     public ClusterStatus setCollectionName(String collectionName) {
@@ -2930,7 +2996,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   public static class ListAliases extends CollectionAdminRequest<CollectionAdminResponse> {
 
     public ListAliases() {
-      super(CollectionAction.LISTALIASES);
+      super(METHOD.GET, CollectionAction.LISTALIASES);
     }
 
     @Override
@@ -2950,7 +3016,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   // LIST request
   public static class List extends CollectionAdminRequest<CollectionAdminResponse> {
     public List() {
-      super(CollectionAction.LIST);
+      super(METHOD.GET, CollectionAction.LIST);
     }
 
     @Override
@@ -3023,7 +3089,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     private Boolean purgeUnused;
 
     private DeleteBackup(String backupName) {
-      super(CollectionAction.DELETEBACKUP);
+      super(METHOD.POST, CollectionAction.DELETEBACKUP);
 
       this.name = backupName;
     }
@@ -3126,7 +3192,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     private String repositoryName;
 
     private ListBackup(String backupName) {
-      super(CollectionAction.LISTBACKUP);
+      super(METHOD.GET, CollectionAction.LISTBACKUP);
 
       this.backupName = backupName;
     }
@@ -3188,7 +3254,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         String replica,
         String propertyName,
         String propertyValue) {
-      super(CollectionAction.ADDREPLICAPROP, collection, shard);
+      super(METHOD.POST, CollectionAction.ADDREPLICAPROP, collection, shard);
       this.replica = checkNotNull(CoreAdminParams.REPLICA, replica);
       this.propertyName = checkNotNull("propertyName", propertyName);
       this.propertyValue = checkNotNull("propertyValue", propertyValue);
@@ -3244,7 +3310,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
     private DeleteReplicaProp(
         String collection, String shard, String replica, String propertyName) {
-      super(CollectionAction.DELETEREPLICAPROP, collection, shard);
+      super(METHOD.POST, CollectionAction.DELETEREPLICAPROP, collection, shard);
       this.replica = checkNotNull(CoreAdminParams.REPLICA, replica);
       this.propertyName = checkNotNull("propertyName", propertyName);
     }
@@ -3280,7 +3346,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Boolean shardUnique;
 
     private BalanceShardUnique(String collection, String propertyName) {
-      super(CollectionAction.BALANCESHARDUNIQUE);
+      super(METHOD.POST, CollectionAction.BALANCESHARDUNIQUE);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
       this.propertyName = checkNotNull("propertyName", propertyName);
     }
@@ -3328,7 +3394,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Map<String, Object> attributes;
 
     private Modify(String collection, Map<String, Object> attributes) {
-      super(CollectionAction.MODIFYCOLLECTION, collection);
+      super(METHOD.POST, CollectionAction.MODIFYCOLLECTION, collection);
       this.attributes = attributes;
     }
 

@@ -151,29 +151,6 @@ public class KafkaCrossDcConsumerTest {
     kafkaCrossDcConsumer.shutdown();
   }
 
-  private ConsumerRecord<String, MirroredSolrRequest<?>> createSampleConsumerRecord() {
-    return new ConsumerRecord<>("sample-topic", 0, 0, "key", createSampleMirroredSolrRequest());
-  }
-
-  private ConsumerRecords<String, MirroredSolrRequest<?>> createSampleConsumerRecords() {
-    TopicPartition topicPartition = new TopicPartition("sample-topic", 0);
-    List<ConsumerRecord<String, MirroredSolrRequest<?>>> recordsList = new ArrayList<>();
-    recordsList.add(
-        new ConsumerRecord<>("sample-topic", 0, 0, "key", createSampleMirroredSolrRequest()));
-    return new ConsumerRecords<>(Map.of(topicPartition, recordsList));
-  }
-
-  private MirroredSolrRequest<?> createSampleMirroredSolrRequest() {
-    // Create a sample MirroredSolrRequest for testing
-    SolrInputDocument solrInputDocument = new SolrInputDocument();
-    solrInputDocument.addField("id", "1");
-    solrInputDocument.addField("title", "Sample title");
-    solrInputDocument.addField("content", "Sample content");
-    UpdateRequest updateRequest = new UpdateRequest();
-    updateRequest.add(solrInputDocument);
-    return new MirroredSolrRequest<>(updateRequest);
-  }
-
   /** Should create a KafkaCrossDcConsumer with the given configuration and startLatch */
   @Test
   public void kafkaCrossDcConsumerCreationWithConfigurationAndStartLatch() {
@@ -204,7 +181,7 @@ public class KafkaCrossDcConsumerTest {
   }
 
   @Test
-  public void testSolrClientSupplier() throws Exception {
+  public void testSolrClientSupplier() {
     supplier.get();
     assertEquals(1, solrClientCounter.get());
     clusterStateProviderIsClosed = true;
@@ -252,7 +229,6 @@ public class KafkaCrossDcConsumerTest {
 
   @Test
   public void testHandleFailedResubmit() throws Exception {
-    // Set up the KafkaCrossDcConsumer
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
     KafkaCrossDcConsumer consumer = createCrossDcConsumerSpy(mockConsumer);
 
@@ -268,9 +244,6 @@ public class KafkaCrossDcConsumerTest {
     MirroredSolrRequest<?> request = new MirroredSolrRequest<>(new UpdateRequest());
     IQueueHandler.Result<MirroredSolrRequest<?>> failedResubmitResult =
         new IQueueHandler.Result<>(IQueueHandler.ResultStatus.FAILED_RESUBMIT, null, request);
-    // SolrMessageProcessor mockMessageProcessor = mock(SolrMessageProcessor.class);
-    // when(mockMessageProcessor.handleItem(any(MirroredSolrRequest.class)))
-    //     .thenReturn(failedResubmitResult);
 
     // Mock the KafkaMirroringSink
     KafkaMirroringSink mockKafkaMirroringSink = mock(KafkaMirroringSink.class);
@@ -331,7 +304,7 @@ public class KafkaCrossDcConsumerTest {
   }
 
   @Test
-  public void testHandleValidAdminRequest() throws Exception {
+  public void testHandleValidAdminRequest() {
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
     KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
     doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED, null))
@@ -429,7 +402,7 @@ public class KafkaCrossDcConsumerTest {
       }
       // Create a valid MirroredSolrRequest
       ConsumerRecord<String, MirroredSolrRequest<?>> record =
-          new ConsumerRecord<>("test-topic", 0, 0, "key", new MirroredSolrRequest<>(validRequest));
+          new ConsumerRecord<>("test-topic", 0, i, "key", new MirroredSolrRequest<>(validRequest));
       records.add(record);
     }
     ConsumerRecords<String, MirroredSolrRequest<?>> consumerRecords =
@@ -442,6 +415,62 @@ public class KafkaCrossDcConsumerTest {
     // Verify that the valid MirroredSolrRequest was processed.
     verify(spyConsumer, times(outputReqs))
         .sendBatch(any(), eq(MirroredSolrRequest.Type.UPDATE), any(), any());
+  }
+
+  /**
+   * When a record's differing params force a flush of the batch collapsed so far, the flush must be
+   * attributed to the last record actually merged into that batch, not to the record that merely
+   * triggered the flush.
+   */
+  @Test
+  public void testFlushedBatchLastRecord() {
+    KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
+    KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
+    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED, null))
+        .when(messageProcessorMock)
+        .handleItem(any());
+
+    UpdateRequest batchRequest1 = new UpdateRequest();
+    SolrInputDocument doc1 = new SolrInputDocument();
+    doc1.addField("id", "1");
+    batchRequest1.add(doc1);
+
+    UpdateRequest batchRequest2 = new UpdateRequest();
+    SolrInputDocument doc2 = new SolrInputDocument();
+    doc2.addField("id", "2");
+    batchRequest2.add(doc2);
+
+    // different params from the first two records, so it can't collapse with them and instead
+    // forces a flush of the batch they collapsed into
+    UpdateRequest differentParamsRequest = new UpdateRequest();
+    SolrInputDocument doc3 = new SolrInputDocument();
+    doc3.addField("id", "3");
+    differentParamsRequest.add(doc3);
+    differentParamsRequest.getParams().set("some.param", "different");
+
+    ConsumerRecord<String, MirroredSolrRequest<?>> record1 =
+        new ConsumerRecord<>("test-topic", 0, 0, "key1", new MirroredSolrRequest<>(batchRequest1));
+    ConsumerRecord<String, MirroredSolrRequest<?>> record2 =
+        new ConsumerRecord<>("test-topic", 0, 1, "key2", new MirroredSolrRequest<>(batchRequest2));
+    ConsumerRecord<String, MirroredSolrRequest<?>> record3 =
+        new ConsumerRecord<>(
+            "test-topic", 0, 2, "key3", new MirroredSolrRequest<>(differentParamsRequest));
+
+    ConsumerRecords<String, MirroredSolrRequest<?>> records =
+        new ConsumerRecords<>(
+            Map.of(new TopicPartition("test-topic", 0), List.of(record1, record2, record3)));
+
+    when(mockConsumer.poll(any())).thenReturn(records).thenThrow(new WakeupException());
+
+    spyConsumer.run();
+
+    // record1 and record2 collapsed into one batch; that batch's flush must be attributed to
+    // record2 (its last record), never to record3 (which only triggered the flush)
+    verify(spyConsumer, times(1))
+        .sendBatch(any(), eq(MirroredSolrRequest.Type.UPDATE), eq(record2), any());
+    // record3 starts (and, at end of loop, flushes) its own batch
+    verify(spyConsumer, times(1))
+        .sendBatch(any(), eq(MirroredSolrRequest.Type.UPDATE), eq(record3), any());
   }
 
   @Test
