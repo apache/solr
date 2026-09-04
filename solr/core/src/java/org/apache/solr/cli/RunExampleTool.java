@@ -410,8 +410,10 @@ public class RunExampleTool extends ToolBase {
         postTool.runTool(postToolCli);
 
       } else {
-        echo(
-            "exampledocs directory not found, skipping indexing step for the techproducts example");
+        throw new IllegalArgumentException(
+            "This Solr distribution does not include example data."
+            + "('slim' Docker image). Please use the full Solr "
+            + "distribution to run the techproducts example.");
       }
     } else if ("films".equals(exampleName) && !alreadyExists) {
       try (SolrClient solrClient =

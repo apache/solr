@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -46,7 +47,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ExternalPaths;
+import org.jspecify.annotations.NonNull;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -664,5 +667,58 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
     int code = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
     assertEquals("Execution should have failed with return code 1", 1, code);
+  }
+
+  @Test
+  public void testTechProductsExampleFailsWithoutDocumentation() throws Exception {
+    Path realSolrHomeDir = ExternalPaths.SERVER_HOME;
+    if (!Files.isDirectory(realSolrHomeDir)) {
+      fail(realSolrHomeDir + " not found and is required to run this test!");
+    }
+    Path fakeServerDir = createTempDir("slim-server");
+    Path fakeExampleDir = createTempDir("slim-example");
+
+    PathUtils.copyDirectory(realSolrHomeDir, fakeServerDir.resolve("solr"));
+    String[] toolArgs = getToolArguments(fakeServerDir, fakeExampleDir);
+
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
+    RunExampleExecutor executor = new RunExampleExecutor();
+    closeables.add(executor);
+
+    RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
+    org.apache.commons.cli.CommandLine cli = SolrCLI.processCommandLineArgs(tool, toolArgs);
+
+    IllegalArgumentException thrown =
+        assertThrows(
+            "Running the techproducts example without exampledocs should fail with a clear"
+                + " error instead of silently launching an empty collection",
+            IllegalArgumentException.class,
+            () -> tool.runImpl(cli));
+
+    assertTrue(
+        "Exception message should explain that example data is missing, but was: "
+            + thrown.getMessage(),
+        thrown.getMessage().contains("does not include example data"));
+  }
+
+  private static String @NonNull [] getToolArguments(Path fakeServerDir, Path fakeExampleDir) throws IOException {
+    Assert.assertNotNull(ExternalPaths.SOURCE_HOME);
+    Path script =
+        ExternalPaths.SOURCE_HOME
+            .resolve("bin")
+            .resolve(CLIUtils.isWindows() ? "solr.cmd" : "solr");
+
+    int bindPort;
+    try (ServerSocket socket = new ServerSocket(0)) {
+      bindPort = socket.getLocalPort();
+    }
+
+    return new String[] {
+      "-e", "techproducts",
+      "--server-dir", fakeServerDir.toString(),
+      "--example-dir", fakeExampleDir.toString(),
+      "--script", script.toString(),
+      "-p", String.valueOf(bindPort),
+    };
   }
 }
