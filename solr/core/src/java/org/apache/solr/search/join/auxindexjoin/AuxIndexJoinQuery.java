@@ -1,0 +1,220 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.search.join.auxindexjoin;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.function.Predicate;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.internal.hppc.IntHashSet;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Weight;
+import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.JoinSegmentReference;
+import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Joins the from-side index to the to-side index this query is executed against, resolving
+ * from-side docs matching {@code fromQuery} to to-side docs through the auxiliary join index
+ * managed by {@link AuxIndexManager}: there, each (from-segment, to-segment) pair owns a
+ * SORTED_NUMERIC column named by both sides' persistent keys, whose doc number is the from-side doc
+ * id and whose value is the matching to-side doc id. Pair columns missing from the join index are
+ * built on demand at weight creation, so no explicit build step exists; obtain instances via {@link
+ * AuxIndexManager#newJoinQuery}. Matches score a constant.
+ *
+ * @lucene.experimental
+ */
+class AuxIndexJoinQuery extends Query {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  final AuxIndexManager joinIndex;
+  final String fromField;
+  final Query fromQuery;
+  protected final IndexSearcher fromSearcher;
+  final String toField;
+  private final ExecutorService fromExecutorService;
+
+  AuxIndexJoinQuery(
+      AuxIndexManager joinIndex,
+      String fromField,
+      Query fromQuery,
+      IndexSearcher fromSearcher,
+      String toField,
+      ExecutorService fromExecutorService) {
+    this.joinIndex = Objects.requireNonNull(joinIndex, "joinIndex");
+    this.fromField = Objects.requireNonNull(fromField, "fromField");
+    this.fromQuery = Objects.requireNonNull(fromQuery, "fromQuery");
+    this.fromSearcher = Objects.requireNonNull(fromSearcher, "fromSearcher");
+    this.toField = Objects.requireNonNull(toField, "toField");
+    this.fromExecutorService = fromExecutorService;
+  }
+
+  @SuppressWarnings("ReferenceEquality")
+  @Override
+  public Query rewrite(IndexSearcher indexSearcher) throws IOException {
+    // the from-side selection rewrites against the from-side searcher, not against the (to-side)
+    // searcher this query is executed with
+    Query rewrittenFrom = fromQuery.rewrite(fromSearcher);
+    if (rewrittenFrom != fromQuery) { // TODO check MatchNoDocs ?
+      return new AuxIndexJoinQuery(
+          joinIndex, fromField, rewrittenFrom, fromSearcher, toField, fromExecutorService);
+    }
+    return super.rewrite(indexSearcher);
+  }
+
+  @Override
+  public Weight createWeight(IndexSearcher toSideSearcher, ScoreMode scoreMode, float boost)
+      throws IOException {
+    @NonNull Map<String, AuxIndexManager.SegmentsTuple> neededPairs =
+        getRequiredColumNames(toSideSearcher);
+
+    joinIndex.onCreateWeight(neededPairs.keySet(), fromSearcher, toSideSearcher); // ignoring fields
+    Predicate<String> isNeeded = neededPairs::containsKey;
+
+    Map<String, JoinSegmentReference> existingJoinSegments;
+    IndexSearcher joinSearcher = this.joinIndex.acquire();
+    try {
+      existingJoinSegments = JoinIndexUtils.extractExistingJoinColumns(joinSearcher, isNeeded);
+    } finally {
+      this.joinIndex.release(joinSearcher);
+    }
+    int pairsNeeded = neededPairs.size();
+    neededPairs.keySet().removeAll(existingJoinSegments.keySet());
+    IntHashSet fromOrdsToLoad = new IntHashSet(neededPairs.size());
+    neededPairs.values().stream()
+        .mapToInt(AuxIndexManager.SegmentsTuple::fromLeafOrd)
+        .forEach(fromOrdsToLoad::add);
+    if (JoinIndexUtils.diagnosticsEnabled(log)) {
+      // pairsMissing > 0 on a repeat query means those pairs were never persisted by a previous
+      // run (writeBatch never captured them), so their from-segments' FK columns get reloaded
+      // here; pairsClaimed counts missing pairs another thread is building right now (claims are
+      // dropped once persisted), i.e. reloads that are pure waste
+      JoinIndexUtils.logDiagnostic(
+          log,
+          "AUXIJOIN evt=weight pairsNeeded={} pairsExisting={} pairsMissing={} pairsClaimed={}"
+              + " fkOrdsToLoad={} missingPairs={}",
+          pairsNeeded,
+          existingJoinSegments.size(),
+          neededPairs.size(),
+          joinIndex.countClaimedBuilds(neededPairs.keySet()),
+          fromOrdsToLoad.size(),
+          neededPairs.keySet());
+    }
+    Map<Integer, Future<FromLeafJoinContext>> fromFutures = loadFromSide(fromOrdsToLoad);
+    // TODO this might produce too many small tasks
+    return new JoinIndexWeight(
+        this,
+        joinSearcher,
+        existingJoinSegments,
+        toSideSearcher.getIndexReader(),
+        scoreMode,
+        boost,
+        fromFutures);
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<Integer, Future<FromLeafJoinContext>> loadFromSide(IntHashSet fromLeafsToLoad)
+      throws IOException {
+    LinkedHashMap<Integer, Future<FromLeafJoinContext>> futuresByLeafOrds =
+        CollectionUtil.newLinkedHashMap(this.fromSearcher.getLeafContexts().size());
+    final Weight fromWeight =
+        this.fromSearcher.createWeight(this.fromQuery, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
+
+    List<LeafReaderContext> fromLeafs = new ArrayList<>(this.fromSearcher.getLeafContexts());
+    // heaviest first, the smallest last
+    fromLeafs.sort(
+        Comparator.<LeafReaderContext, Boolean>comparing(ctx -> fromLeafsToLoad.contains(ctx.ord))
+            .thenComparingInt(ctx -> ctx.reader().maxDoc())
+            .reversed());
+
+    for (LeafReaderContext ctx : fromLeafs) {
+      futuresByLeafOrds.putLast(
+          ctx.ord, // the heaviest is submitted first, and accessed first as well
+          this.fromExecutorService.submit(
+              () ->
+                  FromLeafJoinContext.heavyLoadFromLeaf(
+                      fromWeight, fromField, ctx, fromLeafsToLoad.contains(ctx.ord))));
+    }
+
+    return futuresByLeafOrds;
+  }
+
+  private @NonNull Map<String, AuxIndexManager.SegmentsTuple> getRequiredColumNames(
+      IndexSearcher searcher) {
+    Map<String, AuxIndexManager.SegmentsTuple> neededPairs = new HashMap<>();
+    for (LeafReaderContext toContext : searcher.getIndexReader().leaves()) {
+      String toKey = JoinIndexUtils.getSideKey(toContext, toField);
+      for (LeafReaderContext fromCtx : fromSearcher.getLeafContexts()) {
+        String fromKey = JoinIndexUtils.getSideKey(fromCtx, fromField);
+        neededPairs.put(
+            fromKey + "_" + toKey, new AuxIndexManager.SegmentsTuple(fromCtx.ord, toContext.ord));
+      }
+    }
+    return neededPairs;
+  }
+
+  @Override
+  public String toString(String field) {
+    return "AuxIndexJoinQuery(" + fromField + " -> " + toField + ", from: " + fromQuery + ")";
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    return sameClassAs(other) && equalsTo((AuxIndexJoinQuery) other);
+  }
+
+  private boolean equalsTo(AuxIndexJoinQuery other) {
+    // the join index and the from searcher compare by identity: a reopened from reader sees
+    // different ordinal spaces, so queries over different searcher instances must not be
+    // considered equal
+    return joinIndex == other.joinIndex
+        && fromSearcher == other.fromSearcher
+        && fromField.equals(other.fromField)
+        && fromQuery.equals(other.fromQuery)
+        && toField.equals(other.toField);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        classHash(),
+        System.identityHashCode(joinIndex),
+        fromField,
+        fromQuery,
+        System.identityHashCode(fromSearcher),
+        toField);
+  }
+}

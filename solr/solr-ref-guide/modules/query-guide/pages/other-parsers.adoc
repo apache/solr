@@ -22,6 +22,13 @@ This section details the other parsers, and gives examples for how they might be
 
 Many of these parsers are expressed the same way as xref:local-params.adoc[].
 
+== Auxiliary Index Join Query Parser
+
+It's similar to
+<<Join Query Parser,Join Query Parser>>, but uses a lazily written sidecar index for faster joins.
+
+Details of this query parser are in the section xref:auxindexjoin-query-parser.adoc[].
+
 == Block Join Query Parsers
 
 The Block Join query parsers are used with nested documents to query for parents and/or children.
