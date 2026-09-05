@@ -60,15 +60,7 @@ import org.slf4j.LoggerFactory;
     },
     footerHeading = "%nExamples:%n",
     subcommands = {
-        AddRepo.class,
-        AddKey.class,
-        ListAvailable.class,
-        ListInstalled.class,
-        ListDeployed.class,
-        Install.class,
-        Deploy.class,
-        Uninstall.class,
-        Undeploy.class
+        AddRepo.class
     },
     footer = {
       "  # Add a package repository",
