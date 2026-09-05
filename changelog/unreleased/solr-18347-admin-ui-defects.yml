@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Fix five Admin UI defects found by Selenium testing
+title: Fix four Admin UI defects found by Selenium testing - a null core selection in the shared menu, the ping status of a core with no healthcheck file, silent failures on collection reload, and an enable-ping control offered when it cannot work.
 type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Shrey Narayan
