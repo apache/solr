@@ -90,7 +90,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   /**
    * @deprecated Use {@link #CollectionAdminRequest(METHOD, CollectionAction)}.
    */
-  @Deprecated(since = "11.0")
+  @Deprecated(since = "10.1")
   public CollectionAdminRequest(CollectionAction action) {
     this(METHOD.POST, action);
   }
@@ -98,7 +98,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   /**
    * @deprecated Use {@link #CollectionAdminRequest(METHOD, String, CollectionAction)}.
    */
-  @Deprecated(since = "11.0")
+  @Deprecated(since = "10.1")
   public CollectionAdminRequest(String path, CollectionAction action) {
     this(METHOD.POST, path, action);
   }
@@ -171,7 +171,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     /**
      * @deprecated Use {@link #AsyncCollectionAdminRequest(METHOD, CollectionAction)}.
      */
-    @Deprecated(since = "11.0")
+    @Deprecated(since = "10.1")
     public AsyncCollectionAdminRequest(CollectionAction action) {
       this(METHOD.POST, action);
     }
@@ -289,7 +289,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @deprecated Use {@link #AsyncCollectionSpecificAdminRequest(METHOD, CollectionAction,
      *     String)}.
      */
-    @Deprecated(since = "11.0")
+    @Deprecated(since = "10.1")
     public AsyncCollectionSpecificAdminRequest(CollectionAction action, String collection) {
       this(METHOD.POST, action, collection);
     }
@@ -328,7 +328,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @deprecated Use {@link #AsyncShardSpecificAdminRequest(METHOD, CollectionAction, String,
      *     String)}.
      */
-    @Deprecated(since = "11.0")
+    @Deprecated(since = "10.1")
     public AsyncShardSpecificAdminRequest(
         CollectionAction action, String collection, String shard) {
       this(METHOD.POST, action, collection, shard);
@@ -359,7 +359,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     /**
      * @deprecated Use {@link #ShardSpecificAdminRequest(METHOD, CollectionAction, String, String)}.
      */
-    @Deprecated(since = "11.0")
+    @Deprecated(since = "10.1")
     public ShardSpecificAdminRequest(CollectionAction action, String collection, String shard) {
       this(METHOD.POST, action, collection, shard);
     }
@@ -398,7 +398,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @deprecated Use {@link #CollectionAdminRoleRequest(METHOD, CollectionAction, String,
      *     String)}.
      */
-    @Deprecated(since = "11.0")
+    @Deprecated(since = "10.1")
     public CollectionAdminRoleRequest(CollectionAction action, String node, String role) {
       this(METHOD.POST, action, node, role);
     }
