@@ -109,6 +109,7 @@ public abstract class TextResponseWriter implements TextWriter {
    * NOTE: strict object equality check against {@link #rawReturnFields}; see javadocs for {@link
    * #NO_RAW_FIELDS}
    */
+  @SuppressWarnings("ReferenceEquality") // strict object identity is intentional, see javadoc above
   protected final boolean shouldWriteRaw(String fname, ReturnFields returnFields) {
     return rawReturnFields == returnFields && rawFields.contains(fname);
   }

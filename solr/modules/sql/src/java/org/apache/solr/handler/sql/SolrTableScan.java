@@ -44,6 +44,7 @@ class SolrTableScan extends TableScan implements SolrRel {
    * @param solrTable Solr table
    * @param projectRowType Fields and types to project; null to project raw row
    */
+  @SuppressWarnings("ReferenceEquality")
   SolrTableScan(
       RelOptCluster cluster,
       RelTraitSet traitSet,
@@ -55,6 +56,7 @@ class SolrTableScan extends TableScan implements SolrRel {
     this.projectRowType = projectRowType;
 
     assert solrTable != null;
+    // Conventions are singletons (see SolrRel.CONVENTION); identity comparison is intentional.
     assert getConvention() == SolrRel.CONVENTION;
   }
 

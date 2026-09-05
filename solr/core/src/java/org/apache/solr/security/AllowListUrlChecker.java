@@ -160,6 +160,8 @@ public class AllowListUrlChecker {
    * Gets the set of live hosts urls (host:port) built from the set of live nodes. The set is cached
    * to be reused until the live nodes change.
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // live-nodes set is replaced wholesale, so identity means "unchanged"
   private Set<String> getLiveHostUrls(ClusterState clusterState) {
     if (clusterState == null) {
       return Set.of();

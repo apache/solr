@@ -95,6 +95,8 @@ public class TagLL {
    * Removes this tag from the chain, connecting prevTag and nextTag. Does not modify "this"
    * object's pointers, so the caller can refer to nextTag after removing it.
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // linked-list node identity, not equality, is what matters here
   public void removeLL() {
     if (head[0] == this) head[0] = nextTag;
     if (prevTag != null) {
@@ -105,6 +107,8 @@ public class TagLL {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // linked-list node identity, not equality, is what matters here
   void addBeforeLL(TagLL tag) {
     assert tag.startOffset <= startOffset;
     if (prevTag != null) {

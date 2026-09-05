@@ -740,6 +740,7 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("ReferenceEquality")
   public void testSchemaPlugins() throws Exception {
     String COLLECTION_NAME = "testSchemaLoadingColl";
     System.setProperty("managed.schema.mutable", "true");

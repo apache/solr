@@ -144,6 +144,7 @@ public final class QueryResultKey implements Accountable {
    *
    * @return true if the lists of equivalent other then the ordering
    */
+  @SuppressWarnings("ReferenceEquality") // fast path: takes care of identity and null cases
   private static boolean unorderedCompare(List<Query> fqList1, List<Query> fqList2) {
     // Do fast version first, expecting that filters are usually in the same order
     //

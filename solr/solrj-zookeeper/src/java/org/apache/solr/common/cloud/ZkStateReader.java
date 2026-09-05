@@ -1270,6 +1270,8 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     @Override
+    @SuppressWarnings(
+        "ReferenceEquality") // checking identity of the registered watcher, not equality
     public void process(WatchedEvent event) {
       // session events are not change events, and do not remove the watcher
       if (EventType.None.equals(event.getType())) {
@@ -2007,6 +2009,8 @@ public class ZkStateReader implements SolrCloseable {
      * modifications, giving up after 30 seconds with a SolrException. The caller should understand
      * it's possible the aliases has further changed if it examines it.
      */
+    @SuppressWarnings(
+        "ReferenceEquality") // op.apply returning the same instance means "no change made"
     public void applyModificationAndExportToZk(UnaryOperator<Aliases> op) {
       // The current aliases hasn't been update()'ed yet -- which is impossible?  Any way just
       // update it first.

@@ -27,6 +27,8 @@ public class DualRegistryAttributedLongUpDownCounter extends AttributedLongUpDow
 
   private final AttributedLongUpDownCounter nodeUpDownCounter;
 
+  @SuppressWarnings(
+      "ReferenceEquality") // sanity check that two distinct counter instances were passed in
   public DualRegistryAttributedLongUpDownCounter(
       LongUpDownCounter coreUpDownCounter,
       Attributes coreAttributes,

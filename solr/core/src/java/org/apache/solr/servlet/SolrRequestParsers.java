@@ -270,7 +270,11 @@ public class SolrRequestParsers {
    * @param charset to be used to decode resulting bytes after %-decoding
    * @param map place all parameters in this map
    */
-  @SuppressWarnings({"fallthrough", "resource"})
+  @SuppressWarnings({
+    "fallthrough",
+    "resource",
+    "ReferenceEquality" // currentStream points at keyStream or valueStream; identity is the flag
+  })
   static long parseFormDataContent(
       final InputStream postContent,
       final long maxLen,

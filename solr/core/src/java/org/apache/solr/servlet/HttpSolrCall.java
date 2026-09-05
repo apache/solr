@@ -429,6 +429,8 @@ public class HttpSolrCall {
   }
 
   /** This method processes the request. */
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting whether we're still at the outermost exception, by identity
   public Action call() throws IOException {
 
     if (cores == null) {

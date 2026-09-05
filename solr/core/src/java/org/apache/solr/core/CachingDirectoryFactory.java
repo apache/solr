@@ -223,6 +223,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   // be sure the method is called with the sync lock on this object
   // returns true if we closed the cacheValue, false if it will be closed later
+  @SuppressWarnings("ReferenceEquality") // CacheValue identity, not equality, is what matters here
   private boolean closeCacheValue(CacheValue cacheValue, Set<CacheValue> deferRemove) {
     log.debug("looking to close {} {}", cacheValue.path, cacheValue.closeEntries);
     List<CloseListener> listeners = closeListeners.remove(cacheValue.directory);
@@ -300,6 +301,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     return vals.stream().sorted((a, b) -> b.path.compareTo(a.path)).collect(Collectors.toList());
   }
 
+  @SuppressWarnings("ReferenceEquality") // CacheValue identity, not equality, is what matters here
   private boolean maybeDeferClose(CacheValue maybeDefer) {
     assert maybeDefer.deleteOnClose;
     for (CacheValue maybeChildPath : byPathCache.values()) {
@@ -381,6 +383,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    * java.lang.String, boolean)
    */
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // same instance back from filterDirectory means "unfiltered"
   public final Directory get(String path, DirContext dirContext, String rawLockType)
       throws IOException {
     String fullPath = normalize(path);

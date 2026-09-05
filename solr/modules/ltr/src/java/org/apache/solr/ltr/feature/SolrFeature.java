@@ -135,6 +135,7 @@ public class SolrFeature extends Feature {
   public class SolrFeatureWeight extends FeatureWeight {
     private final Weight solrQueryWeight;
 
+    @SuppressWarnings("ReferenceEquality")
     public SolrFeatureWeight(
         SolrIndexSearcher searcher,
         SolrQueryRequest request,
@@ -189,6 +190,8 @@ public class SolrFeature extends Feature {
           }
 
           DocSet filtersDocSet = searcher.getDocSet(filterQueries); // execute
+          // getDocSet() returns the live docs instance itself when there's nothing to filter;
+          // identity comparison detects that no-op case.
           if (filtersDocSet != searcher.getLiveDocSet()) {
             filterDocSetQuery = filtersDocSet.makeQuery();
           }
