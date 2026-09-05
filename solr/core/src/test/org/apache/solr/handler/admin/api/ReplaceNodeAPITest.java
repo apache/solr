@@ -39,7 +39,7 @@ public class ReplaceNodeAPITest extends MockV2APITest {
 
   @Test
   public void testCreatesValidOverseerMessage() throws Exception {
-    final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", false, "async");
+    final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", "async");
 
     api.replaceNode("demoSourceNode", requestBody);
 
@@ -47,10 +47,9 @@ public class ReplaceNodeAPITest extends MockV2APITest {
         CollectionParams.CollectionAction.REPLACENODE,
         requestBody.async,
         message -> {
-          assertEquals(3, message.size());
+          assertEquals(2, message.size());
           assertEquals("demoSourceNode", message.get("sourceNode"));
           assertEquals("demoTargetNode", message.get("targetNode"));
-          assertEquals(false, message.get("waitForFinalState"));
         });
   }
 
@@ -68,7 +67,7 @@ public class ReplaceNodeAPITest extends MockV2APITest {
 
   @Test
   public void testOptionalValuesNotAddedToRemoteMessageIfNotProvided() throws Exception {
-    final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", null, null);
+    final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", null);
 
     api.replaceNode("demoSourceNode", requestBody);
 
@@ -78,10 +77,6 @@ public class ReplaceNodeAPITest extends MockV2APITest {
           assertEquals(2, message.size());
           assertEquals("demoSourceNode", message.get("sourceNode"));
           assertEquals("demoTargetNode", message.get("targetNode"));
-          assertFalse(
-              "Expected message to not contain value for waitForFinalState: "
-                  + message.get("waitForFinalState"),
-              message.containsKey("waitForFinalState"));
         });
   }
 }

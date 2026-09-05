@@ -209,11 +209,12 @@ See the section xref:configuration-guide:core-discovery.adoc[] for details on su
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `false`
+|Optional |Default: `true`
 |===
 +
 If `true`, the request will complete only when all affected replicas become active.
 If `false`, the API will return the status of the single action, which may be before the new replica is online and active.
+An operator can revert the cluster-wide default back to `false` without changing any client by setting the system property `solr.cloud.waitForFinalState.enabled=false` on each Solr node.
 
 `timing`::
 +
@@ -423,11 +424,12 @@ See the section xref:configuration-guide:core-discovery.adoc[] for details on su
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `false`
+|Optional |Default: `true`
 |===
 +
 If `true`, the request will complete only when all affected replicas become active.
 If `false`, the API will return the status of the single action, which may be before the new replica is online and active.
+An operator can revert the cluster-wide default back to `false` without changing any client by setting the system property `solr.cloud.waitForFinalState.enabled=false` on each Solr node.
 
 `async`::
 +

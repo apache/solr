@@ -232,7 +232,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String collectionName = getSaferTestName();
     CollectionAdminRequest.Create createREq =
         CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
-    createREq.setWaitForFinalState(false);
     CollectionAdminResponse response = createREq.process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
