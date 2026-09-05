@@ -1,0 +1,9 @@
+title: Fix complement() and intersect() streaming expressions silently returning wrong
+  results when on= maps two differently-named fields
+type: fixed
+authors:
+  - name: David Smiley
+    url: https://home.apache.org/phonebook.html?uid=dsmiley
+links:
+  - name: SOLR-18418
+    url: https://issues.apache.org/jira/browse/SOLR-18418
