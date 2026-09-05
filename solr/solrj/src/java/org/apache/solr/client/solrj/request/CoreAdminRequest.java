@@ -605,7 +605,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   /**
    * @deprecated Use {@link #CoreAdminRequest(METHOD)}.
    */
-  @Deprecated(since = "11.0")
+  @Deprecated(since = "10.1")
   public CoreAdminRequest() {
     this(METHOD.POST);
   }
@@ -613,7 +613,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   /**
    * @deprecated Use {@link #CoreAdminRequest(METHOD, String)}.
    */
-  @Deprecated(since = "11.0")
+  @Deprecated(since = "10.1")
   public CoreAdminRequest(String path) {
     this(METHOD.POST, path);
   }
