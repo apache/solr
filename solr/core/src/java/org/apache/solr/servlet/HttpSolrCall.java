@@ -201,8 +201,12 @@ public class HttpSolrCall {
     return core;
   }
 
+  /**
+   * If the request has been created, return its parameters (merges URL and body if applicable);
+   * otherwise, return only the URL query parameters.
+   */
   public SolrParams getQueryParams() {
-    return queryParams;
+    return solrReq != null ? solrReq.getParams() : queryParams;
   }
 
   /** The collection(s) referenced in this request. Populated in {@link #init()}. Not null. */
