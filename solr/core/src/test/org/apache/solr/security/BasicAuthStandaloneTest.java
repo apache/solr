@@ -75,7 +75,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = jetty.newSolrClient(null);
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 20);
 

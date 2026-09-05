@@ -81,7 +81,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     clusterBuilder.configure();
 
     // pick an arbitrary node to use for our requests
-    client = cluster.getRandomJetty(random()).newClient();
+    client = cluster.getRandomJetty(random()).newSolrClient(null);
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);

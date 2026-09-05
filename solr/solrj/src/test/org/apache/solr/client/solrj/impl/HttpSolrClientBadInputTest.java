@@ -50,58 +50,56 @@ public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client = getHttpSolrClient(solrTestRule.getBaseUrl(), ANY_COLLECTION)) {
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "null"),
-          () -> {
-            client.deleteById(NULL_STR_LIST);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "empty"),
-          () -> {
-            client.deleteById(EMPTY_STR_LIST);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "null"),
-          () -> {
-            client.deleteById(NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "empty"),
-          () -> {
-            client.deleteById(EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
-          });
-    }
+    SolrClient client = solrTestRule.getSolrClient(ANY_COLLECTION);
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "null"),
+        () -> {
+          client.deleteById(NULL_STR_LIST);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "empty"),
+        () -> {
+          client.deleteById(EMPTY_STR_LIST);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "null"),
+        () -> {
+          client.deleteById(NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "empty"),
+        () -> {
+          client.deleteById(EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+        });
 
-    try (SolrClient client = getHttpSolrClient(solrTestRule.getBaseUrl())) {
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "null"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, NULL_STR_LIST);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "empty"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "null"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "empty"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
-          });
-    }
+    SolrClient adminClient = solrTestRule.getAdminClient();
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "null"),
+        () -> {
+          adminClient.deleteById(ANY_COLLECTION, NULL_STR_LIST);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "empty"),
+        () -> {
+          adminClient.deleteById(ANY_COLLECTION, EMPTY_STR_LIST);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "null"),
+        () -> {
+          adminClient.deleteById(ANY_COLLECTION, NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "empty"),
+        () -> {
+          adminClient.deleteById(ANY_COLLECTION, EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+        });
   }
 }

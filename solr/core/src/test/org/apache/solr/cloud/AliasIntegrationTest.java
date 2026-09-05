@@ -960,13 +960,12 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       // HttpSolrClient
       JettySolrRunner jetty = cluster.getRandomJetty(random());
       if (random().nextBoolean()) {
-        try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), collectionList)) {
+        try (SolrClient client = jetty.newSolrClient(collectionList)) {
           responseConsumer.accept(client.query(null, solrQuery));
         }
       } else {
-        try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
-          responseConsumer.accept(client.query(collectionList, solrQuery));
-        }
+        SolrClient client = jetty.getSolrClient();
+        responseConsumer.accept(client.query(collectionList, solrQuery));
       }
 
       // Recursively do again; this time with the &collection= param

@@ -117,21 +117,19 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
       final String shardName = entry.getKey();
       final Slice slice = entry.getValue();
       final Replica leader = entry.getValue().getLeader();
-      try (SolrClient leaderClient = getHttpSolrClient(leader)) {
-        final SolrDocumentList leaderResults = leaderClient.query(params).getResults();
-        for (Replica replica : slice) {
-          try (SolrClient replicaClient = getHttpSolrClient(replica)) {
-            final SolrDocumentList replicaResults = replicaClient.query(params).getResults();
-            assertEquals(
-                "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
-                Set.of(),
-                CloudInspectUtil.showDiff(
-                    leaderResults,
-                    replicaResults,
-                    shardName + " leader: " + leader.getCoreUrl(),
-                    shardName + ": " + replica.getCoreUrl()));
-          }
-        }
+      SolrClient leaderClient = cluster.getSolrClient(leader);
+      final SolrDocumentList leaderResults = leaderClient.query(params).getResults();
+      for (Replica replica : slice) {
+        SolrClient replicaClient = cluster.getSolrClient(replica);
+        final SolrDocumentList replicaResults = replicaClient.query(params).getResults();
+        assertEquals(
+            "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
+            Set.of(),
+            CloudInspectUtil.showDiff(
+                leaderResults,
+                replicaResults,
+                shardName + " leader: " + leader.getCoreUrl(),
+                shardName + ": " + replica.getCoreUrl()));
       }
     }
   }

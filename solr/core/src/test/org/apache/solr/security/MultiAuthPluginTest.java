@@ -90,7 +90,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = jetty.newSolrClient(null);
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
@@ -266,7 +266,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = jetty.newSolrClient(null);
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
@@ -308,7 +308,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = jetty.newSolrClient(null);
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
@@ -354,7 +354,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = jetty.newSolrClient(null);
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
@@ -395,7 +395,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = jetty.newSolrClient(null);
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
@@ -432,7 +432,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     try {
       var httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
+      solrClient = jetty.newSolrClient(null);
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 

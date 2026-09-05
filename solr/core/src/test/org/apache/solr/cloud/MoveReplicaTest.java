@@ -38,7 +38,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.IdUtils;
@@ -364,35 +363,33 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   private int getNumOfCores(
       CloudSolrClient cloudClient, String nodeName, String collectionName, String replicaType)
       throws IOException, SolrServerException {
-    try (SolrClient coreclient =
-        getHttpSolrClient(ZkStateReader.from(cloudClient).getBaseUrlForNodeName(nodeName))) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
-      if (status.getCoreStatus().size() == 0) {
-        return 0;
-      }
-      if (collectionName == null && replicaType == null) {
-        return status.getCoreStatus().size();
-      }
-      // filter size by collection name
-      int size = 0;
-      for (Map.Entry<String, CoreStatusResponse.SingleCoreData> coreStatusEntry :
-          status.getCoreStatus().entrySet()) {
-        if (collectionName != null) {
-          String coll = coreStatusEntry.getValue().cloud.collection;
-          if (!collectionName.equals(coll)) {
-            continue;
-          }
-        }
-        if (replicaType != null) {
-          String type = coreStatusEntry.getValue().cloud.replicaType;
-          if (!replicaType.equals(type)) {
-            continue;
-          }
-        }
-        size++;
-      }
-      return size;
+    SolrClient coreclient = cluster.getJetty(nodeName).getSolrClient();
+    CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
+    if (status.getCoreStatus().size() == 0) {
+      return 0;
     }
+    if (collectionName == null && replicaType == null) {
+      return status.getCoreStatus().size();
+    }
+    // filter size by collection name
+    int size = 0;
+    for (Map.Entry<String, CoreStatusResponse.SingleCoreData> coreStatusEntry :
+        status.getCoreStatus().entrySet()) {
+      if (collectionName != null) {
+        String coll = coreStatusEntry.getValue().cloud.collection;
+        if (!collectionName.equals(coll)) {
+          continue;
+        }
+      }
+      if (replicaType != null) {
+        String type = coreStatusEntry.getValue().cloud.replicaType;
+        if (!replicaType.equals(type)) {
+          continue;
+        }
+      }
+      size++;
+    }
+    return size;
   }
 
   protected void addDocs(String collection, int numDocs) throws Exception {

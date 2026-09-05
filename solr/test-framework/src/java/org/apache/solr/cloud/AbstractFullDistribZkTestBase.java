@@ -59,6 +59,7 @@ import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -2556,6 +2557,31 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     return commonCloudSolrClient;
   }
 
+  /** Returns the jetty identified by node name or base URL. */
+  protected JettySolrRunner getJetty(String nodeNameOrUrl) {
+    return MiniSolrCloudCluster.findJetty(allRunners(), nodeNameOrUrl);
+  }
+
+  /**
+   * Returns the jetty-owned client for the node hosting {@code replica}, scoped to that replica's
+   * core. The caller must not close it -- the jetty owns it.
+   */
+  protected SolrClient getSolrClient(Replica replica) {
+    return new CollectionScopedSolrClient(
+        MiniSolrCloudCluster.findReplicaJetty(allRunners(), replica).getSolrClient(),
+        replica.getCoreName());
+  }
+
+  /** All runners of this cluster; the control jetty is kept outside {@link #jettys}. */
+  private List<JettySolrRunner> allRunners() {
+    if (controlJetty == null) {
+      return jettys;
+    }
+    List<JettySolrRunner> all = new ArrayList<>(jettys);
+    all.add(controlJetty);
+    return all;
+  }
+
   protected CloudSolrClient getSolrClient(String collectionName) {
     return solrClientByCollection.computeIfAbsent(
         collectionName,
@@ -2816,7 +2842,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
     String coreName = replica.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = getHttpSolrClient(replica.getBaseUrl())) {
+    try (SolrClient client = new HttpJettySolrClient.Builder(replica.getBaseUrl()).build()) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

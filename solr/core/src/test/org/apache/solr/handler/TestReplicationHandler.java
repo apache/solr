@@ -234,14 +234,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         new GenericSolrRequest(
             SolrRequest.METHOD.POST, "/admin/cores", SolrRequestType.ADMIN, params);
 
-    try (SolrClient adminClient = adminClient(jettySolrRunner)) {
-      NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
-    }
+    SolrClient adminClient = adminClient(jettySolrRunner);
+    NamedList<Object> res = adminClient.request(req);
+    assertNotNull("null response from server", res);
   }
 
   private SolrClient adminClient(JettySolrRunner client) {
-    return getHttpSolrClient(client.getBaseUrl().toString());
+    return client.getSolrClient();
   }
 
   @Test
@@ -1659,33 +1658,32 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     final long sleepInterval = 200;
     long timeSlept = 0;
 
-    try (SolrClient adminClient = adminClient(jettySolrRunner)) {
-      final var statusRequest = new CoresApi.GetCoreStatus("collection1");
-      while (timeSlept < TIMEOUT) {
-        try {
-          final var statusResponse = statusRequest.process(adminClient);
-          assertNotNull(statusResponse.status);
-          assertTrue(statusResponse.status.containsKey("collection1"));
-          final var coreStatus = statusResponse.status.get("collection1");
-          Date startTime = coreStatus.startTime;
+    SolrClient adminClient = adminClient(jettySolrRunner);
+    final var statusRequest = new CoresApi.GetCoreStatus("collection1");
+    while (timeSlept < TIMEOUT) {
+      try {
+        final var statusResponse = statusRequest.process(adminClient);
+        assertNotNull(statusResponse.status);
+        assertTrue(statusResponse.status.containsKey("collection1"));
+        final var coreStatus = statusResponse.status.get("collection1");
+        Date startTime = coreStatus.startTime;
 
-          assertNotNull("core has null startTime", startTime);
-          if (null == min || startTime.after(min)) {
-            return startTime;
-          }
-        } catch (SolrException e) {
-          // workaround for SOLR-4668
-          if (500 != e.code()) {
-            throw e;
-          } // else server possibly from the core reload in progress...
+        assertNotNull("core has null startTime", startTime);
+        if (null == min || startTime.after(min)) {
+          return startTime;
         }
-
-        timeSlept += sleepInterval;
-        Thread.sleep(sleepInterval);
+      } catch (SolrException e) {
+        // workaround for SOLR-4668
+        if (500 != e.code()) {
+          throw e;
+        } // else server possibly from the core reload in progress...
       }
-      fail("timed out waiting for collection1 startAt time to exceed: " + min);
-      return min; // compilation necessity
+
+      timeSlept += sleepInterval;
+      Thread.sleep(sleepInterval);
     }
+    fail("timed out waiting for collection1 startAt time to exceed: " + min);
+    return min; // compilation necessity
   }
 
   @Test

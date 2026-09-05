@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -297,9 +298,10 @@ public class TestPullReplica extends SolrCloudTestCase {
       log.info("Committed doc {} to leader", numDocs);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-        assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-      }
+      Replica sliceLeader = s.getLeader();
+      SolrClient leaderClient = cluster.getSolrClient(sliceLeader);
+      assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+
       log.info(
           "Found {} docs in leader, verifying updates make it to {} pull replicas",
           numDocs,
@@ -532,33 +534,32 @@ public class TestPullReplica extends SolrCloudTestCase {
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client = getHttpSolrClient(rAdd.getBaseUrl(), rAdd.getCoreName())) {
-        client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
-      }
+      SolrClient client = cluster.getSolrClient(rAdd);
+      client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
+
       SolrDocument docCloudClient =
           cluster.getSolrClient().getById(collectionName, String.valueOf(id));
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet : slice.getReplicas()) {
-        try (SolrClient client = getHttpSolrClient(rGet.getBaseUrl(), rGet.getCoreName())) {
-          SolrDocument doc = client.getById(String.valueOf(id));
-          assertEquals("bar", doc.getFieldValue("foo_s"));
-        }
+        SolrClient getClient = cluster.getSolrClient(rGet);
+        SolrDocument doc = getClient.getById(String.valueOf(id));
+        assertEquals("bar", doc.getFieldValue("foo_s"));
       }
       ids.add(String.valueOf(id));
       id++;
     }
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client = getHttpSolrClient(rAdd.getBaseUrl(), rAdd.getCoreName())) {
-        SolrDocumentList allIdsResult = client.getById(ids);
-        if (previousAllIdsResult != null) {
-          assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
-        } else {
-          // set the first response here
-          previousAllIdsResult = allIdsResult;
-          assertEquals("Unexpected number of documents", ids.size(), allIdsResult.getNumFound());
-        }
+      SolrClient client = cluster.getSolrClient(rAdd);
+      SolrDocumentList allIdsResult = client.getById(ids);
+      if (previousAllIdsResult != null) {
+        assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
+      } else {
+        // set the first response here
+        previousAllIdsResult = allIdsResult;
+        assertEquals("Unexpected number of documents", ids.size(), allIdsResult.getNumFound());
       }
+
       id++;
     }
   }
@@ -580,9 +581,9 @@ public class TestPullReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-      assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
+    Replica sliceLeader = s.getLeader();
+    SolrClient leaderClient = cluster.getSolrClient(sliceLeader);
+    assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
 
     waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
 
@@ -637,7 +638,11 @@ public class TestPullReplica extends SolrCloudTestCase {
 
       // Also fails if I send the update to the pull replica explicitly
       try (SolrClient pullReplicaClient =
-          getHttpSolrClient(getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).get(0))) {
+          new HttpJettySolrClient.Builder(
+                  getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).get(0).getBaseUrl())
+              .withDefaultCollection(
+                  getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).get(0).getCoreName())
+              .build()) {
         expectThrows(
             SolrException.class,
             () ->
@@ -685,10 +690,11 @@ public class TestPullReplica extends SolrCloudTestCase {
     // add docs agin
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
     s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-      leaderClient.commit();
-      assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
+    sliceLeader = s.getLeader();
+    leaderClient = cluster.getSolrClient(sliceLeader);
+    leaderClient.commit();
+    assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+
     waitForNumDocsInAllReplicas(
         1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)), "id:2", null, null);
     waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
@@ -889,32 +895,31 @@ public class TestPullReplica extends SolrCloudTestCase {
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r : replicas) {
       String replicaUrl = r.getCoreUrl();
-      try (SolrClient replicaClient = getHttpSolrClient(r)) {
-        while (true) {
-          QueryRequest req = new QueryRequest(new SolrQuery(query));
-          if (user != null && pass != null) {
-            req.setBasicAuthCredentials(user, pass);
-          }
-          try {
-            long numFound = req.process(replicaClient).getResults().getNumFound();
-            assertEquals(
-                "Replica "
-                    + r.getName()
-                    + " ("
-                    + replicaUrl
-                    + ") not up to date after "
-                    + REPLICATION_TIMEOUT_SECS
-                    + " seconds",
-                numDocs,
-                numFound);
-            log.info("Replica {} ({}) has all {} docs", r.name, replicaUrl, numDocs);
-            break;
-          } catch (AssertionError e) {
-            if (t.hasTimedOut()) {
-              throw e;
-            } else {
-              Thread.sleep(200);
-            }
+      SolrClient replicaClient = cluster.getSolrClient(r);
+      while (true) {
+        QueryRequest req = new QueryRequest(new SolrQuery(query));
+        if (user != null && pass != null) {
+          req.setBasicAuthCredentials(user, pass);
+        }
+        try {
+          long numFound = req.process(replicaClient).getResults().getNumFound();
+          assertEquals(
+              "Replica "
+                  + r.getName()
+                  + " ("
+                  + replicaUrl
+                  + ") not up to date after "
+                  + REPLICATION_TIMEOUT_SECS
+                  + " seconds",
+              numDocs,
+              numFound);
+          log.info("Replica {} ({}) has all {} docs", r.name, replicaUrl, numDocs);
+          break;
+        } catch (AssertionError e) {
+          if (t.hasTimedOut()) {
+            throw e;
+          } else {
+            Thread.sleep(200);
           }
         }
       }
