@@ -25,12 +25,15 @@ import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.StoppableThread {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final int MAX_TRANSIENT_RETRIES = 5;
 
   static String t1 = "a_t";
   static String i1 = "a_i";
@@ -99,10 +102,12 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
             UpdateRequest req = new UpdateRequest();
             req.deleteById(deleteId);
             req.setParam("CONTROL", "TRUE");
-            req.process(controlClient);
+            processWithRetry(req, controlClient);
           }
 
-          cloudClient.deleteById(deleteId);
+          UpdateRequest cloudReq = new UpdateRequest();
+          cloudReq.deleteById(deleteId);
+          processWithRetry(cloudReq, cloudClient);
         } catch (Exception e) {
           log.error("REQUEST FAILED for id={}", deleteId, e);
           if (e instanceof SolrServerException) {
@@ -185,11 +190,45 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
       UpdateRequest req = new UpdateRequest();
       req.add(docs);
       req.setParam("CONTROL", "TRUE");
-      req.process(controlClient);
+      processWithRetry(req, controlClient);
     }
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(docs);
-    ureq.process(cloudClient);
+    processWithRetry(ureq, cloudClient);
+  }
+
+  /**
+   * Process the request, retrying a bounded number of times when the failure is an ambiguous
+   * transport-level error (root cause is an {@link IOException}), such as a node being stopped by
+   * the chaos monkey while the request was in flight. Everything this thread sends is idempotent
+   * (adds of docs with unique ids and delete-by-id), so at-least-once delivery is safe, and
+   * retrying is what a well-behaved indexing application would do. Solr-level errors (e.g. a 4xx
+   * response) are not retried.
+   */
+  private void processWithRetry(UpdateRequest req, SolrClient client)
+      throws IOException, SolrServerException {
+    for (int attempt = 1; ; attempt++) {
+      try {
+        req.process(client);
+        return;
+      } catch (SolrServerException | IOException e) {
+        Throwable rootCause = SolrException.getRootCause(e);
+        if (attempt >= MAX_TRANSIENT_RETRIES || !(rootCause instanceof IOException)) {
+          throw e;
+        }
+        log.info(
+            "Retrying update after transient error (attempt {}/{})",
+            attempt,
+            MAX_TRANSIENT_RETRIES,
+            rootCause);
+        try {
+          Thread.sleep(250L * attempt);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw e;
+        }
+      }
+    }
   }
 }
