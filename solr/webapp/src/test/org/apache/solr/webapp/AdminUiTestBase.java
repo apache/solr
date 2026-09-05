@@ -534,12 +534,6 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
                     Arrays.stream(allowedSubstrings)
                         .noneMatch(allowed -> entry.getMessage().contains(allowed)))
             .filter(entry -> !entry.getMessage().contains("favicon.ico"))
-            // benign race in the shared menu code: showCore() fires with a null core
-            // while the per-collection menu resolves after navigation
-            .filter(
-                entry ->
-                    !(entry.getMessage().contains("reading 'name'")
-                        && entry.getMessage().contains("showCore")))
             .toList();
     assertTrue("Severe browser console errors: " + severe, severe.isEmpty());
   }

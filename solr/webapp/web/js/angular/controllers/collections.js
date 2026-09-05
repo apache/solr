@@ -232,15 +232,15 @@ solrAdminApp.controller('CollectionsController',
             alert("No collection selected.");
             return;
         }
+        $scope.reloadSuccess = false;
+        $scope.reloadFailure = false;
         CollectionsV2.reloadCollection($scope.collection.name, {}, function(error, data,response) {
            $timeout(function() {
              if (error) {
                  $scope.reloadFailure = true;
-                 $timeout(function() {$scope.reloadFailure=false}, 1000);
-                 $location.path("/~collections");
+                 ApiErrorHandler.handle(response);
              } else {
                  $scope.reloadSuccess = true;
-                 $timeout(function() {$scope.reloadSuccess=false}, 1000);
              }
            });
         });

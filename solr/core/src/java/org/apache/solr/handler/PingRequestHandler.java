@@ -213,10 +213,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
         break;
       case STATUS:
         if (healthcheck == null) {
-          SolrException e =
-              new SolrException(
-                  SolrException.ErrorCode.SERVICE_UNAVAILABLE, "healthcheck not configured");
-          rsp.setException(e);
+          rsp.add("status", "not_configured");
         } else {
           rsp.add("status", isPingDisabled() ? "disabled" : "enabled");
         }
