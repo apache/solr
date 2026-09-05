@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,15 +28,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.Query;
@@ -69,10 +64,10 @@ import org.apache.solr.spelling.QueryConverter;
 import org.apache.solr.spelling.SolrSpellChecker;
 import org.apache.solr.spelling.SpellCheckCollation;
 import org.apache.solr.spelling.SpellCheckCollator;
+import org.apache.solr.spelling.SpellCheckToken;
 import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingQueryConverter;
 import org.apache.solr.spelling.SpellingResult;
-import org.apache.solr.spelling.Token;
 import org.apache.solr.util.SolrResponseUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -143,20 +138,33 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
     SolrSpellChecker spellChecker = getSpellChecker(params);
     if (spellChecker != null) {
-      Collection<Token> tokens;
       String q = params.get(SPELLCHECK_Q);
+      final String convertedQ;
+      Supplier<TokenStream> tokenStreamSupplier;
       if (q != null) {
         // we have a spell check param, tokenize it with the query analyzer applicable for this
         // spellchecker
-        tokens = getTokens(q, spellChecker.getQueryAnalyzer());
+        convertedQ = q;
+        tokenStreamSupplier = () -> getTokens(convertedQ, spellChecker.getQueryAnalyzer());
       } else {
         q = rb.getQueryString();
         if (q == null) {
           q = params.get(CommonParams.Q);
         }
-        tokens = queryConverter.convert(q);
+        convertedQ = q;
+        tokenStreamSupplier = () -> queryConverter.convert(convertedQ);
       }
-      if (tokens != null && tokens.isEmpty() == false) {
+      // peek for at least one token, using our own throwaway stream instance. Must fully drain
+      // before end()/close() -- TokenStream forbids abandoning mid-INCREMENT.
+      boolean hasTokens = false;
+      try (TokenStream peek = tokenStreamSupplier.get()) {
+        peek.reset();
+        while (peek.incrementToken()) {
+          hasTokens = true;
+        }
+        peek.end();
+      }
+      if (hasTokens) {
         int count = params.getInt(SPELLCHECK_COUNT, 1);
         boolean onlyMorePopular =
             params.getBool(SPELLCHECK_ONLY_MORE_POPULAR, DEFAULT_ONLY_MORE_POPULAR);
@@ -198,7 +206,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           }
           SpellingOptions options =
               new SpellingOptions(
-                  tokens,
+                  tokenStreamSupplier,
                   reader,
                   count,
                   alternativeTermCount,
@@ -230,7 +238,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
               params, spellingResult, rb, q, response, spellChecker.isSuggestionsMayOverlap());
         }
         if (shardRequest) {
-          addOriginalTermsToResponse(response, tokens);
+          addOriginalTermsToResponse(response, tokenStreamSupplier.get());
         }
 
         rb.rsp.add("spellcheck", response);
@@ -346,12 +354,16 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     response.add("collations", collationList);
   }
 
-  private void addOriginalTermsToResponse(
-      NamedList<Object> response, Collection<Token> originalTerms) {
-    List<String> originalTermStr = new ArrayList<String>();
-    for (Token t : originalTerms) {
-      originalTermStr.add(t.toString());
+  private void addOriginalTermsToResponse(NamedList<Object> response, TokenStream originalTerms)
+      throws IOException {
+    List<String> originalTermStr = new ArrayList<>();
+    originalTerms.reset();
+    CharTermAttribute termAtt = originalTerms.addAttribute(CharTermAttribute.class);
+    while (originalTerms.incrementToken()) {
+      originalTermStr.add(termAtt.toString());
     }
+    originalTerms.end();
+    originalTerms.close();
     response.add("originalTerms", originalTermStr);
   }
 
@@ -580,32 +592,9 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  private Collection<Token> getTokens(String q, Analyzer analyzer) throws IOException {
-    Collection<Token> result = new ArrayList<>();
+  private TokenStream getTokens(String q, Analyzer analyzer) {
     assert analyzer != null;
-    try (TokenStream ts = analyzer.tokenStream("", q)) {
-      ts.reset();
-      // TODO: support custom attributes
-      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-      TypeAttribute typeAtt = ts.addAttribute(TypeAttribute.class);
-      FlagsAttribute flagsAtt = ts.addAttribute(FlagsAttribute.class);
-      PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
-      PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
-
-      while (ts.incrementToken()) {
-        Token token = new Token();
-        token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
-        token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
-        token.setType(typeAtt.type());
-        token.setFlags(flagsAtt.getFlags());
-        token.setPayload(payloadAtt.getPayload());
-        token.setPositionIncrement(posIncAtt.getPositionIncrement());
-        result.add(token);
-      }
-      ts.end();
-      return result;
-    }
+    return analyzer.tokenStream("", q);
   }
 
   protected SolrSpellChecker getSpellChecker(SolrParams params) {
@@ -658,13 +647,15 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       String origQuery,
       boolean extendedResults) {
     NamedList<Object> result = new NamedList<>();
-    Map<Token, LinkedHashMap<String, Integer>> suggestions = spellingResult.getSuggestions();
+    Map<SpellCheckToken, LinkedHashMap<String, Integer>> suggestions =
+        spellingResult.getSuggestions();
     boolean hasFreqInfo = spellingResult.hasTokenFrequencyInfo();
     boolean hasSuggestions = false;
     boolean hasZeroFrequencyToken = false;
-    for (Map.Entry<Token, LinkedHashMap<String, Integer>> entry : suggestions.entrySet()) {
-      Token inputToken = entry.getKey();
-      String tokenString = new String(inputToken.buffer(), 0, inputToken.length());
+    for (Map.Entry<SpellCheckToken, LinkedHashMap<String, Integer>> entry :
+        suggestions.entrySet()) {
+      SpellCheckToken inputToken = entry.getKey();
+      String tokenString = inputToken.text();
       Map<String, Integer> theSuggestions = new LinkedHashMap<>(entry.getValue());
       theSuggestions.keySet().removeIf(sug -> sug.equals(tokenString));
       if (theSuggestions.size() > 0) {

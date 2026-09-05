@@ -21,6 +21,13 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.DirectSpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
@@ -183,18 +190,33 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
 
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
-    log.debug("getSuggestions: {}", options.tokens);
-
     SpellingResult result = new SpellingResult();
     float accuracy =
         (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;
 
-    for (Token token : options.tokens) {
-      if (token.length() == 0) {
+    TokenStream stream = options.tokenStreamSupplier.get();
+    stream.reset();
+    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+    OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
+    PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
+    FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
+    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
+    while (stream.incrementToken()) {
+      String tokenText = termAtt.toString();
+      SpellCheckToken token =
+          new SpellCheckToken(
+              tokenText,
+              offsetAtt.startOffset(),
+              offsetAtt.endOffset(),
+              typeAtt.type(),
+              posIncAtt.getPositionIncrement(),
+              flagsAtt.getFlags(),
+              payloadAtt.getPayload());
+      if (tokenText.isEmpty()) {
         result.add(token, List.of());
         continue;
       }
-      String tokenText = token.toString();
       Term term = new Term(field, tokenText);
       int freq = options.reader.docFreq(term);
       int count =
@@ -234,6 +256,8 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
         }
       }
     }
+    stream.end();
+    stream.close();
     return result;
   }
 

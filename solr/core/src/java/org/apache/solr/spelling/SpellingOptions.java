@@ -16,7 +16,8 @@
  */
 package org.apache.solr.spelling;
 
-import java.util.Collection;
+import java.util.function.Supplier;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.solr.common.params.SolrParams;
@@ -24,8 +25,14 @@ import org.apache.solr.common.params.SolrParams;
 /** */
 public class SpellingOptions {
 
-  /** The tokens to spell check */
-  public Collection<Token> tokens;
+  /**
+   * Produces a fresh {@link TokenStream} over the terms to spell check. A {@link TokenStream} is
+   * single-use (one reset, then incrementToken any number of times, then end, then close); this
+   * supplier lets several {@link SolrSpellChecker}s consume the same underlying terms (e.g. via
+   * {@link ConjunctionSolrSpellChecker}) by each getting their own instance. Each caller of {@code
+   * get()} owns that instance completely, including closing it.
+   */
+  public Supplier<TokenStream> tokenStreamSupplier;
 
   /** An optional {@link org.apache.lucene.index.IndexReader} */
   public IndexReader reader;
@@ -52,31 +59,31 @@ public class SpellingOptions {
   public SpellingOptions() {}
 
   // A couple of convenience ones
-  public SpellingOptions(Collection<Token> tokens, int count) {
-    this.tokens = tokens;
+  public SpellingOptions(Supplier<TokenStream> tokenStreamSupplier, int count) {
+    this.tokenStreamSupplier = tokenStreamSupplier;
     this.count = count;
   }
 
-  public SpellingOptions(Collection<Token> tokens, IndexReader reader) {
-    this.tokens = tokens;
+  public SpellingOptions(Supplier<TokenStream> tokenStreamSupplier, IndexReader reader) {
+    this.tokenStreamSupplier = tokenStreamSupplier;
     this.reader = reader;
   }
 
-  public SpellingOptions(Collection<Token> tokens, IndexReader reader, int count) {
-    this.tokens = tokens;
+  public SpellingOptions(Supplier<TokenStream> tokenStreamSupplier, IndexReader reader, int count) {
+    this.tokenStreamSupplier = tokenStreamSupplier;
     this.reader = reader;
     this.count = count;
   }
 
   public SpellingOptions(
-      Collection<Token> tokens,
+      Supplier<TokenStream> tokenStreamSupplier,
       IndexReader reader,
       int count,
       SuggestMode suggestMode,
       boolean extendedResults,
       float accuracy,
       SolrParams customParams) {
-    this.tokens = tokens;
+    this.tokenStreamSupplier = tokenStreamSupplier;
     this.reader = reader;
     this.count = count;
     this.suggestMode = suggestMode;
@@ -86,7 +93,7 @@ public class SpellingOptions {
   }
 
   public SpellingOptions(
-      Collection<Token> tokens,
+      Supplier<TokenStream> tokenStreamSupplier,
       IndexReader reader,
       int count,
       int alternativeTermCount,
@@ -94,7 +101,7 @@ public class SpellingOptions {
       boolean extendedResults,
       float accuracy,
       SolrParams customParams) {
-    this.tokens = tokens;
+    this.tokenStreamSupplier = tokenStreamSupplier;
     this.reader = reader;
     this.count = count;
     this.alternativeTermCount = alternativeTermCount;

@@ -130,13 +130,14 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
   // TODO: This just interleaves the results.  In the future, we might want to let users give each
   // checker its own weight and use that in combination to score & frequency to sort the results ?
   private SpellingResult mergeCheckers(SpellingResult[] results, int numSug) {
-    Map<Token, Integer> combinedTokenFrequency = new HashMap<>();
-    Map<Token, List<LinkedHashMap<String, Integer>>> allSuggestions = new LinkedHashMap<>();
+    Map<SpellCheckToken, Integer> combinedTokenFrequency = new HashMap<>();
+    Map<SpellCheckToken, List<LinkedHashMap<String, Integer>>> allSuggestions =
+        new LinkedHashMap<>();
     for (SpellingResult result : results) {
       if (result.getTokenFrequency() != null) {
         combinedTokenFrequency.putAll(result.getTokenFrequency());
       }
-      for (Map.Entry<Token, LinkedHashMap<String, Integer>> entry :
+      for (Map.Entry<SpellCheckToken, LinkedHashMap<String, Integer>> entry :
           result.getSuggestions().entrySet()) {
         List<LinkedHashMap<String, Integer>> allForThisToken = allSuggestions.get(entry.getKey());
         if (allForThisToken == null) {
@@ -147,8 +148,9 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
       }
     }
     SpellingResult combinedResult = new SpellingResult();
-    for (Map.Entry<Token, List<LinkedHashMap<String, Integer>>> entry : allSuggestions.entrySet()) {
-      Token original = entry.getKey();
+    for (Map.Entry<SpellCheckToken, List<LinkedHashMap<String, Integer>>> entry :
+        allSuggestions.entrySet()) {
+      SpellCheckToken original = entry.getKey();
       List<Iterator<Map.Entry<String, Integer>>> corrIters =
           new ArrayList<>(entry.getValue().size());
       for (LinkedHashMap<String, Integer> corrections : entry.getValue()) {

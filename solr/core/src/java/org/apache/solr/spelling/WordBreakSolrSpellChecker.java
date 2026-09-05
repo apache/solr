@@ -22,6 +22,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.CombineSuggestion;
@@ -158,9 +165,9 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     int numSuggestions = options.count;
 
     StringBuilder sb = new StringBuilder();
-    Token[] tokenArr = options.tokens.toArray(new Token[0]);
-    List<Token> tokenArrWithSeparators = new ArrayList<>(options.tokens.size() + 2);
-    List<Term> termArr = new ArrayList<>(options.tokens.size() + 2);
+    SpellCheckToken[] tokenArr = drainToArray(options.tokenStreamSupplier.get());
+    List<SpellCheckToken> tokenArrWithSeparators = new ArrayList<>(tokenArr.length + 2);
+    List<Term> termArr = new ArrayList<>(tokenArr.length + 2);
     List<ResultEntry> breakSuggestionList = new ArrayList<>();
     List<ResultEntry> noBreakSuggestionList = new ArrayList<>();
     boolean lastOneProhibited = false;
@@ -168,13 +175,13 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     boolean lastOneprocedesNewBooleanOp = false;
     for (int i = 0; i < tokenArr.length; i++) {
       boolean prohibited =
-          (tokenArr[i].getFlags() & QueryConverter.PROHIBITED_TERM_FLAG)
+          (tokenArr[i].flags() & QueryConverter.PROHIBITED_TERM_FLAG)
               == QueryConverter.PROHIBITED_TERM_FLAG;
       boolean required =
-          (tokenArr[i].getFlags() & QueryConverter.REQUIRED_TERM_FLAG)
+          (tokenArr[i].flags() & QueryConverter.REQUIRED_TERM_FLAG)
               == QueryConverter.REQUIRED_TERM_FLAG;
       boolean procedesNewBooleanOp =
-          (tokenArr[i].getFlags() & QueryConverter.TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG)
+          (tokenArr[i].flags() & QueryConverter.TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG)
               == QueryConverter.TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG;
       if (i > 0
           && (prohibited != lastOneProhibited
@@ -234,8 +241,8 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
           }
           sb.append(tokenArrWithSeparators.get(i).toString());
         }
-        Token token =
-            new Token(
+        SpellCheckToken token =
+            new SpellCheckToken(
                 sb.toString(),
                 tokenArrWithSeparators.get(firstTermIndex).startOffset(),
                 tokenArrWithSeparators.get(lastTermIndex).endOffset());
@@ -316,7 +323,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
 
   private void addToResult(
       SpellingResult result,
-      Token token,
+      SpellCheckToken token,
       int tokenFrequency,
       String suggestion,
       int suggestionFrequency) {
@@ -329,7 +336,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     }
   }
 
-  private int getCombineFrequency(IndexReader ir, Token token) throws IOException {
+  private int getCombineFrequency(IndexReader ir, SpellCheckToken token) throws IOException {
     String[] words = spacePattern.split(token.toString());
     int result = 0;
     if (sortMethod == BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY) {
@@ -342,6 +349,36 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
       }
     }
     return result;
+  }
+
+  /**
+   * Drains the query's token stream into an array. Unlike other {@link SolrSpellChecker}s, this one
+   * needs indexed, repeated access across multiple positions at once (to combine adjacent terms
+   * into one corrected phrase), which a single-pass stream cursor can't provide.
+   */
+  private static SpellCheckToken[] drainToArray(TokenStream stream) throws IOException {
+    stream.reset();
+    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+    OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
+    PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
+    FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
+    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
+    List<SpellCheckToken> tokens = new ArrayList<>();
+    while (stream.incrementToken()) {
+      tokens.add(
+          new SpellCheckToken(
+              termAtt.toString(),
+              offsetAtt.startOffset(),
+              offsetAtt.endOffset(),
+              typeAtt.type(),
+              posIncAtt.getPositionIncrement(),
+              flagsAtt.getFlags(),
+              payloadAtt.getPayload()));
+    }
+    stream.end();
+    stream.close();
+    return tokens.toArray(new SpellCheckToken[0]);
   }
 
   @Override

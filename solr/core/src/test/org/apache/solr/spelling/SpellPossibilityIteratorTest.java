@@ -25,10 +25,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
-  private static final Token TOKEN_AYE = new Token("AYE", 0, 3);
-  private static final Token TOKEN_BEE = new Token("BEE", 4, 7);
-  private static final Token TOKEN_AYE_BEE = new Token("AYE BEE", 0, 7);
-  private static final Token TOKEN_CEE = new Token("CEE", 8, 11);
+  private static final SpellCheckToken TOKEN_AYE = new SpellCheckToken("AYE", 0, 3);
+  private static final SpellCheckToken TOKEN_BEE = new SpellCheckToken("BEE", 4, 7);
+  private static final SpellCheckToken TOKEN_AYE_BEE = new SpellCheckToken("AYE BEE", 0, 7);
+  private static final SpellCheckToken TOKEN_CEE = new SpellCheckToken("CEE", 8, 11);
 
   private LinkedHashMap<String, Integer> AYE;
   private LinkedHashMap<String, Integer> BEE;
@@ -87,26 +87,26 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testScalability() {
-    Map<Token, LinkedHashMap<String, Integer>> lotsaSuggestions = new LinkedHashMap<>();
+    Map<SpellCheckToken, LinkedHashMap<String, Integer>> lotsaSuggestions = new LinkedHashMap<>();
     lotsaSuggestions.put(TOKEN_AYE, AYE);
     lotsaSuggestions.put(TOKEN_BEE, BEE);
     lotsaSuggestions.put(TOKEN_CEE, CEE);
 
-    lotsaSuggestions.put(new Token("AYE1", 0, 3), AYE);
-    lotsaSuggestions.put(new Token("BEE1", 4, 7), BEE);
-    lotsaSuggestions.put(new Token("CEE1", 8, 11), CEE);
+    lotsaSuggestions.put(new SpellCheckToken("AYE1", 0, 3), AYE);
+    lotsaSuggestions.put(new SpellCheckToken("BEE1", 4, 7), BEE);
+    lotsaSuggestions.put(new SpellCheckToken("CEE1", 8, 11), CEE);
 
-    lotsaSuggestions.put(new Token("AYE2", 0, 3), AYE);
-    lotsaSuggestions.put(new Token("BEE2", 4, 7), BEE);
-    lotsaSuggestions.put(new Token("CEE2", 8, 11), CEE);
+    lotsaSuggestions.put(new SpellCheckToken("AYE2", 0, 3), AYE);
+    lotsaSuggestions.put(new SpellCheckToken("BEE2", 4, 7), BEE);
+    lotsaSuggestions.put(new SpellCheckToken("CEE2", 8, 11), CEE);
 
-    lotsaSuggestions.put(new Token("AYE3", 0, 3), AYE);
-    lotsaSuggestions.put(new Token("BEE3", 4, 7), BEE);
-    lotsaSuggestions.put(new Token("CEE3", 8, 11), CEE);
+    lotsaSuggestions.put(new SpellCheckToken("AYE3", 0, 3), AYE);
+    lotsaSuggestions.put(new SpellCheckToken("BEE3", 4, 7), BEE);
+    lotsaSuggestions.put(new SpellCheckToken("CEE3", 8, 11), CEE);
 
-    lotsaSuggestions.put(new Token("AYE4", 0, 3), AYE);
-    lotsaSuggestions.put(new Token("BEE4", 4, 7), BEE);
-    lotsaSuggestions.put(new Token("CEE4", 8, 11), CEE);
+    lotsaSuggestions.put(new SpellCheckToken("AYE4", 0, 3), AYE);
+    lotsaSuggestions.put(new SpellCheckToken("BEE4", 4, 7), BEE);
+    lotsaSuggestions.put(new SpellCheckToken("CEE4", 8, 11), CEE);
 
     PossibilityIterator iter = new PossibilityIterator(lotsaSuggestions, 1000, 10000, false);
     int count = 0;
@@ -116,10 +116,10 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
     }
     assertEquals(1000, count);
 
-    lotsaSuggestions.put(new Token("AYE_BEE1", 0, 7), AYE_BEE);
-    lotsaSuggestions.put(new Token("AYE_BEE2", 0, 7), AYE_BEE);
-    lotsaSuggestions.put(new Token("AYE_BEE3", 0, 7), AYE_BEE);
-    lotsaSuggestions.put(new Token("AYE_BEE4", 0, 7), AYE_BEE);
+    lotsaSuggestions.put(new SpellCheckToken("AYE_BEE1", 0, 7), AYE_BEE);
+    lotsaSuggestions.put(new SpellCheckToken("AYE_BEE2", 0, 7), AYE_BEE);
+    lotsaSuggestions.put(new SpellCheckToken("AYE_BEE3", 0, 7), AYE_BEE);
+    lotsaSuggestions.put(new SpellCheckToken("AYE_BEE4", 0, 7), AYE_BEE);
     iter = new PossibilityIterator(lotsaSuggestions, 1000, 10000, true);
     count = 0;
     while (iter.hasNext()) {
@@ -131,7 +131,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSpellPossibilityIterator() {
-    Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<>();
+    Map<SpellCheckToken, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<>();
     suggestions.put(TOKEN_AYE, AYE);
     suggestions.put(TOKEN_BEE, BEE);
     suggestions.put(TOKEN_CEE, CEE);
@@ -184,7 +184,8 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testOverlappingTokens() {
-    Map<Token, LinkedHashMap<String, Integer>> overlappingSuggestions = new LinkedHashMap<>();
+    Map<SpellCheckToken, LinkedHashMap<String, Integer>> overlappingSuggestions =
+        new LinkedHashMap<>();
     overlappingSuggestions.put(TOKEN_AYE, AYE);
     overlappingSuggestions.put(TOKEN_BEE, BEE);
     overlappingSuggestions.put(TOKEN_AYE_BEE, AYE_BEE);
@@ -197,10 +198,10 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
     Set<PossibilityIterator.RankedSpellPossibility> dupChecker = new HashSet<>();
     while (iter.hasNext()) {
       PossibilityIterator.RankedSpellPossibility rsp = iter.next();
-      Token a = null;
-      Token b = null;
-      Token ab = null;
-      Token c = null;
+      SpellCheckToken a = null;
+      SpellCheckToken b = null;
+      SpellCheckToken ab = null;
+      SpellCheckToken c = null;
       for (SpellCheckCorrection scc : rsp.corrections) {
         if (scc.getOriginal().equals(TOKEN_AYE)) {
           a = scc.getOriginal();

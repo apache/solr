@@ -26,6 +26,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
@@ -41,9 +48,9 @@ import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.SolrSpellChecker;
+import org.apache.solr.spelling.SpellCheckToken;
 import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingResult;
-import org.apache.solr.spelling.Token;
 import org.apache.solr.spelling.suggest.fst.FSTLookupFactory;
 import org.apache.solr.spelling.suggest.tst.TSTLookupFactory;
 import org.slf4j.Logger;
@@ -195,17 +202,33 @@ public class Suggester extends SolrSpellChecker {
 
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
-    log.debug("getSuggestions: {}", options.tokens);
     if (lookup == null) {
       log.info("Lookup is null - invoke spellchecker.build first");
       return EMPTY_RESULT;
     }
     SpellingResult res = new SpellingResult();
+    TokenStream stream = options.tokenStreamSupplier.get();
+    stream.reset();
+    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+    OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
+    PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
+    FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
+    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
     CharsRef scratch = new CharsRef();
-    for (Token t : options.tokens) {
-      scratch.chars = t.buffer();
+    while (stream.incrementToken()) {
+      SpellCheckToken t =
+          new SpellCheckToken(
+              termAtt.toString(),
+              offsetAtt.startOffset(),
+              offsetAtt.endOffset(),
+              typeAtt.type(),
+              posIncAtt.getPositionIncrement(),
+              flagsAtt.getFlags(),
+              payloadAtt.getPayload());
+      scratch.chars = termAtt.buffer();
       scratch.offset = 0;
-      scratch.length = t.length();
+      scratch.length = termAtt.length();
       boolean onlyMorePopular =
           (options.suggestMode == SuggestMode.SUGGEST_MORE_POPULAR)
               && !(lookup instanceof WFSTCompletionLookup)
@@ -221,6 +244,8 @@ public class Suggester extends SolrSpellChecker {
         res.add(t, lr.key.toString(), (int) lr.value);
       }
     }
+    stream.end();
+    stream.close();
     return res;
   }
 }

@@ -21,6 +21,13 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.Dictionary;
@@ -132,19 +139,36 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
-    SpellingResult result = new SpellingResult(options.tokens);
+    SpellingResult result = new SpellingResult();
     IndexReader reader = determineReader(options.reader);
     Term term = field != null ? new Term(field, "") : null;
     float theAccuracy =
         (options.accuracy == Float.MIN_VALUE) ? spellChecker.getAccuracy() : options.accuracy;
 
     int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
-    for (Token token : options.tokens) {
-      if (token.length() == 0) {
+    TokenStream stream = options.tokenStreamSupplier.get();
+    stream.reset();
+    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+    OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
+    PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
+    FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
+    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
+    while (stream.incrementToken()) {
+      String tokenText = termAtt.toString();
+      SpellCheckToken token =
+          new SpellCheckToken(
+              tokenText,
+              offsetAtt.startOffset(),
+              offsetAtt.endOffset(),
+              typeAtt.type(),
+              posIncAtt.getPositionIncrement(),
+              flagsAtt.getFlags(),
+              payloadAtt.getPayload());
+      if (tokenText.isEmpty()) {
         result.add(token, List.of());
         continue;
       }
-      String tokenText = new String(token.buffer(), 0, token.length());
       term = new Term(field, tokenText);
       int docFreq = 0;
       if (reader != null) {
@@ -209,6 +233,8 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
         }
       }
     }
+    stream.end();
+    stream.close();
     return result;
   }
 
