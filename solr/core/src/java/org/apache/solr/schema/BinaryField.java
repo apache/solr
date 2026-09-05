@@ -34,7 +34,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BinaryField extends FieldType {
+public class BinaryField extends FieldType implements FieldType.ExternalizeStoredValuesAsObjects {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
