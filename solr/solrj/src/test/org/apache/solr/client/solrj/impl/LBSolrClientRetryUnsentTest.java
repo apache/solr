@@ -149,6 +149,22 @@ public class LBSolrClientRetryUnsentTest extends SolrTestCase {
   }
 
   /**
+   * A query must fail over whenever the transport proves the request unsent, even if the deepest
+   * cause isn't an {@link IOException}.
+   */
+  @Test
+  public void testQueryIsRetriedWhenUnsentButRootCauseIsNotIO() throws Exception {
+    IllegalStateException sessionClosed = new IllegalStateException("session closed");
+    SolrServerException failure =
+        new SolrServerException(
+            "Connection failed before the request was sent to: " + DEAD_HOST_1.getUrl(),
+            new RequestNotSentException(sessionClosed.getMessage(), sessionClosed));
+    assertEquals(
+        List.of(DEAD_HOST_1.getBaseUrl(), DEAD_HOST_2.getBaseUrl()),
+        requestReturningAttemptedUrls(failure, new QueryRequest()));
+  }
+
+  /**
    * Parity with LBAsyncSolrClient, which already retried a bare {@link RequestNotSentException}.
    */
   @Test

@@ -20,8 +20,6 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -652,33 +650,8 @@ public abstract class LBSolrClient extends SolrClient {
         }
         throw e;
       }
-    } catch (SocketException e) {
-      if (!isNonRetryable || getClient(baseUrl).wasRequestUnsent(e)) {
-        ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else {
-        throw e;
-      }
-    } catch (SocketTimeoutException e) {
-      if (!isNonRetryable) {
-        ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else {
-        throw e;
-      }
-    } catch (SolrServerException e) {
-      Throwable rootCause = e.getRootCause();
-      if (!isNonRetryable
-          && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
-        ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else if (isNonRetryable && getClient(baseUrl).wasRequestUnsent(e)) {
-        // Nothing of the request reached the server, so replaying it elsewhere is safe even though
-        // it isn't idempotent.
-        ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else {
-        throw e;
-      }
-    } catch (IOException e) {
-      // A transport may throw one directly rather than wrapping it in a SolrServerException.
-      if (!isNonRetryable || getClient(baseUrl).wasRequestUnsent(e)) {
+    } catch (SolrServerException | IOException e) {
+      if (mayFailOver(baseUrl, e, isNonRetryable)) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
       } else {
         throw e;
@@ -688,6 +661,20 @@ public abstract class LBSolrClient extends SolrClient {
     }
 
     return ex;
+  }
+
+  /**
+   * Whether {@code e} permits trying the next endpoint. A request that isn't safe to replay fails
+   * over only when the transport proves nothing was sent; anything else fails over on any network
+   * failure.
+   */
+  protected boolean mayFailOver(Endpoint endpoint, Exception e, boolean isNonRetryable) {
+    if (getClient(endpoint).wasRequestUnsent(e)) {
+      return true;
+    }
+    Throwable rootCause = (e instanceof SolrServerException sse) ? sse.getRootCause() : e;
+    return !isNonRetryable
+        && (rootCause instanceof IOException || rootCause instanceof TimeoutException);
   }
 
   /**
