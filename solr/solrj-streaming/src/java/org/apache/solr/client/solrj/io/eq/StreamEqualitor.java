@@ -37,10 +37,14 @@ public interface StreamEqualitor extends Equalitor<Tuple>, Expressible, Serializ
    * streamA in complement/intersect), as opposed to {@link #isDerivedFrom(StreamComparator)} which
    * matches either side and so cannot validate an asymmetric {@code on=} clause correctly.
    */
-  boolean isDerivedFromLeft(StreamComparator base);
+  default boolean isDerivedFromLeft(StreamComparator base) {
+    return isDerivedFrom(base);
+  }
 
   /** Right-hand counterpart of {@link #isDerivedFromLeft(StreamComparator)}. */
-  boolean isDerivedFromRight(StreamComparator base);
+  default boolean isDerivedFromRight(StreamComparator base) {
+    return isDerivedFrom(base);
+  }
 
   /**
    * Verifies that this equalitor's field(s) are actually present in the given tuples, as opposed to
