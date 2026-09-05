@@ -81,7 +81,7 @@ import org.apache.lucene.util.NumericUtils;
  * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
  * @since 2.9
  */
-@Deprecated
+@Deprecated(since = "6.0")
 public final class LegacyNumericTokenStream extends TokenStream {
 
   /** The full precision token gets this token type assigned. */

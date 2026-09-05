@@ -16,7 +16,7 @@
  */
 package org.apache.solr.security;
 
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.jetty.MutableListenerFactory;
 
 /**
  * Plugin interface for configuring internal HttpClients. This relies on the internal HttpClient
@@ -26,5 +26,6 @@ import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
  */
 public interface HttpClientBuilderPlugin {
 
-  public default void setup(HttpJettySolrClient client) {}
+  /** May be called more than once; each call replaces the previous listener, not adds to it. */
+  public default void setup(MutableListenerFactory listenerFactory) {}
 }

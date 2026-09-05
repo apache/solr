@@ -31,8 +31,6 @@ import java.util.stream.StreamSupport;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 
 /**
@@ -409,29 +407,6 @@ public abstract class SolrParams
     if (params == null) return defaults;
     if (defaults == null) return params;
     return AppendedSolrParams.wrapAppended(params, defaults);
-  }
-
-  /**
-   * Convert this to a NamedList of unique keys with either String or String[] values depending on
-   * how many values there are for the parameter.
-   *
-   * @deprecated see {@link SimpleOrderedMap#SimpleOrderedMap(MapWriter)}
-   */
-  @Deprecated
-  public NamedList<Object> toNamedList() {
-    final SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
-
-    for (Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
-      final String name = it.next();
-      final String[] values = getParams(name);
-      if (values.length == 1) {
-        result.add(name, values[0]);
-      } else {
-        // currently, no reason not to use the same array
-        result.add(name, values);
-      }
-    }
-    return result;
   }
 
   /**

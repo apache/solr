@@ -24,6 +24,7 @@ import org.junit.Assume;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -55,14 +56,13 @@ public class S3MockContainerRule extends ExternalResource {
 
   @Override
   protected void before() {
+    Assume.assumeTrue(
+        "Docker/Testcontainers not available; skipping test",
+        DockerClientFactory.instance().isDockerAvailable());
     s3MockContainer =
         new S3MockContainer(DockerImageName.parse(S3MOCK_DOCKER_IMAGE))
             .withInitialBuckets(bucketName);
-    try {
-      s3MockContainer.start();
-    } catch (Throwable t) {
-      Assume.assumeNoException("Docker/Testcontainers not available; skipping test", t);
-    }
+    s3MockContainer.start();
   }
 
   @Override
