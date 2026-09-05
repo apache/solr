@@ -52,13 +52,24 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "package",
-    description = "Install, deploy and manage Solr packages in SolrCloud.",
+    description = "Sub commands to Install, deploy and manage Solr packages in SolrCloud.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
       "0:Operation completed successfully.",
       "1:Operation failed; check output for details."
     },
     footerHeading = "%nExamples:%n",
+    subcommands = {
+        AddRepo.class,
+        AddKey.class,
+        ListAvailable.class,
+        ListInstalled.class,
+        ListDeployed.class,
+        Install.class,
+        Deploy.class,
+        Uninstall.class,
+        Undeploy.class
+    },
     footer = {
       "  # Add a package repository",
       "  bin/solr package add-repo myrepo https://my.repo.example/repo",
