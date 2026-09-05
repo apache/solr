@@ -1,0 +1,10 @@
+title: The UnifiedHighlighter now supports an hl.passageSort option to control passage ordering within a document by startOffset, endOffset, or score.
+type: added
+authors:
+  - name: Seunghan Jung
+    nick: Seunghan-Jung
+links:
+  - name: SOLR-17444
+    url: https://issues.apache.org/jira/browse/SOLR-17444
+issues:
+  - 17444
