@@ -215,11 +215,6 @@ public class ClusterAPI {
     return req;
   }
 
-  @EndPoint(method = GET, path = "/cluster/nodes", permission = COLL_READ_PERM)
-  public void getNodes(SolrQueryRequest req, SolrQueryResponse rsp) {
-    rsp.add("nodes", getCoreContainer().getZkController().getClusterState().getLiveNodes());
-  }
-
   @EndPoint(method = GET, path = "/cluster", permission = COLL_READ_PERM)
   public void getClusterStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final Map<String, Object> v1Params =

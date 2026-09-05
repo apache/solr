@@ -187,6 +187,7 @@ import org.apache.solr.handler.admin.api.DeleteShard;
 import org.apache.solr.handler.admin.api.ForceLeader;
 import org.apache.solr.handler.admin.api.InstallShardData;
 import org.apache.solr.handler.admin.api.ListAliases;
+import org.apache.solr.handler.admin.api.ListClusterNodes;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
 import org.apache.solr.handler.admin.api.ListCollectionSnapshots;
 import org.apache.solr.handler.admin.api.ListCollections;
@@ -1212,6 +1213,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteShard.class,
         ForceLeader.class,
         InstallShardData.class,
+        ListClusterNodes.class,
         ListCollections.class,
         ListCollectionBackups.class,
         ReloadCollectionAPI.class,
