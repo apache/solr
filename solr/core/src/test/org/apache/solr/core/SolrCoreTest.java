@@ -139,7 +139,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount;
       assertEquals(pathToClassMap.get("update"), "solr.V2UpdateRequestHandler");
       ++ihCount;
-      assertEquals(pathToClassMap.get("/tasks/cancel"), "solr.QueryCancellationHandler");
+      assertEquals(pathToClassMap.get("/tasks/cancel"), "solr.TaskCancellationHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/tasks/list"), "solr.ActiveTasksListHandler");
     }

@@ -19,24 +19,24 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.api.model.TaskStatusResponse;
+import org.apache.solr.client.api.model.CancelTaskResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CancellableQueryTracker;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.CancellableCollector;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class GetTaskStatusTest extends SolrTestCase {
+public class CancelTaskTest extends SolrTestCase {
 
-  private SolrQueryRequest mockQueryRequest;
-  private SolrCore solrCore;
   private CancellableQueryTracker cancellableQueryTracker;
-
-  private GetTaskStatus getTaskStatus;
+  private CancelTask cancelTask;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -48,27 +48,35 @@ public class GetTaskStatusTest extends SolrTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    mockQueryRequest = mock(SolrQueryRequest.class);
-    solrCore = mock(SolrCore.class);
+    SolrQueryRequest solrQueryRequest = mock(SolrQueryRequest.class);
+    SolrCore solrCore = mock(SolrCore.class);
     cancellableQueryTracker = mock(CancellableQueryTracker.class);
 
-    getTaskStatus = new GetTaskStatus(mockQueryRequest);
+    when(solrQueryRequest.getCore()).thenReturn(solrCore);
+    when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
+
+    cancelTask = new CancelTask(solrQueryRequest);
   }
 
   @Test
-  public void testGetTaskStatus() throws Exception {
+  public void testCancelRunningTask() throws Exception {
+    CancellableCollector cancellableCollector = mock(CancellableCollector.class);
+    when(cancellableQueryTracker.getCancellableTask("taskID_running"))
+        .thenReturn(cancellableCollector);
 
-    when(mockQueryRequest.getCore()).thenReturn(solrCore);
-    when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
-    when(cancellableQueryTracker.isQueryIdActive("taskID_running")).thenReturn(true);
-    when(cancellableQueryTracker.isQueryIdActive("taskID_stopped")).thenReturn(false);
+    CancelTaskResponse response = cancelTask.cancelRunningTask("taskID_running");
 
-    TaskStatusResponse responseRunningTask = getTaskStatus.getTaskStatus("taskID_running");
-    assertEquals(TaskStatusResponse.TaskStatus.ACTIVE, responseRunningTask.status);
-    assertNull(responseRunningTask.error);
+    assertEquals(CancelTaskResponse.CancellationStatus.SUCCESS, response.status);
+    verify(cancellableCollector).cancel();
+  }
 
-    TaskStatusResponse responseStoppedTask = getTaskStatus.getTaskStatus("taskID_stopped");
-    assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, responseStoppedTask.status);
-    assertNull(responseStoppedTask.error);
+  @Test
+  public void testCancelNonExistentTaskReturns404() {
+    when(cancellableQueryTracker.getCancellableTask("taskID_missing")).thenReturn(null);
+
+    SolrException exception =
+        expectThrows(SolrException.class, () -> cancelTask.cancelRunningTask("taskID_missing"));
+    assertEquals(SolrException.ErrorCode.NOT_FOUND.code, exception.code());
+    assertTrue(exception.getMessage().contains("taskID_missing"));
   }
 }
