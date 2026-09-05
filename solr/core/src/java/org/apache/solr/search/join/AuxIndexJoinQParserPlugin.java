@@ -78,8 +78,9 @@ import org.slf4j.LoggerFactory;
  * directory under the core's dataDir (configurable via the {@code dir} init parameter, resolved
  * relative to dataDir unless absolute), and closed when the core closes. The remaining init
  * parameters mirror {@link AuxIndexJoinConfig}: {@code singleFieldPerSegment}, {@code
- * blockingRefresh}, {@code useFromSideThreads}, and {@code sweepSamplingInterval} (seconds). This
- * sidecar always belongs to the "to" side core -- the one this plugin is registered in.
+ * blockingRefresh}, {@code useFromSideThreads}, {@code wipeOnVersionMismatch}, and {@code
+ * sweepSamplingInterval} (seconds). This sidecar always belongs to the "to" side core -- the one
+ * this plugin is registered in.
  *
  * <p><b>Why this implements {@link QueryResponseWriter}:</b> {@link
  * org.apache.solr.core.SolrResourceLoader}'s {@code awareCompatibility} allowlist (see SOLR-8311)
@@ -125,6 +126,12 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
   public static final String USE_FROM_SIDE_THREADS = "useFromSideThreads";
 
   /**
+   * Init parameter: whether opening the join index wipes a pre-existing on-disk index recorded with
+   * a different Solr major version. Defaults to {@code true}.
+   */
+  public static final String WIPE_ON_VERSION_MISMATCH = "wipeOnVersionMismatch";
+
+  /**
    * Init parameter: how often (in seconds) {@code AuxIndexManager.onCreateWeight} samples searcher
    * state for the dead-pair reaper. Non-positive means sample on every call. Defaults to 60.
    */
@@ -147,6 +154,8 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
           params.getBool(BLOCKING_REFRESH, joinIndexConfig.getBlockingRefresh()));
       joinIndexConfig.setUseFromSideThreads(
           params.getBool(USE_FROM_SIDE_THREADS, joinIndexConfig.getUseFromSideThreads()));
+      joinIndexConfig.setWipeOnVersionMismatch(
+          params.getBool(WIPE_ON_VERSION_MISMATCH, joinIndexConfig.getWipeOnVersionMismatch()));
       joinIndexConfig.setSweepSamplingInterval(
           params.getLong(SWEEP_SAMPLING_INTERVAL, 60), TimeUnit.SECONDS);
     }

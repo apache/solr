@@ -39,6 +39,7 @@ public final class AuxIndexJoinConfig {
   private boolean singleFieldPerSegment = false;
   private boolean blockingRefresh = true;
   private boolean useFromSideThreads = true;
+  private boolean wipeOnVersionMismatch = true;
   private long sweepSamplingIntervalNanos = TimeUnit.MINUTES.toNanos(1);
 
   /** Sole constructor, using the default settings documented on each setter. */
@@ -89,6 +90,23 @@ public final class AuxIndexJoinConfig {
   /** Returns the current value set via {@link #setUseFromSideThreads}. */
   public boolean getUseFromSideThreads() {
     return useFromSideThreads;
+  }
+
+  /**
+   * Whether opening the join index wipes a pre-existing on-disk index whose commit user data
+   * records a different Solr major version than the current one (see {@code
+   * AuxIndexManager#wipeIfIncompatibleVersion}). Default is {@code true}: doc-id mappings are
+   * version-specific and stale pairs are rebuilt lazily, so keeping them risks reading corrupt
+   * joins after an upgrade. Disable only when the same process is guaranteed to own the index.
+   */
+  public AuxIndexJoinConfig setWipeOnVersionMismatch(boolean wipeOnVersionMismatch) {
+    this.wipeOnVersionMismatch = wipeOnVersionMismatch;
+    return this;
+  }
+
+  /** Returns the current value set via {@link #setWipeOnVersionMismatch}. */
+  public boolean getWipeOnVersionMismatch() {
+    return wipeOnVersionMismatch;
   }
 
   /**

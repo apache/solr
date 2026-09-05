@@ -90,6 +90,12 @@ final class JoinIndexUtils {
 
   static final String TO_COUNT_PREFIX = "num_toDoc_";
 
+  /**
+   * Commit user-data key under which the {@code SolrVersion} that wrote the index is recorded, so a
+   * future major version can detect and discard an incompatible aux join index.
+   */
+  static final String AUX_INDEX_VERSION = "AuxJoinIndexVersion";
+
   private JoinIndexUtils() {}
 
   /**

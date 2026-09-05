@@ -25,6 +25,7 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 
 /**
@@ -59,6 +60,8 @@ final class JoinColumnDocWriter extends JoinColumWriter {
     }
     // a single block: IndexWriter guarantees no intermediate flush splits it across segments
     writer.addDocuments(docs);
+    writer.setLiveCommitData(
+        Map.of(JoinIndexUtils.AUX_INDEX_VERSION, SolrVersion.LATEST_STRING).entrySet());
     writer.commit();
   }
 

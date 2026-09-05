@@ -18,6 +18,7 @@ package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -25,6 +26,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -34,6 +38,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 
 /**
@@ -70,6 +75,7 @@ public final class AuxIndexManager implements Closeable {
   private final JoinColumWriter writerDelegate;
   private final boolean blockingRefresh;
   private final boolean useFromSideThreads;
+  private final boolean wipeOnVersionMismatch;
 
   /** A pair's (from-segment, to-segment) leaf ordinals. */
   record SegmentsTuple(int fromLeafOrd, int toLeafOrd) {}
@@ -114,10 +120,12 @@ public final class AuxIndexManager implements Closeable {
     this.mergeScheduler = mergeScheduler;
     this.mergePolicy = new AuxIndexJoinMergePolicy();
     this.mergePolicy.setSweepInterval(config.getSweepSamplingIntervalNanos(), TimeUnit.NANOSECONDS);
+    this.wipeOnVersionMismatch = config.getWipeOnVersionMismatch();
     this.writer =
         new IndexWriter(
             directory,
             new IndexWriterConfig().setMergePolicy(mergePolicy).setMergeScheduler(mergeScheduler));
+    wipeIfIncompatibleVersion(directory);
     this.manager = new SearcherManager(writer, null);
     JoinColumWriter bulkWriter = new JoinColumnDocWriter(); // new AIJoinColumnWriter()
     this.writerDelegate =
@@ -126,6 +134,44 @@ public final class AuxIndexManager implements Closeable {
             : bulkWriter;
     this.blockingRefresh = config.getBlockingRefresh();
     this.useFromSideThreads = config.getUseFromSideThreads();
+  }
+
+  /**
+   * Discards the on-disk aux join index when it was written by a Solr whose major version differs
+   * from the current one: doc-id mappings are version-specific, so a mismatched index must not be
+   * reused and its pairs get rebuilt lazily. The version is read from the last commit's user data,
+   * written by {@link JoinColumnDocWriter}; a missing or unparseable version is treated as
+   * incompatible. Runs before the {@link SearcherManager} opens so the fresh reader sees a clean
+   * index. No-op when {@link AuxIndexJoinConfig#setWipeOnVersionMismatch} is {@code false}.
+   */
+  private void wipeIfIncompatibleVersion(Directory directory) throws IOException {
+    if (!wipeOnVersionMismatch) {
+      return;
+    }
+    List<IndexCommit> commits;
+    try {
+      commits = DirectoryReader.listCommits(directory);
+    } catch (IndexNotFoundException e) {
+      return; // fresh index, nothing committed yet to check
+    }
+    if (commits.isEmpty()) {
+      return;
+    }
+    String committedVersion =
+        commits.get(commits.size() - 1).getUserData().get(JoinIndexUtils.AUX_INDEX_VERSION);
+    boolean incompatible;
+    try {
+      incompatible =
+          committedVersion == null
+              || SolrVersion.valueOf(committedVersion).getMajorVersion()
+                  != SolrVersion.LATEST.getMajorVersion();
+    } catch (RuntimeException e) { // unparseable committed version
+      incompatible = true;
+    }
+    if (incompatible) {
+      writer.deleteAll();
+      writer.commit();
+    }
   }
 
   /**
