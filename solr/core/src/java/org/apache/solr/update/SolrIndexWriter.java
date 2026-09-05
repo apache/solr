@@ -35,6 +35,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -117,6 +118,17 @@ public class SolrIndexWriter extends IndexWriter {
       w = new SolrIndexWriter(core, name, path, d, create, schema, config, delPolicy, codec);
       w.setDirectoryFactory(directoryFactory);
       return w;
+    } catch (LockObtainFailedException e) {
+      throw new LockObtainFailedException(
+          "Index dir '"
+              + path
+              + "' of core '"
+              + core.getName()
+              + "' is already locked. "
+              + "The most likely cause is another Solr server (or another solr core in this server) "
+              + "also configured to use this directory; other possible causes may be specific to lockType: "
+              + config.lockType,
+          e);
     } finally {
       if (null == w && null != d) {
         directoryFactory.doneWithDirectory(d);
