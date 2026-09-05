@@ -60,7 +60,7 @@ public class PackageUtils {
   /** Represents a version which denotes the latest version available at the moment. */
   public static String LATEST = "latest";
 
-  public static String PACKAGE_PATH = "/api/cluster/package";
+  public static String PACKAGE_PATH = "/api/cluster/packages";
   public static String CLUSTER_PLUGINS_PATH = "/api/cluster/plugin";
   public static String REPOSITORIES_ZK_PATH = "/repositories.json";
   public static String CLUSTERPROPS_PATH = "/api/cluster/zk/data/clusterprops.json";
