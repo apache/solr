@@ -2975,8 +2975,17 @@ public class ZkController implements Closeable {
     log.info("Publish node={} as DOWN", nodeName);
 
     ClusterState clusterState = getClusterState();
-    Map<String, List<Replica>> replicasPerCollectionOnNode =
-        clusterState.getReplicaNamesPerCollectionOnNode(nodeName);
+    Map<String, List<Replica>> replicasPerCollectionOnNode = new HashMap<>();
+    clusterState
+        .collectionStream()
+        .forEach(
+            col -> {
+              List<Replica> replicas = col.getReplicasOnNode(nodeName);
+              if (!replicas.isEmpty()) {
+                replicasPerCollectionOnNode.put(col.getName(), replicas);
+              }
+            });
+
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       // Note that with the current implementation, when distributed cluster state updates are
       // enabled, we mark the node down synchronously from this thread, whereas the Overseer cluster
