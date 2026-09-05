@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
@@ -88,7 +89,7 @@ public final class LTRThreadModule implements NamedListInitializedPlugin {
 
     // remove consumed keys only once iteration is complete
     // since NamedList iterator does not support 'remove'
-    for (Object key : extractedArgs.asShallowMap().keySet()) {
+    for (Object key : new SimpleOrderedMap<>(extractedArgs).keySet()) {
       args.remove(CONFIG_PREFIX + key);
     }
 

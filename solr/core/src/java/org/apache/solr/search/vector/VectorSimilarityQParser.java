@@ -44,7 +44,7 @@ public class VectorSimilarityQParser extends AbstractVectorQParserBase {
   @Override
   public Query parse() throws SyntaxError {
     final String fieldName = getFieldName();
-    final SchemaField schemaField = req.getCore().getLatestSchema().getField(fieldName);
+    final SchemaField schemaField = req.getSchema().getField(fieldName);
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
 
     if (DenseVectorField.FLAT_ALGORITHM.equals(denseVectorType.getKnnAlgorithm())) {

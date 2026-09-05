@@ -185,16 +185,16 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    IndexSchema latestSchema = req.getCore().getLatestSchema();
+    IndexSchema requestSchema = req.getSchema();
 
     for (String fieldName : inputFields) {
-      if (!latestSchema.isDynamicField(fieldName) && !latestSchema.hasExplicitField(fieldName)) {
+      if (!requestSchema.isDynamicField(fieldName) && !requestSchema.hasExplicitField(fieldName)) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + fieldName + "\"");
       }
     }
 
-    final SchemaField outputFieldSchema = latestSchema.getField(outputField);
+    final SchemaField outputFieldSchema = requestSchema.getField(outputField);
 
     ResponseFormat responseFormat = getJsonSchema(outputFieldSchema);
     boolean multiValued = outputFieldSchema.multiValued();

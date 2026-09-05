@@ -412,7 +412,6 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       // Recipe taken from:
       // http://joelsolr.blogspot.com/2016/10/solr-63-batch-jobs-parallel-etl-and.html
       ModifiableSolrParams q = new ModifiableSolrParams();
-      q.set(CommonParams.QT, "/stream");
       q.set("collection", collection);
       q.set(
           "expr",
@@ -450,7 +449,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       log.debug("- starting copying documents from {} to {}", collection, targetCollection);
       SolrResponse rsp;
       try {
-        rsp = new QueryRequest(q).process(ccc.getSolrCloudManager().getSolrClient());
+        rsp = new QueryRequest("/stream", q).process(ccc.getSolrCloudManager().getSolrClient());
       } catch (Exception e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

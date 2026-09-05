@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -49,7 +50,7 @@ public class AdminUiReplicationStandaloneTest extends AdminUiStandaloneTestBase 
     // sets the solr.tests.* index-config properties the test solrconfigs require
     newRandomConfig();
     // the follower's leaderUrl is not covered by the URL allow-list
-    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
 
     Path leaderHome = buildReplicationHome("solrconfig-leader.xml", 0);
     leaderJetty = new JettySolrRunner(leaderHome.toString(), JettyConfig.builder().build());

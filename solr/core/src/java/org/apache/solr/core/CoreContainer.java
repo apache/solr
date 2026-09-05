@@ -707,7 +707,7 @@ public class CoreContainer {
    * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    * @deprecated likely to simply be moved to the ObjectCache so as to not be used
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public SolrClientCache getSolrClientCache() {
     // TODO put in the objectCache instead
     return solrClientCache;

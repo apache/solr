@@ -150,7 +150,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   public void testFillProperties_PriorityOrder() throws Exception {
     Map<String, Object> properties = new HashMap<>();
 
-    // Set up ZooKeeper with lowest priority
+    // Set up ZooKeeper with the lowest priority
     Properties zkProps = new Properties();
     zkProps.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "zk-kafka:9092");
     zkProps.setProperty(KafkaCrossDcConf.TOPIC_NAME, "zk-topic");
@@ -291,7 +291,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFillProperties_SecurityProperties() throws Exception {
+  public void testFillProperties_SecurityProperties() {
     Map<String, Object> properties = new HashMap<>();
 
     // Set security-related properties
@@ -345,6 +345,85 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
 
     // Verify ZK-only property
     assertEquals("zk-value", properties.get("zk.only.property"));
+  }
+
+  @Test
+  public void testAddAdditionalKafkaProperties_MapsEnvKey() {
+    Map<String, Object> properties = new HashMap<>();
+    Map<String, String> env = Map.of("SOLR_CROSSDC_KAFKA_FOO_BAR", "env-value");
+
+    ConfUtil.addAdditionalKafkaProperties(properties, env, new Properties());
+
+    assertEquals("env-value", properties.get("foo.bar"));
+  }
+
+  @Test
+  public void testAddAdditionalKafkaProperties_MapsSysPropKey() {
+    Map<String, Object> properties = new HashMap<>();
+    Properties sysProps = new Properties();
+    sysProps.setProperty("solr.crossdc.kafka.foo.bar", "sys-value");
+
+    ConfUtil.addAdditionalKafkaProperties(properties, Map.of(), sysProps);
+
+    assertEquals("sys-value", properties.get("foo.bar"));
+  }
+
+  @Test
+  public void testAddAdditionalKafkaProperties_SysPropsOverrideEnv() {
+    Map<String, Object> properties = new HashMap<>();
+    Map<String, String> env = Map.of("SOLR_CROSSDC_KAFKA_FOO_BAR", "env-value");
+    Properties sysProps = new Properties();
+    sysProps.setProperty("solr.crossdc.kafka.foo.bar", "sys-value");
+
+    ConfUtil.addAdditionalKafkaProperties(properties, env, sysProps);
+
+    assertEquals("sys-value", properties.get("foo.bar"));
+  }
+
+  @Test
+  public void testAddAdditionalKafkaProperties_DoesNotOverrideExplicitProperty() {
+    Map<String, Object> properties = new HashMap<>();
+    properties.put("foo.bar", "explicit");
+    Map<String, String> env = Map.of("SOLR_CROSSDC_KAFKA_FOO_BAR", "env-value");
+    Properties sysProps = new Properties();
+    sysProps.setProperty("solr.crossdc.kafka.foo.bar", "sys-value");
+
+    ConfUtil.addAdditionalKafkaProperties(properties, env, sysProps);
+
+    assertEquals("explicit", properties.get("foo.bar"));
+  }
+
+  @Test
+  public void testAddAdditionalKafkaProperties_IgnoresBlankValuesAndEmptyKeys() {
+    Map<String, Object> properties = new HashMap<>();
+    Map<String, String> env = new HashMap<>();
+    env.put("SOLR_CROSSDC_KAFKA_", "ignored-empty-key");
+    env.put("SOLR_CROSSDC_KAFKA_FOO_BAR", "");
+    env.put("SOLR_CROSSDC_KAFKA_BAZ_QUX", "   ");
+    Properties sysProps = new Properties();
+    sysProps.setProperty("solr.crossdc.kafka.", "ignored-empty-key");
+    sysProps.setProperty("solr.crossdc.kafka.foo.bar", "");
+    sysProps.setProperty("solr.crossdc.kafka.baz.qux", "   ");
+
+    ConfUtil.addAdditionalKafkaProperties(properties, env, sysProps);
+
+    assertTrue(properties.isEmpty());
+  }
+
+  @Test
+  public void testFillProperties_PassThroughPreservedInKafkaCrossDcConfAdditionalProperties() {
+    Map<String, Object> properties = new HashMap<>();
+    properties.put(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "localhost:9092");
+    properties.put(KafkaCrossDcConf.TOPIC_NAME, "test-topic");
+    Map<String, String> env = Map.of("SOLR_CROSSDC_KAFKA_MAX_POLL_RECORDS", "500");
+    Properties sysProps = new Properties();
+    sysProps.setProperty("solr.crossdc.kafka.compression.type", "lz4");
+
+    ConfUtil.addAdditionalKafkaProperties(properties, env, sysProps);
+    KafkaCrossDcConf conf = new KafkaCrossDcConf(properties);
+
+    assertEquals(500, conf.getAdditionalProperties().get("max.poll.records"));
+    assertEquals("lz4", conf.getAdditionalProperties().get("compression.type"));
   }
 
   // we can't easily modify envvars, test just the key conversion in properties

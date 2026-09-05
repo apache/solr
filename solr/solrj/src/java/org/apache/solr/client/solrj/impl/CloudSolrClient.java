@@ -198,7 +198,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * @deprecated problematic as a 'get' method, since one implementation will do a remote request
    *     each time this is called, potentially return lots of data that isn't even needed.
    */
-  @Deprecated
+  @Deprecated(since = "10.1")
   public ClusterState getClusterState() {
     // The future of "ClusterState" isn't clear.  Could make it more of a cache instead of a
     // snapshot, so we un-deprecate. Or we avoid it and maybe make the ClusterStateProvider as that
@@ -683,7 +683,11 @@ public abstract class CloudSolrClient extends SolrClient {
       resp = sendRequest(request, inputCollections);
       // to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from
       // there
-      Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
+      Object o = null;
+      if (resp != null && resp.size() > 0) {
+        final int stateVersionIdx = resp.indexOf(STATE_VERSION, resp.size() - 1);
+        o = stateVersionIdx == -1 ? null : resp.getVal(stateVersionIdx);
+      }
       if (o != null && o instanceof Map<?, ?> invalidStates) {
         // remove this because no one else needs this and tests would fail if they are comparing
         // responses

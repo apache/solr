@@ -79,7 +79,7 @@ public class SolrClientCache implements Closeable {
   /**
    * @deprecated use {@link #getCloudSolrClient(CloudSolrClient.CloudSolrClientConnection)}
    */
-  @Deprecated
+  @Deprecated(since = "10.1")
   public CloudSolrClient getCloudSolrClient(String solrConnectionString) {
     var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnectionString);
     return getCloudSolrClient(solrConnection);

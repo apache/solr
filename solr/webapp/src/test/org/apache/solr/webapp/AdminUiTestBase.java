@@ -534,9 +534,6 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
                     Arrays.stream(allowedSubstrings)
                         .noneMatch(allowed -> entry.getMessage().contains(allowed)))
             .filter(entry -> !entry.getMessage().contains("favicon.ico"))
-            // the ui-grid icon font referenced from ui-grid.min.css is not shipped with
-            // the webapp at all, so it 404s in production too
-            .filter(entry -> !entry.getMessage().contains("fonts/ui-grid"))
             .toList();
     assertTrue("Severe browser console errors: " + severe, severe.isEmpty());
   }
