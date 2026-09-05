@@ -23,9 +23,12 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.client.solrj.response.ResponseNormalizer;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
@@ -62,5 +65,25 @@ public class JsonMapResponseParser extends ResponseParser {
   @Override
   public Set<String> getContentTypes() {
     return CONTENT_TYPES;
+  }
+
+  private static final SolrParams REQUEST_PARAMS =
+      SolrParams.of(JsonTextWriter.JSON_NL_STYLE, JsonTextWriter.JSON_NL_MAP);
+
+  /**
+   * Asks for {@code json.nl=map}, so that a {@link NamedList} written by the server arrives as a
+   * JSON object and {@link #processCanonicalResponse} can restore it as a {@code NamedList}. Under
+   * the default {@code json.nl=flat} the keys and values are flattened into one array, and the
+   * structure cannot be recovered.
+   */
+  @Override
+  public SolrParams getAdditionalRequestParams() {
+    return REQUEST_PARAMS;
+  }
+
+  @Override
+  public NamedList<Object> processCanonicalResponse(InputStream body, String encoding)
+      throws IOException {
+    return ResponseNormalizer.normalize(processResponse(body, encoding));
   }
 }

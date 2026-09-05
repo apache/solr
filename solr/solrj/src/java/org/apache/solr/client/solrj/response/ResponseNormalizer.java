@@ -1,0 +1,147 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.client.solrj.response;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+
+/**
+ * Converts a parsed response into the canonical shape the SolrJ response classes expect (the shape
+ * the binary and XML parsers produce): nested JSON objects become {@link NamedList}s and a {@code
+ * {numFound, docs}} object becomes a {@link SolrDocumentList}.
+ *
+ * <p>Only unambiguous, self-describing conversions are performed. It is a no-op for values already
+ * in canonical form (so binary/XML responses pass through unchanged). It does not attempt to
+ * interpret the ambiguous flat arrays produced by {@code json.nl=flat}; a typed JSON parser should
+ * request {@code json.nl=map} for its own reads.
+ *
+ * <p>Public only so that a {@link ResponseParser} in another package can reach it from {@link
+ * ResponseParser#processCanonicalResponse}; it is not intended for callers.
+ *
+ * @lucene.internal
+ */
+public final class ResponseNormalizer {
+
+  private ResponseNormalizer() {}
+
+  /** Returns a normalized copy of the given response NamedList. */
+  public static NamedList<Object> normalize(NamedList<Object> response) {
+    if (response == null) {
+      return null;
+    }
+    SimpleOrderedMap<Object> out = new SimpleOrderedMap<>(response.size());
+    for (Map.Entry<String, Object> e : response) {
+      out.add(e.getKey(), normalizeValue(e.getValue()));
+    }
+    return out;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Object normalizeValue(Object val) {
+    if (val instanceof SolrDocumentList || val instanceof SolrDocument) {
+      // Already canonical (binary/XML produce these directly); leave untouched. Must precede the
+      // List/Map branches since SolrDocumentList is a List and SolrDocument is a Map.
+      return val;
+    } else if (val instanceof NamedList<?> in) {
+      // Already canonical (binary/XML), but its children may still need normalizing. Keep the
+      // concrete type: a SimpleOrderedMap asserts unique keys, which a general NamedList does not,
+      // so promoting one to the other would change the contract of the value.
+      NamedList<Object> out =
+          in instanceof SimpleOrderedMap<?>
+              ? new SimpleOrderedMap<>(in.size())
+              : new NamedList<>(in.size());
+      for (Map.Entry<String, ?> e : in) {
+        out.add(e.getKey(), normalizeValue(e.getValue()));
+      }
+      return out;
+    } else if (val instanceof Map<?, ?> raw) {
+      Map<String, Object> m = (Map<String, Object>) raw;
+      if (isDocList(m)) {
+        return toDocList(m);
+      }
+      if (isNestedDoc(m)) {
+        return toDoc(m);
+      }
+      // A JSON object has unique keys by construction, so it maps onto SimpleOrderedMap.
+      SimpleOrderedMap<Object> out = new SimpleOrderedMap<>(m.size());
+      for (Map.Entry<String, Object> e : m.entrySet()) {
+        out.add(e.getKey(), normalizeValue(e.getValue()));
+      }
+      return out;
+    } else if (val instanceof List<?> in) {
+      List<Object> out = new ArrayList<>(in.size());
+      for (Object item : in) {
+        out.add(normalizeValue(item));
+      }
+      return out;
+    }
+    return val;
+  }
+
+  private static boolean isDocList(Map<String, Object> m) {
+    return m.get("numFound") instanceof Number && m.get("docs") instanceof List;
+  }
+
+  private static boolean isNestedDoc(Map<String, Object> m) {
+    return m.containsKey("_nest_path_") || m.containsKey("_nest_parent_");
+  }
+
+  @SuppressWarnings("unchecked")
+  private static SolrDocumentList toDocList(Map<String, Object> m) {
+    SolrDocumentList docs = new SolrDocumentList();
+    docs.setNumFound(((Number) m.get("numFound")).longValue());
+    if (m.get("start") instanceof Number start) {
+      docs.setStart(start.longValue());
+    }
+    if (m.get("maxScore") instanceof Number maxScore) {
+      docs.setMaxScore(maxScore.floatValue());
+    }
+    if (m.get("numFoundExact") instanceof Boolean exact) {
+      docs.setNumFoundExact(exact);
+    }
+    for (Object d : (List<Object>) m.get("docs")) {
+      docs.add(toDoc(d));
+    }
+    return docs;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static SolrDocument toDoc(Object o) {
+    SolrDocument doc = new SolrDocument();
+    if (o instanceof Map) {
+      for (Map.Entry<String, Object> f : ((Map<String, Object>) o).entrySet()) {
+        if (CommonParams.CHILDDOC.equals(f.getKey()) && f.getValue() instanceof List<?> kids) {
+          // JSON has no document type, so nested documents arrive as a field holding a list of
+          // maps. The other parsers hand them back as child documents, so this one does too.
+          for (Object kid : kids) {
+            doc.addChildDocument(toDoc(kid));
+          }
+          continue;
+        }
+        // The value may be a reconstructed SolrDocumentList, which addField would unwrap.
+        doc.setField(f.getKey(), normalizeValue(f.getValue()));
+      }
+    }
+    return doc;
+  }
+}
