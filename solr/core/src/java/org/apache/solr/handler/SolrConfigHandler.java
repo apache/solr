@@ -52,6 +52,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -407,8 +408,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     }
 
     private void handlePOST() throws IOException {
-      List<CommandOperation> ops =
-          CommandOperation.readCommands(req.getContentStreams(), resp.getValues());
+      List<CommandOperation> ops = ApiBag.readCommands(req.getContentStreams(), resp.getValues());
       if (ops == null) return;
       try {
         for (; ; ) {
