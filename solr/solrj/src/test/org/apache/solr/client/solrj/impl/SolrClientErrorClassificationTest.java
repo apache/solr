@@ -24,18 +24,16 @@ import java.net.http.HttpConnectTimeoutException;
 import java.nio.channels.ClosedChannelException;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.RequestNotSentException;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
-import org.apache.solr.common.util.NamedList;
 import org.eclipse.jetty.io.EofException;
 import org.junit.Test;
 
 /**
- * {@link SolrClient#wasRequestUnsent} and {@link SolrClient#wasCommError} are pure functions of the
- * failure, so each transport's answers can be asserted directly rather than raced for through an
- * integration test. No server is needed; the clients are never asked to send anything.
+ * {@link HttpSolrClient#wasRequestUnsent} and {@link HttpSolrClient#wasCommError} are pure
+ * functions of the failure, so each transport's answers can be asserted directly rather than raced
+ * for through an integration test. No server is needed; the clients are never asked to send
+ * anything.
  *
  * <p>The negative cases matter most: {@code wasRequestUnsent} returning false means "cannot tell",
  * and treating a failure as unsent when it isn't would replay a non-idempotent update.
@@ -107,22 +105,5 @@ public class SolrClientErrorClassificationTest extends SolrTestCase {
         assertFalse(lost.getClass().getName(), client.wasRequestUnsent(wrapped(lost)));
       }
     }
-  }
-
-  /** A plain {@link SolrClient} cannot tell, and must never claim otherwise. */
-  @Test
-  public void testDefaultIsAlwaysFalse() {
-    SolrClient client =
-        new SolrClient() {
-          @Override
-          public NamedList<Object> request(SolrRequest<?> request, String collection) {
-            throw new UnsupportedOperationException();
-          }
-
-          @Override
-          public void close() {}
-        };
-    assertFalse(client.wasRequestUnsent(unsent()));
-    assertFalse(client.wasCommError(new SocketException("Connection reset")));
   }
 }

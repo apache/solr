@@ -21,13 +21,12 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.RequestNotSentException;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
@@ -46,38 +45,38 @@ public class LBSolrClientRetryUnsentTest extends SolrTestCase {
   /** Fails whatever endpoint is tried first with {@code failure}; any later endpoint succeeds. */
   private static class FailFirstEndpoint extends LBSolrClient {
     final List<String> attempted = new ArrayList<>();
-    private final Exception failure;
+    private final HttpSolrClient transport;
 
     FailFirstEndpoint(Exception failure) {
       super(List.of(DEAD_HOST_1, DEAD_HOST_2));
-      this.failure = failure;
+      // A real transport, so the LB asks its real classification rather than a stand-in.
+      this.transport =
+          new HttpJdkSolrClient(DEAD_HOST_1.getBaseUrl(), new HttpJdkSolrClient.Builder()) {
+            @Override
+            public NamedList<Object> requestWithBaseUrl(
+                String baseUrl, SolrRequest<?> solrRequest, String collection)
+                throws SolrServerException, IOException {
+              attempted.add(baseUrl);
+              if (attempted.size() > 1) {
+                return new NamedList<>();
+              }
+              if (failure instanceof SolrServerException sse) {
+                throw sse;
+              }
+              throw (IOException) failure;
+            }
+          };
     }
 
     @Override
-    protected SolrClient getClient(Endpoint endpoint) {
-      return new SolrClient() {
-        // Stands in for a transport; the LB asks it rather than inspecting the exception itself.
-        @Override
-        public boolean wasRequestUnsent(Throwable t) {
-          return SolrException.hasCause(t, RequestNotSentException.class);
-        }
+    protected HttpSolrClient getClient(Endpoint endpoint) {
+      return transport;
+    }
 
-        @Override
-        public NamedList<Object> request(SolrRequest<?> request, String collection)
-            throws SolrServerException, IOException {
-          attempted.add(endpoint.getBaseUrl());
-          if (attempted.size() > 1) {
-            return new NamedList<>();
-          }
-          if (failure instanceof SolrServerException sse) {
-            throw sse;
-          }
-          throw (IOException) failure;
-        }
-
-        @Override
-        public void close() {}
-      };
+    @Override
+    public void close() {
+      super.close();
+      IOUtils.closeQuietly(transport);
     }
   }
 

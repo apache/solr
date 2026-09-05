@@ -203,17 +203,6 @@ public abstract class CloudSolrClient extends SolrClient {
     return getClusterStateProvider().getClusterState();
   }
 
-  /** Is this a communication error? We will retry if so. Answered by the underlying transport. */
-  @Override
-  public boolean wasCommError(Throwable t) {
-    return getHttpClient().wasCommError(t);
-  }
-
-  @Override
-  public boolean wasRequestUnsent(Throwable t) {
-    return getHttpClient().wasRequestUnsent(t);
-  }
-
   @Override
   public void close() {
     closed = true;
@@ -720,12 +709,13 @@ public abstract class CloudSolrClient extends SolrClient {
               ? ((SolrException) rootCause).code()
               : SolrException.ErrorCode.UNKNOWN.code;
 
-      final boolean wasCommError = wasCommError(exc);
+      final boolean wasCommError = getHttpClient().wasCommError(exc);
       // Neither a comm error nor a 503 proves an update went unapplied: directUpdate raises
       // RouteException only after collecting every shard's result. Replay only what the transport
       // proves never arrived.
       final boolean mayReplay =
-          request.getRequestType() != SolrRequestType.UPDATE || wasRequestUnsent(exc);
+          request.getRequestType() != SolrRequestType.UPDATE
+              || getHttpClient().wasRequestUnsent(exc);
 
       if (wasCommError
           || (exc instanceof RouteException

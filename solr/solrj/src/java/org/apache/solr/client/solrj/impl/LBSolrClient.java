@@ -207,7 +207,7 @@ public abstract class LBSolrClient extends SolrClient {
     public LBSolrClient build() {
       return new LBSolrClient(this) {
         @Override
-        protected SolrClient getClient(Endpoint endpoint) {
+        protected HttpSolrClient getClient(Endpoint endpoint) {
           return solrClient;
         }
       };
@@ -690,7 +690,11 @@ public abstract class LBSolrClient extends SolrClient {
     return ex;
   }
 
-  protected abstract SolrClient getClient(Endpoint endpoint);
+  /**
+   * The transport used to reach {@code endpoint}. Declared as an {@link HttpSolrClient} so callers
+   * can ask it to classify its own failures; {@link Builder} already requires one.
+   */
+  protected abstract HttpSolrClient getClient(Endpoint endpoint);
 
   private void startAliveCheckExecutor() {
     // double-checked locking, but it's OK because we don't *do* anything with aliveCheckExecutor

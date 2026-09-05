@@ -362,13 +362,20 @@ public abstract class HttpSolrClient extends SolrClient {
     return urlParamNames;
   }
 
-  @Override
+  /**
+   * Whether the failure proves the request never reached the server, making a replay safe even when
+   * the request isn't idempotent. Only the transport can answer this; {@code false} means "cannot
+   * tell" rather than "the request was sent".
+   */
   public boolean wasRequestUnsent(Throwable t) {
     return SolrException.hasCause(t, RequestNotSentException.class)
         || SolrException.hasCause(t, ConnectException.class);
   }
 
-  @Override
+  /**
+   * Whether this is a transport-level communication failure rather than a response from the server.
+   * Subclasses must keep {@link #wasRequestUnsent} a subset of this.
+   */
   public boolean wasCommError(Throwable t) {
     return SolrException.hasCause(t, SocketException.class)
         || SolrException.hasCause(t, UnknownHostException.class)
