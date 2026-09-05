@@ -55,33 +55,33 @@ public class TestHttpRequestId extends SolrTestCaseJ4 {
   public void mdcContextTest() {
     String collection = "/collection1";
     BlockingQueue<Runnable> workQueue = new SynchronousQueue<>(false);
-    setupClientAndRun(collection, workQueue, 0);
+    setupClientAndRun(collection, workQueue, 0, Integer.MAX_VALUE);
   }
 
   @Test
   public void mdcContextFailureTest() {
     String collection = "/doesnotexist";
     BlockingQueue<Runnable> workQueue = new SynchronousQueue<>(false);
-    setupClientAndRun(collection, workQueue, 0);
+    setupClientAndRun(collection, workQueue, 0, Integer.MAX_VALUE);
   }
 
   @Test
   public void mdcContextTest2() {
     String collection = "/collection1";
     BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(10, false);
-    setupClientAndRun(collection, workQueue, 3);
+    setupClientAndRun(collection, workQueue, 3, 3);
   }
 
   @Test
   public void mdcContextFailureTest2() {
     String collection = "/doesnotexist";
     BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(10, false);
-    setupClientAndRun(collection, workQueue, 3);
+    setupClientAndRun(collection, workQueue, 3, 3);
   }
 
   @SuppressForbidden(reason = "We need to use log4J2 classes directly to test MDC impacts")
   private void setupClientAndRun(
-      String collection, BlockingQueue<Runnable> workQueue, int corePoolSize) {
+      String collection, BlockingQueue<Runnable> workQueue, int corePoolSize, int maximumPoolSize) {
     final String key = "mdcContextTestKey" + System.nanoTime();
     final String value = "TestHttpRequestId" + System.nanoTime();
 
@@ -91,7 +91,7 @@ public class TestHttpRequestId extends SolrTestCaseJ4 {
       ThreadPoolExecutor commExecutor =
           new ExecutorUtil.MDCAwareThreadPoolExecutor(
               corePoolSize,
-              Integer.MAX_VALUE,
+              maximumPoolSize,
               1,
               TimeUnit.SECONDS,
               workQueue,

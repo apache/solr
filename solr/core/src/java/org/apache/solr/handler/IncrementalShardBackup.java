@@ -41,7 +41,6 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -218,10 +217,8 @@ public class IncrementalShardBackup {
                 "BackupUploadExecutor",
                 ExecutorService.class,
                 s ->
-                    ExecutorUtil.newMDCAwareCachedThreadPool(
-                        MAX_PARALLEL_UPLOADS,
-                        Integer.MAX_VALUE,
-                        new SolrNamedThreadFactory("BackupUploadExecutor")));
+                    ExecutorUtil.newMDCAwareFixedThreadPool(
+                        MAX_PARALLEL_UPLOADS, Integer.MAX_VALUE, "BackupUploadExecutor"));
 
     List<Future<?>> uploadFutures = new ArrayList<>();
     for (String fileName : indexFiles) {

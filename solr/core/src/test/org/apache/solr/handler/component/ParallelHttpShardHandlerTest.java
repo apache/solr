@@ -281,22 +281,17 @@ public class ParallelHttpShardHandlerTest extends SolrTestCaseJ4 {
     ExecutorService mockIoThreads =
         ExecutorUtil.newMDCAwareFixedThreadPool(2, new SolrNamedThreadFactory("testMockIo"));
 
-    ExecutorService takeExecutor =
-        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("testTakeRunner"));
-
+    ExecutorService takeExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("testTakeRunner");
     try {
       for (int i = 0; i < iterations; i++) {
         runAsyncRaceCycle(commExecutor, mockIoThreads, takeExecutor, i, perIterationTimeoutMs);
       }
     } finally {
-      takeExecutor.shutdownNow();
-      takeExecutor.awaitTermination(5, TimeUnit.SECONDS);
-      mockIoThreads.shutdownNow();
-      mockIoThreads.awaitTermination(5, TimeUnit.SECONDS);
+      ExecutorUtil.shutdownNowAndAwaitTermination(takeExecutor);
+      ExecutorUtil.shutdownNowAndAwaitTermination(mockIoThreads);
       commExecutor.shutdown();
       if (!commExecutor.awaitTermination(15, TimeUnit.SECONDS)) {
-        commExecutor.shutdownNow();
-        commExecutor.awaitTermination(5, TimeUnit.SECONDS);
+        ExecutorUtil.shutdownNowAndAwaitTermination(commExecutor);
       }
     }
   }
