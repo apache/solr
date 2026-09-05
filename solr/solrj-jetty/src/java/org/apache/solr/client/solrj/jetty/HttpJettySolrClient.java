@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
+import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -49,6 +50,7 @@ import org.apache.solr.client.solrj.jetty.HttpListenerFactory.RequestResponseLis
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
@@ -82,6 +84,7 @@ import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
@@ -520,9 +523,11 @@ public class HttpJettySolrClient extends HttpSolrClient {
       // Jetty HTTP/2 throws IllegalStateException ("session closed") when the connection is lost.
       abortCause = e;
       throw committed.get()
-          ? new SolrServerException("Connection lost at: " + url, new IOException(e))
+          ? new SolrServerException(
+              "Connection lost at: " + url, new EofException("HTTP/2 session closed", e))
           : new SolrServerException(
-              "Connection lost at: " + url, new RequestNotSentException(e.getMessage(), e));
+              "Connection failed before the request was sent to: " + url,
+              new RequestNotSentException(e.getMessage(), e));
     } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;
@@ -558,6 +563,13 @@ public class HttpJettySolrClient extends HttpSolrClient {
     try (final var derivedClient = new NoCloseHttpJettySolrClient(baseUrl, this)) {
       return clientFunction.apply(derivedClient);
     }
+  }
+
+  @Override
+  public boolean wasCommError(Throwable t) {
+    return super.wasCommError(t)
+        || SolrException.hasCause(t, EofException.class)
+        || SolrException.hasCause(t, ClosedChannelException.class);
   }
 
   @Override

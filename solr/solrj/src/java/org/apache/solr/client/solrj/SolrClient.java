@@ -1195,6 +1195,23 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
+   * Whether the failure proves the request never reached the server, making a replay safe even when
+   * the request isn't idempotent. Only the transport can answer this; the default is {@code false},
+   * meaning "cannot tell" rather than "the request was sent".
+   */
+  public boolean wasRequestUnsent(Throwable t) {
+    return false;
+  }
+
+  /**
+   * Whether this is a transport-level communication failure rather than a response from the server.
+   * Implementations must keep {@link #wasRequestUnsent} a subset of this.
+   */
+  public boolean wasCommError(Throwable t) {
+    return false;
+  }
+
+  /**
    * This method defines the context in which this Solr client is being used (e.g. for internal
    * communication between Solr nodes or as an external client). The default value is {@code
    * SolrClientContext#Client}

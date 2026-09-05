@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
@@ -55,6 +56,12 @@ public class LBSolrClientRetryUnsentTest extends SolrTestCase {
     @Override
     protected SolrClient getClient(Endpoint endpoint) {
       return new SolrClient() {
+        // Stands in for a transport; the LB asks it rather than inspecting the exception itself.
+        @Override
+        public boolean wasRequestUnsent(Throwable t) {
+          return SolrException.hasCause(t, RequestNotSentException.class);
+        }
+
         @Override
         public NamedList<Object> request(SolrRequest<?> request, String collection)
             throws SolrServerException, IOException {
@@ -118,5 +125,40 @@ public class LBSolrClientRetryUnsentTest extends SolrTestCase {
     assertEquals(
         List.of(DEAD_HOST_1.getBaseUrl(), DEAD_HOST_2.getBaseUrl()),
         requestReturningAttemptedUrls(maybeSentException(), new QueryRequest()));
+  }
+
+  /**
+   * A transport may throw an {@link IOException} directly rather than wrapping it in a {@link
+   * SolrServerException}, as HttpJdkSolrClient does. LBAsyncSolrClient has always handled that; the
+   * synchronous path used to let it reach the catch-all and abort with no failover.
+   */
+  @Test
+  public void testQueryIsRetriedOnBareIOException() throws Exception {
+    assertEquals(
+        List.of(DEAD_HOST_1.getBaseUrl(), DEAD_HOST_2.getBaseUrl()),
+        requestReturningAttemptedUrls(new IOException("Broken pipe"), new QueryRequest()));
+  }
+
+  @Test
+  public void testUpdateIsNotRetriedOnBareIOException() {
+    LBSolrClient.Req req =
+        new LBSolrClient.Req(new UpdateRequest().add("id", "1"), List.of(DEAD_HOST_1, DEAD_HOST_2));
+    try (FailFirstEndpoint client = new FailFirstEndpoint(new IOException("Broken pipe"))) {
+      expectThrows(IOException.class, () -> client.request(req));
+      assertEquals(List.of(DEAD_HOST_1.getBaseUrl()), client.attempted);
+    }
+  }
+
+  /**
+   * Parity with LBAsyncSolrClient, which already retried a bare {@link RequestNotSentException}.
+   */
+  @Test
+  public void testUpdateIsRetriedOnBareRequestNotSentException() throws Exception {
+    IOException onTheWire = new IOException("Broken pipe");
+    assertEquals(
+        List.of(DEAD_HOST_1.getBaseUrl(), DEAD_HOST_2.getBaseUrl()),
+        requestReturningAttemptedUrls(
+            new RequestNotSentException(onTheWire.getMessage(), onTheWire),
+            new UpdateRequest().add("id", "1")));
   }
 }
