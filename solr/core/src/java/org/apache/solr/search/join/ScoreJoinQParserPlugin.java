@@ -292,14 +292,14 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       final boolean toIsPoint = toSchemaField != null && toSchemaField.getType().isPointField();
       final NumberType toNumberType =
           toSchemaField == null ? null : toSchemaField.getType().getNumberType();
-      if (!toIsPoint || !sameEncoding(fromNumberType, toNumberType)) {
+      if (!toIsPoint || fromNumberType != toNumberType) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Numeric join 'from' field '"
                 + fromField
                 + "' ("
                 + fromNumberType
-                + ") requires a 'to' field of a matching numeric Point field type, but '"
+                + ") requires a 'to' field of the same numeric Point field type, but '"
                 + toField
                 + "' is "
                 + (toSchemaField == null ? "undefined" : toSchemaField.getType().getTypeName())
@@ -315,11 +315,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
           scoreMode);
     }
     return JoinUtil.createJoinQuery(fromField, true, toField, fromQuery, fromSearcher, scoreMode);
-  }
-
-  /** Returns whether two schema {@link NumberType}s use the same Point/numeric encoding. */
-  private static boolean sameEncoding(NumberType fromType, NumberType toType) {
-    return numericClass(fromType).equals(numericClass(toType));
   }
 
   /** Maps a schema {@link NumberType} to the {@link Class} expected by {@link JoinUtil}. */
