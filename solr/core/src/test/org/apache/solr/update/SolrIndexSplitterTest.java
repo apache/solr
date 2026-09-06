@@ -55,6 +55,10 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     // _version_
     System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
     System.setProperty("solr.tests.lockType", DirectoryFactory.LOCK_TYPE_SIMPLE);
+    // route_l needs docValues to be usable as a router.field when numerics are Point-based
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
+    }
 
     initCore("solrconfig.xml", "schema15.xml");
   }
@@ -498,7 +502,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
     for (int i = 100; i < 140; i++) {
       String routeValue = Integer.toString(i);
-      assertU(adoc("id", "doc-" + i, "route_pl", routeValue));
+      assertU(adoc("id", "doc-" + i, "route_l", routeValue));
 
       int hash = router.sliceHash(routeValue, null, null, null);
       for (int rangeIndex = 0; rangeIndex < ranges.size(); rangeIndex++) {
@@ -525,7 +529,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
               null,
               ranges,
               router,
-              "route_pl",
+              "route_l",
               null,
               splitMethod);
       doSplit(command);

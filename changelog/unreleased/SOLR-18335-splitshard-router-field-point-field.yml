@@ -1,8 +1,10 @@
 title: >
-  SPLITSHARD fails to migrate documents when using a numeric PointField as router.field
-type: fixed
+  SPLITSHARD has expanded support for collection router.field, not only supporting indexed fields but also docValues.
+  Note: "Point" numeric fields only work in this case with docValues.
+type: added
 authors:
   - name: Olivier Boudet
+  - name: David Smiley
 links:
   - name: SOLR-18335
     url: https://issues.apache.org/jira/browse/SOLR-18335

@@ -28,23 +28,21 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CodecReader;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FilterCodecReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.misc.store.HardlinkCopyDirectoryWrapper;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -74,7 +72,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -682,9 +679,13 @@ public class SolrIndexSplitter {
       }
     }
 
-    if (field.getType().isPointField()) {
-      return splitPointField(
-          reader,
+    Terms terms = reader.terms(field.getName());
+    TermsEnum termsEnum = terms == null ? null : terms.iterator();
+    if (termsEnum == null) {
+      // No term dictionary for this field (e.g. a PointField, which has no Terms; or a
+      // docValues-only field that isn't indexed). Derive route values from docValues instead.
+      return splitUsingDocValues(
+          readerContext,
           numPieces,
           field,
           rangesArr,
@@ -695,10 +696,6 @@ public class SolrIndexSplitter {
           liveDocs,
           currentPartition);
     }
-
-    Terms terms = reader.terms(field.getName());
-    TermsEnum termsEnum = terms == null ? null : terms.iterator();
-    if (termsEnum == null) return docSets;
 
     BytesRef term = null;
     PostingsEnum postingsEnum = null;
@@ -771,8 +768,8 @@ public class SolrIndexSplitter {
     return docSets;
   }
 
-  private static FixedBitSet[] splitPointField(
-      LeafReader reader,
+  private static FixedBitSet[] splitUsingDocValues(
+      LeafReaderContext readerContext,
       int numPieces,
       SchemaField field,
       DocRouter.Range[] rangesArr,
@@ -783,8 +780,16 @@ public class SolrIndexSplitter {
       Bits liveDocs,
       AtomicInteger currentPartition)
       throws IOException {
-    NumericDocValues numericDocValues =
-        field.hasDocValues() ? DocValues.getNumeric(reader, field.getName()) : null;
+    if (!field.hasDocValues()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Route field '"
+              + field.getName()
+              + "' has no term index to split by and lacks docValues; unable to split shard.");
+    }
+    LeafReader reader = readerContext.reader();
+    ValueSource valueSource = field.getType().getValueSource(field, null);
+    FunctionValues routeFieldValues = valueSource.getValues(Map.of(), readerContext);
 
     int[] docsMatchingRanges = null;
     if (rangesArr != null) {
@@ -796,10 +801,10 @@ public class SolrIndexSplitter {
         continue;
       }
 
-      String routeValue = getRouteFieldValue(reader, doc, field, numericDocValues);
+      String routeValue = getRouteFieldValue(routeFieldValues, doc, field);
       if (splitKey != null) {
         String part1 = ((CompositeIdRouter) hashRouter).getRouteKeyNoSuffix(routeValue);
-        if (part1 == null || !splitKey.equals(part1)) {
+        if (!splitKey.equals(part1)) {
           continue;
         }
       }
@@ -835,43 +840,14 @@ public class SolrIndexSplitter {
   }
 
   private static String getRouteFieldValue(
-      LeafReader reader, int doc, SchemaField field, NumericDocValues numericDocValues)
-      throws IOException {
-    if (numericDocValues != null && numericDocValues.advanceExact(doc)) {
-      return numericRouteValueToString(field, numericDocValues.longValue());
-    }
-
-    if (field.stored()) {
-      Document storedDocument = reader.storedFields().document(doc);
-      IndexableField storedField = storedDocument.getField(field.getName());
-      if (storedField != null) {
-        Object routeValue = field.getType().toObject(storedField);
-        if (routeValue != null) {
-          return routeValue.toString();
-        }
-      }
+      FunctionValues routeFieldValues, int doc, SchemaField field) throws IOException {
+    if (routeFieldValues.exists(doc)) {
+      return routeFieldValues.strVal(doc);
     }
 
     throw new SolrException(
         SolrException.ErrorCode.SERVER_ERROR,
-        "Unable to read route field '"
-            + field.getName()
-            + "' for shard splitting. Point-based route fields must expose docValues or be stored.");
-  }
-
-  private static String numericRouteValueToString(SchemaField field, long value) {
-    NumberType numberType = field.getType().getNumberType();
-    if (numberType == null) {
-      return Long.toString(value);
-    }
-
-    return switch (numberType) {
-      case INTEGER -> Integer.toString((int) value);
-      case LONG -> Long.toString(value);
-      case FLOAT -> Float.toString(Float.intBitsToFloat((int) value));
-      case DOUBLE -> Double.toString(Double.longBitsToDouble(value));
-      case DATE -> Long.toString(value);
-    };
+        "Unable to read route field '" + field.getName() + "' for shard splitting.");
   }
 
   private static void logDocsMatchingRanges(LeafReader reader, int[] docsMatchingRanges) {

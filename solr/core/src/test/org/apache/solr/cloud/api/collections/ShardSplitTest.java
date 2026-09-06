@@ -1021,7 +1021,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     int replicationFactor = 2;
 
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
-    String shardField = "shard_pl";
+    String shardField = "shard_l";
     try (CloudSolrClient client = createCloudClient(null)) {
       Map<String, Object> props =
           Map.of(
