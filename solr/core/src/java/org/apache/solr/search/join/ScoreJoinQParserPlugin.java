@@ -284,7 +284,9 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       throws IOException {
     final SchemaField fromSchemaField = fromSchema.getFieldOrNull(fromField);
     final NumberType fromNumberType =
-        fromSchemaField == null ? null : fromSchemaField.getType().getNumberType();
+        fromSchemaField == null || !fromSchemaField.getType().isPointField()
+            ? null
+            : fromSchemaField.getType().getNumberType();
     if (fromNumberType != null) {
       final SchemaField toSchemaField = toSchema.getFieldOrNull(toField);
       final boolean toIsPoint = toSchemaField != null && toSchemaField.getType().isPointField();

@@ -4,5 +4,5 @@ authors:
   - name: Mikhail Khludnev
     nick: mkhludnev
 links:
-  - name: GITHUB
-    url: https://github.com/mkhludnev/solr/compare/main...copilot/extend-scorejoinqparserplugin-support-numerics
+  - name: GITHUB#26
+    url: https://github.com/mkhludnev/solr/pull/26
