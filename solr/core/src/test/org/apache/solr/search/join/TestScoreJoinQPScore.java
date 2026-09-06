@@ -262,6 +262,31 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
         "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
   }
 
+  public void testNumericJoinFromLegacyTrieField() throws Exception {
+    clearIndex();
+
+    // products: "cat_trie_i" is a legacy (non-Point) TrieIntField with docValues, not indexed;
+    // the numeric join's "from" side only relies on numeric doc values, not on Point encoding.
+    assertU(add(doc("name", "name1", idField, "1", "cat_trie_i", "100")));
+    assertU(add(doc("name", "name2", idField, "4", "cat_trie_i", "200")));
+
+    // offers, referencing the product via an indexed numeric Point field
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodRef_pi", "200")));
+    assertU(add(doc("price_s", "20.0", idField, "6", "prodRef_pi", "200")));
+
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=cat_trie_i to=prodRef_pi score=None}name:name2", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'5'},{'id':'6'}]}");
+
+    assertJQ(
+        req("q", "{!join from=cat_trie_i to=prodRef_pi score=None}name:name1", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+  }
+
   public void testNumericJoinTypeMismatch() throws Exception {
     clearIndex();
     assertU(add(doc("name", "name1", idField, "1", "cat_pi", "100")));
