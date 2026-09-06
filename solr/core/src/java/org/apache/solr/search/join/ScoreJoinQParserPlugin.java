@@ -319,7 +319,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
   /** Returns whether two schema {@link NumberType}s use the same Point/numeric encoding. */
   private static boolean sameEncoding(NumberType fromType, NumberType toType) {
-    if (toType == null) return false;
     return numericClass(fromType).equals(numericClass(toType));
   }
 

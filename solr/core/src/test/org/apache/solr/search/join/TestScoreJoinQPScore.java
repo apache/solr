@@ -214,6 +214,39 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
         "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
   }
 
+  public void testNumericJoinDateField() throws Exception {
+    clearIndex();
+
+    // products, referenced by a release date (pdate uses the same Long encoding as plong)
+    assertU(
+        add(doc("name", "name1", idField, "1", "releaseDate_pdt", "2020-01-01T00:00:00Z")));
+    assertU(
+        add(doc("name", "name2", idField, "4", "releaseDate_pdt", "2021-06-15T00:00:00Z")));
+
+    // offers, referencing the product via the same date value
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodDate_pdt", "2020-01-01T00:00:00Z")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodDate_pdt", "2020-01-01T00:00:00Z")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodDate_pdt", "2021-06-15T00:00:00Z")));
+
+    assertU(commit());
+
+    assertJQ(
+        req(
+            "q",
+            "{!join from=releaseDate_pdt to=prodDate_pdt score=None}name:name1",
+            "fl",
+            "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+
+    assertJQ(
+        req(
+            "q",
+            "{!join from=releaseDate_pdt to=prodDate_pdt score=None}name:name2",
+            "fl",
+            "id"),
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'5'}]}");
+  }
+
   public void testNumericJoinTypeMismatch() throws Exception {
     clearIndex();
     assertU(add(doc("name", "name1", idField, "1", "cat_pi", "100")));
