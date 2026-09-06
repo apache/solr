@@ -116,6 +116,119 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     dir.close();*/
   }
 
+  public void testNumericJoinSingleValued() throws Exception {
+    clearIndex();
+
+    // products
+    assertU(add(doc("name", "name1", idField, "1", "cat_pi", "100")));
+    assertU(add(doc("name", "name2", idField, "4", "cat_pi", "200")));
+
+    // offers, referencing the product via a numeric Point field
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodRef_pi", "200")));
+    assertU(add(doc("price_s", "20.0", idField, "6", "prodRef_pi", "200")));
+
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=cat_pi to=prodRef_pi score=None}name:name2", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'5'},{'id':'6'}]}");
+
+    assertJQ(
+        req("q", "{!join from=cat_pi to=prodRef_pi score=None}name:name1", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+
+    // reverse direction: from Point ("to" side of a Point field can also serve as the numeric
+    // docValues "from" side for the join, since pint fields have both indexed points & docValues)
+    assertJQ(
+        req("q", "{!join from=prodRef_pi to=cat_pi score=None}id:5", "fl", "id"),
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'4'}]}");
+  }
+
+  public void testNumericJoinMultiValued() throws Exception {
+    clearIndex();
+
+    // products, each may belong to several categories (multi-valued numeric field)
+    assertU(add(doc("name", "name1", idField, "1", "cat_pis", "100", "cat_pis", "300")));
+    assertU(add(doc("name", "name2", idField, "4", "cat_pis", "200")));
+
+    // offers, referencing a single category
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodRef_pi", "300")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodRef_pi", "200")));
+
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=cat_pis to=prodRef_pi score=None}name:name1", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+
+    assertJQ(
+        req("q", "{!join from=cat_pis to=prodRef_pi score=None}name:name2", "fl", "id"),
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'5'}]}");
+  }
+
+  public void testNumericJoinWithScoring() throws Exception {
+    clearIndex();
+
+    assertU(
+        add(
+            doc(
+                "t_description",
+                "A random movie",
+                "name",
+                "Movie 1",
+                idField,
+                "1",
+                "movieId_pi",
+                "10")));
+    assertU(
+        add(doc("title", "The first subtitle of this movie", idField, "2", "prodRef_pi", "10")));
+    assertU(
+        add(doc("title", "random subtitle; random event movie", idField, "3", "prodRef_pi", "10")));
+    assertU(
+        add(
+            doc(
+                "t_description",
+                "A second random movie",
+                "name",
+                "Movie 2",
+                idField,
+                "4",
+                "movieId_pi",
+                "20")));
+    assertU(
+        add(
+            doc(
+                "title",
+                "a very random event happened during christmas night",
+                idField,
+                "5",
+                "prodRef_pi",
+                "20")));
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=prodRef_pi to=movieId_pi score=Max}title:random", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
+  }
+
+  public void testNumericJoinTypeMismatch() throws Exception {
+    clearIndex();
+    assertU(add(doc("name", "name1", idField, "1", "cat_pi", "100")));
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_pl", "100")));
+    assertU(commit());
+
+    // "from" is an int field, "to" is a long point field: types don't match, a clear error is
+    // raised instead of a low-level Lucene point encoding failure.
+    assertQEx(
+        "numeric join type mismatch",
+        "Numeric join",
+        req("q", "{!join from=cat_pi to=prodRef_pl score=None}name:name1", "fl", "id"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
   public void testDeleteByScoreJoinQuery() throws Exception {
     indexDataForScoring();
     String joinQuery = "{!join from=" + toField + " to=" + idField + " score=Max}title:random";

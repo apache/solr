@@ -1,0 +1,8 @@
+title: The `{!join score=...}` query parser now supports joining numeric Point fields (`IntPointField`, `LongPointField`, `FloatPointField`, `DoublePointField`) that have `NUMERIC` or `SORTED_NUMERIC` doc values on the "from" side
+type: added
+authors:
+  - name: Mikhail Khludnev
+    nick: mkhludnev
+links:
+  - name: GITHUB
+    url: https://github.com/mkhludnev/solr/tree/main

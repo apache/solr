@@ -750,6 +750,7 @@
   <dynamicField name="*_pf" type="pfloat" indexed="true" multiValued="false"/>
   <dynamicField name="*_pd" type="pdouble" indexed="true" multiValued="false"/>
   <dynamicField name="*_pdt" type="pdate" indexed="true" multiValued="false"/>
+  <dynamicField name="*_pis" type="pint" indexed="true" multiValued="true"/>
 
   <!-- some trie-coded dynamic fields for faster range queries -->
   <dynamicField name="*_ti" type="tint" indexed="true" stored="true"/>
