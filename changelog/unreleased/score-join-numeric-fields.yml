@@ -1,8 +1,8 @@
-title: The `{!join score=...}` query parser now supports joining numeric Point fields (`IntPointField`, `LongPointField`, `FloatPointField`, `DoublePointField`, `DatePointField`) that have `NUMERIC` or `SORTED_NUMERIC` doc values on the "from" side
+title: The `{!join score=...}` query parser now supports joining `from` `NUMERIC` or `SORTED_NUMERIC` doc values `to` numeric Point fields (`IntPointField`, `LongPointField`, `FloatPointField`, `DoublePointField`, `DatePointField`).
 type: added
 authors:
   - name: Mikhail Khludnev
     nick: mkhludnev
 links:
-  - name: GITHUB#26
-    url: https://github.com/mkhludnev/solr/pull/26
+  - name: GITHUB#4880
+    url: https://github.com/apache/solr/pull/4880
