@@ -2,7 +2,8 @@ title: The `{!join score=...}` query parser now supports joining `from` `NUMERIC
 type: added
 authors:
   - name: Mikhail Khludnev
-    nick: mkhludnev
+    nick: mkhludne
+    email: mkhl@apache.org
 links:
   - name: GITHUB#4880
     url: https://github.com/apache/solr/pull/4880
