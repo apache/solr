@@ -81,11 +81,8 @@ import org.slf4j.LoggerFactory;
  *       href="https://solr.apache.org/guide/solr/latest/indexing-guide/docvalues.html">docValues</a>
  *       are not enabled for this field, it will work anyway, but it costs some memory for {@link
  *       UninvertingReader}. Non-numeric fields only support {@link DocValuesType#SORTED}, {@link
- *       DocValuesType#SORTED_SET}, {@link DocValuesType#BINARY}. Numeric fields (any schema type
- *       with a numeric {@link org.apache.solr.schema.NumberType}, whether backed by a Point field
- *       type such as {@code IntPointField}, {@code LongPointField}, {@code FloatPointField}, {@code
- *       DoublePointField}, {@code DatePointField}, or a legacy {@code TrieField}) are supported
- *       when they have {@link DocValuesType#NUMERIC} or {@link DocValuesType#SORTED_NUMERIC} doc
+ *       DocValuesType#SORTED_SET}, {@link DocValuesType#BINARY}. Numeric fields having 
+ *       {@link DocValuesType#NUMERIC} or {@link DocValuesType#SORTED_NUMERIC} doc
  *       values &#8212; such a field does not need to be indexed, only {@code docValues="true"} is
  *       required &#8212; in which case the matching "to" field must be indexed as the same numeric
  *       Point field type.
