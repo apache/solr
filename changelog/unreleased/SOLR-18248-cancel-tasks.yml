@@ -1,0 +1,9 @@
+title:
+  Migration of CancelTask V2 API to JAX-RS construct
+type: changed
+authors:
+  - name: Jalaz Kumar
+  - name: Eric Pugh
+links:
+  - name: SOLR-18248
+    url: https://issues.apache.org/jira/browse/SOLR-18248
