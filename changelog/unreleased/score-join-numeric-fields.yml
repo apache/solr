@@ -5,4 +5,4 @@ authors:
     nick: mkhludnev
 links:
   - name: GITHUB
-    url: https://github.com/mkhludnev/solr/tree/main
+    url: https://github.com/mkhludnev/solr/compare/main...copilot/extend-scorejoinqparserplugin-support-numerics

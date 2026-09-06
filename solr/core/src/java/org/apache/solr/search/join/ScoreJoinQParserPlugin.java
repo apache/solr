@@ -270,6 +270,8 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
    * @param fromQuery the query to match documents on the from side
    * @param fromSearcher the searcher that executed the specified fromQuery
    * @param scoreMode instructs how scores from the fromQuery are mapped to the returned query
+   * @return a {@link Query} instance that can be used to join documents based on the values in the
+   *     from and to field
    */
   static Query createJoinQuery(
       String fromField,
