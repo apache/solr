@@ -373,14 +373,14 @@ public class PackageToolTest extends SolrCloudTestCase {
     // package lookup should fail.
     runTool(
         new String[] {
-            "--solr-url",
-            solrUrl,
-            "deploy",
-            "NONEXISTENT_PKG",
-            "--collections",
-            "validation-test",
-            "--credentials",
-            SecurityJson.USER_PASS
+          "--solr-url",
+          solrUrl,
+          "deploy",
+          "NONEXISTENT_PKG",
+          "--collections",
+          "validation-test",
+          "--credentials",
+          SecurityJson.USER_PASS
         },
         captureRuntime);
     String deployOut = captureRuntime.getOutput();
@@ -395,14 +395,14 @@ public class PackageToolTest extends SolrCloudTestCase {
     // Undeploy of a package that was never deployed should give a clear message.
     runTool(
         new String[] {
-            "--solr-url",
-            solrUrl,
-            "undeploy",
-            "NONEXISTENT_PKG",
-            "--collections",
-            "validation-test",
-            "--credentials",
-            SecurityJson.USER_PASS
+          "--solr-url",
+          solrUrl,
+          "undeploy",
+          "NONEXISTENT_PKG",
+          "--collections",
+          "validation-test",
+          "--credentials",
+          SecurityJson.USER_PASS
         },
         captureRuntime);
     String undeployOut = captureRuntime.getOutput();

@@ -17,5 +17,4 @@
 
 package org.apache.solr.cli;
 
-public class Install {
-}
+public class Install {}

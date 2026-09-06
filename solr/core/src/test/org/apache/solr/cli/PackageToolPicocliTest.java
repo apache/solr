@@ -19,9 +19,7 @@ package org.apache.solr.cli;
 
 import picocli.CommandLine;
 
-/**
- * Runs all {@link PackageToolTest} tests through the picocli invocation path.
- */
+/** Runs all {@link PackageToolTest} tests through the picocli invocation path. */
 public class PackageToolPicocliTest extends PackageToolTest {
 
   @Override

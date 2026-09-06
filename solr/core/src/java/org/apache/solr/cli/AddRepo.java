@@ -37,8 +37,8 @@ import org.apache.solr.packagemanager.RepositoryManager;
     description = "Add a package repository to Solr.",
     footerHeading = "%nExamples:%n",
     footer = {
-        "  # Add a package repository",
-        "  bin/solr package add-repo myrepo https://my.repo.example/repo",
+      "  # Add a package repository",
+      "  bin/solr package add-repo myrepo https://my.repo.example/repo",
     })
 public class AddRepo extends ToolBase {
 
@@ -49,16 +49,10 @@ public class AddRepo extends ToolBase {
 
   @picocli.CommandLine.ArgGroup private ConnectionOptions connectionOptions;
 
-  @picocli.CommandLine.Parameters(
-      index = "0",
-      arity = "1",
-      paramLabel = "REPOSITORY-NAME")
+  @picocli.CommandLine.Parameters(index = "0", arity = "1", paramLabel = "REPOSITORY-NAME")
   private String repoName;
 
-  @picocli.CommandLine.Parameters(
-      index = "1",
-      arity = "1",
-      paramLabel = "REPOSITORY-URL")
+  @picocli.CommandLine.Parameters(index = "1", arity = "1", paramLabel = "REPOSITORY-URL")
   private String repoUrl;
 
   public AddRepo() {
@@ -71,7 +65,8 @@ public class AddRepo extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    throw new UnsupportedOperationException("add-repo is implemented via the commons-cli path under PackageTool");
+    throw new UnsupportedOperationException(
+        "add-repo is implemented via the commons-cli path under PackageTool");
   }
 
   @Override
@@ -98,24 +93,27 @@ public class AddRepo extends ToolBase {
     return sb.toString();
   }
 
-  private void addRepo(String solrUrl, String zkHost, String credentials, String repoName, String repoUrl) throws Exception {
+  private void addRepo(
+      String solrUrl, String zkHost, String credentials, String repoName, String repoUrl)
+      throws Exception {
     Level oldLevel = LoggerContext.getContext(false).getRootLogger().getLevel();
     Configurator.setRootLevel(Level.OFF);
 
     try {
       if (zkHost == null) {
-        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Package manager only runs in SolrCloud");
+        throw new SolrException(
+            SolrException.ErrorCode.INVALID_STATE, "Package manager only runs in SolrCloud");
       }
 
-
       try (SolrClient solrClient = CLIUtils.getSolrClient(solrUrl, credentials, true)) {
-        PackageManager packageManager = new PackageManager(packageTool.getRuntime(), solrClient, solrUrl, zkHost);
+        PackageManager packageManager =
+            new PackageManager(packageTool.getRuntime(), solrClient, solrUrl, zkHost);
         try {
-        RepositoryManager repositoryManager = new RepositoryManager(solrClient, packageManager);
-        repositoryManager.addRepository(repoName, repoUrl);
-        printGreen("Added repository: " + repoName);
+          RepositoryManager repositoryManager = new RepositoryManager(solrClient, packageManager);
+          repositoryManager.addRepository(repoName, repoUrl);
+          printGreen("Added repository: " + repoName);
         } finally {
-        packageManager.close();
+          packageManager.close();
         }
       }
     } catch (Exception exception) {
@@ -124,6 +122,5 @@ public class AddRepo extends ToolBase {
     } finally {
       Configurator.setRootLevel(oldLevel);
     }
-
   }
 }

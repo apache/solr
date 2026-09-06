@@ -59,9 +59,7 @@ import org.slf4j.LoggerFactory;
       "1:Operation failed; check output for details."
     },
     footerHeading = "%nExamples:%n",
-    subcommands = {
-        AddRepo.class
-    },
+    subcommands = {AddRepo.class},
     footer = {
       "  # Add a package repository",
       "  bin/solr package add-repo myrepo https://my.repo.example/repo",

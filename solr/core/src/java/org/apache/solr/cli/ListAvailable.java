@@ -17,5 +17,4 @@
 
 package org.apache.solr.cli;
 
-public class ListAvailable {
-}
+public class ListAvailable {}
