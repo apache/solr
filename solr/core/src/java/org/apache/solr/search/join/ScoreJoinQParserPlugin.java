@@ -323,6 +323,8 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       case INTEGER:
         return Integer.class;
       case LONG:
+        // DatePointField values are internally represented as milliseconds since epoch (long),
+        // via LongPoint, so DATE shares the same encoding as LONG.
       case DATE:
         return Long.class;
       case FLOAT:
