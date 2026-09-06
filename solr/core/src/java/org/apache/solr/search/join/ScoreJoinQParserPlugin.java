@@ -81,11 +81,10 @@ import org.slf4j.LoggerFactory;
  *       href="https://solr.apache.org/guide/solr/latest/indexing-guide/docvalues.html">docValues</a>
  *       are not enabled for this field, it will work anyway, but it costs some memory for {@link
  *       UninvertingReader}. Non-numeric fields only support {@link DocValuesType#SORTED}, {@link
- *       DocValuesType#SORTED_SET}, {@link DocValuesType#BINARY}. Numeric fields having 
- *       {@link DocValuesType#NUMERIC} or {@link DocValuesType#SORTED_NUMERIC} doc
- *       values &#8212; such a field does not need to be indexed, only {@code docValues="true"} is
- *       required &#8212; in which case the matching "to" field must be indexed as the same numeric
- *       Point field type.
+ *       DocValuesType#SORTED_SET}, {@link DocValuesType#BINARY}. Numeric fields having {@link
+ *       DocValuesType#NUMERIC} or {@link DocValuesType#SORTED_NUMERIC} doc values &#8212; such a
+ *       field does not need to be indexed, only {@code docValues="true"} is required &#8212; in
+ *       which case the matching "to" field must be indexed as the same numeric Point field type.
  *   <li>fromIndex - optional parameter, a core name where subordinate query should run (and <code>
  *       from</code> values are collected) rather than current core. <br>
  *       Example:<code>q={!join from=manu_id_s to=id score=total fromIndex=products}foo</code>
