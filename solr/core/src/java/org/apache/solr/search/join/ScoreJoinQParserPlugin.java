@@ -82,10 +82,10 @@ import org.slf4j.LoggerFactory;
  *       are not enabled for this field, it will work anyway, but it costs some memory for {@link
  *       UninvertingReader}. Non-numeric fields only support {@link DocValuesType#SORTED}, {@link
  *       DocValuesType#SORTED_SET}, {@link DocValuesType#BINARY}. Numeric fields (schema types
- *       backed by {@code IntPointField}, {@code LongPointField}, {@code FloatPointField} or {@code
- *       DoublePointField}) are supported when they have {@link DocValuesType#NUMERIC} or {@link
- *       DocValuesType#SORTED_NUMERIC} doc values, in which case the matching "to" field must be one
- *       of the same numeric Point field types.
+ *       backed by {@code IntPointField}, {@code LongPointField}, {@code FloatPointField}, {@code
+ *       DoublePointField} or {@code DatePointField}) are supported when they have {@link
+ *       DocValuesType#NUMERIC} or {@link DocValuesType#SORTED_NUMERIC} doc values, in which case
+ *       the matching "to" field must be of the same numeric Point field type.
  *   <li>fromIndex - optional parameter, a core name where subordinate query should run (and <code>
  *       from</code> values are collected) rather than current core. <br>
  *       Example:<code>q={!join from=manu_id_s to=id score=total fromIndex=products}foo</code>
