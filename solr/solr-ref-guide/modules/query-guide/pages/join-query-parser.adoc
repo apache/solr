@@ -125,6 +125,8 @@ This method must be used if score information is required, and should also be co
 [NOTE]
 ====
 The `dvWithScore` method supports numeric fields whose "from" side uses a `Point` field type (`IntPointField`, `LongPointField`, `FloatPointField`, `DoublePointField`, or `DatePointField`) with `docValues="true"`, single- or multi-valued, as long as the "to" side field uses the same numeric `Point` field type.
+The "from" field only needs `docValues="true"`; it does not need to be `indexed="true"`.
+The "to" field, however, must be indexed, since it is queried by point value.
 Users migrating from versions prior to 7.0, or joining across mismatched field types, are encouraged to change field types to string and rebuild indexes during migration.
 ====
 

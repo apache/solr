@@ -84,8 +84,9 @@ import org.slf4j.LoggerFactory;
  *       DocValuesType#SORTED_SET}, {@link DocValuesType#BINARY}. Numeric fields (schema types
  *       backed by {@code IntPointField}, {@code LongPointField}, {@code FloatPointField}, {@code
  *       DoublePointField} or {@code DatePointField}) are supported when they have {@link
- *       DocValuesType#NUMERIC} or {@link DocValuesType#SORTED_NUMERIC} doc values, in which case
- *       the matching "to" field must be of the same numeric Point field type.
+ *       DocValuesType#NUMERIC} or {@link DocValuesType#SORTED_NUMERIC} doc values &#8212; such a
+ *       field does not need to be indexed, only {@code docValues="true"} is required &#8212; in
+ *       which case the matching "to" field must be of the same numeric Point field type.
  *   <li>fromIndex - optional parameter, a core name where subordinate query should run (and <code>
  *       from</code> values are collected) rather than current core. <br>
  *       Example:<code>q={!join from=manu_id_s to=id score=total fromIndex=products}foo</code>
@@ -263,7 +264,8 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
    * pair, or to {@link JoinUtil#createJoinQuery(String, boolean, String, Query, IndexSearcher,
    * ScoreMode)} otherwise.
    *
-   * @param fromField "foreign key" field name
+   * @param fromField "foreign key" field name; when it's a numeric Point field with {@code
+   *     docValues="true"} it doesn't need to be {@code indexed}
    * @param fromSchema schema holding {@code fromField}, used to detect numeric doc values
    * @param toField "primary key" field name
    * @param toSchema schema holding {@code toField}, used to detect numeric Point fields
@@ -283,10 +285,16 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       ScoreMode scoreMode)
       throws IOException {
     final SchemaField fromSchemaField = fromSchema.getFieldOrNull(fromField);
+    final boolean fromIsPoint = fromSchemaField != null && fromSchemaField.getType().isPointField();
+    if (fromIsPoint && !fromSchemaField.hasDocValues()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Numeric join 'from' field '"
+              + fromField
+              + "' must have docValues enabled; it doesn't need to be indexed.");
+    }
     final NumberType fromNumberType =
-        fromSchemaField == null || !fromSchemaField.getType().isPointField()
-            ? null
-            : fromSchemaField.getType().getNumberType();
+        fromIsPoint ? fromSchemaField.getType().getNumberType() : null;
     if (fromNumberType != null) {
       final SchemaField toSchemaField = toSchema.getFieldOrNull(toField);
       final boolean toIsPoint = toSchemaField != null && toSchemaField.getType().isPointField();
@@ -323,8 +331,8 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       case INTEGER:
         return Integer.class;
       case LONG:
-        // DatePointField values are internally represented as milliseconds since epoch (long),
-        // via LongPoint, so DATE shares the same encoding as LONG.
+      // DatePointField values are internally represented as milliseconds since epoch (long),
+      // via LongPoint, so DATE shares the same encoding as LONG.
       case DATE:
         return Long.class;
       case FLOAT:

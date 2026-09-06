@@ -218,10 +218,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     clearIndex();
 
     // products, referenced by a release date (pdate uses the same Long encoding as plong)
-    assertU(
-        add(doc("name", "name1", idField, "1", "releaseDate_pdt", "2020-01-01T00:00:00Z")));
-    assertU(
-        add(doc("name", "name2", idField, "4", "releaseDate_pdt", "2021-06-15T00:00:00Z")));
+    assertU(add(doc("name", "name1", idField, "1", "releaseDate_pdt", "2020-01-01T00:00:00Z")));
+    assertU(add(doc("name", "name2", idField, "4", "releaseDate_pdt", "2021-06-15T00:00:00Z")));
 
     // offers, referencing the product via the same date value
     assertU(add(doc("price_s", "10.0", idField, "2", "prodDate_pdt", "2020-01-01T00:00:00Z")));
@@ -231,20 +229,37 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertJQ(
-        req(
-            "q",
-            "{!join from=releaseDate_pdt to=prodDate_pdt score=None}name:name1",
-            "fl",
-            "id"),
+        req("q", "{!join from=releaseDate_pdt to=prodDate_pdt score=None}name:name1", "fl", "id"),
         "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
 
     assertJQ(
-        req(
-            "q",
-            "{!join from=releaseDate_pdt to=prodDate_pdt score=None}name:name2",
-            "fl",
-            "id"),
+        req("q", "{!join from=releaseDate_pdt to=prodDate_pdt score=None}name:name2", "fl", "id"),
         "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'5'}]}");
+  }
+
+  public void testNumericJoinFromNonIndexedDocValues() throws Exception {
+    clearIndex();
+
+    // products: "cat_ii" is declared indexed="false", so it only carries numeric doc values,
+    // no indexed points at all; the numeric join must still work off doc values alone.
+    assertU(add(doc("name", "name1", idField, "1", "cat_ii", "100")));
+    assertU(add(doc("name", "name2", idField, "4", "cat_ii", "200")));
+
+    // offers, referencing the product via an indexed numeric Point field
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodRef_pi", "200")));
+    assertU(add(doc("price_s", "20.0", idField, "6", "prodRef_pi", "200")));
+
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=cat_ii to=prodRef_pi score=None}name:name2", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'5'},{'id':'6'}]}");
+
+    assertJQ(
+        req("q", "{!join from=cat_ii to=prodRef_pi score=None}name:name1", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
   }
 
   public void testNumericJoinTypeMismatch() throws Exception {
