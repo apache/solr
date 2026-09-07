@@ -163,8 +163,8 @@ public interface ExtractingParams {
    * call (e.g. {@code {"pdf-parser":{"ocr":{"strategy":"no_ocr"}}}}). The server must have {@code
    * allowPerRequestConfig=true} set, or the request is rejected with 403. Rejected with {@code
    * BAD_REQUEST} for recursive (tikaserver.recursive) requests, since TikaServer has no XML-output
-   * variant of /rmeta/config (tracked upstream as
-   * <a href="https://issues.apache.org/jira/browse/TIKA-4881">TIKA-4881</a>).
+   * variant of /rmeta/config (tracked upstream as <a
+   * href="https://issues.apache.org/jira/browse/TIKA-4881">TIKA-4881</a>).
    */
   String TIKASERVER_CONFIG_JSON = "tikaserver.config";
 }

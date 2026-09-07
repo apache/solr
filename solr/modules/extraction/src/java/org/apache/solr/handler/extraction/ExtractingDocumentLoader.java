@@ -69,8 +69,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
   /**
    * Rethrows {@code e} as-is if it's already a {@link SolrException} (preserving its error code,
-   * e.g. a {@code BAD_REQUEST} from invalid extraction parameters), otherwise wraps it in a
-   * {@code SERVER_ERROR}.
+   * e.g. a {@code BAD_REQUEST} from invalid extraction parameters), otherwise wraps it in a {@code
+   * SERVER_ERROR}.
    */
   private static SolrException wrapExtractionException(Exception e) {
     if (e instanceof SolrException se) {
