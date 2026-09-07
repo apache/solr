@@ -578,7 +578,7 @@ Only enable it if you need per-request configuration, and treat access to your S
 ----
 ====
 
-`tikaserver.config` is combined with any password resolved from `resource.password` or `passwordsFile` (see <<Indexing Encrypted Documents>>) into a single request to Tika Server, and is only supported for non-recursive extraction (`tikaserver.recursive=false`, the default); Tika Server has no way to accept per-request configuration for recursive extraction while also returning the XHTML content Solr Cell needs.
+`tikaserver.config` is combined with any password resolved from `resource.password` or `passwordsFile` (see <<Indexing Encrypted Documents>>) into a single request to Tika Server, and is only supported for non-recursive extraction (`tikaserver.recursive=false`, the default); Tika Server has no way to accept per-request configuration for recursive extraction while also returning the XHTML content Solr Cell needs (tracked upstream as https://issues.apache.org/jira/browse/TIKA-4881[TIKA-4881]).
 
 === Indexing Encrypted Documents
 

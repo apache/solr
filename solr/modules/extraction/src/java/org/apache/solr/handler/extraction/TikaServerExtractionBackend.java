@@ -199,13 +199,16 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     String url;
     Request req;
     if (configJson != null && request.tikaServerRecursive) {
+      // TikaServer 4.x has no XML-output variant of /rmeta/config; tracked upstream as
+      // https://issues.apache.org/jira/browse/TIKA-4881
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Per-request TikaServer config (password or "
               + ExtractingParams.TIKASERVER_CONFIG_JSON
               + ") is not supported together with "
               + ExtractingParams.TIKASERVER_RECURSIVE
-              + "=true: TikaServer 4.x has no XML-output variant of /rmeta/config.");
+              + "=true: TikaServer 4.x has no XML-output variant of /rmeta/config"
+              + " (see https://issues.apache.org/jira/browse/TIKA-4881).");
     }
     if (configJson != null) {
       // Tika 4.x dropped its X-Tika-* configuration headers (including Password) in favor of a
@@ -323,8 +326,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     // truncation -- but the body still carries whatever content was successfully extracted
     // (there's no envelope to carry the exception itself on these endpoints; use /rmeta for
     // that). A request that extracted nothing at all (e.g. a wrong password) also gets 422, but
-    // with an empty body -- treat that case as the failure it is instead of a silent empty
-    // "success". Peek the first byte to tell the two apart.
+    // with an empty body -- that's always a hard failure, regardless of ignoreTikaException.
+    // Peek the first byte to tell the two apart.
     if (code == 422 && !request.tikaServerRecursive) {
       PushbackInputStream peekable = new PushbackInputStream(responseStream, 1);
       int firstByte = peekable.read();
@@ -337,10 +340,21 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
                 + " could not be parsed at all (check the password, if one was required).");
       }
       peekable.unread(firstByte);
+      if (!request.ignoreTikaException) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "TikaServer "
+                + url
+                + " returned status 422 (Unprocessable Entity): a container-level exception"
+                + " occurred during parsing (e.g. a writeLimit truncation). Partial content was"
+                + " extracted but is being discarded because ignoreTikaException=false; set"
+                + " ignoreTikaException=true to index the partial content instead, or use"
+                + " tikaserver.recursive=true against /rmeta for the exception detail.");
+      }
       log.warn(
           "TikaServer {} returned 422 (a container-level exception occurred during parsing); "
-              + "using the partial content it still returned. Use tikaserver.recursive=true "
-              + "against /rmeta for the exception detail.",
+              + "using the partial content it still returned because ignoreTikaException=true. "
+              + "Use tikaserver.recursive=true against /rmeta for the exception detail.",
           url);
       responseStream = peekable;
     } else if (code < 200 || code >= 300) {

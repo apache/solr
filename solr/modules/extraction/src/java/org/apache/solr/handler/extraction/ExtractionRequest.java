@@ -39,6 +39,7 @@ public class ExtractionRequest {
   public final Integer tikaServerTimeoutSeconds; // optional per-request override
   public final Map<String, String> tikaServerRequestHeaders = new HashMap<>();
   public final String tikaServerConfigJson; // optional raw JSON "config" part; TikaServer 4.x only
+  public final boolean ignoreTikaException;
 
   /**
    * Constructs an ExtractionRequest object containing metadata and configurations for extraction
@@ -62,6 +63,9 @@ public class ExtractionRequest {
    *     service. TikaServer only
    * @param tikaServerConfigJson optional raw JSON object sent as the per-request "config" part.
    *     TikaServer 4.x only; requires allowPerRequestConfig=true on the server
+   * @param ignoreTikaException if true, a backend that only partially extracted a document (e.g. a
+   *     TikaServer 422 caused by a writeLimit truncation) may return that partial content instead
+   *     of failing. TikaServer only
    */
   private ExtractionRequest(
       String streamType,
@@ -77,7 +81,8 @@ public class ExtractionRequest {
       boolean tikaServerRecursive,
       Integer tikaServerTimeoutSeconds,
       Map<String, String> tikaServerRequestHeaders,
-      String tikaServerConfigJson) {
+      String tikaServerConfigJson,
+      boolean ignoreTikaException) {
     this.streamType = streamType;
     this.resourceName = resourceName;
     this.contentType = contentType;
@@ -94,6 +99,7 @@ public class ExtractionRequest {
       this.tikaServerRequestHeaders.putAll(tikaServerRequestHeaders);
     }
     this.tikaServerConfigJson = tikaServerConfigJson;
+    this.ignoreTikaException = ignoreTikaException;
   }
 
   /** Creates a new Builder for constructing ExtractionRequest instances. */
@@ -117,6 +123,7 @@ public class ExtractionRequest {
     private Integer tikaServerTimeoutSeconds;
     private Map<String, String> tikaServerRequestHeaders;
     private String tikaServerConfigJson;
+    private boolean ignoreTikaException = false;
 
     private Builder() {}
 
@@ -190,6 +197,11 @@ public class ExtractionRequest {
       return this;
     }
 
+    public Builder ignoreTikaException(boolean ignoreTikaException) {
+      this.ignoreTikaException = ignoreTikaException;
+      return this;
+    }
+
     public ExtractionRequest build() {
       return new ExtractionRequest(
           streamType,
@@ -205,7 +217,8 @@ public class ExtractionRequest {
           tikaServerRecursive,
           tikaServerTimeoutSeconds,
           tikaServerRequestHeaders,
-          tikaServerConfigJson);
+          tikaServerConfigJson,
+          ignoreTikaException);
     }
   }
 }
