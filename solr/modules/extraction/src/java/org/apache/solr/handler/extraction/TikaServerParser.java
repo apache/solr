@@ -35,6 +35,9 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 public class TikaServerParser {
+  // TikaServer 4.x's /rmeta content key (TIKA-4816).
+  private static final String CONTENT_KEY = "tk:content";
+
   private final SAXParser saxParser;
 
   public TikaServerParser() {
@@ -87,14 +90,11 @@ public class TikaServerParser {
     for (Object o : list) {
       if (!(o instanceof Map)) continue;
       Map map = (Map) o;
-      // The content key is tk:content on TikaServer 4.x and X-TIKA:content on 3.x (TIKA-4816);
-      // accept either so this works against both.
-      String contentKey = map.containsKey("tk:content") ? "tk:content" : "X-TIKA:content";
       // Copy metadata
       for (Object k : map.keySet()) {
         String key = String.valueOf(k);
         Object val = map.get(k);
-        if (contentKey.equalsIgnoreCase(key)) {
+        if (CONTENT_KEY.equalsIgnoreCase(key)) {
           // handled below
           continue;
         }
@@ -106,7 +106,7 @@ public class TikaServerParser {
           md.add(key, String.valueOf(val));
         }
       }
-      Object content = map.get(contentKey);
+      Object content = map.get(CONTENT_KEY);
       if (content != null) {
         String xhtml = String.valueOf(content);
         if (!xhtml.isEmpty() && handler != null) {
