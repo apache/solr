@@ -478,8 +478,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFillProperties_SysPropPrecedenceOverDoubleZk()
-      throws Exception {
+  public void testFillProperties_SysPropPrecedenceOverDoubleZk() throws Exception {
     Map<String, Object> properties = new HashMap<>();
 
     System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "sys-kafka:9092");
