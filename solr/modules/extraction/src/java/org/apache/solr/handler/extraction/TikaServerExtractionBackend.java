@@ -76,8 +76,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   /** Minimum TikaServer major version this backend supports (relies on Tika 4.x-only APIs). */
   private static final int MIN_SUPPORTED_TIKASERVER_MAJOR_VERSION = 4;
 
-  private static final Pattern TIKASERVER_VERSION_PATTERN =
-      Pattern.compile("Apache Tika (\\d+)\\.");
+  private static final Pattern TIKASERVER_VERSION_PATTERN = Pattern.compile("Apache Tika (\\d+)");
 
   // Short-lived: /version is a trivial static-text endpoint, so this shouldn't use the full
   // extraction defaultTimeout (which can be minutes) and block concurrent requests behind it.
@@ -89,8 +88,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private final Duration defaultTimeout;
   private final TikaServerParser tikaServerResponseParser = new TikaServerParser();
   private boolean tikaMetadataCompatibility;
-  private boolean tikaServerVersionVerified = false;
-  private String rejectedTikaServerVersionMessage;
+  private volatile boolean tikaServerVersionVerified = false;
+  private volatile String rejectedTikaServerVersionMessage;
   private HashMap<String, Object> initArgsMap = new HashMap<>();
   private final long maxCharsLimit;
 
@@ -398,8 +397,13 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
    * <p>Connectivity/parsing failures are retried on the next call rather than cached, since
    * TikaServer may simply not be up yet. A definitively too-old version, however, is a permanent
    * fact, so that verdict is cached to avoid re-probing the network on every extraction request.
+   *
+   * <p>Deliberately not synchronized: while unverified, concurrent extraction requests may each
+   * probe {@code /version} independently rather than queue behind one shared lock. That's cheap and
+   * self-resolving once verified, and avoids turning a TikaServer outage into concurrent requests
+   * serialized behind a single blocking network call instead of each failing in parallel.
    */
-  private synchronized void ensureSupportedTikaServerVersion() throws Exception {
+  private void ensureSupportedTikaServerVersion() throws Exception {
     if (tikaServerVersionVerified) {
       return;
     }

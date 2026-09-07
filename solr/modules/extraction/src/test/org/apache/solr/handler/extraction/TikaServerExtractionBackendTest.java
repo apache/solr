@@ -21,9 +21,14 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
@@ -290,6 +295,43 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         SolrException e = expectThrows(SolrException.class, () -> backend.extract(in, request));
         assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
         assertTrue(e.getMessage().contains(ExtractingParams.TIKASERVER_RECURSIVE));
+      }
+    }
+  }
+
+  /**
+   * A single {@code TikaServerExtractionBackend} is constructed once by {@code
+   * ExtractingRequestHandler.inform()} and reused for every request it handles, including
+   * concurrently. {@code javax.xml.parsers.SAXParser} is not thread-safe, so parsing the response
+   * must not share one {@code SAXParser} instance across concurrent {@code extract()} calls.
+   */
+  @Test
+  public void testConcurrentExtractDoesNotShareSaxParser() throws Exception {
+    int numThreads = 8;
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
+      ExecutorService pool = Executors.newFixedThreadPool(numThreads);
+      try {
+        List<Future<ExtractionResult>> futures = new ArrayList<>();
+        for (int i = 0; i < numThreads; i++) {
+          futures.add(
+              pool.submit(
+                  () -> {
+                    byte[] data = "Hello TestContainers".getBytes(StandardCharsets.UTF_8);
+                    try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+                      return backend.extract(in, newRequest("test.txt", "text/plain", "text"));
+                    }
+                  }));
+        }
+        for (Future<ExtractionResult> future : futures) {
+          ExtractionResult res = future.get(60, TimeUnit.SECONDS);
+          assertNotNull(res);
+          assertNotNull(res.getContent());
+          assertTrue(res.getContent().contains("Hello TestContainers"));
+        }
+      } finally {
+        pool.shutdown();
+        pool.awaitTermination(10, TimeUnit.SECONDS);
       }
     }
   }
