@@ -113,7 +113,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
           "Collection: " + collectionName + " shard: " + shard + " does not exist");
     }
 
-    boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
+    boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, true);
     boolean skipCreateReplicaInClusterState =
         message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 
@@ -179,21 +179,29 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
           createReplica.node, createReplica.coreNodeName, params, shardHandler);
     }
 
+    SolrCloseableLatch waitForFinalStateLatch =
+        new SolrCloseableLatch(totalReplicas, ccc.getCloseableToLatchOn());
+
     Runnable runnable =
         () -> {
           shardRequestTracker.processResponses(
               results, shardHandler, true, "ADDREPLICA failed to create replica");
-          for (CreateReplica replica : createReplicas) {
-            CollectionHandlingUtils.waitForCoreNodeName(
-                collectionName, replica.node, replica.coreName, ccc.getZkStateReader());
+          // if there were errors, don't do any more waiting
+          if (results.get("failure") != null) {
+            while (waitForFinalStateLatch.getCount() > 0) {
+              waitForFinalStateLatch.countDown();
+            }
+          } else {
+            for (CreateReplica replica : createReplicas) {
+              CollectionHandlingUtils.waitForCoreNodeName(
+                  collectionName, replica.node, replica.coreName, ccc.getZkStateReader());
+            }
           }
           if (onComplete != null) onComplete.run();
         };
 
     if (!parallel || waitForFinalState) {
       if (waitForFinalState) {
-        SolrCloseableLatch latch =
-            new SolrCloseableLatch(totalReplicas, ccc.getCloseableToLatchOn());
         ActiveReplicaWatcher watcher =
             new ActiveReplicaWatcher(
                 collectionName,
@@ -201,11 +209,11 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
                 createReplicas.stream()
                     .map(createReplica -> createReplica.coreName)
                     .collect(Collectors.toList()),
-                latch);
+                waitForFinalStateLatch);
         try {
           zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
           runnable.run();
-          if (!latch.await(timeout, TimeUnit.SECONDS)) {
+          if (!waitForFinalStateLatch.await(timeout, TimeUnit.SECONDS)) {
             throw new SolrException(
                 SolrException.ErrorCode.SERVER_ERROR,
                 "Timeout waiting " + timeout + " seconds for replica to become active.");
