@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -110,16 +111,20 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
     this.solrMetricsContext = parentContext.getChildContext(this);
   }
 
-  public static final Map<String, Class<? extends SearchComponent>> standard_components =
-      Map.of(
-          HighlightComponent.COMPONENT_NAME, HighlightComponent.class,
-          QueryComponent.COMPONENT_NAME, QueryComponent.class,
-          FacetComponent.COMPONENT_NAME, FacetComponent.class,
-          FacetModule.COMPONENT_NAME, FacetModule.class,
-          MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class,
-          StatsComponent.COMPONENT_NAME, StatsComponent.class,
-          DebugComponent.COMPONENT_NAME, DebugComponent.class,
-          RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class,
-          ExpandComponent.COMPONENT_NAME, ExpandComponent.class,
-          TermsComponent.COMPONENT_NAME, TermsComponent.class);
+  public static final Map<String, Class<? extends SearchComponent>> STANDARD_COMPONENTS;
+
+  static {
+    STANDARD_COMPONENTS = new HashMap<>();
+    STANDARD_COMPONENTS.put(HighlightComponent.COMPONENT_NAME, HighlightComponent.class);
+    STANDARD_COMPONENTS.put(QueryComponent.COMPONENT_NAME, QueryComponent.class);
+    STANDARD_COMPONENTS.put(FacetComponent.COMPONENT_NAME, FacetComponent.class);
+    STANDARD_COMPONENTS.put(FacetModule.COMPONENT_NAME, FacetModule.class);
+    STANDARD_COMPONENTS.put(MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class);
+    STANDARD_COMPONENTS.put(StatsComponent.COMPONENT_NAME, StatsComponent.class);
+    STANDARD_COMPONENTS.put(DebugComponent.COMPONENT_NAME, DebugComponent.class);
+    STANDARD_COMPONENTS.put(RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class);
+    STANDARD_COMPONENTS.put(ExpandComponent.COMPONENT_NAME, ExpandComponent.class);
+    STANDARD_COMPONENTS.put(TermsComponent.COMPONENT_NAME, TermsComponent.class);
+    STANDARD_COMPONENTS.put(UBIComponent.COMPONENT_NAME, UBIComponent.class);
+  }
 }
