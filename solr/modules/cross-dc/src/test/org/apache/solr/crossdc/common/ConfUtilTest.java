@@ -426,6 +426,88 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     assertEquals("lz4", conf.getAdditionalProperties().get("compression.type"));
   }
 
+  @Test
+  public void testFillProperties_ZkOnlyKafkaPrefixPropIsNormalized() throws Exception {
+    Map<String, Object> properties = new HashMap<>();
+
+    System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "sys-kafka:9092");
+    System.setProperty(KafkaCrossDcConf.TOPIC_NAME, "sys-topic");
+
+    Properties zkProps = new Properties();
+    zkProps.setProperty("solr.crossdc.kafka.compression.type", "zk-value");
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
+    zkProps.store(writer, null);
+    writer.close();
+    byte[] zkData = baos.toByteArray();
+
+    when(mockZkClient.exists(anyString())).thenReturn(true);
+    when(mockZkClient.getData(anyString(), isNull(), isNull())).thenReturn(zkData);
+
+    ConfUtil.fillProperties(mockZkClient, properties);
+
+    // ZK value lands under the normalized key, not the raw solr.crossdc.kafka.* key.
+    assertEquals("zk-value", properties.get("compression.type"));
+    assertNull(properties.get("solr.crossdc.kafka.compression.type"));
+  }
+
+  @Test
+  public void testFillProperties_KafkaPrefixSysPropPrecedenceOverZk() throws Exception {
+    Map<String, Object> properties = new HashMap<>();
+
+    System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "sys-kafka:9092");
+    System.setProperty(KafkaCrossDcConf.TOPIC_NAME, "sys-topic");
+    System.setProperty("solr.crossdc.kafka.compression.type", "sys-value");
+
+    Properties zkProps = new Properties();
+    zkProps.setProperty("solr.crossdc.kafka.compression.type", "zk-value");
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
+    zkProps.store(writer, null);
+    writer.close();
+    byte[] zkData = baos.toByteArray();
+
+    when(mockZkClient.exists(anyString())).thenReturn(true);
+    when(mockZkClient.getData(anyString(), isNull(), isNull())).thenReturn(zkData);
+
+    ConfUtil.fillProperties(mockZkClient, properties);
+
+    assertEquals("sys-value", properties.get("compression.type"));
+  }
+
+  @Test
+  public void testFillProperties_SysPropPrecedenceOverDoubleZk()
+      throws Exception {
+    Map<String, Object> properties = new HashMap<>();
+
+    System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "sys-kafka:9092");
+    System.setProperty(KafkaCrossDcConf.TOPIC_NAME, "sys-topic");
+    System.setProperty("solr.crossdc.kafka.compression.type", "sys-value");
+
+    // First call, as Consumer.start() does, with no ZK client yet.
+    ConfUtil.fillProperties(null, properties);
+    assertEquals("sys-value", properties.get("compression.type"));
+
+    Properties zkProps = new Properties();
+    zkProps.setProperty("solr.crossdc.kafka.compression.type", "zk-value");
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
+    zkProps.store(writer, null);
+    writer.close();
+    byte[] zkData = baos.toByteArray();
+
+    when(mockZkClient.exists(anyString())).thenReturn(true);
+    when(mockZkClient.getData(anyString(), isNull(), isNull())).thenReturn(zkData);
+
+    // Second call, now with the real ZK client, as Consumer.start() does.
+    ConfUtil.fillProperties(mockZkClient, properties);
+
+    assertEquals("sys-value", properties.get("compression.type"));
+  }
+
   // we can't easily modify envvars, test just the key conversion in properties
   @Test
   public void testUnderscoreToDotsConversion() {
