@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import org.apache.lucene.document.FeatureField;
 import org.apache.lucene.index.IndexableField;
@@ -30,6 +31,8 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.RankQParserPlugin;
 import org.apache.solr.uninverting.UninvertingReader.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@code RankField}s can be used to store scoring factors to improve document ranking. They should
@@ -58,6 +61,8 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * @since 8.6
  */
 public class RankField extends FieldType {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /*
    * While the user can create multiple RankFields, internally we use a single Lucene field,
@@ -109,9 +114,12 @@ public class RankField extends FieldType {
     try {
       featureValue = Float.parseFloat(val);
     } catch (NumberFormatException nfe) {
+      if (log.isTraceEnabled()) {
+        log.trace("Error while creating field '{}' from value '{}'", name, val, nfe);
+      }
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Error while creating field '" + name + "' from value '" + val + "'. Expecting float.",
+          "Error while creating field '" + name + "'. Expecting float.",
           nfe);
     }
     // Internally, we always use the same field
