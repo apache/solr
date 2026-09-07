@@ -440,7 +440,7 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
           "one",
           "literal.extractionLiteral",
           "two",
-          // Tika 4.x renamed its metadata keys under a single lowercase tk: prefix (TIKA-4816)
+          // TikaServer 4.x uses a single lowercase tk: prefix for its metadata keys (TIKA-4816)
           "fmap.tk:parsed-by",
           "ignored_parser",
           "fmap.tk:parsed-by-full-set",
@@ -483,7 +483,7 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
         "extractedLanguage",
         "literal.extractionLiteral",
         "one",
-        // Tika 4.x renamed its metadata keys under a single lowercase tk: prefix (TIKA-4816)
+        // TikaServer 4.x uses a single lowercase tk: prefix for its metadata keys (TIKA-4816)
         "fmap.tk:parsed-by",
         "ignored_parser",
         "fmap.tk:parsed-by-full-set",
@@ -602,7 +602,7 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
         "one",
         "fmap.language",
         "extractedLanguage",
-        // Tika 4.x renamed its metadata keys under a single lowercase tk: prefix (TIKA-4816)
+        // TikaServer 4.x uses a single lowercase tk: prefix for its metadata keys (TIKA-4816)
         "fmap.tk:parsed-by",
         "ignored_parser",
         "fmap.tk:detected-encoding",
@@ -655,7 +655,7 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
         "one",
         "fmap.language",
         "extractedLanguage",
-        // Tika 4.x renamed its metadata keys under a single lowercase tk: prefix (TIKA-4816)
+        // TikaServer 4.x uses a single lowercase tk: prefix for its metadata keys (TIKA-4816)
         "fmap.tk:parsed-by",
         "ignored_parser",
         "fmap.tk:detected-encoding",

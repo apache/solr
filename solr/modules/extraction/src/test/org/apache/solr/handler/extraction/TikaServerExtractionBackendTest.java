@@ -125,13 +125,11 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     try (TikaServerExtractionBackend backend =
         new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
-      // Tika 4.x removed the X-Tika-* header family entirely (see resolveConfigJson's javadoc);
-      // there is no replacement for this combination. Per-request config now requires the
-      // multipart /config endpoints, but Tika 4.x has no XML-output variant of /rmeta/config, so
-      // per-request PDF options (e.g. explicit inline-image extraction) cannot be requested
-      // together with tikaserver.recursive=true. The PDF's embedded image still gets OCR'd into
-      // the main document's content by default, just not exposed as a separate embedded
-      // resource entry the way the pre-4.x X-Tika-PDFextractInlineImages header used to.
+      // Explicit inline-image extraction options can't be requested here: TikaServer's per-request
+      // config only supports the non-recursive /tika/config/xml endpoint (see resolveConfigJson's
+      // javadoc), since there is no XML-output variant of /rmeta/config for recursive requests. The
+      // PDF's embedded image is still OCR'd into the main document's content by default, just not
+      // exposed as a separate embedded resource entry.
       ExtractionRequest request =
           newRequest("pdf-with-image.pdf", "application/pdf", "xml", true, Map.of());
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
@@ -141,7 +139,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         String c = xmlHandler.toString();
         assertNotNull(c);
         assertTrue(c.contains("Puppet Apply"));
-        // Tika 4.x renamed its metadata keys under a single lowercase tk: prefix (TIKA-4816)
+        // TikaServer 4.x uses a single lowercase tk: prefix for its metadata keys (TIKA-4816)
         assertEquals("org.apache.tika.parser.DefaultParser", md.getFirst("tk:parsed-by-full-set"));
       }
     }

@@ -87,8 +87,8 @@ public class TikaServerParser {
     for (Object o : list) {
       if (!(o instanceof Map)) continue;
       Map map = (Map) o;
-      // Tika 4.x renamed X-TIKA:content to tk:content (TIKA-4816); accept either so this also
-      // works against a Tika Server 3.x still on the old key.
+      // The content key is tk:content on TikaServer 4.x and X-TIKA:content on 3.x (TIKA-4816);
+      // accept either so this works against both.
       String contentKey = map.containsKey("tk:content") ? "tk:content" : "X-TIKA:content";
       // Copy metadata
       for (Object k : map.keySet()) {

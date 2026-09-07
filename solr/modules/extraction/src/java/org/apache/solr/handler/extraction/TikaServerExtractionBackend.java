@@ -199,8 +199,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     String url;
     Request req;
     if (configJson != null && request.tikaServerRecursive) {
-      // TikaServer 4.x has no XML-output variant of /rmeta/config; tracked upstream as
-      // https://issues.apache.org/jira/browse/TIKA-4881
+      // Tracked upstream: https://issues.apache.org/jira/browse/TIKA-4881
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Per-request TikaServer config (password or "
@@ -211,11 +210,10 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
               + " (see https://issues.apache.org/jira/browse/TIKA-4881).");
     }
     if (configJson != null) {
-      // Tika 4.x dropped its X-Tika-* configuration headers (including Password) in favor of a
-      // per-request JSON "config" part on a multipart request; the server must additionally opt
-      // in with allowPerRequestConfig=true. There is no XML content-handler variant of
-      // /rmeta/config in Tika 4.x, so this path only covers non-recursive extraction (checked
-      // above).
+      // TikaServer accepts per-request parser config (including passwords) as a JSON "config"
+      // part on a multipart request, and requires allowPerRequestConfig=true on the server. Only
+      // non-recursive extraction is handled here, since TikaServer has no XML content-handler
+      // variant of /rmeta/config (checked above).
       url = baseUrl + "/tika/config/xml";
       req = client.newRequest(url).method("POST");
       req.headers(h -> h.add("Accept", "text/xml"));
@@ -240,8 +238,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
         req.body(multiPart);
       }
     } else {
-      // Tika 4.x's default content handler is Markdown, not XHTML/XML (TIKA-4663); Solr's SAX-based
-      // content handling needs the previous XHTML/XML output, requested via the /xml path variants.
+      // TikaServer's /tika and /rmeta endpoints return Markdown by default (TIKA-4663); Solr's
+      // SAX-based content handling requires XHTML/XML, hence the /xml path variants.
       url = baseUrl + (request.tikaServerRecursive ? "/rmeta/xml" : "/tika/xml");
       req = client.newRequest(url).method("PUT");
       String accept = (request.tikaServerRecursive ? "application/json" : "text/xml");
