@@ -20,6 +20,8 @@
   <fieldType name="str_none" class="solr.StrField"/>
   <fieldType name="str_direct_asserting" class="solr.StrField" postingsFormat="Direct" docValuesFormat="Asserting"/>
   <fieldType name="str_standard_simple" class="solr.StrField" postingsFormat="Lucene84" docValuesFormat="Lucene80"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
 
   <field name="str_none_f" type="str_none"/>
   <field name="str_direct_asserting_f" type="str_direct_asserting"/>
@@ -30,6 +32,8 @@
 
   <field name="str_none_asserting_f" type="str_none" docValuesFormat="Asserting"/>
   <field name="str_standard_asserting_f" type="str_standard_simple" docValuesFormat="Asserting"/>
+  <field name="int_skip_f" type="pint" indexed="false" stored="false" docValues="true" skipList="true"/>
+  <field name="long_skip_mv_f" type="plong" indexed="false" stored="false" docValues="true" multiValued="true" skipList="true"/>
 
   <dynamicField name="*_lucene80" type="str_direct_asserting" postingsFormat="Lucene80"/>
   <dynamicField name="*_direct" type="str_direct_asserting"/>
@@ -37,5 +41,7 @@
 
   <dynamicField name="*_asserting" type="str_none" docValuesFormat="Asserting"/>
   <dynamicField name="*_simple" type="str_direct_asserting" docValuesFormat="Lucene80"/>
+  <dynamicField name="*_skip_i" type="pint" indexed="false" stored="false" docValues="true" skipList="true"/>
+  <dynamicField name="*_skip_l" type="plong" indexed="false" stored="false" docValues="true" multiValued="true" skipList="true"/>
 
 </schema>

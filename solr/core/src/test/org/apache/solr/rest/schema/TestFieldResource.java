@@ -25,7 +25,7 @@ public class TestFieldResource extends SolrRestletTestBase {
     assertQ(
         "/schema/fields/test_postv?indent=on&wt=xml&showDefaults=true",
         "count(/response/lst[@name='field']) = 1",
-        "count(/response/lst[@name='field']/*) = 19",
+        "count(/response/lst[@name='field']/*) = 20",
         "/response/lst[@name='field']/str[@name='name'] = 'test_postv'",
         "/response/lst[@name='field']/str[@name='type'] = 'text'",
         "/response/lst[@name='field']/bool[@name='indexed'] = 'true'",
@@ -44,7 +44,8 @@ public class TestFieldResource extends SolrRestletTestBase {
         "/response/lst[@name='field']/bool[@name='large'] = 'false'",
         "/response/lst[@name='field']/bool[@name='required'] = 'false'",
         "/response/lst[@name='field']/bool[@name='tokenized'] = 'true'",
-        "/response/lst[@name='field']/bool[@name='useDocValuesAsStored'] = 'true'");
+        "/response/lst[@name='field']/bool[@name='useDocValuesAsStored'] = 'true'",
+        "/response/lst[@name='field']/bool[@name='skipList'] = 'false'");
   }
 
   @Test

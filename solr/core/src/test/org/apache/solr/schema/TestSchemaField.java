@@ -75,6 +75,8 @@ public class TestSchemaField extends SolrTestCaseJ4 {
 
     assertFieldFormats("str_none_asserting_f", null, "Asserting");
     assertFieldFormats("str_standard_asserting_f", "Lucene84", "Asserting");
+    assertFieldHasSkipList("int_skip_f", true);
+    assertFieldHasSkipList("long_skip_mv_f", true);
   }
 
   public void testDynamicFields() {
@@ -84,6 +86,23 @@ public class TestSchemaField extends SolrTestCaseJ4 {
 
     assertFieldFormats("any_asserting", null, "Asserting");
     assertFieldFormats("any_simple", "Direct", "Lucene80");
+    assertFieldHasSkipList("any_skip_i", true);
+    assertFieldHasSkipList("any_skip_l", true);
+  }
+
+  private void assertFieldHasSkipList(String fieldName, boolean expectedSkipList) {
+    SchemaField field = h.getCore().getLatestSchema().getField(fieldName);
+    assertNotNull("Field " + fieldName + " not found  - schema got changed?", field);
+    final String skipListPropertyName =
+        FieldProperties.getPropertyName(FieldProperties.DOC_VALUES_SKIP_LIST);
+    assertEquals(
+        "Field " + field.getName() + " wrong " + skipListPropertyName + " value",
+        expectedSkipList,
+        field.hasDocValuesSkipList());
+    assertEquals(
+        "Field " + field.getName() + " wrong schema property value for " + skipListPropertyName,
+        expectedSkipList,
+        field.getNamedPropertyValues(true).get(skipListPropertyName));
   }
 
   private void assertFieldFormats(
