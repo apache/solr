@@ -35,6 +35,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -42,6 +44,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RefCounted;
 import org.apache.tika.sax.BodyContentHandler;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
@@ -70,12 +73,24 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
    */
   public static final long DEFAULT_MAXCHARS_LIMIT = 100 * 1024 * 1024;
 
+  /** Minimum TikaServer major version this backend supports (relies on Tika 4.x-only APIs). */
+  private static final int MIN_SUPPORTED_TIKASERVER_MAJOR_VERSION = 4;
+
+  private static final Pattern TIKASERVER_VERSION_PATTERN =
+      Pattern.compile("Apache Tika (\\d+)\\.");
+
+  // Short-lived: /version is a trivial static-text endpoint, so this shouldn't use the full
+  // extraction defaultTimeout (which can be minutes) and block concurrent requests behind it.
+  private static final Duration VERSION_CHECK_TIMEOUT = Duration.ofSeconds(10);
+
   private static final Object INIT_LOCK = new Object();
   private final String baseUrl;
   private static final int DEFAULT_TIMEOUT_SECONDS = 3 * 60;
   private final Duration defaultTimeout;
   private final TikaServerParser tikaServerResponseParser = new TikaServerParser();
   private boolean tikaMetadataCompatibility;
+  private boolean tikaServerVersionVerified = false;
+  private String rejectedTikaServerVersionMessage;
   private HashMap<String, Object> initArgsMap = new HashMap<>();
   private final long maxCharsLimit;
 
@@ -185,6 +200,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
    *     request.tikaserverRecursive</code>
    */
   InputStream callTikaServer(InputStream inputStream, ExtractionRequest request) throws Exception {
+    ensureSupportedTikaServerVersion();
+
     ExtractionMetadata md = buildMetadataFromRequest(request);
     String pwd = resolvePassword(request, md);
     String configJson = resolveConfigJson(request, pwd);
@@ -369,6 +386,75 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
 
     // Bound the amount of data we read from Tika Server to avoid excessive memory/CPU usage
     return new LimitingInputStream(responseStream, maxCharsLimit);
+  }
+
+  /**
+   * Verifies, once per backend instance, that the configured TikaServer reports a major version of
+   * at least {@link #MIN_SUPPORTED_TIKASERVER_MAJOR_VERSION}. This backend relies on endpoints
+   * (e.g. {@code /tika/xml}, {@code /tika/config/xml}) and metadata keys (e.g. {@code tk:content})
+   * that only exist on TikaServer 4.x and newer; an older server would otherwise fail with
+   * confusing 404s or missing-metadata errors instead of a clear diagnostic.
+   *
+   * <p>Connectivity/parsing failures are retried on the next call rather than cached, since
+   * TikaServer may simply not be up yet. A definitively too-old version, however, is a permanent
+   * fact, so that verdict is cached to avoid re-probing the network on every extraction request.
+   */
+  private synchronized void ensureSupportedTikaServerVersion() throws Exception {
+    if (tikaServerVersionVerified) {
+      return;
+    }
+    if (rejectedTikaServerVersionMessage != null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, rejectedTikaServerVersionMessage);
+    }
+    HttpClient client = acquiredResourcesRef.get().client;
+    String versionUrl = baseUrl + "/version";
+    ContentResponse response;
+    try {
+      response =
+          client
+              .newRequest(versionUrl)
+              .timeout(VERSION_CHECK_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
+              .send();
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not determine the TikaServer version at " + versionUrl + ": " + e.getMessage(),
+          e);
+    }
+    if (response.getStatus() != 200) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "TikaServer " + versionUrl + " returned status " + response.getStatus());
+    }
+    String versionText = response.getContentAsString().trim();
+    Matcher m = TIKASERVER_VERSION_PATTERN.matcher(versionText);
+    if (!m.find()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not parse a TikaServer version from "
+              + versionUrl
+              + "'s response: '"
+              + versionText
+              + "'");
+    }
+    int majorVersion = Integer.parseInt(m.group(1));
+    if (majorVersion < MIN_SUPPORTED_TIKASERVER_MAJOR_VERSION) {
+      rejectedTikaServerVersionMessage =
+          "TikaServer at "
+              + baseUrl
+              + " reports version '"
+              + versionText
+              + "', but Solr's 'tikaserver' extraction backend requires TikaServer "
+              + MIN_SUPPORTED_TIKASERVER_MAJOR_VERSION
+              + ".x or newer (it relies on endpoints and metadata keys introduced in that"
+              + " version). Upgrade the TikaServer, or point tikaserver.url at a TikaServer "
+              + MIN_SUPPORTED_TIKASERVER_MAJOR_VERSION
+              + ".x+ instance.";
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, rejectedTikaServerVersionMessage);
+    }
+    tikaServerVersionVerified = true;
   }
 
   /** Resolves the password to use for an encrypted document, or null if none applies. */
