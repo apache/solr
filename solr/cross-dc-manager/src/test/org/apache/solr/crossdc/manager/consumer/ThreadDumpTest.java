@@ -35,8 +35,8 @@ import org.junit.Test;
 
 /**
  * Verifies that {@link ThreadDump} helper pairs each locked {@link MonitorInfo} with the {@link
- * StackTraceElement} at the matching stack depth, including a monitor locked at stack depth 0.
- * This bug was inherited from the original Dropwizard implementation.
+ * StackTraceElement} at the matching stack depth, including a monitor locked at stack depth 0. This
+ * bug was inherited from the original Dropwizard implementation.
  */
 public class ThreadDumpTest {
 
@@ -47,12 +47,10 @@ public class ThreadDumpTest {
 
   @Test
   public void testAllLockedMonitorsAreReported() {
-    StackTraceElement frame0 =
-        new StackTraceElement("com.example.Inner", "run", "Inner.java", 42);
+    StackTraceElement frame0 = new StackTraceElement("com.example.Inner", "run", "Inner.java", 42);
     StackTraceElement frame1 =
         new StackTraceElement("com.example.Middle", "call", "Middle.java", 21);
-    StackTraceElement frame2 =
-        new StackTraceElement("com.example.Outer", "outer", "Outer.java", 7);
+    StackTraceElement frame2 = new StackTraceElement("com.example.Outer", "outer", "Outer.java", 7);
     StackTraceElement[] stackTrace = {frame0, frame1, frame2};
 
     // one monitor locked at the innermost frame (depth 0) and one at the outermost (depth 2);
@@ -82,14 +80,12 @@ public class ThreadDumpTest {
     when(threadInfo.getLockedSynchronizers()).thenReturn(new LockInfo[0]);
 
     ThreadMXBean threadMXBean = mock(ThreadMXBean.class);
-    when(threadMXBean.dumpAllThreads(true, true))
-        .thenReturn(new ThreadInfo[] {threadInfo});
+    when(threadMXBean.dumpAllThreads(true, true)).thenReturn(new ThreadInfo[] {threadInfo});
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     new ThreadDump(threadMXBean).dump(out);
 
-    List<String> lines =
-        out.toString(StandardCharsets.UTF_8).lines().collect(Collectors.toList());
+    List<String> lines = out.toString(StandardCharsets.UTF_8).lines().collect(Collectors.toList());
 
     int frame0Line = indexOfLineContaining(lines, frame0.toString());
     int frame1Line = indexOfLineContaining(lines, frame1.toString());
