@@ -439,14 +439,12 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     if (solrTestRule.getJetty() != null) {
       // check system wide system handler + "/admin/info/system"
-      String url = solrTestRule.getBaseUrl();
-      try (SolrClient adminClient = getHttpSolrClient(url)) {
-        SolrQuery q = new SolrQuery();
+      SolrClient adminClient = solrTestRule.getAdminClient();
+      SolrQuery q = new SolrQuery();
 
-        final var rsp = new SystemInfoRequest().process(adminClient);
-        assertNotNull(rsp.getResponse().get("mode"));
-        assertNotNull(rsp.getResponse().get("lucene"));
-      }
+      final var rsp = new SystemInfoRequest().process(adminClient);
+      assertNotNull(rsp.getResponse().get("mode"));
+      assertNotNull(rsp.getResponse().get("lucene"));
     }
   }
 
