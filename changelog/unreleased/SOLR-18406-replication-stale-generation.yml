@@ -1,0 +1,10 @@
+title: >
+  Leader/follower replication now restarts with the latest index generation when the selected
+  generation expires during download, avoiding retries against an unavailable generation.
+type: changed
+authors:
+  - name: ZhenyuLi
+    nick: JHSUYU
+links:
+  - name: SOLR-18406
+    url: https://issues.apache.org/jira/browse/SOLR-18406
