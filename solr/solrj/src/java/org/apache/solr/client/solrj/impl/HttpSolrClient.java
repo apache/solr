@@ -69,7 +69,10 @@ public abstract class HttpSolrClient extends SolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
 
-  /** See {@link #getUrlParamNames()}. Default set are interesting for routing or fundamental request purpose */
+  /**
+   * See {@link #getUrlParamNames()}. Default set are interesting for routing or fundamental request
+   * purpose
+   */
   public static final Set<String> DEFAULT_URL_PARAM_NAMES =
       Set.of(
           CoreAdminParams.ACTION,
