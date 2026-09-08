@@ -141,3 +141,40 @@ In these cases, developers may:
           AddFieldOperation requestBody)
       throws Exception;
 ```
+
+== Response POJOs
+
+Every v2 response body extends `SolrJerseyResponse`, which provides `responseHeader` and `error` - except for the raw/streaming APIs described under "Streaming" above, whose interface methods return `StreamingOutput` instead.
+Beyond that base, pick the narrowest existing response type that fits before writing a new one:
+
+* `SolrJerseyResponse` - plain success/error response with no extra data. The default for simple mutations.
+* `AsyncJerseyResponse extends SolrJerseyResponse` - adds a `requestId` field. Use this (or a subclass of it) for any API that supports the `async` request-body parameter, since `submitRemoteMessageAndHandleAsync`/`handlePotentiallyAsynchronousTask` populate `requestId` automatically when an async id is present.
+* `SubResponseAccumulatingJerseyResponse extends AsyncJerseyResponse` - adds `successfulSubResponsesByNodeName`, `failedSubResponsesByNodeName`, and `warning`. Use this for Overseer-driven APIs that fan out to multiple nodes/replicas (e.g. `CreateShard`, `DeleteShard`) - `AdminAPIBase.submitRemoteMessageAndHandleResponse` populates these fields from the Overseer's `success`/`failure`/`warning` NamedList entries automatically.
+* `FlexibleSolrJerseyResponse extends SolrJerseyResponse` - adds `@JsonAnyGetter`/`@JsonAnySetter`-backed dynamic *top-level* properties, for APIs whose entire response shape is genuinely open-ended (e.g. `SchemaDesigner`, the `Select` query API). This is different from the dynamic-request-POJO pattern above: it's for responses, and the dynamism applies to the whole top level rather than one field.
+
+If an API returns specific, known additional data beyond these bases (e.g. timing information, computed ranges, a resource's status fields), extend the appropriate base with typed `@JsonProperty` fields rather than reaching for `FlexibleSolrJerseyResponse` - see `SplitShardResponse.timing`, `SplitCoreResponse.ranges`, or `CollectionStatusResponse` for examples.
+Don't settle for a bare `SolrJerseyResponse` if the underlying operation actually produces more than a bare success/error - a v2 JSON caller has no other way to get that data, since (unlike v1) nothing else in the response pipeline will surface it (see the async caveat below for why this matters in practice).
+
+== Async Task Handling
+
+Solr has two distinct, non-interchangeable mechanisms for handling the `async` request parameter, depending on which base class the API extends:
+
+* **Core-level (`CoreAdminAPIBase`)**: `handlePotentiallyAsynchronousTask(response, coreName, taskId, actionName, supplier)`. If `taskId` is null, the supplier runs inline and its result is returned directly. If non-null, the supplier is wrapped in a `CoreAdminAsyncTracker.TaskObject` and submitted to `coreAdminAsyncTracker`, which tracks status for later `REQUESTSTATUS` polling. Because the supplier is a `Supplier<T>`, it cannot throw checked exceptions directly - wrap them in `CoreAdminAPIBase.CoreAdminAPIBaseException` and rethrow, which `handlePotentiallyAsynchronousTask` unwraps back to the original checked exception for the caller.
+* **Collection-level (`AdminAPIBase`)**: `submitRemoteMessageAndHandleAsync`/`submitRemoteMessageAndHandleResponse(response, action, remoteMessage, asyncId[, timeoutMs])`. The `asyncId` is baked into the submitted `ZkNodeProps` message and handled by the Overseer's own async-tracking machinery; `response.requestId` is populated automatically when `asyncId` is non-null. A timeout-aware overload exists for APIs (like shard split) that legitimately need longer than `CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT` to complete.
+
+Only wrap the branches of an API that are actually meant to support async execution.
+A synchronous-by-design sub-operation (e.g. a "dry run" or "compute recommendations" branch that happens to share a method with the real mutating operation) should bypass async handling entirely rather than being routed through it - see the `async` caveat under "Relationship Between V1 and V2 Implementations" in link:apis.adoc[apis.adoc] for a concrete failure mode this avoids.
+
+== Testing V2 APIs
+
+Newer v2 API tests favor exercising the real HTTP stack over mocking it:
+
+1. Start a real embedded Solr instance with `SolrJettyTestRule` (a `@ClassRule`) rather than the older `initCore()`/mock-`SolrQueryRequest` style.
+2. Issue requests through the *generated* SolrJ client (e.g. `CoresApi.SplitCore`, `ShardsApi.SplitShard`) rather than hand-built `GenericV2SolrRequest`s, so the test also exercises the client codegen.
+3. Give each API its own dedicated test class under `handler.admin.api` (e.g. `RenameCoreAPITest`, `SplitCoreAPITest`, `SplitShardAPITest`), rather than adding cases to a large shared mapping test.
+4. Assert error responses via `expectThrows(RemoteSolrException.class, () -> request.process(client))`, then check `.code()` and `.getMessage()` - a non-2xx v2 response surfaces as a thrown exception on the client side, not as a populated `.error` field on a normally-returned response object.
+
+This has superseded the older `V2ApiMappingTest`-based style (e.g. `V2CoreAPIMappingTest`), which mocks the v1 handler and asserts on the `SolrParams` the v2-to-v1 conversion produces.
+That style still exists for APIs that haven't been migrated to the "logic lives in v2" pattern yet, but shouldn't be extended for newly-migrated APIs - once an API's logic moves into v2, its mapping test loses its reason to exist and should be removed (see "Relationship Between V1 and V2 Implementations" in link:apis.adoc[apis.adoc]) in favor of a real-client test.
+
+One exception: white-box tests that need access to package-private helper methods (e.g. `SplitHandlerTest`, which tests `SplitCoreAPI`'s histogram/range-recommendation internals) should live in the *same package* as the class under test, and move with it if that class's package ever changes.
