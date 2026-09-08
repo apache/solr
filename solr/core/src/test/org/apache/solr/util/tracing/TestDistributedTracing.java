@@ -203,7 +203,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals(0, r1.getStatus());
 
     // Expecting 8 spans:
-    // 1. api call 'operationName:"post:/admin/collections"',
+    // 1. api call 'operationName:"create:/admin/collections"',
     // db.instance=testInternalCollectionApiCommands
     // - unique traceId unrelated to the internal trace id generated for the operation
     // 2. internal CollectionApiCommand 'operationName:"CreateCollectionCmd"'
@@ -223,7 +223,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     var finishedSpans = getAndClearSpans();
     var s0 = finishedSpans.remove(0);
     assertDbInstanceColl(s0, collection);
-    assertEquals("post:/admin/collections", s0.operationName());
+    assertEquals("create:/admin/collections", s0.operationName());
 
     Map<String, Integer> ops = new HashMap<>();
     assertEquals(7, finishedSpans.size());
@@ -251,7 +251,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals(0, r1.getStatus());
 
     // Expecting 6 spans:
-    // 1. api call 'operationName:"post:/admin/collections"',
+    // 1. api call 'operationName:"delete:/admin/collections"',
     // db.instance=testInternalCollectionApiCommands
     // - unique traceId unrelated to the internal trace id generated for the operation
     // 2. internal CollectionApiCommand 'operationName:"DeleteCollectionCmd"'
@@ -267,7 +267,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     var finishedSpans = getAndClearSpans();
     var s0 = finishedSpans.remove(0);
     assertDbInstanceColl(s0, collection);
-    assertEquals("post:/admin/collections", s0.operationName());
+    assertEquals("delete:/admin/collections", s0.operationName());
 
     Map<String, Integer> ops = new HashMap<>();
     assertEquals(5, finishedSpans.size());
