@@ -20,6 +20,7 @@ import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
@@ -238,8 +239,7 @@ public class MirroredSolrRequestSerializerTest extends SolrTestCase {
             + "\twaste="
             + sizes.waste()
             + "\t("
-            + String.format(
-                java.util.Locale.ROOT, "%.1f%%", 100.0 * sizes.waste() / sizes.bufferSize())
+            + String.format(Locale.ROOT, "%.1f%%", 100.0 * sizes.waste() / sizes.bufferSize())
             + " of transmitted bytes)");
   }
 
