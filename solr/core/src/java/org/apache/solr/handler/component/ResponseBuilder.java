@@ -455,10 +455,18 @@ public class ResponseBuilder {
   }
 
   /**
-   * Creates a SolrIndexSearcher.QueryCommand from this ResponseBuilder. TimeAllowed is left unset.
+   * Allocates a QueryCommand from this ResponseBuilder. Override this method if you want to use a
+   * custom QueryCommand implementation e.g. with a custom TopDocsCollector.
+   *
+   * @return a new QueryCommand instance
    */
+  protected QueryCommand newQueryCommand() {
+    return new QueryCommand();
+  }
+
+  /** Creates a QueryCommand from this ResponseBuilder. TimeAllowed is left unset. */
   public QueryCommand createQueryCommand() {
-    QueryCommand cmd = new QueryCommand();
+    QueryCommand cmd = newQueryCommand();
     cmd.setQuery(wrap(getQuery()))
         .setFilterList(getFilters())
         .setSort(getSortSpec().getSort())
