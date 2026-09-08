@@ -13,6 +13,8 @@ on:
 jobs:
   build-and-publish:
     name: Build and publish Docker images
+    # Only run in the canonical repo; forks lack the Docker Hub credentials to publish
+    if: github.repository == 'apache/solr'
     runs-on: ubuntu-latest
     timeout-minutes: 60
 

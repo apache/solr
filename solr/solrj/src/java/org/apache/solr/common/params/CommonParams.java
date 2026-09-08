@@ -74,11 +74,8 @@ public interface CommonParams {
 
   String INDENT = "indent";
 
-  // SOLR-4228 start
   /** "action" parameter name, used by several admin/collection-management APIs */
   String ACTION = "action";
-
-  // SOLR-4228 end
 
   /** query and init param for field list */
   String FL = "fl";

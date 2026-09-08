@@ -195,7 +195,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals(0, r1.getStatus());
 
     // Expecting 8 spans:
-    // 1. api call "name=create:/admin/collections". db.instance=testInternalCollectionApiCommands
+    // 1. api call "name=post:/admin/collections". db.instance=testInternalCollectionApiCommands
     // - unique traceId unrelated to the internal trace id generated for the operation
     // 2. internal CollectionApiCommand "name=CreateCollectionCmd"
     // db.instance=testInternalCollectionApiCommands
@@ -238,7 +238,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
       ops.put(span.getName(), ops.getOrDefault(span.getName(), 0) + 1);
     }
     var expectedOps =
-        Map.of("CreateCollectionCmd", 1, "post:/admin/cores", 4, "post:/{core}/get", 6);
+        Map.of("CreateCollectionCmd", 1, "create:/admin/cores", 4, "post:/{core}/get", 6);
     assertEquals(expectedOps, ops);
   }
 
@@ -254,7 +254,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     // db.instance=testInternalCollectionApiCommands
     // - this will be the parent span, all following spans will have the same traceId
     //
-    // 3..6 (4 times) name=post:/admin/cores
+    // 3..6 (4 times) name=unload:/admin/cores
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
     // db.instance=testInternalCollectionApiCommands_shard1_replica_n2
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n4
@@ -278,7 +278,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
       assertEquals(span.getTraceId(), parentTraceId);
       ops.put(span.getName(), ops.getOrDefault(span.getName(), 0) + 1);
     }
-    var expectedOps = Map.of("DeleteCollectionCmd", 1, "post:/admin/cores", 4);
+    var expectedOps = Map.of("DeleteCollectionCmd", 1, "unload:/admin/cores", 4);
     assertEquals(expectedOps, ops);
   }
 
