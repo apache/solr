@@ -16,10 +16,13 @@
  */
 package org.apache.solr.search.join;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.search.IndexSearcher;
@@ -31,6 +34,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -74,13 +78,13 @@ import org.slf4j.LoggerFactory;
  * SolrRequestInfo#addCloseHook}, the same mechanism {@link
  * org.apache.solr.search.JoinQuery.JoinQueryWeight} uses for the regular {@code {!join}}.
  *
- * <p>One {@link AuxIndexManager} is opened per core in {@link #inform(SolrCore)}, backed by a
- * directory under the core's dataDir (configurable via the {@code dir} init parameter, resolved
- * relative to dataDir unless absolute), and closed when the core closes. The remaining init
- * parameters mirror {@link AuxIndexJoinConfig}: {@code singleFieldPerSegment}, {@code
- * blockingRefresh}, {@code useFromSideThreads}, {@code wipeOnVersionMismatch}, and {@code
- * sweepSamplingInterval} (seconds). This sidecar always belongs to the "to" side core -- the one
- * this plugin is registered in.
+ * <p>One {@link AuxIndexManager} is opened per sidecar directory in {@link #inform(SolrCore)},
+ * backed by a directory under the core's dataDir (configurable via the {@code dir} init parameter,
+ * resolved relative to dataDir unless absolute), and closed when the last core using it closes --
+ * see {@link SharedManagers} for why it outlives a single core. The remaining init parameters
+ * mirror {@link AuxIndexJoinConfig}: {@code singleFieldPerSegment}, {@code blockingRefresh}, {@code
+ * useFromSideThreads}, {@code wipeOnVersionMismatch}, and {@code sweepSamplingInterval} (seconds).
+ * This sidecar always belongs to the "to" side core -- the one this plugin is registered in.
  *
  * <p><b>Why this implements {@link QueryResponseWriter}:</b> {@link
  * org.apache.solr.core.SolrResourceLoader}'s {@code awareCompatibility} allowlist (see SOLR-8311)
@@ -142,6 +146,11 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
 
   private volatile AuxIndexManager joinIndex;
 
+  /** The sidecar this core's joins run through; package-private for tests. */
+  AuxIndexManager getJoinIndex() {
+    return joinIndex;
+  }
+
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
@@ -169,42 +178,158 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
     } else {
       core.getCoreContainer().assertPathAllowed(path);
     }
-    Directory directory = null;
+    final String sidecarPath = path.toAbsolutePath().normalize().toString();
+    final SharedManagers sidecars = SharedManagers.of(core);
     try {
-      directory =
-          core.getDirectoryFactory()
-              .get(path.toString(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-      AuxIndexJoinConfig config = joinIndexConfig;
-      joinIndex = new AuxIndexManager(directory, config);
+      joinIndex = sidecars.acquire(sidecarPath, core, joinIndexConfig);
     } catch (IOException | RuntimeException e) {
-      if (directory != null) {
-        try {
-          core.getDirectoryFactory().release(directory);
-        } catch (IOException releaseException) {
-          e.addSuppressed(releaseException);
-        }
-      }
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Failed to open AuxIndexManager at " + path, e);
     }
-    final Directory capturedDirectory = directory;
     core.addCloseHook(
         new CloseHook() {
           @Override
           public void preClose(SolrCore core) {
-            try {
-              joinIndex.close();
-            } catch (IOException e) {
-              log.warn("Failed closing AuxIndexManager", e);
-            } finally {
-              try {
-                core.getDirectoryFactory().release(capturedDirectory);
-              } catch (IOException e) {
-                log.warn("Failed releasing AuxIndexManager directory {}", capturedDirectory, e);
-              }
-            }
+            sidecars.release(sidecarPath);
           }
         });
+  }
+
+  /**
+   * The {@link AuxIndexManager}s open in one {@link CoreContainer}, keyed by sidecar directory and
+   * ref-counted by the cores using them.
+   *
+   * <p>Sharing is what makes a core reload work at all. The sidecar's {@link
+   * org.apache.lucene.index.IndexWriter} holds a {@code write.lock} that is exclusive per path
+   * within a JVM, and a reload fully builds the new {@link SolrCore} -- running {@link
+   * #inform(SolrCore)} on this plugin's new instance -- before closing the old one, so for a while
+   * both cores want the same sidecar. Opening a second manager there fails with {@link
+   * org.apache.lucene.store.LockObtainFailedException}, and with it the reload; joining the open
+   * one instead lets the last core to close it release the writer and the directory. That mirrors
+   * how a reload passes the main index' {@link org.apache.solr.update.SolrCoreState}, and with it
+   * the live {@code IndexWriter}, on to the new core; it also keeps the pair columns built so far
+   * warm across the reload, which is desirable anyway since a reload changes no doc ids.
+   *
+   * <p>This registry has to outlive a single {@link SolrCore}, but nothing longer, so it lives in
+   * the {@link CoreContainer}'s {@link org.apache.solr.common.util.ObjectCache}: the container is
+   * the same object across a reload, and {@code CoreContainer#shutdown} closes every core before
+   * closing that cache, so the close hooks above always run first and this {@link #close()} only
+   * ever sees leaks. Compare {@code CachingDirectoryFactory#byPathCache}, which ref-counts
+   * Directories by path the same way and survives a reload by living on the {@code
+   * DirectoryFactory} that the new core inherits from the shared {@code SolrCoreState}.
+   *
+   * <p>The {@link AuxIndexJoinConfig} of the core that opened a manager stays in effect: a reload
+   * changing the init parameters only takes them into account once the sidecar is closed and
+   * reopened, i.e. when every core using it has been unloaded.
+   */
+  static final class SharedManagers implements Closeable {
+
+    private static final String OBJECT_CACHE_KEY =
+        AuxIndexJoinQParserPlugin.class.getName() + ".sidecars";
+
+    private final Map<String, SharedManager> open = new HashMap<>();
+
+    /** The registry of the core's container, created on first use. */
+    static SharedManagers of(SolrCore core) {
+      return core.getCoreContainer()
+          .getObjectCache()
+          .computeIfAbsent(OBJECT_CACHE_KEY, SharedManagers.class, key -> new SharedManagers());
+    }
+
+    /** Opens the sidecar at the given path, or joins the manager already open there. */
+    synchronized AuxIndexManager acquire(String path, SolrCore core, AuxIndexJoinConfig config)
+        throws IOException {
+      SharedManager shared = open.get(path);
+      if (shared != null) {
+        shared.refCount++;
+        if (shared.directoryFactory != core.getDirectoryFactory()) {
+          // a reload that doesn't pass its SolrCoreState on (the index dir changed) brings a new
+          // DirectoryFactory: the sidecar keeps the directory it was opened with, which the old
+          // factory closes when the old core goes away
+          log.warn(
+              "AuxIndexManager at {} is shared with a core using another DirectoryFactory; "
+                  + "reload this core once the previous one is closed if the sidecar stops working",
+              path);
+        }
+        log.info(
+            "Joining the AuxIndexManager open at {}, now used by {} cores", path, shared.refCount);
+        return shared.manager;
+      }
+      DirectoryFactory directoryFactory = core.getDirectoryFactory();
+      Directory directory =
+          directoryFactory.get(path, DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
+      try {
+        AuxIndexManager manager = new AuxIndexManager(directory, config);
+        open.put(path, new SharedManager(manager, directoryFactory, directory));
+        return manager;
+      } catch (IOException | RuntimeException e) {
+        try {
+          directoryFactory.release(directory);
+        } catch (IOException releaseException) {
+          e.addSuppressed(releaseException);
+        }
+        throw e;
+      }
+    }
+
+    /** Drops one core's usage of the sidecar at the given path, closing it when it was the last. */
+    synchronized void release(String path) {
+      SharedManager shared = open.get(path);
+      if (shared == null) {
+        log.warn("No AuxIndexManager open at {} to release", path);
+        return;
+      }
+      if (--shared.refCount > 0) {
+        log.info("Keeping the AuxIndexManager at {} open for {} cores", path, shared.refCount);
+        return;
+      }
+      open.remove(path);
+      shared.close();
+    }
+
+    /**
+     * Closes whatever is left when the container's ObjectCache goes down. Every core has been
+     * closed by then, so an entry surviving to here means a close hook didn't run -- close it
+     * rather than leak the writer past the container.
+     */
+    @Override
+    public synchronized void close() {
+      for (Map.Entry<String, SharedManager> entry : open.entrySet()) {
+        log.warn("AuxIndexManager at {} was still open at container shutdown", entry.getKey());
+        entry.getValue().close();
+      }
+      open.clear();
+    }
+
+    /** One open sidecar: the manager, what it was opened with, and the cores using it. */
+    private static final class SharedManager {
+
+      private final AuxIndexManager manager;
+      private final DirectoryFactory directoryFactory;
+      private final Directory directory;
+      private int refCount = 1;
+
+      private SharedManager(
+          AuxIndexManager manager, DirectoryFactory directoryFactory, Directory directory) {
+        this.manager = manager;
+        this.directoryFactory = directoryFactory;
+        this.directory = directory;
+      }
+
+      private void close() {
+        try {
+          manager.close();
+        } catch (IOException e) {
+          log.warn("Failed closing AuxIndexManager", e);
+        } finally {
+          try {
+            directoryFactory.release(directory);
+          } catch (IOException e) {
+            log.warn("Failed releasing AuxIndexManager directory {}", directory, e);
+          }
+        }
+      }
+    }
   }
 
   // QueryResponseWriter stubs, unreachable: implemented only to satisfy SolrCoreAware's allowlist,

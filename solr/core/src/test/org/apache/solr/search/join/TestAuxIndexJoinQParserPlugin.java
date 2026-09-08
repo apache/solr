@@ -194,4 +194,39 @@ public class TestAuxIndexJoinQParserPlugin extends SolrTestCase {
       assertFalse(toCore.isClosed());
     }
   }
+
+  /**
+   * A core reload informs the new core's plugin instance while the old core still holds the
+   * sidecar's {@code write.lock}, so the reloaded core has to join the already open {@link
+   * AuxIndexManager} rather than open a second one on the same directory.
+   */
+  @Test
+  public void testCoreReload() throws Exception {
+    SolrParams join =
+        params("q", "{!auxIndexJoin from=dept_s to=dept_id_s}title_s:MTS", "fl", "id");
+    assertJoin(join, "12", "13"); // builds pair columns, so the sidecar has state to carry over
+
+    CoreContainer coreContainer = solrRule.getCoreContainer();
+    AuxIndexManager sidecar = sidecarOf(coreContainer);
+    coreContainer.reload(DEFAULT_TEST_COLLECTION_NAME);
+
+    assertSame("the reloaded core must join the open sidecar", sidecar, sidecarOf(coreContainer));
+    assertJoin(join, "12", "13");
+    assertJoin(
+        params(
+            "q",
+            "{!auxIndexJoin from=dept_s to=dept_id_s fromIndex=" + FROM_CORE + "}title_s:MTS",
+            "fl",
+            "id"),
+        "12",
+        "13");
+  }
+
+  private static AuxIndexManager sidecarOf(CoreContainer coreContainer) {
+    try (SolrCore core = coreContainer.getCore(DEFAULT_TEST_COLLECTION_NAME)) {
+      AuxIndexJoinQParserPlugin plugin =
+          (AuxIndexJoinQParserPlugin) core.getQueryPlugin(AuxIndexJoinQParserPlugin.NAME);
+      return plugin.getJoinIndex();
+    }
+  }
 }
