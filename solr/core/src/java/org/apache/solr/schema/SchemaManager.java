@@ -240,7 +240,7 @@ public class SchemaManager {
       public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
         final var addFieldTypeOp = (UpsertFieldTypeOperation) op;
         String name = ensureNotNull("name", addFieldTypeOp.name);
-        String className = ensureNotNull("class", addFieldTypeOp.className);
+        String className = ensureNotNull("class", addFieldTypeOp.propertyClass);
         try {
           FieldType fieldType =
               mgr.managedIndexSchema.newFieldType(name, className, convertToMap(addFieldTypeOp));
@@ -420,7 +420,7 @@ public class SchemaManager {
       public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
         final var replaceFieldTypeOp = (UpsertFieldTypeOperation) op;
         String name = ensureNotNull("name", replaceFieldTypeOp.name);
-        String className = ensureNotNull("class", replaceFieldTypeOp.className);
+        String className = ensureNotNull("class", replaceFieldTypeOp.propertyClass);
         try {
           mgr.managedIndexSchema =
               mgr.managedIndexSchema.replaceFieldType(

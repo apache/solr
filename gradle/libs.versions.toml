@@ -14,7 +14,7 @@
 # limitations under the License.
 [versions]
 adobe-testing-s3mock = "5.2.0"
-amazon-awssdk = "2.42.37"
+amazon-awssdk = "2.54.6"
 androidx-adaptive = "1.3.0-beta02"
 androidx-lifecycle = "2.10.0"
 androidx-navigation3 = "1.1.1"
@@ -204,7 +204,7 @@ xerial-snappy = "1.1.10.8"
 
 [plugins]
 barfuin-jacocolog = { id = "org.barfuin.gradle.jacocolog", version.ref = "barfuin-jacocolog" }
-benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benmanes-versions" }
+benmanes-versions = { id = "io.github.ben-manes.versions", version.ref = "benmanes-versions" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 diffplug-spotless = { id = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
 jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "compose" }
