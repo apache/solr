@@ -133,14 +133,13 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     DocCollection sourceState = getCollectionState(sourceCollection);
     assertEquals(2, sourceState.getSlice("shard1").getReplicas().size());
     for (Replica replica : sourceState.getSlice("shard1")) {
-      try (SolrClient replicaClient = getHttpSolrClient(replica)) {
-        SolrQuery query = new SolrQuery("id:\"a!2\"");
-        query.set("distrib", false);
-        assertEquals(
-            "Document missing from replica " + replica.getName(),
-            1,
-            replicaClient.query(query).getResults().getNumFound());
-      }
+      var replicaClient = cluster.getSolrClient(replica);
+      SolrQuery query = new SolrQuery("id:\"a!2\"");
+      query.set("distrib", false);
+      assertEquals(
+          "Document missing from replica " + replica.getName(),
+          1,
+          replicaClient.query(query).getResults().getNumFound());
     }
 
     waitForState(
