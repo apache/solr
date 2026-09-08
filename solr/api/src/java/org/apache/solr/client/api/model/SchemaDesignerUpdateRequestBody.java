@@ -19,6 +19,7 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,6 +29,7 @@ import java.util.Map;
  * indexed}, {@code stored}, {@code analyzer}, {@code copyDest}) are captured via the dynamic {@code
  * additionalProperties} map and forwarded to the Schema API.
  */
+@Schema(additionalProperties = Schema.AdditionalPropertiesValue.TRUE)
 public class SchemaDesignerUpdateRequestBody {
 
   @JsonProperty public String name;
@@ -36,6 +38,7 @@ public class SchemaDesignerUpdateRequestBody {
   // Accessed via @JsonAnyGetter / @JsonAnySetter for JSON (de)serialization.
   public Map<String, Object> additionalProperties = new HashMap<>();
 
+  @Schema(hidden = true)
   @JsonAnyGetter
   public Map<String, Object> getAdditionalProperties() {
     return additionalProperties;

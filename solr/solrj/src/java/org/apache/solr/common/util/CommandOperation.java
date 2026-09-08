@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.common.SolrException;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
@@ -295,47 +294,6 @@ public class CommandOperation {
   @Override
   public String toString() {
     return new String(toJSON(Map.of(name, commandData)), StandardCharsets.UTF_8);
-  }
-
-  public static List<CommandOperation> readCommands(
-      Iterable<ContentStream> streams, @SuppressWarnings({"rawtypes"}) NamedList resp)
-      throws IOException {
-    return readCommands(streams, resp, Set.of());
-  }
-
-  /**
-   * Read commands from request streams
-   *
-   * @param streams the streams
-   * @param resp solr query response
-   * @param singletonCommands , commands that cannot be repeated
-   * @return parsed list of commands
-   * @throws IOException if there is an error while parsing the stream
-   */
-  @SuppressWarnings({"unchecked"})
-  public static List<CommandOperation> readCommands(
-      Iterable<ContentStream> streams,
-      @SuppressWarnings({"rawtypes"}) NamedList resp,
-      Set<String> singletonCommands)
-      throws IOException {
-    if (streams == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
-    }
-    ArrayList<CommandOperation> ops = new ArrayList<>();
-    for (ContentStream stream : streams) {
-
-      if ("application/javabin".equals(stream.getContentType())) {
-        ops.addAll(parse(stream.getStream(), singletonCommands));
-      } else {
-        ops.addAll(parse(stream.getReader(), singletonCommands));
-      }
-    }
-    List<Map<String, Object>> errList = CommandOperation.captureErrors(ops);
-    if (!errList.isEmpty()) {
-      resp.add(CommandOperation.ERR_MSGS, errList);
-      return null;
-    }
-    return ops;
   }
 
   public static List<CommandOperation> clone(List<CommandOperation> ops) {

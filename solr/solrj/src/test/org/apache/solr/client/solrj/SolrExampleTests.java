@@ -23,7 +23,6 @@ import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -31,8 +30,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,7 +48,7 @@ import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrack
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
@@ -80,7 +77,6 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
@@ -920,42 +916,12 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
     assertEquals(0, rsp.getResults().getNumFound());
 
-    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    Path file = getFile("solrj/books.csv");
-    final int opened[] = new int[] {0};
-    final int closed[] = new int[] {0};
-
-    boolean assertClosed = random().nextBoolean();
-    if (assertClosed) {
-      byte[] allBytes = Files.readAllBytes(file);
-
-      ContentStreamBase.ByteArrayStream contentStreamMock =
-          new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
-            @Override
-            public InputStream getStream() throws IOException {
-              opened[0]++;
-              return new ByteArrayInputStream(allBytes) {
-                @Override
-                public void close() throws IOException {
-                  super.close();
-                  closed[0]++;
-                }
-              };
-            }
-          };
-      up.addContentStream(contentStreamMock);
-    } else {
-      up.addFile(file, "application/csv");
-    }
+    ContentWriterUpdateRequest up = new ContentWriterUpdateRequest("/update");
+    up.addFile(getFile("solrj/books.csv"), "application/csv");
 
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = client.request(up);
     assertNotNull("Couldn't upload books.csv", result);
-
-    if (assertClosed) {
-      assertEquals("open only once", 1, opened[0]);
-      assertEquals("close exactly once", 1, closed[0]);
-    }
     rsp = client.query(new SolrQuery("*:*"));
     assertEquals(10, rsp.getResults().getNumFound());
   }
@@ -1013,7 +979,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
     assertEquals(0, rsp.getResults().getNumFound());
 
-    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
+    ContentWriterUpdateRequest up = new ContentWriterUpdateRequest("/update");
     up.addFile(getFile("solrj/docs1.xml"), "application/xml"); // 2
     up.addFile(getFile("solrj/docs2.xml"), "application/xml"); // 3
     up.setParam("a", "\u1234");

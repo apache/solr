@@ -70,7 +70,7 @@ import org.slf4j.LoggerFactory;
 // asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
-  static final String PARAM_WHITELIST_CTX_KEY =
+  public static final String PARAM_WHITELIST_CTX_KEY =
       DistributedUpdateProcessor.class + "PARAM_WHITELIST_CTX_KEY";
   public static final String DISTRIB_FROM_SHARD = "distrib.from.shard";
   public static final String DISTRIB_FROM_COLLECTION = "distrib.from.collection";

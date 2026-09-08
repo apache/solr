@@ -34,6 +34,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,16 +111,15 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
             }
           });
 
-      long lastSuccessfulEnqueueNanos = System.nanoTime();
       // Record time since last successful enqueue as 0
       long elapsedTimeMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - enqueueStartNanos);
       // Update elapsed time
 
       if (elapsedTimeMillis > conf.getInt(SLOW_SUBMIT_THRESHOLD_MS)) {
-        slowSubmitAction(request, elapsedTimeMillis);
+        slowSubmitAction(elapsedTimeMillis);
       }
     } catch (Exception e) {
-      // We are intentionally catching all exceptions, the expected exception form this function is
+      // We are intentionally catching all exceptions, the expected exception from this function is
       // {@link MirroringException}
       String message =
           "Unable to enqueue request "
@@ -220,7 +220,7 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
         kafkaConsumerProperties, new StringDeserializer(), new MirroredSolrRequestSerializer());
   }
 
-  private void slowSubmitAction(Object request, long elapsedTimeMillis) {
+  private void slowSubmitAction(long elapsedTimeMillis) {
     log.warn(
         "Enqueuing the request to Kafka took more than {} millis. enqueueElapsedTime={}",
         conf.get(KafkaCrossDcConf.SLOW_SUBMIT_THRESHOLD_MS),
@@ -233,5 +233,6 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
       producer.flush();
       producer.close();
     }
+    IOUtils.closeQuietly(consumer);
   }
 }

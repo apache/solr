@@ -8,7 +8,7 @@
           "db.instance":"collection1",
           "children":[
             {
-              "name":"post:/admin/cores",
+              "name":"reload:/admin/cores",
               "kind":"SERVER",
               "db.instance":"collection1_shard1_replica_nN",
               "db.type":"solr",
@@ -16,7 +16,7 @@
               "http.response.status_code":200,
               "http.url":"http://NORMALIZED/solr/admin/cores"},
             {
-              "name":"post:/admin/cores",
+              "name":"reload:/admin/cores",
               "kind":"SERVER",
               "db.instance":"collection1_shard1_replica_nN",
               "db.type":"solr",
@@ -24,7 +24,7 @@
               "http.response.status_code":200,
               "http.url":"http://NORMALIZED/solr/admin/cores"},
             {
-              "name":"post:/admin/cores",
+              "name":"reload:/admin/cores",
               "kind":"SERVER",
               "db.instance":"collection1_shard2_replica_nN",
               "db.type":"solr",
@@ -32,7 +32,7 @@
               "http.response.status_code":200,
               "http.url":"http://NORMALIZED/solr/admin/cores"},
             {
-              "name":"post:/admin/cores",
+              "name":"reload:/admin/cores",
               "kind":"SERVER",
               "db.instance":"collection1_shard2_replica_nN",
               "db.type":"solr",

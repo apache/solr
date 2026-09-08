@@ -63,7 +63,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   public Path temporaryFolder;
 
   @ClassRule
-  public static final S3MockContainerRule S3_MOCK_RULE = new S3MockContainerRule(BUCKET_NAME);
+  public static final S3MockContainerRule s3MockContainer = new S3MockContainerRule(BUCKET_NAME);
 
   @Before
   @Override
@@ -338,18 +338,18 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     NamedList<Object> args = new NamedList<>();
     args.add(S3BackupRepositoryConfig.REGION, Region.US_EAST_1.id());
     args.add(S3BackupRepositoryConfig.BUCKET_NAME, BUCKET_NAME);
-    args.add(S3BackupRepositoryConfig.ENDPOINT, S3_MOCK_RULE.getHttpEndpoint());
+    args.add(S3BackupRepositoryConfig.ENDPOINT, s3MockContainer.getHttpEndpoint());
     return args;
   }
 
   private void pushObject(String path, String content) {
-    try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
+    try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
       s3.putObject(b -> b.bucket(BUCKET_NAME).key(path), RequestBody.fromString(content));
     }
   }
 
   private Path pullObject(String path) throws IOException {
-    try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
+    try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
       Path file = Files.createTempFile(temporaryFolder, "junit", null);
       InputStream input =
           s3.getObject(
