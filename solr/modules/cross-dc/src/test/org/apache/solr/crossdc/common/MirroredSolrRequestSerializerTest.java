@@ -16,6 +16,8 @@
  */
 package org.apache.solr.crossdc.common;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -26,12 +28,18 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 public class MirroredSolrRequestSerializerTest extends SolrTestCase {
 
   private static final byte[] EMPTY_ARR = new byte[3];
+
+  @BeforeClass
+  public static void ensureWorkingMockito() {
+    assumeWorkingMockito();
+  }
 
   @Test
   public void testSerializationBufferOptimization() {
