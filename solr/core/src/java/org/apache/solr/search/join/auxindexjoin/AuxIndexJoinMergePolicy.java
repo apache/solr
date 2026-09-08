@@ -17,6 +17,10 @@
 package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,46 +30,166 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.CodecReader;
-import org.apache.lucene.index.FilterCodecReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeTrigger;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.Bits;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @lucene.experimental
  */
 final class AuxIndexJoinMergePolicy extends MergePolicy {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /** How many sidecar segments one {@link DocAlignedMerge} folds into one, by default. */
+  static final int DEFAULT_MERGE_SEGMENTS_AT_ONCE = 10;
+
+  /**
+   * How many pair columns a sidecar segment may already carry and still be compacted again, by
+   * default. Merged segments grow wider, not longer, so this is what makes compaction converge
+   * instead of rewriting the same big segment forever.
+   */
+  static final int DEFAULT_MAX_PAIRS_PER_SEGMENT = 1024;
+
+  /**
+   * Cap on the merges proposed in one round. A backlog of hundreds of segments is worked off over
+   * the following rounds (every flush and every finished merge triggers one) rather than handed to
+   * the scheduler at once, where it would stall the writing thread -- which here is a query thread
+   * building a pair column.
+   */
+  private static final int MAX_MERGES_PER_ROUND = 4;
+
+  private volatile int mergeSegmentsAtOnce = DEFAULT_MERGE_SEGMENTS_AT_ONCE;
+  private volatile int maxPairsPerSegment = DEFAULT_MAX_PAIRS_PER_SEGMENT;
+
+  /**
+   * Last round's pair field names by segment key, so a steady stream of commits doesn't re-read
+   * every segment's FieldInfos -- a compound-file open and mmap per segment per round -- when only
+   * the newest segment is new. Rebuilt on every round, which is also what evicts gone segments.
+   * Needs no synchronization: {@link #findMerges} is always called under the {@link IndexWriter}
+   * monitor, as its contract states.
+   */
+  private Map<String, Set<String>> pairFieldNamesBySegment = Map.of();
+
+  /** Test/ops knobs, mirroring {@link #setSweepInterval}: see the DEFAULT_ constants above. */
+  void setCompaction(int mergeSegmentsAtOnce, int maxPairsPerSegment) {
+    this.mergeSegmentsAtOnce = mergeSegmentsAtOnce;
+    this.maxPairsPerSegment = maxPairsPerSegment;
+  }
+
   @Override
   public MergePolicy.MergeSpecification findMerges(
       MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
       throws IOException {
     Set<SegmentCommitInfo> merging = mergeContext.getMergingSegments();
+    Map<String, Set<String>> pairNamesThisRound = HashMap.newHashMap(segmentInfos.asList().size());
     MergeSpecification spec = null;
+    List<SegmentCommitInfo> compactable = new ArrayList<>();
+    int dead = 0;
     for (SegmentCommitInfo info : segmentInfos) {
+      Set<String> pairFieldNames = pairFieldNames(info, pairNamesThisRound);
       if (merging.contains(info)) {
         continue;
       }
-      Set<String> pairFieldNames =
-          JoinIndexUtils.pairFieldNames(JoinIndexUtils.readFieldInfos(info));
       if (!pairFieldNames.isEmpty()
           && pendingPairRemovals.containsAll(
               pairFieldNames)) { // todo sweep pending removals as well
-        if (spec == null) {
-          spec = new MergeSpecification();
-        }
-        spec.add(new DropSegmentMerge(List.of(info)));
+        dead++;
+        spec = added(spec, new DropSegmentMerge(List.of(info)));
+      } else if (isCompactable(info, pairFieldNames)) {
+        compactable.add(info);
       }
     }
+    this.pairFieldNamesBySegment = pairNamesThisRound;
+    int aligned = 0;
+    if (compactable.size() >= mergeSegmentsAtOnce) {
+      // by maxDoc, so a merge groups sidecar segments of comparable length: the union is as long
+      // as its longest input, and every shorter input pays a bit of sparse-docvalues overhead for
+      // the docs it doesn't reach
+      compactable.sort(Comparator.comparingInt(info -> info.info.maxDoc()));
+      for (int from = 0;
+          from + mergeSegmentsAtOnce <= compactable.size() && aligned < MAX_MERGES_PER_ROUND;
+          from += mergeSegmentsAtOnce) {
+        List<SegmentCommitInfo> group =
+            List.copyOf(compactable.subList(from, from + mergeSegmentsAtOnce));
+        aligned++;
+        spec = added(spec, new DocAlignedMerge(group, alignedMergeCount::incrementAndGet));
+      }
+    }
+    if (spec != null) {
+      log.info(
+          "AUXIJOIN sidecar compaction: {} doc-aligned merge(s) of {} segments each and {} dead "
+              + "segment(s) dropped, out of {} segments ({} compactable, {} merging, {} pairs "
+              + "pending removal), on {}",
+          aligned,
+          mergeSegmentsAtOnce,
+          dead,
+          segmentInfos.size(),
+          compactable.size(),
+          merging.size(),
+          pendingPairRemovals.size(),
+          mergeTrigger);
+    } else if (log.isDebugEnabled()) {
+      log.debug(
+          "AUXIJOIN sidecar: nothing to do on {}, {} segments ({} compactable, {} merging, {} pairs "
+              + "pending removal)",
+          mergeTrigger,
+          segmentInfos.size(),
+          compactable.size(),
+          merging.size(),
+          pendingPairRemovals.size());
+    }
     return spec;
+  }
+
+  private static MergeSpecification added(MergeSpecification spec, OneMerge merge) {
+    if (spec == null) {
+      spec = new MergeSpecification();
+    }
+    spec.add(merge);
+    return spec;
+  }
+
+  /**
+   * Whether this segment may be folded into a {@link DocAlignedMerge}: it must carry pairs worth
+   * keeping, must not be so wide already that rewriting it buys nothing, and must have no deletions
+   * -- the sidecar never deletes, and doc-aligning a segment that somehow did would misreport its
+   * live docs for the padded tail.
+   */
+  private boolean isCompactable(SegmentCommitInfo info, Set<String> pairFieldNames) {
+    return !pairFieldNames.isEmpty()
+        && pairFieldNames.size() <= maxPairsPerSegment
+        && !info.hasDeletions()
+        && info.info.maxDoc() > 0;
+  }
+
+  /** The segment's pair field names, from last round's cache when it was already read. */
+  private Set<String> pairFieldNames(SegmentCommitInfo info, Map<String, Set<String>> thisRound)
+      throws IOException {
+    // fieldInfosGen changes whenever the segment's field set can have changed, so it belongs in
+    // the key; segment names are never reused within an index
+    String key = info.info.name + ":" + info.getFieldInfosGen();
+    Set<String> cached = pairFieldNamesBySegment.get(key);
+    if (cached == null) {
+      cached = JoinIndexUtils.pairFieldNames(JoinIndexUtils.readFieldInfos(info));
+      JoinIndexUtils.logDiagnostic(
+          log, "AUXIJOIN evt=readFieldInfos segment={} pairs={}", key, cached.size());
+    }
+    thisRound.put(key, cached);
+    return cached;
   }
 
   // counts merges that actually dropped a fully-dead segment; test-only observability, see
   // droppedSegmentCount()
   private final AtomicInteger droppedSegmentCount = new AtomicInteger();
+
+  // counts doc-aligned merges that actually produced a compacted segment, see alignedMergeCount()
+  private final AtomicInteger alignedMergeCount = new AtomicInteger();
 
   /**
    * A merge over a single dead segment whose contents are reported as fully deleted, so {@link
@@ -79,33 +203,14 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
 
     @Override
     public CodecReader wrapForMerge(CodecReader reader) {
-      return new FilterCodecReader(reader) {
-        @Override
-        public CacheHelper getCoreCacheHelper() {
-          return reader.getCoreCacheHelper();
-        }
-
-        @Override
-        public CacheHelper getReaderCacheHelper() {
-          return null; // we are altering live docs
-        }
-
-        @Override
-        public Bits getLiveDocs() {
-          return new Bits.MatchNoBits(reader.maxDoc());
-        }
-
-        @Override
-        public int numDocs() {
-          return 0;
-        }
-      };
+      return DocAlignedMerge.dropAllDocs(reader);
     }
 
     @Override
     public void mergeFinished(boolean success, boolean segmentDropped) throws IOException {
       if (segmentDropped) {
-        droppedSegmentCount.incrementAndGet();
+        int dropped = droppedSegmentCount.incrementAndGet();
+        log.info("AUXIJOIN sidecar: reaped dead segment {} ({} so far)", segments, dropped);
       }
       super.mergeFinished(success, segmentDropped);
     }
@@ -114,6 +219,11 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
   /** Test-only: how many sidecar segments this policy has actually reaped so far. */
   int droppedSegmentCount() {
     return droppedSegmentCount.get();
+  }
+
+  /** Test-only: how many doc-aligned compactions have actually completed so far. */
+  int alignedMergeCount() {
+    return alignedMergeCount.get();
   }
 
   /** Test-only: how many dead pair field names are currently queued for the next reap. */
@@ -212,6 +322,7 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
             searcherKey,
             currentSnapshot,
             MAX_TRACKED_SEARCHER_PAIRS);
+    int queued = 0;
     if (previousSnapshot != null) {
       for (String pairFieldName : previousSnapshot) {
         if (!currentSnapshot.contains(pairFieldName)) {
@@ -220,9 +331,17 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
               pendingPairRemovalsOrder,
               pairFieldName,
               MAX_PENDING_PAIR_REMOVALS);
+          queued++;
         }
       }
     }
+    JoinIndexUtils.logDiagnostic(
+        log,
+        "AUXIJOIN evt=sweepSample needed={} wasNeeded={} queuedForRemoval={} pendingTotal={}",
+        currentSnapshot.size(),
+        previousSnapshot == null ? -1 : previousSnapshot.size(),
+        queued,
+        pendingPairRemovals.size());
   }
 
   /**

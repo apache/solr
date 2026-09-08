@@ -87,6 +87,18 @@
  *       ever being resampled this way stays live.
  * </ul>
  *
+ * <h2>Compaction of the sidecar</h2>
+ *
+ * The sidecar gains a segment per written batch and, unlike an ordinary index, cannot merge them
+ * the ordinary way: a sidecar doc id <em>is</em> the from-side doc id its column is addressed by,
+ * so concatenating two segments would shift every mapping in the second one. Left alone the segment
+ * count therefore grew without bound under a steady stream of pair builds, until the JVM ran out of
+ * mmap-able address space. {@code AuxIndexJoinMergePolicy} folds groups of them into one with a
+ * {@code DocAlignedMerge} instead, which unions their columns doc-for-doc -- doc {@code i} of the
+ * result carries doc {@code i} of every input, and the result is as long as its longest input, not
+ * as long as all of them together. Pair columns are opaque to it: their names already carry both
+ * sides' segment ids, so no two inputs' columns can collide.
+ *
  * <h2>TODO</h2>
  *
  * <ul>
@@ -100,6 +112,13 @@
  *       advance()-eble iterator over union. And for "from" side it should be just intersectable
  *       with docSetIter. Format should balance storage size and decoding efforts. It should be
  *       stored as a Document fields.
+ *   <li>let {@code DocAlignedMerge} drop the columns of pairs already queued for reaping while it
+ *       rewrites a segment anyway: nearly free there, and the only way to reclaim a dead pair that
+ *       shares a segment with live ones. Needs {@code
+ *       JoinIndexScorerSupplier#refreshJoinTasksReferences} to rebuild a pair that vanished under a
+ *       live query first, where it currently throws.
+ *   <li>expose the compaction knobs ({@code AuxIndexJoinMergePolicy#setCompaction}) through {@code
+ *       AuxIndexJoinConfig} and the qparser plugin's init params, like the sweep interval
  *   <li>stripe columns for join index: break {@code JoinIndexUtils.TO_DOC_VAL_BY_FROM_DOCNUM} to a
  *       pair one is {@code to_doc_nums<maxdocs(to-side)/2} and {@code
  *       to_doc_nums>=maxdocs(to-side)/2}

@@ -18,7 +18,10 @@ package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
@@ -26,8 +29,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.IndexSearcher;
@@ -41,6 +47,8 @@ import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.Edges;
+import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 
 /**
  * Real (non-mocked) integration smoke test for {@link AuxIndexJoinMergePolicy}: builds a segmented
@@ -257,5 +265,189 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
     assertTrue(
         "a second round of mass deletes + force merge should reap more dead segments",
         joinIndex.mergePolicy.droppedSegmentCount() > droppedSoFar);
+  }
+
+  /**
+   * Writes {@code batches} single-pair batches straight into the sidecar -- one segment each, of
+   * deliberately differing lengths -- and returns the from-doc -> to-doc column each pair was
+   * written with, keyed by pair field name.
+   */
+  private Map<String, int[]> writeBatchesOfVaryingLength(int firstBatch, int batches)
+      throws IOException {
+    Map<String, int[]> columnsByPair = new LinkedHashMap<>();
+    for (int batch = firstBatch; batch < firstBatch + batches; batch++) {
+      // the shape of a real pair field name doesn't matter here, only that it is unique per pair
+      String pairFieldName = "fromSeg" + batch + ":dv0_toSeg:dv0";
+      int fromSegmentMaxDoc = 2 + batch; // pairs come from from-segments of different sizes
+      int[] toDocByFromDoc = new int[fromSegmentMaxDoc];
+      Arrays.fill(toDocByFromDoc, -1);
+      // every other from-doc matches, starting at doc 0 for even batches and doc 1 for odd ones,
+      // so the union has to keep both "doc 0 has a value" and "doc 0 has none" columns straight
+      for (int fromDoc = batch % 2; fromDoc < fromSegmentMaxDoc; fromDoc += 2) {
+        toDocByFromDoc[fromDoc] = 1000 * batch + fromDoc;
+      }
+      columnsByPair.put(pairFieldName, toDocByFromDoc);
+      joinIndex.writeBatch(Map.of(pairFieldName, model(toDocByFromDoc)));
+    }
+    return columnsByPair;
+  }
+
+  /** The {@link JoinColumnModel} a from-doc -> to-doc array implies, edges included. */
+  private static JoinColumnModel model(int[] toDocByFromDoc) {
+    int minFromDoc = -1;
+    int maxFromDoc = -1;
+    int minToDoc = -1;
+    int maxToDoc = -1;
+    int toCount = 0;
+    for (int fromDoc = 0; fromDoc < toDocByFromDoc.length; fromDoc++) {
+      int toDoc = toDocByFromDoc[fromDoc];
+      if (toDoc < 0) {
+        continue;
+      }
+      if (toCount == 0) {
+        minFromDoc = fromDoc;
+        minToDoc = toDoc;
+      }
+      maxFromDoc = fromDoc;
+      minToDoc = Math.min(minToDoc, toDoc);
+      maxToDoc = Math.max(maxToDoc, toDoc);
+      toCount++;
+    }
+    return new JoinColumnModel(
+        toDocByFromDoc,
+        new Edges(new int[] {minFromDoc, maxFromDoc}, new int[] {minToDoc, maxToDoc}, toCount));
+  }
+
+  /**
+   * Asserts the pair's column reads back from the sidecar exactly as written: same to-doc at the
+   * same from-doc, nothing where nothing was written (padding included), and its edges still at doc
+   * 0 -- i.e. that compaction moved no doc id.
+   */
+  private static void assertColumnIntact(IndexReader sidecar, String pairFieldName, int[] expected)
+      throws IOException {
+    String toCountField = JoinIndexUtils.TO_COUNT_PREFIX + pairFieldName;
+    LeafReaderContext carrier = null;
+    for (LeafReaderContext leaf : sidecar.leaves()) {
+      if (leaf.reader().getFieldInfos().fieldInfo(toCountField) != null) {
+        assertNull("pair " + pairFieldName + " ended up in two sidecar segments", carrier);
+        carrier = leaf;
+      }
+    }
+    assertNotNull("pair " + pairFieldName + " was lost", carrier);
+
+    JoinColumnModel written = model(expected);
+    assertArrayEquals(
+        "from-doc edges of " + pairFieldName,
+        written.edges().fromDocEdges(),
+        JoinIndexUtils.loadEdges(carrier, JoinIndexUtils.FROM_EDGES_PREFIX + pairFieldName));
+    assertArrayEquals(
+        "to-doc edges of " + pairFieldName,
+        written.edges().toDocEdges(),
+        JoinIndexUtils.loadEdges(carrier, JoinIndexUtils.TO_EDGES_PREFIX + pairFieldName));
+    assertArrayEquals(
+        "to-doc count of " + pairFieldName,
+        new int[] {written.edges().toCount()},
+        JoinIndexUtils.loadEdges(carrier, toCountField));
+
+    SortedNumericDocValues column =
+        carrier
+            .reader()
+            .getSortedNumericDocValues(JoinIndexUtils.TO_DOC_VAL_BY_FROM_DOCNUM + pairFieldName);
+    assertNotNull("join column of " + pairFieldName, column);
+    for (int fromDoc = 0; fromDoc < expected.length; fromDoc++) {
+      String at = pairFieldName + " at from-doc " + fromDoc;
+      assertEquals(at, expected[fromDoc] >= 0, column.advanceExact(fromDoc));
+      if (expected[fromDoc] >= 0) {
+        assertEquals(at, 1, column.docValueCount());
+        assertEquals(at, expected[fromDoc], column.nextValue());
+      }
+    }
+    // the tail this pair's from-segment never had: padded by the merge, and still empty
+    for (int paddedDoc = expected.length; paddedDoc < carrier.reader().maxDoc(); paddedDoc++) {
+      assertFalse(
+          pairFieldName + " has a value at padded doc " + paddedDoc,
+          column.advanceExact(paddedDoc));
+    }
+  }
+
+  /**
+   * The sidecar is written one batch per segment and can never be merged the ordinary way, so
+   * compaction has to fold segments together by doc id. Checks it happens, and that every column
+   * still answers at exactly the from-doc it was written at.
+   */
+  public void testDocAlignedMergeUnionsColumnsWithoutMovingDocIds() throws Exception {
+    // fold every 3 segments, so a handful of batches is enough to see compaction converge
+    joinIndex.mergePolicy.setCompaction(3, AuxIndexJoinMergePolicy.DEFAULT_MAX_PAIRS_PER_SEGMENT);
+
+    Map<String, int[]> columnsByPair = writeBatchesOfVaryingLength(0, 9);
+    joinIndex.waitForMerges();
+    // one more batch, so the commit it makes publishes the merged segments to the reader below
+    columnsByPair.putAll(writeBatchesOfVaryingLength(9, 1));
+
+    assertTrue(
+        "expected the sidecar's segments to be compacted, none were",
+        joinIndex.mergePolicy.alignedMergeCount() > 0);
+
+    try (DirectoryReader sidecar = DirectoryReader.open(joinDir)) {
+      assertTrue(
+          "compaction should have left fewer segments than the "
+              + columnsByPair.size()
+              + " written batches, got "
+              + sidecar.leaves().size(),
+          sidecar.leaves().size() < columnsByPair.size());
+      for (Map.Entry<String, int[]> pair : columnsByPair.entrySet()) {
+        assertColumnIntact(sidecar, pair.getKey(), pair.getValue());
+      }
+    }
+  }
+
+  /** The same, end to end: a join keeps answering identically once its sidecar is compacted. */
+  public void testJoinAnswersTheSameAfterCompaction() throws Exception {
+    joinIndex.mergePolicy.setCompaction(2, AuxIndexJoinMergePolicy.DEFAULT_MAX_PAIRS_PER_SEGMENT);
+
+    List<String> parentIds = addParentsAndChildren("gen1-", atLeast(15));
+    try (IndexReader childrenReader = childrenWriter.getReader();
+        IndexReader parentsReader = parentsWriter.getReader()) {
+      // builds the sidecar: one segment per written batch, several pairs' worth
+      assertEquals(
+          new TreeSet<>(parentIds),
+          searchAllParents(newSearcher(parentsReader), newSearcher(childrenReader)));
+
+      joinIndex.waitForMerges();
+      assertTrue(
+          "expected the sidecar's segments to be compacted, none were",
+          joinIndex.mergePolicy.alignedMergeCount() > 0);
+
+      // same query, same answer -- now served from doc-aligned, compacted sidecar segments
+      assertEquals(
+          new TreeSet<>(parentIds),
+          searchAllParents(newSearcher(parentsReader), newSearcher(childrenReader)));
+    }
+  }
+
+  /**
+   * The failure mode compaction exists for: under a steady stream of pair builds the sidecar used
+   * to grow by one segment per batch forever -- hundreds of segments, each a compound file the
+   * merge policy reopens on every commit, until the JVM runs out of mmap-able address space ("Map
+   * failed" out of MMapDirectory). With compaction the segment count stays bounded instead.
+   */
+  public void testSegmentCountStaysBoundedUnderSteadyWrites() throws Exception {
+    int batches = 60; // with the default fold of 10, one per commit, as a steady load would
+    writeBatchesOfVaryingLength(0, batches);
+    joinIndex.waitForMerges();
+    writeBatchesOfVaryingLength(batches, 1); // a commit publishing whatever just merged
+    joinIndex.waitForMerges();
+
+    try (DirectoryReader sidecar = DirectoryReader.open(joinDir)) {
+      assertTrue(
+          "expected compactions to keep the sidecar's segment count well under the "
+              + batches
+              + " batches written, got "
+              + sidecar.leaves().size()
+              + " segments after "
+              + joinIndex.mergePolicy.alignedMergeCount()
+              + " compactions",
+          sidecar.leaves().size() <= batches / 3);
+    }
   }
 }

@@ -588,6 +588,14 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       }
       // else: resolved from the indexer
     }
+    // from here on every reference has to address newJoinIndexSearcher: it is the searcher this
+    // supplier reads its columns from (see LeafJoin#toDocsByFromDocsDV, which resolves a reference
+    // against lastSeenJoinSearcher by leaf ord), so passes 2 and 3 below must look segments up in
+    // it and not in the one the weight happened to see. They used to scan the older searcher,
+    // which went unnoticed while the sidecar only ever appended segments and dropped whole dead
+    // ones; a doc-aligned compaction (AuxIndexJoinMergePolicy) reshuffles leaf ords under a live
+    // query, and then a reference resolved in the old searcher addresses a different segment here.
+    this.lastSeenJoinSearcher = newJoinIndexSearcher;
     // refresh old refs, pass 1: same searcher, just get a segment by ord and check
     // the segment name
     List<LeafReaderContext> newLeaves = newJoinIndexSearcher.getLeafContexts();
@@ -668,9 +676,9 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
               this.toReader,
               this.toField,
               this.ctxId,
-              // null refs trace back to the weight-age extract, so that's the searcher these
-              // pairs were last seen absent in; still lastSeenJoinSearcher at this point --
-              // it advances to newJoinIndexSearcher only after this method
+              // the searcher these pairs were last seen absent in: null refs trace back to the
+              // weight-age extract, and pass 3 above rescanned newJoinIndexSearcher for them,
+              // which lastSeenJoinSearcher now is -- the freshest absence this supplier observed
               this.lastSeenJoinSearcher,
               fromColumnFutures);
       this.joinIndexBuildNanos += System.nanoTime() - buildStartNanos;
@@ -681,8 +689,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         justWritten.add(new SimpleEntry<>(cell, entry.getValue()));
       }
     }
-    this.lastSeenJoinSearcher =
-        newJoinIndexSearcher; // set old searcher, it corresponds to weightAgeJoinSegmentsReadOnly
+    assert this.lastSeenJoinSearcher == newJoinIndexSearcher;
     return new TaskRefreshResult(joinSegments, justWritten);
   }
 
