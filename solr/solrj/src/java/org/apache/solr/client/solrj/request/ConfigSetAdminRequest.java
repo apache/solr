@@ -62,7 +62,7 @@ public abstract class ConfigSetAdminRequest<
   /**
    * @deprecated Use {@link #ConfigSetAdminRequest(METHOD)}.
    */
-  @Deprecated(since = "10.1")
+  @Deprecated(since = "11.0")
   public ConfigSetAdminRequest() {
     this(METHOD.POST);
   }
@@ -70,7 +70,7 @@ public abstract class ConfigSetAdminRequest<
   /**
    * @deprecated Use {@link #ConfigSetAdminRequest(METHOD, String)}.
    */
-  @Deprecated(since = "10.1")
+  @Deprecated(since = "11.0")
   public ConfigSetAdminRequest(String path) {
     this(METHOD.POST, path);
   }
@@ -102,7 +102,7 @@ public abstract class ConfigSetAdminRequest<
     /**
      * @deprecated Use {@link #ConfigSetSpecificAdminRequest(METHOD)}.
      */
-    @Deprecated(since = "10.1")
+    @Deprecated(since = "11.0")
     protected ConfigSetSpecificAdminRequest() {
       this(METHOD.POST);
     }
