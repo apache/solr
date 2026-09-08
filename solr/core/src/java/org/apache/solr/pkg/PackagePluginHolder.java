@@ -58,7 +58,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
               }
 
               @Override
-              public Map<String, PackageAPI.PkgVersion> packageDetails() {
+              public Map<String, PackageStore.PkgVersion> packageDetails() {
                 return Map.of(info.cName.original, pkgVersion.getPkgVersion());
               }
 
