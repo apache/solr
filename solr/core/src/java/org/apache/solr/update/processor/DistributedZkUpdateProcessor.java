@@ -678,7 +678,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
-  void setupRequest(UpdateCommand cmd) {
+  public void setupRequest(UpdateCommand cmd) {
     zkCheck(cmd);
     if (cmd instanceof AddUpdateCommand) {
       AddUpdateCommand acmd = (AddUpdateCommand) cmd;
