@@ -32,6 +32,7 @@ plugins {
   alias(libs.plugins.diffplug.spotless) apply false
   alias(libs.plugins.nodegradle.node) apply false
   alias(libs.plugins.openapi.generator) apply false
+  alias(libs.plugins.cyclonedx) apply false
   alias(libs.plugins.logchange)
 }
 
@@ -228,6 +229,7 @@ apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
 apply from: file('gradle/hacks/dummy-outputs.gradle')
 
 apply from: file('gradle/solr/packaging.gradle')
+apply from: file('gradle/solr/sbom.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/node.gradle')

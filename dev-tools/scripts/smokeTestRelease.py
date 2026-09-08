@@ -237,18 +237,15 @@ def checkAllJARs(topDir, gitRevision, version):
 def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   print('  test basics...')
   ents = getDirEntries(urlString)
-  artifact = None
   changesURL = None
   openApiURL = None
   mavenURL = None
   dockerURL = None
-  artifactURL = None
   expectedSigs = []
   if isSigned:
     expectedSigs.append('asc')
   expectedSigs.extend(['sha512'])
-  sigs = []
-  artifacts = []
+  candidates = []
 
   for text, subURL in ents:
     if text == '.gitrev':
@@ -267,31 +264,35 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
       if text not in ('openApi/', 'openApi-%s/' % version):
         raise RuntimeError('solr: found %s vs expected openApi-%s/' % (text, version))
       openApiURL = subURL
-    elif artifact is None:
-      artifact = text
-      artifactURL = subURL
-      expected = 'solr-%s' % version
-      if not artifact.startswith(expected):
-        raise RuntimeError('solr: unknown artifact %s: expected prefix %s' % (text, expected))
-      sigs = []
-    elif text.startswith(artifact + '.'):
-      sigs.append(subURL.rsplit(".")[-1:][0])
     else:
-      if sigs != expectedSigs:
-        raise RuntimeError('solr: artifact %s has wrong sigs: expected %s but got %s' % (artifact, expectedSigs, sigs))
-      artifacts.append((artifact, artifactURL))
-      artifact = text
-      artifactURL = subURL
-      sigs = []
+      candidates.append((text, subURL))
 
-  if sigs != []:
-    artifacts.append((artifact, artifactURL))
-    if sigs != expectedSigs:
-      raise RuntimeError('solr: artifact %s has wrong sigs: expected %s but got %s' % (artifact, expectedSigs, sigs))
+  # Split the remaining entries into artifacts and the signatures that belong to them.
+  # An entry is a signature if its file name is the name of another artifact with a signature extension.
+  names = {text for text, subURL in candidates}
+  artifacts = []
+  sigs = {}
+  for text, subURL in candidates:
+    for ext in expectedSigs:
+      if text.endswith('.' + ext) and text[:-(len(ext) + 1)] in names:
+        sigs.setdefault(text[:-(len(ext) + 1)], []).append(ext)
+        break
+    else:
+      expected = 'solr-%s' % version
+      if not text.startswith(expected):
+        raise RuntimeError('solr: unknown artifact %s: expected prefix %s' % (text, expected))
+      artifacts.append((text, subURL))
+
+  for artifact, subURL in artifacts: # pylint: disable=redefined-argument-from-local
+    actualSigs = sorted(sigs.get(artifact, []))
+    if actualSigs != expectedSigs:
+      raise RuntimeError('solr: artifact %s has wrong sigs: expected %s but got %s' % (artifact, expectedSigs, actualSigs))
 
   expected = ['solr-%s-src.tgz' % version,
               'solr-%s.tgz' % version,
-              'solr-%s-slim.tgz' % version]
+              'solr-%s-slim.tgz' % version,
+              'solr-%s.tgz.cdx.json' % version,
+              'solr-%s-slim.tgz.cdx.json' % version]
 
   actual = [x[0] for x in artifacts]
   expected.sort()
@@ -395,7 +396,7 @@ def testOpenApi(version, openApiDirUrl):
       specFound = True
 
   if not specFound:
-    raise RuntimeError('Did not see %s in %s' % expectedSpecFileName, openApiDirUrl)
+    raise RuntimeError('Did not see %s in %s' % (expectedSpecFileName, openApiDirUrl))
 
 
 def testChangelogMd(dir, version):

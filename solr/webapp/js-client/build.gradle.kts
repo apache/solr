@@ -17,6 +17,8 @@
 
 import com.github.gradle.node.npm.task.NpmTask
 import com.github.gradle.node.npm.task.NpxTask
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 
 // Builds the OpenAPI-generated JS client (from :solr:api) into a single bundled
 // file, for :solr:webapp to include in the war. This is the only place in the
@@ -49,9 +51,29 @@ val syncJSClientSourceCode = tasks.register<Sync>("syncJSClientSourceCode") {
 
   into(jsClientWorkspace)
 
-  // Keep the node modules, so that they don't need to be re-downloaded
+  // Keep the outputs of "npm install", so that they don't need to be regenerated
   preserve {
     include("node_modules/**")
+    include("package-lock.json")
+  }
+
+  // The OpenAPI generator wrongly declares the @babel/cli build tool as a runtime
+  // dependency; move it to devDependencies, so that the SBOM of the bundle
+  // (generated with --omit dev) only lists what browserify actually bundles.
+  doLast {
+    val packageJson = File(jsClientWorkspace, "package.json")
+    @Suppress("UNCHECKED_CAST")
+    val json = JsonSlurper().parse(packageJson) as MutableMap<String, Any?>
+
+    @Suppress("UNCHECKED_CAST")
+    val dependencies = json["dependencies"] as? MutableMap<String, String>
+    dependencies?.remove("@babel/cli")?.let { babelCliVersion ->
+      @Suppress("UNCHECKED_CAST")
+      val devDependencies =
+        json.getOrPut("devDependencies") { mutableMapOf<String, String>() } as MutableMap<String, String>
+      devDependencies["@babel/cli"] = babelCliVersion
+    }
+    packageJson.writeText(JsonOutput.prettyPrint(JsonOutput.toJson(json)))
   }
 }
 
@@ -64,6 +86,7 @@ val jsClientDownloadDeps = tasks.register<NpmTask>("jsClientDownloadDeps") {
   inputs.dir("$jsClientWorkspace/src")
   inputs.file("$jsClientWorkspace/package.json")
   outputs.dir("$jsClientWorkspace/node_modules")
+  outputs.file("$jsClientWorkspace/package-lock.json")
 }
 
 val jsClientBuild = tasks.register<NpmTask>("jsClientBuild") {
@@ -115,5 +138,56 @@ val finalizeJsBundleDir = tasks.register<Sync>("finalizeJsBundleDir") {
 artifacts {
   add("jsClientBundle", jsClientBundleDir) {
     builtBy(finalizeJsBundleDir)
+  }
+}
+
+// CycloneDX SBOM of the bundle, merged into the distribution SBOMs by :solr:packaging
+
+val jsClientSbomFile = layout.buildDirectory.file("cyclonedx/bom-js-client.json").get().asFile
+
+val downloadCyclonedxNpm = tasks.register<NpmTask>("downloadCyclonedxNpm") {
+  args.set(listOf("install", "@cyclonedx/cyclonedx-npm@${libs.versions.cyclonedx.npm.get()}"))
+
+  inputs.property("cyclonedx-npm version", libs.versions.cyclonedx.npm.get())
+  outputs.dir(project.extra["nodeProjectDir"].toString() + "/node_modules/@cyclonedx/cyclonedx-npm")
+}
+
+val generateJsClientSbom = tasks.register<NpxTask>("generateJsClientSbom") {
+  dependsOn(downloadCyclonedxNpm)
+  // Needs the package-lock.json and node_modules produced by the install
+  dependsOn(jsClientDownloadDeps)
+
+  // The full package spec, since the bare "cyclonedx-npm" command name resolves to an
+  // unrelated npm package. Runs from the node project dir, where downloadCyclonedxNpm
+  // installed the pinned version, and points at the workspace manifest instead.
+  command.set("@cyclonedx/cyclonedx-npm@${libs.versions.cyclonedx.npm.get()}")
+  args.set(
+    listOf(
+      // Only the packages bundled into the shipped file, not the build tooling
+      "--omit", "dev",
+      // Match the spec version emitted by the CycloneDX Gradle plugin in :solr:packaging
+      "--spec-version", "1.6",
+      "--output-reproducible",
+      "--output-format", "JSON",
+      "--output-file", jsClientSbomFile.absolutePath,
+      "$jsClientWorkspace/package.json",
+    ),
+  )
+  workingDir.set(File(project.extra["nodeProjectDir"].toString()))
+
+  inputs.file("$jsClientWorkspace/package.json")
+  inputs.file("$jsClientWorkspace/package-lock.json")
+  inputs.property("cyclonedx-npm version", libs.versions.cyclonedx.npm.get())
+  outputs.file(jsClientSbomFile)
+}
+
+val jsClientSbom = configurations.create("jsClientSbom") {
+  isCanBeConsumed = true
+  isCanBeResolved = false
+}
+
+artifacts {
+  add("jsClientSbom", jsClientSbomFile) {
+    builtBy(generateJsClientSbom)
   }
 }
