@@ -19,7 +19,6 @@ package org.apache.solr.crossdc.common;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -27,6 +26,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.TimeSource;
 import org.junit.Test;
 
 public class MirroredSolrRequestSerializerTest extends SolrTestCase {
@@ -171,11 +171,11 @@ public class MirroredSolrRequestSerializerTest extends SolrTestCase {
   @Test
   public void testDefaultSubmitTime() {
     // The timestamp must be comparable across JVMs (e.g. producer and consumer processes), so it
-    // has to be derived from a wall clock (System.currentTimeMillis()) rather than
-    // System.nanoTime(), which is only meaningful within a single JVM's lifetime.
-    long before = TimeUnit.NANOSECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+    // has to be derived from a wall clock (System.currentTimeMillis() via TimeSource.CURRENT_TIME)
+    // rather than System.nanoTime(), which is only meaningful within a single JVM's lifetime.
+    long before = TimeSource.CURRENT_TIME.getTimeNs();
     MirroredSolrRequest<?> mirroredRequest = new MirroredSolrRequest<>(new UpdateRequest());
-    long after = TimeUnit.NANOSECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+    long after = TimeSource.CURRENT_TIME.getTimeNs();
 
     assertTrue(
         "submitTimeNanos should be a wall-clock nanosecond timestamp, got "
@@ -192,10 +192,10 @@ public class MirroredSolrRequestSerializerTest extends SolrTestCase {
     UpdateRequest req = new UpdateRequest();
     req.deleteById("1");
 
-    long before = TimeUnit.NANOSECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+    long before = TimeSource.CURRENT_TIME.getTimeNs();
     MirroredSolrRequest<?> mirroredRequest =
         new MirroredSolrRequest<>(MirroredSolrRequest.Type.UPDATE, 3, req);
-    long after = TimeUnit.NANOSECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+    long after = TimeSource.CURRENT_TIME.getTimeNs();
 
     byte[] data = serializer.serialize("test", mirroredRequest);
     MirroredSolrRequest<?> deserialized = serializer.deserialize("test", data);
