@@ -195,7 +195,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals(0, r1.getStatus());
 
     // Expecting 8 spans:
-    // 1. api call "name=create:/admin/collections". db.instance=testInternalCollectionApiCommands
+    // 1. api call "name=post:/admin/collections". db.instance=testInternalCollectionApiCommands
     // - unique traceId unrelated to the internal trace id generated for the operation
     // 2. internal CollectionApiCommand "name=CreateCollectionCmd"
     // db.instance=testInternalCollectionApiCommands

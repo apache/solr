@@ -204,7 +204,7 @@ xerial-snappy = "1.1.10.8"
 
 [plugins]
 barfuin-jacocolog = { id = "org.barfuin.gradle.jacocolog", version.ref = "barfuin-jacocolog" }
-benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benmanes-versions" }
+benmanes-versions = { id = "io.github.ben-manes.versions", version.ref = "benmanes-versions" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 diffplug-spotless = { id = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
 jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "compose" }
