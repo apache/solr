@@ -178,8 +178,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       proxy.reopen();
     }
 
-    assertNumDocs(
-        20, cluster.getSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0)));
+    assertNumDocs(20, cluster.getSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0)));
   }
 
   public void testCantConnectToLeader() throws Exception {
@@ -193,12 +192,10 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     SocketProxy proxy = getProxyForReplica(s.getLeader());
     try {
       // wait for replication
-      assertNumDocs(
-          10, cluster.getSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0)));
+      assertNumDocs(10, cluster.getSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0)));
       proxy.close();
       expectThrows(SolrException.class, () -> addDocs(1));
-      assertNumDocs(
-          10, cluster.getSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0)));
+      assertNumDocs(10, cluster.getSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0)));
       assertNumDocs(10, cluster.getSolrClient(collectionName));
     } finally {
       log.info("Opening leader node");
