@@ -153,10 +153,14 @@ public abstract class HttpSolrClient extends SolrClient {
   protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
 
-    var addParams = SolrParams.of(CommonParams.WT, parserToUse.getWriterType());
-    addParams = SolrParams.wrapDefaults(addParams, parserToUse.getAdditionalRequestParams());
-
-    return new ModifiableSolrParams(SolrParams.wrapDefaults(addParams, solrRequest.getParams()));
+    // The parser's own params take precedence over the request's, as wt does.
+    var params =
+        new ModifiableSolrParams(
+            SolrParams.wrapDefaults(
+                parserToUse.getAdditionalRequestParams(), solrRequest.getParams()));
+    // set() removes the param when the writer type is null, which is how a parser asks for no wt.
+    params.set(CommonParams.WT, parserToUse.getWriterType());
+    return params;
   }
 
   protected boolean isMultipart(RequestWriter.ContentWriter contentWriter) {
