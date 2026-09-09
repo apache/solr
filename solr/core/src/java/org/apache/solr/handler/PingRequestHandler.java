@@ -256,8 +256,8 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     // Execute the ping query and catch any possible exception
     Throwable ex = null;
-    SolrQueryRequest pingReq = req.subRequest(SolrParams.wrapDefaults(overrides, configParams));
-    try {
+    try (SolrQueryRequest pingReq =
+        req.subRequest(SolrParams.wrapDefaults(overrides, configParams))) {
       SolrQueryResponse pingrsp = new SolrQueryResponse();
       core.execute(handler, pingReq, pingrsp);
       ex = pingrsp.getException();
@@ -267,8 +267,6 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     } catch (Exception e) {
       ex = e;
-    } finally {
-      pingReq.close();
     }
 
     // Send an error or an 'OK' message (response code will be 200)
@@ -288,16 +286,13 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
    * {@code qt} means the core's default handler.
    */
   private SolrParams resolveConfiguredParams(SolrQueryRequest req) {
-    SolrQueryRequest configOnly = req.subRequest(new ModifiableSolrParams());
-    try {
+    try (SolrQueryRequest configOnly = req.subRequest(new ModifiableSolrParams())) {
       PluginInfo info = getPluginInfo();
       if (info != null && info.attributes.containsKey(USEPARAM)) {
         configOnly.getContext().put(USEPARAM, info.attributes.get(USEPARAM));
       }
       SolrPluginUtils.setDefaults(configOnly, defaults, appends, invariants);
       return configOnly.getParams();
-    } finally {
-      configOnly.close();
     }
   }
 
