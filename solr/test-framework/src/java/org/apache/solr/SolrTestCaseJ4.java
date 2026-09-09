@@ -288,7 +288,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     ExecutorUtil.resetThreadLocalProviders();
     OpenTelemetryConfigurator.resetForTest();
 
-    // nocommit: use rarely()
+    // TODO: use rarely()
     withQueryTimeout = true;
     if (withQueryTimeout) {
       log.info("###Test is configured to use QueryLimits");
