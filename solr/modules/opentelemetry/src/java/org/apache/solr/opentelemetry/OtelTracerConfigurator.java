@@ -74,8 +74,8 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
     setDefaultIfNotConfigured("OTEL_PROPAGATORS", "tracecontext,baggage");
-    if (EnvUtils.getProperty("host") != null) {
-      addOtelResourceAttributes(Map.of("host.name", EnvUtils.getProperty("host")));
+    if (EnvUtils.getProperty("solr.host.advertise") != null) {
+      addOtelResourceAttributes(Map.of("host.name", EnvUtils.getProperty("solr.host.advertise")));
     }
 
     final String currentConfig = getCurrentOtelConfigAsString();

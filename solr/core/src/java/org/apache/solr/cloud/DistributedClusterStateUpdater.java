@@ -755,6 +755,8 @@ public class DistributedClusterStateUpdater {
       }
 
       @Override
+      @SuppressWarnings(
+          "ReferenceEquality") // NO_OP is a unique sentinel; identity check is intentional
       public void computeUpdates(ClusterState clusterState, SolrZkClient client) {
         boolean hasJsonUpdates = false;
         List<PerReplicaStatesOps> perReplicaStateOps = new ArrayList<>();
@@ -912,6 +914,8 @@ public class DistributedClusterStateUpdater {
     }
 
     @Override
+    @SuppressWarnings(
+        "ReferenceEquality") // NO_OP is a unique sentinel; identity check is intentional
     public void computeUpdates(ClusterState clusterState, SolrZkClient client) {
       final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
       Optional<ZkWriteCommand> result =
