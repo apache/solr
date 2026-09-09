@@ -26,8 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
@@ -37,7 +35,6 @@ import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
-import org.apache.lucene.util.CharsRef;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
@@ -202,37 +199,21 @@ public class Suggester extends SolrSpellChecker {
       return EMPTY_RESULT;
     }
     SpellingResult res = new SpellingResult();
-    TokenStream stream = options.tokenStreamSupplier.get();
-    try {
-      stream.reset();
-      // AttributeReader also registers CharTermAttribute; addAttribute is idempotent so this
-      // still returns the very same shared instance.
-      CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
-      SpellCheckToken.AttributeReader tokenReader = new SpellCheckToken.AttributeReader(stream);
-      CharsRef scratch = new CharsRef();
-      while (stream.incrementToken()) {
-        SpellCheckToken t = tokenReader.current();
-        scratch.chars = termAtt.buffer();
-        scratch.offset = 0;
-        scratch.length = termAtt.length();
-        boolean onlyMorePopular =
-            (options.suggestMode == SuggestMode.SUGGEST_MORE_POPULAR)
-                && !(lookup instanceof WFSTCompletionLookup)
-                && !(lookup instanceof AnalyzingSuggester);
-        List<LookupResult> suggestions = lookup.lookup(scratch, onlyMorePopular, options.count);
-        if (suggestions == null) {
-          continue;
-        }
-        if (options.suggestMode != SuggestMode.SUGGEST_MORE_POPULAR) {
-          Collections.sort(suggestions);
-        }
-        for (LookupResult lr : suggestions) {
-          res.add(t, lr.key.toString(), (int) lr.value);
-        }
+    for (SpellCheckToken t : options.tokens) {
+      boolean onlyMorePopular =
+          (options.suggestMode == SuggestMode.SUGGEST_MORE_POPULAR)
+              && !(lookup instanceof WFSTCompletionLookup)
+              && !(lookup instanceof AnalyzingSuggester);
+      List<LookupResult> suggestions = lookup.lookup(t.text(), onlyMorePopular, options.count);
+      if (suggestions == null) {
+        continue;
       }
-      stream.end();
-    } finally {
-      stream.close();
+      if (options.suggestMode != SuggestMode.SUGGEST_MORE_POPULAR) {
+        Collections.sort(suggestions);
+      }
+      for (LookupResult lr : suggestions) {
+        res.add(t, lr.key.toString(), (int) lr.value);
+      }
     }
     return res;
   }

@@ -16,6 +16,9 @@
  */
 package org.apache.solr.spelling;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
@@ -54,11 +57,25 @@ public record SpellCheckToken(
   }
 
   /**
-   * Registers the attributes this class needs on {@code stream} once, then lets callers build a
-   * {@link SpellCheckToken} for each position the stream reaches, without every call site
-   * re-registering the same six attributes.
+   * Reads {@code stream} to its end into a list, and closes it. This is the single point where a
+   * {@link TokenStream} becomes values: every consumer of the spellcheck API reads every token, so
+   * the stream's lifecycle need not reach any of them.
    */
-  public static final class AttributeReader {
+  public static List<SpellCheckToken> drain(TokenStream stream) throws IOException {
+    List<SpellCheckToken> tokens = new ArrayList<>();
+    try (stream) {
+      AttributeReader attrs = new AttributeReader(stream);
+      stream.reset();
+      while (stream.incrementToken()) {
+        tokens.add(attrs.current());
+      }
+      stream.end();
+    }
+    return tokens;
+  }
+
+  /** Registers the six attributes {@link #drain} reads, once for the whole stream. */
+  private static final class AttributeReader {
     private final CharTermAttribute termAtt;
     private final OffsetAttribute offsetAtt;
     private final TypeAttribute typeAtt;
@@ -66,7 +83,7 @@ public record SpellCheckToken(
     private final FlagsAttribute flagsAtt;
     private final PayloadAttribute payloadAtt;
 
-    public AttributeReader(TokenStream stream) {
+    AttributeReader(TokenStream stream) {
       termAtt = stream.addAttribute(CharTermAttribute.class);
       offsetAtt = stream.addAttribute(OffsetAttribute.class);
       typeAtt = stream.addAttribute(TypeAttribute.class);
@@ -76,7 +93,7 @@ public record SpellCheckToken(
     }
 
     /** Builds a {@link SpellCheckToken} from the stream's current position. */
-    public SpellCheckToken current() {
+    SpellCheckToken current() {
       return new SpellCheckToken(
           termAtt.toString(),
           offsetAtt.startOffset(),

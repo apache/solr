@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.DirectSpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
@@ -188,59 +187,50 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
     float accuracy =
         (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;
 
-    TokenStream stream = options.tokenStreamSupplier.get();
-    try {
-      stream.reset();
-      SpellCheckToken.AttributeReader tokenReader = new SpellCheckToken.AttributeReader(stream);
-      while (stream.incrementToken()) {
-        SpellCheckToken token = tokenReader.current();
-        String tokenText = token.text();
-        if (tokenText.isEmpty()) {
-          result.add(token, List.of());
-          continue;
-        }
-        Term term = new Term(field, tokenText);
-        int freq = options.reader.docFreq(term);
-        int count =
-            (options.alternativeTermCount > 0 && freq > 0)
-                ? options.alternativeTermCount
-                : options.count;
-        SuggestWord[] suggestions =
-            checker.suggestSimilar(term, count, options.reader, options.suggestMode, accuracy);
-        result.addFrequency(token, freq);
+    for (SpellCheckToken token : options.tokens) {
+      String tokenText = token.text();
+      if (tokenText.isEmpty()) {
+        result.add(token, List.of());
+        continue;
+      }
+      Term term = new Term(field, tokenText);
+      int freq = options.reader.docFreq(term);
+      int count =
+          (options.alternativeTermCount > 0 && freq > 0)
+              ? options.alternativeTermCount
+              : options.count;
+      SuggestWord[] suggestions =
+          checker.suggestSimilar(term, count, options.reader, options.suggestMode, accuracy);
+      result.addFrequency(token, freq);
 
-        // If considering alternatives to "correctly-spelled" terms, then add the
-        // original as a viable suggestion.
-        if (options.alternativeTermCount > 0 && freq > 0) {
-          boolean foundOriginal = false;
-          SuggestWord[] suggestionsWithOrig = new SuggestWord[suggestions.length + 1];
-          for (int i = 0; i < suggestions.length; i++) {
-            if (suggestions[i].string.equals(tokenText)) {
-              foundOriginal = true;
-              break;
-            }
-            suggestionsWithOrig[i + 1] = suggestions[i];
+      // If considering alternatives to "correctly-spelled" terms, then add the
+      // original as a viable suggestion.
+      if (options.alternativeTermCount > 0 && freq > 0) {
+        boolean foundOriginal = false;
+        SuggestWord[] suggestionsWithOrig = new SuggestWord[suggestions.length + 1];
+        for (int i = 0; i < suggestions.length; i++) {
+          if (suggestions[i].string.equals(tokenText)) {
+            foundOriginal = true;
+            break;
           }
-          if (!foundOriginal) {
-            SuggestWord orig = new SuggestWord();
-            orig.freq = freq;
-            orig.string = tokenText;
-            suggestionsWithOrig[0] = orig;
-            suggestions = suggestionsWithOrig;
-          }
+          suggestionsWithOrig[i + 1] = suggestions[i];
         }
-        if (suggestions.length == 0 && freq == 0) {
-          List<String> empty = List.of();
-          result.add(token, empty);
-        } else {
-          for (SuggestWord suggestion : suggestions) {
-            result.add(token, suggestion.string, suggestion.freq);
-          }
+        if (!foundOriginal) {
+          SuggestWord orig = new SuggestWord();
+          orig.freq = freq;
+          orig.string = tokenText;
+          suggestionsWithOrig[0] = orig;
+          suggestions = suggestionsWithOrig;
         }
       }
-      stream.end();
-    } finally {
-      stream.close();
+      if (suggestions.length == 0 && freq == 0) {
+        List<String> empty = List.of();
+        result.add(token, empty);
+      } else {
+        for (SuggestWord suggestion : suggestions) {
+          result.add(token, suggestion.string, suggestion.freq);
+        }
+      }
     }
     return result;
   }

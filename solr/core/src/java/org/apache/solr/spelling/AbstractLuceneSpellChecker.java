@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.Dictionary;
@@ -140,84 +139,75 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
         (options.accuracy == Float.MIN_VALUE) ? spellChecker.getAccuracy() : options.accuracy;
 
     int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
-    TokenStream stream = options.tokenStreamSupplier.get();
-    try {
-      stream.reset();
-      SpellCheckToken.AttributeReader tokenReader = new SpellCheckToken.AttributeReader(stream);
-      while (stream.incrementToken()) {
-        SpellCheckToken token = tokenReader.current();
-        String tokenText = token.text();
-        if (tokenText.isEmpty()) {
-          result.add(token, List.of());
-          continue;
-        }
-        term = new Term(field, tokenText);
-        int docFreq = 0;
-        if (reader != null) {
-          docFreq = reader.docFreq(term);
-        }
-        String[] suggestions =
-            spellChecker.suggestSimilar(
-                tokenText,
-                ((options.alternativeTermCount == 0 || docFreq == 0)
-                    ? count
-                    : options.alternativeTermCount),
-                field != null ? reader : null, // workaround LUCENE-1295
-                field,
-                options.suggestMode,
-                theAccuracy);
-        if (suggestions.length == 1
-            && suggestions[0].equals(tokenText)
-            && options.alternativeTermCount == 0) {
-          // These are spelled the same, continue on
-          continue;
-        }
-        // If considering alternatives to "correctly-spelled" terms, then add the
-        // original as a viable suggestion.
-        if (options.alternativeTermCount > 0 && docFreq > 0) {
-          boolean foundOriginal = false;
-          String[] suggestionsWithOrig = new String[suggestions.length + 1];
-          for (int i = 0; i < suggestions.length; i++) {
-            if (suggestions[i].equals(tokenText)) {
-              foundOriginal = true;
-              break;
-            }
-            suggestionsWithOrig[i + 1] = suggestions[i];
+    for (SpellCheckToken token : options.tokens) {
+      String tokenText = token.text();
+      if (tokenText.isEmpty()) {
+        result.add(token, List.of());
+        continue;
+      }
+      term = new Term(field, tokenText);
+      int docFreq = 0;
+      if (reader != null) {
+        docFreq = reader.docFreq(term);
+      }
+      String[] suggestions =
+          spellChecker.suggestSimilar(
+              tokenText,
+              ((options.alternativeTermCount == 0 || docFreq == 0)
+                  ? count
+                  : options.alternativeTermCount),
+              field != null ? reader : null, // workaround LUCENE-1295
+              field,
+              options.suggestMode,
+              theAccuracy);
+      if (suggestions.length == 1
+          && suggestions[0].equals(tokenText)
+          && options.alternativeTermCount == 0) {
+        // These are spelled the same, continue on
+        continue;
+      }
+      // If considering alternatives to "correctly-spelled" terms, then add the
+      // original as a viable suggestion.
+      if (options.alternativeTermCount > 0 && docFreq > 0) {
+        boolean foundOriginal = false;
+        String[] suggestionsWithOrig = new String[suggestions.length + 1];
+        for (int i = 0; i < suggestions.length; i++) {
+          if (suggestions[i].equals(tokenText)) {
+            foundOriginal = true;
+            break;
           }
-          if (!foundOriginal) {
-            suggestionsWithOrig[0] = tokenText;
-            suggestions = suggestionsWithOrig;
-          }
+          suggestionsWithOrig[i + 1] = suggestions[i];
         }
-
-        if (options.extendedResults == true && reader != null && field != null) {
-          result.addFrequency(token, docFreq);
-          int countLimit = Math.min(options.count, suggestions.length);
-          if (countLimit > 0) {
-            for (int i = 0; i < countLimit; i++) {
-              term = new Term(field, suggestions[i]);
-              result.add(token, suggestions[i], reader.docFreq(term));
-            }
-          } else {
-            List<String> suggList = List.of();
-            result.add(token, suggList);
-          }
-        } else {
-          if (suggestions.length > 0) {
-            List<String> suggList = Arrays.asList(suggestions);
-            if (suggestions.length > options.count) {
-              suggList = suggList.subList(0, options.count);
-            }
-            result.add(token, suggList);
-          } else {
-            List<String> suggList = List.of();
-            result.add(token, suggList);
-          }
+        if (!foundOriginal) {
+          suggestionsWithOrig[0] = tokenText;
+          suggestions = suggestionsWithOrig;
         }
       }
-      stream.end();
-    } finally {
-      stream.close();
+
+      if (options.extendedResults == true && reader != null && field != null) {
+        result.addFrequency(token, docFreq);
+        int countLimit = Math.min(options.count, suggestions.length);
+        if (countLimit > 0) {
+          for (int i = 0; i < countLimit; i++) {
+            term = new Term(field, suggestions[i]);
+            result.add(token, suggestions[i], reader.docFreq(term));
+          }
+        } else {
+          List<String> suggList = List.of();
+          result.add(token, suggList);
+        }
+      } else {
+        if (suggestions.length > 0) {
+          List<String> suggList = Arrays.asList(suggestions);
+          if (suggestions.length > options.count) {
+            suggList = suggList.subList(0, options.count);
+          }
+          result.add(token, suggList);
+        } else {
+          List<String> suggList = List.of();
+          result.add(token, suggList);
+        }
+      }
     }
     return result;
   }

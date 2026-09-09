@@ -17,6 +17,7 @@
 package org.apache.solr.spelling;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -26,6 +27,9 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Analyzes each parsed query word in turn and concatenates their analysis into a single stream,
@@ -34,6 +38,8 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
  * analyzed once this stream reaches it, not up front.
  */
 final class QueryWordsTokenStream extends TokenStream {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** One query word as parsed from query syntax, prior to analysis. */
   record ParsedWord(String text, int startIndex, int flags) {}
@@ -65,37 +71,52 @@ final class QueryWordsTokenStream extends TokenStream {
   @Override
   public boolean incrementToken() throws IOException {
     while (true) {
-      if (current != null && current.incrementToken()) {
-        ParsedWord word = words.get(currentWordIndex);
-        clearAttributes();
-        termAtt.append(currentTermAtt);
-        offsetAtt.setOffset(
-            word.startIndex() + currentOffsetAtt.startOffset(),
-            word.startIndex() + currentOffsetAtt.endOffset());
-        typeAtt.setType(currentTypeAtt.type());
-        posIncAtt.setPositionIncrement(currentPosIncAtt.getPositionIncrement());
-        payloadAtt.setPayload(currentPayloadAtt.getPayload());
-        flagsAtt.setFlags(word.flags());
-        return true;
-      }
+      // A word whose analysis fails is skipped and the query's other words are still checked; an
+      // IOException escaping here would fail the whole spellcheck request instead.
       if (current != null) {
-        current.end();
-        current.close();
+        try {
+          if (current.incrementToken()) {
+            ParsedWord word = words.get(currentWordIndex);
+            clearAttributes();
+            termAtt.append(currentTermAtt);
+            offsetAtt.setOffset(
+                word.startIndex() + currentOffsetAtt.startOffset(),
+                word.startIndex() + currentOffsetAtt.endOffset());
+            typeAtt.setType(currentTypeAtt.type());
+            posIncAtt.setPositionIncrement(currentPosIncAtt.getPositionIncrement());
+            payloadAtt.setPayload(currentPayloadAtt.getPayload());
+            flagsAtt.setFlags(word.flags());
+            return true;
+          }
+          current.end();
+        } catch (IOException e) {
+          log.warn("Skipping the rest of query word '{}': its analysis failed", currentWord(), e);
+        }
+        IOUtils.closeWhileHandlingException(current);
         current = null;
       }
       if (nextWordIndex >= words.size()) {
         return false;
       }
-      currentWordIndex = nextWordIndex;
-      current = analyzer.tokenStream("", words.get(nextWordIndex).text());
-      nextWordIndex++;
-      currentTermAtt = current.addAttribute(CharTermAttribute.class);
-      currentOffsetAtt = current.addAttribute(OffsetAttribute.class);
-      currentTypeAtt = current.addAttribute(TypeAttribute.class);
-      currentPosIncAtt = current.addAttribute(PositionIncrementAttribute.class);
-      currentPayloadAtt = current.addAttribute(PayloadAttribute.class);
-      current.reset();
+      currentWordIndex = nextWordIndex++;
+      try {
+        current = analyzer.tokenStream("", currentWord());
+        currentTermAtt = current.addAttribute(CharTermAttribute.class);
+        currentOffsetAtt = current.addAttribute(OffsetAttribute.class);
+        currentTypeAtt = current.addAttribute(TypeAttribute.class);
+        currentPosIncAtt = current.addAttribute(PositionIncrementAttribute.class);
+        currentPayloadAtt = current.addAttribute(PayloadAttribute.class);
+        current.reset();
+      } catch (IOException e) {
+        log.warn("Skipping query word '{}': its analysis failed", currentWord(), e);
+        IOUtils.closeWhileHandlingException(current);
+        current = null;
+      }
     }
+  }
+
+  private String currentWord() {
+    return words.get(currentWordIndex).text();
   }
 
   @Override

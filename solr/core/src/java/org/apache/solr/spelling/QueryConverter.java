@@ -58,10 +58,9 @@ public abstract class QueryConverter implements NamedListInitializedPlugin {
 
   /**
    * Returns a fresh {@link TokenStream} over the query's terms. Offsets should correspond to the
-   * correct offset in the origQuery. The caller owns the returned stream's lifecycle (reset, then
-   * an incrementToken loop, then end, then close); this method may be called more than once for the
-   * same query text, e.g. via {@link SpellingOptions#tokenStreamSupplier}, since a {@link
-   * TokenStream} is single-use.
+   * correct offset in the origQuery. The caller owns the returned stream's lifecycle: {@link
+   * SpellCheckToken#drain(TokenStream)} resets it, reads it to the end and closes it, and the
+   * spellcheckers read that list rather than this stream.
    */
   public abstract TokenStream convert(String original);
 

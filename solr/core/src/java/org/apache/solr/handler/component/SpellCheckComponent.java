@@ -28,11 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.Query;
@@ -139,32 +137,22 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     SolrSpellChecker spellChecker = getSpellChecker(params);
     if (spellChecker != null) {
       String q = params.get(SPELLCHECK_Q);
-      final String convertedQ;
-      Supplier<TokenStream> tokenStreamSupplier;
+      // the query is analyzed once, here: every spellchecker reads every token, and
+      // ConjunctionSolrSpellChecker hands the same options to each of its children, so one list
+      // serves them all.
+      final List<SpellCheckToken> tokens;
       if (q != null) {
         // we have a spell check param, tokenize it with the query analyzer applicable for this
         // spellchecker
-        convertedQ = q;
-        tokenStreamSupplier = () -> getTokens(convertedQ, spellChecker.getQueryAnalyzer());
+        tokens = SpellCheckToken.drain(getTokens(q, spellChecker.getQueryAnalyzer()));
       } else {
         q = rb.getQueryString();
         if (q == null) {
           q = params.get(CommonParams.Q);
         }
-        convertedQ = q;
-        tokenStreamSupplier = () -> queryConverter.convert(convertedQ);
+        tokens = SpellCheckToken.drain(queryConverter.convert(q));
       }
-      // peek for at least one token, using our own throwaway stream instance. Must fully drain
-      // before end()/close() -- TokenStream forbids abandoning mid-INCREMENT.
-      boolean hasTokens = false;
-      try (TokenStream peek = tokenStreamSupplier.get()) {
-        peek.reset();
-        while (peek.incrementToken()) {
-          hasTokens = true;
-        }
-        peek.end();
-      }
-      if (hasTokens) {
+      if (!tokens.isEmpty()) {
         int count = params.getInt(SPELLCHECK_COUNT, 1);
         boolean onlyMorePopular =
             params.getBool(SPELLCHECK_ONLY_MORE_POPULAR, DEFAULT_ONLY_MORE_POPULAR);
@@ -206,7 +194,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           }
           SpellingOptions options =
               new SpellingOptions(
-                  tokenStreamSupplier,
+                  tokens,
                   reader,
                   count,
                   alternativeTermCount,
@@ -238,7 +226,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
               params, spellingResult, rb, q, response, spellChecker.isSuggestionsMayOverlap());
         }
         if (shardRequest) {
-          addOriginalTermsToResponse(response, tokenStreamSupplier.get());
+          addOriginalTermsToResponse(response, tokens);
         }
 
         rb.rsp.add("spellcheck", response);
@@ -354,18 +342,11 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     response.add("collations", collationList);
   }
 
-  private void addOriginalTermsToResponse(NamedList<Object> response, TokenStream originalTerms)
-      throws IOException {
-    List<String> originalTermStr = new ArrayList<>();
-    try {
-      originalTerms.reset();
-      CharTermAttribute termAtt = originalTerms.addAttribute(CharTermAttribute.class);
-      while (originalTerms.incrementToken()) {
-        originalTermStr.add(termAtt.toString());
-      }
-      originalTerms.end();
-    } finally {
-      originalTerms.close();
+  private void addOriginalTermsToResponse(
+      NamedList<Object> response, List<SpellCheckToken> originalTerms) {
+    List<String> originalTermStr = new ArrayList<>(originalTerms.size());
+    for (SpellCheckToken token : originalTerms) {
+      originalTermStr.add(token.text());
     }
     response.add("originalTerms", originalTermStr);
   }

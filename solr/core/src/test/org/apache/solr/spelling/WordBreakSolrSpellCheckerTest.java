@@ -17,9 +17,8 @@
 package org.apache.solr.spelling;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
@@ -74,18 +73,17 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
 
     {
       // Prior to SOLR-8175, the required term would cause an AIOOBE.
-      Supplier<TokenStream> tokenStreamSupplier = () -> qc.convert("+pine apple good ness");
-      SpellingOptions spellOpts =
-          new SpellingOptions(tokenStreamSupplier, searcher.get().getIndexReader(), 10);
+      List<SpellCheckToken> tokens = SpellCheckToken.drain(qc.convert("+pine apple good ness"));
+      SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
       SpellingResult result = checker.getSuggestions(spellOpts);
       searcher.decref();
       assertTrue(result != null && result.getSuggestions() != null);
       assertEquals(5, result.getSuggestions().size());
     }
 
-    Supplier<TokenStream> tokenStreamSupplier = () -> qc.convert("paintable pine apple good ness");
-    SpellingOptions spellOpts =
-        new SpellingOptions(tokenStreamSupplier, searcher.get().getIndexReader(), 10);
+    List<SpellCheckToken> tokens =
+        SpellCheckToken.drain(qc.convert("paintable pine apple good ness"));
+    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
     SpellingResult result = checker.getSuggestions(spellOpts);
     searcher.decref();
 

@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.CombineSuggestion;
@@ -159,7 +158,9 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     int numSuggestions = options.count;
 
     StringBuilder sb = new StringBuilder();
-    SpellCheckToken[] tokenArr = drainToArray(options.tokenStreamSupplier.get());
+    // an array because, unlike the other SolrSpellCheckers, this one reads several positions at
+    // once to combine adjacent terms into one corrected phrase
+    SpellCheckToken[] tokenArr = options.tokens.toArray(new SpellCheckToken[0]);
     List<SpellCheckToken> tokenArrWithSeparators = new ArrayList<>(tokenArr.length + 2);
     List<Term> termArr = new ArrayList<>(tokenArr.length + 2);
     List<ResultEntry> breakSuggestionList = new ArrayList<>();
@@ -343,26 +344,6 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
       }
     }
     return result;
-  }
-
-  /**
-   * Drains the query's token stream into an array. Unlike other {@link SolrSpellChecker}s, this one
-   * needs indexed, repeated access across multiple positions at once (to combine adjacent terms
-   * into one corrected phrase), which a single-pass stream cursor can't provide.
-   */
-  private static SpellCheckToken[] drainToArray(TokenStream stream) throws IOException {
-    try {
-      stream.reset();
-      SpellCheckToken.AttributeReader tokenReader = new SpellCheckToken.AttributeReader(stream);
-      List<SpellCheckToken> tokens = new ArrayList<>();
-      while (stream.incrementToken()) {
-        tokens.add(tokenReader.current());
-      }
-      stream.end();
-      return tokens.toArray(new SpellCheckToken[0]);
-    } finally {
-      stream.close();
-    }
   }
 
   @Override
