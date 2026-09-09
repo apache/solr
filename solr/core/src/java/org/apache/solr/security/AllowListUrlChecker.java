@@ -25,12 +25,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.NodeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,12 +76,6 @@ public class AllowListUrlChecker {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
-
-  /**
-   * Regex pattern to match any protocol, e.g. http:// https:// s3://. After a match, regex group 1
-   * contains the protocol and group 2 the rest.
-   */
-  private static final Pattern PROTOCOL_PATTERN = Pattern.compile("(\\w+)(://.*)");
 
   /**
    * Allow list of hosts. Elements in the list are formatted as host:port (no protocol or context).
@@ -219,20 +212,9 @@ public class AllowListUrlChecker {
   }
 
   private static String parseHostPort(String url) throws MalformedURLException {
-    // Parse the host and port.
-    // It doesn't really matter which protocol we set here because we are not going to use it.
+    // Detect the scheme the same way the shard URL fetch does (URLUtil#hasScheme).
     url = url.trim();
-    URI u;
-    Matcher protocolMatcher = PROTOCOL_PATTERN.matcher(url);
-    if (protocolMatcher.matches()) {
-      // Replace any protocol unsupported by URL.
-      if (!protocolMatcher.group(1).startsWith("http")) {
-        url = "http" + protocolMatcher.group(2);
-      }
-      u = URI.create(url);
-    } else {
-      u = URI.create("http://" + url);
-    }
+    URI u = URI.create(URLUtil.hasScheme(url) ? url : "http://" + url);
     if (u.getHost() == null || u.getPort() < 0) {
       throw new MalformedURLException("Invalid host or port in '" + url + "'");
     }
