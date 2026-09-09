@@ -141,6 +141,8 @@ public class JavabinLoader extends ContentStreamLoader {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // END_OBJ is a unique sentinel; identity check is intentional
   private void handleMultiStream(
       SolrQueryRequest req,
       SolrQueryResponse rsp,
