@@ -55,6 +55,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.URLUtil;
 
 /**
  * Connects to Zookeeper to pick replicas from a specific collection to send the query to. Under the
@@ -410,7 +411,15 @@ public class CloudSolrStream extends TupleStream implements Expressible {
             getShards(this.solrConnection, this.collection, this.streamContext, mParams);
         if (shards.isEmpty())
           throw new IOException("No shards available from ZooKeeper: " + this.solrConnection);
-        streamOfSolrStream = shards.stream().map(s -> new SolrStream(s, path, mParams));
+        streamOfSolrStream =
+            shards.stream()
+                .map(
+                    s ->
+                        new SolrStream(
+                            URLUtil.extractBaseUrl(s),
+                            URLUtil.extractCoreFromCoreUrl(s),
+                            path,
+                            mParams));
       } else {
         // stream of replicas to reuse the same SolrHttpClient per baseUrl
         // avoids re-parsing data we already have in the replicas

@@ -148,6 +148,12 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.SegmentsApi();
     })
+.factory('SchemaDesignerV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SchemaDesignerApi();
+    })
 .factory('Collections',
   ['$resource', function ($resource) {
     // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
@@ -208,7 +214,7 @@ solrAdminServices.factory('Metrics',
     // v2 NodeThreadsAPI (/api/node/threads) still just delegates straight through to the same v1
     // ThreadDumpHandler, so the response shape is byte-identical -- no generated solrApi client
     // class exists for it (it predates the OpenAPI-based v2 API framework), so this stays a plain
-    // $resource, like SchemaDesigner/Security.
+    // $resource, like Security and (partially) SchemaDesigner.
     return $resource('/api/node/threads', {'wt':'json', '_':Date.now()});
   }])
 .factory('Replication',
@@ -364,11 +370,16 @@ solrAdminServices.factory('Metrics',
 }])
 .factory('SchemaDesigner',
    ['$resource', function($resource) {
+     // Schema Designer's analyze (sample-doc upload/paste, dynamic content-type) and query
+     // (arbitrary forwarded Solr query params) endpoints read their request bodies/params in ways
+     // the OpenAPI-generated SchemaDesignerApi client can't express: analyze() always sends a null
+     // body (the server deliberately reads the raw content stream, dispatched by Content-Type,
+     // rather than a formal parameter) and query() takes no query params at all (the server
+     // forwards arbitrary SolrParams straight through). Both stay on this plain $resource, like
+     // Threads/Collections/ParamSet. Every other Schema Designer endpoint uses SchemaDesignerV2.
      return $resource('/api/schema-designer/:configSet/:path', {wt: 'json', path: '@path', configSet: '@configSet', filePath: '@filePath', _:Date.now()}, {
        get: {method: "GET"},
        post: {method: "POST", timeout: 90000},
-       put: {method: "PUT"},
-       delete: {method: "DELETE"},
        postXml: {headers: {'Content-type': 'text/xml'}, method: "POST", timeout: 90000},
        postCsv: {headers: {'Content-type': 'application/csv'}, method: "POST", timeout: 90000},
        upload: {method: "POST", transformRequest: angular.identity, headers: {'Content-Type': undefined}, timeout: 90000}

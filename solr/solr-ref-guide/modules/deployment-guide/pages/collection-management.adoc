@@ -232,6 +232,8 @@ For nested documents, the route field must match among all the documents in the 
 +
 Please note that xref:configuration-guide:realtime-get.adoc[] or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
+Use of docValues is highly encouraged on this field.
+
 `perReplicaState`::
 +
 [%autowidth,frame=none]
