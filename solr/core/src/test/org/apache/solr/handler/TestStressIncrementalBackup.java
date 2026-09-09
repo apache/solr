@@ -164,7 +164,6 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     CollectionAdminRequest.Backup backup =
         CollectionAdminRequest.backupCollection(DEFAULT_TEST_COLLECTION_NAME, "stressBackup")
             .setLocation(backupPath.toString())
-            .setIncremental(true)
             .setMaxNumberBackupPoints(5);
     if (random().nextBoolean()) {
       try {
