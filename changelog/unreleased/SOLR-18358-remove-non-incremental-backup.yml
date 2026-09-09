@@ -5,9 +5,11 @@ title: >
   `/admin/collections?action=BACKUP` and from the v2 request body, along with the `commitName`
   parameter (v1) / `snapshotName` field (v2) that only that format read, and the SolrJ methods
   `CollectionAdminRequest.Backup.setIncremental(boolean)` (deprecated since 9.0) and
-  `setCommitName(String)`. Restoring collections from existing non-incremental backups is
-  unaffected. The core-level `/admin/cores?action=BACKUPCORE` API keeps its own `incremental` and
-  `commitName` parameters.
+  `setCommitName(String)`. `bin/solr snapshot-export` no longer accepts `--snapshot-name`, which
+  only that format could act on; it always backs up the collection's current state, under a name
+  derived from the collection name and the time the command ran. Restoring collections from existing
+  non-incremental backups is unaffected. The core-level `/admin/cores?action=BACKUPCORE` API keeps
+  its own `incremental` and `commitName` parameters.
 type: removed
 authors:
   - name: Serhiy Bzhezytskyy
