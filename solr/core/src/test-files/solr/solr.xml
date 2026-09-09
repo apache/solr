@@ -28,7 +28,7 @@
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>
   <str name="allowPaths">${solr.security.allow.paths:}</str>
   <str name="allowUrls">${solr.tests.security.allow.urls:}</str>
-  <bool name="hideStackTrace">${solr.responses.stacktrace.enabled:false}</bool>
+  <bool name="hideStackTrace">${solr.hideStackTrace:true}</bool>
   <int name="indexSearcherExecutorThreads">4</int>
 
   <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
