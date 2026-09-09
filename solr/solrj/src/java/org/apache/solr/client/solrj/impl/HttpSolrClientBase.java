@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -44,8 +45,12 @@ import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
@@ -55,6 +60,23 @@ public abstract class HttpSolrClientBase extends SolrClient {
   protected static final String DEFAULT_PATH = ClientUtils.DEFAULT_PATH;
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
+
+  /**
+   * See {@link #getUrlParamNames()}. Default set are interesting for routing or fundamental request
+   * purpose
+   */
+  public static final Set<String> DEFAULT_URL_PARAM_NAMES =
+      Set.of(
+          CoreAdminParams.ACTION,
+          CommonAdminParams.ASYNC,
+          CollectionAdminParams.COLLECTION,
+          "name", // core/collection name
+          "command", // e.g. for replication
+          ShardParams.IS_SHARD,
+          CommonParams.DISTRIB,
+          ShardParams._ROUTE_,
+          ShardParams.SHARDS_PREFERENCE,
+          ShardParams.SHARDS_PURPOSE);
 
   /** The URL of the Solr server. */
   protected final String serverBaseUrl;
@@ -94,11 +116,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
       this.parser = builder.responseParser;
     }
     this.defaultCollection = builder.defaultCollection;
-    if (builder.urlParamNames != null) {
-      this.urlParamNames = builder.urlParamNames;
-    } else {
-      this.urlParamNames = Set.of();
-    }
+    this.urlParamNames = Objects.requireNonNullElse(builder.urlParamNames, DEFAULT_URL_PARAM_NAMES);
   }
 
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
