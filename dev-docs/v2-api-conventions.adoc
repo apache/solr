@@ -21,6 +21,7 @@ Following these guidelines has given us the following (non-exhaustive) list of v
 * `/api/backups/specificBackupName`
 * `/api/backups/specificBackupName/versions`
 * `/api/backups/specificBackupName/versions/specificVersion`
+* `/api/cluster/nodes`
 * `/api/cluster/nodes/specificNodeName/roles`
 * `/api/cluster/nodes/specificNodeName/roles/specificRoleName`
 * `/api/cluster/commands`
