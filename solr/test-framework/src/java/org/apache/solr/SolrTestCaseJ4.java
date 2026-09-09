@@ -116,6 +116,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.QueryLimit;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
@@ -492,7 +493,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     super.setUp();
     if (withQueryTimeout) {
       TestInjection.queryTimeout =
-          new org.apache.solr.search.QueryLimit() {
+          new QueryLimit() {
             @Override
             public Object currentValue() {
               return "No-Op injected QueryLimit";
