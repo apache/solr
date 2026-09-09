@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -166,6 +167,40 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, se.code());
   }
 
+  public void testDelegateHandlerFromConfig() throws Exception {
+    // with no qt configured, ping delegates to the default handler
+    handler = new PingRequestHandler();
+    handler.init(new NamedList<>());
+    handler.inform(h.getCore());
+    SolrQueryResponse rsp = makeRequest(handler, req("qt", "/nosuchhandler"));
+    assertEquals("OK", rsp.getValues().get("status"));
+
+    // ping returns a plain status, not the delegate's response
+    rsp = makeRequest(handler, req("isShard", "true", "fl", "id"));
+    assertEquals("OK", rsp.getValues().get("status"));
+    assertNull(rsp.getValues().get("response"));
+
+    // a qt configured as an invariant selects the delegate
+    handler = new PingRequestHandler();
+    NamedList<Object> initParams = new NamedList<>();
+    NamedList<String> invariants = new NamedList<>();
+    invariants.add("qt", "/nosuchhandler");
+    initParams.add("invariants", invariants);
+    handler.init(initParams);
+    handler.inform(h.getCore());
+    SolrException se =
+        expectThrows(SolrException.class, () -> makeRequest(handler, req("qt", "/select")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, se.code());
+  }
+
+  public void testPingUsesConfiguredQuery() throws Exception {
+    // the ping runs its configured query; stray request params do not change it (an unparseable
+    // rows or an unknown handler would otherwise make the delegate fail)
+    String response = h.query("/admin/ping", req("qt", "/nosuchhandler", "rows", "notanumber"));
+    assertTrue(response, response.contains("<str name=\"status\">OK</str>"));
+    assertFalse(response, response.contains("name=\"response\""));
+  }
+
   public void testPingInClusterWithNoHealthCheck() throws Exception {
 
     MiniSolrCloudCluster miniCluster =
@@ -202,6 +237,15 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
       rsp = reqNonDistrib.process(cloudSolrClient, collectionName);
       assertEquals(0, rsp.getStatus());
       assertTrue(rsp.getResponseHeader().getBooleanArg(("zkConnected")));
+
+      // a request qt cannot redirect the shard requests back into the ping handler
+      SolrPingWithDistrib reqRecursive = new SolrPingWithDistrib();
+      reqRecursive.setDistrib(true);
+      reqRecursive.getParams().add(CommonParams.QT, "/admin/ping");
+      rsp = reqRecursive.process(cloudSolrClient, collectionName);
+      assertEquals(0, rsp.getStatus());
+      assertEquals("OK", rsp.getResponse().get("status"));
+      assertNull(rsp.getResponse().get("response"));
 
     } finally {
       miniCluster.shutdown();

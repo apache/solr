@@ -20,6 +20,7 @@ import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.DISABLE;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ENABLE;
+import static org.apache.solr.core.RequestParams.USEPARAM;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -34,11 +35,13 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,8 +60,8 @@ import org.slf4j.LoggerFactory;
  * responses (or for a simple connection failure) to know if there is a problem with the Solr
  * server.
  *
- * <p>Note in case isShard=true, PingRequestHandler respond back with what the delegated handler
- * returns (by default it's /select handler).
+ * <p>A distributed ping is fanned out to the delegated handler on each shard (by default the
+ * /select handler).
  *
  * <pre class="prettyprint">
  * &lt;requestHandler name="/admin/ping" class="solr.PingRequestHandler"&gt;
@@ -229,73 +232,67 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
   protected void handlePing(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
-    SolrParams params = req.getParams();
     SolrCore core = req.getCore();
 
-    // Get the RequestHandler
-    String qt = params.get(CommonParams.QT); // optional; you get the default otherwise
+    SolrParams configParams = resolveConfiguredParams(req);
+    String qt = configParams.get(CommonParams.QT);
     SolrRequestHandler handler = core.getRequestHandler(qt);
     if (handler == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Unknown RequestHandler (qt): " + qt);
     }
-
     if (handler instanceof PingRequestHandler) {
-      // In case it's a query for shard, use default handler
-      if (params.getBool(ShardParams.IS_SHARD, false)) {
-        handler = core.getRequestHandler(null);
-        ModifiableSolrParams wparams = new ModifiableSolrParams(params);
-        wparams.remove(CommonParams.QT);
-        req.setParams(wparams);
-      } else {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "Cannot execute the PingRequestHandler recursively");
-      }
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Cannot execute the PingRequestHandler recursively");
+    }
+
+    ModifiableSolrParams overrides = new ModifiableSolrParams();
+    boolean distrib = req.getParams().getBool(DISTRIB, false);
+    overrides.set(DISTRIB, distrib);
+    if (distrib) {
+      // target the delegate on each shard, not this ping handler
+      overrides.set(ShardParams.SHARDS_QT, qt == null ? "/select" : qt);
     }
 
     // Execute the ping query and catch any possible exception
     Throwable ex = null;
-
-    // In case it's a query for shard, return the result from delegated handler for distributed
-    // query to merge result
-    if (params.getBool(ShardParams.IS_SHARD, false)) {
-      try {
-        core.execute(handler, req, rsp);
-        ex = rsp.getException();
-      } catch (Exception e) {
-        ex = e;
+    try (SolrQueryRequest pingReq =
+        req.subRequest(SolrParams.wrapDefaults(overrides, configParams))) {
+      SolrQueryResponse pingrsp = new SolrQueryResponse();
+      core.execute(handler, pingReq, pingrsp);
+      ex = pingrsp.getException();
+      NamedList<Object> headers = rsp.getResponseHeader();
+      if (headers != null) {
+        headers.add("zkConnected", pingrsp.getResponseHeader().get("zkConnected"));
       }
-      // Send an error or return
-      if (ex != null) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Ping query caused exception: " + ex.getMessage(),
-            ex);
-      }
-    } else {
-      try {
-        SolrQueryResponse pingrsp = new SolrQueryResponse();
-        core.execute(handler, req, pingrsp);
-        ex = pingrsp.getException();
-        NamedList<Object> headers = rsp.getResponseHeader();
-        if (headers != null) {
-          headers.add("zkConnected", pingrsp.getResponseHeader().get("zkConnected"));
-        }
+    } catch (Exception e) {
+      ex = e;
+    }
 
-      } catch (Exception e) {
-        ex = e;
-      }
+    // Send an error or an 'OK' message (response code will be 200)
+    if (ex != null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Ping query caused exception: " + ex.getMessage(),
+          ex);
+    }
 
-      // Send an error or an 'OK' message (response code will be 200)
-      if (ex != null) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Ping query caused exception: " + ex.getMessage(),
-            ex);
-      }
+    rsp.add("status", "OK");
+  }
 
-      rsp.add("status", "OK");
+  /**
+   * Resolves this handler's configured invariants, appends, defaults and {@code useParams}
+   * paramsets into a single {@link SolrParams}. The delegate handler is named by {@code qt}; a null
+   * {@code qt} means the core's default handler.
+   */
+  private SolrParams resolveConfiguredParams(SolrQueryRequest req) {
+    try (SolrQueryRequest configOnly = req.subRequest(new ModifiableSolrParams())) {
+      PluginInfo info = getPluginInfo();
+      if (info != null && info.attributes.containsKey(USEPARAM)) {
+        configOnly.getContext().put(USEPARAM, info.attributes.get(USEPARAM));
+      }
+      SolrPluginUtils.setDefaults(configOnly, defaults, appends, invariants);
+      return configOnly.getParams();
     }
   }
 
