@@ -33,6 +33,7 @@ import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -47,7 +48,8 @@ public final class DefaultSolrCoreState extends SolrCoreState
     implements RecoveryStrategy.RecoveryListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
+  private final boolean SKIP_AUTO_RECOVERY =
+      EnvUtils.getPropertyAsBool("solr.cloud.skip.autorecovery.enabled", false);
 
   private final ReentrantLock recoveryLock = new ReentrantLock();
 
@@ -299,7 +301,8 @@ public final class DefaultSolrCoreState extends SolrCoreState
             MDCLoggingContext.setCoreDescriptor(cc, cd);
             try {
               if (SKIP_AUTO_RECOVERY) {
-                log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
+                log.warn(
+                    "Skipping recovery according to sys prop solr.cloud.skip.autorecovery.enabled");
                 return;
               }
 

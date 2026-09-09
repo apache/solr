@@ -44,6 +44,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.cloud.prs.enabled|solr.prs.default|false|Controls the default value for Per-Replica State (PRS) when creating a collection that doesn't explicitly specify the `PRS` parameter.
 
+|solr.cloud.skip.autorecovery.enabled|solrcloud.skip.autorecovery|false|Controls whether automatic recovery of out-of-sync replicas is skipped in SolrCloud mode. Intended for testing and diagnostics, not production use.
+
 |solr.cloud.startup.delete.unknown.cores.enabled|solr.deleteUnknownCores|false|Controls whether unknown cores are deleted at startup in SolrCloud mode.
 
 |solr.cloud.delete.unknown.cores.enabled| |false|Controls deletion of preexisting core data when a core is created in SolrCloud mode.
