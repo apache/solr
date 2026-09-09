@@ -111,7 +111,16 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
         new AllowListUrlChecker(
             urls("http://abc-1.com:8983", "http://abc-2.com:8983", "http://abc-3.com:8983"));
     checker.checkAllowList(urls("https://abc-1.com:8983/solr", "https://abc-2.com:8983/solr"));
-    checker.checkAllowList(urls("s3://abc-1.com:8983/solr"));
+
+    // Prefixes not recognized by URLUtil#hasScheme are not schemes, so these URLs are rejected.
+    for (String url :
+        urls(
+            "12345://abc-1.com:8983/solr",
+            "HTTP://abc-1.com:8983/solr",
+            "s3://abc-1.com:8983/solr")) {
+      expectThrows(
+          MalformedURLException.class, () -> AllowListUrlChecker.parseHostPorts(List.of(url)));
+    }
   }
 
   @Test
