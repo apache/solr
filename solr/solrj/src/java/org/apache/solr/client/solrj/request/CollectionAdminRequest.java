@@ -90,7 +90,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   /**
    * @deprecated Use {@link #CollectionAdminRequest(METHOD, CollectionAction)}.
    */
-  @Deprecated(since = "11.0")
+  @Deprecated(since = "10.1")
   public CollectionAdminRequest(CollectionAction action) {
     this(METHOD.POST, action);
   }
@@ -98,7 +98,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   /**
    * @deprecated Use {@link #CollectionAdminRequest(METHOD, String, CollectionAction)}.
    */
-  @Deprecated(since = "11.0")
+  @Deprecated(since = "10.1")
   public CollectionAdminRequest(String path, CollectionAction action) {
     this(METHOD.POST, path, action);
   }
@@ -171,7 +171,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     /**
      * @deprecated Use {@link #AsyncCollectionAdminRequest(METHOD, CollectionAction)}.
      */
-    @Deprecated(since = "11.0")
+    @Deprecated(since = "10.1")
     public AsyncCollectionAdminRequest(CollectionAction action) {
       this(METHOD.POST, action);
     }
@@ -289,7 +289,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @deprecated Use {@link #AsyncCollectionSpecificAdminRequest(METHOD, CollectionAction,
      *     String)}.
      */
-    @Deprecated(since = "11.0")
+    @Deprecated(since = "10.1")
     public AsyncCollectionSpecificAdminRequest(CollectionAction action, String collection) {
       this(METHOD.POST, action, collection);
     }
@@ -328,7 +328,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @deprecated Use {@link #AsyncShardSpecificAdminRequest(METHOD, CollectionAction, String,
      *     String)}.
      */
-    @Deprecated(since = "11.0")
+    @Deprecated(since = "10.1")
     public AsyncShardSpecificAdminRequest(
         CollectionAction action, String collection, String shard) {
       this(METHOD.POST, action, collection, shard);
@@ -359,7 +359,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     /**
      * @deprecated Use {@link #ShardSpecificAdminRequest(METHOD, CollectionAction, String, String)}.
      */
-    @Deprecated(since = "11.0")
+    @Deprecated(since = "10.1")
     public ShardSpecificAdminRequest(CollectionAction action, String collection, String shard) {
       this(METHOD.POST, action, collection, shard);
     }
@@ -381,44 +381,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   // ---------------------------------------------------------------------------------------
   //
   // ---------------------------------------------------------------------------------------
-
-  protected abstract static class CollectionAdminRoleRequest extends AsyncCollectionAdminRequest {
-
-    protected String node;
-    protected String role;
-
-    public CollectionAdminRoleRequest(
-        METHOD method, CollectionAction action, String node, String role) {
-      super(method, action);
-      this.role = checkNotNull(CollectionAdminParams.ROLE, role);
-      this.node = checkNotNull(CoreAdminParams.NODE, node);
-    }
-
-    /**
-     * @deprecated Use {@link #CollectionAdminRoleRequest(METHOD, CollectionAction, String,
-     *     String)}.
-     */
-    @Deprecated(since = "11.0")
-    public CollectionAdminRoleRequest(CollectionAction action, String node, String role) {
-      this(METHOD.POST, action, node, role);
-    }
-
-    public String getNode() {
-      return this.node;
-    }
-
-    public String getRole() {
-      return this.role;
-    }
-
-    @Override
-    public SolrParams getParams() {
-      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(CollectionAdminParams.ROLE, this.role);
-      params.set(CoreAdminParams.NODE, this.node);
-      return params;
-    }
-  }
 
   /** Specific Collection API call implementations * */
 
@@ -2929,40 +2891,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       }
 
       return params;
-    }
-  }
-
-  /**
-   * Returns a SolrRequest to add a role to a node
-   *
-   * @deprecated Use Node Roles ({@code -Dsolr.node.roles}) at startup instead.
-   */
-  @Deprecated(since = "10.1")
-  public static AddRole addRole(String node, String role) {
-    return new AddRole(node, role);
-  }
-
-  // ADDROLE request
-  public static class AddRole extends CollectionAdminRoleRequest {
-    private AddRole(String node, String role) {
-      super(METHOD.POST, CollectionAction.ADDROLE, node, role);
-    }
-  }
-
-  /**
-   * Returns a SolrRequest to remove a role from a node
-   *
-   * @deprecated Use Node Roles ({@code -Dsolr.node.roles}) at startup instead.
-   */
-  @Deprecated(since = "10.1")
-  public static RemoveRole removeRole(String node, String role) {
-    return new RemoveRole(node, role);
-  }
-
-  // REMOVEROLE request
-  public static class RemoveRole extends CollectionAdminRoleRequest {
-    private RemoveRole(String node, String role) {
-      super(METHOD.POST, CollectionAction.REMOVEROLE, node, role);
     }
   }
 

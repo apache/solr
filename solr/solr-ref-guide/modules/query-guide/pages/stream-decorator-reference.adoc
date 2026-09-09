@@ -467,7 +467,13 @@ commit(
 
 The `complement` function wraps two streams (A and B) and emits tuples from A which do not exist in B.
 The tuples are emitted in the order in which they appear in stream A.
-Both streams must be sorted by the fields being used to determine equality (using the `on` parameter).
+Both streams must be sorted ascending by the field(s) named on their own side of the `on` parameter
+(e.g. for `on="fieldNameInLeft=fieldNameInRight"`, A must be sorted by `fieldNameInLeft` and B by
+`fieldNameInRight`) - this holds whether or not the two sides name the same field.
+
+As a sanity check, `complement` and `intersect` (below) partition A: for the same two input streams
+and the same `on`, the number of tuples emitted by `complement` plus the number emitted by
+`intersect` always equals the number of tuples in A.
 
 === complement Parameters
 
@@ -1025,8 +1031,14 @@ innerJoin(
 
 The `intersect` function wraps two streams, A and B, and emits tuples from A which *DO* exist in B.
 The tuples are emitted in the order in which they appear in stream A.
-Both streams must be sorted by the fields being used to determine equality (the `on` parameter).
+Both streams must be sorted ascending by the field(s) named on their own side of the `on` parameter
+(e.g. for `on="fieldNameInLeft=fieldNameInRight"`, A must be sorted by `fieldNameInLeft` and B by
+`fieldNameInRight`) - this holds whether or not the two sides name the same field.
 Only tuples from A are emitted.
+
+As a sanity check, `intersect` and `complement` (above) partition A: for the same two input streams
+and the same `on`, the number of tuples emitted by `complement` plus the number emitted by
+`intersect` always equals the number of tuples in A.
 
 === intersect Parameters
 
