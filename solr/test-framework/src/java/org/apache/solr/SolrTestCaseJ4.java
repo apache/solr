@@ -286,6 +286,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     ExecutorUtil.resetThreadLocalProviders();
     OpenTelemetryConfigurator.resetForTest();
+
+    // nocommit: use rarely()
+    withQueryTimeout = true;
+    if (withQueryTimeout) {
+      log.info("###Test is configured to use QueryLimits");
+    }
   }
 
   @AfterClass
@@ -484,6 +490,20 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    if (withQueryTimeout) {
+      TestInjection.queryTimeout =
+          new org.apache.solr.search.QueryLimit() {
+            @Override
+            public Object currentValue() {
+              return "No-Op injected QueryLimit";
+            }
+
+            @Override
+            public boolean shouldExit() {
+              return false;
+            }
+          };
+    }
     if (log.isInfoEnabled()) {
       log.info("###Starting {}", getTestName()); // returns <unknown>???
     }
@@ -594,6 +614,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static Path testSolrHome;
 
   protected static SolrConfig solrConfig;
+
+  protected static boolean withQueryTimeout;
 
   /**
    * Harness initialized by create[Default]Core[Container].

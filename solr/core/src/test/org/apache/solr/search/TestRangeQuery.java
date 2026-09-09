@@ -463,8 +463,14 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
             queryService.awaitTermination(
                 1, TimeUnit.SECONDS)); // All queries after should be very fast
 
-        assertEquals(
-            "Create only one DocSet outside of cache", 1, TestInjection.countDocSetDelays.get());
+        if (withQueryTimeout) {
+          assertTrue(
+              "Create multiple DocSet-s outside of cache because of possible query timeouts",
+              TestInjection.countDocSetDelays.get() > 1);
+        } else {
+          assertEquals(
+              "Create only one DocSet outside of cache", 1, TestInjection.countDocSetDelays.get());
+        }
       }
       TestInjection.countDocSetDelays.set(0);
     }
