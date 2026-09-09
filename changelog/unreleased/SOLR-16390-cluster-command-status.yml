@@ -1,0 +1,8 @@
+title: "v2 cluster command-status APIs are now more REST-ful at GET/DELETE /api/cluster/commands/{id} and DELETE /api/cluster/commands (the previous /api/cluster/command-status paths are gone). SolrJ provides ClusterApi.GetClusterCommandStatus, ClusterApi.DeleteClusterCommandStatus, and ClusterApi.DeleteAllClusterCommandStatuses."
+type: changed
+authors:
+  - name: Prithvi S
+    nick: iprithv
+links:
+  - name: SOLR-16390
+    url: https://issues.apache.org/jira/browse/SOLR-16390

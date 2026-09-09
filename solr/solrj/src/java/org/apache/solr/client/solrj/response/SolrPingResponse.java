@@ -17,8 +17,10 @@
 package org.apache.solr.client.solrj.response;
 
 /**
+ * @deprecated This class is deprecated and will be removed in a future release.
  * @since solr 1.3
  */
+@Deprecated(since = "10.1")
 public class SolrPingResponse extends SolrResponseBase {
   // nothing special now...
 }

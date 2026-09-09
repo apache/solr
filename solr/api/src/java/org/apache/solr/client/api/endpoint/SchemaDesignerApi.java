@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.ADDTL_FIELDS_PROPERTY;
 import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -147,7 +148,12 @@ public interface SchemaDesignerApi {
   SchemaDesignerUpdateResponse updateSchemaObject(
       @PathParam("configSet") String configSet,
       @QueryParam("schemaVersion") Integer schemaVersion,
-      SchemaDesignerUpdateRequestBody requestBody)
+      @RequestBody(
+              extensions = {
+                @Extension(
+                    properties = {@ExtensionProperty(name = ADDTL_FIELDS_PROPERTY, value = "true")})
+              })
+          SchemaDesignerUpdateRequestBody requestBody)
       throws Exception;
 
   @PUT

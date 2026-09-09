@@ -20,13 +20,16 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
@@ -49,7 +52,7 @@ public class MirroredSolrRequest<T extends SolrResponse> {
     CONFIGSET,
     UNKNOWN;
 
-    public static final Type get(String s) {
+    public static Type get(String s) {
       if (s == null) {
         return UNKNOWN;
       } else {
@@ -110,9 +113,41 @@ public class MirroredSolrRequest<T extends SolrResponse> {
       this.params = params;
     }
 
-    @Override
-    public Collection<ContentStream> getContentStreams() {
+    /** The raw streams, for serializers that need the individual name/type/bytes directly. */
+    public Collection<ContentStream> getRawContentStreams() {
       return contentStreams;
+    }
+
+    @Override
+    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+      if (contentStreams == null || contentStreams.isEmpty()) return null;
+      if (contentStreams.size() == 1) {
+        return streamWriter(contentStreams.iterator().next());
+      }
+      return new RequestWriter.MultipartContentWriter() {
+        @Override
+        public java.util.List<RequestWriter.NamedPart> getParts() {
+          return contentStreams.stream()
+              .map(cs -> new RequestWriter.NamedPart(cs.getName(), streamWriter(cs)))
+              .collect(Collectors.toList());
+        }
+      };
+    }
+
+    private static RequestWriter.ContentWriter streamWriter(ContentStream stream) {
+      return new RequestWriter.ContentWriter() {
+        @Override
+        public void write(OutputStream os) throws IOException {
+          try (var inStream = stream.getStream()) {
+            inStream.transferTo(os);
+          }
+        }
+
+        @Override
+        public String getContentType() {
+          return stream.getContentType();
+        }
+      };
     }
 
     @Override
@@ -227,10 +262,6 @@ public class MirroredSolrRequest<T extends SolrResponse> {
     return submitTimeNanos;
   }
 
-  public void setSubmitTimeNanos(final long submitTimeNanos) {
-    this.submitTimeNanos = submitTimeNanos;
-  }
-
   public Type getType() {
     return type;
   }
@@ -264,15 +295,16 @@ public class MirroredSolrRequest<T extends SolrResponse> {
   public String toString() {
     final StringBuilder sb = new StringBuilder(getClass().getSimpleName() + "{type=");
     sb.append(type.toString());
-    sb.append(", method=" + solrRequest.getMethod());
-    sb.append(", params=" + solrRequest.getParams());
+    sb.append(", method=").append(solrRequest.getMethod());
+    sb.append(", params=").append(solrRequest.getParams());
     if (solrRequest instanceof UpdateRequest req) {
-      sb.append(", add=" + (req.getDocuments() != null ? req.getDocuments().size() : "0"));
-      sb.append(", del=" + (req.getDeleteByIdMap() != null ? req.getDeleteByIdMap().size() : "0"));
-      sb.append(", dbq=" + (req.getDeleteQuery() != null ? req.getDeleteQuery().size() : "0"));
+      sb.append(", add=").append(req.getDocuments() != null ? req.getDocuments().size() : "0");
+      sb.append(", del=")
+          .append(req.getDeleteByIdMap() != null ? req.getDeleteByIdMap().size() : "0");
+      sb.append(", dbq=").append(req.getDeleteQuery() != null ? req.getDeleteQuery().size() : "0");
     }
-    sb.append(", attempt=" + attempt);
-    sb.append(", submitTimeNanos=" + submitTimeNanos);
+    sb.append(", attempt=").append(attempt);
+    sb.append(", submitTimeNanos=").append(submitTimeNanos);
     sb.append('}');
     return sb.toString();
   }

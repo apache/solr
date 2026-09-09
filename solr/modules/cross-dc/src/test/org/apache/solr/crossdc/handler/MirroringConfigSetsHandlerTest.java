@@ -20,7 +20,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
@@ -52,7 +51,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 @ThreadLeakFilters(
-    defaultFilters = true,
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
@@ -149,13 +147,15 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
       req.getParams()
           .forEach(
               entry -> {
-                assertEquals(entry.getValue(), mirroredParams.getParams(entry.getKey()));
+                assertArrayEquals(entry.getValue(), mirroredParams.getParams(entry.getKey()));
               });
       assertEquals("HTTP method", req.getHttpMethod(), solrRequest.getMethod().toString());
       if (expectStreams) {
         List<ContentStream> sourceStreams = (List<ContentStream>) req.getContentStreams();
         assertNotNull("source streams missing", sourceStreams);
-        List<ContentStream> mirroredStreams = (List<ContentStream>) solrRequest.getContentStreams();
+        List<ContentStream> mirroredStreams =
+            (List<ContentStream>)
+                ((MirroredSolrRequest.MirroredConfigSetRequest) solrRequest).getRawContentStreams();
         assertNotNull("mirrored streams missing", mirroredStreams);
         assertEquals("number of streams", sourceStreams.size(), mirroredStreams.size());
         for (int i = 0; i < sourceStreams.size(); i++) {
@@ -167,7 +167,7 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
               MirroredSolrRequest.ExposedByteArrayContentStream.of(source).byteArray();
           byte[] mirroredContent =
               MirroredSolrRequest.ExposedByteArrayContentStream.of(mirrored).byteArray();
-          assertTrue("different content", Arrays.equals(sourceContent, mirroredContent));
+          assertArrayEquals("different content", sourceContent, mirroredContent);
         }
       }
     } else {

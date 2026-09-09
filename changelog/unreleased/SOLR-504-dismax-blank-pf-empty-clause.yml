@@ -1,0 +1,9 @@
+title: >
+  The DisMax query parser no longer adds an empty, no-op boolean clause to the query when the
+  pf parameter is blank or missing.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-504
+    url: https://issues.apache.org/jira/browse/SOLR-504

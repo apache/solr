@@ -588,6 +588,8 @@ public class JettySolrRunner implements SolrBackend {
    * @param ioe An IOException that might wrap a BindException
    * @return A bind exception if present otherwise ioe
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting a self-referencing exception cause loop, by identity
   Exception lookForBindException(IOException ioe) {
     Exception e = ioe;
     while (e.getCause() != null && !(e == e.getCause()) && !(e instanceof BindException)) {
@@ -690,7 +692,7 @@ public class JettySolrRunner implements SolrBackend {
     if (getCoreContainer() != null) {
       final var coreStatusReq = new CoresApi.GetAllCoreStatus();
       coreStatusReq.setIndexInfo(true);
-      try (final var client = newClient()) {
+      try (final var client = new HttpJettySolrClient.Builder(getBaseUrl().toString()).build()) {
         final var coreStatusRsp = coreStatusReq.process(client);
         Utils.writeJson(coreStatusRsp, pw, true);
       } catch (SolrServerException | IOException e) {
@@ -783,21 +785,6 @@ public class JettySolrRunner implements SolrBackend {
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  /**
-   * @deprecated Use {@link #getSolrClient()} or {@link #newClient(int, int)} instead.
-   */
-  @Deprecated(since = "10.1")
-  public HttpJettySolrClient newClient() {
-    return new HttpJettySolrClient.Builder(getBaseUrl().toString()).build();
-  }
-
-  public HttpJettySolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
-    return new HttpJettySolrClient.Builder(getBaseUrl().toString())
-        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
-        .withIdleTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
-        .build();
   }
 
   // --------------------------------------------------------------

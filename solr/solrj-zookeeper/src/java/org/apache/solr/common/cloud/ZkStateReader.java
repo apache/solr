@@ -105,15 +105,8 @@ public class ZkStateReader implements SolrCloseable {
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
 
-  // TODO: Deprecate and remove support for roles.json in an upcoming release.
-  /**
-   * The following, node_roles and roles.json are for assigning roles to nodes. The node_roles is
-   * the preferred way (using -Dsolr.node.roles param), and roles.json is used by legacy ADDROLE API
-   * command.
-   */
+  /** Node roles are assigned at startup with the {@code -Dsolr.node.roles} property. */
   public static final String NODE_ROLES = "/node_roles";
-
-  public static final String ROLES = "/roles.json";
 
   public static final String ALIASES = "/aliases.json";
 
@@ -1270,6 +1263,8 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     @Override
+    @SuppressWarnings(
+        "ReferenceEquality") // checking identity of the registered watcher, not equality
     public void process(WatchedEvent event) {
       // session events are not change events, and do not remove the watcher
       if (EventType.None.equals(event.getType())) {
@@ -2007,6 +2002,8 @@ public class ZkStateReader implements SolrCloseable {
      * modifications, giving up after 30 seconds with a SolrException. The caller should understand
      * it's possible the aliases has further changed if it examines it.
      */
+    @SuppressWarnings(
+        "ReferenceEquality") // op.apply returning the same instance means "no change made"
     public void applyModificationAndExportToZk(UnaryOperator<Aliases> op) {
       // The current aliases hasn't been update()'ed yet -- which is impossible?  Any way just
       // update it first.
