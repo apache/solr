@@ -143,7 +143,7 @@ public class EnvUtils {
     if (value != null) {
       return value;
     }
-    return resolveViaDeprecatedMapping(altKey);
+    return resolveViaDeprecatedMapping(key, altKey);
   }
 
   /**
@@ -155,8 +155,12 @@ public class EnvUtils {
    * ${legacyName:default}} substitution token from before a property was renamed: without this,
    * setting only the new property name would silently have no effect on that token, since nothing
    * else ever rewrites the token's text. See SOLR-17864.
+   *
+   * @param key the property key as originally looked up (used only for the deprecation message)
+   * @param dotKey {@code key} converted to dot-separated form; this is what {@code
+   *     DEPRECATED_MAPPINGS} is keyed by
    */
-  private static String resolveViaDeprecatedMapping(String dotKey) {
+  private static String resolveViaDeprecatedMapping(String key, String dotKey) {
     DeprecatedMapping mapping = DEPRECATED_MAPPINGS.get(dotKey);
     if (mapping == null) {
       return null;
@@ -165,7 +169,19 @@ public class EnvUtils {
     if (newValue == null) {
       return null;
     }
-    return mapping.inverted() ? String.valueOf(!Boolean.parseBoolean(newValue)) : newValue;
+    DeprecationLog.log(
+        dotKey,
+        () ->
+            "A config file still references the deprecated system property "
+                + key
+                + "; it was replaced by "
+                + mapping.currentName()
+                + ". Support for the old property will be removed in a future version of Solr.");
+    return mapping.inverted() ? invertBooleanString(newValue) : newValue;
+  }
+
+  private static String invertBooleanString(String value) {
+    return String.valueOf(!Boolean.parseBoolean(value));
   }
 
   private static String camelCaseToDotSeparated(String key) {
@@ -269,7 +285,7 @@ public class EnvUtils {
       String deprecatedKey, DeprecatedMapping mapping, Properties sysProperties) {
     var newValue =
         mapping.inverted()
-            ? String.valueOf(!Boolean.parseBoolean(sysProperties.getProperty(deprecatedKey)))
+            ? invertBooleanString(sysProperties.getProperty(deprecatedKey))
             : sysProperties.getProperty(deprecatedKey);
     log.warn(
         "Deprecated system property {} has been replaced by {}. Support for the old property will be removed in a future version of Solr.",

@@ -25,7 +25,7 @@ import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat.
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.logging.DeprecationLog;
+import org.apache.solr.common.util.DeprecationLog;
 
 public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   public static final String BITS_PARAM = "bits"; //
