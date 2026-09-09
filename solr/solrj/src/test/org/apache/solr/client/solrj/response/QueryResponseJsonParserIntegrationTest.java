@@ -60,7 +60,7 @@ public class QueryResponseJsonParserIntegrationTest extends SolrTestCase {
     try (SolrClient client =
         solrTestRule
             .newSolrClientBuilder()
-            .withResponseParser(new JsonMapResponseParser())
+            .withResponseParser(JsonMapResponseParser.canonical())
             .build()) {
       assertTypedResponse(client);
     }
@@ -71,7 +71,7 @@ public class QueryResponseJsonParserIntegrationTest extends SolrTestCase {
   public void testTypedQueryResponseOverJsonJdk() throws Exception {
     try (SolrClient client =
         new HttpJdkSolrClient.Builder(solrTestRule.getBaseUrl())
-            .withResponseParser(new JsonMapResponseParser())
+            .withResponseParser(JsonMapResponseParser.canonical())
             .build()) {
       assertTypedResponse(client);
     }

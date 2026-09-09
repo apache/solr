@@ -1,8 +1,9 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 
 title: >
-  SolrJ's QueryResponse and other response objects now work with non-binary response parsers
-  such as the JSON response parser; previously only the default binary parser was supported.
+  SolrJ's QueryResponse and other response objects can now read a JSON response, via the new
+  `JsonMapResponseParser.canonical()`; previously their accessors could throw ClassCastException.
+  The plain `JsonMapResponseParser` constructor keeps returning the raw Maps and Lists it always did.
 type: added
 authors:
   - name: Serhiy Bzhezytskyy

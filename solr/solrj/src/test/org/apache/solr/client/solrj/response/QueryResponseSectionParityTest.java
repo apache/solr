@@ -33,7 +33,7 @@ public class QueryResponseSectionParityTest extends SolrTestCase {
 
   private static QueryResponse parse(String json) throws Exception {
     NamedList<Object> parsed =
-        new JsonMapResponseParser()
+        JsonMapResponseParser.canonical()
             .processResponse(
                 new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), "UTF-8");
     QueryResponse r = new QueryResponse();

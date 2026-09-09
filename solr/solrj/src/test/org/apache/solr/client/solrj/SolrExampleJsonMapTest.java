@@ -26,7 +26,7 @@ public class SolrExampleJsonMapTest extends SolrExampleTests {
   public SolrClient createNewSolrClient() {
     return solrTestRule
         .newSolrClientBuilder()
-        .withResponseParser(new JsonMapResponseParser())
+        .withResponseParser(JsonMapResponseParser.canonical())
         .build();
   }
 }

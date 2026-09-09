@@ -144,7 +144,7 @@ public class TestSuggesterResponse extends SolrTestCaseJ4 {
         switch (random().nextInt(3)) {
           case 0 -> new JavaBinResponseParser();
           case 1 -> new XMLResponseParser();
-          default -> new JsonMapResponseParser();
+          default -> JsonMapResponseParser.canonical();
         };
     return solrTestRule.newSolrClientBuilder().withResponseParser(randomParser).build();
   }

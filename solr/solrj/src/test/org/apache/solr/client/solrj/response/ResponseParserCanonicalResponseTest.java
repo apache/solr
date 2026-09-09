@@ -59,7 +59,8 @@ public class ResponseParserCanonicalResponseTest extends SolrTestCase {
   /** ... and processCanonicalResponse converts it, without the caller asking. */
   @Test
   public void testJsonMapParserCanonicalResponseIsConverted() throws Exception {
-    NamedList<Object> out = new JsonMapResponseParser().processCanonicalResponse(json(), null);
+    NamedList<Object> out =
+        JsonMapResponseParser.canonical().processCanonicalResponse(json(), null);
     assertTrue("header must be a NamedList", out.get("responseHeader") instanceof NamedList);
     assertTrue(
         "response must be a SolrDocumentList", out.get("response") instanceof SolrDocumentList);

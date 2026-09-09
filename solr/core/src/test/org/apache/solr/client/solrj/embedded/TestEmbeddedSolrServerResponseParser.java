@@ -62,7 +62,7 @@ public class TestEmbeddedSolrServerResponseParser extends SolrTestCase {
     SolrQuery q = new SolrQuery("id:1");
     q.addFacetField("name_s");
     QueryRequest req = new QueryRequest(q);
-    req.setResponseParser(new JsonMapResponseParser());
+    req.setResponseParser(JsonMapResponseParser.canonical());
 
     QueryResponse rsp = req.process(solrTestRule.getSolrClient());
 
@@ -103,7 +103,7 @@ public class TestEmbeddedSolrServerResponseParser extends SolrTestCase {
     SolrQuery q = new SolrQuery("id:10");
     q.setFields("*", "[child]");
     QueryRequest req = new QueryRequest(q);
-    req.setResponseParser(new JsonMapResponseParser());
+    req.setResponseParser(JsonMapResponseParser.canonical());
 
     QueryResponse rsp = req.process(client);
 
