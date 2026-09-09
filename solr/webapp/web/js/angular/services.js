@@ -194,7 +194,6 @@ solrAdminServices.factory('Metrics',
   ['$resource', function($resource) {
     return $resource('admin/zookeeper', {wt:'json', _:Date.now()}, {
       "simple": {},
-      "liveNodes": {params: {path: '/live_nodes'}},
       "clusterState": {params: {detail: "true", path: "/clusterstate.json"}},
       "detail": {params: {detail: "true", path: "@path"}}
     });

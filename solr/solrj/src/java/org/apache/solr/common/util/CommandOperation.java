@@ -48,7 +48,7 @@ public class CommandOperation {
   public String getStr(String key, String def) {
     if (ROOT_OBJ.equals(key)) {
       Object obj = getRootPrimitive();
-      return obj == def ? null : String.valueOf(obj);
+      return obj == null ? def : String.valueOf(obj);
     }
     Object o = getMapVal(key);
     return o == null ? def : String.valueOf(o);

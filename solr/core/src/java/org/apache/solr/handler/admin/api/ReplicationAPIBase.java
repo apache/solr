@@ -254,6 +254,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
     protected Long indexGen;
     protected IndexDeletionPolicyWrapper delPolicy;
+    private boolean commitPointSaved;
 
     protected String fileName;
     protected String cfileName;
@@ -342,7 +343,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
       // reserve commit point till write is complete
       if (indexGen != null) {
-        delPolicy.saveCommitPoint(indexGen);
+        try {
+          delPolicy.saveCommitPoint(indexGen);
+          commitPointSaved = true;
+        } catch (IllegalStateException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.CONFLICT, "invalid index generation: " + indexGen, e);
+        }
       }
     }
 
@@ -360,7 +367,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       ReplicationHandler replicationHandler =
           (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
 
-      if (indexGen != null) {
+      if (commitPointSaved) {
         // Reserve the commit point for another 10s for the next file to be to fetched.
         // We need to keep extending the commit reservation between requests so that the replica can
         // fetch all the files correctly.

@@ -965,6 +965,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return new BitDocSet(bs, answer.size());
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting whether makeBitDocSet had to allocate a new instance
   public BitDocSet getDocSetBits(Query q) throws IOException {
     DocSet answer = getDocSet(q);
     BitDocSet answerBits = makeBitDocSet(answer);

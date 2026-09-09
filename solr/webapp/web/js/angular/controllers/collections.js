@@ -85,8 +85,6 @@ solrAdminApp.controller('CollectionsController',
                       }
                   });
               });
-
-              $scope.liveNodes = data.cluster.liveNodes;
           });
           ConfigSetsV2.listConfigSet(function(error, data, response) {
               $timeout(function() {
