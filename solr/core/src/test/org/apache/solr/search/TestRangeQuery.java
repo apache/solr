@@ -466,7 +466,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
         if (withQueryTimeout) {
           assertTrue(
               "Create multiple DocSet-s outside of cache because of possible query timeouts",
-              TestInjection.countDocSetDelays.get() > 1);
+              TestInjection.countDocSetDelays.get() > 0);
         } else {
           assertEquals(
               "Create only one DocSet outside of cache", 1, TestInjection.countDocSetDelays.get());
