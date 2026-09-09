@@ -141,4 +141,54 @@ public class FieldEqualitor implements StreamEqualitor {
 
     return false;
   }
+
+  @Override
+  public boolean isDerivedFromLeft(StreamComparator base) {
+    if (null == base) {
+      return false;
+    }
+    if (base instanceof FieldComparator) {
+      FieldComparator baseComp = (FieldComparator) base;
+      return leftFieldName.equals(baseComp.getLeftFieldName());
+    } else if (base instanceof MultipleFieldComparator) {
+      // must equal the first one
+      MultipleFieldComparator baseComps = (MultipleFieldComparator) base;
+      if (baseComps.getComps().length > 0) {
+        return isDerivedFromLeft(baseComps.getComps()[0]);
+      }
+    }
+
+    return false;
+  }
+
+  @Override
+  public boolean isDerivedFromRight(StreamComparator base) {
+    if (null == base) {
+      return false;
+    }
+    if (base instanceof FieldComparator) {
+      FieldComparator baseComp = (FieldComparator) base;
+      return rightFieldName.equals(baseComp.getRightFieldName());
+    } else if (base instanceof MultipleFieldComparator) {
+      // must equal the first one
+      MultipleFieldComparator baseComps = (MultipleFieldComparator) base;
+      if (baseComps.getComps().length > 0) {
+        return isDerivedFromRight(baseComps.getComps()[0]);
+      }
+    }
+
+    return false;
+  }
+
+  @Override
+  public void assertFieldsPresent(Tuple left, Tuple right) throws IOException {
+    if (!left.getFields().containsKey(leftFieldName)) {
+      throw new IOException(
+          "Field '" + leftFieldName + "' is missing (not just null) from tuple: " + left);
+    }
+    if (!right.getFields().containsKey(rightFieldName)) {
+      throw new IOException(
+          "Field '" + rightFieldName + "' is missing (not just null) from tuple: " + right);
+    }
+  }
 }
