@@ -29,8 +29,8 @@ import org.slf4j.Logger;
 public class ResponseUtils {
   private ResponseUtils() {}
 
-  // System property to use if the Solr core does not exist or solr.responses.stacktrace.enabled
-  // is not configured. (i.e.: a lot of unit test).
+  // Default used when solr.responses.stacktrace.enabled is not explicitly set (e.g. in many unit
+  // tests).
   private static final boolean STACKTRACE_ENABLED =
       EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
 
