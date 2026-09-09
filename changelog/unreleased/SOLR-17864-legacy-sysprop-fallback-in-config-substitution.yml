@@ -1,0 +1,11 @@
+title: >
+  A solr.xml or solrconfig.xml property-substitution token (${...}) that still references a
+  legacy/deprecated system property name now falls back to the current property's value if that's
+  been set, instead of silently ignoring it. Previously, upgrading and setting only the new
+  property name had no effect unless the config file's own ${...} token was also updated by hand.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-17864
+    url: https://issues.apache.org/jira/browse/SOLR-17864
