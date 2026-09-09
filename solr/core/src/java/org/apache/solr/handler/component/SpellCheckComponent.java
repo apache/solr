@@ -357,13 +357,16 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   private void addOriginalTermsToResponse(NamedList<Object> response, TokenStream originalTerms)
       throws IOException {
     List<String> originalTermStr = new ArrayList<>();
-    originalTerms.reset();
-    CharTermAttribute termAtt = originalTerms.addAttribute(CharTermAttribute.class);
-    while (originalTerms.incrementToken()) {
-      originalTermStr.add(termAtt.toString());
+    try {
+      originalTerms.reset();
+      CharTermAttribute termAtt = originalTerms.addAttribute(CharTermAttribute.class);
+      while (originalTerms.incrementToken()) {
+        originalTermStr.add(termAtt.toString());
+      }
+      originalTerms.end();
+    } finally {
+      originalTerms.close();
     }
-    originalTerms.end();
-    originalTerms.close();
     response.add("originalTerms", originalTermStr);
   }
 

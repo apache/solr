@@ -23,12 +23,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.CombineSuggestion;
@@ -357,28 +351,18 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
    * into one corrected phrase), which a single-pass stream cursor can't provide.
    */
   private static SpellCheckToken[] drainToArray(TokenStream stream) throws IOException {
-    stream.reset();
-    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
-    OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
-    PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
-    FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
-    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
-    List<SpellCheckToken> tokens = new ArrayList<>();
-    while (stream.incrementToken()) {
-      tokens.add(
-          new SpellCheckToken(
-              termAtt.toString(),
-              offsetAtt.startOffset(),
-              offsetAtt.endOffset(),
-              typeAtt.type(),
-              posIncAtt.getPositionIncrement(),
-              flagsAtt.getFlags(),
-              payloadAtt.getPayload()));
+    try {
+      stream.reset();
+      SpellCheckToken.AttributeReader tokenReader = new SpellCheckToken.AttributeReader(stream);
+      List<SpellCheckToken> tokens = new ArrayList<>();
+      while (stream.incrementToken()) {
+        tokens.add(tokenReader.current());
+      }
+      stream.end();
+      return tokens.toArray(new SpellCheckToken[0]);
+    } finally {
+      stream.close();
     }
-    stream.end();
-    stream.close();
-    return tokens.toArray(new SpellCheckToken[0]);
   }
 
   @Override

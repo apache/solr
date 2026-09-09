@@ -22,12 +22,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.Dictionary;
@@ -147,94 +141,84 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 
     int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
     TokenStream stream = options.tokenStreamSupplier.get();
-    stream.reset();
-    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
-    OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
-    PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
-    FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
-    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
-    while (stream.incrementToken()) {
-      String tokenText = termAtt.toString();
-      SpellCheckToken token =
-          new SpellCheckToken(
-              tokenText,
-              offsetAtt.startOffset(),
-              offsetAtt.endOffset(),
-              typeAtt.type(),
-              posIncAtt.getPositionIncrement(),
-              flagsAtt.getFlags(),
-              payloadAtt.getPayload());
-      if (tokenText.isEmpty()) {
-        result.add(token, List.of());
-        continue;
-      }
-      term = new Term(field, tokenText);
-      int docFreq = 0;
-      if (reader != null) {
-        docFreq = reader.docFreq(term);
-      }
-      String[] suggestions =
-          spellChecker.suggestSimilar(
-              tokenText,
-              ((options.alternativeTermCount == 0 || docFreq == 0)
-                  ? count
-                  : options.alternativeTermCount),
-              field != null ? reader : null, // workaround LUCENE-1295
-              field,
-              options.suggestMode,
-              theAccuracy);
-      if (suggestions.length == 1
-          && suggestions[0].equals(tokenText)
-          && options.alternativeTermCount == 0) {
-        // These are spelled the same, continue on
-        continue;
-      }
-      // If considering alternatives to "correctly-spelled" terms, then add the
-      // original as a viable suggestion.
-      if (options.alternativeTermCount > 0 && docFreq > 0) {
-        boolean foundOriginal = false;
-        String[] suggestionsWithOrig = new String[suggestions.length + 1];
-        for (int i = 0; i < suggestions.length; i++) {
-          if (suggestions[i].equals(tokenText)) {
-            foundOriginal = true;
-            break;
+    try {
+      stream.reset();
+      SpellCheckToken.AttributeReader tokenReader = new SpellCheckToken.AttributeReader(stream);
+      while (stream.incrementToken()) {
+        SpellCheckToken token = tokenReader.current();
+        String tokenText = token.text();
+        if (tokenText.isEmpty()) {
+          result.add(token, List.of());
+          continue;
+        }
+        term = new Term(field, tokenText);
+        int docFreq = 0;
+        if (reader != null) {
+          docFreq = reader.docFreq(term);
+        }
+        String[] suggestions =
+            spellChecker.suggestSimilar(
+                tokenText,
+                ((options.alternativeTermCount == 0 || docFreq == 0)
+                    ? count
+                    : options.alternativeTermCount),
+                field != null ? reader : null, // workaround LUCENE-1295
+                field,
+                options.suggestMode,
+                theAccuracy);
+        if (suggestions.length == 1
+            && suggestions[0].equals(tokenText)
+            && options.alternativeTermCount == 0) {
+          // These are spelled the same, continue on
+          continue;
+        }
+        // If considering alternatives to "correctly-spelled" terms, then add the
+        // original as a viable suggestion.
+        if (options.alternativeTermCount > 0 && docFreq > 0) {
+          boolean foundOriginal = false;
+          String[] suggestionsWithOrig = new String[suggestions.length + 1];
+          for (int i = 0; i < suggestions.length; i++) {
+            if (suggestions[i].equals(tokenText)) {
+              foundOriginal = true;
+              break;
+            }
+            suggestionsWithOrig[i + 1] = suggestions[i];
           }
-          suggestionsWithOrig[i + 1] = suggestions[i];
+          if (!foundOriginal) {
+            suggestionsWithOrig[0] = tokenText;
+            suggestions = suggestionsWithOrig;
+          }
         }
-        if (!foundOriginal) {
-          suggestionsWithOrig[0] = tokenText;
-          suggestions = suggestionsWithOrig;
-        }
-      }
 
-      if (options.extendedResults == true && reader != null && field != null) {
-        result.addFrequency(token, docFreq);
-        int countLimit = Math.min(options.count, suggestions.length);
-        if (countLimit > 0) {
-          for (int i = 0; i < countLimit; i++) {
-            term = new Term(field, suggestions[i]);
-            result.add(token, suggestions[i], reader.docFreq(term));
+        if (options.extendedResults == true && reader != null && field != null) {
+          result.addFrequency(token, docFreq);
+          int countLimit = Math.min(options.count, suggestions.length);
+          if (countLimit > 0) {
+            for (int i = 0; i < countLimit; i++) {
+              term = new Term(field, suggestions[i]);
+              result.add(token, suggestions[i], reader.docFreq(term));
+            }
+          } else {
+            List<String> suggList = List.of();
+            result.add(token, suggList);
           }
         } else {
-          List<String> suggList = List.of();
-          result.add(token, suggList);
-        }
-      } else {
-        if (suggestions.length > 0) {
-          List<String> suggList = Arrays.asList(suggestions);
-          if (suggestions.length > options.count) {
-            suggList = suggList.subList(0, options.count);
+          if (suggestions.length > 0) {
+            List<String> suggList = Arrays.asList(suggestions);
+            if (suggestions.length > options.count) {
+              suggList = suggList.subList(0, options.count);
+            }
+            result.add(token, suggList);
+          } else {
+            List<String> suggList = List.of();
+            result.add(token, suggList);
           }
-          result.add(token, suggList);
-        } else {
-          List<String> suggList = List.of();
-          result.add(token, suggList);
         }
       }
+      stream.end();
+    } finally {
+      stream.close();
     }
-    stream.end();
-    stream.close();
     return result;
   }
 

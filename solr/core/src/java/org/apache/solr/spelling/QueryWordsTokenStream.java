@@ -43,6 +43,11 @@ final class QueryWordsTokenStream extends TokenStream {
   private int nextWordIndex;
   private int currentWordIndex;
   private TokenStream current;
+  private CharTermAttribute currentTermAtt;
+  private OffsetAttribute currentOffsetAtt;
+  private TypeAttribute currentTypeAtt;
+  private PositionIncrementAttribute currentPosIncAtt;
+  private PayloadAttribute currentPayloadAtt;
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -63,15 +68,13 @@ final class QueryWordsTokenStream extends TokenStream {
       if (current != null && current.incrementToken()) {
         ParsedWord word = words.get(currentWordIndex);
         clearAttributes();
-        termAtt.append(current.addAttribute(CharTermAttribute.class));
-        OffsetAttribute innerOffset = current.addAttribute(OffsetAttribute.class);
+        termAtt.append(currentTermAtt);
         offsetAtt.setOffset(
-            word.startIndex() + innerOffset.startOffset(),
-            word.startIndex() + innerOffset.endOffset());
-        typeAtt.setType(current.addAttribute(TypeAttribute.class).type());
-        posIncAtt.setPositionIncrement(
-            current.addAttribute(PositionIncrementAttribute.class).getPositionIncrement());
-        payloadAtt.setPayload(current.addAttribute(PayloadAttribute.class).getPayload());
+            word.startIndex() + currentOffsetAtt.startOffset(),
+            word.startIndex() + currentOffsetAtt.endOffset());
+        typeAtt.setType(currentTypeAtt.type());
+        posIncAtt.setPositionIncrement(currentPosIncAtt.getPositionIncrement());
+        payloadAtt.setPayload(currentPayloadAtt.getPayload());
         flagsAtt.setFlags(word.flags());
         return true;
       }
@@ -86,6 +89,11 @@ final class QueryWordsTokenStream extends TokenStream {
       currentWordIndex = nextWordIndex;
       current = analyzer.tokenStream("", words.get(nextWordIndex).text());
       nextWordIndex++;
+      currentTermAtt = current.addAttribute(CharTermAttribute.class);
+      currentOffsetAtt = current.addAttribute(OffsetAttribute.class);
+      currentTypeAtt = current.addAttribute(TypeAttribute.class);
+      currentPosIncAtt = current.addAttribute(PositionIncrementAttribute.class);
+      currentPayloadAtt = current.addAttribute(PayloadAttribute.class);
       current.reset();
     }
   }

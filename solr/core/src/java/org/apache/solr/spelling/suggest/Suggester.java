@@ -28,11 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
@@ -208,44 +203,37 @@ public class Suggester extends SolrSpellChecker {
     }
     SpellingResult res = new SpellingResult();
     TokenStream stream = options.tokenStreamSupplier.get();
-    stream.reset();
-    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
-    OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
-    PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
-    FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
-    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
-    CharsRef scratch = new CharsRef();
-    while (stream.incrementToken()) {
-      SpellCheckToken t =
-          new SpellCheckToken(
-              termAtt.toString(),
-              offsetAtt.startOffset(),
-              offsetAtt.endOffset(),
-              typeAtt.type(),
-              posIncAtt.getPositionIncrement(),
-              flagsAtt.getFlags(),
-              payloadAtt.getPayload());
-      scratch.chars = termAtt.buffer();
-      scratch.offset = 0;
-      scratch.length = termAtt.length();
-      boolean onlyMorePopular =
-          (options.suggestMode == SuggestMode.SUGGEST_MORE_POPULAR)
-              && !(lookup instanceof WFSTCompletionLookup)
-              && !(lookup instanceof AnalyzingSuggester);
-      List<LookupResult> suggestions = lookup.lookup(scratch, onlyMorePopular, options.count);
-      if (suggestions == null) {
-        continue;
+    try {
+      stream.reset();
+      // AttributeReader also registers CharTermAttribute; addAttribute is idempotent so this
+      // still returns the very same shared instance.
+      CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+      SpellCheckToken.AttributeReader tokenReader = new SpellCheckToken.AttributeReader(stream);
+      CharsRef scratch = new CharsRef();
+      while (stream.incrementToken()) {
+        SpellCheckToken t = tokenReader.current();
+        scratch.chars = termAtt.buffer();
+        scratch.offset = 0;
+        scratch.length = termAtt.length();
+        boolean onlyMorePopular =
+            (options.suggestMode == SuggestMode.SUGGEST_MORE_POPULAR)
+                && !(lookup instanceof WFSTCompletionLookup)
+                && !(lookup instanceof AnalyzingSuggester);
+        List<LookupResult> suggestions = lookup.lookup(scratch, onlyMorePopular, options.count);
+        if (suggestions == null) {
+          continue;
+        }
+        if (options.suggestMode != SuggestMode.SUGGEST_MORE_POPULAR) {
+          Collections.sort(suggestions);
+        }
+        for (LookupResult lr : suggestions) {
+          res.add(t, lr.key.toString(), (int) lr.value);
+        }
       }
-      if (options.suggestMode != SuggestMode.SUGGEST_MORE_POPULAR) {
-        Collections.sort(suggestions);
-      }
-      for (LookupResult lr : suggestions) {
-        res.add(t, lr.key.toString(), (int) lr.value);
-      }
+      stream.end();
+    } finally {
+      stream.close();
     }
-    stream.end();
-    stream.close();
     return res;
   }
 }

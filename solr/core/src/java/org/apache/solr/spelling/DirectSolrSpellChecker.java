@@ -22,12 +22,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.DirectSpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
@@ -195,69 +189,59 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
         (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;
 
     TokenStream stream = options.tokenStreamSupplier.get();
-    stream.reset();
-    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
-    OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
-    PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
-    FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
-    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
-    while (stream.incrementToken()) {
-      String tokenText = termAtt.toString();
-      SpellCheckToken token =
-          new SpellCheckToken(
-              tokenText,
-              offsetAtt.startOffset(),
-              offsetAtt.endOffset(),
-              typeAtt.type(),
-              posIncAtt.getPositionIncrement(),
-              flagsAtt.getFlags(),
-              payloadAtt.getPayload());
-      if (tokenText.isEmpty()) {
-        result.add(token, List.of());
-        continue;
-      }
-      Term term = new Term(field, tokenText);
-      int freq = options.reader.docFreq(term);
-      int count =
-          (options.alternativeTermCount > 0 && freq > 0)
-              ? options.alternativeTermCount
-              : options.count;
-      SuggestWord[] suggestions =
-          checker.suggestSimilar(term, count, options.reader, options.suggestMode, accuracy);
-      result.addFrequency(token, freq);
+    try {
+      stream.reset();
+      SpellCheckToken.AttributeReader tokenReader = new SpellCheckToken.AttributeReader(stream);
+      while (stream.incrementToken()) {
+        SpellCheckToken token = tokenReader.current();
+        String tokenText = token.text();
+        if (tokenText.isEmpty()) {
+          result.add(token, List.of());
+          continue;
+        }
+        Term term = new Term(field, tokenText);
+        int freq = options.reader.docFreq(term);
+        int count =
+            (options.alternativeTermCount > 0 && freq > 0)
+                ? options.alternativeTermCount
+                : options.count;
+        SuggestWord[] suggestions =
+            checker.suggestSimilar(term, count, options.reader, options.suggestMode, accuracy);
+        result.addFrequency(token, freq);
 
-      // If considering alternatives to "correctly-spelled" terms, then add the
-      // original as a viable suggestion.
-      if (options.alternativeTermCount > 0 && freq > 0) {
-        boolean foundOriginal = false;
-        SuggestWord[] suggestionsWithOrig = new SuggestWord[suggestions.length + 1];
-        for (int i = 0; i < suggestions.length; i++) {
-          if (suggestions[i].string.equals(tokenText)) {
-            foundOriginal = true;
-            break;
+        // If considering alternatives to "correctly-spelled" terms, then add the
+        // original as a viable suggestion.
+        if (options.alternativeTermCount > 0 && freq > 0) {
+          boolean foundOriginal = false;
+          SuggestWord[] suggestionsWithOrig = new SuggestWord[suggestions.length + 1];
+          for (int i = 0; i < suggestions.length; i++) {
+            if (suggestions[i].string.equals(tokenText)) {
+              foundOriginal = true;
+              break;
+            }
+            suggestionsWithOrig[i + 1] = suggestions[i];
           }
-          suggestionsWithOrig[i + 1] = suggestions[i];
+          if (!foundOriginal) {
+            SuggestWord orig = new SuggestWord();
+            orig.freq = freq;
+            orig.string = tokenText;
+            suggestionsWithOrig[0] = orig;
+            suggestions = suggestionsWithOrig;
+          }
         }
-        if (!foundOriginal) {
-          SuggestWord orig = new SuggestWord();
-          orig.freq = freq;
-          orig.string = tokenText;
-          suggestionsWithOrig[0] = orig;
-          suggestions = suggestionsWithOrig;
+        if (suggestions.length == 0 && freq == 0) {
+          List<String> empty = List.of();
+          result.add(token, empty);
+        } else {
+          for (SuggestWord suggestion : suggestions) {
+            result.add(token, suggestion.string, suggestion.freq);
+          }
         }
       }
-      if (suggestions.length == 0 && freq == 0) {
-        List<String> empty = List.of();
-        result.add(token, empty);
-      } else {
-        for (SuggestWord suggestion : suggestions) {
-          result.add(token, suggestion.string, suggestion.freq);
-        }
-      }
+      stream.end();
+    } finally {
+      stream.close();
     }
-    stream.end();
-    stream.close();
     return result;
   }
 
