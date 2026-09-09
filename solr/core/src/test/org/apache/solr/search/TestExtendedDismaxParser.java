@@ -3384,7 +3384,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     final String expectedNoPf = "+((subject:hello | title:hello) (subject:world | title:world))";
     final String expectedRealPf = expectedNoPf + " (subject:\"hello world\")";
 
-    for (String defType : Arrays.asList("dismax", "edismax")) {
+    for (String defType : List.of("dismax", "edismax")) {
       try (SolrQueryRequest req = req("qf", "subject title", "defType", defType)) {
         assertEquals(
             defType,
