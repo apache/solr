@@ -76,7 +76,7 @@ public class FieldEqualitor implements StreamEqualitor {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "ReferenceEquality"}) // fast path: same ref implies equal
   public boolean test(Tuple leftTuple, Tuple rightTuple) {
 
     @SuppressWarnings({"rawtypes"})

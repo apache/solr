@@ -77,8 +77,10 @@ class SolrFilter extends Filter implements SolrRel {
 
   private final RexBuilder builder;
 
+  @SuppressWarnings("ReferenceEquality")
   SolrFilter(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition) {
     super(cluster, traitSet, child, condition);
+    // Conventions are singletons (see SolrRel.CONVENTION); identity comparison is intentional.
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == child.getConvention();
     builder = child.getCluster().getRexBuilder();

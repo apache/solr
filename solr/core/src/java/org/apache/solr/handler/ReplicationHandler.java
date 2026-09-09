@@ -480,6 +480,8 @@ public class ReplicationHandler extends RequestHandlerBase
 
   private volatile IndexFetcher currentIndexFetcher;
 
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting the shared pollingIndexFetcher vs. a one-off, by identity
   public IndexFetchResult doFetch(SolrParams solrParams, boolean forceReplication) {
     String leaderUrl = solrParams.get(LEADER_URL, null);
     if (!indexFetchLock.tryLock()) return IndexFetchResult.LOCK_OBTAIN_FAILED;
@@ -1446,6 +1448,8 @@ public class ReplicationHandler extends RequestHandlerBase
         }
 
         @Override
+        @SuppressWarnings(
+            "ReferenceEquality") // detecting the shared pollingIndexFetcher vs. a one-off
         public void postClose(SolrCore core) {
           if (pollingIndexFetcher != null) {
             pollingIndexFetcher.destroy();

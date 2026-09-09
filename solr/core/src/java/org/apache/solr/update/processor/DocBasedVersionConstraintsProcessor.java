@@ -188,6 +188,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // DELETED is a unique sentinel; identity check is intentional
   private DocFoundAndOldUserAndSolrVersions getOldUserVersionsFromFieldCache(
       BytesRef indexedDocId) {
     SolrInputDocument oldDoc =
