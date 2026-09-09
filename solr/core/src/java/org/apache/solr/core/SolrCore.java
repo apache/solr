@@ -81,7 +81,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -854,59 +853,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
     this.indexReaderFactory = indexReaderFactory;
   }
 
-  // protect via synchronized(SolrCore.class)
-  private static Set<String> dirs = new HashSet<>();
-
-  /**
-   * Returns <code>true</code> iff the index in the named directory is currently locked.
-   *
-   * @param directory the directory to check for a lock
-   * @throws IOException if there is a low-level IO error
-   * @deprecated Use of this method can only lead to race conditions. Try to actually obtain a lock
-   *     instead.
-   */
-  @Deprecated(since = "7.0")
-  private static boolean isWriterLocked(Directory directory) throws IOException {
-    try {
-      directory.obtainLock(IndexWriter.WRITE_LOCK_NAME).close();
-      return false;
-    } catch (LockObtainFailedException failed) {
-      return true;
-    }
-  }
-
-  void initIndex(boolean passOnPreviousState, boolean reload) throws IOException {
+  /** Also fails fast (LockObtainFailedException) if an existing index directory is locked. */
+  void initIndex(boolean reload) throws IOException {
     String indexDir = getNewIndexDir();
     boolean indexExists = getDirectoryFactory().exists(indexDir);
-    boolean firstTime;
-    synchronized (SolrCore.class) {
-      firstTime = dirs.add(getDirectoryFactory().normalize(indexDir));
-    }
 
     initIndexReaderFactory();
 
-    if (indexExists && firstTime && !passOnPreviousState) {
-      final String lockType = getSolrConfig().indexConfig.lockType;
-      Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT, lockType);
-      try {
-        if (isWriterLocked(dir)) {
-          log.error(
-              "Solr index directory '{}' is locked (lockType={}).  Throwing exception.",
-              indexDir,
-              lockType);
-          throw new LockObtainFailedException(
-              "Index dir '"
-                  + indexDir
-                  + "' of core '"
-                  + name
-                  + "' is already locked. "
-                  + "The most likely cause is another Solr server (or another solr core in this server) "
-                  + "also configured to use this directory; other possible causes may be specific to lockType: "
-                  + lockType);
-        }
-      } finally {
-        directoryFactory.release(dir);
-      }
+    if (indexExists) {
+      // Fails fast on a lock conflict (LUCENE-6507/6508); solrCoreState caches the writer.
+      solrCoreState.getIndexWriter(this, false).decref();
     }
 
     // Create the index if it doesn't exist.
@@ -1137,7 +1093,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       this.solrDelPolicy = initDeletionPolicy(delPolicy);
 
       this.codec = initCodec(solrConfig, this.schema);
-      initIndex(prev != null, reload);
+      initIndex(reload);
 
       initWriters();
       qParserPlugins.init(QParserPlugin.standardPlugins, this);
