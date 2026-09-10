@@ -35,20 +35,31 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 public class TikaServerParser {
-  private final SAXParser saxParser;
+  // TikaServer 4.x's /rmeta content key (TIKA-4816).
+  private static final String CONTENT_KEY = "tk:content";
+
+  // SAXParser isn't thread-safe, but a single TikaServerParser is shared across concurrent
+  // extraction requests (TikaServerExtractionBackend is held for the request handler's lifetime).
+  // The factory's config is fixed once at construction, so it's safe to share; each parse below
+  // mints its own SAXParser from it instead of reusing one.
+  private final SAXParserFactory saxParserFactory;
 
   public TikaServerParser() {
-    SAXParserFactory factory = SAXParserFactory.newInstance();
-    factory.setNamespaceAware(true);
+    saxParserFactory = SAXParserFactory.newInstance();
+    saxParserFactory.setNamespaceAware(true);
     try {
-      factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-      factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-      factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+      saxParserFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+      saxParserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+      saxParserFactory.setFeature(
+          "http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
     } catch (Throwable ignore) {
       // Some parsers may not support all features; ignore
     }
+  }
+
+  private SAXParser newSaxParser() {
     try {
-      saxParser = factory.newSAXParser();
+      return saxParserFactory.newSAXParser();
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -63,7 +74,7 @@ public class TikaServerParser {
     DefaultHandler xmlHandler = new TikaXmlResponseSaxContentHandler(handler, metadata);
     try (Reader reader =
         new XmlSanitizingReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-      saxParser.parse(new InputSource(reader), xmlHandler);
+      newSaxParser().parse(new InputSource(reader), xmlHandler);
     }
   }
 
@@ -91,7 +102,7 @@ public class TikaServerParser {
       for (Object k : map.keySet()) {
         String key = String.valueOf(k);
         Object val = map.get(k);
-        if ("X-TIKA:content".equalsIgnoreCase(key)) {
+        if (CONTENT_KEY.equalsIgnoreCase(key)) {
           // handled below
           continue;
         }
@@ -103,7 +114,7 @@ public class TikaServerParser {
           md.add(key, String.valueOf(val));
         }
       }
-      Object content = map.get("X-TIKA:content");
+      Object content = map.get(CONTENT_KEY);
       if (content != null) {
         String xhtml = String.valueOf(content);
         if (!xhtml.isEmpty() && handler != null) {
@@ -111,7 +122,7 @@ public class TikaServerParser {
               new ByteArrayInputStream(xhtml.getBytes(StandardCharsets.UTF_8));
           try (Reader reader =
               new XmlSanitizingReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-            saxParser.parse(new InputSource(reader), handler);
+            newSaxParser().parse(new InputSource(reader), handler);
           }
         }
       }

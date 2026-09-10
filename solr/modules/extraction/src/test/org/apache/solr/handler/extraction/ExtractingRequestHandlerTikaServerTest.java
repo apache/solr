@@ -31,7 +31,8 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @ClassRule
-  public static final TikaServerContainerRule tikaContainer = new TikaServerContainerRule();
+  public static final TikaServerContainerRule tikaContainer =
+      new TikaServerContainerRule(getFile("extraction/tika-server-config.json"));
 
   @BeforeClass
   public static void beforeClassTika() throws Exception {

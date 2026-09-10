@@ -21,9 +21,14 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
@@ -58,7 +63,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   }
 
   @ClassRule
-  public static final TikaServerContainerRule tikaContainer = new TikaServerContainerRule();
+  public static final TikaServerContainerRule tikaContainer =
+      new TikaServerContainerRule(getFile("extraction/tika-server-config.json"));
 
   private static ExtractionRequest newRequest(
       String resourceName,
@@ -124,14 +130,13 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     try (TikaServerExtractionBackend backend =
         new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
-      // Enable recursive extraction and set header to extract images from PDF
+      // Explicit inline-image extraction options can't be requested here: TikaServer's per-request
+      // config only supports the non-recursive /tika/config/xml endpoint (see resolveConfigJson's
+      // javadoc), since there is no XML-output variant of /rmeta/config for recursive requests. The
+      // PDF's embedded image is still OCR'd into the main document's content by default, just not
+      // exposed as a separate embedded resource entry.
       ExtractionRequest request =
-          newRequest(
-              "pdf-with-image.pdf",
-              "application/pdf",
-              "xml",
-              true,
-              Map.of("X-Tika-PDFextractInlineImages", "true"));
+          newRequest("pdf-with-image.pdf", "application/pdf", "xml", true, Map.of());
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
         ToXMLContentHandler xmlHandler = new ToXMLContentHandler();
         ExtractionMetadata md = backend.buildMetadataFromRequest(request);
@@ -139,9 +144,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         String c = xmlHandler.toString();
         assertNotNull(c);
         assertTrue(c.contains("Puppet Apply"));
-        assertTrue(c.contains("embedded:image0.jpg"));
-        assertEquals(
-            "org.apache.tika.parser.DefaultParser", md.getFirst("X-TIKA:Parsed-By-Full-Set"));
+        // TikaServer 4.x uses a single lowercase tk: prefix for its metadata keys (TIKA-4816)
+        assertEquals("org.apache.tika.parser.DefaultParser", md.getFirst("tk:parsed-by-full-set"));
       }
     }
   }
@@ -192,6 +196,142 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         assertTrue(
             "Expected message to mention max size exceeded",
             e.getMessage().contains("exceeded the configured maximum size"));
+      }
+    }
+  }
+
+  private static ExtractionRequest newRequestWithConfig(
+      String resourceName, String contentType, String extractFormat, String configJson) {
+    return ExtractionRequest.builder()
+        .streamType(contentType)
+        .resourceName(resourceName)
+        .contentType(contentType)
+        .streamName(resourceName)
+        .extractFormat(extractFormat)
+        .tikaServerConfigJson(configJson)
+        .build();
+  }
+
+  @Test
+  public void testConfigJsonDisablesOcr() throws Exception {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
+      byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
+      // With no config, the PDF's embedded image gets OCR'd and "Puppet Apply" (from the image)
+      // appears in the extracted content. Disabling OCR via tikaserver.config should suppress it.
+      ExtractionRequest request =
+          newRequestWithConfig(
+              "pdf-with-image.pdf",
+              "application/pdf",
+              "xml",
+              "{\"pdf-parser\":{\"ocr\":{\"strategy\":\"NO_OCR\"}}}");
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        ExtractionResult res = backend.extract(in, request);
+        assertNotNull(res.getContent());
+        assertFalse(
+            "Expected tikaserver.config's NO_OCR strategy to suppress the OCR'd image text",
+            res.getContent().contains("Puppet Apply"));
+      }
+    }
+  }
+
+  @Test
+  public void testConfigJsonMergesWithPassword() throws Exception {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
+      byte[] data = Files.readAllBytes(getFile("extraction/encrypted-password-is-solrRules.pdf"));
+      ExtractionRequest request =
+          ExtractionRequest.builder()
+              .streamType("application/pdf")
+              .resourceName("encrypted-password-is-solrRules.pdf")
+              .contentType("application/pdf")
+              .streamName("encrypted-password-is-solrRules.pdf")
+              .extractFormat("xml")
+              .resourcePassword("solrRules")
+              .tikaServerConfigJson("{\"pdf-parser\":{\"ocr\":{\"strategy\":\"NO_OCR\"}}}")
+              .build();
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        ExtractionResult res = backend.extract(in, request);
+        assertNotNull(res);
+        assertTrue(
+            "Expected the password-unlocked content to still be present alongside the merged"
+                + " tikaserver.config",
+            res.getContent().contains("This is a test of PDF and Word extraction"));
+      }
+    }
+  }
+
+  @Test
+  public void testInvalidConfigJsonRejected() throws Exception {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
+      byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
+      ExtractionRequest request =
+          newRequestWithConfig("test.txt", "text/plain", "xml", "not valid json");
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        SolrException e = expectThrows(SolrException.class, () -> backend.extract(in, request));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue(e.getMessage().contains(ExtractingParams.TIKASERVER_CONFIG_JSON));
+      }
+    }
+  }
+
+  @Test
+  public void testConfigJsonRejectedForRecursive() throws Exception {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
+      byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
+      ExtractionRequest request =
+          ExtractionRequest.builder()
+              .streamType("text/plain")
+              .resourceName("test.txt")
+              .contentType("text/plain")
+              .streamName("test.txt")
+              .extractFormat("xml")
+              .tikaServerRecursive(true)
+              .tikaServerConfigJson("{\"parse-context\":{}}")
+              .build();
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        SolrException e = expectThrows(SolrException.class, () -> backend.extract(in, request));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue(e.getMessage().contains(ExtractingParams.TIKASERVER_RECURSIVE));
+      }
+    }
+  }
+
+  /**
+   * A single {@code TikaServerExtractionBackend} is constructed once by {@code
+   * ExtractingRequestHandler.inform()} and reused for every request it handles, including
+   * concurrently. {@code javax.xml.parsers.SAXParser} is not thread-safe, so parsing the response
+   * must not share one {@code SAXParser} instance across concurrent {@code extract()} calls.
+   */
+  @Test
+  public void testConcurrentExtractDoesNotShareSaxParser() throws Exception {
+    int numThreads = 8;
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
+      ExecutorService pool = Executors.newFixedThreadPool(numThreads);
+      try {
+        List<Future<ExtractionResult>> futures = new ArrayList<>();
+        for (int i = 0; i < numThreads; i++) {
+          futures.add(
+              pool.submit(
+                  () -> {
+                    byte[] data = "Hello TestContainers".getBytes(StandardCharsets.UTF_8);
+                    try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+                      return backend.extract(in, newRequest("test.txt", "text/plain", "text"));
+                    }
+                  }));
+        }
+        for (Future<ExtractionResult> future : futures) {
+          ExtractionResult res = future.get(60, TimeUnit.SECONDS);
+          assertNotNull(res);
+          assertNotNull(res.getContent());
+          assertTrue(res.getContent().contains("Hello TestContainers"));
+        }
+      } finally {
+        pool.shutdown();
+        pool.awaitTermination(10, TimeUnit.SECONDS);
       }
     }
   }

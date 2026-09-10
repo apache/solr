@@ -67,6 +67,18 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   protected SolrContentHandlerFactory factory;
   protected ExtractionBackend backend;
 
+  /**
+   * Rethrows {@code e} as-is if it's already a {@link SolrException} (preserving its error code,
+   * e.g. a {@code BAD_REQUEST} from invalid extraction parameters), otherwise wraps it in a {@code
+   * SERVER_ERROR}.
+   */
+  private static SolrException wrapExtractionException(Exception e) {
+    if (e instanceof SolrException se) {
+      return se;
+    }
+    return new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+  }
+
   public ExtractingDocumentLoader(
       SolrQueryRequest req,
       UpdateRequestProcessor processor,
@@ -143,6 +155,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               .tikaServerRecursive(tikaserverRecursive)
               .tikaServerTimeoutSeconds(tikaTimeoutSecs)
               .tikaServerRequestHeaders(Map.of())
+              .tikaServerConfigJson(params.get(ExtractingParams.TIKASERVER_CONFIG_JSON))
+              .ignoreTikaException(ignoreTikaException)
               .build();
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);
@@ -185,7 +199,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               log.warn("skip extracting text due to {}.", e.getLocalizedMessage(), e);
             return;
           }
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          throw wrapExtractionException(e);
         }
         return;
       }
@@ -203,7 +217,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               return;
             }
           }
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          throw wrapExtractionException(e);
         }
 
         addDoc(handler);
@@ -219,7 +233,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
             log.warn("skip extracting text due to {}.", e.getLocalizedMessage(), e);
           return;
         }
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        throw wrapExtractionException(e);
       }
 
       ExtractionMetadata metadata = result.getMetadata();
