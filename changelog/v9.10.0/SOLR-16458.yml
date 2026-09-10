@@ -1,0 +1,7 @@
+title: Add JAX-RS API for retrieving node thread information.
+type: added
+authors:
+  - name: Yash Goswami
+links:
+  - name: SOLR-16458
+    url: https://issues.apache.org/jira/browse/SOLR-16458
