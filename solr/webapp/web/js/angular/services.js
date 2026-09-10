@@ -204,10 +204,12 @@ solrAdminServices.factory('Metrics',
       "monitor": {}
     });
   }])
-.factory('Properties',
-  ['$resource', function($resource) {
-    return $resource('admin/info/properties', {'wt':'json', '_':Date.now()});
-  }])
+.factory('NodeV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.NodeApi();
+    })
 .factory('Threads',
   ['$resource', function($resource) {
     // v2 NodeThreadsAPI (/api/node/threads) still just delegates straight through to the same v1
