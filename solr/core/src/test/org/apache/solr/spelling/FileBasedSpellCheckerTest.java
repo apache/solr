@@ -16,12 +16,12 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
@@ -62,25 +62,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
 
   /** A stream that emits exactly one token whose term text is empty. */
   private static TokenStream singleEmptyTermTokenStream() {
-    return new TokenStream() {
-      private boolean done;
-
-      @Override
-      public boolean incrementToken() {
-        if (done) {
-          return false;
-        }
-        done = true;
-        clearAttributes();
-        return true;
-      }
-
-      @Override
-      public void reset() throws IOException {
-        super.reset();
-        done = false;
-      }
-    };
+    return new KeywordAnalyzer().tokenStream("", "");
   }
 
   @Test

@@ -67,8 +67,7 @@ public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
   }
 
   public void assertConvertsTo(String text, String expected[]) {
-    try {
-      TokenStream stream = converter.convert(text);
+    try (TokenStream stream = converter.convert(text)) {
       stream.reset();
       CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
       int i = 0;
@@ -77,7 +76,6 @@ public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
         i++;
       }
       stream.end();
-      stream.close();
       assertEquals(i, expected.length);
     } catch (IOException e) {
       throw new RuntimeException(e);

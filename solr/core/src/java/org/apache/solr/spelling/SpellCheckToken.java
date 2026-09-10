@@ -47,8 +47,20 @@ public record SpellCheckToken(
     int flags,
     BytesRef payload) {
 
+  public SpellCheckToken {
+    // PayloadAttribute hands out a buffer it refills for the next token, so a reference to it is
+    // not a value. This record is a map key in SpellingResult and in ConjunctionSolrSpellChecker,
+    // which need one whose bytes cannot change after it is stored.
+    payload = payload == null ? null : BytesRef.deepCopyOf(payload);
+  }
+
   public SpellCheckToken(String text, int startOffset, int endOffset) {
     this(text, startOffset, endOffset, "word", 1, 0, null);
+  }
+
+  /** The length of {@link #text()}, which the {@code Token} this replaced also offered. */
+  public int length() {
+    return text.length();
   }
 
   @Override
