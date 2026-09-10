@@ -1444,6 +1444,7 @@ public class CoreContainer {
     return coreSorter;
   }
 
+  @SuppressWarnings("ReferenceEquality") // SolrCore identity, not equality, is what matters here
   protected SolrCore registerCore(
       CoreDescriptor cd, SolrCore core, boolean registerInZk, boolean skipRecovery) {
     if (core == null) {

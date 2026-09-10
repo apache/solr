@@ -34,7 +34,7 @@ solrAdminApp.controller('CloudController',
             treeSubController($scope, Zookeeper);
         } else if (view === "graph") {
             $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
-            graphSubController($scope, $timeout, Zookeeper, ClusterV2, ApiErrorHandler, false);
+            graphSubController($scope, $timeout, Zookeeper, ClusterV2, ApiErrorHandler);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
             nodesSubController($scope, $timeout, Collections, ClusterV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
@@ -787,13 +787,13 @@ var graphSubController = function ($scope, $timeout, Zookeeper, ClusterV2, ApiEr
     };
 
     $scope.initGraph = function() {
-        ClusterV2.listClusterNodes(function (error, nodesData, response) {
-          $timeout(function() {
-            if (error) { ApiErrorHandler.handle(response); return; }
+        ClusterV2.listClusterNodes(function (error, data, response) {
+            $timeout(function() {
+                if (error) { ApiErrorHandler.handle(response); return; }
 
-            var live_nodes = {};
-            for (var c in nodesData.nodes) {
-                live_nodes[nodesData.nodes[c]] = true;
+                var live_nodes = {};
+                for (var i = 0; i < data.nodes.length; i++) {
+                    live_nodes[data.nodes[i]] = true;
             }
 
             var params = {view: "graph"};

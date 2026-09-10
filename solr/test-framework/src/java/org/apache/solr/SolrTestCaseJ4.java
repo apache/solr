@@ -472,6 +472,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     randomizeNumericTypesProperties();
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting a self-referencing exception cause loop, by identity
   public static Throwable getWrappedException(Throwable e) {
     while (e != null && e.getCause() != e && e.getCause() != null) {
       e = e.getCause();
@@ -2285,6 +2287,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean compareSolrDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrDocument solrDocument1)
@@ -2335,6 +2338,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean compareSolrDocumentList(Object expected, Object actual) {
     if (!(expected instanceof SolrDocumentList list1)
         || !(actual instanceof SolrDocumentList list2)) {
@@ -2366,6 +2370,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean compareSolrInputDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrInputDocument sdoc1)
@@ -2440,6 +2445,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean assertSolrInputFieldEquals(Object expected, Object actual) {
     if (!(expected instanceof SolrInputField sif1) || !(actual instanceof SolrInputField sif2)) {
       return false;
@@ -2557,6 +2563,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return result;
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // SolrIndexSearcher identity, not equality, is what matters here
   protected static void waitForWarming(SolrCore core) throws InterruptedException {
     RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
     RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);
