@@ -1585,6 +1585,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("ReferenceEquality")
   public void testRandomGrouping() throws Exception {
     /*
      * updateJ("{\"add\":{\"doc\":{\"id\":\"77\"}}}", params("commit","true"));
@@ -1725,6 +1726,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         // now sort the groups
 
         // if sort != group.sort, we need to find the max doc by "sort"
+        // Identity check: groupComparator may deliberately be set to the same instance as
+        // sortComparator above.
         if (groupComparator != sortComparator) {
           for (Grp grp : groups.values()) grp.setMaxDoc(sortComparator);
         }

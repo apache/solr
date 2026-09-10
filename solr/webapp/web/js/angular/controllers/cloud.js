@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, $timeout, Zookeeper, Constants, Collections, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
+    function($scope, $location, $timeout, Zookeeper, Constants, Collections, ClusterV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
 
         $scope.showDebug = false;
 
@@ -34,7 +34,7 @@ solrAdminApp.controller('CloudController',
             treeSubController($scope, Zookeeper);
         } else if (view === "graph") {
             $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
-            graphSubController($scope, Zookeeper, false);
+            graphSubController($scope, Zookeeper, ClusterV2, ApiErrorHandler);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
             nodesSubController($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
@@ -744,7 +744,7 @@ function secondsForHumans ( seconds ) {
     return returntext.trim() === '' ? '0m' : returntext.trim();
 }
 
-var graphSubController = function ($scope, Zookeeper) {
+var graphSubController = function ($scope, Zookeeper, ClusterV2, ApiErrorHandler) {
     $scope.showZkStatus = false;
     $scope.showTree = false;
     $scope.showGraph = true;
@@ -781,10 +781,11 @@ var graphSubController = function ($scope, Zookeeper) {
     };
 
     $scope.initGraph = function() {
-        Zookeeper.liveNodes(function (data) {
+        ClusterV2.listClusterNodes(function (error, data, response) {
+            if (error) { ApiErrorHandler.handle(response); return; }
             var live_nodes = {};
-            for (var c in data.tree[0].children) {
-                live_nodes[data.tree[0].children[c].text] = true;
+            for (var i = 0; i < data.nodes.length; i++) {
+                live_nodes[data.nodes[i]] = true;
             }
 
             var params = {view: "graph"};

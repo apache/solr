@@ -157,6 +157,9 @@ public class LatLonPointSpatialField
     }
 
     @Override
+    @SuppressWarnings(
+        "ReferenceEquality") // SpatialOperation constants are singletons; identity check is
+    // intentional
     public Query makeQuery(SpatialArgs args) {
       if (args.getOperation() != SpatialOperation.Intersects) {
         throw new UnsupportedSpatialOperation(args.getOperation());

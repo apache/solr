@@ -3377,4 +3377,33 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name",
         exception.getMessage());
   }
+
+  /** SOLR-504: a missing or blank "pf" must not add an empty/no-op boolean clause to the query */
+  @Test
+  public void testPfMissingOrBlankAddsNoEmptyClause() throws Exception {
+    final String expectedNoPf = "+((subject:hello | title:hello) (subject:world | title:world))";
+    final String expectedRealPf = expectedNoPf + " (subject:\"hello world\")";
+
+    for (String defType : List.of("dismax", "edismax")) {
+      try (SolrQueryRequest req = req("qf", "subject title", "defType", defType)) {
+        assertEquals(
+            defType,
+            expectedNoPf,
+            QParser.getParser("hello world", defType, req).getQuery().toString());
+      }
+      try (SolrQueryRequest req = req("qf", "subject title", "pf", "", "defType", defType)) {
+        assertEquals(
+            defType,
+            expectedNoPf,
+            QParser.getParser("hello world", defType, req).getQuery().toString());
+      }
+      // sanity check: a real pf *does* add a (non-empty) phrase clause
+      try (SolrQueryRequest req = req("qf", "subject title", "pf", "subject", "defType", defType)) {
+        assertEquals(
+            defType,
+            expectedRealPf,
+            QParser.getParser("hello world", defType, req).getQuery().toString());
+      }
+    }
+  }
 }

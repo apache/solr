@@ -201,7 +201,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     // db.instance=testInternalCollectionApiCommands
     // - this will be the parent span, all following spans will have the same traceId
     //
-    // 3..6 (4 times) name=post:/admin/cores
+    // 3..6 (4 times) name=create:/admin/cores
     // db.instance=testInternalCollectionApiCommands_shard1_replica_n2
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n4
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
