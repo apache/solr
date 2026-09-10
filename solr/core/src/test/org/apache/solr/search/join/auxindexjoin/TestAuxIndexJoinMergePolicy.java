@@ -33,6 +33,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.SegmentCommitInfo;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -97,6 +99,9 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
     // this test drives many onCreateWeight calls back to back, well inside the default one-minute
     // sampling interval, and asserts on the reaper noticing every one of them
     joinIndex.mergePolicy.setSweepInterval(0, TimeUnit.NANOSECONDS);
+    // the sidecars here are kilobytes, so the default megabyte of reclaimable bytes would decline
+    // every purge; the two tests below that are about the threshold itself set their own
+    joinIndex.mergePolicy.setMinReclaimableBytesToPurge(0);
   }
 
   @Override
@@ -646,16 +651,18 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
   }
 
   /**
-   * A purge rewrites the whole segment to drop what is dead in it, so one dead column out of twenty
-   * is a twentyfold write amplification -- exactly the "rewrite the same big segment forever" that
-   * {@code maxPairsPerSegment} keeps compaction away from. The threshold makes a purge earn its
-   * rewrite; until it does, the name simply stays queued.
+   * A purge rewrites the whole segment to drop what is dead in it, so it has to reclaim enough
+   * bytes to be worth the trip; until it does, the name simply stays queued. The threshold is in
+   * bytes rather than in share of columns because share is what let the fattest segments -- the
+   * ones holding the bytes -- dilute themselves out of ever being cleaned.
    */
   public void testAThinlyDeadSegmentIsNotWorthRewriting() throws Exception {
     joinIndex.mergePolicy.setCompaction(1000, 0); // nothing compactable, so only purges can act
 
     Map<String, int[]> columnsByPair = new LinkedHashMap<>(writeWideBatch(0, 20));
-    String doomed = columnsByPair.keySet().iterator().next(); // 1 of 20 == 5%, under the default 10
+    // between what one column of twenty is worth and what four are: 1/20 must not pay, 4/20 must
+    joinIndex.mergePolicy.setMinReclaimableBytesToPurge(widestSegmentBytes() / 8);
+    String doomed = columnsByPair.keySet().iterator().next();
     joinIndex.mergePolicy.queueForRemoval(doomed);
 
     columnsByPair.putAll(writeBatchesOfVaryingLength(100, 1));
@@ -663,7 +670,7 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
     columnsByPair.putAll(writeBatchesOfVaryingLength(101, 1));
 
     assertEquals(
-        "one dead column in twenty does not pay for rewriting the other nineteen",
+        "one dead column in twenty does not reclaim enough to pay for rewriting the other nineteen",
         0,
         joinIndex.mergePolicy.purgedSegmentCount());
     assertEquals(
@@ -687,7 +694,7 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
     columnsByPair.putAll(writeBatchesOfVaryingLength(103, 1));
 
     assertTrue(
-        "4 of 20 dead is over the threshold, so the segment should have been purged",
+        "4 of 20 dead is worth more than the threshold, so the segment should have been purged",
         joinIndex.mergePolicy.purgedSegmentCount() >= 1);
     assertEquals(0, joinIndex.mergePolicy.pendingPairRemovalsCount());
     try (DirectoryReader sidecar = DirectoryReader.open(joinDir)) {
@@ -706,7 +713,9 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
     joinIndex.mergePolicy.setCompaction(1000, 0);
 
     Map<String, int[]> columnsByPair = new LinkedHashMap<>(writeWideBatch(0, 20));
-    String doomed = columnsByPair.keySet().iterator().next(); // still only 5% of its segment
+    // nothing this segment holds could ever be worth a rewrite on its own
+    joinIndex.mergePolicy.setMinReclaimableBytesToPurge(Long.MAX_VALUE);
+    String doomed = columnsByPair.keySet().iterator().next();
 
     // a backlog of names for columns long gone, as a stalled reaper would accumulate
     for (int i = 0; i < 2048; i++) {
@@ -751,13 +760,19 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
         // the newer generation needs both pairs
         joinIndex.onCreateWeight(
             Set.of("pairA", "pairB"),
+            PARENT_ID_FK,
             new IndexSearcher(childrenGen2),
+            PARENT_ID,
             new IndexSearcher(parentsGen2));
         assertEquals(0, joinIndex.mergePolicy.pendingPairRemovalsCount());
 
         // an older query samples next and does not need pairB -- because it cannot see it yet
         joinIndex.onCreateWeight(
-            Set.of("pairA"), new IndexSearcher(childrenGen1), new IndexSearcher(parentsGen1));
+            Set.of("pairA"),
+            PARENT_ID_FK,
+            new IndexSearcher(childrenGen1),
+            PARENT_ID,
+            new IndexSearcher(parentsGen1));
         assertEquals(
             "a sample from an older generation must not condemn anything",
             0,
@@ -768,7 +783,11 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
         try (DirectoryReader parentsGen3 = parentsWriter.getReader();
             DirectoryReader childrenGen3 = childrenWriter.getReader()) {
           joinIndex.onCreateWeight(
-              Set.of("pairA"), new IndexSearcher(childrenGen3), new IndexSearcher(parentsGen3));
+              Set.of("pairA"),
+              PARENT_ID_FK,
+              new IndexSearcher(childrenGen3),
+              PARENT_ID,
+              new IndexSearcher(parentsGen3));
           assertEquals(
               "the newest generation no longer needing a pair is what death looks like",
               Set.of("pairB").size(),
@@ -802,5 +821,95 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
               + " compactions",
           sidecar.leaves().size() <= batches / 3);
     }
+  }
+
+  /** The size on disk of the sidecar's biggest segment, which the wide batch above just wrote. */
+  private long widestSegmentBytes() throws IOException {
+    long widest = 0;
+    for (SegmentCommitInfo info : SegmentInfos.readLatestCommit(joinDir)) {
+      widest = Math.max(widest, info.sizeInBytes());
+    }
+    return widest;
+  }
+
+  /** Every pair the sidecar currently stores a column for, across all its segments. */
+  private Set<String> storedPairNames() throws IOException {
+    Set<String> names = new TreeSet<>();
+    try (DirectoryReader sidecar = DirectoryReader.open(joinDir)) {
+      for (LeafReaderContext leaf : sidecar.leaves()) {
+        names.addAll(JoinIndexUtils.pairFieldNames(leaf.reader().getFieldInfos()));
+      }
+    }
+    return names;
+  }
+
+  /**
+   * What a restart inherits has to be reclaimable, and the sampled death signal structurally cannot
+   * reclaim it: that signal only fires when a query needs a pair and a later query doesn't, both
+   * within one process, so a column whose from-segment was merged away while Solr was down is
+   * needed by nobody, missed by nobody, and lives forever. Load tests ended with most of the
+   * sidecar's bytes in exactly such columns, inherited from the previous run's directory.
+   *
+   * <p>Here the readers are the evidence instead: whatever side keys they do not offer name
+   * segments that are gone, whether they went during this process or before it started.
+   */
+  public void testColumnsStrandedByARestartAreReaped() throws Exception {
+    List<String> parentIds = addParentsAndChildren("gen1-", atLeast(6));
+    try (IndexReader parentsReader = parentsWriter.getReader();
+        IndexReader childrenReader = childrenWriter.getReader()) {
+      assertEquals(
+          new TreeSet<>(parentIds),
+          searchAllParents(newSearcher(parentsReader), newSearcher(childrenReader)));
+    }
+    Set<String> inherited = storedPairNames();
+    assertFalse("the join should have built columns to inherit", inherited.isEmpty());
+
+    // the restart: a manager opened on the same directory, with no sampling history whatsoever
+    joinIndex.close();
+    joinIndex = new AuxIndexManager(joinDir);
+    joinIndex.mergePolicy.setSweepInterval(0, TimeUnit.NANOSECONDS);
+
+    // and while it was down, every from-segment those columns name was merged away
+    childrenWriter.w.getConfig().setMergePolicy(new TieredMergePolicy());
+    childrenWriter.forceMerge(1);
+    childrenWriter.commit();
+
+    try (IndexReader parentsReader = parentsWriter.getReader();
+        IndexReader childrenReader = childrenWriter.getReader()) {
+      assertEquals(1, childrenReader.leaves().size());
+      // the first query rebuilds against the merged from-segment and commits, which is what puts
+      // the inherited names in front of the policy; the second is the sample that judges them
+      for (int sample = 0; sample < 2; sample++) {
+        assertEquals(
+            "the join must keep answering while its inherited columns are condemned",
+            new TreeSet<>(parentIds),
+            searchAllParents(newSearcher(parentsReader), newSearcher(childrenReader)));
+      }
+    }
+
+    assertTrue(
+        "a restart's own readers show every inherited column's from-segment gone, so the sweep "
+            + "should have condemned all "
+            + inherited.size()
+            + " of them -- the snapshot diff never can, no query here needing them twice -- but it "
+            + "condemned "
+            + joinIndex.mergePolicy.strandedColumnCount(),
+        joinIndex.mergePolicy.strandedColumnCount() >= inherited.size());
+
+    // and queued means reclaimed: the segments holding them are now entirely dead
+    writeBatchesOfVaryingLength(500, 1);
+    joinIndex.waitForMerges();
+    writeBatchesOfVaryingLength(501, 1); // a commit publishing whatever just dropped
+
+    assertTrue(
+        "the inherited columns should have been dropped, reaped=" + reapedOrDropped(),
+        reapedOrDropped() > 0);
+    Set<String> left = storedPairNames();
+    left.retainAll(inherited);
+    assertEquals("no inherited column should still be on disk", Set.of(), left);
+  }
+
+  private int reapedOrDropped() {
+    return joinIndex.mergePolicy.reapedPairCount() + joinIndex.mergePolicy.droppedSegmentCount();
   }
 }

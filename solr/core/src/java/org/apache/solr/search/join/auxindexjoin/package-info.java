@@ -100,9 +100,20 @@
  *       iteration state lives in its from-side iterator and never in the column. The {@code
  *       rebindsAfterReap} counter on the {@code evt=done} line reports how often this happens; it
  *       should be zero in a steady run.
- *   <li><b>Known gaps.</b> A pair field name is only queued for removal once a searcher pair that
- *       used to need it is sampled again <i>without</i> needing it — a side key that dies without
- *       ever being resampled this way stays live.
+ *   <li><b>Death by evidence, for what sampling cannot see.</b> The snapshot diff can only condemn
+ *       a pair that one query needed and a later query didn't, both inside one process. Everything
+ *       a restart inherits therefore lives forever: nobody needs a column whose from-segment was
+ *       merged away while Solr was down, so nobody misses it either, and load tests duly ended with
+ *       most of the sidecar's bytes in such columns. So the same sample also asks the readers
+ *       directly: {@code JoinIndexUtils#liveSideKeys} enumerates the side keys the from and to
+ *       indexes currently offer for the query's two fields, and any stored pair naming one they
+ *       don't is queued outright. Attribution is by field name, and the from half is judged only
+ *       while a single from-index has been seen joining on that name; the to side needs no such
+ *       guard, the sidecar living under the to-core's dataDir. Counted by {@code
+ *       strandedColumnCount()}.
+ *   <li><b>Known gaps.</b> The sweep above sees only the field pairs that are actually queried:
+ *       columns of a join nobody runs any more are still stranded. Sampling remains throttled, so
+ *       reclaim lands within a sampling interval of the first commit, not immediately.
  * </ul>
  *
  * <h2>Compaction of the sidecar</h2>
@@ -116,6 +127,15 @@
  * result carries doc {@code i} of every input, and the result is as long as its longest input, not
  * as long as all of them together. Pair columns are opaque to it: their names already carry both
  * sides' segment ids, so no two inputs' columns can collide.
+ *
+ * <p>Compaction bounds the segment count; what bounds the bytes is purging dead columns out of the
+ * segments that hold them, and that decision is made in bytes rather than in share of columns. A
+ * share reads well -- one dead column in ten pays for the rewrite -- but ranks this index exactly
+ * wrong: dead columns land in whatever segment compaction last folded them into, so the widest
+ * segments dilute their own dead share below any fixed percentage and become the least likely to be
+ * cleaned, though they are where the bytes are. Ranking by {@code reclaimableBytes} instead puts
+ * the fat segments first and leaves the thin ones queued until more of them dies; see {@code
+ * AuxIndexJoinConfig#setMinReclaimableBytesToPurge}.
  *
  * <h2>TODO</h2>
  *

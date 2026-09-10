@@ -43,7 +43,8 @@ public final class AuxIndexJoinConfig {
   private long sweepSamplingIntervalNanos = TimeUnit.MINUTES.toNanos(1);
   private int mergeSegmentsAtOnce = AuxIndexJoinMergePolicy.DEFAULT_MERGE_SEGMENTS_AT_ONCE;
   private int maxPairsPerSegment = AuxIndexJoinMergePolicy.DEFAULT_MAX_PAIRS_PER_SEGMENT;
-  private int minDeadPercentToPurge = AuxIndexJoinMergePolicy.DEFAULT_MIN_DEAD_PERCENT_TO_PURGE;
+  private long minReclaimableBytesToPurge =
+      AuxIndexJoinMergePolicy.DEFAULT_MIN_RECLAIMABLE_BYTES_TO_PURGE;
 
   /** Sole constructor, using the default settings documented on each setter. */
   public AuxIndexJoinConfig() {}
@@ -161,19 +162,19 @@ public final class AuxIndexJoinConfig {
   }
 
   /**
-   * How much of a segment has to be dead, in percent, before a purge rewrites it just to drop those
-   * columns. A purge pays the segment's full width to reclaim what is dead in it, so this bounds
-   * the write amplification: at the default of 10, a purge never rewrites more than ten columns per
-   * column it reclaims. Zero purges on any death at all; compaction is not subject to it, having
-   * decided to rewrite anyway.
+   * How many bytes a purge has to reclaim before it rewrites a segment just to drop the columns
+   * that are dead in it. Ranking by bytes rather than by share of columns is what keeps the widest
+   * segments -- which dilute their own dead share, and hold most of the sidecar -- from being the
+   * least likely to ever be cleaned. Default is 1MB. Zero purges on any death at all; compaction is
+   * not subject to it, having decided to rewrite anyway.
    */
-  public AuxIndexJoinConfig setMinDeadPercentToPurge(int minDeadPercentToPurge) {
-    this.minDeadPercentToPurge = minDeadPercentToPurge;
+  public AuxIndexJoinConfig setMinReclaimableBytesToPurge(long minReclaimableBytesToPurge) {
+    this.minReclaimableBytesToPurge = minReclaimableBytesToPurge;
     return this;
   }
 
-  /** Returns the current value set via {@link #setMinDeadPercentToPurge}. */
-  public int getMinDeadPercentToPurge() {
-    return minDeadPercentToPurge;
+  /** Returns the current value set via {@link #setMinReclaimableBytesToPurge}. */
+  public long getMinReclaimableBytesToPurge() {
+    return minReclaimableBytesToPurge;
   }
 }

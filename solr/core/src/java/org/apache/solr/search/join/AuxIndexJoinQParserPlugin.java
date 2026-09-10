@@ -158,10 +158,10 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
   public static final String MAX_PAIRS_PER_SEGMENT = "maxPairsPerSegment";
 
   /**
-   * Init parameter: how much of a segment has to be dead, in percent, before a purge rewrites it
-   * just to drop those columns. See {@link AuxIndexJoinConfig#setMinDeadPercentToPurge}.
+   * Init parameter: how many bytes a purge has to reclaim before it rewrites a segment just to drop
+   * the columns dead in it. See {@link AuxIndexJoinConfig#setMinReclaimableBytesToPurge}.
    */
-  public static final String MIN_DEAD_PERCENT_TO_PURGE = "minDeadPercentToPurge";
+  public static final String MIN_RECLAIMABLE_BYTES_TO_PURGE = "minReclaimableBytesToPurge";
 
   private String configuredDir = DEFAULT_DIR;
   private final AuxIndexJoinConfig joinIndexConfig = new AuxIndexJoinConfig();
@@ -193,8 +193,9 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
           params.getInt(MERGE_SEGMENTS_AT_ONCE, joinIndexConfig.getMergeSegmentsAtOnce()));
       joinIndexConfig.setMaxPairsPerSegment(
           params.getInt(MAX_PAIRS_PER_SEGMENT, joinIndexConfig.getMaxPairsPerSegment()));
-      joinIndexConfig.setMinDeadPercentToPurge(
-          params.getInt(MIN_DEAD_PERCENT_TO_PURGE, joinIndexConfig.getMinDeadPercentToPurge()));
+      joinIndexConfig.setMinReclaimableBytesToPurge(
+          params.getLong(
+              MIN_RECLAIMABLE_BYTES_TO_PURGE, joinIndexConfig.getMinReclaimableBytesToPurge()));
     }
   }
 

@@ -96,7 +96,8 @@ class AuxIndexJoinQuery extends Query {
     @NonNull Map<String, AuxIndexManager.SegmentsTuple> neededPairs =
         getRequiredColumNames(toSideSearcher);
 
-    joinIndex.onCreateWeight(neededPairs.keySet(), fromSearcher, toSideSearcher); // ignoring fields
+    joinIndex.onCreateWeight(
+        neededPairs.keySet(), fromField, fromSearcher, toField, toSideSearcher);
     Predicate<String> isNeeded = neededPairs::containsKey;
 
     Map<String, JoinSegmentReference> existingJoinSegments;

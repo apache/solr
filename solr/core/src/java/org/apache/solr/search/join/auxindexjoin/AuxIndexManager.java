@@ -122,7 +122,7 @@ public final class AuxIndexManager implements Closeable {
     this.mergePolicy = new AuxIndexJoinMergePolicy();
     this.mergePolicy.setSweepInterval(config.getSweepSamplingIntervalNanos(), TimeUnit.NANOSECONDS);
     this.mergePolicy.setCompaction(config.getMergeSegmentsAtOnce(), config.getMaxPairsPerSegment());
-    this.mergePolicy.setMinDeadPercentToPurge(config.getMinDeadPercentToPurge());
+    this.mergePolicy.setMinReclaimableBytesToPurge(config.getMinReclaimableBytesToPurge());
     this.wipeOnVersionMismatch = config.getWipeOnVersionMismatch();
     this.writer =
         new IndexWriter(
@@ -278,9 +278,13 @@ public final class AuxIndexManager implements Closeable {
   }
 
   public void onCreateWeight(
-      Set<String> neededPairs, IndexSearcher fromSearcher, IndexSearcher searcher)
+      Set<String> neededPairs,
+      String fromField,
+      IndexSearcher fromSearcher,
+      String toField,
+      IndexSearcher searcher)
       throws IOException {
-    this.mergePolicy.onCreateWeight(neededPairs, fromSearcher, searcher);
+    this.mergePolicy.onCreateWeight(neededPairs, fromField, fromSearcher, toField, searcher);
   }
 
   /**

@@ -439,6 +439,53 @@ final class JoinIndexUtils {
    * IndexReader#leaves()}; a merge produces a new segment with a new id) and the docvalues
    * generation of the join field.
    */
+  /**
+   * Every side key {@code searcher}'s index currently offers for {@code field}: one per leaf, the
+   * same strings {@link #getSideKey} builds into a pair field name. A pair whose key is missing
+   * from this set names a segment that no longer exists, so its column can never be read again.
+   */
+  static Set<String> liveSideKeys(IndexSearcher searcher, String field) {
+    Set<String> keys = CollectionUtil.newHashSet(searcher.getIndexReader().leaves().size());
+    for (LeafReaderContext leaf : searcher.getIndexReader().leaves()) {
+      keys.add(getSideKey(leaf, field));
+    }
+    return keys;
+  }
+
+  /**
+   * Splits a pair field name back into the two side keys {@link #pairFieldName} joined, or {@code
+   * null} when it isn't one.
+   *
+   * <p>The separator is found rather than searched for blindly: a side key is {@code
+   * field:segmentId:dvGen}, whose field name may itself contain underscores (PRODUCT_ID_FK) but no
+   * colon, and whose generation is a number. So the underscore that joins the two keys is the first
+   * one after the second colon -- everything between that colon and it is the generation.
+   */
+  static String[] splitPairFieldName(String pairFieldName) {
+    int fieldEnd = pairFieldName.indexOf(':');
+    if (fieldEnd < 0) {
+      return null;
+    }
+    int idEnd = pairFieldName.indexOf(':', fieldEnd + 1);
+    if (idEnd < 0) {
+      return null;
+    }
+    int separator = pairFieldName.indexOf('_', idEnd + 1);
+    if (separator < 0) {
+      return null;
+    }
+    return new String[] {
+      pairFieldName.substring(0, separator), pairFieldName.substring(separator + 1)
+    };
+  }
+
+  /** Whether {@code sideKey} is a key of {@code field}, as opposed to some other join field's. */
+  static boolean isKeyOf(String sideKey, String field) {
+    return sideKey.length() > field.length()
+        && sideKey.charAt(field.length()) == ':'
+        && sideKey.startsWith(field);
+  }
+
   static String getSideKey(LeafReaderContext context, String field) {
     byte[] segmentId = segmentReader(context.reader()).getSegmentInfo().info.getId();
     // dvGen starts at -1 and advances only when this particular field receives an in-place
