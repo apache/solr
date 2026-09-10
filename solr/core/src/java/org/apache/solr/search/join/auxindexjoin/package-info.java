@@ -76,12 +76,30 @@
  *       throttled ({@code AuxIndexJoinConfig#setSweepSamplingInterval}, default one minute) since
  *       it is only a heuristic hint, not a correctness requirement, and both the snapshot map and
  *       the pending-removal set are size-bounded (best-effort LRU-ish eviction).
- *   <li><b>Reaping.</b> {@code findMerges} drops every sidecar segment whose pair field names are
- *       all pending removals, via a {@code OneMerge} that reports the segment as fully deleted
- *       ({@code wrapForMerge} returns a {@code MatchNoBits} live-docs view) so {@code IndexWriter}
- *       discards it instead of rewriting it. This runs piggybacked on ordinary merges — no
- *       background thread. {@code TestAIJoinMergePolicy} and {@code droppedSegmentCount()} / {@code
- *       pendingPairRemovalsCount()} cover this end to end.
+ *   <li><b>Only a newer view may condemn.</b> The snapshot is keyed by directory, which is stable
+ *       across reopens, so consecutive samples come from different queries that may hold different
+ *       searcher generations. A sample taken from an older generation than the stored snapshot is
+ *       discarded rather than acted on: it cannot see the segments opened since, and would report
+ *       every one of them as dead. Readers with no orderable version are trusted as before.
+ *   <li><b>Reaping.</b> {@code findMerges} reclaims dead pairs two ways, both piggybacked on
+ *       ordinary merges — there is no background thread. A segment whose pair field names are
+ *       <em>all</em> pending removals is dropped whole, via a {@code OneMerge} that reports it
+ *       fully deleted ({@code wrapForMerge} returns a {@code MatchNoBits} live-docs view) so {@code
+ *       IndexWriter} discards it instead of rewriting it. A segment only <em>partly</em> dead — the
+ *       usual case once a segment carries hundreds of pairs — is rewritten by a {@code
+ *       DocAlignedMerge} with the dead columns hidden from its {@code FieldInfos}, either folded
+ *       into a compaction it was going to take part in anyway or, failing that, as a merge of one.
+ *       Either way the names come off the queue only once the merge commits. {@code
+ *       TestAuxIndexJoinMergePolicy} and {@code droppedSegmentCount()} / {@code
+ *       purgedSegmentCount()} / {@code reapedPairCount()} cover this end to end.
+ *   <li><b>Recoverable, not authoritative.</b> Reaping is a heuristic, so a query may still hold a
+ *       reference to a column it drops. Such a pair is rebuilt by {@code
+ *       JoinIndexScorerSupplier#refreshJoinTasksReferences} — including reading the from-side
+ *       foreign-key column the weight skipped, precisely because the pair existed back then — and
+ *       the cell is rebound to the rebuilt model mid-flight, which is safe because a cell's
+ *       iteration state lives in its from-side iterator and never in the column. The {@code
+ *       rebindsAfterReap} counter on the {@code evt=done} line reports how often this happens; it
+ *       should be zero in a steady run.
  *   <li><b>Known gaps.</b> A pair field name is only queued for removal once a searcher pair that
  *       used to need it is sampled again <i>without</i> needing it — a side key that dies without
  *       ever being resampled this way stays live.
@@ -117,8 +135,6 @@
  *       shares a segment with live ones. Needs {@code
  *       JoinIndexScorerSupplier#refreshJoinTasksReferences} to rebuild a pair that vanished under a
  *       live query first, where it currently throws.
- *   <li>expose the compaction knobs ({@code AuxIndexJoinMergePolicy#setCompaction}) through {@code
- *       AuxIndexJoinConfig} and the qparser plugin's init params, like the sweep interval
  *   <li>stripe columns for join index: break {@code JoinIndexUtils.TO_DOC_VAL_BY_FROM_DOCNUM} to a
  *       pair one is {@code to_doc_nums<maxdocs(to-side)/2} and {@code
  *       to_doc_nums>=maxdocs(to-side)/2}

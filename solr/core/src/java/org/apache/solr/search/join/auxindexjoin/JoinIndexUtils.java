@@ -91,6 +91,19 @@ final class JoinIndexUtils {
   static final String TO_COUNT_PREFIX = "num_toDoc_";
 
   /**
+   * Every field one pair occupies in a sidecar segment -- the inverse of {@link #pairFieldNames},
+   * which recovers pair names from field names. Reaping a pair means hiding exactly these; keep the
+   * two in step if a fifth column is ever added.
+   */
+  static Set<String> columnFieldNames(String pairFieldName) {
+    return Set.of(
+        TO_DOC_VAL_BY_FROM_DOCNUM + pairFieldName,
+        FROM_EDGES_PREFIX + pairFieldName,
+        TO_EDGES_PREFIX + pairFieldName,
+        TO_COUNT_PREFIX + pairFieldName);
+  }
+
+  /**
    * Commit user-data key under which the {@code SolrVersion} that wrote the index is recorded, so a
    * future major version can detect and discard an incompatible aux join index.
    */

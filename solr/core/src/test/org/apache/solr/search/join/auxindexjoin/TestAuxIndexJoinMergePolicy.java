@@ -36,11 +36,15 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.index.RandomIndexWriter;
@@ -225,9 +229,12 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
 
     joinIndex.waitForMerges();
 
+    // reapedPairCount, not pendingPairRemovalsCount: the queue is what is still *owed*, and now
+    // that reaping actually drains it, it settles back to zero. What has to be true is that the
+    // dead pairs were recognized and then reclaimed, which is what this counts.
     assertTrue(
-        "the old pair columns should have been recognized as dead",
-        joinIndex.mergePolicy.pendingPairRemovalsCount() > 0);
+        "the old pair columns should have been recognized as dead and reaped",
+        joinIndex.mergePolicy.reapedPairCount() > 0);
     assertTrue(
         "AuxIndexJoinMergePolicy should have reaped at least the one dead sidecar segment",
         joinIndex.mergePolicy.droppedSegmentCount() >= 1);
@@ -240,6 +247,7 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
     // commit (and so the next reap opportunity) -- the reaper is piggybacked on writes, not on a
     // background timer.
     int droppedSoFar = joinIndex.mergePolicy.droppedSegmentCount();
+    int reapedSoFar = joinIndex.mergePolicy.reapedPairCount();
     List<String> secondBatch = addParentsAndChildren("gen2-", atLeast(15));
     try (IndexReader childrenReader = childrenWriter.getReader();
         IndexReader parentsReader = parentsWriter.getReader()) {
@@ -262,9 +270,21 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
 
     joinIndex.waitForMerges();
 
+    // more dead *pairs* reclaimed, not necessarily more dead *segments*: which of the two routes
+    // reaping takes depends on whether a segment's pairs all die together, and with column purging
+    // available a segment often sheds its dead columns before it can become entirely dead
     assertTrue(
-        "a second round of mass deletes + force merge should reap more dead segments",
-        joinIndex.mergePolicy.droppedSegmentCount() > droppedSoFar);
+        "a second round of mass deletes + force merge should reclaim more dead pairs; dropped "
+            + droppedSoFar
+            + "->"
+            + joinIndex.mergePolicy.droppedSegmentCount()
+            + " purged "
+            + joinIndex.mergePolicy.purgedSegmentCount()
+            + " reaped pairs "
+            + reapedSoFar
+            + "->"
+            + joinIndex.mergePolicy.reapedPairCount(),
+        joinIndex.mergePolicy.reapedPairCount() > reapedSoFar);
   }
 
   /**
@@ -422,6 +442,339 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
       assertEquals(
           new TreeSet<>(parentIds),
           searchAllParents(newSearcher(parentsReader), newSearcher(childrenReader)));
+    }
+  }
+
+  /**
+   * Writes one batch carrying {@code pairCount} pairs -- so one sidecar segment {@code pairCount}
+   * columns wide, which is what the purge threshold measures against. Returns its columns by pair
+   * name.
+   */
+  private Map<String, int[]> writeWideBatch(int batch, int pairCount) throws IOException {
+    Map<String, int[]> columnsByPair = new LinkedHashMap<>();
+    Map<String, JoinColumnModel> written = new LinkedHashMap<>();
+    for (int slot = 0; slot < pairCount; slot++) {
+      String pairFieldName = "fromSeg" + batch + "-" + slot + ":dv0_toSeg:dv0";
+      int[] toDocByFromDoc = new int[2 + batch];
+      Arrays.fill(toDocByFromDoc, -1);
+      for (int fromDoc = slot % 2; fromDoc < toDocByFromDoc.length; fromDoc += 2) {
+        toDocByFromDoc[fromDoc] = 1000 * batch + fromDoc;
+      }
+      columnsByPair.put(pairFieldName, toDocByFromDoc);
+      written.put(pairFieldName, model(toDocByFromDoc));
+    }
+    joinIndex.writeBatch(written);
+    return columnsByPair;
+  }
+
+  /** Every sidecar field belonging to {@code pairFieldName}, across all segments. */
+  private static List<String> fieldsOf(IndexReader sidecar, String pairFieldName) {
+    List<String> found = new ArrayList<>();
+    for (LeafReaderContext leaf : sidecar.leaves()) {
+      for (org.apache.lucene.index.FieldInfo fieldInfo : leaf.reader().getFieldInfos()) {
+        if (fieldInfo.name.endsWith(pairFieldName)) {
+          found.add(leaf.reader().toString() + ":" + fieldInfo.name);
+        }
+      }
+    }
+    return found;
+  }
+
+  /**
+   * A queued pair's columns have to actually leave the index, and its name has to leave the queue.
+   * Neither used to happen: reaping could only drop a segment all of whose pairs were dead at once,
+   * which a segment carrying many pairs never is, so {@code pendingPairRemovals} only ever grew --
+   * every entry pinning a column that could never be read again, until the heap ran out.
+   */
+  public void testQueuedPairsAreReapedAndDrained() throws Exception {
+    joinIndex.mergePolicy.setCompaction(3, AuxIndexJoinMergePolicy.DEFAULT_MAX_PAIRS_PER_SEGMENT);
+
+    Map<String, int[]> columnsByPair = writeBatchesOfVaryingLength(0, 6);
+    List<String> allPairs = new ArrayList<>(columnsByPair.keySet());
+    List<String> doomed = allPairs.subList(0, 2);
+    for (String pairFieldName : doomed) {
+      joinIndex.mergePolicy.queueForRemoval(pairFieldName);
+    }
+    assertEquals(doomed.size(), joinIndex.mergePolicy.pendingPairRemovalsCount());
+
+    // a write is what gives the policy its next look at the index -- reaping rides on merges, it
+    // has no timer of its own
+    columnsByPair.putAll(writeBatchesOfVaryingLength(6, 1));
+    joinIndex.waitForMerges();
+    columnsByPair.putAll(writeBatchesOfVaryingLength(7, 1)); // publishes what just merged
+
+    assertEquals(
+        "every queued pair should have been reaped, so nothing should still be pending",
+        0,
+        joinIndex.mergePolicy.pendingPairRemovalsCount());
+
+    try (DirectoryReader sidecar = DirectoryReader.open(joinDir)) {
+      for (String pairFieldName : doomed) {
+        assertEquals(
+            "reaped pair " + pairFieldName + " still has columns in the sidecar",
+            List.of(),
+            fieldsOf(sidecar, pairFieldName));
+      }
+      // and the merge that dropped them left every other column exactly as written
+      for (Map.Entry<String, int[]> pair : columnsByPair.entrySet()) {
+        if (!doomed.contains(pair.getKey())) {
+          assertColumnIntact(sidecar, pair.getKey(), pair.getValue());
+        }
+      }
+    }
+  }
+
+  /**
+   * Compaction cannot be relied on to carry reaping: it needs a quorum of eligible segments, and
+   * {@code isCompactable} passes over exactly the segments most worth purging -- the ones already
+   * wider than {@code maxPairsPerSegment}. Pinned here by making every segment ineligible: only the
+   * single-segment purge path can reclaim anything.
+   */
+  public void testPairsAreReapedEvenWhenCompactionSkipsEverySegment() throws Exception {
+    // maxPairsPerSegment=0 makes isCompactable false for every segment carrying a pair, and the
+    // fold size is beyond anything this test writes, so no DocAlignedMerge can be proposed for
+    // compaction's own sake
+    joinIndex.mergePolicy.setCompaction(1000, 0);
+
+    // two pairs per segment, and only one of them dies: a segment that is merely *partly* dead is
+    // the case the whole-segment drop cannot handle, and the one a real sidecar is always in
+    Map<String, int[]> columnsByPair = new LinkedHashMap<>();
+    String doomed = null;
+    for (int batch = 0; batch < 4; batch++) {
+      Map<String, int[]> written = writeWideBatch(batch, 2);
+      columnsByPair.putAll(written);
+      if (batch == 0) {
+        doomed = written.keySet().iterator().next(); // one pair of a two-pair segment
+      }
+    }
+    // 1 of 2 is well over the purge threshold
+    joinIndex.mergePolicy.queueForRemoval(doomed);
+
+    // a write to give the policy its next look, then one more to publish what merged
+    columnsByPair.putAll(writeBatchesOfVaryingLength(100, 1));
+    joinIndex.waitForMerges();
+    columnsByPair.putAll(writeBatchesOfVaryingLength(101, 1));
+
+    assertEquals(
+        "nothing was compactable, so only the purge path could have reclaimed anything",
+        0,
+        joinIndex.mergePolicy.alignedMergeCount());
+    assertEquals(
+        "the segment still holds a live pair, so it must not be dropped whole",
+        0,
+        joinIndex.mergePolicy.droppedSegmentCount());
+    assertTrue(
+        "expected a single-segment purge to rewrite the segment holding the dead column",
+        joinIndex.mergePolicy.purgedSegmentCount() >= 1);
+    assertEquals(0, joinIndex.mergePolicy.pendingPairRemovalsCount());
+
+    try (DirectoryReader sidecar = DirectoryReader.open(joinDir)) {
+      assertEquals(List.of(), fieldsOf(sidecar, doomed));
+      for (Map.Entry<String, int[]> pair : columnsByPair.entrySet()) {
+        if (!pair.getKey().equals(doomed)) {
+          assertColumnIntact(sidecar, pair.getKey(), pair.getValue());
+        }
+      }
+    }
+  }
+
+  /**
+   * Runs an already-created {@link Weight} across every leaf, returning the parent ids it matches.
+   */
+  private static Set<String> searchWith(Weight weight, IndexSearcher parents) throws IOException {
+    Set<String> matched = new TreeSet<>();
+    for (LeafReaderContext leaf : parents.getIndexReader().leaves()) {
+      ScorerSupplier supplier = weight.scorerSupplier(leaf);
+      if (supplier == null) {
+        continue;
+      }
+      DocIdSetIterator docs = supplier.get(Long.MAX_VALUE).iterator();
+      for (int doc = docs.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docs.nextDoc()) {
+        matched.add(parents.storedFields().document(leaf.docBase + doc).get(PARENT_ID));
+      }
+    }
+    return matched;
+  }
+
+  /**
+   * The race that made column-level reaping unsafe, and the reason it was left undone: a query
+   * snapshots the pair columns it found at {@code createWeight} time, and the reaper can drop one
+   * before the scorer supplier resolves it. That used to throw {@code "unable to refresh segment
+   * refs"} and fail the query outright; now the pair is simply rebuilt, since the reap signal is a
+   * heuristic and must be recoverable rather than fatal.
+   */
+  public void testQueryOutlivesTheReapingOfItsOwnColumns() throws Exception {
+    List<String> parentIds = addParentsAndChildren("gen1-", atLeast(9));
+
+    try (IndexReader childrenReader = childrenWriter.getReader();
+        IndexReader parentsReader = parentsWriter.getReader()) {
+      IndexSearcher parents = new IndexSearcher(parentsReader);
+      IndexSearcher children = new IndexSearcher(childrenReader);
+
+      // first pass builds the sidecar, so there are real columns to reap
+      assertEquals(new TreeSet<>(parentIds), searchAllParents(parents, children));
+
+      Query joinQuery =
+          parents.rewrite(
+              joinIndex.newJoinQuery(PARENT_ID_FK, new MatchAllDocsQuery(), children, PARENT_ID));
+      // the weight snapshots which pair columns exist right now...
+      Weight weight = joinQuery.createWeight(parents, ScoreMode.COMPLETE_NO_SCORES, 1f);
+
+      // ...and every one of them is reaped before the scorers resolve it
+      List<String> reaped = new ArrayList<>();
+      try (DirectoryReader sidecar = DirectoryReader.open(joinDir)) {
+        for (LeafReaderContext leaf : sidecar.leaves()) {
+          reaped.addAll(JoinIndexUtils.pairFieldNames(leaf.reader().getFieldInfos()));
+        }
+      }
+      assertFalse("the first pass should have built some pair columns", reaped.isEmpty());
+      for (String pairFieldName : reaped) {
+        joinIndex.mergePolicy.queueForRemoval(pairFieldName);
+      }
+      joinIndex.writeBatch(Map.of("trigger:dv0_trigger:dv0", model(new int[] {0})));
+      joinIndex.waitForMerges();
+      joinIndex.writeBatch(Map.of("trigger2:dv0_trigger2:dv0", model(new int[] {0})));
+
+      assertEquals(
+          "the query's columns should be gone by now",
+          0,
+          joinIndex.mergePolicy.pendingPairRemovalsCount());
+
+      // the query, holding references to columns that no longer exist, still answers correctly
+      assertEquals(new TreeSet<>(parentIds), searchWith(weight, parents));
+    }
+  }
+
+  /**
+   * A purge rewrites the whole segment to drop what is dead in it, so one dead column out of twenty
+   * is a twentyfold write amplification -- exactly the "rewrite the same big segment forever" that
+   * {@code maxPairsPerSegment} keeps compaction away from. The threshold makes a purge earn its
+   * rewrite; until it does, the name simply stays queued.
+   */
+  public void testAThinlyDeadSegmentIsNotWorthRewriting() throws Exception {
+    joinIndex.mergePolicy.setCompaction(1000, 0); // nothing compactable, so only purges can act
+
+    Map<String, int[]> columnsByPair = new LinkedHashMap<>(writeWideBatch(0, 20));
+    String doomed = columnsByPair.keySet().iterator().next(); // 1 of 20 == 5%, under the default 10
+    joinIndex.mergePolicy.queueForRemoval(doomed);
+
+    columnsByPair.putAll(writeBatchesOfVaryingLength(100, 1));
+    joinIndex.waitForMerges();
+    columnsByPair.putAll(writeBatchesOfVaryingLength(101, 1));
+
+    assertEquals(
+        "one dead column in twenty does not pay for rewriting the other nineteen",
+        0,
+        joinIndex.mergePolicy.purgedSegmentCount());
+    assertEquals(
+        "and the name stays queued, so the next death in that segment can pay for the trip",
+        1,
+        joinIndex.mergePolicy.pendingPairRemovalsCount());
+
+    try (DirectoryReader sidecar = DirectoryReader.open(joinDir)) {
+      assertFalse(
+          "the column is still there, just not yet worth removing",
+          fieldsOf(sidecar, doomed).isEmpty());
+    }
+
+    // now enough of that segment dies to make the rewrite pay
+    List<String> alsoDoomed = new ArrayList<>(columnsByPair.keySet()).subList(1, 4);
+    for (String pairFieldName : alsoDoomed) {
+      joinIndex.mergePolicy.queueForRemoval(pairFieldName);
+    }
+    columnsByPair.putAll(writeBatchesOfVaryingLength(102, 1));
+    joinIndex.waitForMerges();
+    columnsByPair.putAll(writeBatchesOfVaryingLength(103, 1));
+
+    assertTrue(
+        "4 of 20 dead is over the threshold, so the segment should have been purged",
+        joinIndex.mergePolicy.purgedSegmentCount() >= 1);
+    assertEquals(0, joinIndex.mergePolicy.pendingPairRemovalsCount());
+    try (DirectoryReader sidecar = DirectoryReader.open(joinDir)) {
+      assertEquals(List.of(), fieldsOf(sidecar, doomed));
+      for (String pairFieldName : alsoDoomed) {
+        assertEquals(List.of(), fieldsOf(sidecar, pairFieldName));
+      }
+    }
+  }
+
+  /**
+   * The threshold trades heap for I/O, and that trade has to stop once the queue is itself the
+   * danger -- otherwise declining to rewrite is just the old unbounded leak with extra steps.
+   */
+  public void testTheThresholdIsWaivedOnceTheQueueIsDangerous() throws Exception {
+    joinIndex.mergePolicy.setCompaction(1000, 0);
+
+    Map<String, int[]> columnsByPair = new LinkedHashMap<>(writeWideBatch(0, 20));
+    String doomed = columnsByPair.keySet().iterator().next(); // still only 5% of its segment
+
+    // a backlog of names for columns long gone, as a stalled reaper would accumulate
+    for (int i = 0; i < 2048; i++) {
+      joinIndex.mergePolicy.queueForRemoval("stale" + i + ":dv0_gone:dv0");
+    }
+    joinIndex.mergePolicy.queueForRemoval(doomed);
+
+    columnsByPair.putAll(writeBatchesOfVaryingLength(100, 1));
+    joinIndex.waitForMerges();
+    columnsByPair.putAll(writeBatchesOfVaryingLength(101, 1));
+
+    assertTrue(
+        "over the high-water mark the threshold must be waived, thin or not",
+        joinIndex.mergePolicy.purgedSegmentCount() >= 1);
+    try (DirectoryReader sidecar = DirectoryReader.open(joinDir)) {
+      assertEquals(List.of(), fieldsOf(sidecar, doomed));
+      for (Map.Entry<String, int[]> pair : columnsByPair.entrySet()) {
+        if (!pair.getKey().equals(doomed)) {
+          assertColumnIntact(sidecar, pair.getKey(), pair.getValue());
+        }
+      }
+    }
+  }
+
+  /**
+   * The reap signal is keyed by directory, so consecutive samples come from different queries that
+   * may hold different searcher generations. An older generation must not be allowed to speak: it
+   * cannot see the segments opened since, and would report every one of them as dead -- queueing
+   * live columns whose queries then have to rebuild them mid-flight.
+   */
+  public void testAnOlderSampleCannotCondemnPairsItCannotSee() throws Exception {
+    addParentsAndChildren("gen1-", 3);
+    try (DirectoryReader parentsGen1 = parentsWriter.getReader();
+        DirectoryReader childrenGen1 = childrenWriter.getReader()) {
+      addParentsAndChildren("gen2-", 3);
+      try (DirectoryReader parentsGen2 = parentsWriter.getReader();
+          DirectoryReader childrenGen2 = childrenWriter.getReader()) {
+        assertTrue(
+            "the second generation must be newer for this test to mean anything",
+            parentsGen2.getVersion() > parentsGen1.getVersion());
+
+        // the newer generation needs both pairs
+        joinIndex.onCreateWeight(
+            Set.of("pairA", "pairB"),
+            new IndexSearcher(childrenGen2),
+            new IndexSearcher(parentsGen2));
+        assertEquals(0, joinIndex.mergePolicy.pendingPairRemovalsCount());
+
+        // an older query samples next and does not need pairB -- because it cannot see it yet
+        joinIndex.onCreateWeight(
+            Set.of("pairA"), new IndexSearcher(childrenGen1), new IndexSearcher(parentsGen1));
+        assertEquals(
+            "a sample from an older generation must not condemn anything",
+            0,
+            joinIndex.mergePolicy.pendingPairRemovalsCount());
+
+        // whereas the newest generation dropping it is a real death
+        addParentsAndChildren("gen3-", 3);
+        try (DirectoryReader parentsGen3 = parentsWriter.getReader();
+            DirectoryReader childrenGen3 = childrenWriter.getReader()) {
+          joinIndex.onCreateWeight(
+              Set.of("pairA"), new IndexSearcher(childrenGen3), new IndexSearcher(parentsGen3));
+          assertEquals(
+              "the newest generation no longer needing a pair is what death looks like",
+              Set.of("pairB").size(),
+              joinIndex.mergePolicy.pendingPairRemovalsCount());
+        }
+      }
     }
   }
 

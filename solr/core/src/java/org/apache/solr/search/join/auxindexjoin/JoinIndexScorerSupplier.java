@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
@@ -146,6 +148,13 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   /** from-docs walked while draining, i.e. the column reads laziness is trying to avoid */
   private long fromDocsWalked;
 
+  /**
+   * cells whose column was reaped from under this query and had to be rebuilt ({@link
+   * LeafJoin#bind}). Steady-state zero: a non-zero count means the reaper is queueing pairs that
+   * are still in use, and every one of them costs a column build on the query path.
+   */
+  private int rebindsAfterReap;
+
   /** set once the {@code evt=done} line has been emitted, so it is emitted at most once */
   private boolean reported;
 
@@ -179,7 +188,12 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
 
       IndexSearcher freshSearcher = JoinIndexScorerSupplier.this.joinIndex.acquire();
       try {
-        refreshJoinTasksReferences(freshSearcher);
+        // the result matters here too: a cell whose column the reaper dropped is rebuilt by the
+        // refresh, and until it is bound the cell still addresses the segment the column left
+        TaskRefreshResult refreshed = refreshJoinTasksReferences(freshSearcher);
+        for (Entry<LeafJoin, JoinColumnModel> entry : refreshed.justWritten) {
+          entry.getKey().bind(entry.getValue());
+        }
         assert JoinIndexScorerSupplier.this.lastSeenJoinSearcher == freshSearcher;
         for (LeafJoin joinTask : new ArrayList<>(leafJoins)) {
           if (falseNegToDocsBits == null) {
@@ -293,6 +307,40 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       assert this.edges == null : "already resolved: " + this.edges;
       this.edges = docMapping.edges();
       this.docMapping = docMapping;
+    }
+
+    /**
+     * Binds a freshly built model to this cell, whether it was never resolved or its on-disk column
+     * was reaped from under a running query -- {@link #refreshJoinTasksReferences} rebuilds such a
+     * pair rather than failing the query, and the result lands here.
+     *
+     * <p>Rebinding mid-query is safe because a cell's iteration state lives in {@link
+     * #fromSegmentDocIdIter}, never in the column: {@link #toDocsByFromDocsDV()} is re-opened on
+     * every {@link #dumpMatchesInto} call and read by {@code advanceExact(fromDoc)}, so swapping
+     * what backs it between calls is invisible to the walk. A rebuilt column maps the same
+     * from-docs to the same to-docs as the one it replaces -- pair field names pin both segments --
+     * which the assertion below states.
+     */
+    void bind(JoinColumnModel model) {
+      if (edges == null) {
+        resolveFromCalculatedModel(model);
+        return;
+      }
+      assert Arrays.equals(model.edges().fromDocEdges(), fromDocEdges())
+              && Arrays.equals(model.edges().toDocEdges(), toDocEdges())
+          : "rebuilt column "
+              + pairFieldName
+              + " disagrees with the edges this cell resolved with: "
+              + Arrays.toString(model.edges().fromDocEdges())
+              + "/"
+              + Arrays.toString(model.edges().toDocEdges())
+              + " vs "
+              + Arrays.toString(fromDocEdges())
+              + "/"
+              + Arrays.toString(toDocEdges());
+      this.docMapping = model; // toDocsByFromDocsDV() now bypasses the searcher entirely
+      this.joinSegmentRef = null;
+      rebindsAfterReap++;
     }
 
     boolean isResolved() {
@@ -470,7 +518,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     }
     for (Entry<LeafJoin, JoinColumnModel> entry : refreshedAndNew.justWritten) {
       LeafJoin task = entry.getKey();
-      task.resolveFromCalculatedModel(entry.getValue());
+      task.bind(entry.getValue());
     }
     // edges are  loaded
     for (LeafJoin task :
@@ -558,7 +606,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     JoinIndexUtils.logDiagnostic(
         log,
         "AUXIJOIN evt=done ctx={} toSeg={} reason={} confirmCalls={} freeHits={} cellsDrained={}"
-            + " cellsLive={} fromDocsWalked={} buildMs={}",
+            + " cellsLive={} fromDocsWalked={} rebindsAfterReap={} buildMs={}",
         ctxId,
         JoinIndexUtils.segmentName(toContext),
         reason,
@@ -567,7 +615,54 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         leafsDrained,
         leafJoins.size(),
         fromDocsWalked,
+        rebindsAfterReap,
         joinIndexBuildNanos / 1_000_000L);
+  }
+
+  /**
+   * The from-side columns to build {@code tasks}' pairs from, loading on demand any the weight left
+   * out.
+   *
+   * <p>{@code AuxIndexJoinQuery#createWeight} loads the foreign-key column only for from-segments
+   * whose pair was missing from the sidecar -- for a pair that already existed there is nothing to
+   * build, so paying to read its from-side would be waste. A pair reaped from under a running query
+   * turns that on its head: it existed at weight time and has to be rebuilt now, and {@code
+   * JoinColumnIndexer#computeOwnedModels} needs a foreign-key column to rebuild it from. So read it
+   * here, for those from-segments only.
+   *
+   * <p>Returns the weight's own map untouched in the common case, and otherwise a copy: the map is
+   * shared with every other to-segment's supplier of the same weight, and they may be running
+   * concurrently.
+   */
+  private Map<Integer, Future<FromLeafJoinContext>> fromColumnsFor(Collection<LeafJoin> tasks)
+      throws IOException, ExecutionException, InterruptedException {
+    Map<Integer, FromLeafJoinContext> loaded = null;
+    for (LeafJoin task : tasks) {
+      int fromOrd = task.segmentsFromTo.fromLeafOrd();
+      if (loaded != null && loaded.containsKey(fromOrd)) {
+        continue;
+      }
+      FromLeafJoinContext fromContext = fromColumnFutures.get(fromOrd).get();
+      if (fromContext.fkColumn != null) {
+        continue;
+      }
+      if (loaded == null) {
+        loaded = new HashMap<>();
+      }
+      loaded.put(
+          fromOrd,
+          new FromLeafJoinContext(
+              fromContext.matches,
+              new ForeignKeyColumn(fromSearcher.getLeafContexts().get(fromOrd), fromField),
+              fromOrd));
+    }
+    if (loaded == null) {
+      return fromColumnFutures;
+    }
+    Map<Integer, Future<FromLeafJoinContext>> augmented = new HashMap<>(fromColumnFutures);
+    loaded.forEach(
+        (ord, context) -> augmented.put(ord, CompletableFuture.completedFuture(context)));
+    return augmented;
   }
 
   private TaskRefreshResult refreshJoinTasksReferences(IndexSearcher newJoinIndexSearcher)
@@ -649,10 +744,16 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         }
       }
     }
-    if (!refreshReference.isEmpty()) { // TODO presumably we can go to index it
-      throw new IllegalStateException(
-          "unable to refresh segment refs " + refreshReference + " at " + lastSeenJoinSearcher);
+    // pass 4: the column is gone from the sidecar entirely -- the reaper dropped it while this
+    // query was running (AuxIndexJoinMergePolicy queues a pair the moment a sample stops needing
+    // it, which can race a query that still does). Rebuild it rather than failing the query: the
+    // pair name pins both segments, so what comes back maps exactly what was lost. Reads through an
+    // already-acquired searcher never land here -- that reader pins its files -- only a refresh
+    // onto a newer searcher does.
+    for (LeafJoin task : refreshReference) {
+      needIndex.put(task.pairFieldName, task);
     }
+    refreshReference.clear();
     // load edges for regulars, repeat pass 1, for those who was found at pass 3
     for (LeafJoin cell : loadReference) {
       // String pairFieldName = cell.pairFieldName;
@@ -680,7 +781,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
               // weight-age extract, and pass 3 above rescanned newJoinIndexSearcher for them,
               // which lastSeenJoinSearcher now is -- the freshest absence this supplier observed
               this.lastSeenJoinSearcher,
-              fromColumnFutures);
+              fromColumnsFor(needIndex.values()));
       this.joinIndexBuildNanos += System.nanoTime() - buildStartNanos;
       assert written.keySet().containsAll(missingPairs.keySet());
       assert missingPairs.keySet().containsAll(written.keySet());

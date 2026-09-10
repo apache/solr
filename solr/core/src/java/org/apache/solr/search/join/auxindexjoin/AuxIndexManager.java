@@ -58,7 +58,8 @@ import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
  *
  * <p>After either side reopens, the next query builds only the missing (from, to) segment pairs:
  * pair columns are addressed by both sides' persistent segment keys, which survive reopens. Pair
- * columns orphaned by merges are not reclaimed yet; see package's javadoc.
+ * columns orphaned by merges are reclaimed by the sidecar's own merge policy, which drops them from
+ * the segments it rewrites; see package's javadoc.
  *
  * @lucene.experimental
  *     <p>This is experimental API and subject to change.
@@ -120,6 +121,8 @@ public final class AuxIndexManager implements Closeable {
     this.mergeScheduler = mergeScheduler;
     this.mergePolicy = new AuxIndexJoinMergePolicy();
     this.mergePolicy.setSweepInterval(config.getSweepSamplingIntervalNanos(), TimeUnit.NANOSECONDS);
+    this.mergePolicy.setCompaction(config.getMergeSegmentsAtOnce(), config.getMaxPairsPerSegment());
+    this.mergePolicy.setMinDeadPercentToPurge(config.getMinDeadPercentToPurge());
     this.wipeOnVersionMismatch = config.getWipeOnVersionMismatch();
     this.writer =
         new IndexWriter(

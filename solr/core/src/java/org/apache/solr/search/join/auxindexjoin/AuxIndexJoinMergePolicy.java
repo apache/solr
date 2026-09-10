@@ -21,6 +21,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.CodecReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeTrigger;
@@ -46,8 +49,17 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /** How many sidecar segments one {@link DocAlignedMerge} folds into one, by default. */
-  static final int DEFAULT_MERGE_SEGMENTS_AT_ONCE = 10;
+  /**
+   * How many sidecar segments one {@link DocAlignedMerge} folds into one, by default.
+   *
+   * <p>This is a floor as much as a batch size -- with fewer eligible segments than this, no
+   * compaction is proposed at all -- so it has to sit below the segment count the sidecar actually
+   * runs at, not above it. At 10 it never fired once in a 41-minute run: the sidecar sat at 7-16
+   * segments, of which at most 9 were ever eligible at the same time (the rest merging, deleted, or
+   * over {@link #DEFAULT_MAX_PAIRS_PER_SEGMENT}), so every round logged "nothing to do" while pairs
+   * queued for removal piled up until the heap gave out.
+   */
+  static final int DEFAULT_MERGE_SEGMENTS_AT_ONCE = 4;
 
   /**
    * How many pair columns a sidecar segment may already carry and still be compacted again, by
@@ -55,6 +67,19 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
    * instead of rewriting the same big segment forever.
    */
   static final int DEFAULT_MAX_PAIRS_PER_SEGMENT = 1024;
+
+  /**
+   * How much of a segment has to be dead, in percent, before a purge rewrites it just to drop those
+   * columns, by default.
+   *
+   * <p>A purge pays the segment's full width to reclaim what is dead in it, so with no threshold a
+   * single dead column schedules a thousand-column rewrite -- the same "rewrite the same big
+   * segment forever" that {@link #DEFAULT_MAX_PAIRS_PER_SEGMENT} caps for compaction, arriving by
+   * the other door. This bounds the amplification instead: at 10, a purge never rewrites more than
+   * ten columns per column it reclaims. Compaction is not subject to it, having decided to rewrite
+   * anyway.
+   */
+  static final int DEFAULT_MIN_DEAD_PERCENT_TO_PURGE = 10;
 
   /**
    * Cap on the merges proposed in one round. A backlog of hundreds of segments is worked off over
@@ -66,6 +91,23 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
 
   private volatile int mergeSegmentsAtOnce = DEFAULT_MERGE_SEGMENTS_AT_ONCE;
   private volatile int maxPairsPerSegment = DEFAULT_MAX_PAIRS_PER_SEGMENT;
+  private volatile int minDeadPercentToPurge = DEFAULT_MIN_DEAD_PERCENT_TO_PURGE;
+
+  /**
+   * One segment worth purging: what is dead in it, and how wide it is -- the two numbers that
+   * decide whether rewriting it pays, and which of several candidates pays best.
+   */
+  private record PurgeCandidate(SegmentCommitInfo info, Set<String> dead, int width) {
+
+    /** The share of this segment's columns that a purge would reclaim. */
+    double deadShare() {
+      return width == 0 ? 0 : (double) dead.size() / width;
+    }
+
+    boolean earnsRewrite(int minDeadPercent) {
+      return dead.size() * 100L >= (long) width * minDeadPercent;
+    }
+  }
 
   /**
    * Last round's pair field names by segment key, so a steady stream of commits doesn't re-read
@@ -76,10 +118,21 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
    */
   private Map<String, Set<String>> pairFieldNamesBySegment = Map.of();
 
-  /** Test/ops knobs, mirroring {@link #setSweepInterval}: see the DEFAULT_ constants above. */
+  /**
+   * Compaction knobs, fed from {@link AuxIndexJoinConfig} the way {@link #setSweepInterval} is: see
+   * the DEFAULT_ constants above for what each one trades off.
+   */
   void setCompaction(int mergeSegmentsAtOnce, int maxPairsPerSegment) {
     this.mergeSegmentsAtOnce = mergeSegmentsAtOnce;
     this.maxPairsPerSegment = maxPairsPerSegment;
+  }
+
+  /**
+   * How dead a segment must be before a purge rewrites it for that alone, in percent; see {@link
+   * #DEFAULT_MIN_DEAD_PERCENT_TO_PURGE}. Zero purges on any death at all.
+   */
+  void setMinDeadPercentToPurge(int minDeadPercentToPurge) {
+    this.minDeadPercentToPurge = minDeadPercentToPurge;
   }
 
   @Override
@@ -90,23 +143,32 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
     Map<String, Set<String>> pairNamesThisRound = HashMap.newHashMap(segmentInfos.asList().size());
     MergeSpecification spec = null;
     List<SegmentCommitInfo> compactable = new ArrayList<>();
+    // one snapshot for the whole round, so every merge it proposes reaps a consistent set and no
+    // merge drains a name whose column another merge was going to drop
+    Set<String> reapSnapshot = Set.copyOf(pendingPairRemovals);
+    Map<SegmentCommitInfo, PurgeCandidate> reapableBySegment = new LinkedHashMap<>();
     int dead = 0;
     for (SegmentCommitInfo info : segmentInfos) {
       Set<String> pairFieldNames = pairFieldNames(info, pairNamesThisRound);
       if (merging.contains(info)) {
         continue;
       }
-      if (!pairFieldNames.isEmpty()
-          && pendingPairRemovals.containsAll(
-              pairFieldNames)) { // todo sweep pending removals as well
+      if (!pairFieldNames.isEmpty() && reapSnapshot.containsAll(pairFieldNames)) {
         dead++;
-        spec = added(spec, new DropSegmentMerge(List.of(info)));
-      } else if (isCompactable(info, pairFieldNames)) {
+        spec = added(spec, new DropSegmentMerge(List.of(info), pairFieldNames));
+        continue;
+      }
+      Set<String> reapable = intersection(pairFieldNames, reapSnapshot);
+      if (!reapable.isEmpty() && isRewritable(info)) {
+        reapableBySegment.put(info, new PurgeCandidate(info, reapable, pairFieldNames.size()));
+      }
+      if (isCompactable(info, pairFieldNames)) {
         compactable.add(info);
       }
     }
     this.pairFieldNamesBySegment = pairNamesThisRound;
     int aligned = 0;
+    Set<SegmentCommitInfo> taken = new HashSet<>();
     if (compactable.size() >= mergeSegmentsAtOnce) {
       // by maxDoc, so a merge groups sidecar segments of comparable length: the union is as long
       // as its longest input, and every shorter input pays a bit of sparse-docvalues overhead for
@@ -117,27 +179,85 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
           from += mergeSegmentsAtOnce) {
         List<SegmentCommitInfo> group =
             List.copyOf(compactable.subList(from, from + mergeSegmentsAtOnce));
+        // no threshold here, unlike the purges below: these segments are being rewritten anyway,
+        // so dropping whatever of them is dead costs nothing extra
+        Set<String> reaped = new HashSet<>();
+        for (SegmentCommitInfo info : group) {
+          PurgeCandidate candidate = reapableBySegment.get(info);
+          if (candidate != null) {
+            reaped.addAll(candidate.dead());
+          }
+        }
+        taken.addAll(group);
         aligned++;
-        spec = added(spec, new DocAlignedMerge(group, alignedMergeCount::incrementAndGet));
+        spec =
+            added(
+                spec,
+                new DocAlignedMerge(
+                    group, reaped, alignedMergeCount::incrementAndGet, this::drainReaped));
       }
+    }
+    // Reaping on its own account. Compaction alone cannot be relied on to carry it: it needs a
+    // quorum of eligible segments, and it passes over exactly the segments most worth purging --
+    // isCompactable excludes anything already wider than maxPairsPerSegment. A segment holding dead
+    // columns is worth rewriting for that reason alone, so purge it as a merge of one. This
+    // converges: the merge drains those names, so the next round finds nothing reapable there.
+    //
+    // A purge exists only to drop columns, so unlike a compaction it has to earn its rewrite: it
+    // costs the segment's whole width to reclaim what is dead in it, which is the very ratio
+    // maxPairsPerSegment caps for compaction. Below the threshold the names simply stay queued and
+    // the next death in that segment is what pays for the trip -- unless the queue itself has grown
+    // dangerous, at which point I/O is the cheaper currency and the threshold is waived.
+    boolean queueUnderPressure = pendingPairRemovals.size() >= PENDING_PURGE_HIGH_WATER;
+    List<PurgeCandidate> candidates = new ArrayList<>(reapableBySegment.values());
+    // most reclaimed per column rewritten first: the per-round merge budget is small, so spend it
+    // where it buys the most, not on whichever segment happens to come first in the index
+    candidates.sort(Comparator.comparingDouble(PurgeCandidate::deadShare).reversed());
+    int purged = 0;
+    int notWorthIt = 0;
+    for (PurgeCandidate candidate : candidates) {
+      if (aligned + purged >= MAX_MERGES_PER_ROUND) {
+        break;
+      }
+      if (taken.contains(candidate.info())) {
+        continue; // a compaction above is already dropping these
+      }
+      if (!queueUnderPressure && !candidate.earnsRewrite(minDeadPercentToPurge)) {
+        notWorthIt++;
+        continue;
+      }
+      purged++;
+      spec =
+          added(
+              spec,
+              new DocAlignedMerge(
+                  List.of(candidate.info()),
+                  candidate.dead(),
+                  purgedSegmentCount::incrementAndGet,
+                  this::drainReaped));
     }
     if (spec != null) {
       log.info(
-          "AUXIJOIN sidecar compaction: {} doc-aligned merge(s) of {} segments each and {} dead "
-              + "segment(s) dropped, out of {} segments ({} compactable, {} merging, {} pairs "
-              + "pending removal), on {}",
+          "AUXIJOIN sidecar compaction: {} doc-aligned merge(s) of {} segments each, {} column "
+              + "purge(s) and {} dead segment(s) dropped, out of {} segments ({} compactable, {} "
+              + "merging, {} pairs pending removal, {} segment(s) reapable now, {} of those too "
+              + "little dead to be worth rewriting{}), on {}",
           aligned,
           mergeSegmentsAtOnce,
+          purged,
           dead,
           segmentInfos.size(),
           compactable.size(),
           merging.size(),
           pendingPairRemovals.size(),
+          reapableBySegment.size(),
+          notWorthIt,
+          queueUnderPressure ? ", threshold waived: queue over high water" : "",
           mergeTrigger);
     } else if (log.isDebugEnabled()) {
       log.debug(
-          "AUXIJOIN sidecar: nothing to do on {}, {} segments ({} compactable, {} merging, {} pairs "
-              + "pending removal)",
+          "AUXIJOIN sidecar: nothing to do on {}, {} segments ({} compactable, {} merging, {} pairs"
+              + " pending removal)",
           mergeTrigger,
           segmentInfos.size(),
           compactable.size(),
@@ -145,6 +265,49 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
           pendingPairRemovals.size());
     }
     return spec;
+  }
+
+  private static Set<String> intersection(Set<String> pairFieldNames, Set<String> reapSnapshot) {
+    if (pairFieldNames.isEmpty() || reapSnapshot.isEmpty()) {
+      return Set.of();
+    }
+    Set<String> both = new HashSet<>();
+    // iterate the smaller side; a fat segment carries a thousand pairs, the queue up to four
+    Set<String> smaller =
+        pairFieldNames.size() <= reapSnapshot.size() ? pairFieldNames : reapSnapshot;
+    Set<String> larger = smaller == pairFieldNames ? reapSnapshot : pairFieldNames;
+    for (String name : smaller) {
+      if (larger.contains(name)) {
+        both.add(name);
+      }
+    }
+    return both;
+  }
+
+  /**
+   * Whether a {@link DocAlignedMerge} may rewrite this segment at all -- weaker than {@link
+   * #isCompactable}, which additionally declines segments too wide to be worth folding into
+   * another. Those are still worth purging dead columns from.
+   */
+  private static boolean isRewritable(SegmentCommitInfo info) {
+    // no deletions: PaddedToMaxDoc refuses to align a segment carrying them, and the sidecar never
+    // deletes, so this is belt and braces
+    return !info.hasDeletions() && info.info.maxDoc() > 0;
+  }
+
+  /**
+   * Forgets the pair names a merge just dropped the columns of. Called from {@code
+   * OneMerge#mergeFinished} on success only: on failure those columns are still in the index, and
+   * dropping their names here would strand them, never to be reaped again.
+   */
+  private void drainReaped(Set<String> reaped) {
+    pendingPairRemovals.removeAll(reaped);
+    pendingPairRemovalsOrder.removeAll(reaped);
+    reapedPairCount.addAndGet(reaped.size());
+    log.info(
+        "AUXIJOIN sidecar: reaped {} dead pair column(s), {} still pending",
+        reaped.size(),
+        pendingPairRemovals.size());
   }
 
   private static MergeSpecification added(MergeSpecification spec, OneMerge merge) {
@@ -191,14 +354,26 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
   // counts doc-aligned merges that actually produced a compacted segment, see alignedMergeCount()
   private final AtomicInteger alignedMergeCount = new AtomicInteger();
 
+  // counts single-segment rewrites that existed only to drop dead columns, see purgedSegmentCount()
+  private final AtomicInteger purgedSegmentCount = new AtomicInteger();
+
+  // counts pair names actually reclaimed -- queued as dead and then dropped from the index by a
+  // merge that committed, see reapedPairCount()
+  private final AtomicInteger reapedPairCount = new AtomicInteger();
+
   /**
    * A merge over a single dead segment whose contents are reported as fully deleted, so {@link
    * IndexWriter} drops it instead of rewriting it -- see {@link #wrapForMerge}. Non-static so it
    * can report back to the outer policy's {@link #droppedSegmentCount}.
    */
   private final class DropSegmentMerge extends OneMerge {
-    DropSegmentMerge(List<SegmentCommitInfo> segments) {
+
+    /** The segment's pairs -- all of them dead, which is why it is being dropped. */
+    private final Set<String> reapedPairs;
+
+    DropSegmentMerge(List<SegmentCommitInfo> segments, Set<String> reapedPairs) {
       super(segments);
+      this.reapedPairs = Set.copyOf(reapedPairs);
     }
 
     @Override
@@ -211,6 +386,9 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
       if (segmentDropped) {
         int dropped = droppedSegmentCount.incrementAndGet();
         log.info("AUXIJOIN sidecar: reaped dead segment {} ({} so far)", segments, dropped);
+        // the columns went with the segment, so their queue entries can go too -- otherwise the
+        // pending set only ever grows, which is what exhausted the heap
+        drainReaped(reapedPairs);
       }
       super.mergeFinished(success, segmentDropped);
     }
@@ -226,9 +404,33 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
     return alignedMergeCount.get();
   }
 
+  /** Test-only: how many segments have been rewritten purely to drop dead pair columns. */
+  int purgedSegmentCount() {
+    return purgedSegmentCount.get();
+  }
+
+  /**
+   * Test-only: how many dead pair names have been fully reclaimed so far -- queued as dead, their
+   * columns dropped by a merge that committed, and their names taken off the queue. Distinct from
+   * {@link #pendingPairRemovalsCount()}, which is what is still owed: that one settles back to zero
+   * as reaping keeps up, so a test wanting to prove reaping happened has to watch this instead.
+   */
+  int reapedPairCount() {
+    return reapedPairCount.get();
+  }
+
   /** Test-only: how many dead pair field names are currently queued for the next reap. */
   int pendingPairRemovalsCount() {
     return pendingPairRemovals.size();
+  }
+
+  /**
+   * Test-only: queues a pair name for reaping, exactly as a sample that stopped needing it would --
+   * so a test can pin down what gets reaped without staging two searcher generations to imply it.
+   */
+  void queueForRemoval(String pairFieldName) {
+    addBounded(
+        pendingPairRemovals, pendingPairRemovalsOrder, pairFieldName, MAX_PENDING_PAIR_REMOVALS);
   }
 
   @Override
@@ -250,7 +452,16 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
   // caps how many distinct (from-searcher, to-searcher) pairs we remember snapshots for; a
   // best-effort bound since this only anchors a heuristic reap, never correctness
   private static final int MAX_TRACKED_SEARCHER_PAIRS = 256;
-  private final ConcurrentHashMap<Map.Entry<Object, Object>, Set<String>>
+
+  /** A sample's needed-pair set, tagged with the index generations it was taken from. */
+  private record NeededPairs(Set<String> pairs, long fromVersion, long toVersion) {}
+
+  /**
+   * {@link DirectoryReader#getVersion()} is unavailable for this reader, so it cannot be ordered.
+   */
+  private static final long UNKNOWN_VERSION = Long.MIN_VALUE;
+
+  private final ConcurrentHashMap<Map.Entry<Object, Object>, NeededPairs>
       lastNeededPairsBySearcherPair = new ConcurrentHashMap<>();
   private final ConcurrentLinkedQueue<Map.Entry<Object, Object>> trackedSearcherPairsOrder =
       new ConcurrentLinkedQueue<>();
@@ -259,6 +470,16 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
   // (from-searcher, to-searcher) pair -- i.e. no longer needed -- queued here for findMerges to
   // reap; also size-capped, same reasoning
   private static final int MAX_PENDING_PAIR_REMOVALS = 4096;
+
+  /**
+   * Pending removals past which purges ignore {@link #DEFAULT_MIN_DEAD_PERCENT_TO_PURGE}. That
+   * threshold trades heap for I/O -- every name it declines to act on pins a column nobody can read
+   * again -- and the trade stops being sensible once the queue is itself what threatens the
+   * process. Half the queue's cap leaves room to work the backlog off before it starts evicting
+   * names, which would strand their columns for good.
+   */
+  private static final int PENDING_PURGE_HIGH_WATER = MAX_PENDING_PAIR_REMOVALS / 2;
+
   private final Set<String> pendingPairRemovals = ConcurrentHashMap.newKeySet();
   private final ConcurrentLinkedQueue<String> pendingPairRemovalsOrder =
       new ConcurrentLinkedQueue<>();
@@ -314,18 +535,40 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
     Object toKey = JoinIndexUtils.directoryKey(JoinIndexUtils.directory(searcher.getIndexReader()));
     Map.Entry<Object, Object> searcherKey = Map.entry(fromKey, toKey);
 
-    Set<String> currentSnapshot = Set.copyOf(neededPairs);
-    Set<String> previousSnapshot =
-        AuxIndexJoinMergePolicy.putBounded(
-            lastNeededPairsBySearcherPair,
-            trackedSearcherPairsOrder,
-            searcherKey,
-            currentSnapshot,
-            MAX_TRACKED_SEARCHER_PAIRS);
+    NeededPairs current =
+        new NeededPairs(
+            Set.copyOf(neededPairs), readerVersion(fromSearcher), readerVersion(searcher));
+    NeededPairs previous = lastNeededPairsBySearcherPair.get(searcherKey);
+    // A pair is queued because an earlier sample needed it and this one doesn't. That only means
+    // the pair is dead if this sample sees at least as much of the index as the earlier one did:
+    // the key here is the directory, stable across reopens, so consecutive samples come from
+    // different queries that may hold different searcher generations. Let an older generation
+    // speak and it reports every segment opened since as missing -- queueing live columns for
+    // removal, which JoinIndexScorerSupplier then has to rebuild mid-query.
+    if (previous != null && seesLessThan(current, previous)) {
+      JoinIndexUtils.logDiagnostic(
+          log,
+          "AUXIJOIN evt=sweepSkipped needed={} wasNeeded={} fromVer={}<{} toVer={}<{}"
+              + " pendingTotal={}",
+          current.pairs().size(),
+          previous.pairs().size(),
+          current.fromVersion(),
+          previous.fromVersion(),
+          current.toVersion(),
+          previous.toVersion(),
+          pendingPairRemovals.size());
+      return;
+    }
+    AuxIndexJoinMergePolicy.putBounded(
+        lastNeededPairsBySearcherPair,
+        trackedSearcherPairsOrder,
+        searcherKey,
+        current,
+        MAX_TRACKED_SEARCHER_PAIRS);
     int queued = 0;
-    if (previousSnapshot != null) {
-      for (String pairFieldName : previousSnapshot) {
-        if (!currentSnapshot.contains(pairFieldName)) {
+    if (previous != null) {
+      for (String pairFieldName : previous.pairs()) {
+        if (!current.pairs().contains(pairFieldName)) {
           AuxIndexJoinMergePolicy.addBounded(
               pendingPairRemovals,
               pendingPairRemovalsOrder,
@@ -338,10 +581,34 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
     JoinIndexUtils.logDiagnostic(
         log,
         "AUXIJOIN evt=sweepSample needed={} wasNeeded={} queuedForRemoval={} pendingTotal={}",
-        currentSnapshot.size(),
-        previousSnapshot == null ? -1 : previousSnapshot.size(),
+        current.pairs().size(),
+        previous == null ? -1 : previous.pairs().size(),
         queued,
         pendingPairRemovals.size());
+  }
+
+  /**
+   * Whether {@code sample} was taken from an older view of either side than {@code previous} -- so
+   * a pair it does not need may simply be one it cannot see yet. Unknown versions compare as
+   * neither older nor newer, leaving the sample to be trusted as before.
+   */
+  private static boolean seesLessThan(NeededPairs sample, NeededPairs previous) {
+    return isOlder(sample.fromVersion(), previous.fromVersion())
+        || isOlder(sample.toVersion(), previous.toVersion());
+  }
+
+  private static boolean isOlder(long version, long than) {
+    return version != UNKNOWN_VERSION && than != UNKNOWN_VERSION && version < than;
+  }
+
+  /**
+   * The index generation behind a searcher, or {@link #UNKNOWN_VERSION} when it is not reading a
+   * {@link DirectoryReader} and so carries no orderable version.
+   */
+  private static long readerVersion(IndexSearcher searcher) {
+    return searcher.getIndexReader() instanceof DirectoryReader dr
+        ? dr.getVersion()
+        : UNKNOWN_VERSION;
   }
 
   /**

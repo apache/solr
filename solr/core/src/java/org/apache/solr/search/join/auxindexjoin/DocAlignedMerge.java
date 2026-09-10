@@ -18,8 +18,13 @@ package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
 import org.apache.lucene.index.CodecReader;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FilterCodecReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexWriter;
@@ -68,11 +73,19 @@ import org.apache.lucene.util.Bits;
  * wrapForMerge} exactly once per segment, in {@link #segments} order, and only then starting the
  * merge, so that by the last call every input reader is known; the count is enforced below.
  *
- * <p>Live pairs are carried over as they are: dropping the columns of pairs queued for reaping
- * while rewriting them anyway would be nearly free, but a pair that vanishes under a query holding
- * a reference to it currently fails that query's refresh in {@code
- * JoinIndexScorerSupplier#refreshJoinTasksReferences} instead of being rebuilt, so that is left to
- * a follow-up.
+ * <p><b>Reaping rides along.</b> The columns of pairs queued for removal are dropped while the
+ * segment is being rewritten anyway: {@link #wrapForMerge} hides their fields from every input, so
+ * the merged segment never gets them. This is what actually reclaims a dead pair -- dropping a
+ * whole segment instead needs <em>all</em> of its pairs to be dead at once, which a segment
+ * carrying hundreds of them never manages, and the pending set then grows without bound. A pair
+ * that vanishes under a query still holding a reference to it is rebuilt by {@code
+ * JoinIndexScorerSupplier#refreshJoinTasksReferences}, which is what makes dropping columns safe;
+ * before that it failed the query outright.
+ *
+ * <p>{@code reapedPairs} is a snapshot taken when the merge is created, not the live set: a pair
+ * queued while this merge runs is not dropped by it and must stay queued for the next one. {@link
+ * #mergeFinished} drains exactly this snapshot, and only on success -- on failure the columns are
+ * still there.
  *
  * @lucene.experimental
  */
@@ -82,16 +95,37 @@ final class DocAlignedMerge extends MergePolicy.OneMerge {
   private final List<CodecReader> inputs;
 
   private final Runnable onMerged;
+
+  /** Pair names whose columns this merge drops; handed to {@link #onReaped} once it commits. */
+  private final Set<String> reapedPairs;
+
+  /** The fields those pairs occupy, precomputed for the per-field test in {@link #hideReaped}. */
+  private final Set<String> reapedFields;
+
+  private final Consumer<Set<String>> onReaped;
   private ParallelLeafReader union;
 
-  DocAlignedMerge(List<SegmentCommitInfo> segments, Runnable onMerged) {
+  DocAlignedMerge(
+      List<SegmentCommitInfo> segments,
+      Set<String> reapedPairs,
+      Runnable onMerged,
+      Consumer<Set<String>> onReaped) {
     super(segments);
-    if (segments.size() < 2) {
+    if (segments.size() < 2 && reapedPairs.isEmpty()) {
+      // one input and nothing to drop would rewrite it byte for byte; one input with columns to
+      // drop is a purge, and a single input is trivially doc-aligned with itself
       throw new IllegalArgumentException(
           "a doc-aligned merge of " + segments.size() + " segment(s) would only rewrite it");
     }
     this.inputs = new ArrayList<>(segments.size());
     this.onMerged = onMerged;
+    this.reapedPairs = Set.copyOf(reapedPairs);
+    Set<String> fields = new HashSet<>();
+    for (String pairFieldName : this.reapedPairs) {
+      fields.addAll(JoinIndexUtils.columnFieldNames(pairFieldName));
+    }
+    this.reapedFields = fields;
+    this.onReaped = onReaped;
   }
 
   @Override
@@ -104,9 +138,13 @@ final class DocAlignedMerge extends MergePolicy.OneMerge {
               + segments.size()
               + " segments; the doc-aligned merge builds its union on the last call");
     }
-    inputs.add(reader);
+    // filter first, drop second: a fully-deleted reader still hands its FieldInfos to the merge, so
+    // a reaped field left visible here would survive into the result as an empty column -- still
+    // named, so still counted as a live pair by JoinIndexUtils#pairFieldNames
+    CodecReader filtered = hideReaped(reader);
+    inputs.add(filtered);
     if (inputs.size() < segments.size()) {
-      return dropAllDocs(reader); // contributes nothing; its columns come from the union below
+      return dropAllDocs(filtered); // contributes nothing; its columns come from the union below
     }
     int alignedMaxDoc = 0;
     for (CodecReader input : inputs) {
@@ -131,10 +169,60 @@ final class DocAlignedMerge extends MergePolicy.OneMerge {
       inputs.clear();
       if (success && !segmentDropped) {
         onMerged.run();
+        if (!reapedPairs.isEmpty()) {
+          // the columns are gone from the index now, so the queue entries that named them can go
+          // too -- exactly this snapshot, never the live set
+          onReaped.accept(reapedPairs);
+        }
       }
     } finally {
       super.mergeFinished(success, segmentDropped);
     }
+  }
+
+  /**
+   * A view of {@code reader} without the columns of any reaped pair -- both hidden from {@link
+   * org.apache.lucene.index.FieldInfos} and answered as absent, so neither the merged {@code
+   * FieldInfos} nor the merged docvalues carry them. Returns the reader untouched when there is
+   * nothing to reap, which is the common case.
+   *
+   * <p>Hiding the field from {@code FieldInfos} is the whole mechanism, and it is enough on its
+   * own: {@code CodecReader#getSortedNumericDocValues} resolves the name through {@code
+   * getFieldInfos()} and answers null when it is not there, {@link ParallelLeafReader} builds its
+   * field-to-reader map from them, and {@code SegmentMerger} merges them to decide which columns
+   * the result has. The underlying producer is left alone -- nothing reaches it for a field no
+   * longer named.
+   */
+  private CodecReader hideReaped(CodecReader reader) {
+    if (reapedFields.isEmpty()) {
+      return reader;
+    }
+    List<FieldInfo> kept = new ArrayList<>();
+    for (FieldInfo fieldInfo : reader.getFieldInfos()) {
+      if (!reapedFields.contains(fieldInfo.name)) {
+        kept.add(fieldInfo);
+      }
+    }
+    if (kept.size() == reader.getFieldInfos().size()) {
+      return reader; // this input carries none of them
+    }
+    FieldInfos survivors = new FieldInfos(kept.toArray(FieldInfo[]::new));
+    return new FilterCodecReader(reader) {
+      @Override
+      public FieldInfos getFieldInfos() {
+        return survivors;
+      }
+
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return null; // the field set differs from the wrapped reader's
+      }
+
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return null;
+      }
+    };
   }
 
   /**

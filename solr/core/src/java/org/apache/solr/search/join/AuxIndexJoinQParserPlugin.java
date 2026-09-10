@@ -83,8 +83,10 @@ import org.slf4j.LoggerFactory;
  * resolved relative to dataDir unless absolute), and closed when the last core using it closes --
  * see {@link SharedManagers} for why it outlives a single core. The remaining init parameters
  * mirror {@link AuxIndexJoinConfig}: {@code singleFieldPerSegment}, {@code blockingRefresh}, {@code
- * useFromSideThreads}, {@code wipeOnVersionMismatch}, and {@code sweepSamplingInterval} (seconds).
- * This sidecar always belongs to the "to" side core -- the one this plugin is registered in.
+ * useFromSideThreads}, {@code wipeOnVersionMismatch}, {@code sweepSamplingInterval} (seconds), and
+ * the sidecar's compaction knobs {@code mergeSegmentsAtOnce}, {@code maxPairsPerSegment} and {@code
+ * minDeadPercentToPurge}. This sidecar always belongs to the "to" side core -- the one this plugin
+ * is registered in.
  *
  * <p><b>Why this implements {@link QueryResponseWriter}:</b> {@link
  * org.apache.solr.core.SolrResourceLoader}'s {@code awareCompatibility} allowlist (see SOLR-8311)
@@ -141,6 +143,26 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
    */
   public static final String SWEEP_SAMPLING_INTERVAL = "sweepSamplingInterval";
 
+  /**
+   * Init parameter: how many sidecar segments one compaction folds into a single doc-aligned one.
+   * Also the floor below which no compaction is proposed at all, so it belongs below the segment
+   * count the sidecar runs at. See {@link AuxIndexJoinConfig#setMergeSegmentsAtOnce}.
+   */
+  public static final String MERGE_SEGMENTS_AT_ONCE = "mergeSegmentsAtOnce";
+
+  /**
+   * Init parameter: how many pair columns a sidecar segment may already carry and still be
+   * compacted again -- what makes compaction converge. See {@link
+   * AuxIndexJoinConfig#setMaxPairsPerSegment}.
+   */
+  public static final String MAX_PAIRS_PER_SEGMENT = "maxPairsPerSegment";
+
+  /**
+   * Init parameter: how much of a segment has to be dead, in percent, before a purge rewrites it
+   * just to drop those columns. See {@link AuxIndexJoinConfig#setMinDeadPercentToPurge}.
+   */
+  public static final String MIN_DEAD_PERCENT_TO_PURGE = "minDeadPercentToPurge";
+
   private String configuredDir = DEFAULT_DIR;
   private final AuxIndexJoinConfig joinIndexConfig = new AuxIndexJoinConfig();
 
@@ -167,6 +189,12 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
           params.getBool(WIPE_ON_VERSION_MISMATCH, joinIndexConfig.getWipeOnVersionMismatch()));
       joinIndexConfig.setSweepSamplingInterval(
           params.getLong(SWEEP_SAMPLING_INTERVAL, 60), TimeUnit.SECONDS);
+      joinIndexConfig.setMergeSegmentsAtOnce(
+          params.getInt(MERGE_SEGMENTS_AT_ONCE, joinIndexConfig.getMergeSegmentsAtOnce()));
+      joinIndexConfig.setMaxPairsPerSegment(
+          params.getInt(MAX_PAIRS_PER_SEGMENT, joinIndexConfig.getMaxPairsPerSegment()));
+      joinIndexConfig.setMinDeadPercentToPurge(
+          params.getInt(MIN_DEAD_PERCENT_TO_PURGE, joinIndexConfig.getMinDeadPercentToPurge()));
     }
   }
 

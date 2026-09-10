@@ -41,6 +41,9 @@ public final class AuxIndexJoinConfig {
   private boolean useFromSideThreads = true;
   private boolean wipeOnVersionMismatch = true;
   private long sweepSamplingIntervalNanos = TimeUnit.MINUTES.toNanos(1);
+  private int mergeSegmentsAtOnce = AuxIndexJoinMergePolicy.DEFAULT_MERGE_SEGMENTS_AT_ONCE;
+  private int maxPairsPerSegment = AuxIndexJoinMergePolicy.DEFAULT_MAX_PAIRS_PER_SEGMENT;
+  private int minDeadPercentToPurge = AuxIndexJoinMergePolicy.DEFAULT_MIN_DEAD_PERCENT_TO_PURGE;
 
   /** Sole constructor, using the default settings documented on each setter. */
   public AuxIndexJoinConfig() {}
@@ -124,5 +127,53 @@ public final class AuxIndexJoinConfig {
   /** Returns the current value set via {@link #setSweepSamplingInterval}, in nanoseconds. */
   public long getSweepSamplingIntervalNanos() {
     return sweepSamplingIntervalNanos;
+  }
+
+  /**
+   * How many sidecar segments one compaction folds into a single doc-aligned one. This is a floor
+   * as much as a batch size: with fewer eligible segments than this, {@code
+   * AuxIndexJoinMergePolicy} proposes no compaction at all, so it has to sit below the segment
+   * count the sidecar actually runs at. Default is 4.
+   */
+  public AuxIndexJoinConfig setMergeSegmentsAtOnce(int mergeSegmentsAtOnce) {
+    this.mergeSegmentsAtOnce = mergeSegmentsAtOnce;
+    return this;
+  }
+
+  /** Returns the current value set via {@link #setMergeSegmentsAtOnce}. */
+  public int getMergeSegmentsAtOnce() {
+    return mergeSegmentsAtOnce;
+  }
+
+  /**
+   * How many pair columns a sidecar segment may already carry and still be compacted again. Merged
+   * segments grow wider, not longer, so this is what makes compaction converge instead of rewriting
+   * the same big segment forever. Default is 1024.
+   */
+  public AuxIndexJoinConfig setMaxPairsPerSegment(int maxPairsPerSegment) {
+    this.maxPairsPerSegment = maxPairsPerSegment;
+    return this;
+  }
+
+  /** Returns the current value set via {@link #setMaxPairsPerSegment}. */
+  public int getMaxPairsPerSegment() {
+    return maxPairsPerSegment;
+  }
+
+  /**
+   * How much of a segment has to be dead, in percent, before a purge rewrites it just to drop those
+   * columns. A purge pays the segment's full width to reclaim what is dead in it, so this bounds
+   * the write amplification: at the default of 10, a purge never rewrites more than ten columns per
+   * column it reclaims. Zero purges on any death at all; compaction is not subject to it, having
+   * decided to rewrite anyway.
+   */
+  public AuxIndexJoinConfig setMinDeadPercentToPurge(int minDeadPercentToPurge) {
+    this.minDeadPercentToPurge = minDeadPercentToPurge;
+    return this;
+  }
+
+  /** Returns the current value set via {@link #setMinDeadPercentToPurge}. */
+  public int getMinDeadPercentToPurge() {
+    return minDeadPercentToPurge;
   }
 }
