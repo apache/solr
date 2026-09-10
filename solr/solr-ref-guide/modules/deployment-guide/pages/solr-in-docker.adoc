@@ -118,6 +118,11 @@ networks:
 ----
 
 
+=== Easypanel
+
+https://easypanel.io/[Easypanel] offers an official one-click template that deploys Solr for you without running Docker commands manually.
+See the https://easypanel.io/templates/solr[official Solr template on Easypanel] for details.
+
 === Single Command Demo
 
 For quick demos of Solr docker, there is a single command that starts Solr, creates a collection called "demo", and loads sample data into it:
@@ -373,3 +378,4 @@ The Docker image no-longer has custom logic for OOMs.
 The Docker-Solr project was started in 2015 by https://github.com/makuk66[Martijn Koster] in the https://github.com/docker-solr/docker-solr[docker-solr] repository.
 In 2019 maintainership and copyright was transferred to the Apache Lucene/Solr project, and in 2020 the project was migrated to live within the Solr project.
 Many thanks to Martijn for all your contributions over the years!
+
