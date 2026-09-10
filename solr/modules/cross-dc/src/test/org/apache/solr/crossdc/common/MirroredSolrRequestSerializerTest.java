@@ -217,7 +217,7 @@ public class MirroredSolrRequestSerializerTest extends SolrTestCase {
             + deserialized.getSubmitTimeNanos(),
         deserialized.getSubmitTimeNanos() >= before && deserialized.getSubmitTimeNanos() <= after);
   }
-  
+
   /**
    * Confirms the waste pattern from {@link MirroredSolrRequestSerializer#serialize(String,
    * MirroredSolrRequest)} testing both small and large documents around the 8192 bytes boundary.
