@@ -38,6 +38,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.SpellCheckComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -809,7 +810,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       params.add(CommonParams.Q, "test query");
       params.add(CommonParams.DF, "teststop");
 
-      SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+      SolrQueryRequest req = new SolrQueryRequestBase(core, params);
       SolrQueryResponse response = new SolrQueryResponse();
       response.addResponseHeader(new SimpleOrderedMap<>());
 
