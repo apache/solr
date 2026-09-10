@@ -82,6 +82,7 @@ import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -791,6 +792,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return getDocListC(cmd);
   }
 
+  // make sure that searchLeaf searches with QueryLimits never call the
+  // throwaway's IndexSearcher similarity
+  private static final Similarity GUARD_SIMILARITY =
+      new Similarity() {
+        @Override
+        public SimScorer scorer(
+            float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+          throw new UnsupportedOperationException("should never be invoked here!");
+        }
+      };
+
   /**
    * Override the default behavior to proxy to an anonymous {@link IndexSearcher} with {@link
    * IndexSearcher#setTimeout} enabled, if and only if {@link QueryLimits#getCurrentLimits} are
@@ -819,6 +831,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           reader, core.getCoreContainer().getIndexSearcherExecutor()) { // cheap, actually!
         void searchWithTimeout() throws IOException {
           setTimeout(queryLimits); // Lucene's method name is less than ideal here...
+          // make sure no additional weights are produced using this searcher
+          setSimilarity(GUARD_SIMILARITY);
           super.searchLeaf(ctx, minDocId, maxDocId, weight, collector);
           if (timedOut()) {
             throw new QueryLimitsExceededException(
