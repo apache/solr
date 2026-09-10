@@ -155,6 +155,9 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
    */
   private int rebindsAfterReap;
 
+  // how many cells handed their built model back for the column on disk, see adoptOnDiskColumn
+  private int modelsReleasedToDisk;
+
   /** set once the {@code evt=done} line has been emitted, so it is emitted at most once */
   private boolean reported;
 
@@ -341,6 +344,25 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       this.docMapping = model; // toDocsByFromDocsDV() now bypasses the searcher entirely
       this.joinSegmentRef = null;
       rebindsAfterReap++;
+    }
+
+    /**
+     * Points this cell at the column now on disk for its pair and lets go of the model that built
+     * it, so reads go through {@link #joinSegmentRef} like every other cell's.
+     *
+     * <p>A model carries {@code int[fromSegmentMaxDoc]}: 20MB for a five-million-doc from-segment,
+     * per cell, held for as long as the query runs. Eleven live cells in one query and three
+     * queries in flight is how a 2GB heap ends up 74% humongous regions that a full GC cannot
+     * reclaim -- which is what it did. The column on disk says the same thing (it was written from
+     * this very model) and costs an mmap'd docvalues read instead, so the model is worth keeping
+     * only until the sidecar has committed and refreshed past it. The edges stay as they were: the
+     * on-disk ones were written from these.
+     */
+    void adoptOnDiskColumn(JoinSegmentReference onDisk) {
+      assert edges != null : "adopting a column for an unresolved cell: " + this;
+      assert onDisk.pairFieldName().equals(pairFieldName) : onDisk + " is not " + pairFieldName;
+      this.joinSegmentRef = onDisk;
+      this.docMapping = null;
     }
 
     boolean isResolved() {
@@ -606,7 +628,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     JoinIndexUtils.logDiagnostic(
         log,
         "AUXIJOIN evt=done ctx={} toSeg={} reason={} confirmCalls={} freeHits={} cellsDrained={}"
-            + " cellsLive={} fromDocsWalked={} rebindsAfterReap={} buildMs={}",
+            + " cellsLive={} fromDocsWalked={} rebindsAfterReap={} modelsReleased={} buildMs={}",
         ctxId,
         JoinIndexUtils.segmentName(toContext),
         reason,
@@ -616,6 +638,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         leafJoins.size(),
         fromDocsWalked,
         rebindsAfterReap,
+        modelsReleasedToDisk,
         joinIndexBuildNanos / 1_000_000L);
   }
 
@@ -673,6 +696,8 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     Set<LeafJoin> refreshReference = new LinkedHashSet<>();
     Set<LeafJoin> loadReference = new LinkedHashSet<>();
     Map<String, LeafJoin> needIndex = new LinkedHashMap<>();
+    // cells still reading the model they were built from; this refresh is their chance to let it go
+    Map<String, LeafJoin> modelBacked = new LinkedHashMap<>();
     Set<LeafJoin> resolveTarget =
         (newJoinIndexSearcher == this.lastSeenJoinSearcher) ? loadReference : refreshReference;
     for (LeafJoin task : leafJoins) {
@@ -680,8 +705,9 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         resolveTarget.add(task);
       } else if (!task.isResolved()) {
         needIndex.put(task.pairFieldName, task);
+      } else {
+        modelBacked.put(task.pairFieldName, task);
       }
-      // else: resolved from the indexer
     }
     // from here on every reference has to address newJoinIndexSearcher: it is the searcher this
     // supplier reads its columns from (see LeafJoin#toDocsByFromDocsDV, which resolves a reference
@@ -691,6 +717,24 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     // ones; a doc-aligned compaction (AuxIndexJoinMergePolicy) reshuffles leaf ords under a live
     // query, and then a reference resolved in the old searcher addresses a different segment here.
     this.lastSeenJoinSearcher = newJoinIndexSearcher;
+    // pass 0: hand back the models. A cell built during this query reads the model it was built
+    // from until the sidecar has committed and refreshed past the batch -- which is exactly what
+    // this searcher, acquired after that write, proves. Adopting the column releases an
+    // int[fromSegmentMaxDoc] per cell, mid-query rather than at the end of it, and from here on
+    // the cell is an ordinary reference-backed one that passes 1 to 3 keep pointing at the right
+    // segment. A column not found is one the reaper dropped between the write and now, or one the
+    // sidecar has not refreshed past because blockingRefresh is off: the model stays as it is, and
+    // the next refresh tries again.
+    int modelsReleased = 0;
+    if (!modelBacked.isEmpty()) {
+      for (Map.Entry<String, JoinSegmentReference> onDisk :
+          JoinIndexUtils.extractExistingJoinColumns(newJoinIndexSearcher, modelBacked::containsKey)
+              .entrySet()) {
+        modelBacked.get(onDisk.getKey()).adoptOnDiskColumn(onDisk.getValue());
+        modelsReleased++;
+      }
+      this.modelsReleasedToDisk += modelsReleased;
+    }
     // refresh old refs, pass 1: same searcher, just get a segment by ord and check
     // the segment name
     List<LeafReaderContext> newLeaves = newJoinIndexSearcher.getLeafContexts();

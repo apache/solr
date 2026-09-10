@@ -18,12 +18,15 @@ package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
@@ -36,10 +39,15 @@ import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The auxiliary join index: a self-maintaining sidecar persisting per (from-segment, to-segment)
@@ -66,6 +74,8 @@ import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
  */
 public final class AuxIndexManager implements Closeable {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private final IndexWriter writer;
   private final SearcherManager manager;
   private final JoinColumnIndexer pairBuilder = new JoinColumnIndexer(this);
@@ -77,6 +87,18 @@ public final class AuxIndexManager implements Closeable {
   private final boolean blockingRefresh;
   private final boolean useFromSideThreads;
   private final boolean wipeOnVersionMismatch;
+
+  /**
+   * Commits the sidecar on a timer, or {@code null} when {@link
+   * AuxIndexJoinConfig#setCommitIntervalMs} asked for a commit per batch instead. Deliberately not
+   * holding this manager's monitor: {@link #writeBatch} is synchronized only to keep a batch's
+   * documents contiguous in one segment, which a commit doesn't disturb, so committing off that
+   * lock keeps the fsync out of the builders' way.
+   */
+  private final ScheduledExecutorService committer;
+
+  /** Whether {@link #writeBatch} commits before it returns, per the interval being zero. */
+  private final boolean commitPerBatch;
 
   /** A pair's (from-segment, to-segment) leaf ordinals. */
   record SegmentsTuple(int fromLeafOrd, int toLeafOrd) {}
@@ -128,6 +150,10 @@ public final class AuxIndexManager implements Closeable {
         new IndexWriter(
             directory,
             new IndexWriterConfig().setMergePolicy(mergePolicy).setMergeScheduler(mergeScheduler));
+    // set once, not per batch: live commit data sticks on the writer and is applied by whichever
+    // commit comes next, including the wipe's just below and the one close() makes
+    this.writer.setLiveCommitData(
+        Map.of(JoinIndexUtils.AUX_INDEX_VERSION, SolrVersion.LATEST_STRING).entrySet());
     wipeIfIncompatibleVersion(directory);
     this.manager = new SearcherManager(writer, null);
     JoinColumWriter bulkWriter = new JoinColumnDocWriter(); // new AIJoinColumnWriter()
@@ -137,6 +163,36 @@ public final class AuxIndexManager implements Closeable {
             : bulkWriter;
     this.blockingRefresh = config.getBlockingRefresh();
     this.useFromSideThreads = config.getUseFromSideThreads();
+    long commitIntervalMs = config.getCommitIntervalMs();
+    this.commitPerBatch = commitIntervalMs == 0;
+    if (commitPerBatch) {
+      this.committer = null;
+    } else {
+      this.committer =
+          Executors.newSingleThreadScheduledExecutor(
+              new SolrNamedThreadFactory("auxIndexJoinCommit"));
+      this.committer.scheduleWithFixedDelay(
+          this::commitIfChanged, commitIntervalMs, commitIntervalMs, TimeUnit.MILLISECONDS);
+    }
+  }
+
+  /**
+   * Moves the commit point forward if a batch has been flushed since the last one, so Lucene can
+   * let go of the files only the previous commit still referenced. Swallows what it cannot act on:
+   * a failed commit leaves the sidecar exactly where it was, which the next attempt (or the next
+   * query, rebuilding a pair) recovers from on its own -- there is nothing here worth failing the
+   * node over.
+   */
+  private void commitIfChanged() {
+    try {
+      if (writer.hasUncommittedChanges()) {
+        writer.commit();
+      }
+    } catch (AlreadyClosedException e) {
+      // raced close(); the writer commits itself on the way out
+    } catch (Throwable t) {
+      log.warn("AUXIJOIN sidecar: periodic commit failed, retrying at the next interval", t);
+    }
   }
 
   /**
@@ -265,6 +321,9 @@ public final class AuxIndexManager implements Closeable {
    */
   synchronized void writeBatch(Map<String, JoinColumnModel> mappings) throws IOException {
     this.writerDelegate.writeJoinColumns(writer, mappings);
+    if (this.commitPerBatch) {
+      writer.commit();
+    }
     if (this.blockingRefresh) {
       manager.maybeRefreshBlocking();
     } else {
@@ -274,7 +333,11 @@ public final class AuxIndexManager implements Closeable {
 
   @Override
   public void close() throws IOException {
-    IOUtils.close(manager, writer);
+    if (committer != null) {
+      // stop the timer before the writer goes, so a commit can't be mid-flight when it does
+      ExecutorUtil.shutdownAndAwaitTermination(committer);
+    }
+    IOUtils.close(manager, writer); // IndexWriter.close() commits what the timer hasn't
   }
 
   public void onCreateWeight(

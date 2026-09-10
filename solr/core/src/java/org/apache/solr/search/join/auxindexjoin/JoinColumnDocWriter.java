@@ -27,7 +27,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.DocEdges;
 import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 
@@ -67,9 +66,13 @@ final class JoinColumnDocWriter extends JoinColumWriter {
         : "a batch with columns to write needs a doc 0 to carry their edges: " + mappings.keySet();
     // a single block: IndexWriter guarantees no intermediate flush splits it across segments
     writer.addDocuments(new BatchDocuments(mappings, batchNumDocs));
-    writer.setLiveCommitData(
-        Map.of(JoinIndexUtils.AUX_INDEX_VERSION, SolrVersion.LATEST_STRING).entrySet());
-    writer.commit();
+    // seal the batch into a segment of its own, so the next batch starts again at doc 0 -- the
+    // invariant every column depends on, since a sidecar doc number IS a from-doc id. This used
+    // to be a commit(), which sealed the segment only incidentally and paid an fsync of every new
+    // file plus a segments_N for it, on the query thread, inside AuxIndexManager's write lock.
+    // flush() writes the segment and nothing else; durability and file reclamation are the
+    // periodic commit's job.
+    writer.flush();
   }
 
   /**

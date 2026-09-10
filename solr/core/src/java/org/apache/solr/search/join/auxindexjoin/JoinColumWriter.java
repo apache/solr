@@ -34,8 +34,8 @@ abstract class JoinColumWriter {
 
   /**
    * Builds the pair columns for every entry in {@code mappings} (doc-map plus edges, keyed by pair
-   * field name) and writes them as a single indexing call + commit, so a batch's columns all land
-   * at doc 0 of their own sidecar segment.
+   * field name) and writes them as a single indexing call + flush, so a batch's columns all land at
+   * doc 0 of their own sidecar segment.
    */
   abstract void writeJoinColumns(IndexWriter writer, Map<String, JoinColumnModel> mappings)
       throws IOException;

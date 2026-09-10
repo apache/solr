@@ -137,6 +137,49 @@ Pass a non-positive value to sample on every call.
 
 The algorithm utilizes multiple threads on _both_ sides if multiple threads are available. So, set xref:configuration-guide:configuring-solr-xml.adoc#indexSearcherExecutorThreads[indexSearcherExecutorThreads] to `-1` or `>0` in the `solr.xml` file. Note the emphasis on _both_ above: using the xref:common-query-parameters.adoc#multithreaded-parameter[`multiThreaded`] request parameter confines the inner (`from`-side) query to a single thread, limiting performance.
 
+[[sizing-the-from-side]]
+== Sizing the From Side and the JVM
+
+What the sidecar costs is driven by how large the `from`-side segments are, not by how many documents a join actually matches.
+For each (`from`-segment, `to`-segment) pair it builds, the parser holds several structures sized by the `from` segment's `maxDoc`: the set of matching `from` documents, the map from each `from` document to its field value, and the batch written to the sidecar, which spans one document per `from` document however few of them the pair matched.
+On a `from` segment of several million documents each of those runs to tens of megabytes, so the two settings below are worth applying before a large join is put under sustained load.
+
+NOTE: Both are starting points drawn from benchmarking a single relation, not tuned defaults. Like the rest of this parser they are provisional; see <<Disclaimer>>.
+
+=== Cap the From-Side Segment Size
+
+Put a ceiling on how large the `from` core's segments may grow, in that core's `solrconfig.xml`:
+
+[source,xml]
+----
+<indexConfig>
+  <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
+    <double name="maxMergedSegmentMB">200.0</double>
+  </mergePolicyFactory>
+</indexConfig>
+----
+
+This is a ceiling on future merges rather than a reduction: it prevents segments growing past the limit, but doesn't split segments that are already larger.
+
+`TieredMergePolicy` has no document-count setting, so this bounds documents only indirectly, through bytes.
+The document count a given `maxMergedSegmentMB` works out to depends on the average document size, and is worth re-checking whenever the schema changes.
+
+Resist capping too aggressively.
+The parser maintains one pair column per (`from`-segment, `to`-segment) combination, so halving the `from` segment size doubles the number of `from` segments, and with it the number of pair columns to build, persist, and later reclaim.
+
+=== Raise the G1 Region Size
+
+[source,bash]
+----
+GC_TUNE="-XX:G1HeapRegionSize=8m"
+----
+
+G1 treats any single allocation larger than half a region as "`humongous`", placing it in its own run of regions that ordinary young collections don't reclaim.
+At G1's default 1 MB region that threshold is 512 KB, which the per-segment structures described above cross on segments of a few million documents -- a bitset over a `from` segment passes it at roughly 4.2 million documents.
+An 8 MB region moves the threshold to 4 MB, which brings those allocations back under normal collection.
+
+See xref:deployment-guide:jvm-settings.adoc[] for where JVM settings live and how to set them.
+
 == Disclaimer
 
 `auxIndexJoin` is completely experimental, which is why it requires explicit configuration. So, far it's evalueated within single relation (from-to index pair) only, but it should support many ones in principle. It's parameters/usage is more subject to change with less backwards compatibility concern.

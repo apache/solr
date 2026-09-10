@@ -122,8 +122,15 @@ final class JoinColumnIndexer {
     Claims claims = claimPairs(missingPairs.keySet());
     Map<String, JoinColumnModel> loadedMappings = Map.of();
     Set<String> writtenPairs = Set.of();
+    // kept apart because they answer different questions: computing a model walks the from
+    // segment once per pair, while persisting it walks the whole from segment again as sidecar
+    // documents, whatever the pair matched. Which of the two dominates decides where the next
+    // round of work goes.
+    long computeNanos = 0;
+    long persistNanos = 0;
     try {
       if (!claims.owned().isEmpty()) {
+        long computeStartNanos = System.nanoTime();
         loadedMappings =
             computeOwnedModels(
                 claims.owned().keySet(),
@@ -132,10 +139,13 @@ final class JoinColumnIndexer {
                 toReader,
                 toField,
                 fromColumnFutures);
+        computeNanos = System.nanoTime() - computeStartNanos;
         completeClaimFutures(claims.owned(), loadedMappings);
         Map<String, JoinColumnModel> unwrittenMappings =
             dropAlreadyPersisted(loadedMappings, claims.owned().keySet(), observedAbsentSearcher);
+        long persistStartNanos = System.nanoTime();
         persistBatch(unwrittenMappings);
+        persistNanos = System.nanoTime() - persistStartNanos;
         writtenPairs = unwrittenMappings.keySet();
         releaseClaims(claims.owned());
       }
@@ -153,7 +163,9 @@ final class JoinColumnIndexer {
         claims.awaited().size(),
         writtenPairs,
         startNanos,
-        builtNanos);
+        builtNanos,
+        computeNanos,
+        persistNanos);
     return result;
   }
 
@@ -361,25 +373,38 @@ final class JoinColumnIndexer {
       int pairsAwaited,
       Set<String> writtenPairs,
       long startNanos,
-      long builtNanos) {
+      long builtNanos,
+      long computeNanos,
+      long persistNanos) {
     if (!JoinIndexUtils.diagnosticsEnabled(log) || pairsRequested == 0) {
       return;
     }
     long toCount = 0;
+    long modelBytes = 0;
+    int sparseModels = 0;
     for (JoinColumnModel model : loadedMappings.values()) {
       toCount += model.edges().toCount();
+      modelBytes += model.ramBytesUsed();
+      if (model.isSparse()) {
+        sparseModels++;
+      }
     }
     JoinIndexUtils.logDiagnostic(
         log,
         "AUXIJOIN evt=build ctx={} pairsRequested={} pairsBuilt={} pairsAwaited={}"
-            + " builtMs={} awaitedMs={} toCount={} writtenPairs={}",
+            + " builtMs={} computeMs={} persistMs={} awaitedMs={} toCount={} sparseModels={}"
+            + " modelBytes={} writtenPairs={}",
         traceCtxId == null ? "-" : traceCtxId,
         pairsRequested,
         loadedMappings.size(),
         pairsAwaited,
         builtNanos / 1_000_000L,
+        computeNanos / 1_000_000L,
+        persistNanos / 1_000_000L,
         (System.nanoTime() - startNanos - builtNanos) / 1_000_000L,
         toCount,
+        sparseModels,
+        modelBytes,
         writtenPairs);
   }
 }

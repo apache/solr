@@ -30,6 +30,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
@@ -95,7 +96,9 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
             newIndexWriterConfig(new MockAnalyzer(random()))
                 .setMergePolicy(NoMergePolicy.INSTANCE));
     joinDir = newDirectory();
-    joinIndex = new AuxIndexManager(joinDir);
+    // every assertion here reads the sidecar off the directory rather than through the manager's
+    // NRT searcher, so the batches have to be committed, not merely flushed
+    joinIndex = new AuxIndexManager(joinDir, commitEveryBatch());
     // this test drives many onCreateWeight calls back to back, well inside the default one-minute
     // sampling interval, and asserts on the reaper noticing every one of them
     joinIndex.mergePolicy.setSweepInterval(0, TimeUnit.NANOSECONDS);
@@ -338,7 +341,7 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
       maxToDoc = Math.max(maxToDoc, toDoc);
       toCount++;
     }
-    return new JoinColumnModel(
+    return JoinColumnModel.dense(
         toDocByFromDoc,
         new Edges(new int[] {minFromDoc, maxFromDoc}, new int[] {minToDoc, maxToDoc}, toCount));
   }
@@ -833,6 +836,77 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
   }
 
   /** Every pair the sidecar currently stores a column for, across all its segments. */
+  /**
+   * Writing a batch flushes it and nothing more: the flush is what seals it into a segment of its
+   * own -- the invariant a pair column depends on, a sidecar doc number being a from-doc id -- and
+   * the manager's searcher reads the writer's in-memory segments, so the batch answers queries
+   * straight away. Committing it is the timer's job, which is what keeps the fsync off the write
+   * path. Whatever the timer never reached, {@code close()} commits.
+   */
+  public void testABatchIsAnsweredBeforeItIsCommitted() throws Exception {
+    String pairFieldName = "fromSegUncommitted:dv0_toSeg:dv0";
+    int[] toDocByFromDoc = {7, -1, 9};
+    Directory uncommittedDir = newDirectory();
+    try {
+      // an interval no test run will reach, so nothing commits behind these assertions
+      AuxIndexManager sidecar =
+          new AuxIndexManager(
+              uncommittedDir,
+              new AuxIndexJoinConfig().setCommitIntervalMs(TimeUnit.HOURS.toMillis(1)));
+      try {
+        sidecar.writeBatch(Map.of(pairFieldName, model(toDocByFromDoc)));
+        assertEquals(
+            "a flushed batch has to be answerable at once",
+            Set.of(pairFieldName),
+            pairNamesVisibleTo(sidecar));
+        assertEquals(
+            "and must not have cost a commit to get there",
+            Set.of(),
+            committedPairNames(uncommittedDir));
+      } finally {
+        sidecar.close();
+      }
+      assertEquals(
+          "close() has to commit whatever the timer never reached",
+          Set.of(pairFieldName),
+          committedPairNames(uncommittedDir));
+    } finally {
+      uncommittedDir.close();
+    }
+  }
+
+  /** The pairs the sidecar's own searcher can see, committed or merely flushed. */
+  private static Set<String> pairNamesVisibleTo(AuxIndexManager sidecar) throws IOException {
+    IndexSearcher searcher = sidecar.acquire();
+    try {
+      Set<String> names = new TreeSet<>();
+      for (LeafReaderContext leaf : searcher.getIndexReader().leaves()) {
+        names.addAll(JoinIndexUtils.pairFieldNames(leaf.reader().getFieldInfos()));
+      }
+      return names;
+    } finally {
+      sidecar.release(searcher);
+    }
+  }
+
+  /** The pairs a reader opening the directory from scratch can see, i.e. what was committed. */
+  private static Set<String> committedPairNames(Directory dir) throws IOException {
+    Set<String> names = new TreeSet<>();
+    try (DirectoryReader sidecar = DirectoryReader.open(dir)) {
+      for (LeafReaderContext leaf : sidecar.leaves()) {
+        names.addAll(JoinIndexUtils.pairFieldNames(leaf.reader().getFieldInfos()));
+      }
+    } catch (IndexNotFoundException nothingCommittedYet) {
+      return names;
+    }
+    return names;
+  }
+
+  /** A config whose batches land on disk as soon as they are written, as these tests assume. */
+  private static AuxIndexJoinConfig commitEveryBatch() {
+    return new AuxIndexJoinConfig().setCommitIntervalMs(0);
+  }
+
   private Set<String> storedPairNames() throws IOException {
     Set<String> names = new TreeSet<>();
     try (DirectoryReader sidecar = DirectoryReader.open(joinDir)) {
@@ -866,7 +940,7 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
 
     // the restart: a manager opened on the same directory, with no sampling history whatsoever
     joinIndex.close();
-    joinIndex = new AuxIndexManager(joinDir);
+    joinIndex = new AuxIndexManager(joinDir, commitEveryBatch());
     joinIndex.mergePolicy.setSweepInterval(0, TimeUnit.NANOSECONDS);
 
     // and while it was down, every from-segment those columns name was merged away

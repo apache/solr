@@ -116,7 +116,10 @@ public class TestAuxIndexJoin extends SolrTestCase {
             .setSingleFieldPerSegment(random().nextBoolean())
             .setBlockingRefresh(random().nextBoolean())
             .setUseFromSideThreads(random().nextBoolean())
-            .setSweepSamplingInterval(TestUtil.nextInt(random(), -1, 2), TimeUnit.MINUTES);
+            .setSweepSamplingInterval(TestUtil.nextInt(random(), -1, 2), TimeUnit.MINUTES)
+            // 0 commits every batch, 30s leaves them flushed but uncommitted for the whole
+            // run -- correctness must not be able to tell the two apart
+            .setCommitIntervalMs(random().nextBoolean() ? 0 : TimeUnit.SECONDS.toMillis(30));
     joinIndex = new AuxIndexManager(joinDir, config);
   }
 

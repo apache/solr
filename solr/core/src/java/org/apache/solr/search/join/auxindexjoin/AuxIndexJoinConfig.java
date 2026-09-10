@@ -45,6 +45,7 @@ public final class AuxIndexJoinConfig {
   private int maxPairsPerSegment = AuxIndexJoinMergePolicy.DEFAULT_MAX_PAIRS_PER_SEGMENT;
   private long minReclaimableBytesToPurge =
       AuxIndexJoinMergePolicy.DEFAULT_MIN_RECLAIMABLE_BYTES_TO_PURGE;
+  private long commitIntervalMs = TimeUnit.SECONDS.toMillis(30);
 
   /** Sole constructor, using the default settings documented on each setter. */
   public AuxIndexJoinConfig() {}
@@ -176,5 +177,31 @@ public final class AuxIndexJoinConfig {
   /** Returns the current value set via {@link #setMinReclaimableBytesToPurge}. */
   public long getMinReclaimableBytesToPurge() {
     return minReclaimableBytesToPurge;
+  }
+
+  /**
+   * How often the sidecar is committed, in milliseconds. Writing a batch only flushes it -- that
+   * seals the batch into a segment of its own, which is what a pair column needs to start at doc 0
+   * -- so this is what fsyncs those segments and moves the commit point forward.
+   *
+   * <p>Durability is barely the point: the sidecar is derived, and pairs lost to an unclean stop
+   * are rebuilt on the next query exactly as pairs that were never built are. Reclaiming files is:
+   * Lucene retains every file the last commit point references, so this interval sets how far above
+   * its live size the sidecar directory floats.
+   *
+   * <p>Default is 30 seconds. Zero commits at the end of every batch instead -- durable per batch,
+   * at the cost of an fsync on the query thread, holding the write lock, once per batch.
+   */
+  public AuxIndexJoinConfig setCommitIntervalMs(long commitIntervalMs) {
+    if (commitIntervalMs < 0) {
+      throw new IllegalArgumentException("commitIntervalMs must not be negative");
+    }
+    this.commitIntervalMs = commitIntervalMs;
+    return this;
+  }
+
+  /** Returns the current value set via {@link #setCommitIntervalMs}. */
+  public long getCommitIntervalMs() {
+    return commitIntervalMs;
   }
 }

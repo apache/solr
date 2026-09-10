@@ -18,7 +18,6 @@ package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -65,6 +64,9 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RoaringDocIdSet;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedLongValues;
+import org.apache.lucene.util.packed.PagedMutable;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
@@ -108,6 +110,13 @@ final class JoinIndexUtils {
    * future major version can detect and discard an incompatible aux join index.
    */
   static final String AUX_INDEX_VERSION = "AuxJoinIndexVersion";
+
+  /**
+   * Values per page in every paged structure this join builds -- columns, the from-side maps, the
+   * to-side inversion. Sized so a page stays comfortably under G1's humongous threshold even in the
+   * worst case: 16384 values at the full 64 bits is 128KB, against half of a 1MB region.
+   */
+  static final int PAGE_SIZE = 1 << 14;
 
   private JoinIndexUtils() {}
 
@@ -188,26 +197,184 @@ final class JoinIndexUtils {
   record Edges(int[] fromDocEdges, int[] toDocEdges, int toCount) implements DocEdges {}
 
   /**
-   * The from-doc-to-to-doc map produced by {@link #computeDocMapping}, paired with its resolved
+   * The from-doc -> to-doc map produced by {@link #computeDocMapping}, paired with its resolved
    * {@link #edges()}. {@link #toDocByFromDoc()} mirrors the on-disk column's read API, so freshly
    * built pairs (not yet flushed to the join index) and pairs loaded from the join index can be
    * walked by the same code.
+   *
+   * <p>Two layouts back that read API, chosen per pair by {@link #sparseIsSmaller} from the match
+   * count the measuring pass established:
+   *
+   * <ul>
+   *   <li><b>dense</b> -- one slot per from-doc up to the pair's last match, holding {@code toDoc +
+   *       1} so that {@code 0} means "no match here". Addressed straight by from-doc, so a probe is
+   *       one read.
+   *   <li><b>sparse</b> -- only the from-docs that do have a match, ascending, alongside the to-doc
+   *       each maps to. A probe searches the from-docs, which a cursor keeps linear by resuming
+   *       where the previous one stopped.
+   * </ul>
+   *
+   * <p>Sparse is the smaller of the two below 50% density, and the layouts are far from evenly
+   * used: over 34k column drains from a production run, 71% of the columns matched under 1% of
+   * their from-segment's docs (median 2,125 of 5,031,945) while the other 29% matched essentially
+   * every doc.
+   *
+   * <p>Both layouts are held as {@link PackedLongValues}, which stores values at the width they
+   * need rather than a flat 32 bits, and pages them at {@link #PAGE_SIZE} rather than in one array.
+   * Paging is the point: a five-million-doc from-segment as one {@code int[]} is 20MB, and G1 gives
+   * any allocation over half a region (512KB at a 1MB region size) its own run of regions, so
+   * columns like that had taken a production heap 74% humongous -- unreclaimable by anything short
+   * of a full collection, which is how this crashed. No page here reaches 128KB whatever the
+   * column's width or density, so no column is ever allocated humongous again; the narrower packing
+   * (23 bits for five million to-docs) is a second, smaller win on top.
    */
   static final class JoinColumnModel {
-    private final int[] toDocByFromDoc;
+
+    private final int maxDoc;
     private final DocEdges edges;
 
-    JoinColumnModel(int[] toDocByFromDoc, DocEdges edges) {
-      this.toDocByFromDoc = toDocByFromDoc;
+    /**
+     * Dense layout: {@code toDoc + 1} at each from-doc, {@code 0} where the from-doc has no match,
+     * running to the last matched from-doc and no further. Null when sparse.
+     */
+    private final PackedLongValues toDocPlusOneByFromDoc;
+
+    /** Sparse layout: the from-docs carrying a match, ascending. Null when dense. */
+    private final PackedLongValues matchedFromDocs;
+
+    /** Sparse layout: the to-doc of the from-doc at the same index. Null when dense. */
+    private final PackedLongValues matchedToDocs;
+
+    private JoinColumnModel(
+        int maxDoc,
+        DocEdges edges,
+        PackedLongValues toDocPlusOneByFromDoc,
+        PackedLongValues matchedFromDocs,
+        PackedLongValues matchedToDocs) {
+      this.maxDoc = maxDoc;
       this.edges = edges;
+      this.toDocPlusOneByFromDoc = toDocPlusOneByFromDoc;
+      this.matchedFromDocs = matchedFromDocs;
+      this.matchedToDocs = matchedToDocs;
+    }
+
+    /**
+     * Collects one pair's matches into the layout {@code sparse} selects. Matches must arrive in
+     * ascending from-doc order, which is how both build passes walk the from-segment; the dense
+     * layout relies on it to know how many empty slots to lay down before each match.
+     */
+    static final class Builder {
+      private final int maxDoc;
+      private final boolean sparse;
+      private final PackedLongValues.Builder matchedFromDocs;
+      private final PackedLongValues.Builder toDocs;
+
+      /** Dense layout: how many slots are already laid down, i.e. the next from-doc to fill. */
+      private int nextSlot;
+
+      private int matches;
+
+      Builder(int maxDoc, boolean sparse) {
+        this.maxDoc = maxDoc;
+        this.sparse = sparse;
+        // from-docs only ever ascend, and the monotonic encoding stores each one as its distance
+        // from a linear approximation of the whole column -- so a nearly-dense column, whose
+        // from-docs step by one, costs about nothing to remember, which is exactly the column
+        // whose to-docs are most expensive.
+        this.matchedFromDocs =
+            sparse ? PackedLongValues.monotonicBuilder(PAGE_SIZE, PackedInts.COMPACT) : null;
+        this.toDocs = PackedLongValues.packedBuilder(PAGE_SIZE, PackedInts.COMPACT);
+      }
+
+      /** Records that {@code fromDoc} matches {@code toDoc}. */
+      void add(int fromDoc, int toDoc) {
+        assert fromDoc >= nextSlot : "matches must ascend, got " + fromDoc + " after " + nextSlot;
+        assert toDoc >= 0 : "a match must name a to-doc, got " + toDoc;
+        if (sparse) {
+          matchedFromDocs.add(fromDoc);
+          toDocs.add(toDoc);
+        } else {
+          while (nextSlot < fromDoc) {
+            toDocs.add(0L); // no match at this from-doc
+            nextSlot++;
+          }
+          toDocs.add(toDoc + 1L);
+        }
+        nextSlot = fromDoc + 1;
+        matches++;
+      }
+
+      /** How many matches were added, i.e. what {@code edges.toCount()} has to be. */
+      int matches() {
+        return matches;
+      }
+
+      JoinColumnModel build(DocEdges edges) {
+        assert matches == edges.toCount() : "added " + matches + " matches for edges " + edges;
+        return sparse
+            ? new JoinColumnModel(maxDoc, edges, null, matchedFromDocs.build(), toDocs.build())
+            : new JoinColumnModel(maxDoc, edges, toDocs.build(), null, null);
+      }
+    }
+
+    /** A builder laying out a {@code maxDoc}-wide pair densely or sparsely. */
+    static Builder builder(int maxDoc, boolean sparse) {
+      return new Builder(maxDoc, sparse);
+    }
+
+    /** A model laid out densely from {@code toDocByFromDoc}, {@code -1} meaning no match. */
+    static JoinColumnModel dense(int[] toDocByFromDoc, DocEdges edges) {
+      return of(toDocByFromDoc, edges, false);
+    }
+
+    /** The same map as {@link #dense}, laid out as its matches only. */
+    static JoinColumnModel sparse(int[] toDocByFromDoc, DocEdges edges) {
+      return of(toDocByFromDoc, edges, true);
+    }
+
+    private static JoinColumnModel of(int[] toDocByFromDoc, DocEdges edges, boolean sparse) {
+      Builder builder = builder(toDocByFromDoc.length, sparse);
+      for (int fromDoc = 0; fromDoc < toDocByFromDoc.length; fromDoc++) {
+        if (toDocByFromDoc[fromDoc] >= 0) {
+          builder.add(fromDoc, toDocByFromDoc[fromDoc]);
+        }
+      }
+      return builder.build(edges);
+    }
+
+    /**
+     * A model for a pair that matches nothing, holding no per-doc storage at all. It still reports
+     * {@code maxDoc}, so a batch made only of tombstones is still sized to the from-segments it
+     * stands for, and its edges are the symmetric {@code {-1, -1}} sentinel: an asymmetric one
+     * (e.g. {@code {NO_MORE_DOCS, -1}}) doesn't round-trip through the join index's SORTED_NUMERIC
+     * edges column, which always returns its two values in ascending numeric order regardless of
+     * which was written as "min".
+     */
+    static JoinColumnModel tombstone(int maxDoc) {
+      return builder(maxDoc, true).build(new Edges(new int[] {-1, -1}, new int[] {-1, -1}, 0));
+    }
+
+    /**
+     * Whether {@code toCount} matches spread over {@code denseSlots} from-docs are cheaper held as
+     * matches than as a slot per from-doc -- i.e. whether the column is under 50% dense. Sparse
+     * remembers two values per match against dense's one per slot, and while its from-doc column
+     * actually costs far less than that (see {@link Builder}), counting it at full price keeps the
+     * choice a comparison the measuring pass can make with no second guess about how well anything
+     * will pack.
+     */
+    static boolean sparseIsSmaller(int toCount, int denseSlots) {
+      return (long) toCount * 2 < denseSlots;
     }
 
     /**
      * Returns a fresh single-valued cursor over the from-doc -> to-doc map, positioned before doc
-     * 0.
+     * 0. Both cursors only move forward, which is what the on-disk columns require of their readers
+     * anyway; see {@link SparseColumnValues}.
      */
     SortedNumericDocValues toDocByFromDoc() {
-      return new ArrayBackedSortedNumericDocValues(toDocByFromDoc);
+      return toDocPlusOneByFromDoc != null
+          ? new DenseColumnValues(toDocPlusOneByFromDoc)
+          : new SparseColumnValues(matchedFromDocs, matchedToDocs);
     }
 
     DocEdges edges() {
@@ -216,26 +383,44 @@ final class JoinIndexUtils {
 
     /** Returns one greater than the largest possible document number. */
     public int maxDoc() {
-      return toDocByFromDoc.length;
+      return maxDoc;
+    }
+
+    /** Whether this model holds only its matches, rather than a slot per from-doc. */
+    boolean isSparse() {
+      return toDocPlusOneByFromDoc == null;
+    }
+
+    /** What this model's per-doc storage costs on the heap, for the build diagnostics. */
+    long ramBytesUsed() {
+      return isSparse()
+          ? matchedFromDocs.ramBytesUsed() + matchedToDocs.ramBytesUsed()
+          : toDocPlusOneByFromDoc.ramBytesUsed();
     }
   }
 
   /**
-   * Adapts an int-array from-doc -> to-doc map (as produced by {@link #computeDocMapping}, {@code
-   * -1} meaning no value) to the {@link SortedNumericDocValues} read API, so it can be consumed the
-   * same way as the on-disk join column. Always single-valued until M:N pairs are supported.
+   * The dense layout's cursor: {@code toDoc + 1} addressed straight by from-doc, {@code 0} where
+   * there is no match, so a probe is a single read and needs no search. Slots past the pair's last
+   * match were never laid down, which {@link #size} stands for. Always single-valued until M:N
+   * pairs are supported.
    */
-  private static final class ArrayBackedSortedNumericDocValues extends SortedNumericDocValues {
-    private final int[] toDocByFromDoc;
+  private static final class DenseColumnValues extends SortedNumericDocValues {
+    private final PackedLongValues toDocPlusOneByFromDoc;
+    private final int size;
     private int doc = -1;
 
-    ArrayBackedSortedNumericDocValues(int[] toDocByFromDoc) {
-      this.toDocByFromDoc = toDocByFromDoc;
+    /** The to-doc at {@link #doc}, read by the same probe that found it. */
+    private long toDoc;
+
+    DenseColumnValues(PackedLongValues toDocPlusOneByFromDoc) {
+      this.toDocPlusOneByFromDoc = toDocPlusOneByFromDoc;
+      this.size = Math.toIntExact(toDocPlusOneByFromDoc.size());
     }
 
     @Override
     public long nextValue() {
-      return toDocByFromDoc[doc];
+      return toDoc;
     }
 
     @Override
@@ -246,7 +431,12 @@ final class JoinIndexUtils {
     @Override
     public boolean advanceExact(int target) {
       doc = target;
-      return target < toDocByFromDoc.length && toDocByFromDoc[target] >= 0;
+      if (target >= size) {
+        return false;
+      }
+      long toDocPlusOne = toDocPlusOneByFromDoc.get(target);
+      toDoc = toDocPlusOne - 1;
+      return toDocPlusOne != 0;
     }
 
     @Override
@@ -256,48 +446,174 @@ final class JoinIndexUtils {
 
     @Override
     public int nextDoc() {
-      return advance(doc + 1);
+      return doc == NO_MORE_DOCS ? NO_MORE_DOCS : advance(doc + 1);
     }
 
     @Override
     public int advance(int target) {
-      while (target < toDocByFromDoc.length && toDocByFromDoc[target] < 0) {
-        target++;
+      for (int fromDoc = target; fromDoc < size; fromDoc++) {
+        long toDocPlusOne = toDocPlusOneByFromDoc.get(fromDoc);
+        if (toDocPlusOne != 0) {
+          toDoc = toDocPlusOne - 1;
+          doc = fromDoc;
+          return doc;
+        }
       }
-      doc = target < toDocByFromDoc.length ? target : NO_MORE_DOCS;
+      doc = NO_MORE_DOCS;
       return doc;
     }
 
     @Override
     public long cost() {
-      return toDocByFromDoc.length;
+      return size;
     }
   }
 
   /**
-   * Maps a to-side {@link LeafReaderContext} to an int array of to-side doc ids by ordinal for a
-   * fixed {@code toField}, for those docs that are live. this is quite local lifecycle class, thus
-   * we can cache it so. the trick is that, there always single entry in this cache.
+   * The sparse layout's cursor: the same read API over the matched from-docs (ascending, no
+   * duplicates while the mapping stays single-valued) and their to-docs.
+   *
+   * <p>Unlike the dense cursor, which is addressed by from-doc directly, this one has to find the
+   * from-doc -- so it only moves forward, resuming each seek where the previous one stopped, which
+   * keeps a full walk of the column linear instead of a binary search per doc. That is the standard
+   * {@link org.apache.lucene.index.DocValuesIterator} contract, and the one the on-disk columns
+   * already impose on the same call sites; both of them here -- {@code
+   * JoinColumnDocWriter.PairColumn} walking {@code nextDoc()} up the batch, and {@code
+   * JoinIndexScorerSupplier.LeafJoin dumpMatchesInto} calling {@code advanceExact(fromDoc)} along a
+   * forward-only from-doc iterator -- take a freshly positioned cursor and only ever move it
+   * forward.
    */
-  static class ToDocInvertor implements Function<LeafReaderContext, int[]> {
+  private static final class SparseColumnValues extends SortedNumericDocValues {
+    private final PackedLongValues matchedFromDocs;
+    private final PackedLongValues matchedToDocs;
+    private final int size;
+
+    /** Where the last seek stopped: the first match at or after the doc last asked for. */
+    private int index;
+
+    /** The from-doc at {@link #index}, or {@code NO_MORE_DOCS} once the column is spent. */
+    private int indexedFromDoc;
+
+    private int doc = -1;
+
+    SparseColumnValues(PackedLongValues matchedFromDocs, PackedLongValues matchedToDocs) {
+      this.matchedFromDocs = matchedFromDocs;
+      this.matchedToDocs = matchedToDocs;
+      this.size = Math.toIntExact(matchedFromDocs.size());
+    }
+
+    @Override
+    public long nextValue() {
+      return matchedToDocs.get(index);
+    }
+
+    @Override
+    public int docValueCount() {
+      return 1;
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    public boolean advanceExact(int target) {
+      seek(target);
+      doc = target;
+      return indexedFromDoc == target;
+    }
+
+    @Override
+    public int nextDoc() {
+      return doc == NO_MORE_DOCS ? NO_MORE_DOCS : advance(doc + 1);
+    }
+
+    @Override
+    public int advance(int target) {
+      seek(target);
+      doc = indexedFromDoc;
+      return doc;
+    }
+
+    /**
+     * Positions {@link #index} on the first match at or after {@code target}, and {@link
+     * #indexedFromDoc} on its from-doc. Matches before the cursor can't answer a target that never
+     * goes backwards, so the search starts there: stepping to the next match or two -- how a full
+     * walk of the column advances -- costs a read, and only a real jump falls through to a binary
+     * search over what is left.
+     */
+    private void seek(int target) {
+      assert doc == NO_MORE_DOCS || target >= doc
+          : "sparse cursor only moves forward, got " + target + " at " + doc;
+      int at = index;
+      for (int probe = 0; probe < 2 && at < size; probe++, at++) {
+        int fromDoc = (int) matchedFromDocs.get(at);
+        if (fromDoc >= target) {
+          index = at;
+          indexedFromDoc = fromDoc;
+          return;
+        }
+      }
+      int low = at;
+      int high = size - 1;
+      while (low <= high) {
+        int mid = (low + high) >>> 1;
+        int fromDoc = (int) matchedFromDocs.get(mid);
+        if (fromDoc < target) {
+          low = mid + 1;
+        } else if (fromDoc > target) {
+          high = mid - 1;
+        } else {
+          index = mid;
+          indexedFromDoc = fromDoc;
+          return;
+        }
+      }
+      index = low;
+      indexedFromDoc = low < size ? (int) matchedFromDocs.get(low) : NO_MORE_DOCS;
+    }
+
+    @Override
+    public long cost() {
+      return size;
+    }
+  }
+
+  /**
+   * Maps a to-side {@link LeafReaderContext} to the live to-side doc id at each of its ordinals,
+   * for a fixed {@code toField}. this is quite local lifecycle class, thus we can cache it so. the
+   * trick is that, there always single entry in this cache.
+   *
+   * <p>The inversion is addressed by ordinal in no particular order, so unlike a column it has to
+   * stay mutable -- but it is still paged, at {@link #PAGE_SIZE}, and packed at the bits a to-doc
+   * needs rather than a flat 32: a five-million-doc to-segment inverted to one {@code int[]} was a
+   * 20MB humongous allocation per to-segment loaded.
+   */
+  static class ToDocInvertor implements Function<LeafReaderContext, PagedMutable> {
     private final String toField;
-    private final Map<Integer, int[]> cache = new HashMap<>();
+    private final Map<Integer, PagedMutable> cache = new HashMap<>();
 
     ToDocInvertor(String toField) {
       this.toField = toField;
     }
 
     @Override
-    public int[] apply(LeafReaderContext toContext) {
+    public PagedMutable apply(LeafReaderContext toContext) {
       return cache.computeIfAbsent(toContext.ord, (i) -> computeToDoc(toContext));
     }
 
-    private int[] computeToDoc(LeafReaderContext toContext) {
+    /** {@code toDoc + 1} at each to-ord, {@code 0} where no live to-doc carries that ordinal. */
+    private PagedMutable computeToDoc(LeafReaderContext toContext) {
       try {
         SortedSetDocValues toDV = DocValues.getSortedSet(toContext.reader(), toField);
         Bits toLiveDocs = toContext.reader().getLiveDocs();
-        int[] toDocByToOrd = new int[Math.toIntExact(toDV.getValueCount())];
-        Arrays.fill(toDocByToOrd, -1);
+        PagedMutable toDocPlusOneByToOrd =
+            new PagedMutable(
+                toDV.getValueCount(),
+                PAGE_SIZE,
+                PackedInts.bitsRequired(toContext.reader().maxDoc()),
+                PackedInts.COMPACT);
         for (int toDoc = toDV.nextDoc();
             toDoc != DocIdSetIterator.NO_MORE_DOCS;
             toDoc = toDV.nextDoc()) {
@@ -305,10 +621,10 @@ final class JoinIndexUtils {
             continue;
           }
           for (int i = 0; i < toDV.docValueCount(); i++) {
-            toDocByToOrd[(int) toDV.nextOrd()] = toDoc;
+            toDocPlusOneByToOrd.set(toDV.nextOrd(), toDoc + 1L);
           }
         }
-        return toDocByToOrd;
+        return toDocPlusOneByToOrd;
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
@@ -334,76 +650,94 @@ final class JoinIndexUtils {
       throws IOException {
     assert fromSideData != null;
 
-    long[] toOrdByFromOrd = new long[fromSideData.getFromValuesCount()];
-    Arrays.fill(toOrdByFromOrd, -1L);
     SortedSetDocValues toDV = DocValues.getSortedSet(toContext.reader(), toField);
+    // addressed by from-ord in term order, not doc order, so this one stays mutable -- but paged
+    // and packed all the same: as a flat long[] it was 40MB for a five-million-term from side,
+    // allocated afresh for every pair built
+    PagedMutable toOrdPlusOneByFromOrd =
+        new PagedMutable(
+            fromSideData.getFromValuesCount(),
+            PAGE_SIZE,
+            PackedInts.bitsRequired(toDV.getValueCount()),
+            PackedInts.COMPACT);
     TermsEnum toTerms = toDV.termsEnum();
     // resolve from-side ords to to-side ords: look each to-side term up in the from-side hash.
     boolean termsAreDisjoint = true;
     for (BytesRef term = toTerms.next(); term != null; term = toTerms.next()) {
       int fromOrd = fromSideData.getFromTermOrdOrDashOne(term);
       if (fromOrd != -1) {
-        toOrdByFromOrd[fromOrd] = (int) toTerms.ord();
+        toOrdPlusOneByFromOrd.set(fromOrd, toTerms.ord() + 1);
         termsAreDisjoint = false;
       }
     }
-    // TODO: this degrades M:N joins to M:1. Both toDocByToOrd and toDocByFromDoc keep a single
-    // to-side doc per slot, so when several to docs share a term (non-unique toField) or a
-    // fromSideData
-    // doc is multi-valued with several matching terms, later assignments overwrite earlier ones
-    // and only the last match survives. The read side (AuxIndexJoinQuery) already consumes all
-    // docValueCount() values per doc, so only this writer needs to learn to emit multiple
-    // to docs per fromSideData doc.
-    if (!termsAreDisjoint) {
-      int[] toDocByToOrd = toDocInvertor.apply(toContext);
-
-      // resolve every fromSideData doc to its to-side doc. Docs without the field, or whose term
-      // has
-      // no to-side match, keep -1.
-      int[] toDocByFromDoc = fromSideData.cloneFromOrdByFromDoc();
-      int minFromDoc = DocIdSetIterator.NO_MORE_DOCS;
-      int maxFromDoc = -1;
-      int minToDoc = DocIdSetIterator.NO_MORE_DOCS;
-      int maxToDoc = -1;
-      int toCount = 0;
-      // walk the array, mapping each fromSideData ord to its to-side doc in place.
-      for (int fromDoc = 0; fromDoc < toDocByFromDoc.length; fromDoc++) {
-        int fromOrd = toDocByFromDoc[fromDoc];
-        if (fromOrd == -1) {
-          continue;
-        }
-        int toOrd = (int) toOrdByFromOrd[fromOrd];
-        int toDoc = toOrd == -1 ? -1 : toDocByToOrd[toOrd];
-        if (toDoc == -1) {
-          toDocByFromDoc[fromDoc] = -1; // wiping is crucial
-          continue;
-        }
-        toDocByFromDoc[fromDoc] = toDoc;
-        minFromDoc = Math.min(minFromDoc, fromDoc);
-        maxFromDoc = Math.max(maxFromDoc, fromDoc);
-        minToDoc = Math.min(minToDoc, toDoc);
-        maxToDoc = Math.max(maxToDoc, toDoc);
-        toCount++;
-      }
-      if (maxFromDoc < 0) { // tombstone - column is empty
-        // no fromSideData doc in this pair maps to any to doc: normalize both edges to the
-        // symmetric
-        // {-1, -1} sentinel. An asymmetric one (e.g. {NO_MORE_DOCS, -1}) doesn't round-trip
-        // through the join index's SORTED_NUMERIC edges column, which always returns its two
-        // values in ascending numeric order regardless of which was written as "min" -- so
-        // {NO_MORE_DOCS, -1} silently comes back as {-1, NO_MORE_DOCS} on the next read.
-        minFromDoc = -1;
-        minToDoc = -1;
-        maxToDoc = -1;
-      }
-      return new JoinColumnModel(
-          toDocByFromDoc,
-          new Edges(new int[] {minFromDoc, maxFromDoc}, new int[] {minToDoc, maxToDoc}, toCount));
-    } else { // tombstone - column is empty, due to disjoint terms, perhaps one may optimize it
-      int[] minusones = new int[fromSideData.fromSideMaxDocs()];
-      Arrays.fill(minusones, -1);
-      return new JoinColumnModel(minusones, new Edges(new int[] {-1, -1}, new int[] {-1, -1}, 0));
+    // TODO: this degrades M:N joins to M:1. Both toDocByToOrd and the resolved column keep a single
+    // to-side doc per from doc, so when several to docs share a term (non-unique toField) or a
+    // fromSideData doc is multi-valued with several matching terms, later assignments overwrite
+    // earlier ones and only the last match survives. The read side (AuxIndexJoinQuery) already
+    // consumes all docValueCount() values per doc, so only this writer needs to learn to emit
+    // multiple to docs per fromSideData doc.
+    if (termsAreDisjoint) { // no from-side term occurs on the to side: nothing to lay out at all
+      return JoinColumnModel.tombstone(fromSideData.fromSideMaxDocs());
     }
+    PagedMutable toDocPlusOneByToOrd = toDocInvertor.apply(toContext);
+    int fromSideMaxDocs = fromSideData.fromSideMaxDocs();
+
+    // pass one: measure. Nothing is allocated until the match count is known, which is what decides
+    // the layout -- and lets the layout be allocated at exactly its final size.
+    int minFromDoc = DocIdSetIterator.NO_MORE_DOCS;
+    int maxFromDoc = -1;
+    int minToDoc = DocIdSetIterator.NO_MORE_DOCS;
+    int maxToDoc = -1;
+    int toCount = 0;
+    for (ForeignKeyColumn.FromOrds fromOrds = fromSideData.fromOrds(); fromOrds.next(); ) {
+      int toDoc = resolveToDoc(fromOrds.fromOrd(), toOrdPlusOneByFromOrd, toDocPlusOneByToOrd);
+      if (toDoc == -1) {
+        continue;
+      }
+      int fromDoc = fromOrds.fromDoc();
+      minFromDoc = Math.min(minFromDoc, fromDoc);
+      maxFromDoc = fromDoc;
+      minToDoc = Math.min(minToDoc, toDoc);
+      maxToDoc = Math.max(maxToDoc, toDoc);
+      toCount++;
+    }
+    if (maxFromDoc < 0) { // terms overlapped, but no live from-doc reaches a live to-doc
+      return JoinColumnModel.tombstone(fromSideMaxDocs);
+    }
+    DocEdges edges =
+        new Edges(new int[] {minFromDoc, maxFromDoc}, new int[] {minToDoc, maxToDoc}, toCount);
+
+    // pass two: lay the matches out, over the same walk. The dense layout lays down a slot per
+    // from-doc only as far as the last match, so that span, not the segment's width, is what it
+    // would cost -- and so what the layout is chosen on.
+    JoinColumnModel.Builder column =
+        JoinColumnModel.builder(
+            fromSideMaxDocs, JoinColumnModel.sparseIsSmaller(toCount, maxFromDoc + 1));
+    for (ForeignKeyColumn.FromOrds fromOrds = fromSideData.fromOrds(); fromOrds.next(); ) {
+      int toDoc = resolveToDoc(fromOrds.fromOrd(), toOrdPlusOneByFromOrd, toDocPlusOneByToOrd);
+      if (toDoc != -1) {
+        column.add(fromOrds.fromDoc(), toDoc);
+      }
+    }
+    assert column.matches() == toCount
+        : "measured " + toCount + " matches, laid out " + column.matches();
+    return column.build(edges);
+  }
+
+  /**
+   * The to-side doc a from-doc's {@code fromOrd} reaches, or {@code -1} when the from-doc has no
+   * value, its term has no to-side match, or that to-side term's only doc is deleted. Both build
+   * passes resolve every from-doc through here, so they agree on what counts as a match by
+   * construction. Both maps hold their values offset by one, so that the zero a paged map starts at
+   * reads back as "no value".
+   */
+  private static int resolveToDoc(
+      int fromOrd, PagedMutable toOrdPlusOneByFromOrd, PagedMutable toDocPlusOneByToOrd) {
+    if (fromOrd == -1) {
+      return -1;
+    }
+    long toOrdPlusOne = toOrdPlusOneByFromOrd.get(fromOrd);
+    return toOrdPlusOne == 0 ? -1 : (int) toDocPlusOneByToOrd.get(toOrdPlusOne - 1) - 1;
   }
 
   /**

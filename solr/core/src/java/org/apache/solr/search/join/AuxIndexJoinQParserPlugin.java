@@ -163,6 +163,12 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
    */
   public static final String MIN_RECLAIMABLE_BYTES_TO_PURGE = "minReclaimableBytesToPurge";
 
+  /**
+   * Init parameter: how often, in milliseconds, the sidecar is committed -- writing a batch only
+   * flushes it. See {@link AuxIndexJoinConfig#setCommitIntervalMs}.
+   */
+  public static final String COMMIT_INTERVAL_MS = "commitIntervalMs";
+
   private String configuredDir = DEFAULT_DIR;
   private final AuxIndexJoinConfig joinIndexConfig = new AuxIndexJoinConfig();
 
@@ -196,6 +202,8 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
       joinIndexConfig.setMinReclaimableBytesToPurge(
           params.getLong(
               MIN_RECLAIMABLE_BYTES_TO_PURGE, joinIndexConfig.getMinReclaimableBytesToPurge()));
+      joinIndexConfig.setCommitIntervalMs(
+          params.getLong(COMMIT_INTERVAL_MS, joinIndexConfig.getCommitIntervalMs()));
     }
   }
 
