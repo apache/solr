@@ -154,6 +154,12 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.SchemaDesignerApi();
     })
+.factory('SchemaV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SchemaApi();
+    })
 .factory('Collections',
   ['$resource', function ($resource) {
     // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler

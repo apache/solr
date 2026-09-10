@@ -17,8 +17,16 @@
 
 var cookie_schema_browser_autoload = 'schema-browser_autoload';
 
+// SchemaV2 (the generated OpenAPI client) uses superagent directly, so a validation failure
+// (e.g. an unknown field type) arrives as a structured error body just like v1's, but an auth
+// failure (401/403) needs ApiErrorHandler's global handling instead -- see its factory comment.
+function schemaApiErrorMessage(response) {
+    var body = (response && response.body) || {};
+    return (body.error && body.error.msg) || (response && response.statusText) || "Unknown error";
+}
+
 solrAdminApp.controller('SchemaController',
-    function($scope, $routeParams, $location, $cookies, $timeout, Luke, Constants, Schema, Config) {
+    function($scope, $routeParams, $location, $cookies, $timeout, Luke, Constants, Schema, SchemaV2, Config, ApiErrorHandler) {
         $scope.resetMenu("schema", Constants.IS_COLLECTION_PAGE);
 
         $scope.refresh = function () {
@@ -172,21 +180,25 @@ solrAdminApp.controller('SchemaController',
 
         $scope.addField = function() {
             delete $scope.addErrors;
-            var data = {"add-field": $scope.newField};
-            Schema.post({core: $routeParams.core}, data, function(data) {
-                if (data.errors) {
-                    $scope.addErrors = data.errors[0].errorMessages;
-                    if (typeof $scope.addErrors === "string") {
-                        $scope.addErrors = [$scope.addErrors];
+            var indexType = $scope.isCloudEnabled ? "collections" : "cores";
+            SchemaV2.addField(indexType, $routeParams.core, $scope.newField.name,
+                {upsertFieldOperation: $scope.newField}, function(error, data, response) {
+                $timeout(function() {
+                    if (error) {
+                        if (response && (response.status === 401 || response.status === 403)) {
+                            ApiErrorHandler.handle(response);
+                        } else {
+                            $scope.addErrors = [schemaApiErrorMessage(response)];
+                        }
+                        return;
                     }
-                } else {
                     $scope.added = true;
                     $timeout(function() {
                         $scope.showAddField = false;
                         $scope.added = false;
                         $scope.refresh();
                     }, 1500);
-                }
+                });
             });
         }
 
@@ -208,21 +220,25 @@ solrAdminApp.controller('SchemaController',
 
         $scope.addDynamicField = function() {
             delete $scope.addErrors;
-            var data = {"add-dynamic-field": $scope.newField};
-            Schema.post({core: $routeParams.core}, data, function(data) {
-                if (data.errors) {
-                    $scope.addErrors = data.errors[0].errorMessages;
-                    if (typeof $scope.addErrors === "string") {
-                        $scope.addErrors = [$scope.addErrors];
+            var indexType = $scope.isCloudEnabled ? "collections" : "cores";
+            SchemaV2.addDynamicField(indexType, $routeParams.core, $scope.newField.name,
+                {upsertDynamicFieldOperation: $scope.newField}, function(error, data, response) {
+                $timeout(function() {
+                    if (error) {
+                        if (response && (response.status === 401 || response.status === 403)) {
+                            ApiErrorHandler.handle(response);
+                        } else {
+                            $scope.addErrors = [schemaApiErrorMessage(response)];
+                        }
+                        return;
                     }
-                } else {
                     $scope.added = true;
                     $timeout(function() {
                         $scope.showAddField = false;
                         $scope.added = false;
                         $scope.refresh();
                     }, 1500);
-                }
+                });
             });
         }
 
@@ -254,35 +270,34 @@ solrAdminApp.controller('SchemaController',
         }
 
         $scope.toggleDelete = function() {
-            if ($scope.showDelete) {
-                $scope.showDelete = false;
-            } else {
-                if ($scope.is.field) {
-                    $scope.deleteData = {'delete-field': {name: $scope.name}};
-                } else if ($scope.is.dynamicField) {
-                    $scope.deleteData = {'delete-dynamic-field': {name: $scope.name}};
-                } else {
-                    alert("TYPE NOT KNOWN");
-                }
-                $scope.showDelete = true;
-            }
+            $scope.showDelete = !$scope.showDelete;
         }
 
         $scope.delete = function() {
-            Schema.post({core: $routeParams.core}, $scope.deleteData, function(data) {
-               if (data.errors) {
-                   $scope.deleteErrors = data.errors[0].errorMessages;
-                   if (typeof $scope.deleteErrors === "string") {
-                       $scope.deleteErrors = [$scope.deleteErrors];
-                   }
-               } else {
-                   $scope.deleted = true;
-                   $timeout(function() {
-                       $location.search("");
-                     }, 1500
-                   );
-               }
-            });
+            var indexType = $scope.isCloudEnabled ? "collections" : "cores";
+            function callback(error, data, response) {
+                $timeout(function() {
+                    if (error) {
+                        if (response && (response.status === 401 || response.status === 403)) {
+                            ApiErrorHandler.handle(response);
+                        } else {
+                            $scope.deleteErrors = [schemaApiErrorMessage(response)];
+                        }
+                        return;
+                    }
+                    $scope.deleted = true;
+                    $timeout(function() {
+                        $location.search("");
+                    }, 1500);
+                });
+            }
+            if ($scope.is.field) {
+                SchemaV2.deleteField(indexType, $routeParams.core, $scope.name, callback);
+            } else if ($scope.is.dynamicField) {
+                SchemaV2.deleteDynamicField(indexType, $routeParams.core, $scope.name, callback);
+            } else {
+                alert("TYPE NOT KNOWN");
+            }
         }
         $scope.toggleDeleteCopyField = function(field) {
             field.show = !field.show;
