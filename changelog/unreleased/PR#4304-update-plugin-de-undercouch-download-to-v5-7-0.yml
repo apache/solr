@@ -1,7 +1,0 @@
-title: Update plugin de.undercouch.download to v5.7.0 (branch_9x)
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#4304
-  url: https://github.com/apache/solr/pull/4304
