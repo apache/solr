@@ -20,9 +20,10 @@ Standalone smoke-test for Solr Maven artifacts: builds the test-external-client 
 against locally published Solr artifacts to verify that solr-solrj and solr-test-framework
 can be consumed from their published POMs.
 
-This test can be run independently of the full smokeTestRelease.py suite.
-It uses the test-external-client project checked into the repository root, which has
-both Maven (pom.xml) and Gradle (build.gradle.kts) build files.  Both are exercised.
+This test can be run independently of the full smokeTestRelease.py suite.  It copies the
+test-external-client project (which has both Maven and Gradle build files, both exercised)
+to a throwaway directory with no Solr source tree above it, supplies a minimal configSet,
+and builds it there -- so the project sees exactly what a third-party consumer sees.
 
 Set JAVA_HOME if you need to point at a specific JDK.
 
@@ -34,8 +35,7 @@ Usage examples:
   # Test against a release-candidate Maven staging URL (artifacts are downloaded):
   python3 checkTestExternalClient.py --repo-url https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-abc1234/maven 10.0.0
 
-Requirements: Maven (mvn) or Docker must be available for the Maven build.  The Gradle
-build uses the gradlew wrapper in the repository root.
+Requirements: Maven (mvn) must be on the PATH.
 """
 
 import argparse

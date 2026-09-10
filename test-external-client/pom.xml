@@ -29,6 +29,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
     <local.solr.repo>${user.home}/.m2/repository</local.solr.repo>
+    <!-- configSet dir; supplied by the smoke-test runner -->
+    <smoke.configset.dir/>
   </properties>
 
   <repositories>
@@ -70,6 +72,11 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.5</version>
+        <configuration>
+          <systemPropertyVariables>
+            <smoke.configset.dir>${smoke.configset.dir}</smoke.configset.dir>
+          </systemPropertyVariables>
+        </configuration>
         <dependencies>
           <dependency>
             <groupId>org.apache.maven.surefire</groupId>

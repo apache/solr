@@ -764,70 +764,82 @@ def testSolrExample(binaryDistPath, javaPath, isSlim):
   os.chdir(old_cwd)
 
 
-def findMaven():
-  """Find the mvn executable in PATH. Returns the command path, or None if not found."""
-  import shutil as shutil_util
-  return shutil_util.which('mvn')
+def _linkOrCopy(src, dst):
+  """Hard-link src to dst, falling back to a copy when they're on different filesystems."""
+  try:
+    os.link(src, dst)
+  except OSError:
+    shutil.copy2(src, dst)
 
 
-def _dockerAvailable():
-  """Check whether Docker is installed and the daemon is running."""
-  import shutil as shutil_util
-  if shutil_util.which('docker') is None:
-    return False
-  return os.system('docker info > /dev/null 2>&1') == 0
+def prepareExternalClientProject(workDir):
+  """
+  Assembles an isolated copy of the test-external-client project under workDir so its build
+  runs with no Solr source tree in any parent directory -- exactly what a third-party consumer
+  sees, i.e. ExternalPaths.SOURCE_HOME == null.
+
+  Brings in the repo-root Gradle wrapper and a minimal configSet (the isolated project has no
+  Solr source tree to borrow one from).  Returns (projectDir, configSetDir).
+  """
+  repoRoot = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+  projectSrc = os.path.join(repoRoot, 'test-external-client')
+  if not os.path.isdir(projectSrc):
+    raise RuntimeError('test-external-client directory not found at: %s' % projectSrc)
+
+  projectDir = os.path.join(workDir, 'test-external-client')
+  shutil.copytree(projectSrc, projectDir, ignore=shutil.ignore_patterns('build', '.gradle'))
+
+  os.makedirs(os.path.join(projectDir, 'gradle', 'wrapper'))
+  for rel in ('gradlew', 'gradlew.bat',
+              'gradle/wrapper/gradle-wrapper.jar', 'gradle/wrapper/gradle-wrapper.properties'):
+    _linkOrCopy(os.path.join(repoRoot, rel), os.path.join(projectDir, *rel.split('/')))
+  # Present so the Solr gradlew wrapper skips its gradle.properties generator (which needs
+  # build-infra sources we don't copy).
+  with open(os.path.join(projectDir, 'gradle.properties'), 'w') as f:
+    f.write('org.gradle.java.installations.auto-download=false\n')
+
+  configSetDir = os.path.join(projectDir, 'build', 'configset')
+  shutil.copytree(os.path.join(repoRoot, 'solr', 'test-framework', 'src', 'test-files',
+                               'solr', 'configsets', 'minimal'),
+                  configSetDir)
+
+  return projectDir, configSetDir
 
 
 def testMavenBuild(repoDir, tmpDir, version, skipExternalClient=False):
   """
-  Runs the test-external-client project with both Maven and Gradle to verify that the
-  published POMs for solr-solrj and solr-test-framework declare correct transitive
-  dependencies.
+  Builds the test-external-client project against the published Solr artifacts in repoDir,
+  with both Maven and Gradle, to verify that the solr-solrj and solr-test-framework POMs
+  are consumable by a third-party build.
 
   repoDir: root of the local Maven repository (contains org/apache/solr/...)
-  tmpDir: temp directory for log files
+  tmpDir: temp directory for the isolated project copy and log files
   version: Solr version string (e.g. "10.0.0")
   """
   if skipExternalClient:
     print('    skipping external client test (--skip-external-client specified).')
     return
 
+  mvnCmd = shutil.which('mvn')
+  if mvnCmd is None:
+    raise RuntimeError('mvn not found on PATH; install Maven or pass --skip-external-client.')
+
   print('    test external client project (verify POMs are consumable)...')
+  workDir = os.path.join(tmpDir, 'external-client')
+  if os.path.exists(workDir):
+    shutil.rmtree(workDir)
+  os.makedirs(workDir)
+  projectDir, configSetDir = prepareExternalClientProject(workDir)
 
-  scriptDir = os.path.dirname(os.path.abspath(__file__))
-  projectDir = os.path.normpath(os.path.join(scriptDir, '..', '..', 'test-external-client'))
-  if not os.path.isdir(projectDir):
-    raise RuntimeError('test-external-client directory not found at: %s' % projectDir)
+  print('      Maven build...')
+  run('"%s" -B -f "%s/pom.xml" -Dsolr.version="%s" -Dlocal.solr.repo="%s" -Dsmoke.configset.dir="%s" test'
+      % (mvnCmd, projectDir, version, repoDir, configSetDir),
+      os.path.join(tmpDir, 'external-client-maven.log'))
 
-  # Run Maven build
-  mvnCmd = findMaven()
-  if mvnCmd is not None:
-    print('      using local Maven: %s' % mvnCmd)
-    run('"%s" -B -f "%s/pom.xml" -Dsolr.version="%s" -Dlocal.solr.repo="%s" test'
-        % (mvnCmd, projectDir, version, repoDir), os.path.join(tmpDir, 'maven-build.log'))
-  elif _dockerAvailable():
-    print('      Maven not found; using Docker Maven image...')
-    # Note: the Docker image already includes Java 21
-    # Project is mounted writable so Maven can write its build output directory.
-    # When supported, run the container as the current user to avoid leaving
-    # root-owned files in the bind-mounted working copy.
-    dockerUserArg = ''
-    if hasattr(os, 'getuid') and hasattr(os, 'getgid'):
-      dockerUserArg = ' -u %d:%d' % (os.getuid(), os.getgid())
-    run('docker run --rm%s'
-        ' -v "%s":/project'
-        ' -v "%s":/solr-local-release:ro'
-        ' maven:3.9-eclipse-temurin-21'
-        ' mvn -B -f /project/pom.xml -Dsolr.version="%s" -Dlocal.solr.repo=/solr-local-release test'
-        % (dockerUserArg, projectDir, repoDir, version), os.path.join(tmpDir, 'maven-build.log'))
-  else:
-    raise RuntimeError('Neither Maven nor Docker is available. Install one or pass --skip-external-client to skip.')
-
-  # Also run Gradle build
-  gradlew = os.path.normpath(os.path.join(projectDir, '..', 'gradlew'))
-  print('      using Gradle: %s' % gradlew)
-  run('"%s" --no-daemon -p "%s" -Psolr.version="%s" -Plocal.solr.repo="%s" test'
-      % (gradlew, projectDir, version, repoDir), os.path.join(tmpDir, 'gradle-build.log'))
+  print('      Gradle build...')
+  run('"%s/gradlew" --no-daemon -p "%s" -Psolr.version="%s" -Plocal.solr.repo="%s" -Dsmoke.configset.dir="%s" test'
+      % (projectDir, projectDir, version, repoDir, configSetDir),
+      os.path.join(tmpDir, 'external-client-gradle.log'))
 
   print('    external client project: SUCCESS')
 

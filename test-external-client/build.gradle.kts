@@ -60,6 +60,10 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     useJUnit()
+    // Supplied by the smoke-test runner; forward it to the test JVM.
+    providers.systemProperty("smoke.configset.dir").orNull?.let {
+        systemProperty("smoke.configset.dir", it)
+    }
 }
 
 layout.buildDirectory.set(file("build"))
