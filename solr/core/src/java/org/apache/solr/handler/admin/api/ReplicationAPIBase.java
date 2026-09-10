@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.handler.ReplicationHandler.ERR_STATUS;
 import static org.apache.solr.handler.ReplicationHandler.OK_STATUS;
 
 import jakarta.ws.rs.core.StreamingOutput;
@@ -150,8 +149,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         }
         if (null == commit) {
           // The gen they asked for either doesn't exist or has already been deleted
-          reportErrorOnResponse(filesResponse, "invalid index generation", null);
-          return filesResponse;
+          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "invalid index generation");
         }
       }
       assert null != commit;
@@ -200,9 +198,10 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       } catch (IOException e) {
         log.error(
             "Unable to get file names for indexCommit generation: {}", commit.getGeneration(), e);
-        reportErrorOnResponse(
-            filesResponse, "unable to get file names for given index generation", e);
-        return filesResponse;
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "unable to get file names for given index generation",
+            e);
       } finally {
         if (dir != null) {
           try {
@@ -577,15 +576,6 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     protected Path initFile() {
       // if it is a conf file read from config directory
       return solrCore.getResourceLoader().getConfigPath().resolve(cfileName);
-    }
-  }
-
-  private void reportErrorOnResponse(
-      FileListResponse fileListResponse, String message, Exception e) {
-    fileListResponse.status = ERR_STATUS;
-    fileListResponse.message = message;
-    if (e != null) {
-      fileListResponse.exception = e;
     }
   }
 }
