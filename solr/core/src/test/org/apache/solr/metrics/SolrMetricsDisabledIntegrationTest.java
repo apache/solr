@@ -75,7 +75,8 @@ public class SolrMetricsDisabledIntegrationTest extends SolrTestCaseJ4 {
 
     try (SolrCore core = cc.getCore(DEFAULT_TEST_CORENAME)) {
       assertNotNull(core);
-      assertNull(metricManager.getPrometheusMetricReader(core.getCoreMetricManager().getRegistryName()));
+      assertNull(
+          metricManager.getPrometheusMetricReader(core.getCoreMetricManager().getRegistryName()));
     }
 
     assertQ(req("q", "*:*"), "//result[@numFound='0']");

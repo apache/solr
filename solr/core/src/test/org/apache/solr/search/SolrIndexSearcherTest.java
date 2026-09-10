@@ -38,8 +38,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.handler.component.MergeStrategy;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.junit.Before;
@@ -209,7 +209,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
   public void testReplacedSearcherCanBeGarbageCollected() throws Exception {
     WeakReference<SolrIndexSearcher> replacedSearcher = registerCurrentSearcherForGcCheck();
 
-    assertU(adoc("id", "gc-" + System.nanoTime(), "field1_s", "foo"));
+    assertU(adoc("id", "1000000", "field1_s", "foo"));
     openNewSearcherAndWait();
 
     assertEventuallyReleased(replacedSearcher);

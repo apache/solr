@@ -168,7 +168,8 @@ public class SolrMetricManager {
 
   public LongCounter longCounter(
       String registry, String counterName, String description, OtelUnit unit) {
-    LongCounterBuilder builder = meter(registry).counterBuilder(counterName).setDescription(description);
+    LongCounterBuilder builder =
+        meter(registry).counterBuilder(counterName).setDescription(description);
     if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.build();
@@ -239,7 +240,8 @@ public class SolrMetricManager {
       String description,
       Consumer<ObservableLongMeasurement> callback,
       OtelUnit unit) {
-    LongCounterBuilder builder = meter(registry).counterBuilder(counterName).setDescription(description);
+    LongCounterBuilder builder =
+        meter(registry).counterBuilder(counterName).setDescription(description);
     if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder.buildWithCallback(callback);
@@ -346,7 +348,8 @@ public class SolrMetricManager {
 
   private DoubleGaugeBuilder doubleGaugeBuilder(
       String registry, String gaugeName, String description, OtelUnit unit) {
-    DoubleGaugeBuilder builder = meter(registry).gaugeBuilder(gaugeName).setDescription(description);
+    DoubleGaugeBuilder builder =
+        meter(registry).gaugeBuilder(gaugeName).setDescription(description);
     if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder;
@@ -354,7 +357,8 @@ public class SolrMetricManager {
 
   private LongCounterBuilder longCounterBuilder(
       String registry, String counterName, String description, OtelUnit unit) {
-    LongCounterBuilder builder = meter(registry).counterBuilder(counterName).setDescription(description);
+    LongCounterBuilder builder =
+        meter(registry).counterBuilder(counterName).setDescription(description);
     if (unit != null) builder.setUnit(unit.getSymbol());
 
     return builder;
